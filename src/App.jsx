@@ -14,18 +14,66 @@ import {
   Globe,
   AlertCircle,
   Maximize2,
-  Volume2
+  Volume2,
+  Smartphone,
+  Film
 } from 'lucide-react';
 
 // --- BRAND CONSTANTS ---
 const ORANGE = "#FF4F00";
 
-// --- VIDEO ASSETS ---
-const VERTICAL_VIDEOS = [
-  { url: "https://dl.dropboxusercontent.com/scl/fi/vq26nf476bebupfv6jwqp/Malapai-Vertical.mov?rlkey=tjar17zqb7czhx5m93v34xoqk&raw=1", title: "Malapai Vertical A", tag: "6K_RAW" },
-  { url: "https://dl.dropboxusercontent.com/scl/fi/gjua2slterlpr4r7hhfjo/Happy-10-Year-Reel-1.mov?rlkey=3ml7y0gg6t89df051y3bxtfui&raw=1", title: "Social Rhythm", tag: "9:16_OPT" },
-  { url: "https://dl.dropboxusercontent.com/scl/fi/nmcas20p1fg53tuoejyeb/Adobe-2.mov?rlkey=x1176327cigm96iq1v7pdwgw2&raw=1", title: "Adobe Technical", tag: "VERTICAL_SYS" }
-];
+// --- EXPANDED PORTFOLIO DATA ---
+const PORTFOLIO_DATA = {
+  builders: {
+    cinematic: [
+      { title: "Ambition: Refined Gardens", sub: "Brand Episode", url: "https://dl.dropboxusercontent.com/scl/fi/i642p6xrm6zpxastfwa2p/REFINED-GARDENS-DIEON.mp4?rlkey=utze6r9xvj4l634sy7klusa5g&raw=1", tags: ["4K", "Architecture"] },
+      { title: "The Rebuild: Thelma", sub: "Documentary Episode", url: "https://dl.dropboxusercontent.com/scl/fi/pmgtkouq5jkb7chs9xphz/EPISODE-1-THELMA-FF.mov?rlkey=4l5u8xxkw8cxybpnmydhllbmn&raw=1", tags: ["Doc", "Industrial"] },
+      { title: "Malapai Construction", sub: "Doc Preview", url: "https://dl.dropboxusercontent.com/scl/fi/nsg96q5xd1v7jh4gha51h/Malapai-1.mov?rlkey=5abjqtb3zrjcytifndkfgpdcs&raw=1", tags: ["Process", "6K"] },
+      { title: "The Noble Agency", sub: "Sizzle Film", url: "https://dl.dropboxusercontent.com/scl/fi/36hxds9dpn1xtcndlcfi9/Noble-Edit-Sizzle.mov?rlkey=3u41bycqn3jqivadsewqkl7m2&raw=1", tags: ["Real Estate"] },
+      { title: "Du Coeur", sub: "Walkthrough Film", url: "https://dl.dropboxusercontent.com/scl/fi/zqbatp2vzu13xboe4mn9j/Sam-DuCoeur-Walkthrough.m4v?rlkey=t5emcnmd9er5yqp8cqjcya1e4&raw=1", tags: ["Luxury"] },
+      { title: "AZ Cleantech", sub: "Sector Story", url: "https://dl.dropboxusercontent.com/scl/fi/46ov8xdfv1qy7e3vr7d9b/AZCLEANTECH-FINAL.mov?rlkey=khseypkzvpcvzhlthn3mgjn3z&raw=1", tags: ["Industrial"] }
+    ],
+    mobile: [
+      { title: "Malapai Vertical", sub: "Doc Intro", url: "https://dl.dropboxusercontent.com/scl/fi/vq26nf476bebupfv6jwqp/Malapai-Vertical.mov?rlkey=tjar17zqb7czhx5m93v34xoqk&raw=1", tags: ["9:16"] },
+      { title: "Malapai: Lafayette", sub: "Project Update", url: "https://dl.dropboxusercontent.com/scl/fi/ey6te42ahdx4t9udzieao/Malapai-Lafayette-update.mov?rlkey=xsbhgqi3j1voxpwx86090b6q8&raw=1", tags: ["Social"] },
+      { title: "Refined Gardens", sub: "Mobile Cut", url: "https://dl.dropboxusercontent.com/scl/fi/3val6y22ma1ju8f5cqqqe/REFINED-GARDENS-MOBILE.mp4?rlkey=infjowq6zp8cqirrdesg1e0wn&raw=1", tags: ["9:16"] },
+      { title: "Arrowhead Grenadier", sub: "INEOS Mobile", url: "https://dl.dropboxusercontent.com/scl/fi/8a0mig4l8bd8yf3khtigq/ARROWHEAD-UPDATE-MOBILE.mp4?rlkey=hylucrr5d7x3q62ul03g63byz&raw=1", tags: ["Brand"] }
+    ]
+  },
+  founders: {
+    cinematic: [
+      { title: "Reelay", sub: "Product Explainer", url: "https://dl.dropboxusercontent.com/scl/fi/8wfqw1mw9scrahx04x8ks/Reelay-EXPLAINER-1920x1080.mp4?rlkey=hf1ycl8zftd08x32m3asm820g&raw=1", tags: ["SaaS", "VC"] },
+      { title: "NGOTS", sub: "Business Highlight", url: "https://dl.dropboxusercontent.com/scl/fi/jk5wjgqeylw3khbz2ac7y/NGOTS.mp4?rlkey=xky4j0lmms9y8r1qr7w3cl4k8&raw=1", tags: ["Strategy"] },
+      { title: "Intelliplay", sub: "Product Film", url: "https://dl.dropboxusercontent.com/scl/fi/m92mdkme20vwzb3791cnx/Intelliplay-FF.mov?rlkey=aasi46x1u610tqfpx75dw6qgd&raw=1", tags: ["Tech", "UX"] },
+      { title: "Founders Retreat", sub: "Event Film", url: "https://dl.dropboxusercontent.com/scl/fi/2btjzczt66p8aj3iprvy/Retreat-2022.m4v?rlkey=fpjcvxrkj4qtsf2p4fx701v0l&raw=1", tags: ["Community"] }
+    ],
+    mobile: [
+      { title: "Abstrakt SDR", sub: "Vertical Explainer", url: "https://dl.dropboxusercontent.com/scl/fi/311qjnptwbffo0jrlk26c/What-is-Abstrakt-VERT-9x16.mp4?rlkey=8e4eisivpr7ol6rh3leajkfw8&raw=1", tags: ["SaaS"] },
+      { title: "Intelliplay IAAPA", sub: "Event Recap", url: "https://dl.dropboxusercontent.com/scl/fi/juc0yicl7bdoj16k51aci/IAAPA-DAY-2.mov?rlkey=nwbelita2wdmw1mhlvc340f6o&raw=1", tags: ["9:16"] }
+    ]
+  },
+  marketing: {
+    cinematic: [
+      { title: "Letter To The World", sub: "Trailer", url: "https://dl.dropboxusercontent.com/scl/fi/t1jzugta90mp2up4na6zb/Letter-To-The-World-Trailer-FF.mov?rlkey=bz84d3eocnkpd34tnt8fmaxof&raw=1", tags: ["Epic"] },
+      { title: "Cook & Craft", sub: "Brand Film", url: "https://dl.dropboxusercontent.com/scl/fi/9tb5f2m9fahqh1uqh1m5q/Website-Background-C-C.mov?rlkey=dippv72znkzrjdpziae6mzz7p&raw=1", tags: ["Food", "Brand"] },
+      { title: "N2 Media", sub: "Brand Reel", url: "https://dl.dropboxusercontent.com/scl/fi/67tbiugc7b9ofwkpxqc3g/n2-Reel.m4v?rlkey=awjlbtw5l833m5co5ci7lbd0o&raw=1", tags: ["Agency"] },
+      { title: "RW Investments", sub: "Brand Story", url: "https://dl.dropboxusercontent.com/scl/fi/rl5tnpm2lmet6mcful57b/RW-Investments-1-Minute.mp4?rlkey=3be7n7j2k0se7ye81a2de2k0s&raw=1", tags: ["Finance"] },
+      { title: "Ulisgold Pilates", sub: "Studio Brand", url: "https://dl.dropboxusercontent.com/scl/fi/nd4hjftihygeux09zcr1x/ULISGOLD-GRADED-V2.mov?rlkey=cco8bu4qtmehs098mmcebrkxg&raw=1", tags: ["Lifestyle"] }
+    ],
+    mobile: [
+      { title: "NOOK Kitchen", sub: "10 Year Anniversary", url: "https://dl.dropboxusercontent.com/scl/fi/gjua2slterlpr4r7hhfjo/Happy-10-Year-Reel-1.mov?rlkey=3ml7y0gg6t89df051y3bxtfui&raw=1", tags: ["Social"] },
+      { title: "Combat Veterans", sub: "Event Promo", url: "https://dl.dropboxusercontent.com/scl/fi/cqosg1t3bck3d4hwuc5ks/Veterans-Day-Event-Promo.mp4?rlkey=271kjtoooigctix6ir10w8zbs&raw=1", tags: ["Promo"] },
+      { title: "Lagos", sub: "Event Recap", url: "https://dl.dropboxusercontent.com/scl/fi/zte1jt418r58sej21dvnb/EVENT-RECAP-2MIN.mp4?rlkey=are24a517v12jwtgtt4yv3rq0&raw=1", tags: ["Vibe"] },
+      { title: "Pretzel Feature", sub: "Cook & Craft", url: "https://dl.dropboxusercontent.com/scl/fi/n2quyck4ku4iypl8hzgzp/REloaded-PRetz-le.mov?rlkey=k3t1sponipiokel6jvigpwgoj&raw=1", tags: ["Product"] },
+      { title: "Adobe AI", sub: "Sponsored Review", url: "https://dl.dropboxusercontent.com/scl/fi/nmcas20p1fg53tuoejyeb/Adobe-2.mov?rlkey=x1176327cigm96iq1v7pdwgw2&raw=1", tags: ["Tech"] },
+      { title: "Aiper", sub: "Home Show", url: "https://dl.dropboxusercontent.com/scl/fi/maq2vbldzb3olt8u3auc5/AIPER-Maricopa-Home-Show-60-Second.mov?rlkey=elsmbih3a280pqegdqjqnfmrp&raw=1", tags: ["Event"] },
+      { title: "Ambassador Cigar", sub: "Atmosphere", url: "https://dl.dropboxusercontent.com/scl/fi/vcqef5250n2phrguoheor/Video-Jun-25-2023-12-44-50-AM.mp4?rlkey=893ojsbyh7hty8ppshry3nuik&raw=1", tags: ["Luxury"] },
+      { title: "Influencer Day", sub: "Cook & Craft", url: "https://dl.dropboxusercontent.com/scl/fi/69m6kg7pmrk7fjo3bd4yi/CC-Influencer-Day.mov?rlkey=jnf2lhdi97dl6fy9c2xdahbxe&raw=1", tags: ["Social"] }
+    ]
+  }
+};
+
+const VERTICAL_VIDEOS = PORTFOLIO_DATA.builders.mobile; // Default for scroller
 
 // --- ANIMATION VARIANTS ---
 const revealText = {
@@ -102,7 +150,7 @@ const StrategicVortexBG = () => {
       const material = new THREE.LineBasicMaterial({ 
         color: new THREE.Color(ORANGE), 
         transparent: true, 
-        opacity: 0.18 // Increased opacity as requested
+        opacity: 0.18 
       });
       lines = new THREE.LineSegments(geometry, material);
       scene.add(lines);
@@ -165,19 +213,17 @@ const StudioPlayer = ({ video, onClose }) => (
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[700] bg-black/98 flex flex-col items-center justify-center p-4 md:p-8 backdrop-blur-3xl"
       >
-        {/* Header: Project Name */}
         <div className="absolute top-0 left-0 w-full p-8 md:p-12 flex justify-between items-center pointer-events-none">
           <div className="flex flex-col">
             <span className="text-orange-600 font-mono text-[10px] uppercase tracking-[0.5em] font-black italic">Now_Screening</span>
             <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter text-white mt-2">{video.title}</h2>
           </div>
           <div className="hidden md:flex flex-col items-end opacity-40">
-            <span className="text-[10px] font-mono text-white uppercase tracking-widest">Cinema_Grade // 24FPS</span>
-            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mt-1">Status: Active_Stream</span>
+            <span className="text-[10px] font-mono text-white uppercase tracking-widest">Studio_Cinema // 24FPS</span>
+            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mt-1">Status: Active_Master</span>
           </div>
         </div>
 
-        {/* Video Container */}
         <motion.div 
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -189,7 +235,6 @@ const StudioPlayer = ({ video, onClose }) => (
           </video>
         </motion.div>
 
-        {/* Footer: Close Button */}
         <div className="absolute bottom-0 left-0 w-full p-8 md:p-12 flex justify-center">
           <button 
             onClick={onClose}
@@ -346,7 +391,7 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => (
                <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Play size={10} className="fill-white text-white ml-0.5" />
                </div>
-               <h3 className="text-3xl font-black uppercase italic tracking-tighter leading-none group-hover:text-orange-500 transition-colors">{title}</h3>
+               <h3 className={`font-black uppercase italic tracking-tighter leading-none group-hover:text-orange-500 transition-colors ${isVertical ? 'text-2xl' : 'text-3xl'}`}>{title}</h3>
             </div>
             <p className="text-[9px] font-mono text-orange-600 uppercase tracking-[0.2em] font-black">{sub}</p>
         </div>
@@ -460,7 +505,7 @@ export default function App() {
                  <span className="text-[10px] font-mono uppercase tracking-[0.5em] font-black italic text-zinc-600">AOM_SYSTEM_026</span>
               </div>
               <p className="text-sm md:text-lg font-mono uppercase leading-relaxed tracking-wider italic font-black max-w-xl text-zinc-500 text-balance">
-                High-end production systems for physical-world developers and digital-world founders. Cinematic infrastructure designed to scale conviction.
+                Strategic production systems for physical-world developers and digital-world founders. Cinematic infrastructure designed to scale conviction.
               </p>
             </div>
             <div className="md:col-span-6 flex justify-end">
@@ -481,10 +526,10 @@ export default function App() {
       {/* THE WORK (MODAL-ENABLED) */}
       <section id="work" className="px-6 md:px-12 lg:px-24 py-32 relative z-10 bg-[#020202] overflow-hidden w-full max-w-[100vw]">
         <div className="max-w-screen-2xl mx-auto w-full">
-          <div className="flex flex-col lg:flex-row justify-between items-end mb-24 gap-12">
+          <div className="flex flex-col lg:flex-row justify-between items-end mb-24 gap-12 border-b border-white/5 pb-12">
             <div className="max-w-3xl">
               <RevealHeading className="mb-8">
-                <h3 className="text-[11px] font-mono text-orange-600 uppercase tracking-[0.8em] font-black italic">Portfolio_Index // Selected_Ops</h3>
+                <h3 className="text-[11px] font-mono text-orange-600 uppercase tracking-[0.8em] font-black italic">The_Strategic_Archive // V.13</h3>
               </RevealHeading>
               <RevealHeading>
                 <h2 className="text-7xl md:text-[8.5vw] font-black uppercase italic tracking-tighter leading-[0.8]">
@@ -502,26 +547,36 @@ export default function App() {
           </div>
 
           <AnimatePresence mode="wait">
-            <motion.div key={activeTab} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {activeTab === 'builders' && (
-                <>
-                  <div className="md:col-span-8"><VideoModule onPlay={setSelectedVideo} title="The Rebuild" sub="Legacy Documentary // Construction" tags={['Cinema', '4K']} url="https://dl.dropboxusercontent.com/scl/fi/pmgtkouq5jkb7chs9xphz/EPISODE-1-THELMA-FF.mov?rlkey=4l5u8xxkw8cxybpnmydhllbmn&raw=1" /></div>
-                  <div className="md:col-span-4"><VideoModule onPlay={setSelectedVideo} title="Industrial" sub="Process Study // Architecture" tags={['Process']} url="https://dl.dropboxusercontent.com/scl/fi/nsg96q5xd1v7jh4gha51h/Malapai-1.mov?rlkey=5abjqtb3zrjcytifndkfgpdcs&raw=1" /></div>
-                </>
-            )}
-              {activeTab === 'founders' && (
-                <>
-                  <div className="md:col-span-6"><VideoModule onPlay={setSelectedVideo} title="Reelay SaaS" sub="Narrative Map // VC Ready" tags={['Tech', 'SaaS']} url="https://dl.dropboxusercontent.com/scl/fi/8wfqw1mw9scrahx04x8ks/Reelay-EXPLAINER-1920x1080.mp4?rlkey=hf1ycl8zftd08x32m3asm820g&raw=1" /></div>
-                  <div className="md:col-span-6"><VideoModule onPlay={setSelectedVideo} title="Intelliplay" sub="Capability Demo // Future Proof" tags={['UI', 'Tech']} url="https://dl.dropboxusercontent.com/scl/fi/m92mdkme20vwzb3791cnx/Intelliplay-FF.mov?rlkey=aasi46x1u610tqfpx75dw6qgd&raw=1" /></div>
-                </>
-            )}
-              {activeTab === 'marketing' && (
-                <div className="md:col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <VideoModule onPlay={setSelectedVideo} isVertical={true} title="Nook" sub="Social Rhythm" tags={['9:16']} url="https://dl.dropboxusercontent.com/scl/fi/gjua2slterlpr4r7hhfjo/Happy-10-Year-Reel-1.mov?rlkey=3ml7y0gg6t89df051y3bxtfui&raw=1" />
-                  <div className="sm:col-span-2"><VideoModule onPlay={setSelectedVideo} title="Cook & Craft" sub="Brand Pulse" tags={['High Speed']} url="https://dl.dropboxusercontent.com/scl/fi/n2quyck4ku4iypl8hzgzp/REloaded-PRetz-le.mov?rlkey=k3t1sponipiokel6jvigpwgoj&raw=1" /></div>
-                  <VideoModule onPlay={setSelectedVideo} isVertical={true} title="Adobe AI" sub="Case Study" tags={['Vertical']} url="https://dl.dropboxusercontent.com/scl/fi/nmcas20p1fg53tuoejyeb/Adobe-2.mov?rlkey=x1176327cigm96iq1v7pdwgw2&raw=1" />
+            <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-32 mt-20">
+              
+              {/* 🎬 CINEMATIC MASTERS (16:9) */}
+              <div className="space-y-12">
+                <div className="flex items-center gap-6">
+                   <Film size={20} className="text-orange-600" />
+                   <h4 className="text-[10px] font-mono uppercase tracking-[0.5em] font-black italic">Cinematic_Masters // 16:9_HD</h4>
+                   <div className="flex-grow h-[1px] bg-white/5" />
                 </div>
-            )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {PORTFOLIO_DATA[activeTab].cinematic.map((vid, idx) => (
+                    <VideoModule key={vid.title} onPlay={setSelectedVideo} title={vid.title} sub={vid.sub} tags={vid.tags} url={vid.url} />
+                  ))}
+                </div>
+              </div>
+
+              {/* 📱 MOBILE SYSTEMS (9:16) */}
+              <div className="space-y-12">
+                <div className="flex items-center gap-6">
+                   <Smartphone size={20} className="text-orange-600" />
+                   <h4 className="text-[10px] font-mono uppercase tracking-[0.5em] font-black italic">Mobile_Systems // 9:16_Vertical</h4>
+                   <div className="flex-grow h-[1px] bg-white/5" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {PORTFOLIO_DATA[activeTab].mobile.map((vid, idx) => (
+                    <VideoModule key={vid.title} onPlay={setSelectedVideo} isVertical={true} title={vid.title} sub={vid.sub} tags={vid.tags} url={vid.url} />
+                  ))}
+                </div>
+              </div>
+
             </motion.div>
           </AnimatePresence>
         </div>
@@ -568,7 +623,8 @@ export default function App() {
                     animate={{ opacity: 0.5, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     autoPlay muted loop playsInline 
-                    className="w-full h-full object-cover group-hover:opacity-100 group-hover:scale-105 transition-all duration-[5000ms] ease-out"
+                    className="w-full h-full object-cover group-hover:opacity-100 group-hover:scale-105 transition-all duration-[5000ms] ease-out cursor-pointer"
+                    onClick={() => setSelectedVideo({ url: VERTICAL_VIDEOS[activeVerticalIndex].url, title: VERTICAL_VIDEOS[activeVerticalIndex].title })}
                   >
                     <source src={VERTICAL_VIDEOS[activeVerticalIndex].url} />
                   </motion.video>
