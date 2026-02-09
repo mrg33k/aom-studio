@@ -614,7 +614,7 @@ export default function App() {
           </div>
           <div className="mt-12 text-left text-zinc-600 text-xs flex justify-between items-center">
             <span>© 2024 Ahead of Market. All rights reserved. Strategy Before Story.</span>
-            <span className="font-mono text-orange-600/80">SYSTEM_V18.1</span>
+            <span className="font-mono text-orange-600/80">SYSTEM_V18.2</span>
           </div>
         </div>
       </footer>
