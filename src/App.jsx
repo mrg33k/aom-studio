@@ -958,15 +958,15 @@ export default function App() {
               WE HANDLE <br />
               <TypewriterCycle
                 words={[
-                  "THE PLANNING",
+                  "THE STORY",
                   "THE AUDIO",
                   "THE SOCIAL",
                   "THE PHOTOS",
-                  "THE PRODUCTION",
+                  "THE LIGHTS",
                   "THE EDITING",
                   "THE SHOTS",
-                  "THE COLOR-GRADING",
-                  "THE VIBES"
+                  "THE TONE",
+                  "THE PLAN"
                 ]}
               />
               <span className="text-zinc-600 italic block mt-2">YOU OWN</span>
