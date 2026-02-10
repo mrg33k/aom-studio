@@ -1102,7 +1102,7 @@ export default function App() {
           <div className="mt-24 grid grid-cols-1 md:grid-cols-2 gap-20 items-end border-t border-white/10 pt-16">
             <p className="text-xl md:text-2xl text-zinc-300 leading-relaxed max-w-xl font-medium drop-shadow-md">
               We build repeatable video systems for Phoenix founders and developers: sales case studies, social content engines, and investor-ready narrative assets. 
-              <span className="text-orange-500 font-black block mt-4">No Overhead. No Delays. Just outcomes.</span>
+              <span className="text-orange-500 font-black block mt-4">No Overhead. No Delays. Just Outcomes.</span>
             </p>
             <div className="flex justify-start md:justify-end">
               <button onClick={openBrief} className="group flex items-center gap-6 text-white hover:text-orange-500 transition-colors">
