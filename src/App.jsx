@@ -5,7 +5,8 @@ import {
   Activity, Target, Layers, Zap, Smartphone, Clapperboard, CheckCircle2,
   Volume2, ArrowRight, Radio, ArrowDownRight,
   ShieldCheck, Clock3, Users, Building2, BadgeCheck, Star, Sparkles, Coins, ScrollText,
-  Lightbulb, Rocket, Repeat, Crown, Fingerprint, Mic2
+  Lightbulb, Rocket, Repeat, Crown, Fingerprint, Mic2,
+  Download, Calendar, TrendingUp
 } from 'lucide-react';
 
 // --- FIREBASE & STORAGE CONFIG ---
@@ -123,7 +124,6 @@ const PORTFOLIO_DATA = {
     ],
     social: [
       { title: "IAAPA Day 2", sub: "Event Recap", url: "https://gumlet.tv/watch/698a5391873071aec5c8b654/", tags: ["9:16", "Event"] },
-      
     ]
   }
 };
@@ -147,61 +147,85 @@ const ENGAGEMENT_IDEAS = [
     icon: Rocket,
     title: "The Big Launch",
     statement: "We are bringing a new development or product to market and need a full asset suite to drive hype.",
-    price: "$10k+"
+    price: "$10k - $25k",
+    includes: ["3-5 hero videos", "15-30 social cuts", "Website hero loop", "Brand style guide"],
+    timeline: "4-6 weeks",
+    bestFor: "Product launches, major developments, fundraising announcements"
   },
   {
     id: "engine",
     icon: Repeat,
     title: "Content Engine",
     statement: "We are tired of ad-hoc posting. We need a system that delivers consistent video volume every month.",
-    price: "$3k/mo"
+    price: "$3k/mo",
+    includes: ["Monthly capture session", "1 Hero Asset", "8-12 Social Cuts", "Thumbnail Suite"],
+    timeline: "Ongoing",
+    bestFor: "Brands needing consistent social presence & growth"
   },
   {
     id: "authority",
     icon: Crown,
     title: "Founder Authority",
     statement: "I need to establish personal credibility and trust with investors or talent quickly.",
-    price: "$5k+"
+    price: "$5k+",
+    includes: ["Founder story doc", "Leadership interview series", "LinkedIn native assets", "Press kit photos"],
+    timeline: "2-3 weeks",
+    bestFor: "Founders raising capital or recruiting top talent"
   },
   {
     id: "proof",
     icon: Fingerprint,
     title: "Social Proof",
     statement: "We have great projects but no cinematic case studies. We need to prove our expertise.",
-    price: "$5k+"
+    price: "$5k+",
+    includes: ["Client testimonial interviews", "Project b-roll capture", "Data visualization graphics", "Case study PDF"],
+    timeline: "3-4 weeks",
+    bestFor: "Service businesses needing to close larger contracts"
   },
   {
     id: "event",
     icon: Mic2,
     title: "Event Capture",
     statement: "We have a major activation or conference coming up. We need it captured for high-energy recap assets.",
-    price: "$3k+"
+    price: "$3k+",
+    includes: ["Multi-cam event coverage", "Same-day highlight reel", "Full panel recordings", " attendee vox pops"],
+    timeline: "1-2 weeks",
+    bestFor: "Conferences, grand openings, activations"
   },
   {
     id: "custom",
     icon: Lightbulb,
     title: "The Wildcard",
     statement: "We have a specific vision that doesn't fit in a box. We need a creative partner to figure it out.",
-    price: "Tailored"
+    price: "Tailored",
+    includes: ["Custom creative strategy", "Technical execution plan", "Unique deliverables", "Consulting"],
+    timeline: "Flexible",
+    bestFor: "Experimental projects, rebrands, complex productions"
   }
 ];
 
 
 const TESTIMONIALS = [
   {
-    quote: "They moved like an internal team. Fast, organized, and the final assets made us look bigger overnight.",
+    quote: "We closed 3 new industrial contracts in 60 days after launching our case study video. The production cost paid for itself 8x over.",
+    metric: "8x ROI in 60 days",
     name: "Hunter Bjork",
-    company: "ISA ENERGY"
+    company: "ISA ENERGY",
+    industry: "Industrial Energy"
   },
   {
-    quote: "We stopped guessing what to post. The system created repeatable content and our outreach finally had teeth.",
+    quote: "Before AOM, we were posting randomly with no strategy. Now we have a repeatable system that fills our pipeline. Our outreach finally has teeth.",
+    metric: "150% pipeline growth",
     name: "Sumit Seth",
-    company: "Naamly"
+    company: "Naamly",
+    industry: "SaaS"
   },
   {
-    quote: "The difference was strategy. They didn’t just shoot. They built the narrative and made it usable across channels.",
+    quote: "They didn't just shoot beautiful footage. They mapped every asset to a business outcome: investor meetings, recruiting, and web conversion. That's the difference.",
+    metric: "3 venue launches",
     name: "Gio Osso",
-    company: "Virtu Hospitality Group"
+    company: "Virtu Hospitality Group",
+    industry: "Hospitality"
   }
 ];
 
@@ -400,7 +424,7 @@ const TICKER_TEXTS = [
   "DOCUMENTARY PRODUCTION PHOENIX, AZ"
 ];
 
-const SystemTicker = ({ onOpenBrief }) => (
+const SystemTicker = ({ onOpenBrief, onOpenCalendar }) => (
   <div className="fixed bottom-0 left-0 w-full z-[100] h-12 bg-black border-t border-zinc-800 flex items-center shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
     <div className="flex-1 overflow-hidden relative h-full flex items-center bg-black/90 backdrop-blur-sm">
       <div className="flex whitespace-nowrap animate-marquee items-center">
@@ -419,6 +443,14 @@ const SystemTicker = ({ onOpenBrief }) => (
 
     <div className="h-full flex items-center pr-0 pl-0 relative z-20">
       <button
+        onClick={onOpenCalendar}
+        className="h-full px-6 bg-zinc-900 text-zinc-400 font-black italic uppercase tracking-[0.15em] text-[10px] hover:bg-zinc-800 hover:text-white transition-all flex items-center gap-2 border-l border-zinc-800 group"
+      >
+        <Calendar size={14} className="group-hover:scale-110 transition-transform" />
+        <span className="hidden sm:inline">15-Min Call</span>
+        <span className="sm:hidden">Call</span>
+      </button>
+      <button
         onClick={onOpenBrief}
         className="h-full px-8 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.15em] text-xs hover:from-orange-500 hover:to-orange-400 transition-all flex items-center gap-3 shadow-[0_0_25px_rgba(255,79,0,0.4)] border-l border-orange-400/30 group"
       >
@@ -429,17 +461,35 @@ const SystemTicker = ({ onOpenBrief }) => (
   </div>
 );
 
-// --- LIVING GRID VIDEO MODULE ---
-const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
+// --- LIVING GRID VIDEO MODULE (LAZY LOAD UPDATE) ---
+const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay, context }) => {
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [showContext, setShowContext] = useState(false);
+  const ref = useRef(null);
   const embedUrl = getGumletBackgroundEmbed(url);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setShouldLoad(true);
+      },
+      { rootMargin: '200px' }
+    );
+    
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <article
+      ref={ref}
       onClick={() => onPlay({ url, title })}
+      onMouseEnter={() => setShowContext(true)}
+      onMouseLeave={() => setShowContext(false)}
       className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 ${isVertical ? 'aspect-[9/16] w-[280px]' : 'aspect-video w-[450px] shadow-lg'}`}
     >
       <div className="absolute inset-0 bg-zinc-950">
-        {embedUrl && (
+        {shouldLoad && embedUrl && (
           <iframe
             src={embedUrl}
             loading="lazy"
@@ -574,18 +624,32 @@ const ProcessStep = memo(({ idx, title, body, icon: Icon }) => (
 
 const TestimonialCard = memo(({ t }) => (
   <div className="p-10 border border-white/10 bg-zinc-900/30 rounded-sm shadow-2xl hover:border-orange-600/40 transition-colors">
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between mb-4">
       <Sparkles size={16} className="text-orange-600" />
       <div className="flex gap-1">
-        {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-orange-600/50" />)}
+        {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-orange-600 fill-orange-600" />)}
       </div>
     </div>
-    <p className="text-white text-xl md:text-2xl font-black italic tracking-tight mt-8 leading-snug">
-      “{t.quote}”
+    
+    {/* NEW: Metric Badge */}
+    <div className="inline-flex items-center gap-2 bg-orange-600/20 border border-orange-600/40 px-3 py-1.5 rounded-sm mb-6">
+      <TrendingUp size={12} className="text-orange-500" />
+      <span className="text-orange-500 font-black text-xs uppercase tracking-widest">{t.metric}</span>
+    </div>
+    
+    <p className="text-white text-xl md:text-2xl font-black italic tracking-tight leading-snug">
+      "{t.quote}"
     </p>
-    <div className="mt-10 pt-6 border-t border-white/10">
-      <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">{t.name}</p>
-      <p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-500 mt-2">{t.company}</p>
+    
+    <div className="mt-10 pt-6 border-t border-white/10 flex justify-between items-end">
+      <div>
+        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">{t.name}</p>
+        <p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-500 mt-2">{t.company}</p>
+      </div>
+      {/* NEW: Industry tag */}
+      <div className="text-right">
+        <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600">{t.industry}</p>
+      </div>
     </div>
   </div>
 ));
@@ -642,6 +706,53 @@ const MidCTA = memo(({ onOpenBrief }) => (
   </div>
 ));
 
+// --- CALENDAR MODAL COMPONENT ---
+const CalendarModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }} 
+        className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto"
+      >
+        <div className="w-full max-w-4xl h-[80vh] p-8 md:p-12 border border-white/10 bg-[#0a0a0a] relative shadow-2xl rounded-xl my-auto">
+          <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white z-10">
+            <X size={24} />
+          </button>
+          
+          <div className="mb-6">
+            <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
+              <ScrambleText text="Book A Call" />
+            </span>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">
+              15-Min Clarity Call<span className="text-orange-600">.</span>
+            </h2>
+            <p className="text-zinc-400 text-sm mt-4">
+              Quick scope call to understand your needs and see if we're a fit. No pitch, no pressure.
+            </p>
+          </div>
+          
+          {/* INSERT YOUR CALENDLY EMBED HERE */}
+          <div className="w-full h-[calc(100%-120px)] bg-zinc-900/50 border border-white/10 rounded-sm flex items-center justify-center">
+            <div className="text-center p-8">
+              <Calendar size={48} className="mx-auto text-orange-600 mb-4" />
+              <p className="text-zinc-400 text-sm font-mono uppercase tracking-widest mb-4">
+                Calendly Integration Placeholder
+              </p>
+              <p className="text-zinc-600 text-xs max-w-md mx-auto">
+                Replace this section with your Calendly embed code from calendly.com
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 // --- MAIN APP ---
 export default function App() {
   const [loadStatus, setLoadStatus] = useState(0);
@@ -653,6 +764,11 @@ export default function App() {
   
   // V38: Engagement Intent State
   const [selectedIntent, setSelectedIntent] = useState(null);
+
+  // V38: New States
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [videoPlayCount, setVideoPlayCount] = useState(0);
+  const [showLeadCapture, setShowLeadCapture] = useState(false);
 
   const [portfolioData, setPortfolioData] = useState(PORTFOLIO_DATA);
   const [strategyFeed, setStrategyFeed] = useState([]);
@@ -721,6 +837,21 @@ export default function App() {
       setTimeout(() => setIsInitialized(true), 400);
     }
   }, [loadStatus]);
+
+  // V38: Handlers
+  const openCalendar = () => setIsCalendarOpen(true);
+  const closeCalendar = () => setIsCalendarOpen(false);
+
+  const handleVideoPlay = (video) => {
+    setSelectedVideo(video);
+    const newCount = videoPlayCount + 1;
+    setVideoPlayCount(newCount);
+    sessionStorage.setItem('videoPlays', newCount.toString());
+    
+    if (newCount === 3 && !showLeadCapture) {
+      setShowLeadCapture(true);
+    }
+  };
 
   const handleInquirySubmit = async (finalPhaseData = {}) => {
     setIsSubmitting(true);
@@ -794,7 +925,7 @@ export default function App() {
       <TextureOverlay />
 
       {/* --- SYSTEM TICKER (FIXED BOTTOM) --- */}
-      <SystemTicker onOpenBrief={openBrief} />
+      <SystemTicker onOpenBrief={openBrief} onOpenCalendar={openCalendar} />
 
       {/* --- CREATIVE BRIEF MODAL --- */}
       <AnimatePresence>
@@ -806,84 +937,78 @@ export default function App() {
               {!isSuccess ? (
                 <div className="space-y-8">
                   <div className="flex justify-between items-start">
-                     <div>
-                        <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
-                        <ScrambleText text="Start Your Project" />
-                        </span>
-                        <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build this<span className="text-orange-600">.</span></h2>
-                     </div>
-                     {selectedIntent && (
-                        <div className="hidden sm:flex flex-col items-end">
-                            <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mb-1">Focus</span>
-                            <span className="bg-orange-600/20 text-orange-500 border border-orange-600/40 px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-widest">
-                                {selectedIntent.title}
-                            </span>
-                        </div>
-                     )}
+                      <div>
+                         <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
+                         <ScrambleText text="Start Your Project" />
+                         </span>
+                         <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build this<span className="text-orange-600">.</span></h2>
+                      </div>
+                      {selectedIntent && (
+                         <div className="hidden sm:flex flex-col items-end">
+                             <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mb-1">Focus</span>
+                             <span className="bg-orange-600/20 text-orange-500 border border-orange-600/40 px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-widest">
+                                 {selectedIntent.title}
+                             </span>
+                         </div>
+                      )}
                   </div>
 
                   <AnimatePresence mode="wait">
                     <motion.div key={step} initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="min-h-[300px] flex flex-col justify-center">
                       {step === 1 && (
-                        <div className="space-y-3">
-                          <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">Identification:</p>
-                          {["Commercial Construction", "Founder/Owner", "Marketing Agency"].map(opt => (
-                            <button
-                              key={opt}
-                              onClick={() => { setFormData({ ...formData, lens: opt }); setStep(2); }}
-                              className="w-full p-5 border border-white/5 bg-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all rounded-sm flex justify-between items-center text-left group"
-                            >
-                              <span className="font-bold uppercase tracking-tight italic text-lg">{opt}</span>
-                              <ChevronRight size={18} className="text-zinc-600 group-hover:text-white" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {step === 2 && (
                         <div className="space-y-6">
-                          <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-4">Contact:</p>
+                          <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-4">Your Info:</p>
                           <div className="space-y-4">
                             <input type="text" placeholder="NAME" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
                             <input type="email" placeholder="EMAIL ADDRESS" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
                             <input type="tel" placeholder="PHONE (OPTIONAL)" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
                           </div>
                           {formError && <div className="text-orange-500 text-xs mt-2 font-mono uppercase">{formError}</div>}
-                          <button onClick={() => (formData.name && formData.email) ? setStep(3) : setFormError("REQUIRED FIELDS MISSING")} className="w-full bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-sm hover:from-orange-500 hover:to-orange-400 transition-all mt-6 shadow-[0_0_20px_rgba(255,79,0,0.4)]">Next Phase</button>
+                          <button onClick={() => (formData.name && formData.email) ? setStep(2) : setFormError("NAME & EMAIL REQUIRED")} className="w-full bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-sm hover:from-orange-500 hover:to-orange-400 transition-all mt-6 shadow-[0_0_20px_rgba(255,79,0,0.4)]">Next</button>
+                          
+                          {/* Escape hatch */}
+                          <div className="text-center pt-4 border-t border-white/10">
+                            <p className="text-zinc-600 text-xs mb-3 font-mono uppercase tracking-widest">Prefer to just talk?</p>
+                            <button onClick={() => { closeBrief(); openCalendar(); }} className="text-orange-500 hover:text-orange-400 text-sm font-bold uppercase tracking-widest flex items-center gap-2 mx-auto">
+                              <Calendar size={14} />
+                              Book 15-Min Call Instead
+                            </button>
+                          </div>
                         </div>
                       )}
 
-                      {step === 3 && (
-                        <div className="space-y-3">
-                          <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">Capital Allocation:</p>
-                          {BUDGET_OPTIONS.map(opt => (
-                            <button
-                              key={opt}
-                              onClick={() => { setFormData({ ...formData, budget: opt }); setStep(4); }}
-                              className="w-full p-5 border border-white/5 bg-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all rounded-sm flex justify-between items-center text-left group"
-                            >
-                              <span className="font-bold italic text-xl tracking-tighter">{opt}</span>
-                              <ChevronRight size={18} className="text-zinc-600 group-hover:text-white" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                      {step === 2 && (
+                        <div className="space-y-8">
+                          <div className="space-y-3">
+                            <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">Budget Range:</p>
+                            {BUDGET_OPTIONS.map(opt => (
+                              <button
+                                key={opt}
+                                onClick={() => setFormData({ ...formData, budget: opt })}
+                                className={`w-full p-5 border rounded-sm flex justify-between items-center text-left group transition-all ${formData.budget === opt ? 'border-orange-600 bg-orange-600/20' : 'border-white/5 bg-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-600'}`}
+                              >
+                                <span className="font-bold italic text-xl tracking-tighter">{opt}</span>
+                                {formData.budget === opt ? <CheckCircle2 size={18} className="text-orange-600" /> : <ChevronRight size={18} className="text-zinc-600 group-hover:text-white" />}
+                              </button>
+                            ))}
+                          </div>
 
-                      {step === 4 && (
-                        <div className="space-y-3">
-                          <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">Execution Velocity:</p>
-                          {TIMELINE_OPTIONS.map(opt => (
-                            <button
-                              key={opt}
-                              disabled={isSubmitting}
-                              onClick={() => handleInquirySubmit({ timeline: opt })}
-                              className="w-full p-5 border border-white/5 bg-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all rounded-sm flex justify-between items-center text-left group"
-                            >
-                              <span className="font-bold uppercase tracking-widest text-sm">{opt}</span>
-                              {isSubmitting ? <Loader2 size={18} className="animate-spin text-white" /> : <ChevronRight size={18} className="text-zinc-600 group-hover:text-white" />}
-                            </button>
-                          ))}
-                          <button onClick={() => setStep(3)} className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest hover:text-white mt-8 self-start font-mono">← Return</button>
+                          <div className="space-y-3">
+                            <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">Timeline:</p>
+                            {TIMELINE_OPTIONS.map(opt => (
+                              <button
+                                key={opt}
+                                disabled={isSubmitting || !formData.budget}
+                                onClick={() => handleInquirySubmit({ timeline: opt })}
+                                className="w-full p-5 border border-white/5 bg-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all rounded-sm flex justify-between items-center text-left group disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <span className="font-bold uppercase tracking-widest text-sm">{opt}</span>
+                                {isSubmitting ? <Loader2 size={18} className="animate-spin text-white" /> : <ChevronRight size={18} className="text-zinc-600 group-hover:text-white" />}
+                              </button>
+                            ))}
+                          </div>
+
+                          <button onClick={() => setStep(1)} className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest hover:text-white mt-8 self-start font-mono">← Back</button>
                         </div>
                       )}
                     </motion.div>
@@ -901,6 +1026,9 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* --- CALENDAR MODAL --- */}
+      <CalendarModal isOpen={isCalendarOpen} onClose={closeCalendar} />
 
       {/* --- HUD NAVIGATION --- */}
       <header className="fixed top-0 left-0 w-full z-[200] px-6 py-6 md:px-12 flex justify-between items-center bg-gradient-to-b from-black/90 to-transparent backdrop-blur-sm pointer-events-none">
@@ -955,28 +1083,26 @@ export default function App() {
             </div>
 
             <h2 className="text-[clamp(3.5rem,7.5vw,9rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic drop-shadow-2xl">
-              WE HANDLE <br />
+              TEAMS WHO <br />
               <TypewriterCycle
                 words={[
-                  "THE STORY",
-                  "THE AUDIO",
-                  "THE SOCIAL",
-                  "THE PHOTOS",
-                  "THE LIGHTS",
-                  "THE EDITING",
-                  "THE SHOTS",
-                  "THE TONE",
-                  "THE PLAN"
+                  "CLOSE FASTER",
+                  "RECRUIT BETTER", 
+                  "RAISE CAPITAL",
+                  "OWN ATTENTION",
+                  "BUILD TRUST",
+                  "SCALE FASTER"
                 ]}
               />
-              <span className="text-zinc-600 italic block mt-2">YOU OWN</span>
-              <span className="text-outline">THE MARKET</span>
+              <br />
+              <span className="text-outline">USE VIDEO</span>
             </h2>
           </motion.div>
 
           <div className="mt-24 grid grid-cols-1 md:grid-cols-2 gap-20 items-end border-t border-white/10 pt-16">
             <p className="text-xl md:text-2xl text-zinc-300 leading-relaxed max-w-xl font-medium drop-shadow-md">
-              Ahead of Market is a turnkey production partner for Phoenix founders and developers. We build the high-impact assets that drive authority.
+              We build repeatable video systems for Phoenix founders and developers: sales case studies, social content engines, and investor-ready narrative assets. 
+              <span className="text-orange-500 font-black block mt-4">No retainers. No agencies. Just outcomes.</span>
             </p>
             <div className="flex justify-start md:justify-end">
               <button onClick={openBrief} className="group flex items-center gap-6 text-white hover:text-orange-500 transition-colors">
@@ -1049,16 +1175,16 @@ export default function App() {
                </FadeIn>
                <AnimatePresence mode="wait">
                  <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5 }}
+                   key={activeTab}
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   transition={{ duration: 0.5 }}
                  >
                     <InfiniteMarquee speed={120}>
                        {activeCampaigns.map((vid, idx) => (
                           <div key={`${activeTab}-${idx}`} className="mx-4">
-                             <VideoModule onPlay={setSelectedVideo} {...vid} />
+                             <VideoModule onPlay={handleVideoPlay} {...vid} />
                           </div>
                        ))}
                     </InfiniteMarquee>
@@ -1077,7 +1203,7 @@ export default function App() {
               <InfiniteMarquee speed={80}>
                  {allSocials.map((vid, idx) => (
                     <div key={`social-${idx}`} className="mx-2">
-                       <VideoModule onPlay={setSelectedVideo} isVertical={true} {...vid} />
+                       <VideoModule onPlay={handleVideoPlay} isVertical={true} {...vid} />
                     </div>
                  ))}
               </InfiniteMarquee>
@@ -1134,7 +1260,7 @@ export default function App() {
             <div className="flex-1 overflow-x-auto flex items-center gap-4 p-8 no-scrollbar cursor-grab active:cursor-grabbing">
               {strategyFeed.map((vid, idx) => (
                 <div key={idx} className="relative min-w-[300px] h-[90%] snap-center shrink-0 transform transition-transform duration-500 hover:scale-105 hover:z-10 border border-white/5 bg-zinc-950">
-                  <VideoModule {...vid} isVertical={true} onPlay={setSelectedVideo} />
+                  <VideoModule {...vid} isVertical={true} onPlay={handleVideoPlay} />
                 </div>
               ))}
             </div>
@@ -1428,5 +1554,3 @@ export default function App() {
     </main>
   );
 }
-
-
