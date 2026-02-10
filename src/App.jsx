@@ -94,7 +94,7 @@ const PORTFOLIO_DATA = {
   marketing: {
     campaigns: [
       { title: "AOM Reel 2024", sub: "Master Production", url: "https://gumlet.tv/watch/698a6215aec3d4e420c317f7/", tags: ["Master", "Showreel"] },
-      { title: "Journey To Gary Lee", sub: "Cinematic Story", url: "https://gumlet.tv/watch/698a6296fc23d3d76fa8d992/", tags: ["Narrative"] },
+      { title: "Journey To Gary Vee", sub: "Cinematic Story", url: "https://gumlet.tv/watch/698a6296fc23d3d76fa8d992/", tags: ["Narrative"] },
       { title: "Rainbow Rider", sub: "Experience Asset", url: "https://gumlet.tv/watch/698a6106aec3d4e420c2fd85/", tags: ["Vibe", "Brand"] },
       { title: "Pretty Penny", sub: "Restaurant Identity", url: "https://gumlet.tv/watch/698a5d24aec3d4e420c2a0a0/", tags: ["Food", "Brand"] },
       { title: "Virtu Hospitality", sub: "Scottsdale Premium", url: "https://gumlet.tv/watch/698a5ef5fc23d3d76fa87ef4/", tags: ["Luxury", "Food"] },
@@ -103,7 +103,7 @@ const PORTFOLIO_DATA = {
       { title: "AZ Arts Foundation", sub: "Trust Piece", url: "https://gumlet.tv/watch/698a64e5873071aec5ca99ac/", tags: ["Non-Profit"] },
       { title: "Cynshine Pilates", sub: "Founder Story", url: "https://gumlet.tv/watch/698a63e5aec3d4e420c34783/", tags: ["Wellness"] },
       { title: "Sherpa Hospitality", sub: "Corporate ID", url: "https://gumlet.tv/watch/698a63acaec3d4e420c341f8/", tags: ["Corp", "Brand"] },
-      { title: "Natl Comedy Theater", sub: "Venue Promo", url: "https://gumlet.tv/watch/698a63acaec3d4e420c341f8/", tags: ["Entertainment"] },
+      { title: "Natl Comedy Theater", sub: "Venue Promo", url: "https://gumlet.tv/watch/698a63acfc23d3d76fa8f582/", tags: ["Entertainment"] },
       { title: "RW Investment Firm", sub: "Trust Asset", url: "https://gumlet.tv/watch/698a5edeaec3d4e420c2c8be/", tags: ["Finance"] },
       { title: "Ulisgold Pilates", sub: "Studio Brand", url: "https://gumlet.tv/watch/698a5ebcaec3d4e420c2c573/", tags: ["Wellness"] },
       { title: "Keep it Cut", sub: "Recruiting Film", url: "https://gumlet.tv/watch/698a6177873071aec5ca4374/", tags: ["HR", "Culture"] },
