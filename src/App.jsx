@@ -61,7 +61,7 @@ const PORTFOLIO_DATA = {
   builders: {
     campaigns: [
       { title: "To Have and To Host", sub: "Builder Showcase", url: "https://gumlet.tv/watch/698a68b7fc23d3d76fa970ef/", tags: ["Residential", "Build"] },
-      { title: "Abraza Healthcare", sub: "HVAC Emergency Response", url: "https://gumlet.tv/watch/698a58aefc23d3d76fa7cdd6/", tags: ["Operations", "Service"] },
+      { title: "Abrazo Healthcare", sub: "HVAC Emergency Response", url: "https://gumlet.tv/watch/698a58aefc23d3d76fa7cdd6/", tags: ["Operations", "Service"] },
       { title: "Memorial Towers", sub: "Crane Day Chillers", url: "https://gumlet.tv/watch/698a584faec3d4e420c20fef/", tags: ["Industrial", "Scale"] },
       { title: "Refined Gardens Dieon", sub: "Brand Authority", url: "https://gumlet.tv/watch/698a57fb873071aec5c94350/", tags: ["Landscaping", "Build"] },
       { title: "Tree Guardian", sub: "Documentary Episode", url: "https://gumlet.tv/watch/698a5e91873071aec5c9fc36/", tags: ["Doc", "Process"] },
@@ -98,7 +98,7 @@ const PORTFOLIO_DATA = {
       { title: "Rainbow Rider", sub: "Experience Asset", url: "https://gumlet.tv/watch/698a6106aec3d4e420c2fd85/", tags: ["Vibe", "Brand"] },
       { title: "Pretty Penny", sub: "Restaurant Identity", url: "https://gumlet.tv/watch/698a5d24aec3d4e420c2a0a0/", tags: ["Food", "Brand"] },
       { title: "Virtu Hospitality", sub: "Scottsdale Premium", url: "https://gumlet.tv/watch/698a5ef5fc23d3d76fa87ef4/", tags: ["Luxury", "Food"] },
-      { title: "Ducor Event", sub: "Recap Narrative", url: "https://gumlet.tv/watch/698a53a4aec3d4e420c17ee0/", tags: ["Events"] },
+      { title: "Du Coeur Event", sub: "Recap Narrative", url: "https://gumlet.tv/watch/698a53a4aec3d4e420c17ee0/", tags: ["Events"] },
       { title: "Cook & Craft Hero", sub: "Web Background", url: "https://gumlet.tv/watch/698a53a9873071aec5c8b9d7/", tags: ["Web", "Loop"] },
       { title: "AZ Arts Foundation", sub: "Trust Piece", url: "https://gumlet.tv/watch/698a64e5873071aec5ca99ac/", tags: ["Non-Profit"] },
       { title: "Cynshine Pilates", sub: "Founder Story", url: "https://gumlet.tv/watch/698a63e5aec3d4e420c34783/", tags: ["Wellness"] },
