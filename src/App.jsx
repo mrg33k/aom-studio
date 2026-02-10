@@ -810,7 +810,7 @@ export default function App() {
                         <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
                         <ScrambleText text="Start Your Project" />
                         </span>
-                        <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build<br />this<span className="text-orange-600">.</span></h2>
+                        <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build this<span className="text-orange-600">.</span></h2>
                      </div>
                      {selectedIntent && (
                         <div className="hidden sm:flex flex-col items-end">
