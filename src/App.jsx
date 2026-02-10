@@ -608,7 +608,7 @@ export default function App() {
             </div>
           </FadeIn>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <FadeIn className="lg:col-span-4"><VibeStat icon={Building2} kicker="Phoenix Impact" valueNode={<span><CountUp to={63} duration={1000} className="text-white" /><span className="text-orange-600">+</span></span>} sub="Supporting Arizona teams across, industrial services, hospitality, and STEAM." /></FadeIn>
+            <FadeIn className="lg:col-span-4"><VibeStat icon={Building2} kicker="Phoenix Impact" valueNode={<span><CountUp to={65} duration={1000} className="text-white" /><span className="text-orange-600">+</span></span>} sub="Supporting Arizona teams across, industrial services, hospitality, and STEAM." /></FadeIn>
             <FadeIn className="lg:col-span-4" delay={0.1}><VibeStat icon={PlaneTakeoff} kicker="Regional Reach" valueNode={<span><CountUp to={34} duration={1100} className="text-white" /><span className="text-orange-600">+</span></span>} sub="Executing video production projects across the nation and even the globe for market leaders." accent /></FadeIn>
             <FadeIn className="lg:col-span-4" delay={0.2}><VibeStat icon={Clapperboard} kicker="Assets Shipped" valueNode={<span><CountUp to={100} duration={1200} className="text-white" /><span className="text-orange-600">+</span></span>} sub="Professional video deliverables shipped to date—optimized for LinkedIn, web conversion, and sales cycles." /></FadeIn>
           </div>
