@@ -99,7 +99,8 @@ const PORTFOLIO_DATA = {
       { title: "Memorial Towers", sub: "Crane Day Chillers", url: "https://gumlet.tv/watch/698a584faec3d4e420c20fef/", tags: ["Industrial", "Scale"] },
       { title: "Refined Gardens Dieon", sub: "Brand Authority", url: "https://gumlet.tv/watch/698a57fb873071aec5c94350/", tags: ["Landscaping", "Build"] },
       { title: "Tree Guardian", sub: "Documentary Episode", url: "https://gumlet.tv/watch/698a5e91873071aec5c9fc36/", tags: ["Doc", "Process"] },
-      { title: "Arizona Cleantech", sub: "Sector Narrative", url: "https://gumlet.tv/watch/698a57da873071aec5c93fa0/", tags: ["Industrial", "Green"] }
+      { title: "Arizona Cleantech", sub: "Sector Narrative", url: "https://gumlet.tv/watch/698a57da873071aec5c93fa0/", tags: ["Industrial", "Green"] },
+      { title: "HUUB x Miss Dessert", sub: "Biz Spotlight", url: "https://gumlet.tv/watch/698a63ac873071aec5ca7db1/", tags: ["9:16", "Case Study"] }
     ],
     social: [
       { title: "Primrose Ambition", sub: "Mechanical Update", url: "https://gumlet.tv/watch/698a581daec3d4e420c20b94/", tags: ["9:16", "Build"] },
@@ -122,7 +123,7 @@ const PORTFOLIO_DATA = {
     ],
     social: [
       { title: "IAAPA Day 2", sub: "Event Recap", url: "https://gumlet.tv/watch/698a5391873071aec5c8b654/", tags: ["9:16", "Event"] },
-      { title: "HUUB x Miss Dessert", sub: "Biz Spotlight", url: "https://gumlet.tv/watch/698a63ac873071aec5ca7db1/", tags: ["9:16", "Case Study"] }
+      
     ]
   }
 };
@@ -153,14 +154,14 @@ const ENGAGEMENT_IDEAS = [
     icon: Repeat,
     title: "Content Engine",
     statement: "We are tired of ad-hoc posting. We need a system that delivers consistent video volume every month.",
-    price: "$5k/mo"
+    price: "$3k/mo"
   },
   {
     id: "authority",
     icon: Crown,
     title: "Founder Authority",
     statement: "I need to establish personal credibility and trust with investors or talent quickly.",
-    price: "$3k+"
+    price: "$5k+"
   },
   {
     id: "proof",
@@ -181,7 +182,7 @@ const ENGAGEMENT_IDEAS = [
     icon: Lightbulb,
     title: "The Wildcard",
     statement: "We have a specific vision that doesn't fit in a box. We need a creative partner to figure it out.",
-    price: "Custom"
+    price: "Tailored"
   }
 ];
 
@@ -189,18 +190,18 @@ const ENGAGEMENT_IDEAS = [
 const TESTIMONIALS = [
   {
     quote: "They moved like an internal team. Fast, organized, and the final assets made us look bigger overnight.",
-    name: "Operations Lead",
-    company: "Phoenix Builder"
+    name: "Founder",
+    company: "Hunter Bjork"
   },
   {
     quote: "We stopped guessing what to post. The system created repeatable content and our outreach finally had teeth.",
-    name: "Founder",
-    company: "B2B SaaS"
+    name: "Sumit Seth",
+    company: "Naamly"
   },
   {
     quote: "The difference was strategy. They didn’t just shoot. They built the narrative and made it usable across channels.",
-    name: "Marketing Director",
-    company: "Hospitality Group"
+    name: "Gio Osso",
+    company: "Virtu Hospitality Group"
   }
 ];
 
@@ -395,8 +396,8 @@ const TICKER_TEXTS = [
   "TURNKEY CONTENT SCALE",
   "AHEAD OF MARKET // EST 2021",
   "SCOTTSDALE BRAND NARRATIVE",
-  "CAPITAL ALLOCATION MEDIA",
-  "COMMERCIAL DEVELOPMENT ASSETS"
+  "FUNDRAISING VIDEO PRODUCTION",
+  "DOCUMENTARY PRODUCTION PHOENIX, AZ"
 ];
 
 const SystemTicker = ({ onOpenBrief }) => (
@@ -826,7 +827,7 @@ export default function App() {
                       {step === 1 && (
                         <div className="space-y-3">
                           <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">Identification:</p>
-                          {["Real Estate Developer", "Founder / Tech", "Marketing Agency"].map(opt => (
+                          {["Commercial Construction", "Founder/Owner", "Marketing Agency"].map(opt => (
                             <button
                               key={opt}
                               onClick={() => { setFormData({ ...formData, lens: opt }); setStep(2); }}
@@ -958,7 +959,7 @@ export default function App() {
               <TypewriterCycle
                 words={[
                   "THE PLANNING",
-                  "THE WEBSITE",
+                  "THE AUDIO",
                   "THE SOCIAL",
                   "THE PHOTOS",
                   "THE PRODUCTION",
