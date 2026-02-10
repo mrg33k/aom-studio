@@ -190,8 +190,8 @@ const ENGAGEMENT_IDEAS = [
 const TESTIMONIALS = [
   {
     quote: "They moved like an internal team. Fast, organized, and the final assets made us look bigger overnight.",
-    name: "Founder",
-    company: "Hunter Bjork"
+    name: "Hunter Bjork",
+    company: "ISA ENERGY"
   },
   {
     quote: "We stopped guessing what to post. The system created repeatable content and our outreach finally had teeth.",
