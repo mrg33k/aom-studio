@@ -62,7 +62,6 @@ const shuffleArray = (array) => {
 const PORTFOLIO_DATA = {
   marketing: {
     campaigns: [
-      
       { title: "Journey To Gary Vee", sub: "Cinematic Story", url: "https://gumlet.tv/watch/698a6296fc23d3d76fa8d992/", tags: ["Narrative"] },
       { title: "Rainbow Rider", sub: "Experience Asset", url: "https://gumlet.tv/watch/698a6106aec3d4e420c2fd85/", tags: ["Vibe", "Brand"] },
       { title: "Pretty Penny", sub: "Restaurant Identity", url: "https://gumlet.tv/watch/698a5d24aec3d4e420c2a0a0/", tags: ["Food", "Brand"] },
@@ -204,7 +203,6 @@ const ENGAGEMENT_IDEAS = [
   }
 ];
 
-
 const TESTIMONIALS = [
   {
     quote: "We closed 3 new industrial contracts in 60 days after launching our case study video. The production cost paid for itself 8x over.",
@@ -290,6 +288,13 @@ const TextureOverlay = () => (
       .pause-on-hover:hover { animation-play-state: paused; }
       .cursor-blink { animation: blink 1s step-end infinite; }
       @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+      @keyframes scan {
+        0% { transform: translateY(-120%); opacity: 0; }
+        10% { opacity: 0.6; }
+        50% { opacity: 0.25; }
+        100% { transform: translateY(140%); opacity: 0; }
+      }
+      .animate-scan { animation: scan 4.5s linear infinite; }
     `}} />
   </>
 );
@@ -310,13 +315,13 @@ const FadeIn = ({ children, className = "", delay = 0 }) => (
 // --- INFINITE MARQUEE COMPONENT ---
 const InfiniteMarquee = ({ children, speed = 40, className = "" }) => (
   <div className={`overflow-hidden relative flex w-full group ${className}`}>
-     <div
-       className="flex gap-4 animate-scroll whitespace-nowrap pause-on-hover will-change-transform"
-       style={{ animationDuration: `${speed}s` }}
-     >
-       {children}
-       {children}
-     </div>
+    <div
+      className="flex gap-4 animate-scroll whitespace-nowrap pause-on-hover will-change-transform"
+      style={{ animationDuration: `${speed}s` }}
+    >
+      {children}
+      {children}
+    </div>
   </div>
 );
 
@@ -412,6 +417,242 @@ const RevealHeading = ({ children, className }) => {
   );
 };
 
+// --- COUNT UP (SCROLL REVEAL) ---
+const CountUp = ({ to = 0, duration = 900, className = "", suffix = "", prefix = "" }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-25%" });
+  const [val, setVal] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    let raf = 0;
+    const start = performance.now();
+    const from = 0;
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const next = Math.round(from + (to - from) * eased);
+      setVal(next);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, to, duration]);
+
+  return (
+    <span ref={ref} className={className}>
+      {prefix}{val}{suffix}
+    </span>
+  );
+};
+
+// --- VIBE CHECK: BY THE NUMBERS ---
+const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) => (
+  <div className={`relative p-8 md:p-10 border rounded-sm overflow-hidden shadow-2xl ${accent ? "border-orange-600/50 bg-orange-950/15" : "border-white/10 bg-zinc-900/25"}`}>
+    <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute -top-20 -right-20 w-56 h-56 bg-orange-600/10 blur-3xl rounded-full" />
+      <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+    </div>
+
+    <div className="relative z-10">
+      <div className="flex items-center justify-between">
+        <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
+          <Icon className="text-orange-600" size={22} />
+        </div>
+        <div className="text-[9px] font-mono uppercase tracking-[0.35em] text-zinc-600">
+          <ScrambleText text={kicker} hover={false} />
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <div className="text-[clamp(2.5rem,5vw,4.25rem)] font-black italic tracking-tighter leading-[0.85] text-white">
+          {valueNode}
+        </div>
+        <p className="text-zinc-400 text-sm mt-5 leading-relaxed max-w-md">
+          {sub}
+        </p>
+      </div>
+    </div>
+  </div>
+));
+
+const VibeCheckSection = ({ videoTotal, companyTotal = 60, travelTotal = 11 }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-15%" });
+
+  return (
+    <section ref={ref} className="px-6 md:px-12 py-32 bg-black border-t border-white/5 relative overflow-hidden">
+      {/* Background grid + scan */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 opacity-[0.07]">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:52px_52px]" />
+        </div>
+        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-transparent via-orange-600/40 to-transparent" />
+        <div className="absolute left-[12%] top-0 w-[2px] h-full bg-gradient-to-b from-transparent via-orange-600/15 to-transparent" />
+        <div className="absolute left-[58%] top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+        <div className="absolute inset-x-0 -top-24 h-48 bg-orange-600/10 blur-3xl" />
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute inset-x-10 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-scan" />
+        </div>
+      </div>
+
+      <div className="max-w-screen-2xl mx-auto w-full relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.9, ease: [0.21, 0.47, 0.32, 0.98] }}
+          className="border-b border-white/10 pb-12 mb-14"
+        >
+          <div className="flex flex-col lg:flex-row items-end justify-between gap-10">
+            <div className="max-w-3xl">
+              <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
+                <ScrambleText text="Vibe Check" hover={false} />
+              </span>
+
+              <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">
+                Who we are<br />
+                <span className="text-outline">by the numbers</span><span className="text-orange-600">.</span>
+              </h2>
+
+              <p className="text-zinc-400 text-sm md:text-base mt-8 leading-relaxed max-w-2xl">
+                This section exists for the same reason seatbelts do: because people don’t trust anything until they see proof it’s real.
+              </p>
+            </div>
+
+            <div className="w-full lg:max-w-xl">
+              <div className="p-6 md:p-7 border border-white/10 bg-zinc-900/20">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="text-orange-600" size={18} />
+                  <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">At the door</p>
+                </div>
+                <p className="text-zinc-500 text-sm mt-5 leading-relaxed">
+                  If you want “creative vibes” with no delivery system, this is where you quietly back out of the room.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {["Clear scope", "Fast turn", "Repeatable output", "No chaos"].map((x) => (
+                    <span key={x} className="text-[9px] font-mono font-bold uppercase tracking-[0.35em] px-3 py-2 border border-white/10 bg-black/40 text-zinc-400">
+                      {x}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <motion.div
+            className="lg:col-span-4"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-20%" }}
+            transition={{ duration: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
+          >
+            <VibeStat
+              icon={Rocket}
+              kicker="Out of state"
+              valueNode={
+                <span>
+                  <CountUp to={travelTotal} duration={900} className="text-white" />
+                  <span className="text-orange-600">+</span>
+                </span>
+              }
+              sub="We’ve traveled for jobs because some clients prefer the team that shows up, not the team that emails excuses."
+              accent
+            />
+          </motion.div>
+
+          <motion.div
+            className="lg:col-span-4"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-20%" }}
+            transition={{ duration: 0.7, delay: 0.06, ease: [0.21, 0.47, 0.32, 0.98] }}
+          >
+            <VibeStat
+              icon={Building2}
+              kicker="Companies served"
+              valueNode={
+                <span>
+                  <CountUp to={companyTotal} duration={1000} className="text-white" />
+                  <span className="text-orange-600">+</span>
+                </span>
+              }
+              sub="Different industries, different stakes. Same promise: make you look established and ship on time."
+            />
+          </motion.div>
+
+          <motion.div
+            className="lg:col-span-4"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-20%" }}
+            transition={{ duration: 0.7, delay: 0.12, ease: [0.21, 0.47, 0.32, 0.98] }}
+          >
+            <VibeStat
+              icon={Clapperboard}
+              kicker="Videos shipped"
+              valueNode={
+                <span className="flex flex-wrap items-end gap-3">
+                  <span>
+                    <CountUp to={Math.max(100, videoTotal)} duration={1100} className="text-white" />
+                    <span className="text-orange-600">+</span>
+                  </span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-500 pb-2">
+                    (and yes, it’s in the code)
+                  </span>
+                </span>
+              }
+              sub={
+                <span>
+                  We’ve made over 100 videos. If you want to see the exact number, it’s literally calculated from the archive.
+                  <span className="text-orange-500 font-black"> Current count: {videoTotal}</span>.
+                </span>
+              }
+            />
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-15%" }}
+          transition={{ duration: 0.7, delay: 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
+          className="mt-10 border border-white/10 bg-gradient-to-r from-black via-black/50 to-orange-950/10 p-8 md:p-10 relative overflow-hidden"
+        >
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-orange-600/10 blur-3xl rounded-full" />
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+            <div className="max-w-2xl">
+              <p className="text-orange-600 text-[10px] font-mono font-bold uppercase tracking-[0.45em]">
+                <ScrambleText text="Door Policy" hover={false} />
+              </p>
+              <h3 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white mt-5 leading-[0.95]">
+                If your brand needs to look bigger than your headcount,
+                <span className="text-outline"> you’re in the right place</span>.
+              </h3>
+              <p className="text-zinc-400 text-sm md:text-base mt-5 leading-relaxed">
+                We build story systems that remove friction in sales and make your marketing feel inevitable. No drama. No mystery. No “we’ll circle back.”
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
+                <ScrollText size={20} className="text-orange-600" />
+              </div>
+              <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
+                <ShieldCheck size={20} className="text-orange-600" />
+              </div>
+              <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
+                <Activity size={20} className="text-orange-600" />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
 // --- SYSTEM TICKER COMPONENT ---
 const TICKER_TEXTS = [
   "PHOENIX VIDEO PRODUCTION",
@@ -475,7 +716,7 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay, contex
       },
       { rootMargin: '200px' }
     );
-    
+
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -579,10 +820,10 @@ const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
     className={`relative p-8 md:p-10 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-orange-600 bg-orange-950/20" : "border-white/10 bg-zinc-900/30 hover:border-white/30 hover:bg-zinc-900/60"}`}
   >
     <div className="flex items-center justify-between mb-8">
-       <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-orange-600 bg-orange-600 text-white" : "border-white/10 bg-black/40 text-zinc-400 group-hover:text-white"}`}>
-          <idea.icon size={20} />
-       </div>
-       {isSelected && <CheckCircle2 size={24} className="text-orange-600" />}
+      <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-orange-600 bg-orange-600 text-white" : "border-white/10 bg-black/40 text-zinc-400 group-hover:text-white"}`}>
+        <idea.icon size={20} />
+      </div>
+      {isSelected && <CheckCircle2 size={24} className="text-orange-600" />}
     </div>
 
     <div className="flex-grow">
@@ -594,8 +835,8 @@ const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
 
     <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-end">
       <div>
-         <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Starting At</p>
-         <p className="text-lg font-black italic text-orange-600 tracking-tight">{idea.price}</p>
+        <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Starting At</p>
+        <p className="text-lg font-black italic text-orange-600 tracking-tight">{idea.price}</p>
       </div>
       <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all ${isSelected ? "bg-white text-black border-white rotate-0" : "bg-transparent text-zinc-600 -rotate-45 group-hover:text-white group-hover:border-white/50"}`}>
         <ArrowRight size={14} />
@@ -603,7 +844,6 @@ const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
     </div>
   </button>
 ));
-
 
 const ProcessStep = memo(({ idx, title, body, icon: Icon }) => (
   <div className="relative pl-10 md:pl-14">
@@ -630,17 +870,17 @@ const TestimonialCard = memo(({ t }) => (
         {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-orange-600 fill-orange-600" />)}
       </div>
     </div>
-    
+
     {/* NEW: Metric Badge */}
     <div className="inline-flex items-center gap-2 bg-orange-600/20 border border-orange-600/40 px-3 py-1.5 rounded-sm mb-6">
       <TrendingUp size={12} className="text-orange-500" />
       <span className="text-orange-500 font-black text-xs uppercase tracking-widest">{t.metric}</span>
     </div>
-    
+
     <p className="text-white text-xl md:text-2xl font-black italic tracking-tight leading-snug">
       "{t.quote}"
     </p>
-    
+
     <div className="mt-10 pt-6 border-t border-white/10 flex justify-between items-end">
       <div>
         <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">{t.name}</p>
@@ -709,20 +949,20 @@ const MidCTA = memo(({ onOpenBrief }) => (
 // --- CALENDAR MODAL COMPONENT ---
 const CalendarModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
-  
+
   return (
     <AnimatePresence>
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        exit={{ opacity: 0 }} 
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto"
       >
         <div className="w-full max-w-4xl h-[80vh] p-8 md:p-12 border border-white/10 bg-[#0a0a0a] relative shadow-2xl rounded-xl my-auto">
           <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white z-10">
             <X size={24} />
           </button>
-          
+
           <div className="mb-6">
             <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
               <ScrambleText text="Book A Call" />
@@ -734,7 +974,7 @@ const CalendarModal = ({ isOpen, onClose }) => {
               Quick scope call to understand your needs and see if we're a fit. No pitch, no pressure.
             </p>
           </div>
-          
+
           {/* INSERT YOUR CALENDLY EMBED HERE */}
           <div className="w-full h-[calc(100%-120px)] bg-zinc-900/50 border border-white/10 rounded-sm flex items-center justify-center">
             <div className="text-center p-8">
@@ -761,7 +1001,7 @@ export default function App() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [user, setUser] = useState(null);
-  
+
   // V38: Engagement Intent State
   const [selectedIntent, setSelectedIntent] = useState(null);
 
@@ -847,7 +1087,7 @@ export default function App() {
     const newCount = videoPlayCount + 1;
     setVideoPlayCount(newCount);
     sessionStorage.setItem('videoPlays', newCount.toString());
-    
+
     if (newCount === 3 && !showLeadCapture) {
       setShowLeadCapture(true);
     }
@@ -856,10 +1096,10 @@ export default function App() {
   const handleInquirySubmit = async (finalPhaseData = {}) => {
     setIsSubmitting(true);
     setFormError('');
-    const fullLead = { 
-        ...formData, 
-        ...finalPhaseData,
-        intent: selectedIntent?.title || 'General Inquiry' // Tag the intent
+    const fullLead = {
+      ...formData,
+      ...finalPhaseData,
+      intent: selectedIntent?.title || 'General Inquiry' // Tag the intent
     };
 
     try {
@@ -901,6 +1141,11 @@ export default function App() {
   const activeCampaigns = useMemo(() => portfolioData?.[activeTab]?.campaigns ?? [], [portfolioData, activeTab]);
   const allSocials = useMemo(() => strategyFeed, [strategyFeed]);
 
+  // --- VIDEO TOTAL (THE "IT'S IN THE CODE" JOKE, LITERALLY) ---
+  const videoTotal = useMemo(() => {
+    const cats = Object.values(portfolioData || {});
+    return cats.reduce((acc, cat) => acc + (cat?.campaigns?.length || 0) + (cat?.social?.length || 0), 0);
+  }, [portfolioData]);
 
   if (!isInitialized) {
     return (
@@ -937,20 +1182,20 @@ export default function App() {
               {!isSuccess ? (
                 <div className="space-y-8">
                   <div className="flex justify-between items-start">
-                      <div>
-                         <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
-                         <ScrambleText text="Start Your Project" />
-                         </span>
-                         <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build this<span className="text-orange-600">.</span></h2>
+                    <div>
+                      <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
+                        <ScrambleText text="Start Your Project" />
+                      </span>
+                      <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build this<span className="text-orange-600">.</span></h2>
+                    </div>
+                    {selectedIntent && (
+                      <div className="hidden sm:flex flex-col items-end">
+                        <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mb-1">Focus</span>
+                        <span className="bg-orange-600/20 text-orange-500 border border-orange-600/40 px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-widest">
+                          {selectedIntent.title}
+                        </span>
                       </div>
-                      {selectedIntent && (
-                         <div className="hidden sm:flex flex-col items-end">
-                             <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mb-1">Focus</span>
-                             <span className="bg-orange-600/20 text-orange-500 border border-orange-600/40 px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-widest">
-                                 {selectedIntent.title}
-                             </span>
-                         </div>
-                      )}
+                    )}
                   </div>
 
                   <AnimatePresence mode="wait">
@@ -965,7 +1210,7 @@ export default function App() {
                           </div>
                           {formError && <div className="text-orange-500 text-xs mt-2 font-mono uppercase">{formError}</div>}
                           <button onClick={() => (formData.name && formData.email) ? setStep(2) : setFormError("NAME & EMAIL REQUIRED")} className="w-full bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-sm hover:from-orange-500 hover:to-orange-400 transition-all mt-6 shadow-[0_0_20px_rgba(255,79,0,0.4)]">Next</button>
-                          
+
                           {/* Escape hatch */}
                           <div className="text-center pt-4 border-t border-white/10">
                             <p className="text-zinc-600 text-xs mb-3 font-mono uppercase tracking-widest">Prefer to just talk?</p>
@@ -1026,7 +1271,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* --- CALENDAR MODAL --- */}
       <CalendarModal isOpen={isCalendarOpen} onClose={closeCalendar} />
 
@@ -1087,7 +1332,7 @@ export default function App() {
               <TypewriterCycle
                 words={[
                   "CLOSE FASTER",
-                  "RECRUIT BETTER", 
+                  "RECRUIT BETTER",
                   "RAISE CAPITAL",
                   "OWN ATTENTION",
                   "BUILD TRUST",
@@ -1101,7 +1346,7 @@ export default function App() {
 
           <div className="mt-24 grid grid-cols-1 md:grid-cols-2 gap-20 items-end border-t border-white/10 pt-16">
             <p className="text-xl md:text-2xl text-zinc-300 leading-relaxed max-w-xl font-medium drop-shadow-md">
-              We build repeatable story systems for Phoenix founders and developers: sales case studies, social content engines, and investor-ready narrative assets. 
+              We build repeatable story systems for Phoenix founders and developers: sales case studies, social content engines, and investor-ready narrative assets.
               <span className="text-orange-500 font-black block mt-4">No Overhead. No Delays. Just Outcomes.</span>
             </p>
             <div className="flex justify-start md:justify-end">
@@ -1131,6 +1376,9 @@ export default function App() {
         </div>
       </section>
 
+      {/* --- NEW: VIBE CHECK / BY THE NUMBERS --- */}
+      <VibeCheckSection videoTotal={videoTotal} companyTotal={60} travelTotal={11} />
+
       {/* --- THE PORTFOLIO ARCHIVE --- */}
       <section id="work" className="px-6 md:px-12 py-32 bg-[#050505] relative z-10 overflow-hidden">
         <div className="max-w-screen-2xl mx-auto w-full">
@@ -1147,11 +1395,11 @@ export default function App() {
                   <span className="text-orange-600">.</span>
                 </h2>
               </div>
-              
+
               <div className="flex flex-col items-end gap-6">
                 <div className="flex items-center gap-2 text-orange-600 animate-pulse">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em]">SELECT THE MARKET THAT ALIGNS WITH YOU</span>
-                    <ArrowDownRight size={16} />
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em]">SELECT THE MARKET THAT ALIGNS WITH YOU</span>
+                  <ArrowDownRight size={16} />
                 </div>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                   {['marketing', 'builders', 'founders'].map(tab => (
@@ -1167,29 +1415,29 @@ export default function App() {
           <div className="space-y-32">
             {/* Filterable Campaigns Loop */}
             <div className="space-y-12">
-               <FadeIn>
-                  <div className="flex items-center gap-4 mb-8">
-                    <Clapperboard size={24} className="text-orange-600" />
-                    <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">Cinematic Campaigns</h4>
-                  </div>
-               </FadeIn>
-               <AnimatePresence mode="wait">
-                 <motion.div
-                   key={activeTab}
-                   initial={{ opacity: 0 }}
-                   animate={{ opacity: 1 }}
-                   exit={{ opacity: 0 }}
-                   transition={{ duration: 0.5 }}
-                 >
-                    <InfiniteMarquee speed={120}>
-                       {activeCampaigns.map((vid, idx) => (
-                          <div key={`${activeTab}-${idx}`} className="mx-4">
-                             <VideoModule onPlay={handleVideoPlay} {...vid} />
-                          </div>
-                       ))}
-                    </InfiniteMarquee>
-                 </motion.div>
-               </AnimatePresence>
+              <FadeIn>
+                <div className="flex items-center gap-4 mb-8">
+                  <Clapperboard size={24} className="text-orange-600" />
+                  <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">Cinematic Campaigns</h4>
+                </div>
+              </FadeIn>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <InfiniteMarquee speed={120}>
+                    {activeCampaigns.map((vid, idx) => (
+                      <div key={`${activeTab}-${idx}`} className="mx-4">
+                        <VideoModule onPlay={handleVideoPlay} {...vid} />
+                      </div>
+                    ))}
+                  </InfiniteMarquee>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* All Socials Loop - Independent of Tab */}
@@ -1201,11 +1449,11 @@ export default function App() {
                 </div>
               </FadeIn>
               <InfiniteMarquee speed={80}>
-                 {allSocials.map((vid, idx) => (
-                    <div key={`social-${idx}`} className="mx-2">
-                       <VideoModule onPlay={handleVideoPlay} isVertical={true} {...vid} />
-                    </div>
-                 ))}
+                {allSocials.map((vid, idx) => (
+                  <div key={`social-${idx}`} className="mx-2">
+                    <VideoModule onPlay={handleVideoPlay} isVertical={true} {...vid} />
+                  </div>
+                ))}
               </InfiniteMarquee>
             </div>
           </div>
@@ -1320,19 +1568,19 @@ export default function App() {
                 We don't sell cookie-cutter packages. We solve business problems. Select the statement that sounds like you to get started.
               </p>
               {selectedIntent && (
-                  <button onClick={openBrief} className="mt-8 flex items-center gap-3 bg-gradient-to-r from-orange-600 to-orange-500 text-white px-8 py-3 rounded-sm font-black uppercase tracking-widest text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-lg animate-pulse">
-                      <span>Start Project: {selectedIntent.title}</span>
-                      <ArrowRight size={16} />
-                  </button>
+                <button onClick={openBrief} className="mt-8 flex items-center gap-3 bg-gradient-to-r from-orange-600 to-orange-500 text-white px-8 py-3 rounded-sm font-black uppercase tracking-widest text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-lg animate-pulse">
+                  <span>Start Project: {selectedIntent.title}</span>
+                  <ArrowRight size={16} />
+                </button>
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
             {ENGAGEMENT_IDEAS.map((idea) => (
-              <IdeaCard 
-                key={idea.id} 
-                idea={idea} 
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
                 isSelected={selectedIntent?.id === idea.id}
                 onSelect={setSelectedIntent}
               />
