@@ -1095,7 +1095,7 @@ export default function App() {
                 ]}
               />
               <br />
-              <span className="text-outline">USE VIDEO</span>
+              <span className="text-outline">USE STORY</span>
             </h2>
           </motion.div>
 
