@@ -62,7 +62,7 @@ const shuffleArray = (array) => {
 const PORTFOLIO_DATA = {
   marketing: {
     campaigns: [
-      { title: "AOM Reel 2024", sub: "Master Production", url: "https://gumlet.tv/watch/698a6215aec3d4e420c317f7/", tags: ["Master", "Showreel"] },
+      
       { title: "Journey To Gary Vee", sub: "Cinematic Story", url: "https://gumlet.tv/watch/698a6296fc23d3d76fa8d992/", tags: ["Narrative"] },
       { title: "Rainbow Rider", sub: "Experience Asset", url: "https://gumlet.tv/watch/698a6106aec3d4e420c2fd85/", tags: ["Vibe", "Brand"] },
       { title: "Pretty Penny", sub: "Restaurant Identity", url: "https://gumlet.tv/watch/698a5d24aec3d4e420c2a0a0/", tags: ["Food", "Brand"] },
