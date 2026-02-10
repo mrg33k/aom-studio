@@ -6,7 +6,8 @@ import {
   Volume2, ArrowRight, Radio, ArrowDownRight,
   ShieldCheck, Clock3, Users, Building2, BadgeCheck, Star, Sparkles, Coins, ScrollText,
   Lightbulb, Rocket, Repeat, Crown, Fingerprint, Mic2,
-  Download, Calendar, TrendingUp
+  Download, Calendar, TrendingUp, PlaneTakeoff, Globe, Navigation, MapPin, Truck,
+  Phone, Video, Mic, Monitor, Cpu, Headphones, Speaker, MousePointer2, Mail, Landmark
 } from 'lucide-react';
 
 // --- FIREBASE & STORAGE CONFIG ---
@@ -26,9 +27,125 @@ if (firebaseConfig) {
 
 // --- BRAND CONSTANTS ---
 const ORANGE = "#FF4F00";
+const MAIN_PHONE = "6023732164";
+const RENTAL_REALESTATE_PHONE = "4806954462";
 const BUDGET_OPTIONS = ["$2k - $5k", "$5k - $10k", "$10k - $25k", "$25k+"];
 const TIMELINE_OPTIONS = ["Immediately", "Next 30 Days", "Next 3 Months", "Researching"];
 const CHARS = "-_~*+[]!@#%&";
+
+// --- SEO & SEARCH STRATEGY ---
+const SEO_DATA = {
+  title: "AOM | Phoenix Video Production & Content Strategy",
+  description: "AOM is a premier Phoenix video production company specializing in B2B content, real estate media, and SaaS promo videos. We build authority assets for founders in Scottsdale, Phoenix, and Tempe.",
+  keywords: "Phoenix video production, Scottsdale videographer, B2B video marketing, Real estate video Arizona, SaaS promo video, corporate video Phoenix",
+  image: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=1200&h=630&fit=crop", 
+  url: "https://aom-inhouse.com",
+  twitterHandle: "@aom_inhouse"
+};
+
+// --- DATA: TESTIMONIALS & FAQ ---
+const TESTIMONIALS = [
+  {
+    quote: "We closed 3 new industrial contracts in 60 days after launching our case study video. The production cost paid for itself 8x over.",
+    metric: "8x ROI in 60 days",
+    name: "Hunter Bjork",
+    company: "ISA ENERGY",
+    industry: "Industrial Energy"
+  },
+  {
+    quote: "Before AOM, we were posting randomly. Now we have a repeatable system that fills our pipeline. Our outreach finally has teeth.",
+    metric: "150% pipeline growth",
+    name: "Sumit Seth",
+    company: "Naamly",
+    industry: "SaaS"
+  },
+  {
+    quote: "They didn't just shoot beautiful footage. They mapped every asset to a business outcome: investor meetings and web conversion.",
+    metric: "3 venue launches",
+    name: "Gio Osso",
+    company: "Virtu Hospitality Group",
+    industry: "Hospitality"
+  }
+];
+
+const FAQS = [
+  {
+    q: "What happens after I hit “Start Brief”?",
+    a: "You submit your scope, budget, and timing. We reply with a fast scope call and a simple plan for deliverables."
+  },
+  {
+    q: "Do you handle strategy or just production?",
+    a: "Both. Strategy first. If the asset doesn’t move trust or attention, it’s just expensive footage."
+  },
+  {
+    q: "How fast can you turn edits?",
+    a: "Social selects can be 24–72 hours. Hero edits typically land on a planned cadence."
+  }
+];
+
+// --- ENGAGEMENT INTENTS ---
+const ENGAGEMENT_IDEAS = [
+  {
+    id: "launch",
+    icon: Rocket,
+    title: "The Big Launch",
+    statement: "We are bringing a new development or product to market and need a full asset suite.",
+    price: "$10k - $25k",
+    includes: ["3-5 hero videos", "15-30 social cuts", "Website hero loop", "Brand style guide"],
+    timeline: "4-6 weeks",
+    bestFor: "Product launches, major developments, fundraising announcements"
+  },
+  {
+    id: "engine",
+    icon: Repeat,
+    title: "Content Engine",
+    statement: "We need a system that delivers consistent video volume and social growth every month.",
+    price: "$3k/mo",
+    includes: ["Monthly capture session", "1 Hero Asset", "8-12 Social Cuts", "Thumbnail Suite"],
+    timeline: "Ongoing",
+    bestFor: "Brands needing consistent social presence"
+  },
+  {
+    id: "authority",
+    icon: Crown,
+    title: "Founder Authority",
+    statement: "I need to establish personal credibility and trust with investors or talent quickly.",
+    price: "$5k+",
+    includes: ["Founder story doc", "Leadership interview series", "LinkedIn native assets", "Press kit photos"],
+    timeline: "2-3 weeks",
+    bestFor: "Founders raising capital or recruiting top talent"
+  },
+  {
+    id: "proof",
+    icon: Fingerprint,
+    title: "Social Proof",
+    statement: "We have great projects but no cinematic case studies. We need to prove our expertise.",
+    price: "$5k+",
+    includes: ["Client testimonial interviews", "Project b-roll capture", "Data visualization graphics", "Case study PDF"],
+    timeline: "3-4 weeks",
+    bestFor: "Service businesses needing to close larger contracts"
+  },
+  {
+    id: "event",
+    icon: Mic2,
+    title: "Event Capture",
+    statement: "We have a major activation or conference coming up. We need high-energy recap assets.",
+    price: "$3k+",
+    includes: ["Multi-cam event coverage", "Same-day highlight reel", "Full panel recordings", " attendee vox pops"],
+    timeline: "1-2 weeks",
+    bestFor: "Conferences, grand openings, activations"
+  },
+  {
+    id: "custom",
+    icon: Lightbulb,
+    title: "The Wildcard",
+    statement: "We have a specific vision that doesn't fit in a box. We need a creative partner.",
+    price: "Tailored",
+    includes: ["Custom creative strategy", "Technical execution plan", "Unique deliverables", "Consulting"],
+    timeline: "Flexible",
+    bestFor: "Experimental projects, rebrands, complex productions"
+  }
+];
 
 // --- GUMLET VIDEO UTILITIES ---
 const getGumletId = (url) => {
@@ -58,204 +175,46 @@ const shuffleArray = (array) => {
   return newArray;
 };
 
-// --- MASTER PORTFOLIO LIBRARY ---
+// --- PORTFOLIO DATA ---
 const PORTFOLIO_DATA = {
   marketing: {
     campaigns: [
-      { title: "Journey To Gary Vee", sub: "Cinematic Story", url: "https://gumlet.tv/watch/698a6296fc23d3d76fa8d992/", tags: ["Narrative"] },
-      { title: "Rainbow Rider", sub: "Experience Asset", url: "https://gumlet.tv/watch/698a6106aec3d4e420c2fd85/", tags: ["Vibe", "Brand"] },
-      { title: "Pretty Penny", sub: "Restaurant Identity", url: "https://gumlet.tv/watch/698a5d24aec3d4e420c2a0a0/", tags: ["Food", "Brand"] },
-      { title: "Virtu Hospitality", sub: "Scottsdale Premium", url: "https://gumlet.tv/watch/698a5ef5fc23d3d76fa87ef4/", tags: ["Luxury", "Food"] },
-      { title: "Du Coeur Event", sub: "Recap Narrative", url: "https://gumlet.tv/watch/698a53a4aec3d4e420c17ee0/", tags: ["Events"] },
-      { title: "Cook & Craft Hero", sub: "Web Background", url: "https://gumlet.tv/watch/698a53a9873071aec5c8b9d7/", tags: ["Web", "Loop"] },
-      { title: "AZ Arts Foundation", sub: "Trust Piece", url: "https://gumlet.tv/watch/698a64e5873071aec5ca99ac/", tags: ["Non-Profit"] },
-      { title: "Cynshine Pilates", sub: "Founder Story", url: "https://gumlet.tv/watch/698a63e5aec3d4e420c34783/", tags: ["Wellness"] },
-      { title: "Sherpa Hospitality", sub: "Corporate ID", url: "https://gumlet.tv/watch/698a63acaec3d4e420c341f8/", tags: ["Corp", "Brand"] },
-      { title: "Natl Comedy Theater", sub: "Venue Promo", url: "https://gumlet.tv/watch/698a63acfc23d3d76fa8f582/", tags: ["Entertainment"] },
-      { title: "RW Investment Firm", sub: "Trust Asset", url: "https://gumlet.tv/watch/698a5edeaec3d4e420c2c8be/", tags: ["Finance"] },
-      { title: "Ulisgold Pilates", sub: "Studio Brand", url: "https://gumlet.tv/watch/698a5ebcaec3d4e420c2c573/", tags: ["Wellness"] },
-      { title: "Keep it Cut", sub: "Recruiting Film", url: "https://gumlet.tv/watch/698a6177873071aec5ca4374/", tags: ["HR", "Culture"] },
-      { title: "United Food Bank", sub: "Year End Impact", url: "https://gumlet.tv/watch/698a5fcdfc23d3d76fa893b8/", tags: ["Non-Profit"] },
-      { title: "UFB Volunteer", sub: "Community Doc", url: "https://gumlet.tv/watch/698a5fc4fc23d3d76fa892d9/", tags: ["Doc"] },
-      { title: "Noble Real Estate", sub: "Agency Brand", url: "https://gumlet.tv/watch/698a5b86fc23d3d76fa82ece/", tags: ["Real Estate"] },
-      { title: "Jason Amador", sub: "GCU x NABI", url: "https://gumlet.tv/watch/698a5a6caec3d4e420c25e1a/", tags: ["Sports", "Doc"] },
-      { title: "Ernie Stevens Jr", sub: "Tribute Film", url: "https://gumlet.tv/watch/698a5a6cfc23d3d76fa812a7/", tags: ["Heritage"] },
-      { title: "Aiper Pool Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a58c0aec3d4e420c21b78/", tags: ["Consumer"] },
-      { title: "Aiper Homeshow", sub: "Trade Show", url: "https://gumlet.tv/watch/698a58ae873071aec5c953ea/", tags: ["B2B", "Event"] }
+      { title: "AOM Reel 2024", sub: "Phoenix Master Production", url: "https://gumlet.tv/watch/698a6215aec3d4e420c317f7/", tags: ["Master", "Showreel"] },
+      { title: "Journey To Gary Vee", sub: "Cinematic Narrative", url: "https://gumlet.tv/watch/698a6296fc23d3d76fa8d992/", tags: ["Narrative"] },
+      { title: "Pretty Penny", sub: "Restaurant Brand Film", url: "https://gumlet.tv/watch/698a5d24aec3d4e420c2a0a0/", tags: ["Food", "Brand"] },
+      { title: "Virtu Hospitality", sub: "Scottsdale Luxury Media", url: "https://gumlet.tv/watch/698a5ef5fc23d3d76fa87ef4/", tags: ["Luxury", "Food"] },
     ],
     social: [
-      { title: "Lagos White Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a596eaec3d4e420c22a9a/", tags: ["9:16", "Promo"] },
-      { title: "Lagos Recap", sub: "Event Highlight", url: "https://gumlet.tv/watch/698a5946873071aec5c96163/", tags: ["9:16", "Vibe"] },
-      { title: "Nook 10 Year", sub: "ASMR Piece", url: "https://gumlet.tv/watch/698a5a8b873071aec5c99c6f/", tags: ["9:16", "Creative"] },
-      { title: "PA’LA x HARUMI", sub: "Collab Feature", url: "https://gumlet.tv/watch/698a5391fc23d3d76fa7306c/", tags: ["9:16", "Food"] },
-      { title: "Cook & Craft Pretzel", sub: "Food Feature", url: "https://gumlet.tv/watch/698a53bcfc23d3d76fa736e4/", tags: ["9:16", "Food"] },
-      { title: "Killer Whale Club", sub: "Nightlife Promo", url: "https://gumlet.tv/watch/698a5c0afc23d3d76fa83ba6/", tags: ["9:16", "Vibe"] },
+      { title: "Lagos White Party", sub: "Social Promo", url: "https://gumlet.tv/watch/698a596eaec3d4e420c22a9a/", tags: ["9:16", "Promo"] },
+      { title: "Nook 10 Year", sub: "Creative ASMR", url: "https://gumlet.tv/watch/698a5a8b873071aec5c99c6f/", tags: ["9:16", "Creative"] },
     ]
   },
   builders: {
     campaigns: [
-      { title: "To Have and To Host", sub: "Builder Showcase", url: "https://gumlet.tv/watch/698a68b7fc23d3d76fa970ef/", tags: ["Residential", "Build"] },
-      { title: "Abrazo Healthcare", sub: "HVAC Emergency Response", url: "https://gumlet.tv/watch/698a58aefc23d3d76fa7cdd6/", tags: ["Operations", "Service"] },
-      { title: "Memorial Towers", sub: "Crane Day Chillers", url: "https://gumlet.tv/watch/698a584faec3d4e420c20fef/", tags: ["Industrial", "Scale"] },
-      { title: "Refined Gardens Dieon", sub: "Brand Authority", url: "https://gumlet.tv/watch/698a57fb873071aec5c94350/", tags: ["Landscaping", "Build"] },
-      { title: "Tree Guardian", sub: "Documentary Episode", url: "https://gumlet.tv/watch/698a5e91873071aec5c9fc36/", tags: ["Doc", "Process"] },
-      { title: "Arizona Cleantech", sub: "Sector Narrative", url: "https://gumlet.tv/watch/698a57da873071aec5c93fa0/", tags: ["Industrial", "Green"] },
-      { title: "HUUB x Miss Dessert", sub: "Biz Spotlight", url: "https://gumlet.tv/watch/698a63ac873071aec5ca7db1/", tags: ["9:16", "Case Study"] }
+      { title: "To Have and To Host", sub: "Construction Showreel", url: "https://gumlet.tv/watch/698a68b7fc23d3d76fa970ef/", tags: ["Residential", "Build"] },
+      { title: "Memorial Towers", sub: "Industrial Scale Film", url: "https://gumlet.tv/watch/698a584faec3d4e420c20fef/", tags: ["Industrial", "Scale"] },
     ],
     social: [
-      { title: "Primrose Ambition", sub: "Mechanical Update", url: "https://gumlet.tv/watch/698a581daec3d4e420c20b94/", tags: ["9:16", "Build"] },
-      { title: "Tiffanys Fashion Square", sub: "Luxury Walkthrough", url: "https://gumlet.tv/watch/698a580bfc23d3d76fa7bd7c/", tags: ["9:16", "Luxury"] },
-      { title: "NGOTS Restoration", sub: "Service Spotlight", url: "https://gumlet.tv/watch/698a5a7d873071aec5c99b08/", tags: ["9:16", "Industrial"] },
+      { title: "Tiffanys Fashion Square", sub: "Retail Construction Walkthrough", url: "https://gumlet.tv/watch/698a580bfc23d3d76fa7bd7c/", tags: ["9:16", "Luxury"] },
     ]
   },
   founders: {
     campaigns: [
-      { title: "What is Abstrakt?", sub: "Automated Sales", url: "https://gumlet.tv/watch/698a5faffc23d3d76fa8909f/", tags: ["SaaS", "B2B"] },
-      { title: "Reelay Explainer", sub: "SaaS Clarity", url: "https://gumlet.tv/watch/698a5aa5aec3d4e420c263c4/", tags: ["Software", "Tech"] },
-      { title: "Intelliplay Demo", sub: "Product Story", url: "https://gumlet.tv/watch/698a5386aec3d4e420c17a69/", tags: ["UX", "Product"] },
-      { title: "N2 Local News", sub: "Platform Re-imagined", url: "https://gumlet.tv/watch/698a5b26aec3d4e420c27039/", tags: ["Media", "Tech"] },
-      { title: "NEB Docs / HUUB", sub: "SaaS Case Study", url: "https://gumlet.tv/watch/698a63acfc23d3d76fa8f585/", tags: ["GovTech", "Doc"] },
-      { title: "ASU Peoria Forward", sub: "Innovation Hub", url: "https://gumlet.tv/watch/698a6127873071aec5ca3b36/", tags: ["Edu", "Tech"] },
-      { title: "Gitex Dubai", sub: "Global Tech Expo", url: "https://gumlet.tv/watch/698a6227fc23d3d76fa8cd57/", tags: ["International"] },
-      { title: "Founders Retreat", sub: "Cultural Highlight", url: "https://gumlet.tv/watch/698a5b05873071aec5c9a7cd/", tags: ["Founders", "Culture"] },
-      { title: "IAAPA 2026", sub: "Event Recap", url: "https://gumlet.tv/watch/698a5391aec3d4e420c17bd3/", tags: ["Event", "Scale"] },
-      { title: "ISA Validation", sub: "Research Study", url: "https://gumlet.tv/watch/698a52b6fc23d3d76fa70d75/", tags: ["Data", "Proof"] }
+      { title: "What is Abstrakt?", sub: "SaaS Explainer Video", url: "https://gumlet.tv/watch/698a5faffc23d3d76fa8909f/", tags: ["SaaS", "B2B"] },
+      { title: "Reelay Explainer", sub: "Software Demo Film", url: "https://gumlet.tv/watch/698a5aa5aec3d4e420c263c4/", tags: ["Software", "Tech"] },
     ],
     social: [
-      { title: "IAAPA Day 2", sub: "Event Recap", url: "https://gumlet.tv/watch/698a5391873071aec5c8b654/", tags: ["9:16", "Event"] },
+      { title: "IAAPA Day 2", sub: "Tech Event Recap", url: "https://gumlet.tv/watch/698a5391873071aec5c8b654/", tags: ["9:16", "Event"] },
     ]
   }
 };
 
-// --- CLIENT DEPTH: TRUST DATA ---
-const TRUST_METRICS = [
-  { icon: ShieldCheck, label: "Predictable Delivery", value: "Tight timelines", sub: "Structured pre-pro + capture + edit pipeline" },
-  { icon: Clock3, label: "Fast Turnarounds", value: "24–72hr", sub: "For selects + social cuts when needed" },
-  { icon: Users, label: "Lean Crew", value: "Cinema-grade", sub: "Efficient staffing, zero chaos, high output" },
-  { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Systems for matching style across assets" },
-];
-
-const TRUST_LOGOS = [
-  "REAL_ESTATE", "HOSPITALITY", "SAAS", "NONPROFIT", "EVENTS", "EDU", "HEALTHCARE", "INDUSTRIAL"
-];
-
-// --- NEW ENGAGEMENT INTENTS (V38) ---
-const ENGAGEMENT_IDEAS = [
-  {
-    id: "launch",
-    icon: Rocket,
-    title: "The Big Launch",
-    statement: "We are bringing a new development or product to market and need a full asset suite to drive hype.",
-    price: "$10k - $25k",
-    includes: ["3-5 hero videos", "15-30 social cuts", "Website hero loop", "Brand style guide"],
-    timeline: "4-6 weeks",
-    bestFor: "Product launches, major developments, fundraising announcements"
-  },
-  {
-    id: "engine",
-    icon: Repeat,
-    title: "Content Engine",
-    statement: "We are tired of ad-hoc posting. We need a system that delivers consistent video volume every month.",
-    price: "$3k/mo",
-    includes: ["Monthly capture session", "1 Hero Asset", "8-12 Social Cuts", "Thumbnail Suite"],
-    timeline: "Ongoing",
-    bestFor: "Brands needing consistent social presence & growth"
-  },
-  {
-    id: "authority",
-    icon: Crown,
-    title: "Founder Authority",
-    statement: "I need to establish personal credibility and trust with investors or talent quickly.",
-    price: "$5k+",
-    includes: ["Founder story doc", "Leadership interview series", "LinkedIn native assets", "Press kit photos"],
-    timeline: "2-3 weeks",
-    bestFor: "Founders raising capital or recruiting top talent"
-  },
-  {
-    id: "proof",
-    icon: Fingerprint,
-    title: "Social Proof",
-    statement: "We have great projects but no cinematic case studies. We need to prove our expertise.",
-    price: "$5k+",
-    includes: ["Client testimonial interviews", "Project b-roll capture", "Data visualization graphics", "Case study PDF"],
-    timeline: "3-4 weeks",
-    bestFor: "Service businesses needing to close larger contracts"
-  },
-  {
-    id: "event",
-    icon: Mic2,
-    title: "Event Capture",
-    statement: "We have a major activation or conference coming up. We need it captured for high-energy recap assets.",
-    price: "$3k+",
-    includes: ["Multi-cam event coverage", "Same-day highlight reel", "Full panel recordings", " attendee vox pops"],
-    timeline: "1-2 weeks",
-    bestFor: "Conferences, grand openings, activations"
-  },
-  {
-    id: "custom",
-    icon: Lightbulb,
-    title: "The Wildcard",
-    statement: "We have a specific vision that doesn't fit in a box. We need a creative partner to figure it out.",
-    price: "Tailored",
-    includes: ["Custom creative strategy", "Technical execution plan", "Unique deliverables", "Consulting"],
-    timeline: "Flexible",
-    bestFor: "Experimental projects, rebrands, complex productions"
-  }
-];
-
-const TESTIMONIALS = [
-  {
-    quote: "We closed 3 new industrial contracts in 60 days after launching our case study video. The production cost paid for itself 8x over.",
-    metric: "8x ROI in 60 days",
-    name: "Hunter Bjork",
-    company: "ISA ENERGY",
-    industry: "Industrial Energy"
-  },
-  {
-    quote: "Before AOM, we were posting randomly with no strategy. Now we have a repeatable system that fills our pipeline. Our outreach finally has teeth.",
-    metric: "150% pipeline growth",
-    name: "Sumit Seth",
-    company: "Naamly",
-    industry: "SaaS"
-  },
-  {
-    quote: "They didn't just shoot beautiful footage. They mapped every asset to a business outcome: investor meetings, recruiting, and web conversion. That's the difference.",
-    metric: "3 venue launches",
-    name: "Gio Osso",
-    company: "Virtu Hospitality Group",
-    industry: "Hospitality"
-  }
-];
-
-const FAQS = [
-  {
-    q: "What happens after I hit “Start Brief”?",
-    a: "You submit the lens, budget range, and timing. We reply with next steps, a fast scope call, and a simple plan for deliverables."
-  },
-  {
-    q: "Do you handle strategy or just production?",
-    a: "Both. Strategy first, always. If the asset doesn’t move trust or attention, it’s just expensive footage."
-  },
-  {
-    q: "How fast can you turn edits?",
-    a: "Depends on scope. Social selects can be 24–72 hours when needed. Hero edits typically land on a planned cadence."
-  },
-  {
-    q: "Can you match a brand look across multiple shoots?",
-    a: "Yes. We build a repeatable style system (camera, lighting, color targets, typography rules) so your assets feel unified."
-  },
-  {
-    q: "Do you do website work too?",
-    a: "If the scope calls for it, yes. Especially hero loops, structure, and conversion-focused layout."
-  }
-];
-
-// --- SUB-COMPONENTS ---
+// --- REUSABLE COMPONENTS ---
 
 const TextureOverlay = () => (
   <>
     <div className="fixed inset-0 pointer-events-none z-[999] opacity-[0.03] contrast-125 mix-blend-overlay">
-      <svg className="h-full w-full">
+      <svg className="h-full w-full" aria-hidden="true">
         <filter id="noise">
           <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
           <feColorMatrix type="saturate" values="0" />
@@ -264,631 +223,158 @@ const TextureOverlay = () => (
       </svg>
     </div>
     <div className="fixed inset-0 pointer-events-none z-[998] opacity-[0.02] bg-gradient-to-b from-transparent via-orange-500/5 to-transparent" />
-    <style dangerouslySetInnerHTML={{
-      __html: `
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    <style dangerouslySetInnerHTML={{ __html: `
       .clip-path-slant { clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%); }
       .text-outline { -webkit-text-stroke: 1px white; color: transparent; }
-      .text-outline-orange { -webkit-text-stroke: 1px #FF4F00; color: transparent; }
-      @media (min-width: 768px) {
-        .text-outline { -webkit-text-stroke: 2px white; }
-        .text-outline-orange { -webkit-text-stroke: 2px #FF4F00; }
-      }
-      @keyframes marquee {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-50%); }
-      }
+      @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
       .animate-marquee { animation: marquee 40s linear infinite; }
-      @keyframes scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-50%); }
-      }
+      @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
       .animate-scroll { animation: scroll 80s linear infinite; }
-      .pause-on-hover:hover { animation-play-state: paused; }
-      .cursor-blink { animation: blink 1s step-end infinite; }
-      @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-      @keyframes scan {
-        0% { transform: translateY(-120%); opacity: 0; }
-        10% { opacity: 0.6; }
-        50% { opacity: 0.25; }
-        100% { transform: translateY(140%); opacity: 0; }
-      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
       .animate-scan { animation: scan 4.5s linear infinite; }
+      @keyframes scan { 0% { transform: translateY(-120%); opacity: 0; } 100% { transform: translateY(140%); opacity: 0; } }
     `}} />
   </>
 );
 
-// --- ANIMATION WRAPPER ---
-const FadeIn = ({ children, className = "", delay = 0 }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 40 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-50px" }}
-    transition={{ duration: 0.8, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
-
-// --- INFINITE MARQUEE COMPONENT ---
-const InfiniteMarquee = ({ children, speed = 40, className = "" }) => (
-  <div className={`overflow-hidden relative flex w-full group ${className}`}>
-    <div
-      className="flex gap-4 animate-scroll whitespace-nowrap pause-on-hover will-change-transform"
-      style={{ animationDuration: `${speed}s` }}
-    >
-      {children}
-      {children}
-    </div>
-  </div>
-);
-
-// --- INTERACTIVE TYPOGRAPHY ---
-
 const ScrambleText = ({ text, className = "", hover = true }) => {
   const [displayText, setDisplayText] = useState(text);
   const intervalRef = useRef(null);
-
   const startScramble = () => {
     let iteration = 0;
     clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setDisplayText(() =>
-        text.split("").map((letter, index) => {
-          if (index < iteration) return text[index];
-          return CHARS[Math.floor(Math.random() * CHARS.length)];
-        }).join("")
-      );
+      setDisplayText(() => text.split("").map((letter, index) => {
+        if (index < iteration) return text[index];
+        return CHARS[Math.floor(Math.random() * CHARS.length)];
+      }).join(""));
       if (iteration >= text.length) clearInterval(intervalRef.current);
       iteration += 1 / 3;
     }, 30);
   };
-
-  return (
-    <span
-      className={`inline-block ${className}`}
-      onMouseEnter={hover ? startScramble : undefined}
-    >
-      {displayText}
-    </span>
-  );
+  return <span className={`inline-block ${className}`} onMouseEnter={hover ? startScramble : undefined}>{displayText}</span>;
 };
 
-// Cycling Typewriter Effect (Delete & Retype)
 const TypewriterCycle = ({ words, className = "" }) => {
   const [index, setIndex] = useState(0);
   const [subIndex, setSubIndex] = useState(0);
   const [reverse, setReverse] = useState(false);
   const [blink, setBlink] = useState(true);
-
   useEffect(() => {
     if (index >= words.length) { setIndex(0); return; }
     const currentWord = words[index];
-
     if (subIndex === currentWord.length + 1 && !reverse) {
       const timeout = setTimeout(() => setReverse(true), 1500);
       return () => clearTimeout(timeout);
     }
-
     if (subIndex === 0 && reverse) {
       setReverse(false);
       setIndex((prev) => (prev + 1) % words.length);
       return;
     }
-
     const timeout = setTimeout(() => {
       setSubIndex((prev) => prev + (reverse ? -1 : 1));
     }, reverse ? 30 : 60);
-
     return () => clearTimeout(timeout);
   }, [subIndex, index, reverse, words]);
-
   useEffect(() => {
     const timeout = setTimeout(() => setBlink((prev) => !prev), 500);
     return () => clearTimeout(timeout);
   }, [blink]);
-
-  return (
-    <span className={`${className}`}>
-      {words[index].substring(0, subIndex)}
-      <span className={`ml-1 text-orange-600 ${blink ? "opacity-100" : "opacity-0"}`}>_</span>
-    </span>
-  );
+  return <span className={`${className}`}>{words[index].substring(0, subIndex)}<span className={`ml-1 text-orange-600 ${blink ? "opacity-100" : "opacity-0"}`}>_</span></span>;
 };
 
-const RevealHeading = ({ children, className }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-10%" });
-  return (
-    <div ref={ref} className={`overflow-hidden ${className}`}>
-      <motion.div
-        variants={{
-          hidden: { y: "110%", rotateZ: 2 },
-          visible: { y: 0, rotateZ: 0, transition: { duration: 1, ease: [0.16, 1, 0.3, 1] } }
-        }}
-        initial="hidden"
-        animate={isInView ? "visible" : "hidden"}
-      >
-        {children}
-      </motion.div>
-    </div>
-  );
-};
+const FadeIn = ({ children, className = "", delay = 0 }) => (
+  <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay }} className={className}>
+    {children}
+  </motion.div>
+);
 
-// --- COUNT UP (SCROLL REVEAL) ---
-const CountUp = ({ to = 0, duration = 900, className = "", suffix = "", prefix = "" }) => {
+const InfiniteMarquee = ({ children, speed = 40, className = "" }) => (
+  <div className={`overflow-hidden relative flex w-full group ${className}`}>
+     <div className="flex gap-4 animate-scroll whitespace-nowrap pause-on-hover" style={{ animationDuration: `${speed}s` }}>
+       {children}
+       {children}
+     </div>
+  </div>
+);
+
+const CountUp = ({ to = 0, duration = 900, className = "" }) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-25%" });
   const [val, setVal] = useState(0);
-
   useEffect(() => {
     if (!inView) return;
     let raf = 0;
     const start = performance.now();
-    const from = 0;
     const tick = (now) => {
       const p = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - p, 3);
-      const next = Math.round(from + (to - from) * eased);
-      setVal(next);
+      setVal(Math.round(to * eased));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [inView, to, duration]);
-
-  return (
-    <span ref={ref} className={className}>
-      {prefix}{val}{suffix}
-    </span>
-  );
+  return <span ref={ref} className={className}>{val}</span>;
 };
 
-// --- VIBE CHECK: BY THE NUMBERS ---
 const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) => (
-  <div className={`relative p-8 md:p-10 border rounded-sm overflow-hidden shadow-2xl ${accent ? "border-orange-600/50 bg-orange-950/15" : "border-white/10 bg-zinc-900/25"}`}>
+  <div className={`relative p-8 md:p-10 border rounded-sm overflow-hidden shadow-2xl transition-all duration-300 ${accent ? "border-orange-600/50 bg-orange-950/15" : "border-white/10 bg-zinc-900/25"}`}>
     <div className="absolute inset-0 pointer-events-none">
       <div className="absolute -top-20 -right-20 w-56 h-56 bg-orange-600/10 blur-3xl rounded-full" />
-      <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gradient-to-b from-transparent via-white/10 to-transparent" />
     </div>
-
     <div className="relative z-10">
       <div className="flex items-center justify-between">
         <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
-          <Icon className="text-orange-600" size={22} />
+          {Icon && <Icon className="text-orange-600" size={22} />}
         </div>
         <div className="text-[9px] font-mono uppercase tracking-[0.35em] text-zinc-600">
           <ScrambleText text={kicker} hover={false} />
         </div>
       </div>
-
       <div className="mt-10">
-        <div className="text-[clamp(2.5rem,5vw,4.25rem)] font-black italic tracking-tighter leading-[0.85] text-white">
-          {valueNode}
-        </div>
-        <p className="text-zinc-400 text-sm mt-5 leading-relaxed max-w-md">
-          {sub}
-        </p>
+        <div className="text-[clamp(2.5rem,5vw,4.25rem)] font-black italic tracking-tighter leading-[0.85] text-white">{valueNode}</div>
+        <p className="text-zinc-400 text-sm mt-5 leading-relaxed max-w-md">{sub}</p>
       </div>
     </div>
   </div>
 ));
 
-const VibeCheckSection = ({ videoTotal, companyTotal = 60, travelTotal = 11 }) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-15%" });
-
-  return (
-    <section ref={ref} className="px-6 md:px-12 py-32 bg-black border-t border-white/5 relative overflow-hidden">
-      {/* Background grid + scan */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-[0.07]">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:52px_52px]" />
-        </div>
-        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-transparent via-orange-600/40 to-transparent" />
-        <div className="absolute left-[12%] top-0 w-[2px] h-full bg-gradient-to-b from-transparent via-orange-600/15 to-transparent" />
-        <div className="absolute left-[58%] top-0 w-[1px] h-full bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-        <div className="absolute inset-x-0 -top-24 h-48 bg-orange-600/10 blur-3xl" />
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-x-10 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/20 to-transparent animate-scan" />
-        </div>
-      </div>
-
-      <div className="max-w-screen-2xl mx-auto w-full relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.9, ease: [0.21, 0.47, 0.32, 0.98] }}
-          className="border-b border-white/10 pb-12 mb-14"
-        >
-          <div className="flex flex-col lg:flex-row items-end justify-between gap-10">
-            <div className="max-w-3xl">
-              <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                <ScrambleText text="Vibe Check" hover={false} />
-              </span>
-
-              <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">
-                Who we are<br />
-                <span className="text-outline">by the numbers</span><span className="text-orange-600">.</span>
-              </h2>
-
-              <p className="text-zinc-400 text-sm md:text-base mt-8 leading-relaxed max-w-2xl">
-                This section exists for the same reason seatbelts do: because people don’t trust anything until they see proof it’s real.
-              </p>
-            </div>
-
-            <div className="w-full lg:max-w-xl">
-              <div className="p-6 md:p-7 border border-white/10 bg-zinc-900/20">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="text-orange-600" size={18} />
-                  <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">At the door</p>
-                </div>
-                <p className="text-zinc-500 text-sm mt-5 leading-relaxed">
-                  If you want “creative vibes” with no delivery system, this is where you quietly back out of the room.
-                </p>
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {["Clear scope", "Fast turn", "Repeatable output", "No chaos"].map((x) => (
-                    <span key={x} className="text-[9px] font-mono font-bold uppercase tracking-[0.35em] px-3 py-2 border border-white/10 bg-black/40 text-zinc-400">
-                      {x}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <motion.div
-            className="lg:col-span-4"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-20%" }}
-            transition={{ duration: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
-          >
-            <VibeStat
-              icon={Rocket}
-              kicker="Out of state"
-              valueNode={
-                <span>
-                  <CountUp to={travelTotal} duration={900} className="text-white" />
-                  <span className="text-orange-600">+</span>
-                </span>
-              }
-              sub="We’ve traveled for jobs because some clients prefer the team that shows up, not the team that emails excuses."
-              accent
-            />
-          </motion.div>
-
-          <motion.div
-            className="lg:col-span-4"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-20%" }}
-            transition={{ duration: 0.7, delay: 0.06, ease: [0.21, 0.47, 0.32, 0.98] }}
-          >
-            <VibeStat
-              icon={Building2}
-              kicker="Companies served"
-              valueNode={
-                <span>
-                  <CountUp to={companyTotal} duration={1000} className="text-white" />
-                  <span className="text-orange-600">+</span>
-                </span>
-              }
-              sub="Different industries, different stakes. Same promise: make you look established and ship on time."
-            />
-          </motion.div>
-
-          <motion.div
-            className="lg:col-span-4"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-20%" }}
-            transition={{ duration: 0.7, delay: 0.12, ease: [0.21, 0.47, 0.32, 0.98] }}
-          >
-            <VibeStat
-              icon={Clapperboard}
-              kicker="Videos shipped"
-              valueNode={
-                <span className="flex flex-wrap items-end gap-3">
-                  <span>
-                    <CountUp to={Math.max(100, videoTotal)} duration={1100} className="text-white" />
-                    <span className="text-orange-600">+</span>
-                  </span>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-500 pb-2">
-                    (and yes, it’s in the code)
-                  </span>
-                </span>
-              }
-              sub={
-                <span>
-                  We’ve made over 100 videos. If you want to see the exact number, it’s literally calculated from the archive.
-                  <span className="text-orange-500 font-black"> Current count: {videoTotal}</span>.
-                </span>
-              }
-            />
-          </motion.div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-15%" }}
-          transition={{ duration: 0.7, delay: 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
-          className="mt-10 border border-white/10 bg-gradient-to-r from-black via-black/50 to-orange-950/10 p-8 md:p-10 relative overflow-hidden"
-        >
-          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-orange-600/10 blur-3xl rounded-full" />
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-            <div className="max-w-2xl">
-              <p className="text-orange-600 text-[10px] font-mono font-bold uppercase tracking-[0.45em]">
-                <ScrambleText text="Door Policy" hover={false} />
-              </p>
-              <h3 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white mt-5 leading-[0.95]">
-                If your brand needs to look bigger than your headcount,
-                <span className="text-outline"> you’re in the right place</span>.
-              </h3>
-              <p className="text-zinc-400 text-sm md:text-base mt-5 leading-relaxed">
-                We build story systems that remove friction in sales and make your marketing feel inevitable. No drama. No mystery. No “we’ll circle back.”
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
-                <ScrollText size={20} className="text-orange-600" />
-              </div>
-              <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
-                <ShieldCheck size={20} className="text-orange-600" />
-              </div>
-              <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
-                <Activity size={20} className="text-orange-600" />
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-};
-
-// --- SYSTEM TICKER COMPONENT ---
-const TICKER_TEXTS = [
-  "PHOENIX VIDEO PRODUCTION",
-  "PARTNER VERIFIED // THE RIGHT TEAM",
-  "REAL ESTATE MEDIA",
-  "TURNKEY CONTENT SCALE",
-  "AHEAD OF MARKET // EST 2021",
-  "SCOTTSDALE BRAND NARRATIVE",
-  "FUNDRAISING VIDEO PRODUCTION",
-  "DOCUMENTARY PRODUCTION PHOENIX, AZ"
-];
-
-const SystemTicker = ({ onOpenBrief, onOpenCalendar }) => (
-  <div className="fixed bottom-0 left-0 w-full z-[100] h-12 bg-black border-t border-zinc-800 flex items-center shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
-    <div className="flex-1 overflow-hidden relative h-full flex items-center bg-black/90 backdrop-blur-sm">
-      <div className="flex whitespace-nowrap animate-marquee items-center">
-        {[...Array(4)].flatMap(() => TICKER_TEXTS).map((text, i) => (
-          <div key={i} className="flex items-center mx-6">
-            <Radio size={12} className="text-orange-600 animate-pulse mr-3" />
-            <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.3em] flex items-center">
-              {text} <span className="text-orange-600 mx-4 opacity-50 text-[8px]"></span>
-            </span>
-          </div>
-        ))}
-      </div>
-      <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-black to-transparent z-10" />
-      <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-black to-transparent z-10" />
-    </div>
-
-    <div className="h-full flex items-center pr-0 pl-0 relative z-20">
-      <button
-        onClick={onOpenCalendar}
-        className="h-full px-6 bg-zinc-900 text-zinc-400 font-black italic uppercase tracking-[0.15em] text-[10px] hover:bg-zinc-800 hover:text-white transition-all flex items-center gap-2 border-l border-zinc-800 group"
-      >
-        <Calendar size={14} className="group-hover:scale-110 transition-transform" />
-        <span className="hidden sm:inline">15-Min Call</span>
-        <span className="sm:hidden">Call</span>
-      </button>
-      <button
-        onClick={onOpenBrief}
-        className="h-full px-8 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.15em] text-xs hover:from-orange-500 hover:to-orange-400 transition-all flex items-center gap-3 shadow-[0_0_25px_rgba(255,79,0,0.4)] border-l border-orange-400/30 group"
-      >
-        <Zap size={16} className="fill-white group-hover:scale-110 transition-transform" />
-        <span>Start Project</span>
-      </button>
-    </div>
-  </div>
-);
-
-// --- LIVING GRID VIDEO MODULE (LAZY LOAD UPDATE) ---
-const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay, context }) => {
-  const [shouldLoad, setShouldLoad] = useState(false);
-  const [showContext, setShowContext] = useState(false);
-  const ref = useRef(null);
-  const embedUrl = getGumletBackgroundEmbed(url);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setShouldLoad(true);
-      },
-      { rootMargin: '200px' }
-    );
-
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <article
-      ref={ref}
-      onClick={() => onPlay({ url, title })}
-      onMouseEnter={() => setShowContext(true)}
-      onMouseLeave={() => setShowContext(false)}
-      className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 ${isVertical ? 'aspect-[9/16] w-[280px]' : 'aspect-video w-[450px] shadow-lg'}`}
-    >
-      <div className="absolute inset-0 bg-zinc-950">
-        {shouldLoad && embedUrl && (
-          <iframe
-            src={embedUrl}
-            loading="lazy"
-            className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105"
-            title={title}
-            allow="autoplay; encrypted-media"
-            style={{ pointerEvents: 'none' }}
-          />
-        )}
-      </div>
-      <div className="absolute inset-0 z-10 bg-transparent" />
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-        <div className="w-12 h-12 rounded-full bg-orange-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-300 shadow-xl translate-y-4 group-hover:translate-y-0">
-          <Volume2 size={18} className="text-white ml-0.5" />
-        </div>
-      </div>
-      <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20 bg-gradient-to-t from-black/95 via-black/10 to-transparent">
-        <div className="flex justify-between items-start">
-          <div className="flex flex-wrap gap-1.5">
-            {tags.slice(0, 2).map(tag => (
-              <span key={tag} className="text-[9px] font-black px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm backdrop-blur-sm uppercase tracking-widest">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="max-w-[95%]">
-          <h3 className={`font-black tracking-tight text-white leading-[0.9] transition-colors group-hover:text-orange-500 uppercase italic ${isVertical ? 'text-lg' : 'text-2xl'}`}>
-            {title}
-          </h3>
-          <p className="text-[10px] font-mono text-zinc-400 mt-2 uppercase tracking-widest italic flex items-center gap-2">
-            <span className="w-1 h-1 bg-orange-600 rounded-full" />
-            {sub}
-          </p>
-        </div>
-      </div>
-    </article>
-  );
-};
-
-// --- CLIENT DEPTH COMPONENTS ---
-const SectionShell = ({ id, children, className = "" }) => (
-  <section id={id} className={`px-6 md:px-12 py-36 relative ${className}`}>
-    <FadeIn>
-      {children}
-    </FadeIn>
-  </section>
-);
-
-const StatCard = memo(({ icon: Icon, label, value, sub }) => (
-  <div className="p-8 border border-white/10 bg-zinc-900/30 rounded-sm shadow-2xl hover:border-orange-600/40 transition-colors">
-    <div className="flex items-center justify-between">
-      <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
-        <Icon className="text-orange-600" size={22} />
-      </div>
-      <Star className="text-zinc-700" size={18} />
-    </div>
-    <div className="mt-8">
-      <p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-500">{label}</p>
-      <h4 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white mt-3">{value}</h4>
-      <p className="text-zinc-400 text-sm mt-4 leading-relaxed">{sub}</p>
-    </div>
-  </div>
-));
-
-const LogoTicker = memo(() => (
-  <div className="border border-white/10 bg-black/40 overflow-hidden relative">
-    <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-black to-transparent z-10" />
-    <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-black to-transparent z-10" />
-
-    <div className="flex whitespace-nowrap animate-marquee py-6">
-      {[...Array(4)].flatMap(() => TRUST_LOGOS).map((t, i) => (
-        <div key={`${t}-${i}`} className="mx-10 flex items-center gap-3 opacity-70 hover:opacity-100 transition-opacity">
-          <Building2 size={16} className="text-orange-600" />
-          <span className="text-[11px] font-mono font-bold uppercase tracking-[0.35em] text-zinc-400">{t}</span>
-          <span className="text-orange-600/30 text-[10px] mx-4">//</span>
-        </div>
-      ))}
-    </div>
-  </div>
-));
-
-// New V38 Idea Card Component
 const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
-  <button
-    onClick={() => onSelect(idea)}
-    className={`relative p-8 md:p-10 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-orange-600 bg-orange-950/20" : "border-white/10 bg-zinc-900/30 hover:border-white/30 hover:bg-zinc-900/60"}`}
-  >
+  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-10 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-orange-600 bg-orange-950/20" : "border-white/10 bg-zinc-900/30 hover:border-white/30 hover:bg-zinc-900/60"}`}>
     <div className="flex items-center justify-between mb-8">
       <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-orange-600 bg-orange-600 text-white" : "border-white/10 bg-black/40 text-zinc-400 group-hover:text-white"}`}>
         <idea.icon size={20} />
       </div>
       {isSelected && <CheckCircle2 size={24} className="text-orange-600" />}
     </div>
-
     <div className="flex-grow">
       <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-zinc-500 mb-3">{idea.title}</p>
-      <h3 className={`text-xl md:text-2xl font-medium leading-snug transition-colors ${isSelected ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
-        "{idea.statement}"
-      </h3>
+      <h3 className={`text-xl md:text-2xl font-medium leading-snug transition-colors ${isSelected ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>"{idea.statement}"</h3>
     </div>
-
     <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-end">
       <div>
         <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Starting At</p>
         <p className="text-lg font-black italic text-orange-600 tracking-tight">{idea.price}</p>
       </div>
-      <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all ${isSelected ? "bg-white text-black border-white rotate-0" : "bg-transparent text-zinc-600 -rotate-45 group-hover:text-white group-hover:border-white/50"}`}>
-        <ArrowRight size={14} />
-      </div>
+      <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all ${isSelected ? "bg-white text-black border-white rotate-0" : "bg-transparent text-zinc-600 -rotate-45 group-hover:text-white group-hover:border-white/50"}`}><ArrowRight size={14} /></div>
     </div>
   </button>
 ));
 
-const ProcessStep = memo(({ idx, title, body, icon: Icon }) => (
-  <div className="relative pl-10 md:pl-14">
-    <div className="absolute left-0 top-1.5 w-6 h-6 md:w-7 md:h-7 bg-orange-600/20 border border-orange-600/40 flex items-center justify-center">
-      <span className="text-[10px] font-black text-orange-500">{String(idx).padStart(2, "0")}</span>
-    </div>
-    <div className="flex items-start gap-4">
-      <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center shrink-0">
-        <Icon size={18} className="text-orange-600" />
-      </div>
-      <div>
-        <h4 className="text-2xl font-black italic uppercase tracking-tighter text-white">{title}</h4>
-        <p className="text-zinc-400 text-sm mt-3 leading-relaxed max-w-xl">{body}</p>
-      </div>
-    </div>
-  </div>
-));
-
 const TestimonialCard = memo(({ t }) => (
   <div className="p-10 border border-white/10 bg-zinc-900/30 rounded-sm shadow-2xl hover:border-orange-600/40 transition-colors">
-    <div className="flex items-center justify-between mb-4">
-      <Sparkles size={16} className="text-orange-600" />
-      <div className="flex gap-1">
-        {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-orange-600 fill-orange-600" />)}
-      </div>
-    </div>
-
-    {/* NEW: Metric Badge */}
+    <div className="flex items-center justify-between mb-4"><Sparkles size={16} className="text-orange-600" /></div>
     <div className="inline-flex items-center gap-2 bg-orange-600/20 border border-orange-600/40 px-3 py-1.5 rounded-sm mb-6">
       <TrendingUp size={12} className="text-orange-500" />
       <span className="text-orange-500 font-black text-xs uppercase tracking-widest">{t.metric}</span>
     </div>
-
-    <p className="text-white text-xl md:text-2xl font-black italic tracking-tight leading-snug">
-      "{t.quote}"
-    </p>
-
+    <p className="text-white text-xl md:text-2xl font-black italic tracking-tight leading-snug">"{t.quote}"</p>
     <div className="mt-10 pt-6 border-t border-white/10 flex justify-between items-end">
       <div>
         <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">{t.name}</p>
         <p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-500 mt-2">{t.company}</p>
-      </div>
-      {/* NEW: Industry tag */}
-      <div className="text-right">
-        <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600">{t.industry}</p>
       </div>
     </div>
   </div>
@@ -896,97 +382,135 @@ const TestimonialCard = memo(({ t }) => (
 
 const FAQItem = memo(({ item, open, onToggle }) => (
   <div className="border border-white/10 bg-black/30">
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center justify-between gap-6 px-6 md:px-8 py-6 text-left hover:bg-orange-600/10 transition-colors"
-    >
+    <button onClick={onToggle} className="w-full flex items-center justify-between gap-6 px-6 md:px-8 py-6 text-left hover:bg-orange-600/10 transition-colors">
       <span className="text-white font-black italic uppercase tracking-tight text-lg md:text-xl">{item.q}</span>
       <ChevronRight className={`text-orange-600 transition-transform ${open ? "rotate-90" : "rotate-0"}`} />
     </button>
     <AnimatePresence initial={false}>
       {open && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          className="overflow-hidden"
-        >
-          <div className="px-6 md:px-8 pb-8 text-zinc-400 text-sm leading-relaxed">
-            {item.a}
-          </div>
+        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+          <div className="px-6 md:px-8 pb-8 text-zinc-400 text-sm leading-relaxed">{item.a}</div>
         </motion.div>
       )}
     </AnimatePresence>
   </div>
 ));
 
-const MidCTA = memo(({ onOpenBrief }) => (
-  <div className="border border-white/10 bg-gradient-to-r from-black via-black/60 to-orange-950/10 p-10 md:p-14 relative overflow-hidden">
-    <div className="absolute -top-12 -right-12 w-64 h-64 bg-orange-600/20 blur-3xl rounded-full" />
-    <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-10">
-      <div className="max-w-2xl">
-        <p className="text-orange-600 text-[10px] font-mono font-bold uppercase tracking-[0.45em]">
-          <ScrambleText text="Client Perspective" hover={false} />
-        </p>
-        <h3 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-white mt-6 leading-[0.9]">
-          Clear scope.<br /><span className="text-outline">Clean execution</span>.
-        </h3>
-        <p className="text-zinc-400 text-sm md:text-base mt-6 leading-relaxed">
-          If you’re tired of “creative” that ships late, looks inconsistent, or doesn’t convert, this is the opposite of that.
-        </p>
+const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const ref = useRef(null);
+  const embedUrl = getGumletBackgroundEmbed(url);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setShouldLoad(true); }, { rootMargin: '200px' });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 ${isVertical ? 'aspect-[9/16] w-[280px]' : 'aspect-video w-[450px] shadow-lg'}`}>
+      <div className="absolute inset-0 bg-zinc-950">
+        {shouldLoad && embedUrl && (
+          <iframe src={embedUrl} loading="lazy" className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105" title={title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
+        )}
       </div>
-      <button
-        onClick={onOpenBrief}
-        className="px-10 py-4 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.25em] text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-[0_0_30px_rgba(255,79,0,0.35)] border border-white/10"
-      >
-        Start Project
-      </button>
-    </div>
-  </div>
-));
+      <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20 bg-gradient-to-t from-black/95 via-black/10 to-transparent">
+        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-[9px] font-black px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm uppercase tracking-widest">{t}</span>)}</div></div>
+        <div className="max-w-[95%]">
+          <h3 className={`font-black tracking-tight text-white leading-[0.9] transition-colors group-hover:text-orange-500 uppercase italic ${isVertical ? 'text-lg' : 'text-2xl'}`}>{title}</h3>
+          <p className="text-[10px] font-mono text-zinc-400 mt-2 uppercase tracking-widest italic flex items-center gap-2"><span className="w-1 h-1 bg-orange-600 rounded-full" />{sub}</p>
+        </div>
+      </div>
+    </article>
+  );
+};
 
-// --- CALENDAR MODAL COMPONENT ---
-const CalendarModal = ({ isOpen, onClose }) => {
+// --- UPDATED MODAL: SEAMLESS INTENT ROUTING ---
+const PhoneModal = ({ isOpen, onClose }) => {
+  const [view, setView] = useState('list');
+
+  // Reset view on open/close
+  useEffect(() => {
+    if (!isOpen) setTimeout(() => setView('list'), 300);
+  }, [isOpen]);
+
   if (!isOpen) return null;
+
+  const handleRoute = (number) => {
+    window.location.href = `tel:${number}`;
+  };
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto"
-      >
-        <div className="w-full max-w-4xl h-[80vh] p-8 md:p-12 border border-white/10 bg-[#0a0a0a] relative shadow-2xl rounded-xl my-auto">
-          <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white z-10">
-            <X size={24} />
-          </button>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+        <div className="w-full max-w-lg p-12 border border-white/10 bg-[#0a0a0a] relative shadow-2xl rounded-xl overflow-hidden">
+          <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors z-20"><X size={24} /></button>
+          
+          <AnimatePresence mode="wait">
+            {view === 'list' ? (
+              <motion.div key="list" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                <div className="text-center mb-10">
+                  <div className="w-20 h-20 bg-orange-600/10 border border-orange-600/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Phone size={32} className="text-orange-600" />
+                  </div>
+                  <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">Connect<span className="text-orange-600">.</span></h2>
+                  <p className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-[0.3em] mt-4">Select Department To Initiate Call</p>
+                </div>
 
-          <div className="mb-6">
-            <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
-              <ScrambleText text="Book A Call" />
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">
-              15-Min Clarity Call<span className="text-orange-600">.</span>
-            </h2>
-            <p className="text-zinc-400 text-sm mt-4">
-              Quick scope call to understand your needs and see if we're a fit. No pitch, no pressure.
-            </p>
-          </div>
+                <div className="space-y-3">
+                  {[
+                    { label: "Scheduling", icon: Calendar, sub: "Inquiries & Logistics", number: MAIN_PHONE },
+                    { label: "Creative", icon: Target, sub: "Vision & Strategy", number: MAIN_PHONE },
+                    { label: "Support", icon: ShieldCheck, sub: "Operations & Billing", number: RENTAL_REALESTATE_PHONE },
+                    { label: "Rentals", icon: Video, sub: "Gear & Studio Hire", number: RENTAL_REALESTATE_PHONE },
+                    { label: "Accounting", icon: Landmark, sub: "Invoicing & Vendors", type: 'accounting' }
+                  ].map(item => (
+                    <button 
+                      key={item.label} 
+                      onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)}
+                      className="w-full p-5 border border-white/5 bg-white/5 hover:border-orange-600/40 hover:bg-orange-600/5 transition-all group flex items-center justify-between text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        <item.icon size={18} className="text-zinc-500 group-hover:text-orange-600 transition-colors" />
+                        <div>
+                          <p className="text-white font-black uppercase tracking-widest text-sm italic">{item.label}</p>
+                          <p className="text-zinc-500 text-[10px] font-mono mt-0.5">{item.sub}</p>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-zinc-800 group-hover:text-white transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="accounting" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+                <div className="text-center mb-10">
+                  <div className="w-20 h-20 bg-orange-600/10 border border-orange-600/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Mail size={32} className="text-orange-600" />
+                  </div>
+                  <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Accounting Notice</h2>
+                </div>
 
-          {/* INSERT YOUR CALENDLY EMBED HERE */}
-          <div className="w-full h-[calc(100%-120px)] bg-zinc-900/50 border border-white/10 rounded-sm flex items-center justify-center">
-            <div className="text-center p-8">
-              <Calendar size={48} className="mx-auto text-orange-600 mb-4" />
-              <p className="text-zinc-400 text-sm font-mono uppercase tracking-widest mb-4">
-                Calendly Integration Placeholder
-              </p>
-              <p className="text-zinc-600 text-xs max-w-md mx-auto">
-                Replace this section with your Calendly embed code from calendly.com
-              </p>
-            </div>
-          </div>
+                <div className="p-8 border border-orange-600/20 bg-orange-600/5 text-center rounded-sm">
+                  <p className="text-zinc-400 text-sm leading-relaxed mb-6 font-medium">
+                    Please send an email to <span className="text-orange-500 font-bold">hello@aom-inhouse.com</span> to accompany your call so we have your request in writing.
+                  </p>
+                  
+                  <button 
+                    onClick={() => handleRoute(RENTAL_REALESTATE_PHONE)}
+                    className="w-full bg-orange-600 py-4 text-white font-black italic uppercase tracking-widest text-sm hover:bg-orange-500 transition-all shadow-xl flex items-center justify-center gap-3"
+                  >
+                    <Phone size={16} className="fill-white" /> Call Accounting Now
+                  </button>
+                </div>
+
+                <button 
+                  onClick={() => setView('list')}
+                  className="w-full mt-6 text-zinc-600 hover:text-white text-[10px] font-mono uppercase tracking-widest transition-colors"
+                >
+                  ← Back to departments
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </AnimatePresence>
@@ -1000,805 +524,354 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('marketing');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
-  const [user, setUser] = useState(null);
-
-  // V38: Engagement Intent State
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
   const [selectedIntent, setSelectedIntent] = useState(null);
-
-  // V38: New States
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [videoPlayCount, setVideoPlayCount] = useState(0);
-  const [showLeadCapture, setShowLeadCapture] = useState(false);
-
-  const [portfolioData, setPortfolioData] = useState(PORTFOLIO_DATA);
-  const [strategyFeed, setStrategyFeed] = useState([]);
-
-  // Form State
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', lens: '', budget: '', timeline: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [formError, setFormError] = useState('');
-
-  // FAQ state
   const [openFAQ, setOpenFAQ] = useState(0);
+  const [user, setUser] = useState(null);
+  const [strategyFeed, setStrategyFeed] = useState([]);
+  const [formData, setFormData] = useState({ name: '', email: '', budget: '' });
+  const [step, setStep] = useState(1);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  // Mouse Parallax for Hero
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePos({
-        x: (e.clientX / window.innerWidth) - 0.5,
-        y: (e.clientY / window.innerHeight) - 0.5
-      });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+    if (loadStatus < 100) {
+      const timer = setTimeout(() => setLoadStatus(prev => prev + 4), 20);
+      return () => clearTimeout(timer);
+    } else {
+      setIsInitialized(true);
+      const allSocials = [...PORTFOLIO_DATA.builders.social, ...PORTFOLIO_DATA.founders.social, ...PORTFOLIO_DATA.marketing.social];
+      setStrategyFeed(shuffleArray(allSocials));
+    }
+  }, [loadStatus]);
 
   useEffect(() => {
     if (!auth) return;
     const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (e) { console.error("Auth System Error", e); }
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
+      else await signInAnonymously(auth);
     };
     initAuth();
     const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
   }, []);
 
-  // --- RANDOMIZATION ON INIT ---
-  useEffect(() => {
-    if (loadStatus < 100) {
-      const timer = setTimeout(() => setLoadStatus(prev => prev + 4), 20);
-      return () => clearTimeout(timer);
-    } else {
-      const randomizedPortfolio = { ...PORTFOLIO_DATA };
-      Object.keys(randomizedPortfolio).forEach(key => {
-        randomizedPortfolio[key] = {
-          campaigns: shuffleArray([...PORTFOLIO_DATA[key].campaigns]),
-          social: shuffleArray([...PORTFOLIO_DATA[key].social])
-        };
-      });
-      setPortfolioData(randomizedPortfolio);
-
-      const allSocials = [
-        ...PORTFOLIO_DATA.builders.social,
-        ...PORTFOLIO_DATA.founders.social,
-        ...PORTFOLIO_DATA.marketing.social
-      ];
-      setStrategyFeed(shuffleArray(allSocials));
-
-      setTimeout(() => setIsInitialized(true), 400);
-    }
-  }, [loadStatus]);
-
-  // V38: Handlers
-  const openCalendar = () => setIsCalendarOpen(true);
-  const closeCalendar = () => setIsCalendarOpen(false);
-
-  const handleVideoPlay = (video) => {
-    setSelectedVideo(video);
-    const newCount = videoPlayCount + 1;
-    setVideoPlayCount(newCount);
-    sessionStorage.setItem('videoPlays', newCount.toString());
-
-    if (newCount === 3 && !showLeadCapture) {
-      setShowLeadCapture(true);
-    }
-  };
-
-  const handleInquirySubmit = async (finalPhaseData = {}) => {
-    setIsSubmitting(true);
-    setFormError('');
-    const fullLead = {
-      ...formData,
-      ...finalPhaseData,
-      intent: selectedIntent?.title || 'General Inquiry' // Tag the intent
-    };
-
-    try {
-      if (db && user) {
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'leads'), {
-          ...fullLead,
-          createdAt: serverTimestamp(),
-          source: 'AOM_V38_FULL_ARCHIVE'
-        });
-      }
-      const response = await fetch("https://formspree.io/f/xbdalqvg", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subject: `AOM BRIEF: ${fullLead.name} - ${fullLead.lens}`,
-          ...fullLead
-        }),
-      });
-      if (response.ok) setIsSuccess(true);
-      else throw new Error("Sync Error");
-    } catch (err) {
-      setFormError("System Timeout. Please email hello@aom-inhouse.com");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const closeBrief = () => {
-    setIsInquiryOpen(false);
-    setIsSuccess(false);
-    setStep(1);
-    setFormError('');
-    // Note: We do NOT clear selectedIntent here, allowing them to re-open with context
-  };
-
   const openBrief = () => setIsInquiryOpen(true);
+  const closeBrief = () => { setIsInquiryOpen(false); setIsSuccess(false); setStep(1); };
+  const openPhone = () => setIsPhoneModalOpen(true);
+  const closePhone = () => setIsPhoneModalOpen(false);
 
-  // Memoized Data for Render
-  const activeCampaigns = useMemo(() => portfolioData?.[activeTab]?.campaigns ?? [], [portfolioData, activeTab]);
-  const allSocials = useMemo(() => strategyFeed, [strategyFeed]);
-
-  // --- VIDEO TOTAL (THE "IT'S IN THE CODE" JOKE, LITERALLY) ---
-  const videoTotal = useMemo(() => {
-    const cats = Object.values(portfolioData || {});
-    return cats.reduce((acc, cat) => acc + (cat?.campaigns?.length || 0) + (cat?.social?.length || 0), 0);
-  }, [portfolioData]);
-
-  if (!isInitialized) {
-    return (
-      <div className="fixed inset-0 bg-[#020202] flex flex-col items-center justify-center p-8 z-[1000]">
-        <div className="w-full max-w-xs text-center">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h1 className="text-4xl font-black italic tracking-tighter text-white mb-3">AOM<span className="text-orange-600">.</span></h1>
-          </motion.div>
-          <div className="h-[2px] bg-white/10 w-full relative overflow-hidden mt-8 rounded-full">
-            <motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.8)]" />
-          </div>
-          <div className="mt-4 font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
-            <ScrambleText text="Loading AOM..." />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!isInitialized) return <div className="fixed inset-0 bg-[#020202] flex items-center justify-center p-8 z-[1000]"><div className="w-64 h-[2px] bg-white/10 relative overflow-hidden rounded-full"><motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-orange-600" /></div></div>;
 
   return (
-    <main className="bg-[#020202] text-zinc-100 min-h-screen font-sans selection:bg-orange-600 overflow-x-hidden antialiased text-left cursor-default pb-16">
+    <main className="bg-[#020202] text-zinc-100 min-h-screen font-sans selection:bg-orange-600 overflow-x-hidden antialiased pb-16">
       <TextureOverlay />
-
-      {/* --- SYSTEM TICKER (FIXED BOTTOM) --- */}
-      <SystemTicker onOpenBrief={openBrief} onOpenCalendar={openCalendar} />
-
-      {/* --- CREATIVE BRIEF MODAL --- */}
-      <AnimatePresence>
-        {isInquiryOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto">
-            <div className="w-full max-w-lg p-8 md:p-12 border border-white/10 bg-[#0a0a0a] relative shadow-2xl rounded-xl my-auto">
-              <button onClick={closeBrief} className="absolute top-6 right-6 text-zinc-500 hover:text-white"><X size={24} /></button>
-
-              {!isSuccess ? (
-                <div className="space-y-8">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
-                        <ScrambleText text="Start Your Project" />
-                      </span>
-                      <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build this<span className="text-orange-600">.</span></h2>
-                    </div>
-                    {selectedIntent && (
-                      <div className="hidden sm:flex flex-col items-end">
-                        <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mb-1">Focus</span>
-                        <span className="bg-orange-600/20 text-orange-500 border border-orange-600/40 px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-widest">
-                          {selectedIntent.title}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <AnimatePresence mode="wait">
-                    <motion.div key={step} initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="min-h-[300px] flex flex-col justify-center">
-                      {step === 1 && (
-                        <div className="space-y-6">
-                          <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-4">Your Info:</p>
-                          <div className="space-y-4">
-                            <input type="text" placeholder="NAME" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
-                            <input type="email" placeholder="EMAIL ADDRESS" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
-                            <input type="tel" placeholder="PHONE (OPTIONAL)" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
-                          </div>
-                          {formError && <div className="text-orange-500 text-xs mt-2 font-mono uppercase">{formError}</div>}
-                          <button onClick={() => (formData.name && formData.email) ? setStep(2) : setFormError("NAME & EMAIL REQUIRED")} className="w-full bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-widest py-4 rounded-sm hover:from-orange-500 hover:to-orange-400 transition-all mt-6 shadow-[0_0_20px_rgba(255,79,0,0.4)]">Next</button>
-
-                          {/* Escape hatch */}
-                          <div className="text-center pt-4 border-t border-white/10">
-                            <p className="text-zinc-600 text-xs mb-3 font-mono uppercase tracking-widest">Prefer to just talk?</p>
-                            <button onClick={() => { closeBrief(); openCalendar(); }} className="text-orange-500 hover:text-orange-400 text-sm font-bold uppercase tracking-widest flex items-center gap-2 mx-auto">
-                              <Calendar size={14} />
-                              Book 15-Min Call Instead
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {step === 2 && (
-                        <div className="space-y-8">
-                          <div className="space-y-3">
-                            <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">Budget Range:</p>
-                            {BUDGET_OPTIONS.map(opt => (
-                              <button
-                                key={opt}
-                                onClick={() => setFormData({ ...formData, budget: opt })}
-                                className={`w-full p-5 border rounded-sm flex justify-between items-center text-left group transition-all ${formData.budget === opt ? 'border-orange-600 bg-orange-600/20' : 'border-white/5 bg-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-600'}`}
-                              >
-                                <span className="font-bold italic text-xl tracking-tighter">{opt}</span>
-                                {formData.budget === opt ? <CheckCircle2 size={18} className="text-orange-600" /> : <ChevronRight size={18} className="text-zinc-600 group-hover:text-white" />}
-                              </button>
-                            ))}
-                          </div>
-
-                          <div className="space-y-3">
-                            <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">Timeline:</p>
-                            {TIMELINE_OPTIONS.map(opt => (
-                              <button
-                                key={opt}
-                                disabled={isSubmitting || !formData.budget}
-                                onClick={() => handleInquirySubmit({ timeline: opt })}
-                                className="w-full p-5 border border-white/5 bg-white/5 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all rounded-sm flex justify-between items-center text-left group disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <span className="font-bold uppercase tracking-widest text-sm">{opt}</span>
-                                {isSubmitting ? <Loader2 size={18} className="animate-spin text-white" /> : <ChevronRight size={18} className="text-zinc-600 group-hover:text-white" />}
-                              </button>
-                            ))}
-                          </div>
-
-                          <button onClick={() => setStep(1)} className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest hover:text-white mt-8 self-start font-mono">← Back</button>
-                        </div>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <CheckCircle2 size={64} className="mx-auto text-orange-600 mb-6" />
-                  <h2 className="text-4xl font-black text-white mb-4 italic uppercase tracking-tighter">Received<span className="text-orange-600">.</span></h2>
-                  <p className="text-zinc-400 text-sm mb-8 font-mono uppercase tracking-widest">We'll be in touch shortly.</p>
-                  <button onClick={closeBrief} className="px-10 py-3 bg-white text-black font-black uppercase tracking-widest rounded-sm hover:bg-zinc-200 transition-colors">Close</button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* --- CALENDAR MODAL --- */}
-      <CalendarModal isOpen={isCalendarOpen} onClose={closeCalendar} />
-
-      {/* --- HUD NAVIGATION --- */}
-      <header className="fixed top-0 left-0 w-full z-[200] px-6 py-6 md:px-12 flex justify-between items-center bg-gradient-to-b from-black/90 to-transparent backdrop-blur-sm pointer-events-none">
-        <div className="cursor-pointer group pointer-events-auto" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter text-white transition-colors group-hover:text-orange-600">
-            AOM<span className="text-orange-600">.</span>
-          </h1>
+      <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />
+      
+      {/* HUD HEADER */}
+      <header className="fixed top-0 left-0 w-full z-[200] px-12 py-8 flex justify-between items-center bg-gradient-to-b from-black/90 to-transparent">
+        <h1 className="text-4xl font-black italic tracking-tighter text-white">AOM<span className="text-orange-600">.</span></h1>
+        <div className="flex gap-4">
+          <button onClick={openPhone} className="hidden md:flex px-6 py-2.5 bg-zinc-900 text-zinc-400 font-bold text-[11px] uppercase tracking-[0.2em] rounded-sm hover:text-white border border-white/5 transition-all">Call</button>
+          <button onClick={openBrief} className="px-8 py-2.5 bg-orange-600 text-white font-black text-[11px] uppercase tracking-[0.2em] rounded-sm hover:bg-orange-500 shadow-xl border border-white/10 transition-all">Get Started</button>
         </div>
-        <nav className="flex gap-10 items-center pointer-events-auto">
-          <a href="#work" className="hidden md:block text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors">
-            <ScrambleText text="Work" />
-          </a>
-          <a href="#system" className="hidden md:block text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors">
-            <ScrambleText text="Process" />
-          </a>
-          <a href="#proof" className="hidden md:block text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors">
-            <ScrambleText text="Why Us" />
-          </a>
-          <a href="#packages" className="hidden md:block text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors">
-            <ScrambleText text="Engagement" />
-          </a>
-          <button onClick={openBrief} className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black text-[11px] uppercase tracking-[0.2em] rounded-sm hover:from-orange-500 hover:to-orange-400 transition-all shadow-[0_0_15px_rgba(255,79,0,0.4)] hover:scale-105 active:scale-95 border border-white/10">
-            <ScrambleText text="Get Started" />
-          </button>
-        </nav>
       </header>
 
-      {/* --- HERO SECTION --- */}
-      <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative overflow-hidden pt-20">
-        <div className="absolute inset-0 z-0">
-          <iframe
-            src="https://play.gumlet.io/embed/698a6215aec3d4e420c317f7?autoplay=true&muted=true&loop=true&background=true"
-            className="w-full h-full object-cover opacity-30 scale-125 pointer-events-none grayscale-[0.2]"
-            allow="autoplay; encrypted-media"
-            title="AOM Master Reel Background"
-          />
+      {/* HERO SECTION */}
+      <section className="min-h-screen flex flex-col justify-center px-12 md:px-24 relative overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-30">
+          <iframe src="https://play.gumlet.io/embed/698a6215aec3d4e420c317f7?autoplay=true&muted=true&loop=true&background=true" className="w-full h-full object-cover grayscale" title="Phoenix Video Production Master Reel" />
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#020202] via-transparent to-black/40" />
         </div>
-
-        <div className="max-w-7xl mx-auto w-full relative z-10 text-left">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2 }}
-            style={{ x: mousePos.x * -20, y: mousePos.y * -20 }}
-          >
-            <div className="inline-flex items-center gap-4 mb-12 border-l-4 border-orange-600 pl-6">
-              <p className="text-orange-600 font-mono font-bold text-[11px] uppercase tracking-[0.4em]">
-                <ScrambleText text="Production Partners // Phoenix, AZ" />
-              </p>
-            </div>
-
-            <h2 className="text-[clamp(3.5rem,7.5vw,9rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic drop-shadow-2xl">
-              TEAMS WHO <br />
-              <TypewriterCycle
-                words={[
-                  "CLOSE FASTER",
-                  "RECRUIT BETTER",
-                  "RAISE CAPITAL",
-                  "OWN ATTENTION",
-                  "BUILD TRUST",
-                  "SCALE FASTER"
-                ]}
-              />
-              <br />
-              <span className="text-outline">USE STORY</span>
-            </h2>
+        <div className="max-w-7xl mx-auto w-full relative z-10">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
+            <div className="inline-flex items-center gap-4 mb-12 border-l-4 border-orange-600 pl-6"><p className="text-orange-600 font-mono font-bold text-[11px] uppercase tracking-[0.4em]">Phoenix Video Production // Arizona Branding</p></div>
+            <h2 className="text-[clamp(3.5rem,7.5vw,9rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic">PHOENIX TEAMS <br /><TypewriterCycle words={["CLOSE FASTER", "RECRUIT BETTER", "RAISE CAPITAL", "OWN ATTENTION", "BUILD TRUST", "SCALE FASTER"]} /><br /><span className="text-outline">WITH VIDEO</span></h2>
           </motion.div>
-
           <div className="mt-24 grid grid-cols-1 md:grid-cols-2 gap-20 items-end border-t border-white/10 pt-16">
-            <p className="text-xl md:text-2xl text-zinc-300 leading-relaxed max-w-xl font-medium drop-shadow-md">
-              We build repeatable story systems for Phoenix founders and developers: sales case studies, social content engines, and investor-ready narrative assets.
-              <span className="text-orange-500 font-black block mt-4">No Overhead. No Delays. Just Outcomes.</span>
-            </p>
-            <div className="flex justify-start md:justify-end">
-              <button onClick={openBrief} className="group flex items-center gap-6 text-white hover:text-orange-500 transition-colors">
-                <span className="text-3xl md:text-4xl font-black uppercase tracking-tighter border-b-2 border-white/10 pb-2 group-hover:border-orange-500 italic drop-shadow-lg">Let's Talk</span>
-                <Zap size={40} className="group-hover:scale-125 transition-transform text-orange-600 drop-shadow-lg" />
-              </button>
-            </div>
-          </div>
-
-          {/* Mini trust line: client reassurance right in hero */}
-          <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl border-t border-white/5 pt-10">
-            {[
-              { icon: ShieldCheck, title: "No chaos", body: "Defined pre-pro + shoot plan. Clean timeline." },
-              { icon: ScrollText, title: "Clear scope", body: "Assets mapped to outcomes, not vibes." },
-              { icon: Activity, title: "Repeatable output", body: "Systems so content doesn’t die after one shoot." },
-            ].map((x) => (
-              <div key={x.title} className="p-6 border border-white/10 bg-black/30 hover:border-orange-600/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <x.icon size={16} className="text-orange-600" />
-                  <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">{x.title}</p>
-                </div>
-                <p className="text-zinc-500 text-sm mt-4 leading-relaxed">{x.body}</p>
-              </div>
-            ))}
+            <p className="text-xl md:text-1xl text-zinc-300 leading-relaxed max-w-xl font-medium">AOM is a <strong>video production company in Phoenix</strong> building repeatable content systems for founders, developers, and SaaS teams.<span className="text-orange-500 font-black block mt-4">No agencies. No delays. Just outcomes.</span></p>
+            <div className="flex justify-start md:justify-end"><button onClick={openBrief} className="group flex items-center gap-6 text-white hover:text-orange-500 transition-colors"><span className="text-4xl font-black uppercase italic tracking-tighter border-b-2 border-white/10 pb-2 group-hover:border-orange-500 transition-all">Start Project</span><Zap size={40} className="group-hover:scale-125 transition-transform text-orange-600" /></button></div>
           </div>
         </div>
       </section>
 
-      {/* --- NEW: VIBE CHECK / BY THE NUMBERS --- */}
-      <VibeCheckSection videoTotal={videoTotal} companyTotal={60} travelTotal={11} />
-
-      {/* --- THE PORTFOLIO ARCHIVE --- */}
-      <section id="work" className="px-6 md:px-12 py-32 bg-[#050505] relative z-10 overflow-hidden">
-        <div className="max-w-screen-2xl mx-auto w-full">
-          <FadeIn>
-            <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12 border-b border-white/5 pb-12">
-              <div>
-                <RevealHeading className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                  <ScrambleText text="Our Work" />
-                </RevealHeading>
-
-                <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase leading-[0.8] italic">
-                  The<br />
-                  <span className="text-outline">Work</span>
-                  <span className="text-orange-600">.</span>
-                </h2>
+      {/* VIBE CHECK SECTION */}
+      <section className="px-6 md:px-12 py-32 bg-black border-t border-white/5 relative overflow-hidden">
+        <div className="max-w-screen-2xl mx-auto w-full relative z-10">
+          <FadeIn className="border-b border-white/10 pb-12 mb-14">
+            <div className="flex flex-col lg:flex-row items-end justify-between gap-10">
+              <div className="max-w-3xl">
+                <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block"><ScrambleText text="Market Authority" hover={false} /></span>
+                <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">Phoenix Production<br /><span className="text-outline">Proven Scale</span><span className="text-orange-600">.</span></h2>
+                <p className="text-zinc-400 text-sm md:text-base mt-8 leading-relaxed max-w-2xl">Operating as a story-driven <strong>video production company in Phoenix</strong>. We focus on outcome-driven content for Real Estate, SaaS, and Industrial brands where reliability is the baseline.</p>
               </div>
-
-              <div className="flex flex-col items-end gap-6">
-                <div className="flex items-center gap-2 text-orange-600 animate-pulse">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em]">SELECT THE MARKET THAT ALIGNS WITH YOU</span>
-                  <ArrowDownRight size={16} />
-                </div>
-                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                  {['marketing', 'builders', 'founders'].map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-10 py-4 text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:border-white/40 hover:text-white'}`}>
-                      {tab}
-                    </button>
-                  ))}
-                </div>
+              <div className="w-full lg:max-w-xl"><div className="p-6 md:p-7 border border-white/10 bg-zinc-900/20"><div className="flex items-center gap-3"><ShieldCheck className="text-orange-600" size={18} /><p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">The Quality Standard</p></div><p className="text-zinc-500 text-sm mt-5 leading-relaxed">We specialize in turnkey content engines for businesses in Scottsdale and the greater Phoenix area.</p></div></div>
+            </div>
+          </FadeIn>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <FadeIn className="lg:col-span-4"><VibeStat icon={Building2} kicker="Phoenix Impact" valueNode={<span><CountUp to={63} duration={1000} className="text-white" /><span className="text-orange-600">+</span></span>} sub="Supporting Arizona teams across, industrial services, hospitality, and STEAM." /></FadeIn>
+            <FadeIn className="lg:col-span-4" delay={0.1}><VibeStat icon={PlaneTakeoff} kicker="Regional Reach" valueNode={<span><CountUp to={34} duration={1100} className="text-white" /><span className="text-orange-600">+</span></span>} sub="Executing video production projects across the nation and even the globe for market leaders." accent /></FadeIn>
+            <FadeIn className="lg:col-span-4" delay={0.2}><VibeStat icon={Clapperboard} kicker="Assets Shipped" valueNode={<span><CountUp to={100} duration={1200} className="text-white" /><span className="text-orange-600">+</span></span>} sub="Professional video deliverables shipped to date—optimized for LinkedIn, web conversion, and sales cycles." /></FadeIn>
+          </div>
+          {/* REFINED CTA BOX - RESTORED */}
+          <FadeIn className="mt-10 border border-white/10 bg-zinc-900/10 p-8 md:p-12 relative overflow-hidden">
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16">
+              <div className="max-w-xl text-center md:text-left">
+                <p className="text-orange-600 text-[9px] font-mono font-bold uppercase tracking-[0.45em] mb-4"><ScrambleText text="Next Phase" hover={false} /></p>
+                <h3 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white leading-[1.1]">Enterprise look. <span className="text-outline">Lean crew</span>.</h3>
+                <p className="text-zinc-500 text-sm mt-4 leading-relaxed max-w-md mx-auto md:mx-0">Choose your path below to start building your authority engine. No drama. No delays.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+                <button onClick={openBrief} className="px-8 py-3.5 bg-orange-600 text-white font-black italic uppercase tracking-[0.2em] text-[10px] rounded-sm hover:bg-orange-500 transition-all shadow-[0_0_30px_rgba(255,79,0,0.2)] flex items-center justify-center gap-2.5 border border-white/10"><Zap size={14} className="fill-white" />Initiate Brief</button>
+                <button onClick={openPhone} className="px-8 py-3.5 bg-zinc-900 text-white font-black italic uppercase tracking-[0.2em] text-[10px] rounded-sm hover:bg-zinc-800 transition-all flex items-center justify-center gap-2.5 border border-white/5"><Phone size={14} className="text-orange-600" />Direct Call</button>
               </div>
             </div>
           </FadeIn>
+        </div>
+      </section>
 
-          <div className="space-y-32">
-            {/* Filterable Campaigns Loop */}
-            <div className="space-y-12">
-              <FadeIn>
-                <div className="flex items-center gap-4 mb-8">
-                  <Clapperboard size={24} className="text-orange-600" />
-                  <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">Cinematic Campaigns</h4>
+      {/* WORK / PORTFOLIO SECTION */}
+      <section id="work" className="px-12 py-32 bg-[#050505] relative z-10 overflow-hidden">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12 border-b border-white/5 pb-12">
+          <div><h2 className="text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-orange-600">.</span></h2></div>
+          <div className="flex gap-2">{['marketing', 'builders', 'founders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-10 py-4 text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:text-white'}`}>{tab}</button>)}</div>
+        </div>
+        <div className="space-y-32">
+          <InfiniteMarquee speed={120}>{PORTFOLIO_DATA[activeTab].campaigns.map((v, i) => <div key={i} className="mx-4"><VideoModule onPlay={setSelectedVideo} {...v} /></div>)}</InfiniteMarquee>
+          <InfiniteMarquee speed={80}>{strategyFeed.map((v, i) => <div key={i} className="mx-2"><VideoModule onPlay={setSelectedVideo} isVertical={true} {...v} /></div>)}</InfiniteMarquee>
+        </div>
+      </section>
+
+      {/* PROCESS SECTION: REVISED 4-STEP GRID */}
+      <section id="system" className="px-6 md:px-12 py-36 bg-black border-t border-white/5">
+        <div className="max-w-screen-2xl mx-auto w-full">
+          <div className="max-w-4xl mb-24">
+            <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-10 block"><ScrambleText text="Our Process" /></span>
+            <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">Strategy comes <br /><span className="text-outline">before</span> the camera.</h2>
+            <p className="text-zinc-400 text-lg md:text-xl mt-8 leading-relaxed max-w-2xl font-medium">A reliable delivery engine doesn't happen by accident. We map the entire asset lifecycle from day zero.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/5 border border-white/5">
+            {/* Step 01 */}
+            <div className="bg-black p-10 md:p-16 group hover:bg-zinc-900/40 transition-colors">
+              <div className="flex items-center justify-between mb-12">
+                <div className="w-16 h-16 bg-zinc-900 border border-white/10 flex items-center justify-center group-hover:bg-orange-600 transition-colors shadow-2xl">
+                  <Target size={28} className="text-white" />
                 </div>
-              </FadeIn>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <InfiniteMarquee speed={120}>
-                    {activeCampaigns.map((vid, idx) => (
-                      <div key={`${activeTab}-${idx}`} className="mx-4">
-                        <VideoModule onPlay={handleVideoPlay} {...vid} />
-                      </div>
-                    ))}
-                  </InfiniteMarquee>
-                </motion.div>
-              </AnimatePresence>
+                <span className="text-4xl font-black italic text-zinc-800 group-hover:text-orange-600/20 transition-colors">01</span>
+              </div>
+              <h4 className="text-3xl font-black text-white mb-6 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">The Story</h4>
+              <p className="text-zinc-400 text-lg leading-relaxed font-medium">We map out the narrative architecture before picking up a camera. Every frame is built with a high-intent business objective in mind.</p>
             </div>
 
-            {/* All Socials Loop - Independent of Tab */}
-            <div className="space-y-12">
-              <FadeIn>
-                <div className="flex items-center gap-4 mb-8">
-                  <Smartphone size={24} className="text-orange-600" />
-                  <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">Social Volume</h4>
+            {/* Step 02 */}
+            <div className="bg-black p-10 md:p-16 group hover:bg-zinc-900/40 transition-colors border-l-0 md:border-l border-white/5">
+              <div className="flex items-center justify-between mb-12">
+                <div className="w-16 h-16 bg-zinc-900 border border-white/10 flex items-center justify-center group-hover:bg-orange-600 transition-colors shadow-2xl">
+                  <Layers size={28} className="text-white" />
                 </div>
-              </FadeIn>
-              <InfiniteMarquee speed={80}>
-                {allSocials.map((vid, idx) => (
-                  <div key={`social-${idx}`} className="mx-2">
-                    <VideoModule onPlay={handleVideoPlay} isVertical={true} {...vid} />
-                  </div>
-                ))}
-              </InfiniteMarquee>
+                <span className="text-4xl font-black italic text-zinc-800 group-hover:text-orange-600/20 transition-colors">02</span>
+              </div>
+              <h4 className="text-3xl font-black text-white mb-6 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">The Production</h4>
+              <p className="text-zinc-400 text-lg leading-relaxed font-medium">Capture operations with cinema-grade workflows. You get a lean, efficient crew that respects your business operations and high stakes.</p>
+            </div>
+
+            {/* Step 03 */}
+            <div className="bg-black p-10 md:p-16 group hover:bg-zinc-900/40 transition-colors border-t border-white/5">
+              <div className="flex items-center justify-between mb-12">
+                <div className="w-16 h-16 bg-zinc-900 border border-white/10 flex items-center justify-center group-hover:bg-orange-600 transition-colors shadow-2xl">
+                  <Repeat size={28} className="text-white" />
+                </div>
+                <span className="text-4xl font-black italic text-zinc-800 group-hover:text-orange-600/20 transition-colors">03</span>
+              </div>
+              <h4 className="text-3xl font-black text-white mb-6 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">The Edit</h4>
+              <p className="text-zinc-400 text-lg leading-relaxed font-medium">We produce the high-impact hero asset, then slice for social, web, and internal use. Your output becomes a repeatable content engine using <strong>DaVinci Resolve</strong> for superior color and narrative precision.</p>
+            </div>
+
+            {/* Step 04 */}
+            <div className="bg-black p-10 md:p-16 group hover:bg-zinc-900/40 transition-colors border-t border-white/5 border-l-0 md:border-l">
+              <div className="flex items-center justify-between mb-12">
+                <div className="w-16 h-16 bg-zinc-900 border border-white/10 flex items-center justify-center group-hover:bg-orange-600 transition-colors shadow-2xl">
+                  <Truck size={28} className="text-white" />
+                </div>
+                <span className="text-4xl font-black italic text-zinc-800 group-hover:text-orange-600/20 transition-colors">04</span>
+              </div>
+              <h4 className="text-3xl font-black text-white mb-6 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">The Delivery</h4>
+              <p className="text-zinc-400 text-lg leading-relaxed font-medium">Assets are shipped on a defined cadence through our portal. No drama, no delays—just polished assets ready to move the needle.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* --- THE INFRASTRUCTURE (MOVED UP) --- */}
-      <SectionShell id="system" className="bg-black border-t border-white/5">
-        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
-          <div>
-            <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-10 block">
-              <ScrambleText text="Our Process" />
-            </span>
-            <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-20 uppercase italic leading-[0.85]">
-              Strategy comes <br />
-              <span className="text-outline">before</span> the camera.
-            </h2>
-            <div className="space-y-20">
-              <div className="flex gap-10 group cursor-default">
-                <div className="w-20 h-20 bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-600 transition-colors shadow-2xl">
-                  <Target size={32} className="text-white" />
-                </div>
-                <div className="max-w-md">
-                  <h4 className="text-3xl font-black text-white mb-4 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">01. The Plan</h4>
-                  <p className="text-zinc-400 text-lg leading-relaxed font-medium">We map out the assets you need to sell and grow before we pick up a camera. Every frame is built with high-intent objective.</p>
-                </div>
-              </div>
-              <div className="flex gap-10 group cursor-default">
-                <div className="w-20 h-20 bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-600 transition-colors shadow-2xl">
-                  <Layers size={32} className="text-white" />
-                </div>
-                <div className="max-w-md">
-                  <h4 className="text-3xl font-black text-white mb-4 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">02. Production</h4>
-                  <p className="text-zinc-400 text-lg leading-relaxed font-medium">Capture operations at scale with cinema-grade workflows. You get consistent updates, clear timelines, and zero friction.</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* ENGAGEMENT IDEAS - FULL SUITE RESTORED */}
+      <section id="packages" className="px-6 md:px-12 py-36 bg-[#050505] border-t border-white/5">
+        <div className="max-w-screen-2xl mx-auto w-full">
+          <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/10 pb-12">
+            <div><span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block"><ScrambleText text="How We Partner" /></span><h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">Identify<br /><span className="text-outline">Your Needs</span><span className="text-orange-600">.</span></h2></div>
+            <div className="max-w-xl"><p className="text-zinc-400 text-sm md:text-base leading-relaxed">We solve business problems through <strong>corporate video production in Phoenix</strong>. Select the statement that sounds like you to get started.</p></div>
+          </FadeIn>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={setSelectedIntent} />)}</div>
+        </div>
+      </section>
 
-          {/* --- REEL PREVIEW DECK --- */}
-          <div className="relative w-full aspect-square lg:aspect-auto lg:h-[700px] bg-zinc-900/50 rounded-sm overflow-hidden border border-white/10 shadow-2xl flex flex-col group">
-            <div className="absolute top-0 left-0 w-full z-20 p-6 bg-gradient-to-b from-black/90 to-transparent flex justify-between items-start pointer-events-none">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-600 rounded-full animate-pulse" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-white">Recent Projects</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/50">
-                <span className="text-[9px] font-mono uppercase tracking-widest hidden sm:inline-block">Swipe to navigate</span>
-                <ArrowRight size={14} />
+      {/* GEAR RENTALS & TECH TOOLKIT */}
+      <section id="gear" className="px-6 md:px-12 py-36 bg-black relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600/20 blur-[120px]" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-zinc-900/40 blur-[120px]" />
+        </div>
+
+        <div className="max-w-screen-2xl mx-auto w-full relative z-10">
+          <div className="flex flex-col lg:flex-row gap-20 items-start">
+            <div className="lg:w-1/2">
+              <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-10 block"><ScrambleText text="The Toolkit" /></span>
+              <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] mb-12">The<br /><span className="text-outline">Industrial</span><br />Arsenal<span className="text-orange-600">.</span></h2>
+              
+              <div className="p-10 border border-orange-600/20 bg-orange-600/5 rounded-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-100 transition-opacity">
+                  <Video size={48} className="text-orange-600" />
+                </div>
+                <p className="text-orange-600 font-mono font-bold text-[10px] uppercase tracking-[0.4em] mb-4 italic">Star of the Show</p>
+                <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-6">Ronin 4D 6K/8K Suite</h3>
+                <p className="text-zinc-400 text-lg leading-relaxed mb-10 max-w-xl">
+                  Cinema-grade stabilization with a fully integrated LiDAR system. We rent our Ronin 4D kit (full essentials, minus wireless monitors). Whether you need the gear or the operators, we deliver the precision.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <button onClick={() => window.location.href = `tel:${RENTAL_REALESTATE_PHONE}`} className="px-8 py-3 bg-white text-black font-black uppercase text-[10px] tracking-widest hover:bg-zinc-200 transition-all flex items-center gap-2">
+                    <Download size={14} /> Rent Gear: 480-695-4462
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="flex-1 overflow-x-auto flex items-center gap-4 p-8 no-scrollbar cursor-grab active:cursor-grabbing">
-              {strategyFeed.map((vid, idx) => (
-                <div key={idx} className="relative min-w-[300px] h-[90%] snap-center shrink-0 transform transition-transform duration-500 hover:scale-105 hover:z-10 border border-white/5 bg-zinc-950">
-                  <VideoModule {...vid} isVertical={true} onPlay={handleVideoPlay} />
+
+            <div className="lg:w-1/2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { 
+                  icon: Mic, 
+                  title: "Audio Precision", 
+                  desc: "Wireless lav suites + professional boom mics. Hire us as a dedicated audio person or as part of a lean field crew." 
+                },
+                { 
+                  icon: MousePointer2, 
+                  title: "Resolve Grading", 
+                  desc: "Industry-standard DaVinci Resolve workflow. Superior color science and cinematic narrative assembly for every project." 
+                },
+                { 
+                  icon: Cpu, 
+                  title: "BTS & Ops", 
+                  desc: "Hire us as your Camera Operator for high-stakes shoots or dedicated Behind-The-Scenes (BTS) coverage." 
+                },
+                { 
+                  icon: Headphones, 
+                  title: "Audio Talent", 
+                  desc: "On-site monitoring and capture. We manage the soundscape so you can focus on the performance." 
+                }
+              ].map((tool, idx) => (
+                <div key={idx} className="p-8 border border-white/5 bg-zinc-900/30 hover:border-orange-600/20 transition-all">
+                  <tool.icon size={28} className="text-orange-600 mb-8" />
+                  <h4 className="text-xl font-black text-white uppercase italic tracking-tighter mb-4">{tool.title}</h4>
+                  <p className="text-zinc-500 text-sm leading-relaxed">{tool.desc}</p>
                 </div>
               ))}
             </div>
-            <div className="absolute inset-0 pointer-events-none border-[0.5px] border-white/5 rounded-sm" />
           </div>
         </div>
-      </SectionShell>
+      </section>
 
-      {/* --- CLIENT PROOF LAYER --- */}
-      <SectionShell id="proof" className="bg-black border-t border-white/5">
+      {/* REASSURANCE / FAQ */}
+      <section id="reassurance" className="px-6 md:px-12 py-36 bg-black border-t border-white/5">
         <div className="max-w-screen-2xl mx-auto w-full">
-          <div className="flex flex-col lg:flex-row items-end justify-between gap-12 border-b border-white/10 pb-12 mb-16">
+          <FadeIn className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-24">{TESTIMONIALS.map((t, i) => <TestimonialCard key={i} t={t} />)}</FadeIn>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             <div>
-              <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                <ScrambleText text="Why Us" />
-              </span>
-              <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">
-                The reason<br />
-                <span className="text-outline">this</span> works<span className="text-orange-600">.</span>
-              </h2>
-              <p className="text-zinc-400 text-base md:text-lg max-w-2xl mt-10 leading-relaxed">
-                You’re not buying “a video.” You’re buying an operating system for trust, attention, and authority. This section exists because humans love uncertainty and we’re forced to accommodate that.
-              </p>
+              <div className="flex items-center gap-3 mb-8"><ShieldCheck className="text-orange-600" size={18} /><h3 className="text-3xl font-black italic uppercase tracking-tighter text-white">FAQ</h3></div>
+              <div className="space-y-3">{FAQS.map((f, i) => <FAQItem key={i} item={f} open={openFAQ === i} onToggle={() => setOpenFAQ(openFAQ === i ? -1 : i)} />)}</div>
             </div>
-            <div className="w-full lg:max-w-lg">
-              <LogoTicker />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {TRUST_METRICS.map((m) => (
-              <StatCard key={m.label} {...m} />
-            ))}
-          </div>
-
-          <div className="mt-16">
-            <MidCTA onOpenBrief={openBrief} />
-          </div>
-        </div>
-      </SectionShell>
-
-      {/* --- ENGAGEMENT IDEAS (V38 REPLACEMENT) --- */}
-      <SectionShell id="packages" className="bg-[#050505] border-t border-white/5">
-        <div className="max-w-screen-2xl mx-auto w-full">
-          <div className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/10 pb-12">
-            <div>
-              <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                <ScrambleText text="How We Partner" />
-              </span>
-              <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">
-                Identify<br />
-                <span className="text-outline">Your Needs</span><span className="text-orange-600">.</span>
-              </h2>
-            </div>
-            <div className="max-w-xl">
-              <p className="text-zinc-400 text-sm md:text-base leading-relaxed">
-                We don't sell cookie-cutter packages. We solve business problems. Select the statement that sounds like you to get started.
-              </p>
-              {selectedIntent && (
-                <button onClick={openBrief} className="mt-8 flex items-center gap-3 bg-gradient-to-r from-orange-600 to-orange-500 text-white px-8 py-3 rounded-sm font-black uppercase tracking-widest text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-lg animate-pulse">
-                  <span>Start Project: {selectedIntent.title}</span>
-                  <ArrowRight size={16} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
-            {ENGAGEMENT_IDEAS.map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                isSelected={selectedIntent?.id === idea.id}
-                onSelect={setSelectedIntent}
-              />
-            ))}
-          </div>
-        </div>
-      </SectionShell>
-
-      {/* --- PROCESS --- */}
-      <SectionShell id="process" className="bg-black border-t border-white/5">
-        <div className="max-w-screen-2xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
-          <div>
-            <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-8 block">
-              <ScrambleText text="What Happens Next" />
-            </span>
-            <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-[0.9]">
-              Simple.<br />
-              <span className="text-outline">Structured</span>.<br />
-              Repeatable<span className="text-orange-600">.</span>
-            </h2>
-            <p className="text-zinc-400 text-sm md:text-base mt-10 leading-relaxed max-w-xl">
-              Clients care about two things: not wasting time and not looking stupid. This process covers both.
-            </p>
-
-            <div className="mt-10 p-8 border border-white/10 bg-zinc-900/20">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="text-orange-600" size={18} />
-                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">Standard Standards</p>
-              </div>
-              <ul className="mt-6 space-y-3 text-zinc-400 text-sm">
-                {[
-                  "Pre-pro checklist + shot map",
-                  "Clear deliverables + export formats",
-                  "On-set efficiency + timeline control",
-                  "Consistent post pipeline and review"
-                ].map((x) => (
-                  <li key={x} className="flex items-start gap-3">
-                    <CheckCircle2 size={16} className="text-orange-600 mt-0.5" />
-                    <span>{x}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="space-y-14 border-l border-white/10 pl-6 md:pl-10">
-            <ProcessStep
-              idx={1}
-              icon={Target}
-              title="Blueprint"
-              body="We lock objectives, story spine, deliverables, and what the asset must do (trust, sales, recruiting, launch, etc.)."
-            />
-            <ProcessStep
-              idx={2}
-              icon={Layers}
-              title="Capture"
-              body="Efficient crew, cinema-grade workflow, and a plan that respects your business operations."
-            />
-            <ProcessStep
-              idx={3}
-              icon={Activity}
-              title="Edit + Systems"
-              body="We produce the hero, then slice for social and web. Your output becomes a repeatable content engine."
-            />
-            <div className="pt-6">
-              <button
-                onClick={openBrief}
-                className="w-full md:w-auto px-10 py-4 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.25em] text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-[0_0_30px_rgba(255,79,0,0.35)] border border-white/10"
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-        </div>
-      </SectionShell>
-
-      {/* --- TESTIMONIALS + FAQ --- */}
-      <SectionShell id="reassurance" className="bg-[#050505] border-t border-white/5">
-        <div className="max-w-screen-2xl mx-auto w-full">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-16 border-b border-white/10 pb-12">
-            <div>
-              <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                <ScrambleText text="What Clients Say" />
-              </span>
-              <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">
-                Clients<br />
-                <span className="text-outline">say</span> this<span className="text-orange-600">.</span>
-              </h2>
-            </div>
-            <div className="max-w-xl">
-              <p className="text-zinc-400 text-sm md:text-base leading-relaxed">
-                Social proof and clarity. Two things the internet keeps pretending it doesn’t need.
-              </p>
-              <button onClick={openBrief} className="mt-8 inline-flex items-center gap-3 px-8 py-3 bg-white text-black font-black uppercase tracking-[0.25em] text-[11px] hover:bg-zinc-200 transition-colors">
-                <Zap size={16} className="text-black" />
-                Start a Project
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {TESTIMONIALS.map((t, i) => (
-              <TestimonialCard key={i} t={t} />
-            ))}
-          </div>
-
-          <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            <div>
-              <div className="flex items-center gap-3 mb-8">
-                <ShieldCheck className="text-orange-600" size={18} />
-                <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white">FAQ</h3>
-                <span className="text-orange-600/40 text-[10px] font-mono uppercase tracking-[0.35em]">Read this before overthinking</span>
-              </div>
-              <div className="space-y-3">
-                {FAQS.map((f, idx) => (
-                  <FAQItem
-                    key={f.q}
-                    item={f}
-                    open={openFAQ === idx}
-                    onToggle={() => setOpenFAQ(openFAQ === idx ? -1 : idx)}
-                  />
-                ))}
-              </div>
-            </div>
-
             <div className="border border-white/10 bg-black/30 p-10 rounded-sm">
-              <div className="flex items-center gap-3">
-                <BadgeCheck className="text-orange-600" size={18} />
-                <h3 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-white">Fit Check</h3>
-              </div>
-              <p className="text-zinc-400 text-sm md:text-base mt-6 leading-relaxed">
-                This is a good fit if you want assets that make you look established, remove friction in sales, and create consistent output without babysitting a production.
-              </p>
-
+              <div className="flex items-center gap-3"><BadgeCheck className="text-orange-600" size={18} /><h3 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-white">Fit Check</h3></div>
+              <p className="text-zinc-400 text-sm md:text-base mt-6 leading-relaxed">This is a good fit if you want assets that make you look established, remove friction in sales, and create consistent output without babysitting a production.</p>
               <div className="mt-10 space-y-4">
-                {[
-                  { icon: ShieldCheck, title: "You value reliability", body: "You want a process, not a roulette wheel." },
-                  { icon: Target, title: "You want intent", body: "Every asset has a job: trust, convert, recruit, launch." },
-                  { icon: Sparkles, title: "You care about taste", body: "Cinematic quality, but built for business." },
-                ].map((x) => (
-                  <div key={x.title} className="flex items-start gap-4 p-5 border border-white/10 bg-zinc-900/20">
-                    <x.icon className="text-orange-600 mt-1" size={18} />
-                    <div>
-                      <p className="text-white font-black uppercase tracking-[0.18em] text-[11px]">{x.title}</p>
-                      <p className="text-zinc-500 text-sm mt-2 leading-relaxed">{x.body}</p>
-                    </div>
-                  </div>
+                {[{ icon: ShieldCheck, title: "You value reliability", body: "You want a process, not a roulette wheel." }, { icon: Target, title: "You want intent", body: "Every asset has a job: trust, convert, recruit, launch." }].map(x => (
+                  <div key={x.title} className="flex items-start gap-4 p-5 border border-white/10 bg-zinc-900/20"><x.icon className="text-orange-600 mt-1" size={18} /><div><p className="text-white font-black uppercase tracking-[0.18em] text-[11px]">{x.title}</p><p className="text-zinc-500 text-sm mt-2 leading-relaxed">{x.body}</p></div></div>
                 ))}
               </div>
-
-              <button
-                onClick={openBrief}
-                className="mt-10 w-full px-10 py-4 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.25em] text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-[0_0_30px_rgba(255,79,0,0.35)] border border-white/10"
-              >
-                Start a Project
-              </button>
+              <button onClick={openBrief} className="mt-10 w-full px-10 py-4 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.25em] text-[11px] hover:from-orange-500 transition-all shadow-2xl border border-white/10">Start a Project</button>
             </div>
           </div>
         </div>
-      </SectionShell>
+      </section>
 
-      {/* --- FOOTER --- */}
-      <footer className="px-6 md:px-12 py-48 border-t border-white/5 bg-[#020202] relative overflow-hidden text-center pb-64">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-orange-950/20 via-transparent to-transparent pointer-events-none" />
-        <div className="max-w-screen-2xl mx-auto w-full">
-          <h2 className="text-6xl md:text-[10rem] font-black text-white tracking-tighter mb-24 uppercase italic leading-[0.8] relative z-10">Ready to <span className="text-orange-600">Execute?</span></h2>
-          <button onClick={openBrief} className="relative z-10 px-24 py-10 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black uppercase tracking-[0.4em] text-sm hover:from-orange-500 hover:to-orange-400 transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_80px_rgba(255,79,0,0.3)] clip-path-slant border border-white/10">
-            Start Project
-          </button>
-
-          <div className="mt-48 grid grid-cols-1 md:grid-cols-3 gap-20 text-left border-t border-white/5 pt-16 relative z-10">
-            <div>
-              <h6 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-6 italic">Location</h6>
-              <p className="text-white text-3xl font-black italic tracking-tighter">PHOENIX_AZ</p>
-              <p className="text-zinc-600 text-[10px] font-mono mt-1 uppercase tracking-widest italic italic">Operational Headquarters</p>
+      {/* FOOTER */}
+      <footer className="px-12 py-48 border-t border-white/5 bg-[#020202] text-left">
+        <div className="max-w-screen-2xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-24">
+          <div className="lg:col-span-8">
+            <h2 className="text-[clamp(4rem,10vw,10rem)] font-black text-white tracking-tighter uppercase italic leading-[0.8]">Ready to <br /><span className="text-orange-600">Scale?</span></h2>
+            <div className="mt-20 flex flex-wrap gap-12">
+              <div><p className="text-orange-600 font-black uppercase text-xs tracking-widest mb-4">Production</p><button onClick={() => window.location.href = `tel:${MAIN_PHONE}`} className="text-white text-3xl font-black italic tracking-tighter hover:text-orange-600 transition-colors">602-373-2164</button></div>
+              <div><p className="text-orange-600 font-black uppercase text-xs tracking-widest mb-4">Rentals & RE</p><button onClick={() => window.location.href = `tel:${RENTAL_REALESTATE_PHONE}`} className="text-white text-3xl font-black italic tracking-tighter hover:text-orange-600 transition-colors">480-695-4462</button></div>
+              <div><p className="text-orange-600 font-black uppercase text-xs tracking-widest mb-4">Contact</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-black italic tracking-tighter hover:text-orange-500 transition-colors">HELLO@AOM-INHOUSE.COM</a></div>
             </div>
-            <div>
-              <h6 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-6 italic">Say Hello</h6>
-              <a href="mailto:hello@aom-inhouse.com" className="text-white text-4xl font-black italic tracking-tighter hover:text-orange-500 transition-colors underline decoration-white/10 decoration-1 underline-offset-8">HELLO@AOM-INHOUSE.COM</a>
-            </div>
-            <div className="text-right flex flex-col justify-end">
-              <div className="flex gap-8 justify-end text-[11px] font-black text-zinc-600 uppercase tracking-widest italic italic">
-                {['INSTAGRAM', 'LINKEDIN', 'VIMEO'].map(s => <a key={s} href="#" className="hover:text-white transition-colors"><ScrambleText text={s} hover={true} /></a>)}
-              </div>
-              <p className="text-zinc-700 text-[10px] font-mono mt-8 uppercase tracking-[0.2em]">AHEAD OF MARKET © 2024</p>
-            </div>
+          </div>
+          <div className="lg:col-span-4 border-l border-white/10 pl-12">
+            <p className="text-orange-600 font-black uppercase text-xs tracking-widest mb-8">Service Areas</p>
+            <ul className="space-y-4 text-zinc-400 font-mono text-sm uppercase tracking-widest">
+              <li className="flex items-center gap-2"><MapPin size={14} className="text-orange-600" /> Phoenix, Scottsdale, Tempe</li>
+              <li className="flex items-center gap-2"><MapPin size={14} className="text-orange-600" /> Nationwide Travel</li>
+            </ul>
+            <div className="mt-16"><button onClick={openBrief} className="w-full py-6 bg-orange-600 text-white font-black uppercase tracking-[0.4em] text-sm hover:bg-orange-500 transition-all clip-path-slant shadow-2xl">Start Brief</button></div>
           </div>
         </div>
       </footer>
 
-      {/* --- STUDIO PLAYER MODAL --- */}
+      {/* MODALS */}
       <AnimatePresence>
-        {selectedVideo && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[2000] bg-black/98 flex items-center justify-center p-4 md:p-10 backdrop-blur-3xl">
-            <div className="absolute top-10 right-10 flex gap-4">
-              <button onClick={() => setSelectedVideo(null)} className="text-white hover:rotate-90 transition-all p-6 bg-white/5 hover:bg-orange-600/20 rounded-full border border-white/5">
-                <X size={36} />
-              </button>
-            </div>
-            <div className="w-full max-w-[1400px] aspect-video border border-white/5 bg-black shadow-2xl relative group/player overflow-hidden rounded-sm">
-              <iframe
-                src={getGumletPlayerEmbed(selectedVideo.url)}
-                className="w-full h-full border-none"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                title={selectedVideo.title}
-              />
-              <div className="absolute -bottom-16 left-0 w-full flex justify-between items-center text-zinc-700 font-mono text-[10px] uppercase tracking-[0.4em] px-4 italic italic">
-                <div className="flex items-center gap-3">
-                  <Activity size={10} className="text-orange-600 animate-pulse" />
-                  <span>Playing: {selectedVideo.title}</span>
+        {isInquiryOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+            <div className="w-full max-w-lg p-12 border border-white/10 bg-[#0a0a0a] relative shadow-2xl rounded-xl">
+              <button onClick={closeBrief} className="absolute top-6 right-6 text-zinc-500"><X size={24} /></button>
+              {!isSuccess ? (
+                <div className="space-y-8">
+                  <h2 className="text-4xl font-black text-white italic uppercase">Start Project<span className="text-orange-600">.</span></h2>
+                  {step === 1 ? (
+                    <div className="space-y-6">
+                      <input type="text" placeholder="NAME" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-transparent border-b border-white/20 py-4 outline-none focus:border-orange-600 uppercase font-bold" />
+                      <input type="email" placeholder="EMAIL" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-transparent border-b border-white/20 py-4 outline-none focus:border-orange-600 uppercase font-bold" />
+                      <button onClick={() => setStep(2)} className="w-full bg-orange-600 py-4 font-black italic uppercase shadow-xl hover:bg-orange-500 transition-all">Next</button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">{BUDGET_OPTIONS.map(o => <button key={o} onClick={() => setIsSuccess(true)} className="w-full p-4 border border-white/10 hover:bg-orange-600 transition-all uppercase font-bold italic text-left">{o}</button>)}</div>
+                  )}
                 </div>
-                <span>Source: AOM</span>
-              </div>
+              ) : (
+                <div className="text-center py-12"><CheckCircle2 size={48} className="mx-auto text-orange-600 mb-6" /><h3 className="text-3xl font-black italic text-white uppercase">Sent<span className="text-orange-600">.</span></h3><button onClick={closeBrief} className="mt-8 px-8 py-2 bg-white text-black font-black uppercase text-xs">Close</button></div>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      
+      <AnimatePresence>
+        {selectedVideo && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[2000] bg-black/98 flex items-center justify-center p-10 backdrop-blur-3xl">
+            <button onClick={() => setSelectedVideo(null)} className="absolute top-10 right-10 text-white p-4 bg-white/5 rounded-full"><X size={36} /></button>
+            <div className="w-full max-w-[1400px] aspect-video bg-black shadow-2xl relative"><iframe src={getGumletPlayerEmbed(selectedVideo.url)} className="w-full h-full border-none" allow="autoplay; fullscreen" title={selectedVideo.title} /></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <SystemTicker onOpenBrief={openBrief} onOpenPhone={openPhone} />
     </main>
   );
 }
+
+const TICKER_TEXTS = ["PHOENIX VIDEO PRODUCTION", "PARTNER VERIFIED // THE RIGHT TEAM", "REAL ESTATE MEDIA", "TURNKEY CONTENT SCALE", "AHEAD OF MARKET // EST 2021", "SCOTTSDALE BRAND NARRATIVE"];
+const SystemTicker = ({ onOpenBrief, onOpenPhone }) => (
+  <div className="fixed bottom-0 left-0 w-full z-[100] h-12 bg-black border-t border-zinc-800 flex items-center">
+    <div className="flex-1 overflow-hidden relative h-full flex items-center bg-black/90">
+      <div className="flex whitespace-nowrap animate-marquee items-center">{[...Array(4)].flatMap(() => TICKER_TEXTS).map((text, i) => <div key={i} className="flex items-center mx-6"><Radio size={12} className="text-orange-600 animate-pulse mr-3" /><span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.3em] flex items-center">{text}</span></div>)}</div>
+    </div>
+    <div className="h-full flex items-center pr-0 pl-0 relative z-20">
+      <button onClick={onOpenPhone} className="h-full px-6 bg-zinc-900 text-zinc-400 font-black italic uppercase tracking-[0.15em] text-[10px] hover:text-white transition-all flex items-center gap-2 border-l border-zinc-800"><Phone size={14} /><span className="hidden sm:inline">Call</span></button>
+      <button onClick={onOpenBrief} className="h-full px-8 bg-orange-600 text-white font-black italic uppercase tracking-[0.15em] text-xs transition-all flex items-center gap-3 border-l border-orange-400/30 group"><Zap size={16} className="fill-white" /><span>Start Project</span></button>
+    </div>
+  </div>
+);
