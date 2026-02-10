@@ -3,8 +3,9 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import {
   X, ChevronRight, Loader2,
   Activity, Target, Layers, Zap, Smartphone, Clapperboard, CheckCircle2,
-  Volume2, ArrowRight, Radio,
-  ShieldCheck, Clock3, Users, Building2, BadgeCheck, Star, Sparkles, Coins, ScrollText
+  Volume2, ArrowRight, Radio, ArrowDownRight,
+  ShieldCheck, Clock3, Users, Building2, BadgeCheck, Star, Sparkles, Coins, ScrollText,
+  Lightbulb, Rocket, Repeat, Crown, Fingerprint, Mic2
 } from 'lucide-react';
 
 // --- FIREBASE & STORAGE CONFIG ---
@@ -58,39 +59,6 @@ const shuffleArray = (array) => {
 
 // --- MASTER PORTFOLIO LIBRARY ---
 const PORTFOLIO_DATA = {
-  builders: {
-    campaigns: [
-      { title: "To Have and To Host", sub: "Builder Showcase", url: "https://gumlet.tv/watch/698a68b7fc23d3d76fa970ef/", tags: ["Residential", "Build"] },
-      { title: "Abrazo Healthcare", sub: "HVAC Emergency Response", url: "https://gumlet.tv/watch/698a58aefc23d3d76fa7cdd6/", tags: ["Operations", "Service"] },
-      { title: "Memorial Towers", sub: "Crane Day Chillers", url: "https://gumlet.tv/watch/698a584faec3d4e420c20fef/", tags: ["Industrial", "Scale"] },
-      { title: "Refined Gardens Dieon", sub: "Brand Authority", url: "https://gumlet.tv/watch/698a57fb873071aec5c94350/", tags: ["Landscaping", "Build"] },
-      { title: "Tree Guardian", sub: "Documentary Episode", url: "https://gumlet.tv/watch/698a5e91873071aec5c9fc36/", tags: ["Doc", "Process"] },
-      { title: "Arizona Cleantech", sub: "Sector Narrative", url: "https://gumlet.tv/watch/698a57da873071aec5c93fa0/", tags: ["Industrial", "Green"] }
-    ],
-    social: [
-      { title: "Primrose Ambition", sub: "Mechanical Update", url: "https://gumlet.tv/watch/698a581daec3d4e420c20b94/", tags: ["9:16", "Build"] },
-      { title: "Tiffanys Fashion Square", sub: "Luxury Walkthrough", url: "https://gumlet.tv/watch/698a580bfc23d3d76fa7bd7c/", tags: ["9:16", "Luxury"] },
-      { title: "NGOTS Restoration", sub: "Service Spotlight", url: "https://gumlet.tv/watch/698a5a7d873071aec5c99b08/", tags: ["9:16", "Industrial"] },
-    ]
-  },
-  founders: {
-    campaigns: [
-      { title: "What is Abstrakt?", sub: "Automated Sales", url: "https://gumlet.tv/watch/698a5faffc23d3d76fa8909f/", tags: ["SaaS", "B2B"] },
-      { title: "Reelay Explainer", sub: "SaaS Clarity", url: "https://gumlet.tv/watch/698a5aa5aec3d4e420c263c4/", tags: ["Software", "Tech"] },
-      { title: "Intelliplay Demo", sub: "Product Story", url: "https://gumlet.tv/watch/698a5386aec3d4e420c17a69/", tags: ["UX", "Product"] },
-      { title: "N2 Local News", sub: "Platform Re-imagined", url: "https://gumlet.tv/watch/698a5b26aec3d4e420c27039/", tags: ["Media", "Tech"] },
-      { title: "NEB Docs / HUUB", sub: "SaaS Case Study", url: "https://gumlet.tv/watch/698a63acfc23d3d76fa8f585/", tags: ["GovTech", "Doc"] },
-      { title: "ASU Peoria Forward", sub: "Innovation Hub", url: "https://gumlet.tv/watch/698a6127873071aec5ca3b36/", tags: ["Edu", "Tech"] },
-      { title: "Gitex Dubai", sub: "Global Tech Expo", url: "https://gumlet.tv/watch/698a6227fc23d3d76fa8cd57/", tags: ["International"] },
-      { title: "Founders Retreat", sub: "Cultural Highlight", url: "https://gumlet.tv/watch/698a5b05873071aec5c9a7cd/", tags: ["Founders", "Culture"] },
-      { title: "IAAPA 2026", sub: "Event Recap", url: "https://gumlet.tv/watch/698a5391aec3d4e420c17bd3/", tags: ["Event", "Scale"] },
-      { title: "ISA Validation", sub: "Research Study", url: "https://gumlet.tv/watch/698a52b6fc23d3d76fa70d75/", tags: ["Data", "Proof"] }
-    ],
-    social: [
-      { title: "IAAPA Day 2", sub: "Event Recap", url: "https://gumlet.tv/watch/698a5391873071aec5c8b654/", tags: ["9:16", "Event"] },
-      { title: "HUUB x Miss Dessert", sub: "Biz Spotlight", url: "https://gumlet.tv/watch/698a63ac873071aec5ca7db1/", tags: ["9:16", "Case Study"] }
-    ]
-  },
   marketing: {
     campaigns: [
       { title: "AOM Reel 2024", sub: "Master Production", url: "https://gumlet.tv/watch/698a6215aec3d4e420c317f7/", tags: ["Master", "Showreel"] },
@@ -123,6 +91,39 @@ const PORTFOLIO_DATA = {
       { title: "Cook & Craft Pretzel", sub: "Food Feature", url: "https://gumlet.tv/watch/698a53bcfc23d3d76fa736e4/", tags: ["9:16", "Food"] },
       { title: "Killer Whale Club", sub: "Nightlife Promo", url: "https://gumlet.tv/watch/698a5c0afc23d3d76fa83ba6/", tags: ["9:16", "Vibe"] },
     ]
+  },
+  builders: {
+    campaigns: [
+      { title: "To Have and To Host", sub: "Builder Showcase", url: "https://gumlet.tv/watch/698a68b7fc23d3d76fa970ef/", tags: ["Residential", "Build"] },
+      { title: "Abrazo Healthcare", sub: "HVAC Emergency Response", url: "https://gumlet.tv/watch/698a58aefc23d3d76fa7cdd6/", tags: ["Operations", "Service"] },
+      { title: "Memorial Towers", sub: "Crane Day Chillers", url: "https://gumlet.tv/watch/698a584faec3d4e420c20fef/", tags: ["Industrial", "Scale"] },
+      { title: "Refined Gardens Dieon", sub: "Brand Authority", url: "https://gumlet.tv/watch/698a57fb873071aec5c94350/", tags: ["Landscaping", "Build"] },
+      { title: "Tree Guardian", sub: "Documentary Episode", url: "https://gumlet.tv/watch/698a5e91873071aec5c9fc36/", tags: ["Doc", "Process"] },
+      { title: "Arizona Cleantech", sub: "Sector Narrative", url: "https://gumlet.tv/watch/698a57da873071aec5c93fa0/", tags: ["Industrial", "Green"] }
+    ],
+    social: [
+      { title: "Primrose Ambition", sub: "Mechanical Update", url: "https://gumlet.tv/watch/698a581daec3d4e420c20b94/", tags: ["9:16", "Build"] },
+      { title: "Tiffanys Fashion Square", sub: "Luxury Walkthrough", url: "https://gumlet.tv/watch/698a580bfc23d3d76fa7bd7c/", tags: ["9:16", "Luxury"] },
+      { title: "NGOTS Restoration", sub: "Service Spotlight", url: "https://gumlet.tv/watch/698a5a7d873071aec5c99b08/", tags: ["9:16", "Industrial"] },
+    ]
+  },
+  founders: {
+    campaigns: [
+      { title: "What is Abstrakt?", sub: "Automated Sales", url: "https://gumlet.tv/watch/698a5faffc23d3d76fa8909f/", tags: ["SaaS", "B2B"] },
+      { title: "Reelay Explainer", sub: "SaaS Clarity", url: "https://gumlet.tv/watch/698a5aa5aec3d4e420c263c4/", tags: ["Software", "Tech"] },
+      { title: "Intelliplay Demo", sub: "Product Story", url: "https://gumlet.tv/watch/698a5386aec3d4e420c17a69/", tags: ["UX", "Product"] },
+      { title: "N2 Local News", sub: "Platform Re-imagined", url: "https://gumlet.tv/watch/698a5b26aec3d4e420c27039/", tags: ["Media", "Tech"] },
+      { title: "NEB Docs / HUUB", sub: "SaaS Case Study", url: "https://gumlet.tv/watch/698a63acfc23d3d76fa8f585/", tags: ["GovTech", "Doc"] },
+      { title: "ASU Peoria Forward", sub: "Innovation Hub", url: "https://gumlet.tv/watch/698a6127873071aec5ca3b36/", tags: ["Edu", "Tech"] },
+      { title: "Gitex Dubai", sub: "Global Tech Expo", url: "https://gumlet.tv/watch/698a6227fc23d3d76fa8cd57/", tags: ["International"] },
+      { title: "Founders Retreat", sub: "Cultural Highlight", url: "https://gumlet.tv/watch/698a5b05873071aec5c9a7cd/", tags: ["Founders", "Culture"] },
+      { title: "IAAPA 2026", sub: "Event Recap", url: "https://gumlet.tv/watch/698a5391aec3d4e420c17bd3/", tags: ["Event", "Scale"] },
+      { title: "ISA Validation", sub: "Research Study", url: "https://gumlet.tv/watch/698a52b6fc23d3d76fa70d75/", tags: ["Data", "Proof"] }
+    ],
+    social: [
+      { title: "IAAPA Day 2", sub: "Event Recap", url: "https://gumlet.tv/watch/698a5391873071aec5c8b654/", tags: ["9:16", "Event"] },
+      { title: "HUUB x Miss Dessert", sub: "Biz Spotlight", url: "https://gumlet.tv/watch/698a63ac873071aec5ca7db1/", tags: ["9:16", "Case Study"] }
+    ]
   }
 };
 
@@ -138,47 +139,52 @@ const TRUST_LOGOS = [
   "REAL_ESTATE", "HOSPITALITY", "SAAS", "NONPROFIT", "EVENTS", "EDU", "HEALTHCARE", "INDUSTRIAL"
 ];
 
-const PACKAGES = [
+// --- NEW ENGAGEMENT INTENTS (V38) ---
+const ENGAGEMENT_IDEAS = [
   {
-    name: "Authority Sprint",
-    tag: "Best for: founders who need credibility fast",
-    price: "from $2–5k",
-    bullets: [
-      "Strategy call + messaging map",
-      "1 shoot block (half-day)",
-      "1 hero video + 3 social cuts",
-      "Color + sound polish"
-    ],
-    note: "Great when you need to look legit by next week.",
-    highlight: false
+    id: "launch",
+    icon: Rocket,
+    title: "The Big Launch",
+    statement: "We are bringing a new development or product to market and need a full asset suite to drive hype.",
+    price: "$10k+"
   },
   {
-    name: "Content Engine",
-    tag: "Best for: teams that need output every month",
-    price: "from $5–10k",
-    bullets: [
-      "Monthly capture block",
-      "1 flagship asset + 8–12 verticals",
-      "B-roll library buildout",
-      "Thumbnails + export formats"
-    ],
-    note: "Turns your operations into a pipeline of content.",
-    highlight: true
+    id: "engine",
+    icon: Repeat,
+    title: "Content Engine",
+    statement: "We are tired of ad-hoc posting. We need a system that delivers consistent video volume every month.",
+    price: "$5k/mo"
   },
   {
-    name: "Campaign System",
-    tag: "Best for: developers + agencies shipping big launches",
-    price: "from $10–25k+",
-    bullets: [
-      "Pre-pro + shot design + schedule",
-      "Multi-location capture",
-      "Campaign edit package",
-      "Website hero loops + socials"
-    ],
-    note: "When the market is watching and you cannot miss.",
-    highlight: false
+    id: "authority",
+    icon: Crown,
+    title: "Founder Authority",
+    statement: "I need to establish personal credibility and trust with investors or talent quickly.",
+    price: "$3k+"
+  },
+  {
+    id: "proof",
+    icon: Fingerprint,
+    title: "Social Proof",
+    statement: "We have great projects but no cinematic case studies. We need to prove our expertise.",
+    price: "$5k+"
+  },
+  {
+    id: "event",
+    icon: Mic2,
+    title: "Event Capture",
+    statement: "We have a major activation or conference coming up. We need it captured for high-energy recap assets.",
+    price: "$3k+"
+  },
+  {
+    id: "custom",
+    icon: Lightbulb,
+    title: "The Wildcard",
+    statement: "We have a specific vision that doesn't fit in a box. We need a creative partner to figure it out.",
+    price: "Custom"
   }
 ];
+
 
 const TESTIMONIALS = [
   {
@@ -200,7 +206,7 @@ const TESTIMONIALS = [
 
 const FAQS = [
   {
-    q: "What happens after I hit “Initialize Brief”?",
+    q: "What happens after I hit “Start Brief”?",
     a: "You submit the lens, budget range, and timing. We reply with next steps, a fast scope call, and a simple plan for deliverables."
   },
   {
@@ -251,10 +257,42 @@ const TextureOverlay = () => (
         100% { transform: translateX(-50%); }
       }
       .animate-marquee { animation: marquee 40s linear infinite; }
+      @keyframes scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      .animate-scroll { animation: scroll 80s linear infinite; }
+      .pause-on-hover:hover { animation-play-state: paused; }
       .cursor-blink { animation: blink 1s step-end infinite; }
       @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
     `}} />
   </>
+);
+
+// --- ANIMATION WRAPPER ---
+const FadeIn = ({ children, className = "", delay = 0 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 40 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-50px" }}
+    transition={{ duration: 0.8, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
+    className={className}
+  >
+    {children}
+  </motion.div>
+);
+
+// --- INFINITE MARQUEE COMPONENT ---
+const InfiniteMarquee = ({ children, speed = 40, className = "" }) => (
+  <div className={`overflow-hidden relative flex w-full group ${className}`}>
+     <div
+       className="flex gap-4 animate-scroll whitespace-nowrap pause-on-hover will-change-transform"
+       style={{ animationDuration: `${speed}s` }}
+     >
+       {children}
+       {children}
+     </div>
+  </div>
 );
 
 // --- INTERACTIVE TYPOGRAPHY ---
@@ -351,14 +389,14 @@ const RevealHeading = ({ children, className }) => {
 
 // --- SYSTEM TICKER COMPONENT ---
 const TICKER_TEXTS = [
-  "PHOENIX_VIDEO_PRODUCTION: ONLINE",
-  "PARTNER_VERIFIED: THE_RIGHT_TEAM",
-  "REAL_ESTATE_MEDIA_OPS: ACTIVE",
-  "TURNKEY_CONTENT_SCALE: READY",
-  "AHEAD_OF_MARKET: ESTABLISHED",
-  "SCOTTSDALE_BRAND_NARRATIVE: LIVE",
-  "CAPITAL_ALLOCATION_MEDIA: DEPLOYING",
-  "COMMERCIAL_DEVELOPMENT_ASSETS: VERIFIED"
+  "PHOENIX VIDEO PRODUCTION",
+  "PARTNER VERIFIED // THE RIGHT TEAM",
+  "REAL ESTATE MEDIA",
+  "TURNKEY CONTENT SCALE",
+  "AHEAD OF MARKET // EST 2021",
+  "SCOTTSDALE BRAND NARRATIVE",
+  "CAPITAL ALLOCATION MEDIA",
+  "COMMERCIAL DEVELOPMENT ASSETS"
 ];
 
 const SystemTicker = ({ onOpenBrief }) => (
@@ -369,7 +407,7 @@ const SystemTicker = ({ onOpenBrief }) => (
           <div key={i} className="flex items-center mx-6">
             <Radio size={12} className="text-orange-600 animate-pulse mr-3" />
             <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.3em] flex items-center">
-              {text} <span className="text-orange-600 mx-4 opacity-50 text-[8px]">//</span>
+              {text} <span className="text-orange-600 mx-4 opacity-50 text-[8px]"></span>
             </span>
           </div>
         ))}
@@ -384,7 +422,7 @@ const SystemTicker = ({ onOpenBrief }) => (
         className="h-full px-8 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.15em] text-xs hover:from-orange-500 hover:to-orange-400 transition-all flex items-center gap-3 shadow-[0_0_25px_rgba(255,79,0,0.4)] border-l border-orange-400/30 group"
       >
         <Zap size={16} className="fill-white group-hover:scale-110 transition-transform" />
-        <span>Initialize Brief</span>
+        <span>Start Project</span>
       </button>
     </div>
   </div>
@@ -397,7 +435,7 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
   return (
     <article
       onClick={() => onPlay({ url, title })}
-      className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm ${isVertical ? 'aspect-[9/16]' : 'aspect-video shadow-lg'}`}
+      className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 ${isVertical ? 'aspect-[9/16] w-[280px]' : 'aspect-video w-[450px] shadow-lg'}`}
     >
       <div className="absolute inset-0 bg-zinc-950">
         {embedUrl && (
@@ -420,7 +458,7 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
       <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20 bg-gradient-to-t from-black/95 via-black/10 to-transparent">
         <div className="flex justify-between items-start">
           <div className="flex flex-wrap gap-1.5">
-            {tags.map(tag => (
+            {tags.slice(0, 2).map(tag => (
               <span key={tag} className="text-[9px] font-black px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm backdrop-blur-sm uppercase tracking-widest">
                 {tag}
               </span>
@@ -428,7 +466,7 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
           </div>
         </div>
         <div className="max-w-[95%]">
-          <h3 className={`font-black tracking-tight text-white leading-[0.9] transition-colors group-hover:text-orange-500 uppercase italic ${isVertical ? 'text-xl' : 'text-2xl'}`}>
+          <h3 className={`font-black tracking-tight text-white leading-[0.9] transition-colors group-hover:text-orange-500 uppercase italic ${isVertical ? 'text-lg' : 'text-2xl'}`}>
             {title}
           </h3>
           <p className="text-[10px] font-mono text-zinc-400 mt-2 uppercase tracking-widest italic flex items-center gap-2">
@@ -444,7 +482,9 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
 // --- CLIENT DEPTH COMPONENTS ---
 const SectionShell = ({ id, children, className = "" }) => (
   <section id={id} className={`px-6 md:px-12 py-36 relative ${className}`}>
-    {children}
+    <FadeIn>
+      {children}
+    </FadeIn>
   </section>
 );
 
@@ -481,45 +521,38 @@ const LogoTicker = memo(() => (
   </div>
 ));
 
-const PackageCard = memo(({ pkg, onOpenBrief }) => (
-  <div className={`relative p-10 border rounded-sm shadow-2xl overflow-hidden transition-colors ${pkg.highlight ? "border-orange-600/60 bg-gradient-to-b from-orange-600/10 via-black/30 to-black/20" : "border-white/10 bg-zinc-900/30 hover:border-white/30"}`}>
-    {pkg.highlight && (
-      <div className="absolute -top-10 -right-10 w-48 h-48 bg-orange-600/20 blur-3xl rounded-full" />
-    )}
+// New V38 Idea Card Component
+const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
+  <button
+    onClick={() => onSelect(idea)}
+    className={`relative p-8 md:p-10 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-orange-600 bg-orange-950/20" : "border-white/10 bg-zinc-900/30 hover:border-white/30 hover:bg-zinc-900/60"}`}
+  >
+    <div className="flex items-center justify-between mb-8">
+       <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-orange-600 bg-orange-600 text-white" : "border-white/10 bg-black/40 text-zinc-400 group-hover:text-white"}`}>
+          <idea.icon size={20} />
+       </div>
+       {isSelected && <CheckCircle2 size={24} className="text-orange-600" />}
+    </div>
 
-    <div className="flex items-start justify-between gap-6">
+    <div className="flex-grow">
+      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-zinc-500 mb-3">{idea.title}</p>
+      <h3 className={`text-xl md:text-2xl font-medium leading-snug transition-colors ${isSelected ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>
+        "{idea.statement}"
+      </h3>
+    </div>
+
+    <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-end">
       <div>
-        <h3 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white">{pkg.name}</h3>
-        <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-500">{pkg.tag}</p>
+         <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Starting At</p>
+         <p className="text-lg font-black italic text-orange-600 tracking-tight">{idea.price}</p>
       </div>
-      <div className="text-right">
-        <div className="inline-flex items-center gap-2 px-3 py-2 border border-white/10 bg-black/40">
-          <Coins size={14} className="text-orange-600" />
-          <span className="text-[11px] font-black uppercase tracking-[0.25em] text-white">{pkg.price}</span>
-        </div>
+      <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all ${isSelected ? "bg-white text-black border-white rotate-0" : "bg-transparent text-zinc-600 -rotate-45 group-hover:text-white group-hover:border-white/50"}`}>
+        <ArrowRight size={14} />
       </div>
     </div>
-
-    <div className="mt-10 space-y-3">
-      {pkg.bullets.map((b) => (
-        <div key={b} className="flex items-start gap-3">
-          <CheckCircle2 size={16} className="text-orange-600 mt-0.5" />
-          <p className="text-zinc-300 text-sm leading-relaxed">{b}</p>
-        </div>
-      ))}
-    </div>
-
-    <div className="mt-10 flex items-center justify-between gap-6">
-      <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">{pkg.note}</p>
-      <button
-        onClick={onOpenBrief}
-        className="px-6 py-3 bg-white text-black font-black uppercase tracking-[0.25em] text-[11px] hover:bg-zinc-200 transition-colors"
-      >
-        Start
-      </button>
-    </div>
-  </div>
+  </button>
 ));
+
 
 const ProcessStep = memo(({ idx, title, body, icon: Icon }) => (
   <div className="relative pl-10 md:pl-14">
@@ -589,7 +622,7 @@ const MidCTA = memo(({ onOpenBrief }) => (
     <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-10">
       <div className="max-w-2xl">
         <p className="text-orange-600 text-[10px] font-mono font-bold uppercase tracking-[0.45em]">
-          <ScrambleText text="Client Perspective Layer" hover={false} />
+          <ScrambleText text="Client Perspective" hover={false} />
         </p>
         <h3 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter text-white mt-6 leading-[0.9]">
           Clear scope.<br /><span className="text-outline">Clean execution</span>.
@@ -602,7 +635,7 @@ const MidCTA = memo(({ onOpenBrief }) => (
         onClick={onOpenBrief}
         className="px-10 py-4 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.25em] text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-[0_0_30px_rgba(255,79,0,0.35)] border border-white/10"
       >
-        Initialize Brief
+        Start Project
       </button>
     </div>
   </div>
@@ -612,10 +645,13 @@ const MidCTA = memo(({ onOpenBrief }) => (
 export default function App() {
   const [loadStatus, setLoadStatus] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [activeTab, setActiveTab] = useState('builders');
+  const [activeTab, setActiveTab] = useState('marketing');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [user, setUser] = useState(null);
+  
+  // V38: Engagement Intent State
+  const [selectedIntent, setSelectedIntent] = useState(null);
 
   const [portfolioData, setPortfolioData] = useState(PORTFOLIO_DATA);
   const [strategyFeed, setStrategyFeed] = useState([]);
@@ -688,14 +724,18 @@ export default function App() {
   const handleInquirySubmit = async (finalPhaseData = {}) => {
     setIsSubmitting(true);
     setFormError('');
-    const fullLead = { ...formData, ...finalPhaseData };
+    const fullLead = { 
+        ...formData, 
+        ...finalPhaseData,
+        intent: selectedIntent?.title || 'General Inquiry' // Tag the intent
+    };
 
     try {
       if (db && user) {
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'leads'), {
           ...fullLead,
           createdAt: serverTimestamp(),
-          source: 'AOM_V30_FULL_ARCHIVE'
+          source: 'AOM_V38_FULL_ARCHIVE'
         });
       }
       const response = await fetch("https://formspree.io/f/xbdalqvg", {
@@ -720,12 +760,15 @@ export default function App() {
     setIsSuccess(false);
     setStep(1);
     setFormError('');
+    // Note: We do NOT clear selectedIntent here, allowing them to re-open with context
   };
 
   const openBrief = () => setIsInquiryOpen(true);
 
+  // Memoized Data for Render
   const activeCampaigns = useMemo(() => portfolioData?.[activeTab]?.campaigns ?? [], [portfolioData, activeTab]);
-  const activeSocial = useMemo(() => portfolioData?.[activeTab]?.social ?? [], [portfolioData, activeTab]);
+  const allSocials = useMemo(() => strategyFeed, [strategyFeed]);
+
 
   if (!isInitialized) {
     return (
@@ -738,7 +781,7 @@ export default function App() {
             <motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.8)]" />
           </div>
           <div className="mt-4 font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
-            <ScrambleText text="Initializing Protocol..." />
+            <ScrambleText text="Loading AOM..." />
           </div>
         </div>
       </div>
@@ -761,11 +804,21 @@ export default function App() {
 
               {!isSuccess ? (
                 <div className="space-y-8">
-                  <div>
-                    <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
-                      <ScrambleText text="Start Project Protocol" />
-                    </span>
-                    <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build<br />this<span className="text-orange-600">.</span></h2>
+                  <div className="flex justify-between items-start">
+                     <div>
+                        <span className="text-orange-600 text-xs font-mono font-bold tracking-widest uppercase mb-2 block">
+                        <ScrambleText text="Start Your Project" />
+                        </span>
+                        <h2 className="text-4xl md:text-5xl font-black tracking-tighter mt-2 text-white italic uppercase">Let's build<br />this<span className="text-orange-600">.</span></h2>
+                     </div>
+                     {selectedIntent && (
+                        <div className="hidden sm:flex flex-col items-end">
+                            <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-widest mb-1">Focus</span>
+                            <span className="bg-orange-600/20 text-orange-500 border border-orange-600/40 px-3 py-1 rounded-sm text-[10px] font-black uppercase tracking-widest">
+                                {selectedIntent.title}
+                            </span>
+                        </div>
+                     )}
                   </div>
 
                   <AnimatePresence mode="wait">
@@ -788,9 +841,9 @@ export default function App() {
 
                       {step === 2 && (
                         <div className="space-y-6">
-                          <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-4">Contact_Data:</p>
+                          <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-4">Contact:</p>
                           <div className="space-y-4">
-                            <input type="text" placeholder="IDENTITY NAME" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
+                            <input type="text" placeholder="NAME" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
                             <input type="email" placeholder="EMAIL ADDRESS" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
                             <input type="tel" placeholder="PHONE (OPTIONAL)" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-transparent border-b border-white/20 py-3 text-white focus:border-orange-600 outline-none transition-colors font-bold uppercase tracking-widest placeholder:text-zinc-700" />
                           </div>
@@ -839,8 +892,8 @@ export default function App() {
                 <div className="text-center py-12">
                   <CheckCircle2 size={64} className="mx-auto text-orange-600 mb-6" />
                   <h2 className="text-4xl font-black text-white mb-4 italic uppercase tracking-tighter">Received<span className="text-orange-600">.</span></h2>
-                  <p className="text-zinc-400 text-sm mb-8 font-mono uppercase tracking-widest">Protocol Initialized. Standby for contact.</p>
-                  <button onClick={closeBrief} className="px-10 py-3 bg-white text-black font-black uppercase tracking-widest rounded-sm hover:bg-zinc-200 transition-colors">Close Terminal</button>
+                  <p className="text-zinc-400 text-sm mb-8 font-mono uppercase tracking-widest">We'll be in touch shortly.</p>
+                  <button onClick={closeBrief} className="px-10 py-3 bg-white text-black font-black uppercase tracking-widest rounded-sm hover:bg-zinc-200 transition-colors">Close</button>
                 </div>
               )}
             </div>
@@ -860,16 +913,16 @@ export default function App() {
             <ScrambleText text="Work" />
           </a>
           <a href="#system" className="hidden md:block text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors">
-            <ScrambleText text="Infrastructure" />
+            <ScrambleText text="Process" />
           </a>
           <a href="#proof" className="hidden md:block text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors">
-            <ScrambleText text="Proof" />
+            <ScrambleText text="Why Us" />
           </a>
           <a href="#packages" className="hidden md:block text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors">
-            <ScrambleText text="Packages" />
+            <ScrambleText text="Engagement" />
           </a>
           <button onClick={openBrief} className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black text-[11px] uppercase tracking-[0.2em] rounded-sm hover:from-orange-500 hover:to-orange-400 transition-all shadow-[0_0_15px_rgba(255,79,0,0.4)] hover:scale-105 active:scale-95 border border-white/10">
-            <ScrambleText text="Start Brief" />
+            <ScrambleText text="Get Started" />
           </button>
         </nav>
       </header>
@@ -896,7 +949,7 @@ export default function App() {
           >
             <div className="inline-flex items-center gap-4 mb-12 border-l-4 border-orange-600 pl-6">
               <p className="text-orange-600 font-mono font-bold text-[11px] uppercase tracking-[0.4em]">
-                <ScrambleText text="Operating Infrastructure // Phoenix_AZ" />
+                <ScrambleText text="Production Partners // Phoenix, AZ" />
               </p>
             </div>
 
@@ -926,7 +979,7 @@ export default function App() {
             </p>
             <div className="flex justify-start md:justify-end">
               <button onClick={openBrief} className="group flex items-center gap-6 text-white hover:text-orange-500 transition-colors">
-                <span className="text-3xl md:text-4xl font-black uppercase tracking-tighter border-b-2 border-white/10 pb-2 group-hover:border-orange-500 italic drop-shadow-lg">Initiate Protocol</span>
+                <span className="text-3xl md:text-4xl font-black uppercase tracking-tighter border-b-2 border-white/10 pb-2 group-hover:border-orange-500 italic drop-shadow-lg">Let's Talk</span>
                 <Zap size={40} className="group-hover:scale-125 transition-transform text-orange-600 drop-shadow-lg" />
               </button>
             </div>
@@ -952,58 +1005,142 @@ export default function App() {
       </section>
 
       {/* --- THE PORTFOLIO ARCHIVE --- */}
-      <section id="work" className="px-6 md:px-12 py-32 bg-[#050505] relative z-10">
+      <section id="work" className="px-6 md:px-12 py-32 bg-[#050505] relative z-10 overflow-hidden">
         <div className="max-w-screen-2xl mx-auto w-full">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12 border-b border-white/5 pb-12">
-            <div>
-              <RevealHeading className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                <ScrambleText text="Asset Repository v30.0" />
-              </RevealHeading>
+          <FadeIn>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12 border-b border-white/5 pb-12">
+              <div>
+                <RevealHeading className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
+                  <ScrambleText text="Our Work" />
+                </RevealHeading>
 
-              <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase leading-[0.8] italic">
-                The<br />
-                <span className="text-outline">Outputs</span>
-                <span className="text-orange-600">.</span>
-              </h2>
+                <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase leading-[0.8] italic">
+                  The<br />
+                  <span className="text-outline">Work</span>
+                  <span className="text-orange-600">.</span>
+                </h2>
+              </div>
+              
+              <div className="flex flex-col items-end gap-6">
+                <div className="flex items-center gap-2 text-orange-600 animate-pulse">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em]">SELECT THE MARKET THAT ALIGNS WITH YOU</span>
+                    <ArrowDownRight size={16} />
+                </div>
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                  {['marketing', 'builders', 'founders'].map(tab => (
+                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-10 py-4 text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:border-white/40 hover:text-white'}`}>
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-              {['builders', 'founders', 'marketing'].map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={`px-10 py-4 text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:border-white/40 hover:text-white'}`}>
-                  {tab}
-                </button>
-              ))}
+          </FadeIn>
+
+          <div className="space-y-32">
+            {/* Filterable Campaigns Loop */}
+            <div className="space-y-12">
+               <FadeIn>
+                  <div className="flex items-center gap-4 mb-8">
+                    <Clapperboard size={24} className="text-orange-600" />
+                    <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">Cinematic Campaigns</h4>
+                  </div>
+               </FadeIn>
+               <AnimatePresence mode="wait">
+                 <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                 >
+                    <InfiniteMarquee speed={120}>
+                       {activeCampaigns.map((vid, idx) => (
+                          <div key={`${activeTab}-${idx}`} className="mx-4">
+                             <VideoModule onPlay={setSelectedVideo} {...vid} />
+                          </div>
+                       ))}
+                    </InfiniteMarquee>
+                 </motion.div>
+               </AnimatePresence>
+            </div>
+
+            {/* All Socials Loop - Independent of Tab */}
+            <div className="space-y-12">
+              <FadeIn>
+                <div className="flex items-center gap-4 mb-8">
+                  <Smartphone size={24} className="text-orange-600" />
+                  <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">Social Volume</h4>
+                </div>
+              </FadeIn>
+              <InfiniteMarquee speed={80}>
+                 {allSocials.map((vid, idx) => (
+                    <div key={`social-${idx}`} className="mx-2">
+                       <VideoModule onPlay={setSelectedVideo} isVertical={true} {...vid} />
+                    </div>
+                 ))}
+              </InfiniteMarquee>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- THE INFRASTRUCTURE (MOVED UP) --- */}
+      <SectionShell id="system" className="bg-black border-t border-white/5">
+        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
+          <div>
+            <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-10 block">
+              <ScrambleText text="Our Process" />
+            </span>
+            <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-20 uppercase italic leading-[0.85]">
+              Strategy comes <br />
+              <span className="text-outline">before</span> the camera.
+            </h2>
+            <div className="space-y-20">
+              <div className="flex gap-10 group cursor-default">
+                <div className="w-20 h-20 bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-600 transition-colors shadow-2xl">
+                  <Target size={32} className="text-white" />
+                </div>
+                <div className="max-w-md">
+                  <h4 className="text-3xl font-black text-white mb-4 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">01. The Plan</h4>
+                  <p className="text-zinc-400 text-lg leading-relaxed font-medium">We map out the assets you need to sell and grow before we pick up a camera. Every frame is built with high-intent objective.</p>
+                </div>
+              </div>
+              <div className="flex gap-10 group cursor-default">
+                <div className="w-20 h-20 bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-600 transition-colors shadow-2xl">
+                  <Layers size={32} className="text-white" />
+                </div>
+                <div className="max-w-md">
+                  <h4 className="text-3xl font-black text-white mb-4 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">02. Production</h4>
+                  <p className="text-zinc-400 text-lg leading-relaxed font-medium">Capture operations at scale with cinema-grade workflows. You get consistent updates, clear timelines, and zero friction.</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div key={activeTab} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.6 }} className="space-y-32">
-              <div className="space-y-12">
-                <div className="flex items-center gap-4">
-                  <Clapperboard size={24} className="text-orange-600" />
-                  <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">Cinematic_Volume_01</h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-                  {activeCampaigns.map((vid, idx) => (
-                    <VideoModule key={idx} onPlay={setSelectedVideo} {...vid} />
-                  ))}
-                </div>
+          {/* --- REEL PREVIEW DECK --- */}
+          <div className="relative w-full aspect-square lg:aspect-auto lg:h-[700px] bg-zinc-900/50 rounded-sm overflow-hidden border border-white/10 shadow-2xl flex flex-col group">
+            <div className="absolute top-0 left-0 w-full z-20 p-6 bg-gradient-to-b from-black/90 to-transparent flex justify-between items-start pointer-events-none">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-orange-600 rounded-full animate-pulse" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-white">Recent Projects</span>
               </div>
-
-              <div className="space-y-12">
-                <div className="flex items-center gap-4">
-                  <Smartphone size={24} className="text-orange-600" />
-                  <h4 className="text-[12px] font-black text-white uppercase tracking-[0.4em] italic">Vertical_Social_Stream</h4>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-1">
-                  {activeSocial.map((vid, idx) => (
-                    <VideoModule key={idx} onPlay={setSelectedVideo} isVertical={true} {...vid} />
-                  ))}
-                </div>
+              <div className="flex items-center gap-2 text-white/50">
+                <span className="text-[9px] font-mono uppercase tracking-widest hidden sm:inline-block">Swipe to navigate</span>
+                <ArrowRight size={14} />
               </div>
-            </motion.div>
-          </AnimatePresence>
+            </div>
+            <div className="flex-1 overflow-x-auto flex items-center gap-4 p-8 no-scrollbar cursor-grab active:cursor-grabbing">
+              {strategyFeed.map((vid, idx) => (
+                <div key={idx} className="relative min-w-[300px] h-[90%] snap-center shrink-0 transform transition-transform duration-500 hover:scale-105 hover:z-10 border border-white/5 bg-zinc-950">
+                  <VideoModule {...vid} isVertical={true} onPlay={setSelectedVideo} />
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 pointer-events-none border-[0.5px] border-white/5 rounded-sm" />
+          </div>
         </div>
-      </section>
+      </SectionShell>
 
       {/* --- CLIENT PROOF LAYER --- */}
       <SectionShell id="proof" className="bg-black border-t border-white/5">
@@ -1011,7 +1148,7 @@ export default function App() {
           <div className="flex flex-col lg:flex-row items-end justify-between gap-12 border-b border-white/10 pb-12 mb-16">
             <div>
               <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                <ScrambleText text="Proof Layer // Client Assurance" />
+                <ScrambleText text="Why Us" />
               </span>
               <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">
                 The reason<br />
@@ -1038,33 +1175,40 @@ export default function App() {
         </div>
       </SectionShell>
 
-      {/* --- PACKAGES --- */}
+      {/* --- ENGAGEMENT IDEAS (V38 REPLACEMENT) --- */}
       <SectionShell id="packages" className="bg-[#050505] border-t border-white/5">
         <div className="max-w-screen-2xl mx-auto w-full">
           <div className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/10 pb-12">
             <div>
               <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                <ScrambleText text="Buying Paths // Optional" />
+                <ScrambleText text="How We Partner" />
               </span>
               <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">
-                Choose a<br />
-                <span className="text-outline">lane</span><span className="text-orange-600">.</span>
+                Identify<br />
+                <span className="text-outline">Your Needs</span><span className="text-orange-600">.</span>
               </h2>
             </div>
             <div className="max-w-xl">
               <p className="text-zinc-400 text-sm md:text-base leading-relaxed">
-                These are starting points, not handcuffs. We scope based on your lens, timeline, and what you actually need to ship.
+                We don't sell cookie-cutter packages. We solve business problems. Select the statement that sounds like you to get started.
               </p>
-              <div className="mt-6 flex items-center gap-3 text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-500">
-                <BadgeCheck className="text-orange-600" size={14} />
-                Transparent deliverables. No mystery meat.
-              </div>
+              {selectedIntent && (
+                  <button onClick={openBrief} className="mt-8 flex items-center gap-3 bg-gradient-to-r from-orange-600 to-orange-500 text-white px-8 py-3 rounded-sm font-black uppercase tracking-widest text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-lg animate-pulse">
+                      <span>Start Project: {selectedIntent.title}</span>
+                      <ArrowRight size={16} />
+                  </button>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {PACKAGES.map((p) => (
-              <PackageCard key={p.name} pkg={p} onOpenBrief={openBrief} />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+            {ENGAGEMENT_IDEAS.map((idea) => (
+              <IdeaCard 
+                key={idea.id} 
+                idea={idea} 
+                isSelected={selectedIntent?.id === idea.id}
+                onSelect={setSelectedIntent}
+              />
             ))}
           </div>
         </div>
@@ -1089,7 +1233,7 @@ export default function App() {
             <div className="mt-10 p-8 border border-white/10 bg-zinc-900/20">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="text-orange-600" size={18} />
-                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">Operational safeguards</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white">Standard Standards</p>
               </div>
               <ul className="mt-6 space-y-3 text-zinc-400 text-sm">
                 {[
@@ -1131,69 +1275,12 @@ export default function App() {
                 onClick={openBrief}
                 className="w-full md:w-auto px-10 py-4 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.25em] text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-[0_0_30px_rgba(255,79,0,0.35)] border border-white/10"
               >
-                Initialize Brief
+                Get Started
               </button>
             </div>
           </div>
         </div>
       </SectionShell>
-
-      {/* --- THE INFRASTRUCTURE --- */}
-      <section id="system" className="px-6 md:px-12 py-40 bg-black border-t border-white/5">
-        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
-          <div>
-            <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-10 block">
-              <ScrambleText text="Operating Protocol" />
-            </span>
-            <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-20 uppercase italic leading-[0.85]">
-              Strategy is our <br />
-              <span className="text-outline">Primary</span> Asset.
-            </h2>
-            <div className="space-y-20">
-              <div className="flex gap-10 group cursor-default">
-                <div className="w-20 h-20 bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-600 transition-colors shadow-2xl">
-                  <Target size={32} className="text-white" />
-                </div>
-                <div className="max-w-md">
-                  <h4 className="text-3xl font-black text-white mb-4 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">Phase 01: The Blueprint</h4>
-                  <p className="text-zinc-400 text-lg leading-relaxed font-medium">We map out the assets you need to sell and grow before we pick up a camera. Every frame is built with high-intent objective.</p>
-                </div>
-              </div>
-              <div className="flex gap-10 group cursor-default">
-                <div className="w-20 h-20 bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-orange-600 transition-colors shadow-2xl">
-                  <Layers size={32} className="text-white" />
-                </div>
-                <div className="max-w-md">
-                  <h4 className="text-3xl font-black text-white mb-4 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">Phase 02: Turnkey Capture</h4>
-                  <p className="text-zinc-400 text-lg leading-relaxed font-medium">Capture operations at scale with cinema-grade workflows. You get consistent updates, clear timelines, and zero friction.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* --- REEL PREVIEW DECK --- */}
-          <div className="relative w-full aspect-square lg:aspect-auto lg:h-[700px] bg-zinc-900/50 rounded-sm overflow-hidden border border-white/10 shadow-2xl flex flex-col group">
-            <div className="absolute top-0 left-0 w-full z-20 p-6 bg-gradient-to-b from-black/90 to-transparent flex justify-between items-start pointer-events-none">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-600 rounded-full animate-pulse" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-white">Active_Campaigns</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/50">
-                <span className="text-[9px] font-mono uppercase tracking-widest hidden sm:inline-block">Swipe to navigate</span>
-                <ArrowRight size={14} />
-              </div>
-            </div>
-            <div className="flex-1 overflow-x-auto flex items-center gap-4 p-8 no-scrollbar cursor-grab active:cursor-grabbing">
-              {strategyFeed.map((vid, idx) => (
-                <div key={idx} className="relative min-w-[300px] h-[90%] snap-center shrink-0 transform transition-transform duration-500 hover:scale-105 hover:z-10 border border-white/5 bg-zinc-950">
-                  <VideoModule {...vid} isVertical={true} onPlay={setSelectedVideo} />
-                </div>
-              ))}
-            </div>
-            <div className="absolute inset-0 pointer-events-none border-[0.5px] border-white/5 rounded-sm" />
-          </div>
-        </div>
-      </section>
 
       {/* --- TESTIMONIALS + FAQ --- */}
       <SectionShell id="reassurance" className="bg-[#050505] border-t border-white/5">
@@ -1201,7 +1288,7 @@ export default function App() {
           <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-16 border-b border-white/10 pb-12">
             <div>
               <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">
-                <ScrambleText text="Objection Removal Layer" />
+                <ScrambleText text="What Clients Say" />
               </span>
               <h2 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">
                 Clients<br />
@@ -1214,7 +1301,7 @@ export default function App() {
               </p>
               <button onClick={openBrief} className="mt-8 inline-flex items-center gap-3 px-8 py-3 bg-white text-black font-black uppercase tracking-[0.25em] text-[11px] hover:bg-zinc-200 transition-colors">
                 <Zap size={16} className="text-black" />
-                Start Brief
+                Start a Project
               </button>
             </div>
           </div>
@@ -1273,7 +1360,7 @@ export default function App() {
                 onClick={openBrief}
                 className="mt-10 w-full px-10 py-4 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black italic uppercase tracking-[0.25em] text-[11px] hover:from-orange-500 hover:to-orange-400 transition-all shadow-[0_0_30px_rgba(255,79,0,0.35)] border border-white/10"
               >
-                Initialize Brief
+                Start a Project
               </button>
             </div>
           </div>
@@ -1286,24 +1373,24 @@ export default function App() {
         <div className="max-w-screen-2xl mx-auto w-full">
           <h2 className="text-6xl md:text-[10rem] font-black text-white tracking-tighter mb-24 uppercase italic leading-[0.8] relative z-10">Ready to <span className="text-orange-600">Execute?</span></h2>
           <button onClick={openBrief} className="relative z-10 px-24 py-10 bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black uppercase tracking-[0.4em] text-sm hover:from-orange-500 hover:to-orange-400 transition-all transform hover:scale-105 active:scale-95 shadow-[0_0_80px_rgba(255,79,0,0.3)] clip-path-slant border border-white/10">
-            Initialize Brief
+            Start Project
           </button>
 
           <div className="mt-48 grid grid-cols-1 md:grid-cols-3 gap-20 text-left border-t border-white/5 pt-16 relative z-10">
             <div>
-              <h6 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-6 italic">Facility_Data</h6>
+              <h6 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-6 italic">Location</h6>
               <p className="text-white text-3xl font-black italic tracking-tighter">PHOENIX_AZ</p>
               <p className="text-zinc-600 text-[10px] font-mono mt-1 uppercase tracking-widest italic italic">Operational Headquarters</p>
             </div>
             <div>
-              <h6 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-6 italic">Comm_Link</h6>
+              <h6 className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-6 italic">Say Hello</h6>
               <a href="mailto:hello@aom-inhouse.com" className="text-white text-4xl font-black italic tracking-tighter hover:text-orange-500 transition-colors underline decoration-white/10 decoration-1 underline-offset-8">HELLO@AOM-INHOUSE.COM</a>
             </div>
             <div className="text-right flex flex-col justify-end">
               <div className="flex gap-8 justify-end text-[11px] font-black text-zinc-600 uppercase tracking-widest italic italic">
                 {['INSTAGRAM', 'LINKEDIN', 'VIMEO'].map(s => <a key={s} href="#" className="hover:text-white transition-colors"><ScrambleText text={s} hover={true} /></a>)}
               </div>
-              <p className="text-zinc-700 text-[10px] font-mono mt-8 uppercase tracking-[0.2em]">SYSTEM_CHECKSUM_V30.0 © 2024</p>
+              <p className="text-zinc-700 text-[10px] font-mono mt-8 uppercase tracking-[0.2em]">AHEAD OF MARKET © 2024</p>
             </div>
           </div>
         </div>
@@ -1329,9 +1416,9 @@ export default function App() {
               <div className="absolute -bottom-16 left-0 w-full flex justify-between items-center text-zinc-700 font-mono text-[10px] uppercase tracking-[0.4em] px-4 italic italic">
                 <div className="flex items-center gap-3">
                   <Activity size={10} className="text-orange-600 animate-pulse" />
-                  <span>System_Broadcast: {selectedVideo.title}</span>
+                  <span>Playing: {selectedVideo.title}</span>
                 </div>
-                <span>Relay: GUMLET_V30_PROD</span>
+                <span>Source: AOM</span>
               </div>
             </div>
           </motion.div>
@@ -1340,3 +1427,5 @@ export default function App() {
     </main>
   );
 }
+
+
