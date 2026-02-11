@@ -65,7 +65,8 @@ const TRUST_METRICS = [
   { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Systems for matching style across assets." },
 ];
 
-const TRUST_LOGOS = ["REAL_ESTATE", "HOSPITALITY", "SAAS", "NONPROFIT", "EVENTS", "EDU", "HEALTHCARE", "INDUSTRIAL"];
+// REPLACEMENT: Relevant Industry Labels
+const TRUST_LOGOS = ["INDUSTRIAL", "CONSTRUCTION", "REAL ESTATE", "HOSPITALITY", "SAAS", "HEALTHCARE", "NONPROFIT", "EVENTS", "EDUCATION", "FINANCE"];
 
 const TESTIMONIALS = [
   {
@@ -158,7 +159,7 @@ const ENGAGEMENT_IDEAS = [
   { id: "launch", icon: Rocket, title: "The Big Launch", statement: "We are bringing a new development or product to market and need a full asset suite.", price: "$10k - $25k" },
   { id: "engine", icon: Repeat, title: "Content Engine", statement: "We need a system that delivers consistent video volume every month.", price: "$3k/mo" },
   { id: "authority", icon: Crown, title: "Founder Authority", statement: "I need to establish personal credibility and trust with investors or talent quickly.", price: "$5k+" },
-  { id: "proof", icon: Fingerprint, title: "Social Proof", statement: "We have great projects but no cinematic case studies. We need to prove our expertise.", price: "$5k+" },
+  { id: "price", icon: Fingerprint, title: "Social Proof", statement: "We have great projects but no cinematic case studies. We need to prove our expertise.", price: "$5k+" },
   { id: "event", icon: Mic2, title: "Event Capture", statement: "We have a major activation or conference coming up. We need recap assets.", price: "$3k+" },
   { id: "custom", icon: Lightbulb, title: "The Wildcard", statement: "We have a specific vision that doesn't fit in a box. We need a creative partner.", price: "Tailored" }
 ];
@@ -593,7 +594,7 @@ export default function App() {
       </AnimatePresence>
 
       {isInitialized && (
-        <main className={`pb-24 text-left h-screen overflow-y-auto scroll-smooth hide-scrollbar ${isModalOpen ? 'snap-none overflow-hidden' : 'snap-y snap-proximity'}`}>
+        <main className={`pb-24 text-left h-screen overflow-y-auto scroll-smooth hide-scrollbar ${isModalOpen ? 'snap-none overflow-hidden' : 'snap-y snap-mandatory'}`}>
           <TextureOverlay />
           <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />
           
@@ -605,8 +606,8 @@ export default function App() {
             </div>
           </header>
 
-          <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative overflow-hidden pt-20 md:pt-40 snap-start scroll-mt-0">
-            {/* HERO BACKGROUND VIDEO: Optimized Cover Behavior */}
+          {/* PROBLEM 1: Mobile Hero spacing and justified alignment */}
+          <section className="min-h-[100svh] md:min-h-screen flex flex-col justify-start md:justify-center px-6 md:px-24 relative overflow-hidden pt-24 sm:pt-28 md:pt-40 pb-28 md:pb-0 snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="absolute inset-0 z-0 opacity-20 overflow-hidden">
               {heroVideoEmbed && (
                 <div className="absolute top-1/2 left-1/2 w-[115%] h-[115%] -translate-x-1/2 -translate-y-1/2">
@@ -621,14 +622,14 @@ export default function App() {
                 <div className="inline-flex items-center gap-4 mb-10 border-l-4 border-orange-600 pl-4 md:pl-6 max-w-full"><p className="text-orange-600 font-mono font-bold text-[clamp(10px,2.2vw,12px)] uppercase tracking-[0.4em] leading-tight block">Phoenix Video Production // Arizona Branding</p></div>
                 <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic">PHOENIX TEAMS <br /><TypewriterCycle words={["CLOSE FASTER", "RECRUIT BETTER", "RAISE CAPITAL", "OWN ATTENTION", "BUILD TRUST", "SCALE FASTER"]} /><br /><span className="text-outline">WITH VIDEO</span></h2>
               </motion.div>
-              <div className="mt-16 md:mt-24 grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/10 pt-12 md:pt-16 items-end">
+              <div className="mt-12 md:mt-24 grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/10 pt-12 md:pt-16 items-end">
                 <p className="text-lg md:text-xl text-zinc-300 leading-relaxed max-w-xl font-medium">Building repeatable story-driven content systems for founders, developers, and SaaS teams.<span className="text-orange-500 font-black block mt-4">No agencies. No delays. Just outcomes.</span></p>
                 <div className="flex justify-start md:justify-end"><button onClick={() => openBrief()} className="group flex items-center gap-4 md:gap-6 text-white hover:text-orange-500 transition-colors"><span className="text-2xl md:text-4xl font-black uppercase italic tracking-tighter border-b-2 border-white/10 pb-2 group-hover:border-orange-500 transition-all text-left">Let's Work</span><Zap size={32} className="group-hover:scale-125 transition-transform text-orange-600 md:w-10 md:h-10" /></button></div>
               </div>
             </div>
           </section>
 
-          <section className="px-6 md:px-12 py-24 md:py-36 bg-black border-t border-white/5 relative snap-start scroll-mt-12 md:scroll-mt-24">
+          <section className="px-6 md:px-12 py-24 md:py-36 bg-black border-t border-white/5 relative snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="border-b border-white/5 pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
                 <div className="max-w-3xl">
@@ -646,7 +647,7 @@ export default function App() {
             </div>
           </section>
 
-          <section id="work" className="py-24 md:py-36 bg-[#050505] relative z-10 overflow-hidden border-t border-white/5 snap-start scroll-mt-12 md:scroll-mt-24">
+          <section id="work" className="py-24 md:py-36 bg-[#050505] relative z-10 overflow-hidden border-t border-white/5 snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/5 pb-16 text-white">
               <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-black tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-orange-600">.</span></h2></div>
               <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders', 'founders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-10 py-3 md:py-4 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:text-white'}`}>{tab}</button>)}</div>
@@ -657,7 +658,7 @@ export default function App() {
             </div>
           </section>
 
-          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-[#050505] border-t border-white/5 text-white snap-start scroll-mt-12 md:scroll-mt-24">
+          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-[#050505] border-t border-white/5 text-white snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/5 pb-16">
                 <div><span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Identify Your Needs</span><h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">Choose Your<br /><span className="text-outline">Execution Path</span><span className="text-orange-600">.</span></h2></div>
@@ -666,7 +667,7 @@ export default function App() {
             </div>
           </section>
 
-          <section className="px-6 md:px-12 py-36 bg-black border-t border-white/5 overflow-hidden text-white snap-start scroll-mt-12 md:scroll-mt-24">
+          <section className="px-6 md:px-12 py-36 bg-black border-t border-white/5 overflow-hidden text-white snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="flex flex-col lg:flex-row items-end justify-between gap-12 mb-20">
                 <div className="max-w-xl">
@@ -674,15 +675,15 @@ export default function App() {
                   <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-orange-600">.</span></h2>
                 </div>
                 <div className="w-full lg:max-w-md border border-white/10 bg-black/40 overflow-hidden relative">
-                  {/* TRUST LOGO MARQUEE: Optimized for mobile relevance */}
-                  <div className="flex whitespace-nowrap animate-scroll py-6 md:opacity-100 opacity-60 [animation-duration:80s] md:[animation-duration:60s]">{[...Array(4)].flatMap(() => TRUST_LOGOS).map((t, i) => ( <div key={i} className="mx-10 flex items-center gap-3"><Building2 size={16} className="text-orange-600" /><span className="text-[11px] font-mono font-bold uppercase tracking-[0.35em] text-zinc-400">{t}</span></div> ))}</div>
+                  {/* TRUST LOGO MARQUEE: Speed and Relevance Optimization */}
+                  <div className="flex whitespace-nowrap animate-scroll py-6 md:opacity-100 opacity-70 [animation-duration:28s] md:[animation-duration:40s]">{[...Array(4)].flatMap(() => TRUST_LOGOS).map((t, i) => ( <div key={i} className="mx-10 flex items-center gap-3"><Building2 size={16} className="text-orange-600" /><span className="text-[11px] font-mono font-bold uppercase tracking-[0.35em] text-zinc-400">{t}</span></div> ))}</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/5 bg-zinc-900/10 rounded-sm hover:border-orange-600/30 transition-all"><m.icon className="text-orange-600 mb-8" size={24} /><p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-600 mb-3">{m.label}</p><h4 className="text-xl font-black italic text-white uppercase">{m.value}</h4><p className="text-zinc-500 text-xs mt-4 leading-relaxed">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
-          <footer className="px-6 md:px-12 py-24 md:py-48 border-t border-white/5 bg-[#020202] text-center pb-64 text-white snap-start scroll-mt-12 md:scroll-mt-24">
+          <footer className="px-6 md:px-12 py-24 md:py-48 border-t border-white/5 bg-[#020202] text-center pb-64 text-white snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="max-w-screen-2xl mx-auto w-full">
               <h2 className="text-6xl md:text-[10rem] font-black tracking-tighter mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-orange-600">Scale?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
