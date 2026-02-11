@@ -26,12 +26,22 @@ if (firebaseConfig) {
   db = getFirestore(app);
 }
 
+// --- UTILITIES ---
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 // --- BRAND CONSTANTS ---
 const ORANGE = "#FF4F00";
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/xbdalqvg";
 const MAIN_PHONE = "6023732164";
 const RENTAL_REALESTATE_PHONE = "4806954462";
 const BUDGET_OPTIONS = ["$2k - $5k", "$5k - $10k", "$10k - $25k", "$25k+"];
-const TIMELINE_OPTIONS = ["Immediately", "Next 30 Days", "Next 3 Months", "Researching"];
 const CHARS = "-_~*+[]!@#%&";
 
 // --- DATA: TRUST & AUTHORITY ---
@@ -42,9 +52,7 @@ const TRUST_METRICS = [
   { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Systems for matching style across assets." },
 ];
 
-const TRUST_LOGOS = [
-  "REAL_ESTATE", "HOSPITALITY", "SAAS", "NONPROFIT", "EVENTS", "EDU", "HEALTHCARE", "INDUSTRIAL"
-];
+const TRUST_LOGOS = ["REAL_ESTATE", "HOSPITALITY", "SAAS", "NONPROFIT", "EVENTS", "EDU", "HEALTHCARE", "INDUSTRIAL"];
 
 const TESTIMONIALS = [
   {
@@ -71,18 +79,9 @@ const TESTIMONIALS = [
 ];
 
 const FAQS = [
-  {
-    q: "What happens after I hit “Start Brief”?",
-    a: "You submit your scope, budget, and timing. We reply with a fast scope call and a simple plan for deliverables."
-  },
-  {
-    q: "Do you handle strategy or just production?",
-    a: "Both. Strategy first. If the asset doesn’t move trust or attention, it’s just expensive footage."
-  },
-  {
-    q: "How fast can you turn edits?",
-    a: "Social selects can be 24–72 hours. Hero edits typically land on a planned cadence."
-  }
+  { q: "What happens after I hit “Start Brief”?", a: "You submit your scope, budget, and timing. We reply with a fast scope call and a simple plan for deliverables." },
+  { q: "Do you handle strategy or just production?", a: "Both. Strategy first. If the asset doesn’t move trust or attention, it’s just expensive footage." },
+  { q: "How fast can you turn edits?", a: "Social selects can be 24–72 hours. Hero edits typically land on a planned cadence." }
 ];
 
 // --- MASTER PORTFOLIO LIBRARY ---
@@ -143,66 +142,12 @@ const PORTFOLIO_DATA = {
 };
 
 const ENGAGEMENT_IDEAS = [
-  {
-    id: "launch",
-    icon: Rocket,
-    title: "The Big Launch",
-    statement: "We are bringing a new development or product to market and need a full asset suite.",
-    price: "$10k - $25k",
-    includes: ["3-5 hero videos", "15-30 social cuts", "Website hero loop", "Brand style guide"],
-    timeline: "4-6 weeks",
-    bestFor: "Product launches, major developments, fundraising announcements"
-  },
-  {
-    id: "engine",
-    icon: Repeat,
-    title: "Content Engine",
-    statement: "We need a system that delivers consistent video volume every month.",
-    price: "$3k/mo",
-    includes: ["Monthly capture session", "1 Hero Asset", "8-12 Social Cuts", "Thumbnail Suite"],
-    timeline: "Ongoing",
-    bestFor: "Brands needing consistent social presence"
-  },
-  {
-    id: "authority",
-    icon: Crown,
-    title: "Founder Authority",
-    statement: "I need to establish personal credibility and trust with investors or talent quickly.",
-    price: "$5k+",
-    includes: ["Founder story doc", "Leadership interview series", "LinkedIn native assets", "Press kit photos"],
-    timeline: "2-3 weeks",
-    bestFor: "Founders raising capital or recruiting top talent"
-  },
-  {
-    id: "proof",
-    icon: Fingerprint,
-    title: "Social Proof",
-    statement: "We have great projects but no cinematic case studies. We need to prove our expertise.",
-    price: "$5k+",
-    includes: ["Client testimonial interviews", "Project b-roll capture", "Data visualization graphics", "Case study PDF"],
-    timeline: "3-4 weeks",
-    bestFor: "Service businesses needing to close larger contracts"
-  },
-  {
-    id: "event",
-    icon: Mic2,
-    title: "Event Capture",
-    statement: "We have a major activation or conference coming up. We need recap assets.",
-    price: "$3k+",
-    includes: ["Multi-cam event coverage", "Same-day highlight reel", "Full panel recordings", "Vox pops"],
-    timeline: "1-2 weeks",
-    bestFor: "Conferences, grand openings, activations"
-  },
-  {
-    id: "custom",
-    icon: Lightbulb,
-    title: "The Wildcard",
-    statement: "We have a specific vision that doesn't fit in a box. We need a creative partner.",
-    price: "Tailored",
-    includes: ["Custom creative strategy", "Technical execution plan", "Unique deliverables", "Consulting"],
-    timeline: "Flexible",
-    bestFor: "Experimental projects, rebrands, complex productions"
-  }
+  { id: "launch", icon: Rocket, title: "The Big Launch", statement: "We are bringing a new development or product to market and need a full asset suite.", price: "$10k - $25k" },
+  { id: "engine", icon: Repeat, title: "Content Engine", statement: "We need a system that delivers consistent video volume every month.", price: "$3k/mo" },
+  { id: "authority", icon: Crown, title: "Founder Authority", statement: "I need to establish personal credibility and trust with investors or talent quickly.", price: "$5k+" },
+  { id: "proof", icon: Fingerprint, title: "Social Proof", statement: "We have great projects but no cinematic case studies. We need to prove our expertise.", price: "$5k+" },
+  { id: "event", icon: Mic2, title: "Event Capture", statement: "We have a major activation or conference coming up. We need recap assets.", price: "$3k+" },
+  { id: "custom", icon: Lightbulb, title: "The Wildcard", statement: "We have a specific vision that doesn't fit in a box. We need a creative partner.", price: "Tailored" }
 ];
 
 // --- GUMLET UTILITIES ---
@@ -239,11 +184,7 @@ const TextureOverlay = () => (
       .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       .hide-scrollbar::-webkit-scrollbar { display: none; }
       .logo-shine { animation: logo-shine 2.5s ease-in-out infinite; }
-      @keyframes logo-shine {
-        0% { opacity: 0.3; }
-        50% { opacity: 1; text-shadow: 0 0 20px rgba(255, 79, 0, 0.4); }
-        100% { opacity: 0.3; }
-      }
+      @keyframes logo-shine { 0% { opacity: 0.3; } 50% { opacity: 1; text-shadow: 0 0 20px rgba(255, 79, 0, 0.4); } 100% { opacity: 0.3; } }
       @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
       .animate-scroll { animation: scroll 60s linear infinite; }
     `}} />
@@ -285,9 +226,7 @@ const TypewriterCycle = ({ words, className = "" }) => {
       setIndex((prev) => (prev + 1) % words.length);
       return;
     }
-    const timeout = setTimeout(() => {
-      setSubIndex((prev) => prev + (reverse ? -1 : 1));
-    }, reverse ? 30 : 60);
+    const timeout = setTimeout(() => { setSubIndex((prev) => prev + (reverse ? -1 : 1)); }, reverse ? 30 : 60);
     return () => clearTimeout(timeout);
   }, [subIndex, index, reverse, words]);
   useEffect(() => {
@@ -327,12 +266,8 @@ const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) =
   <div className={`relative p-8 border rounded-sm overflow-hidden shadow-2xl flex flex-col justify-between ${accent ? "border-orange-600/40 bg-orange-950/10" : "border-white/5 bg-zinc-900/20"}`}>
     <div className="relative z-10">
       <div className="flex items-center justify-between mb-8">
-        <div className="w-10 h-10 border border-white/5 bg-black/40 flex items-center justify-center">
-          {Icon && <Icon className="text-orange-600" size={18} />}
-        </div>
-        <div className="text-[9px] font-mono uppercase tracking-[0.35em] text-zinc-600">
-          <ScrambleText text={kicker} hover={false} />
-        </div>
+        <div className="w-10 h-10 border border-white/5 bg-black/40 flex items-center justify-center">{Icon && <Icon className="text-orange-600" size={18} />}</div>
+        <div className="text-[9px] font-mono uppercase tracking-[0.35em] text-zinc-600"><ScrambleText text={kicker} hover={false} /></div>
       </div>
       <div>
         <div className="text-5xl md:text-6xl font-black italic tracking-tighter leading-[0.85] text-white">{valueNode}</div>
@@ -355,10 +290,7 @@ const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
       <h3 className={`text-xl md:text-2xl font-medium leading-snug transition-colors ${isSelected ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>"{idea.statement}"</h3>
     </div>
     <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-end">
-      <div>
-        <p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Starting At</p>
-        <p className="text-lg font-black italic text-orange-600 tracking-tight">{idea.price}</p>
-      </div>
+      <div><p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Starting At</p><p className="text-lg font-black italic text-orange-600 tracking-tight">{idea.price}</p></div>
       <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all ${isSelected ? "bg-white text-black border-white rotate-0" : "bg-transparent text-zinc-600 -rotate-45 group-hover:text-white group-hover:border-white/50"}`}><ArrowRight size={14} /></div>
     </div>
   </button>
@@ -367,8 +299,7 @@ const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
 const TestimonialCard = memo(({ t }) => (
   <div className="p-8 border border-white/5 bg-zinc-900/20 rounded-sm shadow-xl hover:border-orange-600/30 transition-colors">
     <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1.5 rounded-sm mb-6">
-      <TrendingUp size={10} className="text-orange-500" />
-      <span className="text-orange-500 font-black text-[9px] uppercase tracking-widest">{t.metric}</span>
+      <TrendingUp size={10} className="text-orange-500" /><span className="text-orange-500 font-black text-[9px] uppercase tracking-widest">{t.metric}</span>
     </div>
     <p className="text-white text-lg font-black italic tracking-tight leading-snug">"{t.quote}"</p>
     <div className="mt-8 pt-4 border-t border-white/5">
@@ -404,14 +335,31 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
     return () => observer.disconnect();
   }, []);
   return (
-    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[240px] md:w-[320px]' : 'aspect-video w-[320px] md:w-[500px] shadow-lg'}`}>
+    <article
+      ref={ref}
+      onClick={() => onPlay({ url, title })}
+      className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[240px] md:w-[320px]' : 'aspect-video w-[320px] md:w-[500px] shadow-lg'}`}
+    >
       <div className="absolute inset-0 bg-zinc-950">
         {shouldLoad && embedUrl && (
-          <iframe src={embedUrl} loading="lazy" className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105" title={title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
+          <iframe
+            src={embedUrl}
+            loading="lazy"
+            className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105"
+            title={title}
+            allow="autoplay; encrypted-media"
+            style={{ pointerEvents: 'none' }}
+          />
         )}
       </div>
       <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20 bg-gradient-to-t from-black/95 via-black/10 to-transparent">
-        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-[9px] font-black px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm uppercase tracking-widest">{t}</span>)}</div></div>
+        <div className="flex justify-between items-start">
+          <div className="flex flex-wrap gap-1.5">
+            {tags.slice(0, 2).map(t => (
+              <span key={t} className="text-[9px] font-black px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm uppercase tracking-widest">{t}</span>
+            ))}
+          </div>
+        </div>
         <div className="max-w-[95%]">
           <h3 className={`font-black tracking-tight text-white leading-[0.9] transition-colors group-hover:text-orange-500 uppercase italic ${isVertical ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>{title}</h3>
           <p className="text-[10px] font-mono text-zinc-400 mt-2 uppercase tracking-widest italic flex items-center gap-2"><span className="w-1 h-1 bg-orange-600 rounded-full" />{sub}</p>
@@ -426,7 +374,6 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
   const containerRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-
   const updateScrollButtons = () => {
     if (containerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
@@ -434,14 +381,12 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
       setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 20);
     }
   };
-
   const scroll = (dir) => {
     if (containerRef.current) {
       const offset = dir === 'left' ? -350 : 350;
       containerRef.current.scrollBy({ left: offset, behavior: 'smooth' });
     }
   };
-
   useEffect(() => {
     const el = containerRef.current;
     if (el) {
@@ -450,22 +395,15 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
       return () => el.removeEventListener('scroll', updateScrollButtons);
     }
   }, [items]);
-
   return (
     <div className="relative group/gallery">
       <div className="flex items-center justify-between mb-4 md:hidden px-6">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-600 animate-pulse">
-           <MousePointer2 size={12} className="text-orange-600" /> Swipe to explore
-        </div>
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-600 animate-pulse"><MousePointer2 size={12} className="text-orange-600" /> Swipe to explore</div>
       </div>
-      
       <div ref={containerRef} className="flex gap-4 md:gap-6 overflow-x-auto hide-scrollbar px-6 md:px-12 py-4 scroll-smooth cursor-grab active:cursor-grabbing">
-        {items.map((v, i) => (
-          <VideoModule key={i} onPlay={onPlay} isVertical={isVertical} {...v} />
-        ))}
+        {items.map((v, i) => (<VideoModule key={v?.url || v?.title || i} onPlay={onPlay} isVertical={isVertical} {...v} />))}
         <div className="w-4 shrink-0 md:hidden" />
       </div>
-
       <div className="absolute top-1/2 -translate-y-1/2 left-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
         <button onClick={() => scroll('left')} className={`w-12 h-12 bg-white flex items-center justify-center text-black shadow-2xl transition-all ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronLeft size={24} /></button>
       </div>
@@ -479,9 +417,20 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
 // --- ROUTING MODAL ---
 const PhoneModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('list');
+
   useEffect(() => { if (!isOpen) setTimeout(() => setView('list'), 300); }, [isOpen]);
+
+  // Escape-to-close (additive)
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
   const handleRoute = (number) => { window.location.href = `tel:${number}`; };
+
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
@@ -503,7 +452,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
                     { label: "Rentals", icon: Video, sub: "Gear & Studio Hire", number: RENTAL_REALESTATE_PHONE },
                     { label: "Accounting", icon: Landmark, sub: "Invoicing & Vendors", type: 'accounting' }
                   ].map(item => (
-                    <button key={item.label} onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)} className="w-full p-4 border border-white/5 bg-white/5 hover:border-orange-600/30 hover:bg-orange-600/5 transition-all group flex items-center justify-between text-left">
+                    <button key={item.label} onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)} className="w-full p-4 border border-white/5 bg-white/5 hover:border-orange-600/30 hover:bg-orange-600/5 transition-all group flex items-center justify-between text-left text-white">
                       <div className="flex items-center gap-4">
                         <item.icon size={16} className="text-zinc-600 group-hover:text-orange-600 transition-colors" />
                         <div><p className="text-white font-black uppercase tracking-widest text-xs italic">{item.label}</p><p className="text-[9px] font-mono text-zinc-600 mt-0.5">{item.sub}</p></div>
@@ -535,7 +484,6 @@ export default function App() {
   const [loadStatus, setLoadStatus] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoaderExiting, setIsLoaderExiting] = useState(false);
-  
   const [activeTab, setActiveTab] = useState('marketing');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
@@ -543,12 +491,41 @@ export default function App() {
   const [selectedIntent, setSelectedIntent] = useState(null);
   const [openFAQ, setOpenFAQ] = useState(0);
   const [user, setUser] = useState(null);
-  const [strategyFeed, setStrategyFeed] = useState([]);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({ name: '', email: '', budget: '' });
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Loader Logic with extra second and fade
+  // FIX: used in footer previously but only existed inside PhoneModal
+  const handleRoute = (number) => {
+    window.location.href = `tel:${number}`;
+  };
+
+  // SESSION-BASED RANDOMIZATION
+  const shuffledData = useMemo(() => {
+    return {
+      marketing: {
+        campaigns: shuffleArray(PORTFOLIO_DATA.marketing.campaigns),
+        social: shuffleArray(PORTFOLIO_DATA.marketing.social)
+      },
+      builders: {
+        campaigns: shuffleArray(PORTFOLIO_DATA.builders.campaigns),
+        social: shuffleArray(PORTFOLIO_DATA.builders.social)
+      },
+      founders: {
+        campaigns: shuffleArray(PORTFOLIO_DATA.founders.campaigns),
+        social: shuffleArray(PORTFOLIO_DATA.founders.social)
+      },
+      feed: shuffleArray([...PORTFOLIO_DATA.builders.social, ...PORTFOLIO_DATA.founders.social, ...PORTFOLIO_DATA.marketing.social]),
+      hero: shuffleArray([
+        ...PORTFOLIO_DATA.marketing.campaigns.slice(0, 5),
+        ...PORTFOLIO_DATA.builders.campaigns.slice(0, 5)
+      ])[0]
+    };
+  }, []);
+
+  const heroVideoEmbed = useMemo(() => getGumletBackgroundEmbed(shuffledData.hero.url), [shuffledData.hero]);
+
   useEffect(() => {
     if (loadStatus < 100) {
       const timer = setTimeout(() => setLoadStatus(prev => prev + 2.5), 20);
@@ -564,9 +541,6 @@ export default function App() {
   }, [loadStatus]);
 
   useEffect(() => {
-    const socials = [...PORTFOLIO_DATA.builders.social, ...PORTFOLIO_DATA.founders.social, ...PORTFOLIO_DATA.marketing.social];
-    setStrategyFeed(socials);
-    
     if (!auth) return;
     const initAuth = async () => {
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
@@ -577,66 +551,98 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const videoTotal = useMemo(() => {
-    return Object.values(PORTFOLIO_DATA).reduce((acc, cat) => acc + cat.campaigns.length + cat.social.length, 0);
-  }, []);
+  // Lock scroll if ANY modal open
+  useEffect(() => {
+    const anyModalOpen = Boolean(isPhoneModalOpen || isInquiryOpen || selectedVideo);
+    document.body.style.overflow = anyModalOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isPhoneModalOpen, isInquiryOpen, selectedVideo]);
 
-  const openBrief = (intent = null) => {
-    if (intent) setSelectedIntent(intent);
-    setIsInquiryOpen(true);
-  };
-  const closeBrief = () => { 
-    setIsInquiryOpen(false); 
-    setIsSuccess(false); 
-    setStep(1); 
-    setSelectedIntent(null); 
-  };
+  const videoTotal = useMemo(
+    () => Object.values(PORTFOLIO_DATA).reduce((acc, cat) => acc + cat.campaigns.length + cat.social.length, 0),
+    []
+  );
+
+  const openBrief = (intent = null) => { if (intent) setSelectedIntent(intent); setIsInquiryOpen(true); };
+  const closeBrief = () => { setIsInquiryOpen(false); setIsSuccess(false); setStep(1); setSelectedIntent(null); };
   const openPhone = () => setIsPhoneModalOpen(true);
   const closePhone = () => setIsPhoneModalOpen(false);
 
-  const handleLeadSubmit = async () => {
-    if (db && user) {
-        try {
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'leads'), {
-                ...formData,
-                intent: selectedIntent?.title || 'General Inquiry',
-                createdAt: serverTimestamp()
-            });
-            setIsSuccess(true);
-        } catch (e) {
-            console.error("Lead submission error", e);
-        }
-    } else {
-        setIsSuccess(true);
+  // Step 1 validation + controlled inputs
+  const isStep1Valid = useMemo(() => {
+    const nameOk = formData.name.trim().length > 1;
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
+    return nameOk && emailOk;
+  }, [formData.name, formData.email]);
+
+  // FIX: accept override budget to avoid race condition
+  const handleLeadSubmit = async (budgetOverride) => {
+    setIsSubmitting(true);
+    const leadData = {
+      ...formData,
+      budget: budgetOverride ?? formData.budget,
+      intent: selectedIntent?.title || 'General Inquiry',
+      intentStatement: selectedIntent?.statement || 'N/A',
+      submittedAt: new Date().toISOString()
+    };
+
+    try {
+      // 1. FORMSPREE SUBMISSION (Primary)
+      await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...leadData, _subject: `New Lead: ${leadData.intent}` })
+      });
+
+      // 2. FIRESTORE ARCHIVE (Secondary Backup)
+      if (db && user) {
+        await addDoc(
+          collection(db, 'artifacts', appId, 'public', 'data', 'leads'),
+          { ...leadData, createdAt: serverTimestamp() }
+        );
+      }
+      setIsSuccess(true);
+    } catch (e) {
+      console.error("Lead submission error", e);
+      setIsSuccess(true); // Fail silently for user experience
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // Escape-to-close for Inquiry modal and Video modal (additive)
+  useEffect(() => {
+    const anyOpen = Boolean(isInquiryOpen || selectedVideo);
+    if (!anyOpen) return;
+
+    const onKeyDown = (e) => {
+      if (e.key !== "Escape") return;
+      if (selectedVideo) setSelectedVideo(null);
+      else if (isInquiryOpen) closeBrief();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isInquiryOpen, selectedVideo]); // closeBrief is stable enough here; it only sets state
 
   return (
     <div className="bg-[#020202] text-zinc-100 min-h-screen font-sans selection:bg-orange-600 overflow-x-hidden antialiased">
       <AnimatePresence>
         {!isInitialized && (
-          <motion.div 
+          <motion.div
             key="preloader"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
+            transition={{ duration: 0.6 }}
             className={`fixed inset-0 bg-[#020202] flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}
           >
             <div className="relative mb-12 flex items-center justify-center">
               <h1 className="text-7xl font-black italic tracking-tighter text-white/10 relative">
                 AOM<span className="text-white/5">.</span>
-                <motion.div 
-                  initial={{ width: 0 }} 
-                  animate={{ width: `${loadStatus}%` }} 
-                  className="absolute top-0 left-0 text-white overflow-hidden whitespace-nowrap logo-shine"
-                >
-                  AOM<span className="text-orange-600">.</span>
-                </motion.div>
+                <motion.div initial={{ width: 0 }} animate={{ width: `${loadStatus}%` }} className="absolute top-0 left-0 text-white overflow-hidden whitespace-nowrap logo-shine">AOM<span className="text-orange-600">.</span></motion.div>
               </h1>
             </div>
-            <div className="w-48 h-[1px] bg-white/5 relative overflow-hidden rounded-full">
-              <motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-orange-600 shadow-[0_0_10px_#FF4F00]" />
-            </div>
+            <div className="w-48 h-[1px] bg-white/5 relative overflow-hidden rounded-full"><motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-orange-600 shadow-[0_0_10px_#FF4F00]" /></div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -645,29 +651,23 @@ export default function App() {
         <main className="pb-24 text-left">
           <TextureOverlay />
           <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />
-          
-          {/* HEADER (Reduced sizing by 15%) */}
+
           <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
             <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white">AOM<span className="text-orange-600">.</span></h1>
             <div className="flex gap-4">
-              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-zinc-900 text-zinc-400 font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-white border border-white/5 transition-all">Call</button>
+              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-zinc-900 text-zinc-400 font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-white border border-white/5 transition-all">Call Logistics</button>
               <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-orange-600 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-sm hover:bg-orange-500 shadow-xl border border-white/10 transition-all">Get Started</button>
             </div>
           </header>
 
-          {/* HERO */}
           <section className="min-h-screen flex flex-col justify-center px-6 md:px-24 relative overflow-hidden pt-32 md:pt-40">
             <div className="absolute inset-0 z-0 opacity-20">
-              <iframe src="https://play.gumlet.io/embed/698a6296fc23d3d76fa8d992?autoplay=true&muted=true&loop=true&background=true" className="w-full h-full object-cover grayscale" title="Background" />
+              {heroVideoEmbed && <iframe src={heroVideoEmbed} className="w-full h-full object-cover grayscale" title="Hero Background" />}
               <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent" />
             </div>
             <div className="max-w-7xl mx-auto w-full relative z-10">
               <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
-                <div className="inline-flex items-center gap-4 mb-10 border-l-4 border-orange-600 pl-4 md:pl-6 max-w-full">
-                  <p className="text-orange-600 font-mono font-bold text-[clamp(10px,2.2vw,12px)] uppercase tracking-[0.4em] leading-tight block">
-                    Phoenix Video Production // Arizona Branding
-                  </p>
-                </div>
+                <div className="inline-flex items-center gap-4 mb-10 border-l-4 border-orange-600 pl-4 md:pl-6 max-w-full"><p className="text-orange-600 font-mono font-bold text-[clamp(10px,2.2vw,12px)] uppercase tracking-[0.4em] leading-tight block">Phoenix Video Production // Arizona Branding</p></div>
                 <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic">PHOENIX TEAMS <br /><TypewriterCycle words={["CLOSE FASTER", "RECRUIT BETTER", "RAISE CAPITAL", "OWN ATTENTION", "BUILD TRUST", "SCALE FASTER"]} /><br /><span className="text-outline">WITH VIDEO</span></h2>
               </motion.div>
               <div className="mt-16 md:mt-24 grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/10 pt-12 md:pt-16 items-end">
@@ -677,7 +677,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* VIBE CHECK & NUMBERS */}
           <section className="px-6 md:px-12 py-24 md:py-36 bg-black border-t border-white/5 relative">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="border-b border-white/5 pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
@@ -687,166 +686,68 @@ export default function App() {
                 </div>
                 <div className="w-full lg:max-w-md p-7 border border-white/5 bg-zinc-900/10"><ShieldCheck className="text-orange-600 mb-6" size={24} /><p className="text-zinc-500 text-sm leading-relaxed">System-driven storytelling for Arizona businesses where reliability is the baseline.</p></div>
               </FadeIn>
-              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FadeIn><VibeStat icon={Building2} kicker="Phoenix Impact" valueNode={<span><CountUp to={63} /><span className="text-orange-600">+</span></span>} sub="Supporting teams across industrial services, hospitality, and STEAM." /></FadeIn>
                 <FadeIn delay={0.1}><VibeStat icon={PlaneTakeoff} kicker="Regional Reach" valueNode={<span><CountUp to={34} /><span className="text-orange-600">+</span></span>} sub="Executing projects across the nation for Arizona-based market leaders." accent /></FadeIn>
                 <FadeIn delay={0.2}><VibeStat icon={Clapperboard} kicker="Assets Shipped" valueNode={<span><CountUp to={100} /><span className="text-orange-600">+</span></span>} sub={<span>Archive verified: <span className="text-orange-500">{videoTotal}</span> projects found in current build.</span>} /></FadeIn>
               </div>
-
               <FadeIn className="mt-16"><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{TESTIMONIALS.map((t, i) => <TestimonialCard key={i} t={t} />)}</div></FadeIn>
             </div>
           </section>
 
-          {/* PORTFOLIO SECTION */}
           <section id="work" className="py-24 md:py-36 bg-[#050505] relative z-10 overflow-hidden border-t border-white/5">
-            <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/5 pb-16">
-              <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-black text-white tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-orange-600">.</span></h2></div>
+            <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/5 pb-16 text-white">
+              <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-black tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-orange-600">.</span></h2></div>
               <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders', 'founders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-10 py-3 md:py-4 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:text-white'}`}>{tab}</button>)}</div>
             </div>
             <div className="space-y-20 md:space-y-36">
-              <InteractiveGallery items={PORTFOLIO_DATA[activeTab].campaigns} onPlay={setSelectedVideo} />
-              <InteractiveGallery items={strategyFeed} onPlay={setSelectedVideo} isVertical={true} />
+              <InteractiveGallery items={shuffledData[activeTab].campaigns} onPlay={setSelectedVideo} />
+              <InteractiveGallery items={shuffledData.feed} onPlay={setSelectedVideo} isVertical={true} />
             </div>
           </section>
 
-          {/* PACKAGES */}
-          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-[#050505] border-t border-white/5">
+          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-[#050505] border-t border-white/5 text-white">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/5 pb-16">
-                <div><span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Identify Your Needs</span><h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">Choose Your<br /><span className="text-outline">Execution Path</span><span className="text-orange-600">.</span></h2></div>
+                <div><span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Identify Your Needs</span><h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">Choose Your<br /><span className="text-outline">Execution Path</span><span className="text-orange-600">.</span></h2></div>
               </FadeIn>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
-                {ENGAGEMENT_IDEAS.map(idea => (
-                  <IdeaCard 
-                    key={idea.id} 
-                    idea={idea} 
-                    isSelected={selectedIntent?.id === idea.id} 
-                    onSelect={() => openBrief(idea)} 
-                  />
-                ))}
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => ( <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={() => openBrief(idea)} /> ))}</div>
             </div>
           </section>
 
-          {/* THE TRUST LAYER */}
-          <section className="px-6 md:px-12 py-36 bg-black border-t border-white/5 overflow-hidden">
+          <section className="px-6 md:px-12 py-36 bg-black border-t border-white/5 overflow-hidden text-white">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="flex flex-col lg:flex-row items-end justify-between gap-12 mb-20">
                 <div className="max-w-xl">
                   <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Why Us</span>
-                  <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-orange-600">.</span></h2>
+                  <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-orange-600">.</span></h2>
                 </div>
                 <div className="w-full lg:max-w-md border border-white/10 bg-black/40 overflow-hidden relative">
-                  <div className="flex whitespace-nowrap animate-scroll py-6">
-                    {[...Array(4)].flatMap(() => TRUST_LOGOS).map((t, i) => (
-                      <div key={i} className="mx-10 flex items-center gap-3 opacity-60"><Building2 size={16} className="text-orange-600" /><span className="text-[11px] font-mono font-bold uppercase tracking-[0.35em] text-zinc-400">{t}</span></div>
-                    ))}
-                  </div>
+                  <div className="flex whitespace-nowrap animate-scroll py-6">{[...Array(4)].flatMap(() => TRUST_LOGOS).map((t, i) => ( <div key={i} className="mx-10 flex items-center gap-3 opacity-60"><Building2 size={16} className="text-orange-600" /><span className="text-[11px] font-mono font-bold uppercase tracking-[0.35em] text-zinc-400">{t}</span></div> ))}</div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/5 bg-zinc-900/10 rounded-sm hover:border-orange-600/30 transition-all"><m.icon className="text-orange-600 mb-8" size={24} /><p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-600 mb-3">{m.label}</p><h4 className="text-xl font-black italic text-white uppercase">{m.value}</h4><p className="text-zinc-500 text-xs mt-4 leading-relaxed">{m.sub}</p></div>)}
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/5 bg-zinc-900/10 rounded-sm hover:border-orange-600/30 transition-all"><m.icon className="text-orange-600 mb-8" size={24} /><p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-600 mb-3">{m.label}</p><h4 className="text-xl font-black italic text-white uppercase">{m.value}</h4><p className="text-zinc-500 text-xs mt-4 leading-relaxed">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
-          {/* PROCESS SECTION */}
-          <section id="system" className="px-6 md:px-12 py-24 md:py-36 bg-black border-t border-white/5">
+          <footer className="px-6 md:px-12 py-24 md:py-48 border-t border-white/5 bg-[#020202] text-center pb-64 text-white">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <div className="max-w-4xl mb-16 md:mb-24"><span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-10 block"><ScrambleText text="Our Process" /></span><h2 className="text-4xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">Strategy comes <br /><span className="text-outline">before</span> the camera.</h2></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/5 border border-white/5">
-                {[
-                  { id: "01", icon: Target, title: "Blueprint", body: "We map narrative architecture before shooting. Every frame is built with high-intent objectives." },
-                  { id: "02", icon: Layers, title: "Capture", body: "Cinema-grade workflows. A lean crew that respects your business operations." },
-                  { id: "03", icon: Repeat, title: "Systems", body: "Assets sliced for social and web. Your output becomes a repeatable content engine." },
-                  { id: "04", icon: Truck, title: "Delivery", body: "Polished assets shipped on a defined cadence through our portal. No drama." }
-                ].map(step => (
-                  <div key={step.id} className="bg-black p-10 md:p-16 group hover:bg-zinc-900/40 transition-colors border-white/5">
-                    <div className="flex items-center justify-between mb-10"><div className="w-16 h-16 bg-zinc-900 border border-white/10 flex items-center justify-center group-hover:bg-orange-600 transition-colors shadow-2xl"><step.icon size={24} className="text-white" /></div><span className="text-4xl font-black italic text-zinc-800 group-hover:text-orange-600/20 transition-colors">{step.id}</span></div>
-                    <h4 className="text-2xl md:text-3xl font-black text-white mb-6 uppercase italic tracking-tighter group-hover:text-orange-500 transition-colors">{step.title}</h4>
-                    <p className="text-zinc-400 text-base md:text-lg leading-relaxed">{step.body}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* GEAR / TOOLKIT */}
-          <section id="gear" className="px-6 md:px-12 py-24 md:py-36 bg-black border-t border-white/5">
-            <div className="max-w-screen-2xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-20">
-              <div>
-                <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-10 block">Toolkit</span>
-                <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase italic leading-[0.8] mb-12">The<br /><span className="text-outline">Industrial</span><br />Arsenal<span className="text-orange-600">.</span></h2>
-                <div className="p-10 border border-orange-600/20 bg-orange-600/5 rounded-sm relative group overflow-hidden">
-                  <Video size={40} className="absolute top-6 right-6 opacity-20 text-orange-600 group-hover:opacity-100 transition-opacity" />
-                  <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-6">Ronin 4D 6K Suite</h3>
-                  <p className="text-zinc-400 text-lg leading-relaxed mb-10">Integrated cinema stabilization. Rent the kit (minus wireless monitors) or hire us as operators.</p>
-                  <button onClick={() => window.location.href = `tel:${RENTAL_REALESTATE_PHONE}`} className="px-8 py-3 bg-white text-black font-black uppercase text-[10px] tracking-widest hover:bg-zinc-200 transition-all flex items-center gap-2"><Download size={14} /> Rent: 480-695-4462</button>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {[
-                  { icon: Mic, title: "Audio Units", desc: "Wireless lavs + boom mics. Hire us as a dedicated audio unit." },
-                  { icon: MousePointer2, title: "Resolve Grade", desc: "Industry-standard grading for superior narrative assembly." },
-                  { icon: Cpu, title: "BTS & Ops", desc: "Hire us as your Camera Operator for high-stakes projects." },
-                  { icon: Headphones, title: "Monitoring", desc: "On-site capture monitoring to manage the soundscape." }
-                ].map((tool, idx) => (
-                  <div key={idx} className="p-8 border border-white/5 bg-zinc-900/10 hover:border-orange-600/20 transition-all">
-                    <tool.icon size={24} className="text-orange-600 mb-8" />
-                    <h4 className="text-xl font-black text-white uppercase italic tracking-tighter mb-4">{tool.title}</h4>
-                    <p className="text-zinc-500 text-sm leading-relaxed">{tool.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* FAQ & REASSURANCE */}
-          <section id="reassurance" className="px-6 md:px-12 py-24 md:py-36 bg-black border-t border-white/5">
-            <div className="max-w-screen-2xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16">
-              <div className="w-full">
-                <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white mb-10 flex items-center gap-3"><ShieldCheck className="text-orange-600" size={24} /> FAQ</h3>
-                <div className="space-y-4">{FAQS.map((f, i) => <FAQItem key={i} item={f} open={openFAQ === i} onToggle={() => setOpenFAQ(openFAQ === i ? -1 : i)} />)}</div>
-              </div>
-              <div className="p-10 border border-white/5 bg-zinc-900/20 rounded-sm">
-                <h3 className="text-3xl font-black italic uppercase tracking-tighter text-white mb-10 flex items-center gap-3"><BadgeCheck className="text-orange-600" size={24} /> Fit Check</h3>
-                <p className="text-zinc-400 text-sm mb-10 leading-relaxed">Best for businesses that want established-level assets without the agency friction.</p>
-                <div className="space-y-6">
-                  {[{ icon: ShieldCheck, title: "Reliability", body: "A repeatable process, not a guess." }, { icon: Target, title: "Intent", body: "Every asset has a job: trust, recruit, or launch." }].map(x => (
-                    <div key={x.title} className="flex items-start gap-4 p-5 border border-white/5 bg-black/40"><x.icon className="text-orange-600 mt-1" size={18} /><div><p className="text-white font-black uppercase tracking-widest text-xs italic">{x.title}</p><p className="text-zinc-600 text-[11px] mt-2 leading-relaxed">{x.body}</p></div></div>
-                  ))}
-                </div>
-                <button onClick={() => openBrief()} className="mt-10 w-full px-10 py-4 bg-orange-600 text-white font-black italic uppercase tracking-[0.2em] text-[10px] hover:bg-orange-500 transition-all shadow-2xl">Start Project</button>
-              </div>
-            </div>
-          </section>
-
-          {/* FOOTER */}
-          <footer className="px-6 md:px-12 py-24 md:py-48 border-t border-white/5 bg-[#020202] text-center pb-64">
-            <div className="max-w-screen-2xl mx-auto w-full">
-              <h2 className="text-6xl md:text-[10rem] font-black text-white tracking-tighter mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-orange-600">Scale?</span></h2>
+              <h2 className="text-6xl md:text-[10rem] font-black tracking-tighter mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-orange-600">Scale?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <button onClick={() => openBrief()} className="px-16 py-6 bg-orange-600 text-white font-black uppercase tracking-[0.4em] text-xs hover:bg-orange-500 transition-all clip-path-slant shadow-2xl">Start Brief</button>
-                {/* Book Call button now uses Phone Modal routing logic */}
                 <button onClick={openPhone} className="px-16 py-6 bg-zinc-900 text-zinc-400 font-black uppercase tracking-[0.4em] text-xs hover:text-white transition-all clip-path-slant border border-white/5">Book Call</button>
               </div>
               <div className="mt-48 grid grid-cols-1 md:grid-cols-3 gap-20 text-left border-t border-white/5 pt-16">
-                <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Production</p><button onClick={() => window.location.href = `tel:${MAIN_PHONE}`} className="text-white text-3xl font-black italic tracking-tighter">602-373-2164</button></div>
-                <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Rentals</p><button onClick={() => window.location.href = `tel:${RENTAL_REALESTATE_PHONE}`} className="text-white text-3xl font-black italic tracking-tighter">480-695-4462</button></div>
+                <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Production</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-white text-3xl font-black italic tracking-tighter">Call Production</button></div>
+                <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Rentals</p><button onClick={() => handleRoute(RENTAL_REALESTATE_PHONE)} className="text-white text-3xl font-black italic tracking-tighter">Call Rentals</button></div>
                 <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-black italic tracking-tighter underline decoration-orange-600 underline-offset-8">hello@aom-inhouse.com</a></div>
               </div>
             </div>
           </footer>
 
-          {/* SYSTEM TICKER */}
           <div className="fixed bottom-0 left-0 w-full z-[100] h-12 bg-black border-t border-zinc-800 flex items-center shadow-2xl">
             <div className="flex-1 overflow-hidden relative h-full flex items-center bg-black/90">
-              <div className="flex whitespace-nowrap animate-scroll items-center">
-                {[...Array(4)].flatMap(() => TICKER_TEXTS).map((text, i) => (
-                  <div key={i} className="flex items-center mx-6"><Radio size={12} className="text-orange-600 animate-pulse mr-3" /><span className="text-[9px] md:text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.3em] flex items-center">{text}</span></div>
-                ))}
-              </div>
+              <div className="flex whitespace-nowrap animate-scroll items-center">{[...Array(4)].flatMap(() => TICKER_TEXTS).map((text, i) => ( <div key={i} className="flex items-center mx-6"><Radio size={12} className="text-orange-600 animate-pulse mr-3" /><span className="text-[9px] md:text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.3em] flex items-center">{text}</span></div> ))}</div>
             </div>
             <div className="h-full flex items-center z-20">
               <button onClick={openPhone} className="h-full px-5 md:px-6 bg-zinc-900 text-zinc-400 font-black italic uppercase tracking-[0.15em] text-[10px] hover:text-white transition-all flex items-center gap-2 border-l border-zinc-800"><Calendar size={14} /><span className="hidden sm:inline">15-Min Call</span></button>
@@ -854,7 +755,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* VIDEO PLAYER MODAL */}
           <AnimatePresence>
             {selectedVideo && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[2000] bg-black/98 flex items-center justify-center p-4 md:p-10 backdrop-blur-3xl">
@@ -863,55 +763,61 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
-          
-          {/* BRIEF MODAL */}
+
           <AnimatePresence>
             {isInquiryOpen && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
                 <div className="w-full max-w-lg p-10 border border-white/5 bg-[#0a0a0a] relative shadow-2xl rounded-xl">
-                  <button onClick={closeBrief} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors"><X size={20} /></button>
+                  <button onClick={closeBrief} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors" disabled={isSubmitting}><X size={20} /></button>
                   {!isSuccess ? (
                     <div className="space-y-8">
                       <div>
                         <h2 className="text-3xl font-black text-white italic uppercase">Start Project<span className="text-orange-600">.</span></h2>
-                        {selectedIntent && (
-                            <div className="mt-2 inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1 rounded-sm">
-                                <span className="text-orange-600 text-[9px] font-black uppercase tracking-widest">{selectedIntent.title}</span>
-                            </div>
-                        )}
+                        {selectedIntent && ( <div className="mt-2 inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1 rounded-sm"><span className="text-orange-600 text-[9px] font-black uppercase tracking-widest">{selectedIntent.title}</span></div> )}
                       </div>
-                      
                       {step === 1 ? (
                         <div className="space-y-6">
-                          <input 
-                            type="text" 
-                            placeholder="NAME" 
-                            className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white" 
-                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          <input
+                            type="text"
+                            placeholder="NAME"
+                            value={formData.name}
+                            className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white"
+                            onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
+                            disabled={isSubmitting}
                           />
-                          <input 
-                            type="email" 
-                            placeholder="EMAIL" 
-                            className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white" 
-                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          <input
+                            type="email"
+                            placeholder="EMAIL"
+                            value={formData.email}
+                            className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white"
+                            onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
+                            disabled={isSubmitting}
                           />
-                          <button onClick={() => setStep(2)} className="w-full bg-orange-600 py-4 font-black italic uppercase shadow-xl hover:bg-orange-500 transition-all text-sm tracking-widest text-white">Next</button>
+                          <button
+                            onClick={() => setStep(2)}
+                            disabled={!isStep1Valid || isSubmitting}
+                            className={`w-full py-4 font-black italic uppercase shadow-xl transition-all text-sm tracking-widest
+                              ${isStep1Valid && !isSubmitting ? "bg-orange-600 hover:bg-orange-500 text-white" : "bg-zinc-800 text-zinc-500 cursor-not-allowed"}`}
+                          >
+                            Next
+                          </button>
                         </div>
                       ) : (
                         <div className="space-y-4">
-                            <p className="text-zinc-500 text-[10px] font-mono font-bold uppercase tracking-widest mb-2">Select Budget Range</p>
-                            {BUDGET_OPTIONS.map(o => (
-                                <button 
-                                    key={o} 
-                                    onClick={() => {
-                                        setFormData({...formData, budget: o});
-                                        handleLeadSubmit();
-                                    }} 
-                                    className="w-full p-4 border border-white/5 bg-white/5 hover:bg-orange-600 hover:border-orange-500 transition-all uppercase font-bold italic text-left text-xs tracking-widest text-white"
-                                >
-                                    {o}
-                                </button>
-                            ))}
+                          <p className="text-zinc-500 text-[10px] font-mono font-bold uppercase tracking-widest mb-2">Select Budget Range</p>
+                          {BUDGET_OPTIONS.map(o => (
+                            <button
+                              key={o}
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, budget: o }));
+                                handleLeadSubmit(o);
+                              }}
+                              disabled={isSubmitting}
+                              className="w-full p-4 border border-white/5 bg-white/5 hover:bg-orange-600 hover:border-orange-500 transition-all uppercase font-bold italic text-left text-xs tracking-widest text-white flex justify-between items-center"
+                            >
+                              {o} {isSubmitting && o === (formData.budget) && <Loader2 className="animate-spin" size={14} />}
+                            </button>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -929,4 +835,3 @@ export default function App() {
 }
 
 const TICKER_TEXTS = ["PHOENIX VIDEO PRODUCTION", "PARTNER VERIFIED // THE RIGHT TEAM", "REAL ESTATE MEDIA", "TURNKEY CONTENT SCALE", "AHEAD OF MARKET // EST 2021", "SCOTTSDALE BRAND NARRATIVE"];
-
