@@ -8,7 +8,7 @@ import {
   Lightbulb, Rocket, Repeat, Crown, Fingerprint, Mic2,
   Download, Calendar, TrendingUp, PlaneTakeoff, Globe, Navigation, MapPin, Truck,
   Phone, Video, Mic, Monitor, Cpu, Headphones, Speaker, MousePointer2, Mail, Landmark,
-  ChevronLeft
+  ChevronLeft, AlertCircle
 } from 'lucide-react';
 
 // --- FIREBASE & STORAGE CONFIG ---
@@ -42,7 +42,20 @@ const FORMSPREE_ENDPOINT = "https://formspree.io/f/xbdalqvg";
 const MAIN_PHONE = "6023732164";
 const RENTAL_REALESTATE_PHONE = "4806954462";
 const BUDGET_OPTIONS = ["$2k - $5k", "$5k - $10k", "$10k - $25k", "$25k+"];
+const GOAL_OPTIONS = ["Close more sales", "Recruiting", "Investor / fundraising", "Brand trust", "Event recap", "Launch", "Other"];
+const PLACEMENT_OPTIONS = ["Website", "Ads", "LinkedIn", "Instagram/TikTok", "Sales outreach", "Internal", "Not sure"];
+const TIMING_OPTIONS = ["ASAP (1–2 weeks)", "This month", "Next 30–60 days", "Quarterly/ongoing"];
 const CHARS = "-_~*+[]!@#%&";
+
+const INITIAL_FORM_STATE = {
+  name: '', 
+  email: '', 
+  budget: '',
+  goal: '',
+  problem: '',
+  placement: '',
+  timing: ''
+};
 
 // --- DATA: TRUST & AUTHORITY ---
 const TRUST_METRICS = [
@@ -335,31 +348,14 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
     return () => observer.disconnect();
   }, []);
   return (
-    <article
-      ref={ref}
-      onClick={() => onPlay({ url, title })}
-      className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[240px] md:w-[320px]' : 'aspect-video w-[320px] md:w-[500px] shadow-lg'}`}
-    >
+    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[240px] md:w-[320px]' : 'aspect-video w-[320px] md:w-[500px] shadow-lg'}`}>
       <div className="absolute inset-0 bg-zinc-950">
         {shouldLoad && embedUrl && (
-          <iframe
-            src={embedUrl}
-            loading="lazy"
-            className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105"
-            title={title}
-            allow="autoplay; encrypted-media"
-            style={{ pointerEvents: 'none' }}
-          />
+          <iframe src={embedUrl} loading="lazy" className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105" title={title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
         )}
       </div>
       <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20 bg-gradient-to-t from-black/95 via-black/10 to-transparent">
-        <div className="flex justify-between items-start">
-          <div className="flex flex-wrap gap-1.5">
-            {tags.slice(0, 2).map(t => (
-              <span key={t} className="text-[9px] font-black px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm uppercase tracking-widest">{t}</span>
-            ))}
-          </div>
-        </div>
+        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-[9px] font-black px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm uppercase tracking-widest">{t}</span>)}</div></div>
         <div className="max-w-[95%]">
           <h3 className={`font-black tracking-tight text-white leading-[0.9] transition-colors group-hover:text-orange-500 uppercase italic ${isVertical ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>{title}</h3>
           <p className="text-[10px] font-mono text-zinc-400 mt-2 uppercase tracking-widest italic flex items-center gap-2"><span className="w-1 h-1 bg-orange-600 rounded-full" />{sub}</p>
@@ -389,11 +385,7 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
   };
   useEffect(() => {
     const el = containerRef.current;
-    if (el) {
-      el.addEventListener('scroll', updateScrollButtons);
-      updateScrollButtons();
-      return () => el.removeEventListener('scroll', updateScrollButtons);
-    }
+    if (el) { el.addEventListener('scroll', updateScrollButtons); updateScrollButtons(); return () => el.removeEventListener('scroll', updateScrollButtons); }
   }, [items]);
   return (
     <div className="relative group/gallery">
@@ -401,7 +393,7 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-600 animate-pulse"><MousePointer2 size={12} className="text-orange-600" /> Swipe to explore</div>
       </div>
       <div ref={containerRef} className="flex gap-4 md:gap-6 overflow-x-auto hide-scrollbar px-6 md:px-12 py-4 scroll-smooth cursor-grab active:cursor-grabbing">
-        {items.map((v, i) => (<VideoModule key={v?.url || v?.title || i} onPlay={onPlay} isVertical={isVertical} {...v} />))}
+        {items.map((v, i) => ( <VideoModule key={i} onPlay={onPlay} isVertical={isVertical} {...v} /> ))}
         <div className="w-4 shrink-0 md:hidden" />
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 left-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
@@ -417,20 +409,9 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
 // --- ROUTING MODAL ---
 const PhoneModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('list');
-
   useEffect(() => { if (!isOpen) setTimeout(() => setView('list'), 300); }, [isOpen]);
-
-  // Escape-to-close (additive)
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
   const handleRoute = (number) => { window.location.href = `tel:${number}`; };
-
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
@@ -492,14 +473,11 @@ export default function App() {
   const [openFAQ, setOpenFAQ] = useState(0);
   const [user, setUser] = useState(null);
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({ name: '', email: '', budget: '' });
+  const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // FIX: used in footer previously but only existed inside PhoneModal
-  const handleRoute = (number) => {
-    window.location.href = `tel:${number}`;
-  };
+  const [pendingBudget, setPendingBudget] = useState(null);
 
   // SESSION-BASED RANDOMIZATION
   const shuffledData = useMemo(() => {
@@ -527,115 +505,79 @@ export default function App() {
   const heroVideoEmbed = useMemo(() => getGumletBackgroundEmbed(shuffledData.hero.url), [shuffledData.hero]);
 
   useEffect(() => {
-    if (loadStatus < 100) {
-      const timer = setTimeout(() => setLoadStatus(prev => prev + 2.5), 20);
-      return () => clearTimeout(timer);
-    } else {
-      const timer = setTimeout(() => {
-        setIsLoaderExiting(true);
-        const finalTimer = setTimeout(() => setIsInitialized(true), 600);
-        return () => clearTimeout(finalTimer);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
+    if (loadStatus < 100) { const timer = setTimeout(() => setLoadStatus(prev => prev + 2.5), 20); return () => clearTimeout(timer); } 
+    else { const timer = setTimeout(() => { setIsLoaderExiting(true); const finalTimer = setTimeout(() => setIsInitialized(true), 600); return () => clearTimeout(finalTimer); }, 1500); return () => clearTimeout(timer); }
   }, [loadStatus]);
 
   useEffect(() => {
     if (!auth) return;
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token);
-      else await signInAnonymously(auth);
-    };
+    const initAuth = async () => { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); else await signInAnonymously(auth); };
     initAuth();
     const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
   }, []);
 
-  // Lock scroll if ANY modal open
-  useEffect(() => {
-    const anyModalOpen = Boolean(isPhoneModalOpen || isInquiryOpen || selectedVideo);
-    document.body.style.overflow = anyModalOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [isPhoneModalOpen, isInquiryOpen, selectedVideo]);
-
-  const videoTotal = useMemo(
-    () => Object.values(PORTFOLIO_DATA).reduce((acc, cat) => acc + cat.campaigns.length + cat.social.length, 0),
-    []
-  );
+  const videoTotal = useMemo(() => Object.values(PORTFOLIO_DATA).reduce((acc, cat) => acc + cat.campaigns.length + cat.social.length, 0), []);
 
   const openBrief = (intent = null) => { if (intent) setSelectedIntent(intent); setIsInquiryOpen(true); };
-  const closeBrief = () => { setIsInquiryOpen(false); setIsSuccess(false); setStep(1); setSelectedIntent(null); };
+  const closeBrief = () => { 
+    setIsInquiryOpen(false); 
+    setIsSuccess(false); 
+    setIsError(false); 
+    setStep(1); 
+    setSelectedIntent(null); 
+    setFormData(INITIAL_FORM_STATE);
+    setPendingBudget(null);
+  };
   const openPhone = () => setIsPhoneModalOpen(true);
   const closePhone = () => setIsPhoneModalOpen(false);
 
-  // Step 1 validation + controlled inputs
-  const isStep1Valid = useMemo(() => {
-    const nameOk = formData.name.trim().length > 1;
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
-    return nameOk && emailOk;
-  }, [formData.name, formData.email]);
-
-  // FIX: accept override budget to avoid race condition
-  const handleLeadSubmit = async (budgetOverride) => {
+  const handleLeadSubmit = async (overrides = {}) => {
     setIsSubmitting(true);
-    const leadData = {
+    setIsError(false);
+    
+    // Construct final payload using overrides to handle async state lag
+    const finalPayload = {
       ...formData,
-      budget: budgetOverride ?? formData.budget,
+      ...overrides,
       intent: selectedIntent?.title || 'General Inquiry',
       intentStatement: selectedIntent?.statement || 'N/A',
+      source: "aheadofmarket.com modal",
       submittedAt: new Date().toISOString()
     };
 
     try {
-      // 1. FORMSPREE SUBMISSION (Primary)
-      await fetch(FORMSPREE_ENDPOINT, {
+      const response = await fetch(FORMSPREE_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...leadData, _subject: `New Lead: ${leadData.intent}` })
+        body: JSON.stringify({ ...finalPayload, _subject: `New Lead: ${finalPayload.intent} - ${finalPayload.name}` })
       });
 
-      // 2. FIRESTORE ARCHIVE (Secondary Backup)
+      if (!response.ok) throw new Error("Formspree rejected submission");
+
       if (db && user) {
-        await addDoc(
-          collection(db, 'artifacts', appId, 'public', 'data', 'leads'),
-          { ...leadData, createdAt: serverTimestamp() }
-        );
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'leads'), { ...finalPayload, createdAt: serverTimestamp() });
       }
       setIsSuccess(true);
     } catch (e) {
       console.error("Lead submission error", e);
-      setIsSuccess(true); // Fail silently for user experience
+      setIsError(true);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Escape-to-close for Inquiry modal and Video modal (additive)
-  useEffect(() => {
-    const anyOpen = Boolean(isInquiryOpen || selectedVideo);
-    if (!anyOpen) return;
+  const isStep1Valid = formData.name.trim().length > 1 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+  const isStep2Valid = formData.goal !== '' && formData.problem.trim().length >= 15 && formData.placement !== '';
+  const isStep3Valid = isStep1Valid && isStep2Valid && formData.timing !== '';
 
-    const onKeyDown = (e) => {
-      if (e.key !== "Escape") return;
-      if (selectedVideo) setSelectedVideo(null);
-      else if (isInquiryOpen) closeBrief();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isInquiryOpen, selectedVideo]); // closeBrief is stable enough here; it only sets state
+  const handleRoute = (number) => { window.location.href = `tel:${number}`; };
 
   return (
     <div className="bg-[#020202] text-zinc-100 min-h-screen font-sans selection:bg-orange-600 overflow-x-hidden antialiased">
       <AnimatePresence>
         {!isInitialized && (
-          <motion.div
-            key="preloader"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className={`fixed inset-0 bg-[#020202] flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}
-          >
+          <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-[#020202] flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
             <div className="relative mb-12 flex items-center justify-center">
               <h1 className="text-7xl font-black italic tracking-tighter text-white/10 relative">
                 AOM<span className="text-white/5">.</span>
@@ -651,7 +593,7 @@ export default function App() {
         <main className="pb-24 text-left">
           <TextureOverlay />
           <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />
-
+          
           <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
             <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white">AOM<span className="text-orange-600">.</span></h1>
             <div className="flex gap-4">
@@ -763,66 +705,179 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
-
+          
           <AnimatePresence>
             {isInquiryOpen && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
-                <div className="w-full max-w-lg p-10 border border-white/5 bg-[#0a0a0a] relative shadow-2xl rounded-xl">
-                  <button onClick={closeBrief} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors" disabled={isSubmitting}><X size={20} /></button>
-                  {!isSuccess ? (
-                    <div className="space-y-8">
+                <div className="w-full max-w-xl p-8 md:p-12 border border-white/5 bg-[#0a0a0a] relative shadow-2xl rounded-xl overflow-y-auto max-h-[90vh]">
+                  {/* Visual Edge Light */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-600/10 via-transparent to-orange-600/5 pointer-events-none rounded-xl" />
+                  
+                  {/* Progress Bar */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden rounded-t-xl z-30">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(step/3) * 100}%` }}
+                      className="h-full bg-orange-600 shadow-[0_0_15px_#FF4F00]"
+                    />
+                  </div>
+
+                  <button onClick={closeBrief} className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors z-40" disabled={isSubmitting}><X size={24} /></button>
+                  
+                  {!isSuccess && !isError ? (
+                    <div className="space-y-10 relative z-10">
                       <div>
-                        <h2 className="text-3xl font-black text-white italic uppercase">Start Project<span className="text-orange-600">.</span></h2>
-                        {selectedIntent && ( <div className="mt-2 inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1 rounded-sm"><span className="text-orange-600 text-[9px] font-black uppercase tracking-widest">{selectedIntent.title}</span></div> )}
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Start Brief<span className="text-orange-600">.</span></h2>
+                            <span className="text-[10px] font-mono text-zinc-600 font-bold tracking-widest uppercase">Step {step} of 3</span>
+                        </div>
+                        {selectedIntent && step === 1 && ( <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1.5 rounded-sm"><span className="text-orange-600 text-[9px] font-black uppercase tracking-widest">{selectedIntent.title}</span></div> )}
                       </div>
-                      {step === 1 ? (
-                        <div className="space-y-6">
-                          <input
-                            type="text"
-                            placeholder="NAME"
-                            value={formData.name}
-                            className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white"
-                            onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
-                            disabled={isSubmitting}
-                          />
-                          <input
-                            type="email"
-                            placeholder="EMAIL"
-                            value={formData.email}
-                            className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white"
-                            onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
-                            disabled={isSubmitting}
-                          />
-                          <button
-                            onClick={() => setStep(2)}
-                            disabled={!isStep1Valid || isSubmitting}
-                            className={`w-full py-4 font-black italic uppercase shadow-xl transition-all text-sm tracking-widest
-                              ${isStep1Valid && !isSubmitting ? "bg-orange-600 hover:bg-orange-500 text-white" : "bg-zinc-800 text-zinc-500 cursor-not-allowed"}`}
-                          >
-                            Next
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <p className="text-zinc-500 text-[10px] font-mono font-bold uppercase tracking-widest mb-2">Select Budget Range</p>
-                          {BUDGET_OPTIONS.map(o => (
-                            <button
-                              key={o}
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, budget: o }));
-                                handleLeadSubmit(o);
-                              }}
-                              disabled={isSubmitting}
-                              className="w-full p-4 border border-white/5 bg-white/5 hover:bg-orange-600 hover:border-orange-500 transition-all uppercase font-bold italic text-left text-xs tracking-widest text-white flex justify-between items-center"
-                            >
-                              {o} {isSubmitting && o === (formData.budget) && <Loader2 className="animate-spin" size={14} />}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+
+                      <AnimatePresence mode="wait">
+                        {step === 1 && (
+                          <motion.div key="step1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-2 block">Your Name</label>
+                                    <input type="text" placeholder="FULL NAME" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-zinc-800 transition-colors" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-2 block">Direct Email</label>
+                                    <input type="email" placeholder="EMAIL@DOMAIN.COM" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-zinc-800 transition-colors" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                                </div>
+                            </div>
+                            <button onClick={() => setStep(2)} disabled={!isStep1Valid} className={`w-full py-5 font-black italic uppercase shadow-xl transition-all text-sm tracking-widest ${isStep1Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'}`}>Next Step</button>
+                            <p className="text-[10px] text-zinc-600 font-mono text-center uppercase tracking-widest">A creative lead will reply within 24 hours.</p>
+                          </motion.div>
+                        )}
+
+                        {step === 2 && (
+                          <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
+                             {/* Live Outcome Preview */}
+                             <div className="p-4 border border-orange-600/20 bg-orange-600/5 rounded-sm">
+                                <p className="text-[8px] font-mono text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles size={10}/> Logic Preview</p>
+                                <div className="flex gap-4">
+                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Goal</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.goal || 'PENDING'}</p></div>
+                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Platform</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.placement || 'PENDING'}</p></div>
+                                </div>
+                             </div>
+
+                             <div className="space-y-6">
+                                <div>
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Primary Objective</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {GOAL_OPTIONS.map(g => (
+                                            <button key={g} onClick={() => setFormData({...formData, goal: g})} className={`px-4 py-2 border text-[10px] font-black uppercase transition-all tracking-widest ${formData.goal === g ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.3)]' : 'border-white/5 bg-white/5 text-zinc-500 hover:border-zinc-700'}`}>{g}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Current Bottleneck</label>
+                                    <textarea maxLength={180} placeholder="Example: We have great work but no case study video that wins industrial contracts." className="w-full bg-zinc-900/50 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-zinc-800 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
+                                    <div className="flex justify-between mt-2">
+                                        {formData.problem.length < 15 && <span className="text-[9px] font-mono text-orange-500/60 uppercase animate-pulse">Min. 15 characters required</span>}
+                                        <span className="text-[9px] font-mono text-zinc-700 ml-auto">{formData.problem.length}/180</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Asset Placement</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {PLACEMENT_OPTIONS.map(p => (
+                                            <button key={p} onClick={() => setFormData({...formData, placement: p})} className={`px-4 py-2 border text-[10px] font-black uppercase transition-all tracking-widest ${formData.placement === p ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'border-white/5 bg-white/5 text-zinc-500 hover:border-zinc-700'}`}>{p}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                             </div>
+                             <div className="flex gap-4">
+                                <button onClick={() => setStep(1)} className="px-8 py-5 border border-white/5 bg-zinc-900 text-zinc-500 font-black italic uppercase text-xs tracking-widest hover:text-white transition-all">Back</button>
+                                <button onClick={() => setStep(3)} disabled={!isStep2Valid} className={`flex-grow py-5 font-black italic uppercase shadow-xl transition-all text-sm tracking-widest ${isStep2Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'}`}>Set Logistics</button>
+                             </div>
+                          </motion.div>
+                        )}
+
+                        {step === 3 && (
+                          <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
+                             {/* Live Outcome Preview */}
+                             <div className="p-4 border border-orange-600/20 bg-orange-600/5 rounded-sm">
+                                <p className="text-[8px] font-mono text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Clock3 size={10}/> Strategy Summary</p>
+                                <div className="grid grid-cols-3 gap-4">
+                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Goal</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter truncate">{formData.goal}</p></div>
+                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Timing</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.timing || 'PENDING'}</p></div>
+                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Tier</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.budget || 'PENDING'}</p></div>
+                                </div>
+                             </div>
+
+                             <div className="space-y-8">
+                                <div>
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Preferred Timeline</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {TIMING_OPTIONS.map(t => (
+                                            <button key={t} onClick={() => setFormData({...formData, timing: t})} className={`px-4 py-3 border text-[9px] font-black uppercase transition-all tracking-widest text-left ${formData.timing === t ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.3)]' : 'border-white/5 bg-white/5 text-zinc-500 hover:border-zinc-700'}`}>{t}</button>
+                                        ))}
+                                    </div>
+                                    {!formData.timing && <p className="text-[9px] font-mono text-orange-500/60 uppercase mt-3 italic">Select timing to enable budget tiers</p>}
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Select Budget Tier <span className="text-zinc-700 italic font-mono lowercase tracking-normal font-normal">(Submits Brief)</span></label>
+                                    <div className="space-y-2">
+                                        {BUDGET_OPTIONS.map(o => {
+                                          const isActive = pendingBudget === o && isSubmitting;
+                                          return (
+                                            <button 
+                                              key={o} 
+                                              onClick={() => { 
+                                                const b = o;
+                                                setFormData(prev => ({...prev, budget: b}));
+                                                setPendingBudget(b); 
+                                                handleLeadSubmit({ budget: b }); 
+                                              }} 
+                                              disabled={isSubmitting || !formData.timing} 
+                                              className={`w-full p-4 border transition-all uppercase font-black italic text-left text-xs tracking-widest flex justify-between items-center ${!formData.timing ? 'opacity-30 cursor-not-allowed bg-zinc-950 border-white/5 text-zinc-800' : 'bg-white/5 border-white/5 text-white hover:bg-orange-600 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(255,79,0,0.2)]'}`}
+                                            >
+                                                {o} {isActive && <Loader2 className="animate-spin" size={14} />}
+                                            </button>
+                                          );
+                                        })}
+                                    </div>
+                                </div>
+                             </div>
+                             <div className="flex gap-4">
+                                <button onClick={() => setStep(2)} className="px-8 py-5 border border-white/5 bg-zinc-900 text-zinc-500 font-black italic uppercase text-xs tracking-widest hover:text-white transition-all">Back</button>
+                                <div className="flex-grow flex items-center justify-center text-[10px] text-zinc-700 font-mono uppercase tracking-widest animate-pulse italic">
+                                  {!formData.timing ? "Waiting for timing..." : "Select tier to finish"}
+                                </div>
+                             </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
+                  ) : isError ? (
+                    <motion.div key="error" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12 relative z-10">
+                        <AlertCircle size={64} className="mx-auto text-red-600 mb-8" />
+                        <h3 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-4">Submission Failed</h3>
+                        <p className="text-zinc-500 text-sm leading-relaxed mb-10 max-w-xs mx-auto uppercase font-mono font-bold tracking-widest">A network conflict occurred. Please retry with your selected tier ({pendingBudget}).</p>
+                        <div className="space-y-4">
+                            <button onClick={() => handleLeadSubmit({ budget: pendingBudget })} className="w-full bg-orange-600 py-4 font-black italic uppercase shadow-xl hover:bg-orange-500 transition-all text-sm tracking-widest text-white flex items-center justify-center gap-3"><Loader2 className={isSubmitting ? "animate-spin" : "hidden"} size={16} /> Retry Submission</button>
+                            <button onClick={() => { closeBrief(); openPhone(); }} className="w-full bg-white/5 border border-white/10 py-4 font-black italic uppercase text-zinc-400 hover:text-white transition-all text-sm tracking-widest">Call Logistics</button>
+                        </div>
+                    </motion.div>
                   ) : (
-                    <div className="text-center py-12"><CheckCircle2 size={48} className="mx-auto text-orange-600 mb-6" /><h3 className="text-3xl font-black italic text-white uppercase">Sent<span className="text-orange-600">.</span></h3><p className="text-zinc-500 text-xs mt-4">We'll review your brief and reach out shortly.</p><button onClick={closeBrief} className="mt-8 px-8 py-2 bg-white text-black font-black uppercase text-xs tracking-widest">Close</button></div>
+                    <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12 relative z-10">
+                        <CheckCircle2 size={64} className="mx-auto text-orange-600 mb-8" />
+                        <h3 className="text-3xl font-black italic text-white uppercase tracking-tighter">Brief Received<span className="text-orange-600">.</span></h3>
+                        <div className="mt-8 p-6 border border-white/5 bg-white/5 text-left rounded-sm space-y-4">
+                            <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2"><Target size={10} className="text-orange-600"/> Engagement Logic Verified:</p>
+                            <div className="grid grid-cols-2 gap-4 border-l-2 border-orange-600 pl-4">
+                                <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Goal</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.goal}</p></div>
+                                <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Placement</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.placement}</p></div>
+                                <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Timing</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.timing}</p></div>
+                                <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Budget</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.budget}</p></div>
+                            </div>
+                        </div>
+                        <p className="text-zinc-500 text-[10px] mt-10 leading-relaxed font-mono uppercase tracking-widest max-w-sm mx-auto">We've archived your brief. A creative lead will contact you via <span className="text-white">{formData.email}</span> shortly.</p>
+                        <button onClick={closeBrief} className="mt-12 w-full px-8 py-4 bg-white text-black font-black uppercase text-xs tracking-widest italic hover:bg-zinc-200 transition-all shadow-2xl">Return to Work</button>
+                    </motion.div>
                   )}
                 </div>
               </motion.div>
@@ -835,3 +890,4 @@ export default function App() {
 }
 
 const TICKER_TEXTS = ["PHOENIX VIDEO PRODUCTION", "PARTNER VERIFIED // THE RIGHT TEAM", "REAL ESTATE MEDIA", "TURNKEY CONTENT SCALE", "AHEAD OF MARKET // EST 2021", "SCOTTSDALE BRAND NARRATIVE"];
+
