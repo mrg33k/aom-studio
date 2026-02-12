@@ -658,7 +658,7 @@ export default function App() {
                 <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic">PHOENIX TEAMS <br /><TypewriterCycle words={["CLOSE FASTER", "RECRUIT BETTER", "RAISE CAPITAL", "OWN ATTENTION", "BUILD TRUST", "SCALE FASTER"]} /><br /><span className="text-outline">WITH VIDEO</span></h2>
               </motion.div>
               <div className="mt-12 md:mt-24 grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/10 pt-12 md:pt-16 items-end">
-                <p className="text-lg md:text-xl text-zinc-300 leading-relaxed max-w-xl font-medium">Building repeatable story-driven content systems for founders, developers, and SaaS teams.<span className="text-orange-500 font-black block mt-4">No agencies. No delays. Just outcomes.</span></p>
+                <p className="text-lg md:text-xl text-zinc-300 leading-relaxed max-w-xl font-medium">Building repeatable story-driven content systems for founders, developers, and SaaS teams.<span className="text-orange-500 font-black block mt-4">No excuses. No delays. Just outcomes.</span></p>
                 <div className="flex justify-start md:justify-end"><button onClick={() => openBrief()} className="group flex items-center gap-4 md:gap-6 text-white hover:text-orange-500 transition-colors"><span className="text-2xl md:text-4xl font-black uppercase italic tracking-tighter border-b-2 border-white/10 pb-2 group-hover:border-orange-500 transition-all text-left">Let's Work</span><Zap size={32} className="group-hover:scale-125 transition-transform text-orange-600 md:w-10 md:h-10" /></button></div>
               </div>
             </div>
