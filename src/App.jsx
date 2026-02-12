@@ -700,7 +700,7 @@ export default function App() {
             </div>
           </section>
 
-          <section id="work" className="py-24 md:py-36 bg-[#050505] relative z-10 overflow-hidden border-t border-white/5 snap-start scroll-mt-24 md:scroll-mt-32">
+         <section id="work" className="pt-24 pb-[200px] md:py-36 bg-[#050505] relative z-10 overflow-hidden border-t border-white/5 snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/5 pb-16 text-white">
               <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-black tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-orange-600">.</span></h2></div>
               <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders', 'founders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-10 py-3 md:py-4 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:text-white'}`}>{tab}</button>)}</div>
