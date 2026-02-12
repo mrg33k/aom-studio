@@ -257,22 +257,58 @@ const FadeIn = ({ children, className = "", delay = 0 }) => (
 
 const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-10%" });
   const [val, setVal] = useState(0);
+  const [started, setStarted] = useState(false);
+
+  // Detect in-view INSIDE the scroll container (your <main>), not the window.
   useEffect(() => {
-    if (!inView) return;
+    const el = ref.current;
+    if (!el) return;
+
+    // Find the nearest scrollable container (your <main> has overflow-y-auto)
+    const root = el.closest("main") || null;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStarted(true);
+          obs.disconnect(); // once: true behavior
+        }
+      },
+      {
+        root,                 // <-- key change
+        threshold: 0.25,      // start when ~25% visible
+        rootMargin: "0px 0px -10% 0px",
+      }
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Animate once started
+  useEffect(() => {
+    if (!started) return;
+
     let raf = 0;
     const start = performance.now();
+
     const tick = (now) => {
       const p = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - p, 3);
       setVal(Math.round(to * eased));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
+
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inView, to, duration]);
-  return <span ref={ref} className={className}>{val}</span>;
+  }, [started, to, duration]);
+
+  return (
+    <span ref={ref} className={className}>
+      {val}
+    </span>
+  );
 };
 
 const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) => (
