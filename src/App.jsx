@@ -682,7 +682,7 @@ export default function App() {
 
             <div className="max-w-7xl mx-auto w-full relative z-10">
               <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
-                <div className="inline-flex items-center gap-4 mb-10 border-l-4 border-orange-600 pl-4 md:pl-6 max-w-full"><p className="text-orange-600 font-mono font-bold text-[clamp(10px,2.2vw,12px)] uppercase tracking-[0.4em] leading-tight block">Phoenix Video Production // Arizona Branding</p></div>
+                <div className="inline-flex items-center gap-4 mb-10 border-l-4 border-orange-600 pl-4 md:pl-6 max-w-full"><p className="text-orange-600 font-mono font-bold text-[clamp(10px,2.2vw,12px)] uppercase tracking-[0.4em] leading-tight block">Story-Driven // Phoenix Video Production</p></div>
                 <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic">PHOENIX TEAMS <br /><TypewriterCycle words={["CLOSE FASTER", "RECRUIT BETTER", "RAISE CAPITAL", "OWN ATTENTION", "BUILD TRUST", "SCALE FASTER"]} /><br /><span className="text-outline">WITH VIDEO</span></h2>
               </motion.div>
               <div className="mt-12 md:mt-24 grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/10 pt-12 md:pt-16 items-end">
