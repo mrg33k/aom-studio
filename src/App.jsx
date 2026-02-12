@@ -65,6 +65,7 @@ const TRUST_METRICS = [
   { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Systems for matching style across assets." },
 ];
 
+// UPDATED TRUST LOGOS
 const TRUST_LOGOS = ["INDUSTRIAL", "CONSTRUCTION", "REAL ESTATE", "HOSPITALITY", "SAAS", "HEALTHCARE", "NONPROFIT", "EVENTS", "EDUCATION", "FINANCE"];
 
 const TESTIMONIALS = [
@@ -199,7 +200,7 @@ const TextureOverlay = () => (
       .logo-shine { animation: logo-shine 2.5s ease-in-out infinite; }
       @keyframes logo-shine { 0% { opacity: 0.3; } 50% { opacity: 1; text-shadow: 0 0 20px rgba(255, 79, 0, 0.4); } 100% { opacity: 0.3; } }
       @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-      .animate-scroll { animation: scroll 60s linear infinite; }
+      .animate-scroll { animation: scroll linear infinite; }
     `}} />
   </>
 );
@@ -260,35 +261,21 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
   const [val, setVal] = useState(0);
   const [started, setStarted] = useState(false);
 
-  // Detect in-view INSIDE the scroll container (your <main>), not the window.
-  const [isMobile, setIsMobile] = useState(false);
-  
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    const apply = () => setIsMobile(mq.matches);
-    apply();
-    // Safari fallback support
-    if (mq.addEventListener) mq.addEventListener("change", apply);
-    else mq.addListener(apply);
-    return () => {
-      if (mq.removeEventListener) mq.removeEventListener("change", apply);
-      else mq.removeListener(apply);
-    };
-  }, []);
-
-    // Find the nearest scrollable container (your <main> has overflow-y-auto)
+    const el = ref.current;
+    if (!el) return;
     const root = el.closest("main") || null;
 
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setStarted(true);
-          obs.disconnect(); // once: true behavior
+          obs.disconnect(); 
         }
       },
       {
-        root,                 // <-- key change
-        threshold: 0.25,      // start when ~25% visible
+        root,
+        threshold: 0.25,
         rootMargin: "0px 0px -10% 0px",
       }
     );
@@ -297,29 +284,21 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
     return () => obs.disconnect();
   }, []);
 
-  // Animate once started
   useEffect(() => {
     if (!started) return;
-
     let raf = 0;
     const start = performance.now();
-
     const tick = (now) => {
       const p = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - p, 3);
       setVal(Math.round(to * eased));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
-
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [started, to, duration]);
 
-  return (
-    <span ref={ref} className={className}>
-      {val}
-    </span>
-  );
+  return <span ref={ref} className={className}>{val}</span>;
 };
 
 const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) => (
@@ -525,53 +504,60 @@ export default function App() {
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingBudget, setPendingBudget] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Interaction State Logic
   const isModalOpen = isInquiryOpen || !!selectedVideo || isPhoneModalOpen;
 
   // SESSION-BASED RANDOMIZATION
-const shuffledData = useMemo(() => {
-  const feed = shuffleArray([
-    ...PORTFOLIO_DATA.builders.social,
-    ...PORTFOLIO_DATA.founders.social,
-    ...PORTFOLIO_DATA.marketing.social,
-  ]);
+  const shuffledData = useMemo(() => {
+    const feed = shuffleArray([
+      ...PORTFOLIO_DATA.builders.social,
+      ...PORTFOLIO_DATA.founders.social,
+      ...PORTFOLIO_DATA.marketing.social,
+    ]);
 
-  return {
-    marketing: {
-      campaigns: shuffleArray(PORTFOLIO_DATA.marketing.campaigns),
-      social: shuffleArray(PORTFOLIO_DATA.marketing.social),
-    },
-    builders: {
-      campaigns: shuffleArray(PORTFOLIO_DATA.builders.campaigns),
-      social: shuffleArray(PORTFOLIO_DATA.builders.social),
-    },
-    founders: {
-      campaigns: shuffleArray(PORTFOLIO_DATA.founders.campaigns),
-      social: shuffleArray(PORTFOLIO_DATA.founders.social),
-    },
-    feed,
-    hero: shuffleArray([
-      ...PORTFOLIO_DATA.marketing.campaigns.slice(0, 5),
-      ...PORTFOLIO_DATA.builders.campaigns.slice(0, 5),
-    ])[0],
-    heroMobile: feed[0], // <- vertical 9:16 pick for mobile
-  };
-}, []);
+    return {
+      marketing: {
+        campaigns: shuffleArray(PORTFOLIO_DATA.marketing.campaigns),
+        social: shuffleArray(PORTFOLIO_DATA.marketing.social),
+      },
+      builders: {
+        campaigns: shuffleArray(PORTFOLIO_DATA.builders.campaigns),
+        social: shuffleArray(PORTFOLIO_DATA.builders.social),
+      },
+      founders: {
+        campaigns: shuffleArray(PORTFOLIO_DATA.founders.campaigns),
+        social: shuffleArray(PORTFOLIO_DATA.founders.social),
+      },
+      feed,
+      hero: shuffleArray([
+        ...PORTFOLIO_DATA.marketing.campaigns.slice(0, 5),
+        ...PORTFOLIO_DATA.builders.campaigns.slice(0, 5),
+      ])[0],
+      heroMobile: feed[0],
+    };
+  }, []);
 
   const heroDesktopEmbed = useMemo(
-  () => getGumletBackgroundEmbed(shuffledData.hero.url),
-  [shuffledData.hero.url]
-);
+    () => getGumletBackgroundEmbed(shuffledData.hero.url),
+    [shuffledData.hero.url]
+  );
 
-const heroMobileEmbed = useMemo(
-  () => getGumletBackgroundEmbed(shuffledData.heroMobile?.url),
-  [shuffledData.heroMobile?.url]
-);
+  const heroMobileEmbed = useMemo(
+    () => getGumletBackgroundEmbed(shuffledData.heroMobile?.url),
+    [shuffledData.heroMobile?.url]
+  );
 
-const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
+  const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
 
-
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   useEffect(() => {
     if (loadStatus < 100) { const timer = setTimeout(() => setLoadStatus(prev => prev + 2.5), 20); return () => clearTimeout(timer); } 
@@ -605,7 +591,6 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
     setIsSubmitting(true);
     setIsError(false);
     
-    // Construct final payload using overrides to handle async state lag
     const finalPayload = {
       ...formData,
       ...overrides,
@@ -621,9 +606,7 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...finalPayload, _subject: `New Lead: ${finalPayload.intent} - ${finalPayload.name}` })
       });
-
       if (!response.ok) throw new Error("Formspree rejected submission");
-
       if (db && user) {
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'leads'), { ...finalPayload, createdAt: serverTimestamp() });
       }
@@ -672,21 +655,20 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
           </header>
 
           <section className="min-h-[100svh] md:min-h-screen flex flex-col justify-start md:justify-center px-6 md:px-24 relative overflow-hidden pt-24 sm:pt-28 md:pt-40 pb-28 md:pb-0 snap-start scroll-mt-24 md:scroll-mt-32">
-            {/* HERO BACKGROUND VIDEO: Optimized Cover Behavior */}
             <div className="absolute inset-0 z-0 opacity-20 overflow-hidden">
-  {heroVideoEmbed && (
-    <div className="absolute inset-0 h-[100svh] md:h-full">
-      <iframe
-        src={heroVideoEmbed}
-        className="absolute inset-0 w-full h-full scale-[1.15] md:scale-100 grayscale pointer-events-none"
-        title="Hero Background"
-        allow="autoplay; encrypted-media"
-      />
-    </div>
-  )}
-  <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent" />
-  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
-</div>
+              {heroVideoEmbed && (
+                <div className="absolute inset-0 h-[100svh] md:h-full">
+                  <iframe
+                    src={heroVideoEmbed}
+                    className="absolute inset-0 w-full h-full scale-[1.15] md:scale-100 grayscale pointer-events-none"
+                    title="Hero Background"
+                    allow="autoplay; encrypted-media"
+                  />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+            </div>
 
             <div className="max-w-7xl mx-auto w-full relative z-10">
               <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
@@ -694,7 +676,7 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
                 <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic">PHOENIX TEAMS <br /><TypewriterCycle words={["CLOSE FASTER", "RECRUIT BETTER", "RAISE CAPITAL", "OWN ATTENTION", "BUILD TRUST", "SCALE FASTER"]} /><br /><span className="text-outline">WITH VIDEO</span></h2>
               </motion.div>
               <div className="mt-12 md:mt-24 grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/10 pt-12 md:pt-16 items-end">
-                <p className="text-lg md:text-xl text-zinc-300 leading-relaxed max-w-xl font-medium">Building repeatable story-driven content systems for founders, developers, and SaaS teams.<span className="text-orange-500 font-black block mt-4">No excuses. No delays. Just outcomes.</span></p>
+                <p className="text-lg md:text-xl text-zinc-300 leading-relaxed max-w-xl font-medium">Building repeatable story-driven content systems for founders, developers, and SaaS teams.<span className="text-orange-500 font-black block mt-4">No agencies. No delays. Just outcomes.</span></p>
                 <div className="flex justify-start md:justify-end"><button onClick={() => openBrief()} className="group flex items-center gap-4 md:gap-6 text-white hover:text-orange-500 transition-colors"><span className="text-2xl md:text-4xl font-black uppercase italic tracking-tighter border-b-2 border-white/10 pb-2 group-hover:border-orange-500 transition-all text-left">Let's Work</span><Zap size={32} className="group-hover:scale-125 transition-transform text-orange-600 md:w-10 md:h-10" /></button></div>
               </div>
             </div>
@@ -746,7 +728,6 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
                   <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-orange-600">.</span></h2>
                 </div>
                 <div className="w-full lg:max-w-md border border-white/10 bg-black/40 overflow-hidden relative">
-                  {/* TRUST LOGO MARQUEE: Optimized for mobile relevance */}
                   <div className="flex whitespace-nowrap animate-scroll py-6 md:opacity-100 opacity-70 [animation-duration:28s] md:[animation-duration:40s]">{[...Array(4)].flatMap(() => TRUST_LOGOS).map((t, i) => ( <div key={i} className="mx-10 flex items-center gap-3"><Building2 size={16} className="text-orange-600" /><span className="text-[11px] font-mono font-bold uppercase tracking-[0.35em] text-zinc-400">{t}</span></div> ))}</div>
                 </div>
               </div>
@@ -771,7 +752,7 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
 
           <div className="fixed bottom-0 left-0 w-full z-[100] h-12 bg-black border-t border-zinc-800 flex items-center shadow-2xl pointer-events-none">
             <div className="flex-1 overflow-hidden relative h-full flex items-center bg-black/90">
-              <div className="flex whitespace-nowrap animate-scroll items-center">{[...Array(4)].flatMap(() => TICKER_TEXTS).map((text, i) => ( <div key={i} className="flex items-center mx-6"><Radio size={12} className="text-orange-600 animate-pulse mr-3" /><span className="text-[9px] md:text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.3em] flex items-center">{text}</span></div> ))}</div>
+              <div className="flex whitespace-nowrap animate-scroll items-center [animation-duration:60s]">{[...Array(4)].flatMap(() => TICKER_TEXTS).map((text, i) => ( <div key={i} className="flex items-center mx-6"><Radio size={12} className="text-orange-600 animate-pulse mr-3" /><span className="text-[9px] md:text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.3em] flex items-center">{text}</span></div> ))}</div>
             </div>
             <div className="h-full flex items-center z-20 pointer-events-auto">
               <button onClick={openPhone} className="h-full px-5 md:px-6 bg-zinc-900 text-zinc-400 font-black italic uppercase tracking-[0.15em] text-[10px] hover:text-white transition-all flex items-center gap-2 border-l border-zinc-800"><Calendar size={14} /><span className="hidden sm:inline">15-Min Call</span></button>
@@ -792,10 +773,7 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
             {isInquiryOpen && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
                 <div className="w-full max-w-xl p-8 md:p-12 border border-white/5 bg-[#0a0a0a] relative shadow-2xl rounded-xl overflow-y-auto max-h-[90vh]">
-                  {/* Visual Edge Light */}
                   <div className="absolute inset-0 bg-gradient-to-br from-orange-600/10 via-transparent to-orange-600/5 pointer-events-none rounded-xl" />
-                  
-                  {/* Progress Bar */}
                   <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden rounded-t-xl z-30">
                     <motion.div 
                       initial={{ width: 0 }}
@@ -803,9 +781,7 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
                       className="h-full bg-orange-600 shadow-[0_0_15px_#FF4F00]"
                     />
                   </div>
-
                   <button onClick={closeBrief} className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors z-40" disabled={isSubmitting}><X size={24} /></button>
-                  
                   {!isSuccess && !isError ? (
                     <div className="space-y-10 relative z-10">
                       <div>
@@ -815,7 +791,6 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
                         </div>
                         {selectedIntent && step === 1 && ( <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1.5 rounded-sm"><span className="text-orange-600 text-[9px] font-black uppercase tracking-widest">{selectedIntent.title}</span></div> )}
                       </div>
-
                       <AnimatePresence mode="wait">
                         {step === 1 && (
                           <motion.div key="step1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
@@ -833,10 +808,8 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
                             <p className="text-[10px] text-zinc-600 font-mono text-center uppercase tracking-widest">A creative lead will reply within 24 hours.</p>
                           </motion.div>
                         )}
-
                         {step === 2 && (
                           <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
-                             {/* Live Outcome Preview */}
                              <div className="p-4 border border-orange-600/20 bg-orange-600/5 rounded-sm">
                                 <p className="text-[8px] font-mono text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles size={10}/> Logic Preview</p>
                                 <div className="flex gap-4">
@@ -844,7 +817,6 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
                                   <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Platform</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.placement || 'PENDING'}</p></div>
                                 </div>
                              </div>
-
                              <div className="space-y-6">
                                 <div>
                                     <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Primary Objective</label>
@@ -877,10 +849,8 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
                              </div>
                           </motion.div>
                         )}
-
                         {step === 3 && (
                           <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
-                             {/* Live Outcome Preview */}
                              <div className="p-4 border border-orange-600/20 bg-orange-600/5 rounded-sm">
                                 <p className="text-[8px] font-mono text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Clock3 size={10}/> Strategy Summary</p>
                                 <div className="grid grid-cols-3 gap-4">
@@ -889,7 +859,6 @@ const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
                                   <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Tier</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.budget || 'PENDING'}</p></div>
                                 </div>
                              </div>
-
                              <div className="space-y-8">
                                 <div>
                                     <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Preferred Timeline</label>
