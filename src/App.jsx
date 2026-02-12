@@ -645,13 +645,21 @@ export default function App() {
             {/* HERO BACKGROUND VIDEO: Optimized Cover Behavior */}
             <div className="absolute inset-0 z-0 opacity-20 overflow-hidden">
               {heroVideoEmbed && (
-                <div className="absolute top-1/2 left-1/2 w-[115%] h-[115%] -translate-x-1/2 -translate-y-1/2">
-                   <iframe src={heroVideoEmbed} className="w-full h-full object-cover scale-[1.15] md:scale-100 grayscale pointer-events-none" title="Hero Background" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
-            </div>
+           <div className="absolute inset-0 z-0 opacity-20 overflow-hidden">
+  {heroVideoEmbed && (
+    <div className="absolute inset-0 h-[100svh] md:h-full">
+      <iframe
+        src={heroVideoEmbed}
+        className="absolute inset-0 w-full h-full scale-[1.15] md:scale-100 grayscale pointer-events-none"
+        title="Hero Background"
+        allow="autoplay; encrypted-media"
+      />
+    </div>
+  )}
+  <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent" />
+  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+</div>
+
             <div className="max-w-7xl mx-auto w-full relative z-10">
               <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
                 <div className="inline-flex items-center gap-4 mb-10 border-l-4 border-orange-600 pl-4 md:pl-6 max-w-full"><p className="text-orange-600 font-mono font-bold text-[clamp(10px,2.2vw,12px)] uppercase tracking-[0.4em] leading-tight block">Phoenix Video Production // Arizona Branding</p></div>
