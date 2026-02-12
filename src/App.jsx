@@ -65,7 +65,6 @@ const TRUST_METRICS = [
   { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Systems for matching style across assets." },
 ];
 
-// UPDATED TRUST LOGOS
 const TRUST_LOGOS = ["INDUSTRIAL", "CONSTRUCTION", "REAL ESTATE", "HOSPITALITY", "SAAS", "HEALTHCARE", "NONPROFIT", "EVENTS", "EDUCATION", "FINANCE"];
 
 const TESTIMONIALS = [
@@ -374,7 +373,7 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
     return () => observer.disconnect();
   }, []);
   return (
-    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[240px] md:w-[320px]' : 'aspect-video w-[320px] md:w-[500px] shadow-lg'}`}>
+    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[280px] md:w-[380px]' : 'aspect-video w-[360px] md:w-[640px] shadow-lg'}`}>
       <div className="absolute inset-0 bg-zinc-950">
         {shouldLoad && embedUrl && (
           <iframe src={embedUrl} loading="lazy" className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105" title={title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
@@ -505,6 +504,7 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingBudget, setPendingBudget] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const playerFrameRef = useRef(null);
 
   // Interaction State Logic
   const isModalOpen = isInquiryOpen || !!selectedVideo || isPhoneModalOpen;
@@ -558,6 +558,16 @@ export default function App() {
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
+
+  useEffect(() => {
+    if (!selectedVideo) return;
+    const t = setTimeout(() => {
+      const el = playerFrameRef.current;
+      if (!el) return;
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    }, 50);
+    return () => clearTimeout(t);
+  }, [selectedVideo]);
 
   useEffect(() => {
     if (loadStatus < 100) { const timer = setTimeout(() => setLoadStatus(prev => prev + 2.5), 20); return () => clearTimeout(timer); } 
@@ -700,7 +710,7 @@ export default function App() {
             </div>
           </section>
 
-         <section id="work" className="pt-24 pb-[200px] md:py-36 bg-[#050505] relative z-10 overflow-hidden border-t border-white/5 snap-start scroll-mt-24 md:scroll-mt-32">
+          <section id="work" className="pt-24 pb-[200px] md:py-36 bg-[#050505] relative z-10 overflow-hidden border-t border-white/5 snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/5 pb-16 text-white">
               <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-black tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-orange-600">.</span></h2></div>
               <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders', 'founders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-10 py-3 md:py-4 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:text-white'}`}>{tab}</button>)}</div>
@@ -763,8 +773,17 @@ export default function App() {
           <AnimatePresence>
             {selectedVideo && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[2000] bg-black/98 flex items-center justify-center p-4 md:p-10 backdrop-blur-3xl">
-                <button onClick={() => setSelectedVideo(null)} className="absolute top-6 right-6 md:top-10 md:right-10 text-white p-3 md:p-4 bg-white/5 rounded-full z-50 hover:bg-orange-600/20 transition-all"><X size={28} /></button>
-                <div className="w-full max-w-[1400px] aspect-video bg-black shadow-2xl relative border border-white/5"><iframe src={getGumletPlayerEmbed(selectedVideo.url)} className="w-full h-full border-none" allow="autoplay; fullscreen" title={selectedVideo.title} /></div>
+                <button onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); setSelectedVideo(null); }} className="absolute top-6 right-6 md:top-10 md:right-10 text-white p-3 md:p-4 bg-white/5 rounded-full z-50 hover:bg-orange-600/20 transition-all"><X size={28} /></button>
+                <div className="w-[96vw] h-[90vh] md:w-[92vw] md:h-[88vh] bg-black shadow-2xl relative border border-white/5">
+                  <iframe 
+                    ref={playerFrameRef}
+                    src={getGumletPlayerEmbed(selectedVideo.url)} 
+                    className="w-full h-full border-none" 
+                    allow="autoplay; fullscreen" 
+                    allowFullScreen
+                    title={selectedVideo.title} 
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
