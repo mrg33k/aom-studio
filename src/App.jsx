@@ -65,7 +65,6 @@ const TRUST_METRICS = [
   { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Systems for matching style across assets." },
 ];
 
-// REPLACEMENT: Relevant Industry Labels
 const TRUST_LOGOS = ["INDUSTRIAL", "CONSTRUCTION", "REAL ESTATE", "HOSPITALITY", "SAAS", "HEALTHCARE", "NONPROFIT", "EVENTS", "EDUCATION", "FINANCE"];
 
 const TESTIMONIALS = [
@@ -159,7 +158,7 @@ const ENGAGEMENT_IDEAS = [
   { id: "launch", icon: Rocket, title: "The Big Launch", statement: "We are bringing a new development or product to market and need a full asset suite.", price: "$10k - $25k" },
   { id: "engine", icon: Repeat, title: "Content Engine", statement: "We need a system that delivers consistent video volume every month.", price: "$3k/mo" },
   { id: "authority", icon: Crown, title: "Founder Authority", statement: "I need to establish personal credibility and trust with investors or talent quickly.", price: "$5k+" },
-  { id: "price", icon: Fingerprint, title: "Social Proof", statement: "We have great projects but no cinematic case studies. We need to prove our expertise.", price: "$5k+" },
+  { id: "proof", icon: Fingerprint, title: "Social Proof", statement: "We have great projects but no cinematic case studies. We need to prove our expertise.", price: "$5k+" },
   { id: "event", icon: Mic2, title: "Event Capture", statement: "We have a major activation or conference coming up. We need recap assets.", price: "$3k+" },
   { id: "custom", icon: Lightbulb, title: "The Wildcard", statement: "We have a specific vision that doesn't fit in a box. We need a creative partner.", price: "Tailored" }
 ];
@@ -606,8 +605,8 @@ export default function App() {
             </div>
           </header>
 
-          {/* PROBLEM 1: Mobile Hero spacing and justified alignment */}
           <section className="min-h-[100svh] md:min-h-screen flex flex-col justify-start md:justify-center px-6 md:px-24 relative overflow-hidden pt-24 sm:pt-28 md:pt-40 pb-28 md:pb-0 snap-start scroll-mt-24 md:scroll-mt-32">
+            {/* HERO BACKGROUND VIDEO: Optimized Cover Behavior */}
             <div className="absolute inset-0 z-0 opacity-20 overflow-hidden">
               {heroVideoEmbed && (
                 <div className="absolute top-1/2 left-1/2 w-[115%] h-[115%] -translate-x-1/2 -translate-y-1/2">
@@ -675,7 +674,7 @@ export default function App() {
                   <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-orange-600">.</span></h2>
                 </div>
                 <div className="w-full lg:max-w-md border border-white/10 bg-black/40 overflow-hidden relative">
-                  {/* TRUST LOGO MARQUEE: Speed and Relevance Optimization */}
+                  {/* TRUST LOGO MARQUEE: Optimized for mobile relevance */}
                   <div className="flex whitespace-nowrap animate-scroll py-6 md:opacity-100 opacity-70 [animation-duration:28s] md:[animation-duration:40s]">{[...Array(4)].flatMap(() => TRUST_LOGOS).map((t, i) => ( <div key={i} className="mx-10 flex items-center gap-3"><Building2 size={16} className="text-orange-600" /><span className="text-[11px] font-mono font-bold uppercase tracking-[0.35em] text-zinc-400">{t}</span></div> ))}</div>
                 </div>
               </div>
@@ -901,4 +900,3 @@ export default function App() {
 }
 
 const TICKER_TEXTS = ["PHOENIX VIDEO PRODUCTION", "PARTNER VERIFIED // THE RIGHT TEAM", "REAL ESTATE MEDIA", "TURNKEY CONTENT SCALE", "AHEAD OF MARKET // EST 2021", "SCOTTSDALE BRAND NARRATIVE"];
-
