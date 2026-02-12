@@ -261,9 +261,20 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
   const [started, setStarted] = useState(false);
 
   // Detect in-view INSIDE the scroll container (your <main>), not the window.
+  const [isMobile, setIsMobile] = useState(false);
+  
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const mq = window.matchMedia("(max-width: 768px)");
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    // Safari fallback support
+    if (mq.addEventListener) mq.addEventListener("change", apply);
+    else mq.addListener(apply);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", apply);
+      else mq.removeListener(apply);
+    };
+  }, []);
 
     // Find the nearest scrollable container (your <main> has overflow-y-auto)
     const root = el.closest("main") || null;
@@ -519,29 +530,48 @@ export default function App() {
   const isModalOpen = isInquiryOpen || !!selectedVideo || isPhoneModalOpen;
 
   // SESSION-BASED RANDOMIZATION
-  const shuffledData = useMemo(() => {
-    return {
-      marketing: {
-        campaigns: shuffleArray(PORTFOLIO_DATA.marketing.campaigns),
-        social: shuffleArray(PORTFOLIO_DATA.marketing.social)
-      },
-      builders: {
-        campaigns: shuffleArray(PORTFOLIO_DATA.builders.campaigns),
-        social: shuffleArray(PORTFOLIO_DATA.builders.social)
-      },
-      founders: {
-        campaigns: shuffleArray(PORTFOLIO_DATA.founders.campaigns),
-        social: shuffleArray(PORTFOLIO_DATA.founders.social)
-      },
-      feed: shuffleArray([...PORTFOLIO_DATA.builders.social, ...PORTFOLIO_DATA.founders.social, ...PORTFOLIO_DATA.marketing.social]),
-      hero: shuffleArray([
-        ...PORTFOLIO_DATA.marketing.campaigns.slice(0, 5),
-        ...PORTFOLIO_DATA.builders.campaigns.slice(0, 5)
-      ])[0]
-    };
-  }, []);
+const shuffledData = useMemo(() => {
+  const feed = shuffleArray([
+    ...PORTFOLIO_DATA.builders.social,
+    ...PORTFOLIO_DATA.founders.social,
+    ...PORTFOLIO_DATA.marketing.social,
+  ]);
 
-  const heroVideoEmbed = useMemo(() => getGumletBackgroundEmbed(shuffledData.hero.url), [shuffledData.hero]);
+  return {
+    marketing: {
+      campaigns: shuffleArray(PORTFOLIO_DATA.marketing.campaigns),
+      social: shuffleArray(PORTFOLIO_DATA.marketing.social),
+    },
+    builders: {
+      campaigns: shuffleArray(PORTFOLIO_DATA.builders.campaigns),
+      social: shuffleArray(PORTFOLIO_DATA.builders.social),
+    },
+    founders: {
+      campaigns: shuffleArray(PORTFOLIO_DATA.founders.campaigns),
+      social: shuffleArray(PORTFOLIO_DATA.founders.social),
+    },
+    feed,
+    hero: shuffleArray([
+      ...PORTFOLIO_DATA.marketing.campaigns.slice(0, 5),
+      ...PORTFOLIO_DATA.builders.campaigns.slice(0, 5),
+    ])[0],
+    heroMobile: feed[0], // <- vertical 9:16 pick for mobile
+  };
+}, []);
+
+  const heroDesktopEmbed = useMemo(
+  () => getGumletBackgroundEmbed(shuffledData.hero.url),
+  [shuffledData.hero.url]
+);
+
+const heroMobileEmbed = useMemo(
+  () => getGumletBackgroundEmbed(shuffledData.heroMobile?.url),
+  [shuffledData.heroMobile?.url]
+);
+
+const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
+
+
 
   useEffect(() => {
     if (loadStatus < 100) { const timer = setTimeout(() => setLoadStatus(prev => prev + 2.5), 20); return () => clearTimeout(timer); } 
@@ -644,8 +674,6 @@ export default function App() {
           <section className="min-h-[100svh] md:min-h-screen flex flex-col justify-start md:justify-center px-6 md:px-24 relative overflow-hidden pt-24 sm:pt-28 md:pt-40 pb-28 md:pb-0 snap-start scroll-mt-24 md:scroll-mt-32">
             {/* HERO BACKGROUND VIDEO: Optimized Cover Behavior */}
             <div className="absolute inset-0 z-0 opacity-20 overflow-hidden">
-              {heroVideoEmbed && (
-           <div className="absolute inset-0 z-0 opacity-20 overflow-hidden">
   {heroVideoEmbed && (
     <div className="absolute inset-0 h-[100svh] md:h-full">
       <iframe
