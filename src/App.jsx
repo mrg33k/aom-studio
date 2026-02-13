@@ -102,19 +102,27 @@ const PORTFOLIO_DATA = {
   marketing: {
     campaigns: [
       { title: "Journey To Gary Vee", sub: "Cinematic Story", url: "https://gumlet.tv/watch/698a6296fc23d3d76fa8d992/", tags: ["Narrative"] },
+      { title: "Noble Real Estate", sub: "Agency Brand", url: "https://gumlet.tv/watch/698a5b86fc23d3d76fa82ece/", tags: ["Real Estate"] },
       { title: "Rainbow Rider", sub: "Experience Asset", url: "https://gumlet.tv/watch/698a6106aec3d4e420c2fd85/", tags: ["Vibe", "Brand"] },
       { title: "Pretty Penny", sub: "Restaurant Identity", url: "https://gumlet.tv/watch/698a5d24aec3d4e420c2a0a0/", tags: ["Food", "Brand"] },
       { title: "Virtu Hospitality", sub: "Scottsdale Premium", url: "https://gumlet.tv/watch/698a5ef5fc23d3d76fa87ef4/", tags: ["Luxury", "Food"] },
-      { title: "Du Coeur Event", sub: "Recap Narrative", url: "https://gumlet.tv/watch/698a53a4aec3d4e420c17ee0/", tags: ["Events"] },
       { title: "AZ Arts Foundation", sub: "Trust Piece", url: "https://gumlet.tv/watch/698a64e5873071aec5ca99ac/", tags: ["Non-Profit"] },
       { title: "Cynshine Pilates", sub: "Founder Story", url: "https://gumlet.tv/watch/698a63e5aec3d4e420c34783/", tags: ["Wellness"] },
-      { title: "Sherpa Hospitality", sub: "Corporate ID", url: "https://gumlet.tv/watch/698a63acaec3d4e420c341f8/", tags: ["Corp", "Brand"] },
-      { title: "RW Investment Firm", sub: "Trust Asset", url: "https://gumlet.tv/watch/698a5edeaec3d4e420c2c8be/", tags: ["Finance"] },
+      { title: "ASU:Peoria Forward", sub: "Trust Asset", url: "https://gumlet.tv/watch/698a6127873071aec5ca3b36/", tags: ["Entrepreneurship"] },
       { title: "Keep it Cut", sub: "Recruiting Film", url: "https://gumlet.tv/watch/698a6177873071aec5ca4374/", tags: ["HR", "Culture"] },
       { title: "United Food Bank", sub: "Year End Impact", url: "https://gumlet.tv/watch/698a5fcdfc23d3d76fa893b8/", tags: ["Non-Profit"] },
       { title: "UFB Volunteer", sub: "Community Doc", url: "https://gumlet.tv/watch/698a5fc4fc23d3d76fa892d9/", tags: ["Doc"] },
-      { title: "Noble Real Estate", sub: "Agency Brand", url: "https://gumlet.tv/watch/698a5b86fc23d3d76fa82ece/", tags: ["Real Estate"] },
-      { title: "Aiper Pool Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a58c0aec3d4e420c21b78/", tags: ["Consumer"] }
+      { title: "Aiper Pool Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a58c0aec3d4e420c21b78/", tags: ["Consumer"] },
+
+      // added from your note
+      { title: "Ducor Event Recap", sub: "Event Recap", url: "https://gumlet.tv/watch/698a53a4aec3d4e420c17ee0/", tags: ["Event", "Brand"] },
+      { title: "Cook & Craft Website Background", sub: "Website Background", url: "https://gumlet.tv/watch/698a53a9873071aec5c8b9d7/", tags: ["Web", "Food"] },
+      { title: "Ulisgold Pilates", sub: "Wellness Brand", url: "https://gumlet.tv/watch/698a5ebcaec3d4e420c2c573/", tags: ["Wellness", "Brand"] },
+      { title: "Jason Amador: GCU Basketball x NABI", sub: "Athlete Story", url: "https://gumlet.tv/watch/698a5a6caec3d4e420c25e1a/", tags: ["Doc", "Sports"] },
+      { title: "Ernie Stevens Jr. Tribute", sub: "Tribute Film", url: "https://gumlet.tv/watch/698a5a6cfc23d3d76fa812a7/", tags: ["Doc", "Tribute"] },
+      { title: "Aiper Homeshow Event Recap", sub: "Event Recap", url: "https://gumlet.tv/watch/698a58ae873071aec5c953ea/", tags: ["Event", "Consumer"] },
+      { title: "Founders Retreat", sub: "Event Story", url: "https://gumlet.tv/watch/698a5b05873071aec5c9a7cd/", tags: ["Event", "Culture"] },
+      { title: "ISA Validation Study", sub: "Research Story", url: "https://gumlet.tv/watch/698a52b6fc23d3d76fa70d75/", tags: ["B2B", "Research"] }
     ],
     social: [
       { title: "Lagos White Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a596eaec3d4e420c22a9a/", tags: ["9:16", "Promo"] },
@@ -122,9 +130,10 @@ const PORTFOLIO_DATA = {
       { title: "Nook 10 Year", sub: "ASMR Piece", url: "https://gumlet.tv/watch/698a5a8b873071aec5c99c6f/", tags: ["9:16", "Creative"] },
       { title: "PA’LA x HARUMI", sub: "Collab Feature", url: "https://gumlet.tv/watch/698a5391fc23d3d76fa7306c/", tags: ["9:16", "Food"] },
       { title: "Cook & Craft Pretzel", sub: "Food Feature", url: "https://gumlet.tv/watch/698a53bcfc23d3d76fa736e4/", tags: ["9:16", "Food"] },
-      { title: "Killer Whale Club", sub: "Nightlife Promo", url: "https://gumlet.tv/watch/698a5c0afc23d3d76fa83ba6/", tags: ["9:16", "Vibe"] },
+      { title: "Killer Whale Club", sub: "Nightlife Promo", url: "https://gumlet.tv/watch/698a5c0afc23d3d76fa83ba6/", tags: ["9:16", "Vibe"] }
     ]
   },
+
   builders: {
     campaigns: [
       { title: "To Have and To Host", sub: "Residential Build", url: "https://gumlet.tv/watch/698a68b7fc23d3d76fa970ef/", tags: ["Build", "Luxury"] },
@@ -137,8 +146,12 @@ const PORTFOLIO_DATA = {
     social: [
       { title: "Tiffanys Walkthrough", sub: "Luxury Walkthrough", url: "https://gumlet.tv/watch/698a580bfc23d3d76fa7bd7c/", tags: ["9:16", "Retail"] },
       { title: "Primrose Ambition", sub: "Build Update", url: "https://gumlet.tv/watch/698a581daec3d4e420c20b94/", tags: ["9:16", "Build"] },
+
+      // added from your note
+      { title: "NGOTS Restoration", sub: "Service Promo", url: "https://gumlet.tv/watch/698a5a7d873071aec5c99b08/", tags: ["9:16", "Service"] }
     ]
   },
+
   founders: {
     campaigns: [
       { title: "What is Abstrakt?", sub: "SaaS Explainer", url: "https://gumlet.tv/watch/698a5faffc23d3d76fa8909f/", tags: ["SaaS", "B2B"] },
@@ -146,13 +159,17 @@ const PORTFOLIO_DATA = {
       { title: "Intelliplay Demo", sub: "Product Story", url: "https://gumlet.tv/watch/698a5386aec3d4e420c17a69/", tags: ["UX", "SaaS"] },
       { title: "N2 Local News", sub: "Media Re-imagined", url: "https://gumlet.tv/watch/698a5b26aec3d4e420c27039/", tags: ["Media", "Tech"] },
       { title: "NEB Docs / HUUB", sub: "SaaS Case Study", url: "https://gumlet.tv/watch/698a63acfc23d3d76fa8f585/", tags: ["GovTech"] },
-      { title: "Gitex Dubai", sub: "Global Tech Expo", url: "https://gumlet.tv/watch/698a6227fc23d3d76fa8cd57/", tags: ["Tech", "Global"] }
+      { title: "Gitex Dubai", sub: "Global Tech Expo", url: "https://gumlet.tv/watch/698a6227fc23d3d76fa8cd57/", tags: ["Tech", "Global"] },
+
+      // added from your note
+      { title: "IAAPA 2026 Full Recap", sub: "Tech Event Recap", url: "https://gumlet.tv/watch/698a5391aec3d4e420c17bd3/", tags: ["Event", "Tech"] }
     ],
     social: [
-      { title: "IAAPA Day 2", sub: "Tech Event Recap", url: "https://gumlet.tv/watch/698a5391873071aec5c8b654/", tags: ["9:16", "Event"] },
+      { title: "IAAPA Day 2", sub: "Tech Event Recap", url: "https://gumlet.tv/watch/698a5391873071aec5c8b654/", tags: ["9:16", "Event"] }
     ]
   }
 };
+
 
 const ENGAGEMENT_IDEAS = [
   { id: "launch", icon: Rocket, title: "The Big Launch", statement: "We are bringing a new development or product to market and need a full asset suite.", price: "$10k - $25k" },
