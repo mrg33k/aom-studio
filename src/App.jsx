@@ -121,8 +121,8 @@ const PORTFOLIO_DATA = {
       { title: "Jason Amador: GCU Basketball x NABI", sub: "Athlete Story", url: "https://gumlet.tv/watch/698a5a6caec3d4e420c25e1a/", tags: ["Doc", "Sports"] },
       { title: "Ernie Stevens Jr. Tribute", sub: "Tribute Film", url: "https://gumlet.tv/watch/698a5a6cfc23d3d76fa812a7/", tags: ["Doc", "Tribute"] },
       { title: "Aiper Homeshow Event Recap", sub: "Event Recap", url: "https://gumlet.tv/watch/698a58ae873071aec5c953ea/", tags: ["Event", "Consumer"] },
-      { title: "Founders Retreat", sub: "Event Story", url: "https://gumlet.tv/watch/698a5b05873071aec5c9a7cd/", tags: ["Event", "Culture"] },
-      { title: "ISA Validation Study", sub: "Research Story", url: "https://gumlet.tv/watch/698a52b6fc23d3d76fa70d75/", tags: ["B2B", "Research"] }
+      { title: "Founders Retreat", sub: "Event Story", url: "https://gumlet.tv/watch/698a5b05873071aec5c9a7cd/", tags: ["Event", "Culture"] }
+
     ],
     social: [
       { title: "Lagos White Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a596eaec3d4e420c22a9a/", tags: ["9:16", "Promo"] },
