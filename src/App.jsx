@@ -69,7 +69,7 @@ const TRUST_LOGOS = ["INDUSTRIAL", "CONSTRUCTION", "REAL ESTATE", "HOSPITALITY",
 
 const TESTIMONIALS = [
   {
-    quote: "The video was a huge recruiting tool in recruiting our first 3 co-horts and showing people what we're about.",
+    quote: "The video was a huge recruiting tool in recruiting our first 3 cohorts and showing people what we're about.",
     metric: "Attracted 3-Cohorts and 40+ Founders",
     name: "Brandon Clarke",
     company: "Startup AZ Foundation",
