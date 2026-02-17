@@ -83,7 +83,7 @@ const TESTIMONIALS = [
     industry: "SaaS"
   },
   {
-    quote: "They didn't just shoot beautiful footage. They mapped every asset to a business outcome: investor meetings and web conversion.",
+    quote: "They didn't just shoot beautiful footage. They showed people the place I created had legacy",
     metric: "3 venue launches",
     name: "Gio Osso",
     company: "Virtu Hospitality Group",
