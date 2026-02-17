@@ -69,11 +69,11 @@ const TRUST_LOGOS = ["INDUSTRIAL", "CONSTRUCTION", "REAL ESTATE", "HOSPITALITY",
 
 const TESTIMONIALS = [
   {
-    quote: "We closed 3 new industrial contracts in 60 days after launching our case study video. The production cost paid for itself 8x over.",
-    metric: "8x ROI in 60 days",
-    name: "Hunter Bjork",
-    company: "ISA ENERGY",
-    industry: "Industrial Energy"
+    quote: "The video was a huge recruiting tool in recruiting our first 3 co-horts and showing people what we're about.",
+    metric: "Raised 50k in  30 days",
+    name: "Brandon Clarke",
+    company: "Startup AZ Foundation",
+    industry: "Tech-Investments"
   },
   {
     quote: "Before AOM, we were posting randomly. Now we have a repeatable system that fills our pipeline. Our outreach finally has teeth.",
