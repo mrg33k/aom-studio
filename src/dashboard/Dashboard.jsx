@@ -61,6 +61,44 @@ function parseAgentLog(md) {
   return { date: cols[0], action: cols[1] || '', notes: cols[2] || '' }
 }
 
+function relativeTime(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  if (isNaN(d)) return null
+  const now = new Date()
+  const diffMs = now - d
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return '1d ago'
+  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`
+  return `${Math.floor(diffDays / 30)}mo ago`
+}
+
+function deadlineDaysRemaining(taskText) {
+  // Known hardcoded deadlines
+  const KNOWN = [
+    { pattern: /isa energy|brand video|april 27/i, date: '2026-04-27' },
+    { pattern: /included health|ih retainer/i, date: '2026-03-11' },
+  ]
+  for (const k of KNOWN) {
+    if (k.pattern.test(taskText)) {
+      const diff = Math.ceil((new Date(k.date) - new Date()) / (1000 * 60 * 60 * 24))
+      return diff
+    }
+  }
+  // Try to extract a date from the raw text
+  const dateMatch = taskText.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:,\s*\d{4})?|\d{4}-\d{2}-\d{2}/i)
+  if (dateMatch) {
+    const parsed = new Date(dateMatch[0])
+    if (!isNaN(parsed)) {
+      const diff = Math.ceil((parsed - new Date()) / (1000 * 60 * 60 * 24))
+      return diff
+    }
+  }
+  return null
+}
+
 function inferAgentStatus(md) {
   if (!md) return 'idle'
   if (/holding|blocked|waiting on.*patrik|3 open questions/i.test(md)) return 'hold'
@@ -134,16 +172,25 @@ function AgentInitial({ name, size = 28 }) {
   )
 }
 
-function AgentRow({ agent, selected, onClick }) {
+function AgentRow({ agent, selected, onClick, taskCount }) {
+  const lastActive = agent.lastEntry ? relativeTime(agent.lastEntry.date) : null
   return (
     <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, width: '100%', background: selected ? 'rgba(255,255,255,0.06)' : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}>
       <AgentInitial name={agent.name} size={30} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: '#e5e5e5' }}>{agent.name}</span>
-          <StatusPill status={agent.status} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            {taskCount > 0 && (
+              <span style={{ fontSize: 9, fontWeight: 700, color: ORANGE, background: 'rgba(255,79,0,0.12)', borderRadius: 10, padding: '1px 5px', letterSpacing: '0.04em' }}>{taskCount}</span>
+            )}
+            <StatusPill status={agent.status} />
+          </div>
         </div>
-        <div style={{ fontSize: 10, color: '#555', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.role}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+          <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.role}</div>
+          {lastActive && <span style={{ fontSize: 9, color: '#383838', flexShrink: 0, marginLeft: 4 }}>{lastActive}</span>}
+        </div>
       </div>
     </button>
   )
@@ -151,9 +198,20 @@ function AgentRow({ agent, selected, onClick }) {
 
 function TaskCard({ task }) {
   const agentColor = task.agent ? (AGENT_COLORS[task.agent] || '#888') : '#444'
+  const daysLeft = task.deadline ? deadlineDaysRemaining(task.raw || task.text) : null
+  const urgentColor = daysLeft !== null && daysLeft <= 7 ? '#ff2020' : RED
   return (
     <div style={{ background: '#111', border: `1px solid ${task.deadline ? 'rgba(239,68,68,0.3)' : task.blocked ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, padding: '10px 12px' }}>
-      {task.deadline && <div style={{ fontSize: 9, color: RED, fontWeight: 700, letterSpacing: '0.1em', marginBottom: 4, textTransform: 'uppercase' }}>Hard Deadline</div>}
+      {task.deadline && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <span style={{ fontSize: 9, color: urgentColor, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Hard Deadline</span>
+          {daysLeft !== null ? (
+            <span style={{ fontSize: 9, fontWeight: 700, color: urgentColor, background: `${urgentColor}18`, borderRadius: 4, padding: '1px 5px' }}>{daysLeft}d</span>
+          ) : (
+            <span style={{ fontSize: 9, fontWeight: 600, color: '#555', background: 'rgba(255,255,255,0.04)', borderRadius: 4, padding: '1px 5px' }}>deadline</span>
+          )}
+        </div>
+      )}
       <div style={{ fontSize: 12, color: '#ddd', lineHeight: 1.4 }}>{task.text}</div>
       {(task.agent || task.category) && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -451,7 +509,8 @@ export default function Dashboard() {
       const blockedCount = punchItems.filter(p => p.blocked && !p.done).length
       const deadlineCount = punchItems.filter(p => p.deadline && !p.done).length
       const unassignedCount = tasks.filter(t => t.column === 'unassigned').length
-      setData({ agents, tasks, actions, handoff, priorities, openCount, blockedCount, deadlineCount, unassignedCount })
+      const doneCount = punchItems.filter(p => p.done).length
+      setData({ agents, tasks, actions, handoff, priorities, openCount, blockedCount, deadlineCount, unassignedCount, doneCount })
       setLastFetched(new Date())
     } finally { setLoading(false) }
   }, [])
@@ -482,6 +541,7 @@ export default function Dashboard() {
               <Stat label="BLOCKED" value={data.blockedCount} color={data.blockedCount > 0 ? YELLOW : undefined} />
               <Stat label="DEADLINES" value={data.deadlineCount} color={data.deadlineCount > 0 ? RED : undefined} />
               <Stat label="UNASSIGNED" value={data.unassignedCount} color={data.unassignedCount > 0 ? '#777' : undefined} />
+              <Stat label="DONE" value={data.doneCount} color={data.doneCount > 0 ? GREEN : undefined} />
             </div>
           )}
         </div>
@@ -505,7 +565,10 @@ export default function Dashboard() {
             <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,79,0,0.12)', border: '1.5px solid rgba(255,79,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: ORANGE, flexShrink: 0 }}>ALL</div>
             <span style={{ fontSize: 12, fontWeight: 600, color: !selectedAgent ? '#fff' : '#888' }}>All Agents</span>
           </button>
-          {data?.agents?.map(a => <AgentRow key={a.name} agent={a} selected={selectedAgent === a.name} onClick={() => setSelectedAgent(selectedAgent === a.name ? null : a.name)} />)}
+          {data?.agents?.map(a => {
+            const taskCount = data.tasks.filter(t => t.agent === a.name).length
+            return <AgentRow key={a.name} agent={a} selected={selectedAgent === a.name} onClick={() => setSelectedAgent(selectedAgent === a.name ? null : a.name)} taskCount={taskCount} />
+          })}
           {!data && <div style={{ padding: '20px 12px', fontSize: 11, color: '#333' }}>{loading ? 'Loading…' : !GITHUB_TOKEN ? 'Set VITE_GITHUB_TOKEN' : 'No data'}</div>}
           <div style={{ marginTop: 'auto', padding: '12px 12px 4px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, marginBottom: 2 }}>{activeAgents} active</div>
