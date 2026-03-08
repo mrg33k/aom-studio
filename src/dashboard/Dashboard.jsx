@@ -198,10 +198,38 @@ function AgentRow({ agent, selected, onClick, taskCount }) {
   )
 }
 
-function TaskCard({ task }) {
+function TaskCard({ task, onRefresh }) {
+  const [replyOpen, setReplyOpen] = useState(false)
+  const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
+  const [reply, setReply] = useState(null)
+  const inputRef = useRef(null)
   const agentColor = task.agent ? (AGENT_COLORS[task.agent] || '#888') : '#444'
   const daysLeft = task.deadline ? deadlineDaysRemaining(task.raw || task.text) : null
   const urgentColor = daysLeft !== null && daysLeft <= 7 ? '#ff2020' : RED
+
+  useEffect(() => { if (replyOpen && inputRef.current) inputRef.current.focus() }, [replyOpen])
+
+  const send = async () => {
+    const text = input.trim()
+    if (!text || sending) return
+    setInput('')
+    setSending(true)
+    const agent = task.agent || 'All'
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'chat', message: `TASK: "${task.text}"\n\nPatrik says: ${text}`, agent }),
+      })
+      const data = await res.json()
+      setReply({ text: data.reply || data.error || 'No response.', agent: data.agent || agent })
+    } catch {
+      setReply({ text: 'Network error.', agent: 'System' })
+    }
+    setSending(false)
+  }
+
   return (
     <div style={{ background: '#111', border: `1px solid ${task.deadline ? 'rgba(239,68,68,0.3)' : task.blocked ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, padding: '10px 12px' }}>
       {task.deadline && (
@@ -216,8 +244,11 @@ function TaskCard({ task }) {
       )}
       <div style={{ fontSize: 12, color: '#ddd', lineHeight: 1.4 }}>{task.text}</div>
       {(task.agent || task.category) && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          {task.category && <span style={{ fontSize: 10, color: '#444' }}>{task.category}</span>}
+        <div
+          onClick={() => { setReplyOpen(!replyOpen); setReply(null) }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+        >
+          {task.category && <span style={{ fontSize: 10, color: replyOpen ? '#666' : '#444', transition: 'color 0.15s' }}>{task.category}</span>}
           {task.agent ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <AgentInitial name={task.agent} size={16} />
@@ -226,6 +257,35 @@ function TaskCard({ task }) {
           ) : (
             <span style={{ fontSize: 10, color: '#333', fontStyle: 'italic' }}>unassigned</span>
           )}
+        </div>
+      )}
+
+      {/* Inline reply */}
+      {replyOpen && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          {reply && (
+            <div style={{ marginBottom: 8, padding: '6px 10px', background: '#161616', borderRadius: 6, border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ fontSize: 9, color: AGENT_COLORS[reply.agent] || '#888', fontWeight: 700, marginBottom: 3, letterSpacing: '0.06em' }}>{reply.agent}</div>
+              <div style={{ fontSize: 11, color: '#bbb', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{reply.text}</div>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') send(); if (e.key === 'Escape') setReplyOpen(false) }}
+              placeholder="Quick note..."
+              style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#fff', fontSize: 11, padding: '6px 10px', outline: 'none' }}
+            />
+            <button
+              onClick={send}
+              disabled={!input.trim() || sending}
+              style={{ background: ORANGE, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', cursor: input.trim() ? 'pointer' : 'default', opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+            >
+              {sending ? '...' : 'GO'}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -238,7 +298,7 @@ const COLUMNS = [
   { id: 'blocked', label: 'Blocked', color: YELLOW, desc: 'Needs action' },
 ]
 
-function KanbanColumn({ col, tasks }) {
+function KanbanColumn({ col, tasks, onRefresh }) {
   const colTasks = tasks.filter(t => t.column === col.id)
   return (
     <div style={{ minWidth: 260, maxWidth: 300, flex: '1 1 260px' }}>
@@ -248,7 +308,7 @@ function KanbanColumn({ col, tasks }) {
         <span style={{ fontSize: 10, color: col.color, background: `${col.color}18`, borderRadius: 4, padding: '1px 6px', fontWeight: 700 }}>{colTasks.length}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {colTasks.map(t => <TaskCard key={t.id} task={t} />)}
+        {colTasks.map(t => <TaskCard key={t.id} task={t} onRefresh={onRefresh} />)}
         {colTasks.length === 0 && (
           <div style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 8, padding: '16px 12px', textAlign: 'center', fontSize: 11, color: '#333' }}>{col.desc}</div>
         )}
@@ -795,7 +855,7 @@ export default function Dashboard() {
           {/* Kanban */}
           {GITHUB_TOKEN && (
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 8 }}>
-              {COLUMNS.map(col => <KanbanColumn key={col.id} col={col} tasks={filteredTasks} />)}
+              {COLUMNS.map(col => <KanbanColumn key={col.id} col={col} tasks={filteredTasks} onRefresh={load} />)}
             </div>
           )}
         </div>
