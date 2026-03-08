@@ -239,6 +239,322 @@ function AgentRow({ agent, selected, onClick, taskCount }) {
   )
 }
 
+// ─── MOBILE TASK CARD ─────────────────────────────────────────────────────────
+function MobileTaskCard({ task, onRefresh }) {
+  const [replyOpen, setReplyOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const [subtasks, setSubtasks] = useState(null)
+  const [loadingSubtasks, setLoadingSubtasks] = useState(false)
+  const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
+  const [reply, setReply] = useState(null)
+  const [editing, setEditing] = useState(false)
+  const [editText, setEditText] = useState(task.text)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleted, setDeleted] = useState(false)
+  const [swipeX, setSwipeX] = useState(0)
+  const [actionsRevealed, setActionsRevealed] = useState(false)
+  const inputRef = useRef(null)
+  const editRef = useRef(null)
+  const subtaskCacheRef = useRef(null)
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 })
+  const isScrollingRef = useRef(false)
+  const swipeThreshold = 80
+  const agentColor = task.agent ? (AGENT_COLORS[task.agent] || '#888') : '#444'
+  const daysLeft = task.deadline ? deadlineDaysRemaining(task.raw || task.text) : null
+  const urgentColor = daysLeft !== null && daysLeft <= 7 ? '#ff2020' : RED
+  const blockerCtx = getBlockerContext(task.raw || task.text)
+
+  useEffect(() => { if (replyOpen && inputRef.current) inputRef.current.focus() }, [replyOpen])
+  useEffect(() => { if (editing && editRef.current) { editRef.current.focus(); editRef.current.select() } }, [editing])
+
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0]
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() }
+    isScrollingRef.current = false
+  }
+
+  const handleTouchMove = (e) => {
+    const touch = e.touches[0]
+    const deltaX = touch.clientX - touchStartRef.current.x
+    const deltaY = Math.abs(touch.clientY - touchStartRef.current.y)
+    if (deltaY > 20 && Math.abs(deltaX) < deltaY) { isScrollingRef.current = true; return }
+    if (isScrollingRef.current) return
+    if (actionsRevealed && deltaX > 0) {
+      setSwipeX(Math.min(deltaX - 140, 0))
+    } else if (deltaX < 0) {
+      setSwipeX(Math.max(deltaX, -160))
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (isScrollingRef.current) return
+    if (swipeX < -swipeThreshold) {
+      setActionsRevealed(true)
+      setSwipeX(-140)
+    } else {
+      setActionsRevealed(false)
+      setSwipeX(0)
+    }
+  }
+
+  const closeActions = () => {
+    setActionsRevealed(false)
+    setSwipeX(0)
+  }
+
+  const toggleExpand = async () => {
+    if (actionsRevealed) { closeActions(); return }
+    const next = !expanded
+    setExpanded(next)
+    if (next && !subtaskCacheRef.current && !loadingSubtasks) {
+      setLoadingSubtasks(true)
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'chat', message: `Break this task into actionable subtasks (3-5 bullet points). Task: "${task.text}"`, agent: task.agent || 'All' }),
+        })
+        const data = await res.json()
+        const bullets = (data.reply || 'Could not generate subtasks.')
+        subtaskCacheRef.current = bullets
+        setSubtasks(bullets)
+      } catch {
+        subtaskCacheRef.current = 'Network error fetching subtasks.'
+        setSubtasks('Network error fetching subtasks.')
+      }
+      setLoadingSubtasks(false)
+    } else if (next && subtaskCacheRef.current) {
+      setSubtasks(subtaskCacheRef.current)
+    }
+  }
+
+  const send = async () => {
+    const text = input.trim()
+    if (!text || sending) return
+    setInput('')
+    setSending(true)
+    const agent = task.agent || 'All'
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'chat', message: `TASK: "${task.text}"\n\nPatrik says: ${text}`, agent }),
+      })
+      const data = await res.json()
+      setReply({ text: data.reply || data.error || 'No response.', agent: data.agent || agent })
+    } catch {
+      setReply({ text: 'Network error.', agent: 'System' })
+    }
+    setSending(false)
+  }
+
+  const deleteTask = async () => {
+    if (deleting || deleted) return
+    setDeleting(true)
+    closeActions()
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_task', taskText: task.text }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setDeleted(true)
+        setTimeout(onRefresh, 1200)
+      }
+    } catch { /* silently fail */ }
+    setDeleting(false)
+  }
+
+  const saveRename = async () => {
+    const newText = editText.trim()
+    if (!newText || newText === task.text || saving) { setEditing(false); setEditText(task.text); return }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rename_task', oldText: task.text, newText }),
+      })
+      const data = await res.json()
+      if (data.ok) { setTimeout(onRefresh, 1500) }
+    } catch { /* silently fail */ }
+    setSaving(false)
+    setEditing(false)
+  }
+
+  if (deleted) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px', background: '#0a0a0a', borderRadius: 10, border: '1px solid rgba(34,197,94,0.3)', opacity: 0.6, transition: 'opacity 0.4s' }}>
+        <span style={{ color: '#22c55e', fontSize: 16 }}>&#10003;</span>
+        <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 600 }}>Removed</span>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 10 }}>
+      {/* Action buttons revealed by swipe */}
+      <div style={{
+        position: 'absolute', right: 0, top: 0, bottom: 0, width: 140,
+        display: 'flex', alignItems: 'stretch', gap: 0, borderRadius: '0 10px 10px 0',
+        overflow: 'hidden',
+      }}>
+        <button
+          onClick={() => { closeActions(); setReplyOpen(!replyOpen) }}
+          style={{
+            flex: 1, background: 'rgba(96,165,250,0.15)', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+            color: BLUE, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+          }}
+        >
+          <span style={{ fontSize: 18 }}>&#8617;</span>
+          REPLY
+        </button>
+        <button
+          onClick={() => { setEditing(true); setEditText(task.text); closeActions() }}
+          style={{
+            flex: 1, background: 'rgba(234,179,8,0.15)', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+            color: YELLOW, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+          }}
+        >
+          <span style={{ fontSize: 18 }}>&#9998;</span>
+          EDIT
+        </button>
+        <button
+          onClick={deleteTask}
+          style={{
+            flex: 1, background: 'rgba(239,68,68,0.15)', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+            color: RED, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+          }}
+        >
+          <span style={{ fontSize: 18 }}>{deleting ? '...' : '\u00d7'}</span>
+          DELETE
+        </button>
+      </div>
+
+      {/* Card body (slides on swipe) */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          background: '#111', border: `1px solid ${task.deadline ? 'rgba(239,68,68,0.3)' : task.blocked ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.06)'}`,
+          borderRadius: 10, padding: '14px 16px',
+          transform: `translateX(${swipeX}px)`,
+          transition: swipeX === 0 || actionsRevealed ? 'transform 0.25s ease' : 'none',
+          position: 'relative', zIndex: 2,
+        }}
+      >
+        {/* Deadline + blocker badges */}
+        {(task.deadline || blockerCtx) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            {task.deadline && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ fontSize: 10, color: urgentColor, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Deadline</span>
+                {daysLeft !== null && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: urgentColor, background: `${urgentColor}18`, borderRadius: 5, padding: '2px 7px' }}>{daysLeft}d</span>
+                )}
+              </div>
+            )}
+            {blockerCtx && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 11 }}>{blockerCtx.icon}</span>
+                <span style={{ fontSize: 10, color: '#666', fontWeight: 600 }}>{blockerCtx.label}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Task text */}
+        {editing ? (
+          <input
+            ref={editRef}
+            value={editText}
+            onChange={e => setEditText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') { setEditing(false); setEditText(task.text) } }}
+            onBlur={saveRename}
+            style={{ fontSize: 14, color: '#fff', lineHeight: 1.5, background: '#0a0a0a', border: '1px solid rgba(255,79,0,0.3)', borderRadius: 6, padding: '8px 12px', width: '100%', outline: 'none', fontFamily: 'inherit' }}
+          />
+        ) : (
+          <div
+            onClick={toggleExpand}
+            style={{ minHeight: 44, display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', userSelect: 'none' }}
+          >
+            <span style={{ display: 'inline-block', width: 12, fontSize: 10, color: '#444', marginTop: 5, transition: 'transform 0.15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0 }}>&#9654;</span>
+            <span style={{ fontSize: 14, color: '#ddd', lineHeight: 1.5 }}>
+              {task.text}
+              {saving && <span style={{ fontSize: 10, color: '#555', marginLeft: 8 }}>saving...</span>}
+            </span>
+          </div>
+        )}
+
+        {/* Expanded subtasks */}
+        <div style={{ maxHeight: expanded ? 300 : 0, overflow: 'hidden', transition: 'max-height 0.25s ease' }}>
+          {expanded && (
+            <div style={{ padding: '10px 0 4px 20px', borderLeft: '2px solid rgba(255,255,255,0.06)', marginTop: 8, marginLeft: 4 }}>
+              {loadingSubtasks && <div style={{ fontSize: 11, color: '#444', letterSpacing: '0.06em' }}>breaking down...</div>}
+              {subtasks && (
+                <div style={{ fontSize: 12, color: '#888', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{subtasks}</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Agent + category footer */}
+        {(task.agent || task.category) && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            {task.category && <span style={{ fontSize: 11, color: '#444' }}>{task.category}</span>}
+            {task.agent ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AgentInitial name={task.agent} size={20} />
+                <span style={{ fontSize: 11, color: agentColor, fontWeight: 600 }}>{task.agent}</span>
+              </div>
+            ) : (
+              <span style={{ fontSize: 11, color: '#333', fontStyle: 'italic' }}>unassigned</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Inline reply (outside swipe area) */}
+      {replyOpen && (
+        <div style={{ marginTop: 2, padding: '12px 16px', background: '#0d0d0d', borderRadius: '0 0 10px 10px', border: '1px solid rgba(255,255,255,0.04)', borderTop: 'none' }}>
+          {reply && (
+            <div style={{ marginBottom: 10, padding: '10px 12px', background: '#161616', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ fontSize: 10, color: AGENT_COLORS[reply.agent] || '#888', fontWeight: 700, marginBottom: 4, letterSpacing: '0.06em' }}>{reply.agent}</div>
+              <div style={{ fontSize: 12, color: '#bbb', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{reply.text}</div>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') send(); if (e.key === 'Escape') setReplyOpen(false) }}
+              placeholder="Quick note..."
+              style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#fff', fontSize: 13, padding: '10px 14px', outline: 'none' }}
+            />
+            <button
+              onClick={send}
+              disabled={!input.trim() || sending}
+              style={{ background: ORANGE, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', cursor: input.trim() ? 'pointer' : 'default', opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase', whiteSpace: 'nowrap', minHeight: 44 }}
+            >
+              {sending ? '...' : 'GO'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── DESKTOP TASK CARD ────────────────────────────────────────────────────────
 function TaskCard({ task, onRefresh }) {
   const [replyOpen, setReplyOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -1168,7 +1484,7 @@ function CommandBar({ onRefresh, isMobile }) {
       )}
 
       {/* Bar */}
-      <div style={{ position: 'fixed', bottom: isMobile ? 52 : 0, left: 0, right: 0, height: 56, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, padding: isMobile ? '0 10px' : '0 20px', zIndex: 99 }}>
+      <div style={{ position: 'fixed', bottom: isMobile ? 56 : 0, left: 0, right: 0, height: 56, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, padding: isMobile ? '0 10px' : '0 20px', zIndex: 99 }}>
         {/* Agent selector */}
         <div style={{ display: 'flex', gap: 4, overflowX: isMobile ? 'auto' : 'visible', flexShrink: isMobile ? 0 : undefined, maxWidth: isMobile ? 120 : undefined, WebkitOverflowScrolling: 'touch' }}>
           {CHAT_AGENTS.map(a => (
@@ -1375,7 +1691,7 @@ export default function Dashboard() {
     : data?.tasks || []
 
   return (
-    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 108 : 56 }}>
+    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 116 : 56 }}>
 
       {/* REFRESH PROGRESS BAR */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2, zIndex: 300, background: 'transparent' }}>
@@ -1540,38 +1856,85 @@ export default function Dashboard() {
 
           {/* Priorities */}
           {GITHUB_TOKEN && !selectedAgent && data?.priorities?.length > 0 && (
-            <div style={{ marginBottom: isMobile ? 16 : 28 }}>
-              <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Current Priorities</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {data.priorities.map((p, i) => (
-                  <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: isMobile ? '8px 10px' : '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-start', flex: isMobile ? '1 1 100%' : '1 1 200px', maxWidth: isMobile ? '100%' : 300 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: ORANGE, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd' }}>{p.label}</div>
-                      {p.desc && <div style={{ fontSize: 10, color: '#555', marginTop: 2, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isMobile ? 'nowrap' : 'normal' }}>{p.desc}</div>}
-                    </div>
-                  </div>
-                ))}
+            isMobile ? (
+              /* Mobile: horizontal scrollable priority chips with expanded info */
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Priorities</div>
+                <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', marginLeft: -12, marginRight: -12, paddingLeft: 12, paddingRight: 12 }}>
+                  {data.priorities.map((p, i) => {
+                    const daysLeft = deadlineDaysRemaining(p.desc || p.label)
+                    const isUrgent = i < 3
+                    return (
+                      <div key={i} style={{
+                        background: '#111', border: `1px solid ${isUrgent ? 'rgba(255,79,0,0.15)' : 'rgba(255,255,255,0.06)'}`,
+                        borderRadius: 12, padding: '14px 16px', minWidth: 200, maxWidth: 260, flexShrink: 0,
+                        scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: 6,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{
+                              width: 24, height: 24, borderRadius: 6,
+                              background: isUrgent ? 'rgba(255,79,0,0.12)' : 'rgba(255,255,255,0.04)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 12, fontWeight: 800, color: isUrgent ? ORANGE : '#555',
+                            }}>{i + 1}</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: '#eee' }}>{p.label}</span>
+                          </div>
+                          {daysLeft !== null && (
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, borderRadius: 5, padding: '2px 7px',
+                              color: daysLeft <= 7 ? '#ff2020' : daysLeft <= 14 ? YELLOW : '#555',
+                              background: daysLeft <= 7 ? 'rgba(255,32,32,0.12)' : daysLeft <= 14 ? 'rgba(234,179,8,0.12)' : 'rgba(255,255,255,0.04)',
+                            }}>{daysLeft}d</span>
+                          )}
+                        </div>
+                        {p.desc && (
+                          <div style={{ fontSize: 12, color: '#666', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {p.desc}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div style={{ marginBottom: 28 }}>
+                <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Current Priorities</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {data.priorities.map((p, i) => (
+                    <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-start', flex: '1 1 200px', maxWidth: 300 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: ORANGE, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd' }}>{p.label}</div>
+                        {p.desc && <div style={{ fontSize: 10, color: '#555', marginTop: 2, lineHeight: 1.4 }}>{p.desc}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
           )}
 
           {/* Kanban */}
           {GITHUB_TOKEN && (
             isMobile ? (
-              /* Mobile: stacked single-column */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              /* Mobile: stacked single-column with swipeable cards */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                 {COLUMNS.map(col => {
                   const colTasks = filteredTasks.filter(t => t.column === col.id)
                   return (
                     <div key={col.id}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: col.color }} />
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{col.label}</span>
-                        <span style={{ fontSize: 10, color: col.color, background: `${col.color}18`, borderRadius: 4, padding: '1px 6px', fontWeight: 700 }}>{colTasks.length}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, position: 'sticky', top: 0, background: '#020202', zIndex: 5, paddingTop: 4, paddingBottom: 4 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: col.color }} />
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{col.label}</span>
+                        <span style={{ fontSize: 11, color: col.color, background: `${col.color}18`, borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{colTasks.length}</span>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {colTasks.map(t => <TaskCard key={t.id} task={t} onRefresh={load} />)}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {colTasks.map(t => <MobileTaskCard key={t.id} task={t} onRefresh={load} />)}
+                        {colTasks.length === 0 && (
+                          <div style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', fontSize: 12, color: '#333' }}>{col.desc}</div>
+                        )}
                       </div>
                     </div>
                   )
@@ -1620,7 +1983,7 @@ export default function Dashboard() {
 
       {/* MOBILE BOTTOM TABS */}
       {isMobile && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 52, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 101 }}>
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 56, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'stretch', justifyContent: 'space-around', zIndex: 101 }}>
           {[
             { id: 'queue', label: 'Queue', icon: '\u25A0' },
             { id: 'agents', label: 'Agents', icon: '\u{1F464}' },
@@ -1632,14 +1995,15 @@ export default function Dashboard() {
               key={tab.id}
               onClick={() => setActiveView(tab.id)}
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '6px 12px', minWidth: 56, minHeight: 44,
                 color: activeView === tab.id ? ORANGE : '#444',
                 transition: 'color 0.15s',
               }}
             >
-              <span style={{ fontSize: 16 }}>{tab.icon}</span>
-              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{tab.label}</span>
+              <span style={{ fontSize: 18 }}>{tab.icon}</span>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{tab.label}</span>
             </button>
           ))}
         </div>
