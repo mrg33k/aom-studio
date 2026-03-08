@@ -171,6 +171,8 @@ function getAgentFile(agent) {
     Cleo: 'projects/content-agent/AGENT.md',
     Rex: 'projects/rex/AGENT.md',
     Steffen: null,
+    Paige: 'projects/paige/AGENT.md',
+    Tony: 'projects/tony/AGENT.md',
   }
   return map[agent] || null
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN
 const REPO = 'mrg33k/AOM-EA'
 const BRANCH = 'master'
-const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD
+const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
 
 const ORANGE = '#FF4F00'
 const GREEN = '#22c55e'
@@ -138,6 +138,8 @@ function assignTasksToAgents(punchItems) {
     if (!agent && /cleo|video|edit|reel|tiktok|instagram/i.test(p.text)) agent = 'Cleo'
     if (!agent && /steffen|brand|guideline/i.test(p.text)) agent = 'Steffen'
     if (!agent && /rex|stuck|blocked|push/i.test(p.text)) agent = 'Rex'
+    if (!agent && /paige|client.*check|payment|invoice|deposit|churn|upsell/i.test(p.text)) agent = 'Paige'
+    if (!agent && /tony|social|posting|instagram|linkedin|tiktok|postiz|content.*calendar/i.test(p.text)) agent = 'Tony'
     let column = agent ? 'assigned' : 'unassigned'
     if (p.blocked) column = 'blocked'
     return { ...p, agent, column }
@@ -161,7 +163,7 @@ function StatusPill({ status }) {
   )
 }
 
-const AGENT_COLORS = { Bobby: ORANGE, Jacob: BLUE, Alex: PURPLE, Cleo: '#f472b6', Steffen: '#34d399', Rex: RED, Patrik: '#fff' }
+const AGENT_COLORS = { Bobby: ORANGE, Jacob: BLUE, Alex: PURPLE, Cleo: '#f472b6', Steffen: '#34d399', Rex: RED, Paige: '#06b6d4', Tony: '#a3e635', Patrik: '#fff' }
 
 function AgentInitial({ name, size = 28 }) {
   const color = AGENT_COLORS[name] || '#888'
@@ -276,7 +278,7 @@ function ActivityFeed({ actions, handoff }) {
 }
 
 // ─── COUNCIL MODAL ────────────────────────────────────────────────────────────
-const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Rex', 'Steffen']
+const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Rex', 'Steffen', 'Paige', 'Tony']
 
 function CouncilModal({ onClose }) {
   const [topic, setTopic] = useState('')
@@ -440,7 +442,7 @@ function CouncilModal({ onClose }) {
 }
 
 // ─── COMMAND BAR ──────────────────────────────────────────────────────────────
-const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Rex', 'Steffen']
+const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Rex', 'Steffen', 'Paige', 'Tony']
 
 function CommandBar({ onRefresh }) {
   const [input, setInput] = useState('')
@@ -613,7 +615,7 @@ function PasswordGate({ onAuth }) {
   const [shake, setShake] = useState(false)
 
   const attempt = () => {
-    if (input === DASHBOARD_PASSWORD) { sessionStorage.setItem('aom_ops_auth', '1'); onAuth() }
+    if (input === DASHBOARD_PASSWORD) { localStorage.setItem('aom_ops_auth', '1'); onAuth() }
     else { setShake(true); setInput(''); setTimeout(() => setShake(false), 600) }
   }
 
@@ -643,10 +645,12 @@ const AGENTS_CONFIG = [
   { name: 'Cleo', role: 'Content & Video', agentFile: 'projects/content-agent/AGENT.md' },
   { name: 'Rex', role: 'Relentless Execution', agentFile: 'projects/rex/AGENT.md' },
   { name: 'Steffen', role: 'Brand Guidelines', agentFile: null },
+  { name: 'Paige', role: 'Client Success', agentFile: 'projects/paige/AGENT.md' },
+  { name: 'Tony', role: 'Social Media', agentFile: 'projects/tony/AGENT.md' },
 ]
 
 export default function Dashboard() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem('aom_ops_auth') === '1')
+  const [authed, setAuthed] = useState(() => localStorage.getItem('aom_ops_auth') === '1')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [selectedAgent, setSelectedAgent] = useState(null)
@@ -715,7 +719,7 @@ export default function Dashboard() {
           {lastFetched && !loading && <span style={{ fontSize: 10, color: '#333' }}>{lastFetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>}
           <button onClick={() => setCouncilOpen(true)} style={{ background: `${ORANGE}12`, border: `1px solid ${ORANGE}30`, borderRadius: 6, color: ORANGE, fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700 }}>COUNCIL</button>
           <button onClick={load} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#666', fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 600 }}>REFRESH</button>
-          <button onClick={() => { sessionStorage.removeItem('aom_ops_auth'); setAuthed(false) }} style={{ background: 'none', border: 'none', color: '#333', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>LOCK</button>
+          <button onClick={() => { localStorage.removeItem('aom_ops_auth'); setAuthed(false) }} style={{ background: 'none', border: 'none', color: '#333', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>LOCK</button>
         </div>
       </div>
 
