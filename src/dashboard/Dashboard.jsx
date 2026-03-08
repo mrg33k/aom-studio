@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// ─── CONFIG (build: 2026-03-09) ───────────────────────────────────────────────
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN
 const REPO = 'mrg33k/AOM-EA'
 const BRANCH = 'master'
