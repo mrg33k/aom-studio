@@ -1730,6 +1730,7 @@ export default function Dashboard() {
   const [lastFetched, setLastFetched] = useState(null)
   const [councilOpen, setCouncilOpen] = useState(false)
   const [activeView, setActiveView] = useState('queue') // 'queue' | 'reports' | 'skills' | 'agents' | 'activity'
+  const [mobileFilter, setMobileFilter] = useState('all') // 'all' | 'unassigned' | 'assigned' | 'blocked'
   const [mobileAgentPanel, setMobileAgentPanel] = useState(false)
   const [refreshProgress, setRefreshProgress] = useState(0)
   const refreshTimerRef = useRef(null)
@@ -2028,20 +2029,51 @@ export default function Dashboard() {
           {/* Kanban */}
           {GITHUB_TOKEN && (
             isMobile ? (
-              /* Mobile: stacked single-column with swipeable cards */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                {COLUMNS.map(col => {
+              /* Mobile: filter tabs + stacked single-column with swipeable cards */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Filter tabs */}
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                  {[{ id: 'all', label: 'All', color: ORANGE }, ...COLUMNS].map(f => {
+                    const count = f.id === 'all' ? filteredTasks.length : filteredTasks.filter(t => t.column === f.id).length
+                    const active = mobileFilter === f.id
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => setMobileFilter(f.id)}
+                        style={{
+                          background: active ? `${f.color}20` : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${active ? `${f.color}40` : 'rgba(255,255,255,0.06)'}`,
+                          borderRadius: 8, padding: '8px 14px', cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, minHeight: 40,
+                        }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 700, color: active ? f.color : '#666' }}>{f.label}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: active ? f.color : '#444', background: active ? `${f.color}18` : 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '1px 6px' }}>{count}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Filtered columns */}
+                {(mobileFilter === 'all' ? COLUMNS : COLUMNS.filter(c => c.id === mobileFilter)).map(col => {
                   const colTasks = filteredTasks.filter(t => t.column === col.id)
+                  if (mobileFilter !== 'all' && colTasks.length === 0) {
+                    return (
+                      <div key={col.id} style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', fontSize: 12, color: '#333' }}>No {col.label.toLowerCase()} tasks</div>
+                    )
+                  }
                   return (
                     <div key={col.id}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, position: 'sticky', top: 0, background: '#020202', zIndex: 5, paddingTop: 4, paddingBottom: 4 }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: col.color }} />
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{col.label}</span>
-                        <span style={{ fontSize: 11, color: col.color, background: `${col.color}18`, borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{colTasks.length}</span>
-                      </div>
+                      {mobileFilter === 'all' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, position: 'sticky', top: 0, background: '#020202', zIndex: 5, paddingTop: 4, paddingBottom: 4 }}>
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: col.color }} />
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{col.label}</span>
+                          <span style={{ fontSize: 11, color: col.color, background: `${col.color}18`, borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{colTasks.length}</span>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {colTasks.map(t => <MobileTaskCard key={t.id} task={t} onRefresh={load} />)}
-                        {colTasks.length === 0 && (
+                        {colTasks.length === 0 && mobileFilter === 'all' && (
                           <div style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', fontSize: 12, color: '#333' }}>{col.desc}</div>
                         )}
                       </div>
