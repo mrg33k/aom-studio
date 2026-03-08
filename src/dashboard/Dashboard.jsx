@@ -251,6 +251,7 @@ function TaskCard({ task, onRefresh }) {
   const [editText, setEditText] = useState(task.text)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deleted, setDeleted] = useState(false)
   const inputRef = useRef(null)
   const editRef = useRef(null)
   const subtaskCacheRef = useRef(null)
@@ -308,7 +309,7 @@ function TaskCard({ task, onRefresh }) {
   }
 
   const deleteTask = async () => {
-    if (deleting) return
+    if (deleting || deleted) return
     setDeleting(true)
     try {
       const res = await fetch('/api/chat', {
@@ -317,7 +318,10 @@ function TaskCard({ task, onRefresh }) {
         body: JSON.stringify({ action: 'delete_task', taskText: task.text }),
       })
       const data = await res.json()
-      if (data.ok) setTimeout(onRefresh, 1000)
+      if (data.ok) {
+        setDeleted(true)
+        setTimeout(onRefresh, 1200)
+      }
     } catch { /* silently fail */ }
     setDeleting(false)
   }
@@ -340,7 +344,13 @@ function TaskCard({ task, onRefresh }) {
   }
 
   return (
-    <div style={{ background: '#111', border: `1px solid ${task.deadline ? 'rgba(239,68,68,0.3)' : task.blocked ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, padding: '10px 12px' }}>
+    <div style={{ background: deleted ? '#0a0a0a' : '#111', border: `1px solid ${deleted ? 'rgba(34,197,94,0.3)' : task.deadline ? 'rgba(239,68,68,0.3)' : task.blocked ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, padding: '10px 12px', opacity: deleted ? 0 : 1, maxHeight: deleted ? 0 : 500, overflow: 'hidden', transition: 'opacity 0.4s ease, max-height 0.5s ease 0.3s, padding 0.5s ease 0.3s, margin 0.5s ease 0.3s', ...(deleted ? { padding: 0, marginBottom: -8 } : {}) }}>
+      {deleted && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px' }}>
+          <span style={{ color: '#22c55e', fontSize: 14 }}>&#10003;</span>
+          <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 600 }}>Removed</span>
+        </div>
+      )}
       {task.deadline && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
           <span style={{ fontSize: 9, color: urgentColor, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Hard Deadline</span>
