@@ -275,6 +275,170 @@ function ActivityFeed({ actions, handoff }) {
   )
 }
 
+// ─── COUNCIL MODAL ────────────────────────────────────────────────────────────
+const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Rex', 'Steffen']
+
+function CouncilModal({ onClose }) {
+  const [topic, setTopic] = useState('')
+  const [phase, setPhase] = useState('idle') // idle | convening | done
+  const [responses, setResponses] = useState({})
+  const [synthesis, setSynthesis] = useState(null)
+  const [error, setError] = useState(null)
+  const inputRef = useRef(null)
+  const bottomRef = useRef(null)
+
+  useEffect(() => { if (phase === 'idle' && inputRef.current) inputRef.current.focus() }, [phase])
+  useEffect(() => { if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' }) }, [synthesis])
+
+  const convene = async () => {
+    if (!topic.trim() || phase !== 'idle') return
+    setPhase('convening')
+    setResponses({})
+    setSynthesis(null)
+    setError(null)
+
+    const message = `COUNCIL TOPIC: ${topic}\n\nYou are in an AOM team council meeting. Respond from your specific domain only. Be direct and specific. Max 4 sentences. No filler, no hedging.`
+
+    try {
+      const agentPromises = COUNCIL_AGENTS.map(agent =>
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'chat', message, agent, mode: 'council' }),
+        })
+        .then(r => r.json())
+        .then(data => {
+          const text = data.reply || data.error || 'No response.'
+          setResponses(prev => ({ ...prev, [agent]: text }))
+          return { agent, text }
+        })
+      )
+
+      const agentResults = await Promise.all(agentPromises)
+
+      const synthRes = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'council_synthesis', topic, responses: agentResults }),
+      })
+      const synthData = await synthRes.json()
+      setSynthesis(synthData.synthesis || 'Synthesis unavailable.')
+      setPhase('done')
+    } catch {
+      setError('Network error during council.')
+      setPhase('idle')
+    }
+  }
+
+  const reset = () => { setPhase('idle'); setTopic(''); setResponses({}); setSynthesis(null); setError(null) }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ background: '#080808', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, width: '100%', maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 32px 100px rgba(0,0,0,0.9)' }}>
+
+        {/* Header */}
+        <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontSize: 10, letterSpacing: '0.22em', fontWeight: 800, color: ORANGE, textTransform: 'uppercase' }}>Council</span>
+            <div style={{ display: 'flex' }}>
+              {COUNCIL_AGENTS.map((a, i) => (
+                <div key={a} style={{ marginLeft: i > 0 ? -7 : 0, zIndex: COUNCIL_AGENTS.length - i }}>
+                  <AgentInitial name={a} size={22} />
+                </div>
+              ))}
+            </div>
+            {phase !== 'idle' && topic && (
+              <span style={{ fontSize: 11, color: '#444', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topic}</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {phase === 'done' && (
+              <button onClick={reset} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#555', fontSize: 10, padding: '4px 10px', cursor: 'pointer', letterSpacing: '0.06em' }}>NEW</button>
+            )}
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#555', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}>×</button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {/* Idle: topic input */}
+          {phase === 'idle' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>What's the council on?</div>
+                <div style={{ fontSize: 11, color: '#444', lineHeight: 1.6 }}>Each agent weighs in from their domain. Bobby on tech, Jacob on pipeline, Alex on revenue, Cleo on content, Rex on blockers, Steffen on brand. Synthesis follows.</div>
+              </div>
+              <textarea
+                ref={inputRef}
+                value={topic}
+                onChange={e => setTopic(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) convene() }}
+                placeholder="e.g. Should we raise Ambition's retainer? / Should we build the social agent next? / What does the team think about taking on NEON?"
+                rows={3}
+                style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#fff', fontSize: 13, padding: '12px 14px', outline: 'none', resize: 'none', lineHeight: 1.55, fontFamily: 'inherit' }}
+              />
+              {error && <div style={{ fontSize: 11, color: RED }}>{error}</div>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  onClick={convene}
+                  disabled={!topic.trim()}
+                  style={{ background: topic.trim() ? ORANGE : '#1a1a1a', color: topic.trim() ? '#fff' : '#333', border: 'none', borderRadius: 8, padding: '10px 28px', fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', cursor: topic.trim() ? 'pointer' : 'default', textTransform: 'uppercase', transition: 'all 0.15s' }}
+                >
+                  Convene
+                </button>
+                <span style={{ fontSize: 10, color: '#333' }}>or Cmd+Enter</span>
+              </div>
+            </div>
+          )}
+
+          {/* Convening / Done: agent responses */}
+          {phase !== 'idle' && COUNCIL_AGENTS.map(agent => {
+            const hasResponse = !!responses[agent]
+            const agentColor = AGENT_COLORS[agent] || '#888'
+            return (
+              <div
+                key={agent}
+                style={{ background: '#0f0f0f', border: `1px solid ${hasResponse ? `${agentColor}28` : 'rgba(255,255,255,0.04)'}`, borderRadius: 10, padding: '14px 16px', transition: 'border-color 0.4s' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: hasResponse ? 10 : 0 }}>
+                  <AgentInitial name={agent} size={26} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: hasResponse ? agentColor : '#2a2a2a', transition: 'color 0.4s' }}>{agent}</span>
+                  {!hasResponse && (
+                    <span style={{ fontSize: 10, color: '#2a2a2a', letterSpacing: '0.08em' }}>thinking…</span>
+                  )}
+                </div>
+                {hasResponse && (
+                  <div style={{ fontSize: 12, color: '#ccc', lineHeight: 1.65, paddingLeft: 36, whiteSpace: 'pre-wrap' }}>
+                    {responses[agent]}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Synthesis */}
+          {(phase === 'done' || synthesis) && (
+            <div style={{ background: '#0a0a0a', border: `1px solid ${ORANGE}28`, borderRadius: 10, padding: '18px 20px', marginTop: 4 }}>
+              <div style={{ fontSize: 9, letterSpacing: '0.18em', fontWeight: 800, color: ORANGE, textTransform: 'uppercase', marginBottom: 12 }}>Synthesis</div>
+              {synthesis ? (
+                <div style={{ fontSize: 12, color: '#ddd', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{synthesis}</div>
+              ) : (
+                <div style={{ fontSize: 11, color: '#333' }}>Synthesizing…</div>
+              )}
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── COMMAND BAR ──────────────────────────────────────────────────────────────
 const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Rex', 'Steffen']
 
@@ -487,6 +651,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
+  const [councilOpen, setCouncilOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!GITHUB_TOKEN) return
@@ -548,6 +713,7 @@ export default function Dashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {loading && <span style={{ fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>syncing…</span>}
           {lastFetched && !loading && <span style={{ fontSize: 10, color: '#333' }}>{lastFetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>}
+          <button onClick={() => setCouncilOpen(true)} style={{ background: `${ORANGE}12`, border: `1px solid ${ORANGE}30`, borderRadius: 6, color: ORANGE, fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700 }}>COUNCIL</button>
           <button onClick={load} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#666', fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 600 }}>REFRESH</button>
           <button onClick={() => { sessionStorage.removeItem('aom_ops_auth'); setAuthed(false) }} style={{ background: 'none', border: 'none', color: '#333', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>LOCK</button>
         </div>
@@ -616,6 +782,9 @@ export default function Dashboard() {
 
       {/* COMMAND BAR */}
       <CommandBar onRefresh={load} />
+
+      {/* COUNCIL MODAL */}
+      {councilOpen && <CouncilModal onClose={() => setCouncilOpen(false)} />}
     </div>
   )
 }

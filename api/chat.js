@@ -46,7 +46,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
-  const { action, message, agent, task } = req.body
+  const { action, message, agent, task, mode, topic, responses } = req.body
 
   // ── ADD TASK ──────────────────────────────────────────────────────────────
   if (action === 'add_task') {
@@ -104,9 +104,12 @@ export default async function handler(req, res) {
       agentMd ? `# ${agent.toUpperCase()} AGENT CONTEXT\n${agentMd.content.slice(0, 4000)}` : '',
     ].filter(Boolean).join('\n\n---\n\n')
 
-    const systemPrompt = agent && agent !== 'All'
-      ? `You are ${agent}, an AI agent at AOM (Ahead of Market), a creative production and AI systems company in Phoenix, AZ. You are responding to Patrik, AOM's co-owner. Be direct, specific, and action-oriented. No filler. Here is your current context:\n\n${contextBlock}`
-      : `You are the AOM team -- Bobby (web dev), Jacob (outreach), Alex (deal architect), Cleo (content), and Steffen (brand). You are responding to Patrik, AOM's co-owner. Be direct, specific, action-oriented. Respond from whichever agent's perspective is most relevant to the question, or synthesize across agents. Here is the current company context:\n\n${contextBlock}`
+    const isCouncil = mode === 'council'
+    const systemPrompt = isCouncil
+      ? `You are ${agent}, an AI agent at AOM (Ahead of Market). You are in a council meeting called by Patrik. Respond ONLY from your specific domain. Be blunt and direct. Max 4 sentences. No corporate speak, no filler, no hedging. Here is your context:\n\n${contextBlock}`
+      : agent && agent !== 'All'
+        ? `You are ${agent}, an AI agent at AOM (Ahead of Market), a creative production and AI systems company in Phoenix, AZ. You are responding to Patrik, AOM's co-owner. Be direct, specific, and action-oriented. No filler. Here is your current context:\n\n${contextBlock}`
+        : `You are the AOM team -- Bobby (web dev), Jacob (outreach), Alex (deal architect), Cleo (content), and Steffen (brand). You are responding to Patrik, AOM's co-owner. Be direct, specific, action-oriented. Respond from whichever agent's perspective is most relevant to the question, or synthesize across agents. Here is the current company context:\n\n${contextBlock}`
 
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -117,7 +120,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: isCouncil ? 400 : 1024,
         system: systemPrompt,
         messages: [{ role: 'user', content: message }],
       }),
@@ -131,6 +134,30 @@ export default async function handler(req, res) {
     const data = await anthropicRes.json()
     const reply = data.content?.[0]?.text || 'No response.'
     return res.status(200).json({ reply, agent: agent || 'All' })
+  }
+
+  // ── COUNCIL SYNTHESIS ─────────────────────────────────────────────────────
+  if (action === 'council_synthesis') {
+    if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' })
+    if (!topic || !responses?.length) return res.status(400).json({ error: 'topic and responses required' })
+
+    const responsesBlock = responses.map(r => `## ${r.agent}\n${r.text}`).join('\n\n')
+    const userMessage = `COUNCIL TOPIC: ${topic}\n\nAGENT RESPONSES:\n\n${responsesBlock}\n\nWrite a tight synthesis. Format:\n\nWhere we agree: [1-2 sentences]\nOpen questions: [bullet points if any, else "None"]\nRecommended next action: [one clear action Patrik should take]`
+
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: 'You are synthesizing an AOM agent council meeting for Patrik, AOM\'s co-owner. Be direct and specific. Extract real signal. The synthesis is what the team will actually act on.',
+        messages: [{ role: 'user', content: userMessage }],
+      }),
+    })
+
+    if (!anthropicRes.ok) return res.status(500).json({ error: 'Anthropic API error during synthesis' })
+    const data = await anthropicRes.json()
+    return res.status(200).json({ synthesis: data.content?.[0]?.text || 'No synthesis.' })
   }
 
   return res.status(400).json({ error: 'Unknown action' })
