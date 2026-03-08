@@ -1,4 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+
+// ─── RESPONSIVE HOOK ─────────────────────────────────────────────────────────
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < breakpoint)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint)
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [breakpoint])
+  return isMobile
+}
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN
@@ -121,6 +132,24 @@ function parseHandoff(md) {
   return md.split('\n').filter(l => l.startsWith('- ')).map(l => l.replace('- ', '').trim()).slice(0, 8)
 }
 
+// ─── BLOCKER CONTEXT ─────────────────────────────────────────────────────────
+function getBlockerContext(taskText) {
+  const lower = taskText.toLowerCase()
+  // Desktop-required tasks
+  if (/postiz|docker|vercel|deploy|firebase console|gcp console|codespaces|terminal|cli|npm|git push/i.test(lower))
+    return { label: 'Needs desktop', icon: '\u{1F5A5}' }
+  // Needs client response
+  if (/client.*confirm|waiting.*client|need.*from.*client|stats bar.*confirm|client.*approve/i.test(lower))
+    return { label: 'Waiting on client', icon: '\u{23F3}' }
+  // Needs Patrik in person
+  if (/filming|on-site|on site|load-in|shoot|set up.*gear/i.test(lower))
+    return { label: 'On-site required', icon: '\u{1F4CD}' }
+  // Manual action in external tool
+  if (/manually|gmail ui|send.*gmail|schedule.*gmail/i.test(lower))
+    return { label: 'Manual action', icon: '\u{270B}' }
+  return null
+}
+
 function assignTasksToAgents(punchItems) {
   const ownerMap = {
     'Ambition Mechanical': 'Bobby', 'Skylar Music Video': 'Cleo',
@@ -227,6 +256,7 @@ function TaskCard({ task, onRefresh }) {
   const agentColor = task.agent ? (AGENT_COLORS[task.agent] || '#888') : '#444'
   const daysLeft = task.deadline ? deadlineDaysRemaining(task.raw || task.text) : null
   const urgentColor = daysLeft !== null && daysLeft <= 7 ? '#ff2020' : RED
+  const blockerCtx = getBlockerContext(task.raw || task.text)
 
   useEffect(() => { if (replyOpen && inputRef.current) inputRef.current.focus() }, [replyOpen])
   useEffect(() => { if (editing && editRef.current) { editRef.current.focus(); editRef.current.select() } }, [editing])
@@ -303,6 +333,14 @@ function TaskCard({ task, onRefresh }) {
           ) : (
             <span style={{ fontSize: 9, fontWeight: 600, color: '#555', background: 'rgba(255,255,255,0.04)', borderRadius: 4, padding: '1px 5px' }}>deadline</span>
           )}
+        </div>
+      )}
+
+      {/* Blocker context badge */}
+      {blockerCtx && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+          <span style={{ fontSize: 10 }}>{blockerCtx.icon}</span>
+          <span style={{ fontSize: 9, color: '#777', fontWeight: 600, letterSpacing: '0.04em' }}>{blockerCtx.label}</span>
         </div>
       )}
 
@@ -655,6 +693,125 @@ function ReportsPanel() {
   )
 }
 
+// ─── SKILLS PANEL ────────────────────────────────────────────────────────────
+function SkillsPanel() {
+  const [skills, setSkills] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [expandedSkill, setExpandedSkill] = useState(null)
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        // Fetch the skills directory listing from GitHub
+        const res = await fetch(
+          `https://api.github.com/repos/${REPO}/contents/.claude/skills?ref=${BRANCH}`,
+          { headers: { Authorization: `token ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
+        )
+        if (!res.ok) { setLoading(false); return }
+        const dirs = await res.json()
+        const skillDirs = dirs.filter(d => d.type === 'dir')
+
+        // Fetch each SKILL.md in parallel
+        const skillData = await Promise.all(
+          skillDirs.map(async (dir) => {
+            const md = await fetchFile(`.claude/skills/${dir.name}/SKILL.md`)
+            if (!md) return null
+            const titleMatch = md.match(/^#\s+(.+)/m)
+            const triggerMatch = md.match(/## Trigger\n([\s\S]*?)(?=\n##|\n---|\Z)/i)
+            const stepsMatch = md.match(/## Steps\n([\s\S]*?)(?=\n##|\n---|\Z)/i)
+            const whatMatch = md.match(/## What This Skill Does\n([\s\S]*?)(?=\n##|\n---|\Z)/i)
+
+            // Extract bullet points from trigger section
+            const triggers = triggerMatch
+              ? triggerMatch[1].split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('User says')).map(l => l.replace(/^[-*]\s*/, '').trim()).filter(Boolean)
+              : []
+
+            // Extract step headers
+            const steps = stepsMatch
+              ? stepsMatch[1].split('\n').filter(l => /^###\s/.test(l)).map(l => l.replace(/^###\s+/, '').replace(/^\d+\.\s*/, '').trim())
+              : []
+
+            return {
+              name: dir.name,
+              title: titleMatch ? titleMatch[1].replace(/^Skill:\s*/i, '') : dir.name,
+              description: whatMatch ? whatMatch[1].trim().split('\n')[0] : '',
+              triggers,
+              steps,
+              fullMd: md,
+            }
+          })
+        )
+        setSkills(skillData.filter(Boolean).sort((a, b) => a.title.localeCompare(b.title)))
+      } catch { /* silently fail */ }
+      setLoading(false)
+    }
+    fetchSkills()
+  }, [])
+
+  return (
+    <div style={{ padding: 24, flex: 1, overflow: 'auto' }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Skills</div>
+        <div style={{ fontSize: 11, color: '#444' }}>{skills.length} skills loaded from .claude/skills/</div>
+      </div>
+
+      {loading && <div style={{ fontSize: 11, color: '#444', padding: 20 }}>Loading skills...</div>}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {skills.map(skill => {
+          const isExpanded = expandedSkill === skill.name
+          return (
+            <div key={skill.name} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
+              <div
+                onClick={() => setExpandedSkill(isExpanded ? null : skill.name)}
+                style={{ padding: '12px 14px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 4 }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ display: 'inline-block', width: 10, fontSize: 8, color: '#444', transition: 'transform 0.15s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>&#9654;</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#ddd' }}>{skill.title}</span>
+                  </div>
+                  <span style={{ fontSize: 9, color: '#555', background: 'rgba(255,255,255,0.04)', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>{skill.steps.length} steps</span>
+                </div>
+                {skill.description && (
+                  <div style={{ fontSize: 11, color: '#555', paddingLeft: 18, lineHeight: 1.4 }}>{skill.description}</div>
+                )}
+              </div>
+
+              {isExpanded && (
+                <div style={{ padding: '0 14px 14px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  {/* Triggers */}
+                  {skill.triggers.length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 9, letterSpacing: '0.1em', color: ORANGE, fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Triggers</div>
+                      {skill.triggers.map((t, i) => (
+                        <div key={i} style={{ fontSize: 11, color: '#888', lineHeight: 1.6, paddingLeft: 8 }}>{t}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Steps */}
+                  {skill.steps.length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 9, letterSpacing: '0.1em', color: BLUE, fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Steps</div>
+                      {skill.steps.map((s, i) => (
+                        <div key={i} style={{ fontSize: 11, color: '#888', lineHeight: 1.8, paddingLeft: 8, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                          <span style={{ color: '#333', fontWeight: 700, flexShrink: 0, fontSize: 10, marginTop: 2 }}>{i + 1}</span>
+                          <span>{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── ACTION BADGE ────────────────────────────────────────────────────────────
 function ActionBadge({ action }) {
   const toolLabels = { mark_task_done: 'Task Completed' }
@@ -846,7 +1003,7 @@ function CouncilModal({ onClose }) {
 // ─── COMMAND BAR ──────────────────────────────────────────────────────────────
 const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Paige', 'Tony', 'Elon']
 
-function CommandBar({ onRefresh }) {
+function CommandBar({ onRefresh, isMobile }) {
   const [input, setInput] = useState('')
   const [taskNotes, setTaskNotes] = useState('')
   const [notesOpen, setNotesOpen] = useState(false)
@@ -913,7 +1070,7 @@ function CommandBar({ onRefresh }) {
     <>
       {/* Chat panel */}
       {open && messages.length > 0 && (
-        <div style={{ position: 'fixed', bottom: addTaskMode && notesOpen ? 120 : 64, right: 24, width: 420, maxHeight: 400, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', transition: 'bottom 0.15s ease' }}>
+        <div style={{ position: 'fixed', bottom: addTaskMode && notesOpen ? 120 : 64, right: isMobile ? 0 : 24, left: isMobile ? 0 : 'auto', width: isMobile ? '100%' : 420, maxHeight: isMobile ? '70vh' : 400, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: isMobile ? '12px 12px 0 0' : 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', transition: 'bottom 0.15s ease' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ fontSize: 10, color: '#555', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>Command Log</span>
             <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#555', fontSize: 14, cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -967,9 +1124,9 @@ function CommandBar({ onRefresh }) {
       )}
 
       {/* Bar */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 56, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', zIndex: 99 }}>
+      <div style={{ position: 'fixed', bottom: isMobile ? 52 : 0, left: 0, right: 0, height: 56, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, padding: isMobile ? '0 10px' : '0 20px', zIndex: 99 }}>
         {/* Agent selector */}
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 4, overflowX: isMobile ? 'auto' : 'visible', flexShrink: isMobile ? 0 : undefined, maxWidth: isMobile ? 120 : undefined, WebkitOverflowScrolling: 'touch' }}>
           {CHAT_AGENTS.map(a => (
             <button
               key={a}
@@ -1096,13 +1253,15 @@ const AGENTS_CONFIG = [
 const REFRESH_INTERVAL = 30000
 
 export default function Dashboard() {
+  const isMobile = useIsMobile()
   const [authed, setAuthed] = useState(() => localStorage.getItem('aom_ops_auth') === '1')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
   const [councilOpen, setCouncilOpen] = useState(false)
-  const [activeView, setActiveView] = useState('queue') // 'queue' | 'reports'
+  const [activeView, setActiveView] = useState('queue') // 'queue' | 'reports' | 'skills' | 'agents' | 'activity'
+  const [mobileAgentPanel, setMobileAgentPanel] = useState(false)
   const [refreshProgress, setRefreshProgress] = useState(0)
   const refreshTimerRef = useRef(null)
   const progressRef = useRef(null)
@@ -1172,7 +1331,7 @@ export default function Dashboard() {
     : data?.tasks || []
 
   return (
-    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: 56 }}>
+    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 108 : 56 }}>
 
       {/* REFRESH PROGRESS BAR */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2, zIndex: 300, background: 'transparent' }}>
@@ -1180,28 +1339,28 @@ export default function Dashboard() {
       </div>
 
       {/* TOP BAR */}
-      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: isMobile ? '0 12px' : '0 24px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.16em', color: '#fff', textTransform: 'uppercase' }}>AOM</span>
-            <span style={{ fontSize: 10, letterSpacing: '0.14em', color: ORANGE, fontWeight: 700, textTransform: 'uppercase' }}>Mission Control</span>
+            {!isMobile && <span style={{ fontSize: 10, letterSpacing: '0.14em', color: ORANGE, fontWeight: 700, textTransform: 'uppercase' }}>Mission Control</span>}
           </div>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+          {!isMobile && <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />}
           {data && (
-            <div style={{ display: 'flex', gap: 20 }}>
-              <Stat label="OPEN" value={data.openCount} />
-              <Stat label="BLOCKED" value={data.blockedCount} color={data.blockedCount > 0 ? YELLOW : undefined} />
-              <Stat label="DEADLINES" value={data.deadlineCount} color={data.deadlineCount > 0 ? RED : undefined} />
-              <Stat label="UNASSIGNED" value={data.unassignedCount} color={data.unassignedCount > 0 ? '#777' : undefined} />
-              <Stat label="DONE" value={data.doneCount} color={data.doneCount > 0 ? GREEN : undefined} />
+            <div style={{ display: 'flex', gap: isMobile ? 10 : 20 }}>
+              <Stat label="OPEN" value={data.openCount} compact={isMobile} />
+              <Stat label="BLOCKED" value={data.blockedCount} color={data.blockedCount > 0 ? YELLOW : undefined} compact={isMobile} />
+              <Stat label="DUE" value={data.deadlineCount} color={data.deadlineCount > 0 ? RED : undefined} compact={isMobile} />
+              {!isMobile && <Stat label="UNASSIGNED" value={data.unassignedCount} color={data.unassignedCount > 0 ? '#777' : undefined} />}
+              {!isMobile && <Stat label="DONE" value={data.doneCount} color={data.doneCount > 0 ? GREEN : undefined} />}
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
           {loading && <span style={{ fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>syncing…</span>}
-          {lastFetched && !loading && <span style={{ fontSize: 10, color: '#333' }}>{lastFetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>}
+          {lastFetched && !loading && !isMobile && <span style={{ fontSize: 10, color: '#333' }}>{lastFetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>}
           <button onClick={() => setCouncilOpen(true)} style={{ background: `${ORANGE}12`, border: `1px solid ${ORANGE}30`, borderRadius: 6, color: ORANGE, fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700 }}>COUNCIL</button>
-          <button onClick={load} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#666', fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 600 }}>REFRESH</button>
+          {!isMobile && <button onClick={load} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#666', fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 600 }}>REFRESH</button>}
           <button onClick={() => { localStorage.removeItem('aom_ops_auth'); setAuthed(false) }} style={{ background: 'none', border: 'none', color: '#333', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>LOCK</button>
         </div>
       </div>
@@ -1209,7 +1368,8 @@ export default function Dashboard() {
       {/* MAIN LAYOUT */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-        {/* LEFT SIDEBAR */}
+        {/* LEFT SIDEBAR (desktop only) */}
+        {!isMobile && (
         <div style={{ width: 220, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.06)', padding: '20px 8px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
           <div style={{ padding: '0 12px', marginBottom: 12 }}>
             <span style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase' }}>Agents</span>
@@ -1250,6 +1410,18 @@ export default function Dashboard() {
               >
                 <span style={{ fontSize: 12 }}>&#9776;</span> Reports
               </button>
+              <button
+                onClick={() => setActiveView('skills')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 6, width: '100%',
+                  background: activeView === 'skills' ? 'rgba(167,139,250,0.08)' : 'transparent',
+                  border: `1px solid ${activeView === 'skills' ? 'rgba(167,139,250,0.15)' : 'transparent'}`,
+                  cursor: 'pointer', textAlign: 'left', fontSize: 11, fontWeight: 600,
+                  color: activeView === 'skills' ? '#fff' : '#555',
+                }}
+              >
+                <span style={{ fontSize: 12 }}>&#9881;</span> Skills
+              </button>
             </div>
             <div style={{ padding: '4px 12px 4px' }}>
               <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, marginBottom: 2 }}>{activeAgents} active</div>
@@ -1257,12 +1429,48 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* MAIN CONTENT: QUEUE or REPORTS */}
+        {/* MAIN CONTENT */}
         {activeView === 'reports' ? (
           <ReportsPanel />
+        ) : activeView === 'skills' ? (
+          <SkillsPanel />
+        ) : activeView === 'agents' && isMobile ? (
+          /* Mobile agents list */
+          <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Agents</div>
+            <button onClick={() => { setSelectedAgent(null); setActiveView('queue') }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, width: '100%', background: 'rgba(255,79,0,0.06)', border: '1px solid rgba(255,79,0,0.15)', cursor: 'pointer', textAlign: 'left', marginBottom: 8 }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,79,0,0.12)', border: '1.5px solid rgba(255,79,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: ORANGE }}>ALL</div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>All Agents</span>
+            </button>
+            {data?.agents?.map(a => {
+              const taskCount = data.tasks.filter(t => t.agent === a.name).length
+              return (
+                <div key={a.name} onClick={() => { setSelectedAgent(a.name); setMobileAgentPanel(true) }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, marginBottom: 4, background: 'rgba(255,255,255,0.02)', cursor: 'pointer' }}>
+                  <AgentInitial name={a.name} size={30} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#e5e5e5' }}>{a.name}</span>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        {taskCount > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: ORANGE, background: 'rgba(255,79,0,0.12)', borderRadius: 10, padding: '1px 5px' }}>{taskCount}</span>}
+                        <StatusPill status={a.status} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>{a.role}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : activeView === 'activity' && isMobile ? (
+          /* Mobile activity feed */
+          <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Activity</div>
+            {data ? <ActivityFeed actions={data.actions} handoff={data.handoff} /> : <div style={{ fontSize: 11, color: '#333' }}>No activity</div>}
+          </div>
         ) : (
-        <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 24 }}>
 
           {/* No token error state */}
           {!GITHUB_TOKEN && (
@@ -1281,22 +1489,22 @@ export default function Dashboard() {
             </div>
           )}
 
-          {GITHUB_TOKEN && <div style={{ marginBottom: 20 }}>
+          {GITHUB_TOKEN && <div style={{ marginBottom: isMobile ? 12 : 20 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{selectedAgent ? `${selectedAgent}'s Queue` : 'Mission Queue'}</div>
-            <div style={{ fontSize: 11, color: '#444' }}>{selectedAgent ? `Tasks assigned to ${selectedAgent} + unassigned gaps` : 'All active work across every agent — gaps surface as unassigned'}</div>
+            <div style={{ fontSize: 11, color: '#444' }}>{selectedAgent ? `Tasks assigned to ${selectedAgent} + unassigned gaps` : 'All active work across every agent'}</div>
           </div>}
 
           {/* Priorities */}
           {GITHUB_TOKEN && !selectedAgent && data?.priorities?.length > 0 && (
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 12 }}>Current Priorities</div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: isMobile ? 16 : 28 }}>
+              <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Current Priorities</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {data.priorities.map((p, i) => (
-                  <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start', flex: '1 1 200px', maxWidth: 300 }}>
+                  <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: isMobile ? '8px 10px' : '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-start', flex: isMobile ? '1 1 100%' : '1 1 200px', maxWidth: isMobile ? '100%' : 300 }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: ORANGE, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd' }}>{p.label}</div>
-                      {p.desc && <div style={{ fontSize: 10, color: '#555', marginTop: 3, lineHeight: 1.4 }}>{p.desc}</div>}
+                      {p.desc && <div style={{ fontSize: 10, color: '#555', marginTop: 2, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isMobile ? 'nowrap' : 'normal' }}>{p.desc}</div>}
                     </div>
                   </div>
                 ))}
@@ -1306,14 +1514,36 @@ export default function Dashboard() {
 
           {/* Kanban */}
           {GITHUB_TOKEN && (
-            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 8 }}>
-              {COLUMNS.map(col => <KanbanColumn key={col.id} col={col} tasks={filteredTasks} onRefresh={load} />)}
-            </div>
+            isMobile ? (
+              /* Mobile: stacked single-column */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {COLUMNS.map(col => {
+                  const colTasks = filteredTasks.filter(t => t.column === col.id)
+                  return (
+                    <div key={col.id}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: col.color }} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{col.label}</span>
+                        <span style={{ fontSize: 10, color: col.color, background: `${col.color}18`, borderRadius: 4, padding: '1px 6px', fontWeight: 700 }}>{colTasks.length}</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {colTasks.map(t => <TaskCard key={t.id} task={t} onRefresh={load} />)}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 8 }}>
+                {COLUMNS.map(col => <KanbanColumn key={col.id} col={col} tasks={filteredTasks} onRefresh={load} />)}
+              </div>
+            )
           )}
         </div>
         )}
 
-        {/* RIGHT SIDEBAR -- AGENT PROFILE / ACTIVITY */}
+        {/* RIGHT SIDEBAR (desktop only) */}
+        {!isMobile && (
         <div style={{ width: 260, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', padding: '20px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
           {selectedAgent && data?.agents && (() => {
             const agentData = data.agents.find(a => a.name === selectedAgent)
@@ -1324,10 +1554,55 @@ export default function Dashboard() {
             {data ? <ActivityFeed actions={data.actions} handoff={data.handoff} /> : <div style={{ fontSize: 11, color: '#333' }}>{loading ? 'Loading…' : 'No activity'}</div>}
           </div>
         </div>
+        )}
       </div>
 
+      {/* MOBILE AGENT PROFILE PANEL (slides up) */}
+      {isMobile && mobileAgentPanel && selectedAgent && data?.agents && (() => {
+        const agentData = data.agents.find(a => a.name === selectedAgent)
+        if (!agentData) return null
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 150, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }} onClick={e => { if (e.target === e.currentTarget) setMobileAgentPanel(false) }}>
+            <div style={{ background: '#0a0a0a', borderRadius: '16px 16px 0 0', padding: '20px 16px 80px', maxHeight: '70vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <button onClick={() => { setMobileAgentPanel(false); setActiveView('queue') }} style={{ background: `${AGENT_COLORS[selectedAgent] || ORANGE}12`, border: `1px solid ${AGENT_COLORS[selectedAgent] || ORANGE}30`, borderRadius: 6, color: AGENT_COLORS[selectedAgent] || ORANGE, fontSize: 10, padding: '5px 12px', cursor: 'pointer', fontWeight: 700 }}>View Queue</button>
+                <button onClick={() => setMobileAgentPanel(false)} style={{ background: 'none', border: 'none', color: '#555', fontSize: 20, cursor: 'pointer' }}>x</button>
+              </div>
+              <AgentProfile agent={agentData} />
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* MOBILE BOTTOM TABS */}
+      {isMobile && (
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 52, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 101 }}>
+          {[
+            { id: 'queue', label: 'Queue', icon: '\u25A0' },
+            { id: 'agents', label: 'Agents', icon: '\u{1F464}' },
+            { id: 'reports', label: 'Reports', icon: '\u2630' },
+            { id: 'skills', label: 'Skills', icon: '\u2699' },
+            { id: 'activity', label: 'Activity', icon: '\u26A1' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveView(tab.id)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px',
+                color: activeView === tab.id ? ORANGE : '#444',
+                transition: 'color 0.15s',
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{tab.icon}</span>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* COMMAND BAR */}
-      <CommandBar onRefresh={load} />
+      <CommandBar onRefresh={load} isMobile={isMobile} />
 
       {/* COUNCIL MODAL */}
       {councilOpen && <CouncilModal onClose={() => setCouncilOpen(false)} />}
@@ -1335,11 +1610,11 @@ export default function Dashboard() {
   )
 }
 
-function Stat({ label, value, color }) {
+function Stat({ label, value, color, compact }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-      <span style={{ fontSize: 15, fontWeight: 800, color: color || '#fff', letterSpacing: '-0.02em' }}>{value}</span>
-      <span style={{ fontSize: 9, color: '#444', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: compact ? 'center' : 'baseline', gap: compact ? 3 : 5 }}>
+      <span style={{ fontSize: compact ? 13 : 15, fontWeight: 800, color: color || '#fff', letterSpacing: '-0.02em' }}>{value}</span>
+      <span style={{ fontSize: compact ? 8 : 9, color: '#444', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>{label}</span>
     </div>
   )
 }
