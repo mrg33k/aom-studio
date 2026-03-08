@@ -1,4 +1,4 @@
-// AOM Mission Control -- Chat + Task API
+// AOM Mission Control -- Chat + Task + Reports + Tool-Use API
 // Vercel serverless function
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
@@ -37,6 +37,86 @@ async function writeGitHubFile(path, content, sha, message) {
   return res.ok
 }
 
+async function listGitHubDir(path) {
+  const res = await fetch(
+    `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`,
+    { headers: { Authorization: `token ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
+  )
+  if (!res.ok) return []
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+// ── TOOL DEFINITIONS ────────────────────────────────────────────────────────
+const TOOLS = [
+  {
+    name: 'mark_task_done',
+    description: 'Marks a task as done in the AOM punch list. Use when Patrik confirms a task is complete. Takes the task description and finds the matching line in punch-list.md, checks it off with a completion date.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        task_description: {
+          type: 'string',
+          description: 'The text of the task to mark as done. Should closely match the task text in the punch list.',
+        },
+      },
+      required: ['task_description'],
+    },
+  },
+]
+
+const TOOL_SYSTEM_PROMPT = `
+You have tools available to update AOM's system. Use them when:
+- A task is confirmed done (mark_task_done)
+Do NOT use tools speculatively. Only write when something actually happened.
+Do NOT mark tasks done unless Patrik confirms.`
+
+async function executeMarkTaskDone(taskDescription) {
+  const file = await fetchGitHubFile('punch-list.md')
+  if (!file) return { success: false, error: 'Could not fetch punch list' }
+
+  const lines = file.content.split('\n')
+  const today = new Date().toISOString().split('T')[0]
+  const searchLower = taskDescription.toLowerCase()
+
+  let bestMatch = -1
+  let bestScore = 0
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (!line.match(/^\s*- \[ \]/)) continue
+    const lineText = line.replace(/^\s*- \[ \]\s*/, '').toLowerCase()
+    // Simple keyword match scoring
+    const searchWords = searchLower.split(/\s+/).filter(w => w.length > 2)
+    const matchCount = searchWords.filter(w => lineText.includes(w)).length
+    const score = matchCount / searchWords.length
+    if (score > bestScore) { bestScore = score; bestMatch = i }
+  }
+
+  if (bestMatch === -1 || bestScore < 0.3) {
+    return { success: false, error: `No matching unchecked task found for: "${taskDescription}"` }
+  }
+
+  const originalLine = lines[bestMatch]
+  lines[bestMatch] = originalLine.replace('- [ ]', `- [x]`) + ` -- done ${today}`
+
+  const ok = await writeGitHubFile(
+    'punch-list.md',
+    lines.join('\n'),
+    file.sha,
+    `Mark task done from dashboard: ${taskDescription.slice(0, 60)}`
+  )
+
+  if (!ok) return { success: false, error: 'GitHub write failed' }
+  return { success: true, task: originalLine.replace(/^\s*- \[ \]\s*/, '').trim(), date: today }
+}
+
+async function executeTool(toolName, toolInput) {
+  if (toolName === 'mark_task_done') {
+    return await executeMarkTaskDone(toolInput.task_description)
+  }
+  return { success: false, error: `Unknown tool: ${toolName}` }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -47,6 +127,109 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
   const { action, message, agent, task, mode, topic, responses } = req.body
+
+  // ── GET REPORTS ────────────────────────────────────────────────────────────
+  if (action === 'get_reports') {
+    try {
+      // Scan known project directories for report files
+      const reportDirs = [
+        'projects/ambition-mechanical',
+        'projects/aom-strategy',
+        'projects/content-agent',
+        'projects/sys',
+        'projects/mom',
+        'projects/paige',
+        'projects/tony',
+      ]
+
+      const reportPatterns = [
+        /^audit-/i, /^brief-/i, /^dashboard-brief/i, /^biz-dev-brief/i,
+        /^reference-analysis/i, /^design-brief/i, /^stats-research/i,
+        /^bobby-session/i, /^seo-keyword/i, /^super-admin-plan/i,
+        /^dashboard-control-panel/i,
+      ]
+
+      const allFiles = await Promise.all(reportDirs.map(dir => listGitHubDir(dir)))
+      const reportFiles = []
+
+      for (let i = 0; i < reportDirs.length; i++) {
+        const dir = reportDirs[i]
+        const files = allFiles[i]
+        for (const file of files) {
+          if (file.type !== 'file' || !file.name.endsWith('.md')) continue
+          if (file.name === 'AGENT.md' || file.name === 'README.md' || file.name === 'SKILL.md') continue
+          // Match known report patterns or any non-AGENT md file in strategy dirs
+          const isReport = reportPatterns.some(p => p.test(file.name)) ||
+            dir === 'projects/aom-strategy' ||
+            /audit|brief|research|analysis|plan|session/i.test(file.name)
+          if (isReport) {
+            reportFiles.push({ path: `${dir}/${file.name}`, name: file.name, dir })
+          }
+        }
+      }
+
+      // Fetch content for each report (limit to 20 to avoid rate limits)
+      const reports = []
+      const toFetch = reportFiles.slice(0, 20)
+      const contents = await Promise.all(toFetch.map(f => fetchGitHubFile(f.path)))
+
+      for (let i = 0; i < toFetch.length; i++) {
+        const f = toFetch[i]
+        const content = contents[i]
+        if (!content) continue
+
+        // Extract date from filename or content
+        const dateFromName = f.name.match(/(\d{4}-\d{2}-\d{2})/)
+        const dateFromContent = content.content.match(/(?:date|updated|created|designed).*?(\d{4}-\d{2}-\d{2})/i)
+        const date = dateFromName ? dateFromName[1] : dateFromContent ? dateFromContent[1] : null
+
+        // Infer agent from directory
+        const agentMap = {
+          'projects/ambition-mechanical': 'Bobby',
+          'projects/aom-strategy': 'Alex',
+          'projects/content-agent': 'Cleo',
+          'projects/sys': 'Elon',
+          'projects/mom': 'Mom',
+          'projects/paige': 'Paige',
+          'projects/tony': 'Tony',
+        }
+        const inferredAgent = agentMap[f.dir] || 'System'
+
+        // Extract title from first heading or filename
+        const titleMatch = content.content.match(/^#\s+(.+)/m)
+        const title = titleMatch ? titleMatch[1].trim() : f.name.replace('.md', '').replace(/-/g, ' ')
+
+        // Categorize
+        let type = 'report'
+        if (/audit/i.test(f.name)) type = 'audit'
+        else if (/brief/i.test(f.name)) type = 'brief'
+        else if (/research|analysis/i.test(f.name)) type = 'research'
+        else if (/plan|arch/i.test(f.name)) type = 'plan'
+        else if (/session/i.test(f.name)) type = 'session'
+
+        reports.push({
+          path: f.path,
+          title,
+          type,
+          agent: inferredAgent,
+          date,
+          content: content.content,
+        })
+      }
+
+      // Sort newest first (reports with dates first, then alphabetical)
+      reports.sort((a, b) => {
+        if (a.date && b.date) return b.date.localeCompare(a.date)
+        if (a.date) return -1
+        if (b.date) return 1
+        return a.title.localeCompare(b.title)
+      })
+
+      return res.status(200).json({ reports })
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to fetch reports: ' + err.message })
+    }
+  }
 
   // ── ADD TASK ──────────────────────────────────────────────────────────────
   if (action === 'add_task') {
@@ -95,7 +278,6 @@ export default async function handler(req, res) {
     const file = await fetchGitHubFile('punch-list.md')
     if (!file) return res.status(500).json({ error: 'Could not fetch punch list' })
 
-    // Find the line containing this task text and replace just the text portion
     const lines = file.content.split('\n')
     let found = false
     for (let i = 0; i < lines.length; i++) {
@@ -119,7 +301,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, message: 'Task renamed.' })
   }
 
-  // ── CHAT ──────────────────────────────────────────────────────────────────
+  // ── CHAT (with tool_use support) ───────────────────────────────────────────
   if (action === 'chat') {
     if (!ANTHROPIC_API_KEY) {
       return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set in Vercel env vars' })
@@ -144,35 +326,90 @@ export default async function handler(req, res) {
     ].filter(Boolean).join('\n\n---\n\n')
 
     const isCouncil = mode === 'council'
-    const systemPrompt = isCouncil
+    let systemPrompt = isCouncil
       ? `You are ${agent}, an AI agent at AOM (Ahead of Market). You are in a council meeting called by Patrik. Respond ONLY from your specific domain. Be blunt and direct. Max 4 sentences. No corporate speak, no filler, no hedging. Here is your context:\n\n${contextBlock}`
       : agent && agent !== 'All'
         ? `You are ${agent}, an AI agent at AOM (Ahead of Market), a creative production and AI systems company in Phoenix, AZ. You are responding to Patrik, AOM's co-owner. Be direct, specific, and action-oriented. No filler. Here is your current context:\n\n${contextBlock}`
         : `You are the AOM team -- Bobby (web dev), Jacob (outreach), Alex (deal architect), Cleo (content), and Steffen (brand). You are responding to Patrik, AOM's co-owner. Be direct, specific, action-oriented. Respond from whichever agent's perspective is most relevant to the question, or synthesize across agents. Here is the current company context:\n\n${contextBlock}`
 
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Add tool instructions for non-council chats
+    if (!isCouncil) {
+      systemPrompt += TOOL_SYSTEM_PROMPT
+    }
+
+    // Tool execution loop (max 3 iterations)
+    let messages = [{ role: 'user', content: message }]
+    const actions_taken = []
+    const MAX_TOOL_ITERATIONS = 3
+
+    for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration++) {
+      const apiBody = {
         model: 'claude-sonnet-4-6',
         max_tokens: isCouncil ? 400 : 1024,
         system: systemPrompt,
-        messages: [{ role: 'user', content: message }],
-      }),
-    })
+        messages,
+      }
 
-    if (!anthropicRes.ok) {
-      const err = await anthropicRes.text()
-      return res.status(500).json({ error: 'Anthropic API error: ' + err })
+      // Only include tools for non-council chats
+      if (!isCouncil) {
+        apiBody.tools = TOOLS
+      }
+
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(apiBody),
+      })
+
+      if (!anthropicRes.ok) {
+        const err = await anthropicRes.text()
+        return res.status(500).json({ error: 'Anthropic API error: ' + err })
+      }
+
+      const data = await anthropicRes.json()
+
+      // Check if response has tool_use blocks
+      const toolUseBlocks = (data.content || []).filter(b => b.type === 'tool_use')
+      const textBlocks = (data.content || []).filter(b => b.type === 'text')
+
+      if (toolUseBlocks.length === 0 || data.stop_reason !== 'tool_use') {
+        // No tool calls -- extract text and return
+        const reply = textBlocks.map(b => b.text).join('\n') || 'No response.'
+        return res.status(200).json({ reply, agent: agent || 'All', actions_taken })
+      }
+
+      // Execute tool calls and build tool_result messages
+      const assistantContent = data.content
+      messages.push({ role: 'assistant', content: assistantContent })
+
+      const toolResults = []
+      for (const toolBlock of toolUseBlocks) {
+        const result = await executeTool(toolBlock.name, toolBlock.input)
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: toolBlock.id,
+          content: JSON.stringify(result),
+        })
+        actions_taken.push({
+          tool: toolBlock.name,
+          input: toolBlock.input,
+          result,
+        })
+      }
+
+      messages.push({ role: 'user', content: toolResults })
     }
 
-    const data = await anthropicRes.json()
-    const reply = data.content?.[0]?.text || 'No response.'
-    return res.status(200).json({ reply, agent: agent || 'All' })
+    // If we exhausted iterations, return whatever we have
+    return res.status(200).json({
+      reply: 'Reached maximum tool iterations. Actions may have been taken.',
+      agent: agent || 'All',
+      actions_taken,
+    })
   }
 
   // ── COUNCIL SYNTHESIS ─────────────────────────────────────────────────────

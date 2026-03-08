@@ -530,6 +530,155 @@ function ActivityFeed({ actions, handoff }) {
   )
 }
 
+// ─── REPORT COMPONENTS ───────────────────────────────────────────────────────
+const REPORT_TYPE_CONFIG = {
+  audit: { label: 'AUDIT', color: '#ef4444' },
+  brief: { label: 'BRIEF', color: '#60a5fa' },
+  research: { label: 'RESEARCH', color: '#a78bfa' },
+  plan: { label: 'PLAN', color: '#22c55e' },
+  session: { label: 'SESSION', color: '#eab308' },
+  report: { label: 'REPORT', color: '#888' },
+}
+
+function ReportCard({ report }) {
+  const [expanded, setExpanded] = useState(false)
+  const typeConfig = REPORT_TYPE_CONFIG[report.type] || REPORT_TYPE_CONFIG.report
+  const agentColor = AGENT_COLORS[report.agent] || '#888'
+
+  return (
+    <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, overflow: 'hidden' }}>
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{ padding: '12px 14px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 6 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+            <span style={{ display: 'inline-block', width: 10, fontSize: 8, color: '#444', transition: 'transform 0.15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0 }}>&#9654;</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#ddd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{report.title}</span>
+          </div>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: typeConfig.color, background: `${typeConfig.color}18`, borderRadius: 4, padding: '2px 6px', textTransform: 'uppercase', flexShrink: 0 }}>
+            {typeConfig.label}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <AgentInitial name={report.agent} size={16} />
+            <span style={{ fontSize: 10, color: agentColor, fontWeight: 600 }}>{report.agent}</span>
+          </div>
+          {report.date && <span style={{ fontSize: 9, color: '#383838' }}>{report.date}</span>}
+          <span style={{ fontSize: 9, color: '#2a2a2a', marginLeft: 'auto' }}>{report.path}</span>
+        </div>
+      </div>
+
+      {/* Expanded content */}
+      <div style={{ maxHeight: expanded ? 600 : 0, overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
+        {expanded && (
+          <div style={{ padding: '0 14px 14px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ fontSize: 11, color: '#999', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: 500, overflow: 'auto', padding: '12px 0', fontFamily: '-apple-system, BlinkMacSystemFont, monospace' }}>
+              {report.content.slice(0, 4000)}{report.content.length > 4000 ? '\n\n[truncated]' : ''}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ReportsPanel() {
+  const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [filter, setFilter] = useState('all')
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get_reports' }),
+        })
+        const data = await res.json()
+        if (data.error) { setError(data.error); return }
+        setReports(data.reports || [])
+      } catch {
+        setError('Failed to load reports.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchReports()
+  }, [])
+
+  const types = ['all', ...new Set(reports.map(r => r.type))]
+  const filtered = filter === 'all' ? reports : reports.filter(r => r.type === filter)
+
+  return (
+    <div style={{ padding: 24, flex: 1, overflow: 'auto' }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Reports Feed</div>
+        <div style={{ fontSize: 11, color: '#444' }}>Agent outputs, audits, briefs, and research</div>
+      </div>
+
+      {/* Type filters */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        {types.map(t => {
+          const config = t === 'all' ? { label: 'ALL', color: ORANGE } : (REPORT_TYPE_CONFIG[t] || { label: t, color: '#888' })
+          return (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              style={{
+                padding: '3px 10px', borderRadius: 5, fontSize: 9, fontWeight: 700,
+                letterSpacing: '0.08em', cursor: 'pointer', border: 'none', textTransform: 'uppercase',
+                background: filter === t ? `${config.color}20` : 'transparent',
+                color: filter === t ? config.color : '#444',
+                transition: 'all 0.1s',
+              }}
+            >
+              {config.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {loading && <div style={{ fontSize: 11, color: '#444', padding: 20 }}>Loading reports...</div>}
+      {error && <div style={{ fontSize: 11, color: RED, padding: 20 }}>{error}</div>}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {filtered.map((report, i) => <ReportCard key={report.path || i} report={report} />)}
+        {!loading && !error && filtered.length === 0 && (
+          <div style={{ fontSize: 11, color: '#333', padding: 20, textAlign: 'center' }}>No reports found</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── ACTION BADGE ────────────────────────────────────────────────────────────
+function ActionBadge({ action }) {
+  const toolLabels = { mark_task_done: 'Task Completed' }
+  const label = toolLabels[action.tool] || action.tool
+  const isSuccess = action.result?.success
+
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '3px 8px', borderRadius: 5, fontSize: 9, fontWeight: 700,
+      letterSpacing: '0.06em',
+      background: isSuccess ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+      color: isSuccess ? GREEN : RED,
+      border: `1px solid ${isSuccess ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+    }}>
+      <span>{isSuccess ? '\u2713' : '\u2717'}</span>
+      <span>{label}</span>
+      {action.result?.task && (
+        <span style={{ color: '#666', fontWeight: 500 }}>: {action.result.task.slice(0, 40)}{action.result.task.length > 40 ? '...' : ''}</span>
+      )}
+    </div>
+  )
+}
+
 // ─── COUNCIL MODAL ────────────────────────────────────────────────────────────
 const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Paige', 'Tony', 'Elon']
 
@@ -749,7 +898,9 @@ function CommandBar({ onRefresh }) {
         if (data.error) {
           setMessages(m => [...m, { role: 'system', text: data.error, type: 'error' }])
         } else {
-          setMessages(m => [...m, { role: 'agent', text: data.reply, agent: data.agent }])
+          setMessages(m => [...m, { role: 'agent', text: data.reply, agent: data.agent, actions_taken: data.actions_taken || [] }])
+          // Auto-refresh if actions were taken
+          if (data.actions_taken?.length > 0) setTimeout(onRefresh, 2000)
         }
       } catch {
         setMessages(m => [...m, { role: 'system', text: 'Network error. Is ANTHROPIC_API_KEY set in Vercel?', type: 'error' }])
@@ -780,6 +931,11 @@ function CommandBar({ onRefresh }) {
                 }}>
                   {m.role === 'agent' && <div style={{ fontSize: 9, color: AGENT_COLORS[m.agent] || '#888', fontWeight: 700, marginBottom: 4, letterSpacing: '0.08em' }}>{m.agent}</div>}
                   {m.text}
+                  {m.actions_taken?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      {m.actions_taken.map((a, ai) => <ActionBadge key={ai} action={a} />)}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -946,6 +1102,7 @@ export default function Dashboard() {
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
   const [councilOpen, setCouncilOpen] = useState(false)
+  const [activeView, setActiveView] = useState('queue') // 'queue' | 'reports'
   const [refreshProgress, setRefreshProgress] = useState(0)
   const refreshTimerRef = useRef(null)
   const progressRef = useRef(null)
@@ -1066,13 +1223,45 @@ export default function Dashboard() {
             return <AgentRow key={a.name} agent={a} selected={selectedAgent === a.name} onClick={() => setSelectedAgent(selectedAgent === a.name ? null : a.name)} taskCount={taskCount} />
           })}
           {!data && <div style={{ padding: '20px 12px', fontSize: 11, color: '#333' }}>{loading ? 'Loading…' : !GITHUB_TOKEN ? 'Set VITE_GITHUB_TOKEN' : 'No data'}</div>}
-          <div style={{ marginTop: 'auto', padding: '12px 12px 4px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-            <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, marginBottom: 2 }}>{activeAgents} active</div>
-            <div style={{ fontSize: 9, color: '#333', letterSpacing: '0.06em' }}>{data?.agents?.length || 0} total agents</div>
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {/* View switcher */}
+            <div style={{ padding: '8px 8px 0', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
+              <button
+                onClick={() => setActiveView('queue')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 6, width: '100%',
+                  background: activeView === 'queue' ? 'rgba(255,79,0,0.08)' : 'transparent',
+                  border: `1px solid ${activeView === 'queue' ? 'rgba(255,79,0,0.15)' : 'transparent'}`,
+                  cursor: 'pointer', textAlign: 'left', fontSize: 11, fontWeight: 600,
+                  color: activeView === 'queue' ? '#fff' : '#555',
+                }}
+              >
+                <span style={{ fontSize: 12 }}>&#9632;</span> Queue
+              </button>
+              <button
+                onClick={() => setActiveView('reports')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 6, width: '100%',
+                  background: activeView === 'reports' ? 'rgba(96,165,250,0.08)' : 'transparent',
+                  border: `1px solid ${activeView === 'reports' ? 'rgba(96,165,250,0.15)' : 'transparent'}`,
+                  cursor: 'pointer', textAlign: 'left', fontSize: 11, fontWeight: 600,
+                  color: activeView === 'reports' ? '#fff' : '#555',
+                }}
+              >
+                <span style={{ fontSize: 12 }}>&#9776;</span> Reports
+              </button>
+            </div>
+            <div style={{ padding: '4px 12px 4px' }}>
+              <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, marginBottom: 2 }}>{activeAgents} active</div>
+              <div style={{ fontSize: 9, color: '#333', letterSpacing: '0.06em' }}>{data?.agents?.length || 0} total agents</div>
+            </div>
           </div>
         </div>
 
-        {/* MISSION QUEUE */}
+        {/* MAIN CONTENT: QUEUE or REPORTS */}
+        {activeView === 'reports' ? (
+          <ReportsPanel />
+        ) : (
         <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
           {/* No token error state */}
@@ -1122,6 +1311,7 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+        )}
 
         {/* RIGHT SIDEBAR -- AGENT PROFILE / ACTIVITY */}
         <div style={{ width: 260, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', padding: '20px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
