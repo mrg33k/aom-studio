@@ -137,7 +137,7 @@ function assignTasksToAgents(punchItems) {
     if (!agent && /alex|deal|offer|revenue/i.test(p.text)) agent = 'Alex'
     if (!agent && /cleo|video|edit|reel|tiktok|instagram/i.test(p.text)) agent = 'Cleo'
     if (!agent && /steffen|brand|guideline/i.test(p.text)) agent = 'Steffen'
-    if (!agent && /rex|stuck|blocked|push/i.test(p.text)) agent = 'Rex'
+    if (!agent && /mom|stuck|blocked|push/i.test(p.text)) agent = 'Mom'
     if (!agent && /paige|client.*check|payment|invoice|deposit|churn|upsell/i.test(p.text)) agent = 'Paige'
     if (!agent && /tony|social|posting|instagram|linkedin|tiktok|postiz|content.*calendar/i.test(p.text)) agent = 'Tony'
     let column = agent ? 'assigned' : 'unassigned'
@@ -163,7 +163,7 @@ function StatusPill({ status }) {
   )
 }
 
-const AGENT_COLORS = { Bobby: ORANGE, Jacob: BLUE, Alex: PURPLE, Cleo: '#f472b6', Steffen: '#34d399', Rex: RED, Paige: '#06b6d4', Tony: '#a3e635', Patrik: '#fff' }
+const AGENT_COLORS = { Bobby: ORANGE, Jacob: BLUE, Alex: PURPLE, Cleo: '#f472b6', Steffen: '#34d399', Mom: RED, Paige: '#06b6d4', Tony: '#a3e635', Patrik: '#fff' }
 
 function AgentInitial({ name, size = 28 }) {
   const color = AGENT_COLORS[name] || '#888'
@@ -278,7 +278,7 @@ function ActivityFeed({ actions, handoff }) {
 }
 
 // ─── COUNCIL MODAL ────────────────────────────────────────────────────────────
-const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Rex', 'Steffen', 'Paige', 'Tony']
+const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Paige', 'Tony']
 
 function CouncilModal({ onClose }) {
   const [topic, setTopic] = useState('')
@@ -372,7 +372,7 @@ function CouncilModal({ onClose }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 }}>What's the council on?</div>
-                <div style={{ fontSize: 11, color: '#444', lineHeight: 1.6 }}>Each agent weighs in from their domain. Bobby on tech, Jacob on pipeline, Alex on revenue, Cleo on content, Rex on blockers, Steffen on brand. Synthesis follows.</div>
+                <div style={{ fontSize: 11, color: '#444', lineHeight: 1.6 }}>Each agent weighs in from their domain. Bobby on tech, Jacob on pipeline, Alex on revenue, Cleo on content, Mom on blockers, Steffen on brand. Synthesis follows.</div>
               </div>
               <textarea
                 ref={inputRef}
@@ -442,7 +442,7 @@ function CouncilModal({ onClose }) {
 }
 
 // ─── COMMAND BAR ──────────────────────────────────────────────────────────────
-const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Rex', 'Steffen', 'Paige', 'Tony']
+const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Paige', 'Tony']
 
 function CommandBar({ onRefresh }) {
   const [input, setInput] = useState('')
@@ -643,7 +643,7 @@ const AGENTS_CONFIG = [
   { name: 'Jacob', role: 'Outreach & Pipeline', agentFile: 'outreach/AGENT.md' },
   { name: 'Alex', role: 'Deal Architect', agentFile: 'projects/aom-strategy/AGENT.md' },
   { name: 'Cleo', role: 'Content & Video', agentFile: 'projects/content-agent/AGENT.md' },
-  { name: 'Rex', role: 'Relentless Execution', agentFile: 'projects/rex/AGENT.md' },
+  { name: 'Mom', role: 'Relentless Execution', agentFile: 'projects/mom/AGENT.md' },
   { name: 'Steffen', role: 'Brand Guidelines', agentFile: null },
   { name: 'Paige', role: 'Client Success', agentFile: 'projects/paige/AGENT.md' },
   { name: 'Tony', role: 'Social Media', agentFile: 'projects/tony/AGENT.md' },

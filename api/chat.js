@@ -169,7 +169,7 @@ function getAgentFile(agent) {
     Jacob: 'outreach/AGENT.md',
     Alex: 'projects/aom-strategy/AGENT.md',
     Cleo: 'projects/content-agent/AGENT.md',
-    Rex: 'projects/rex/AGENT.md',
+    Mom: 'projects/mom/AGENT.md',
     Steffen: null,
     Paige: 'projects/paige/AGENT.md',
     Tony: 'projects/tony/AGENT.md',
