@@ -212,15 +212,49 @@ function AgentRow({ agent, selected, onClick, taskCount }) {
 
 function TaskCard({ task, onRefresh }) {
   const [replyOpen, setReplyOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const [subtasks, setSubtasks] = useState(null)
+  const [loadingSubtasks, setLoadingSubtasks] = useState(false)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [reply, setReply] = useState(null)
+  const [editing, setEditing] = useState(false)
+  const [editText, setEditText] = useState(task.text)
+  const [saving, setSaving] = useState(false)
   const inputRef = useRef(null)
+  const editRef = useRef(null)
+  const subtaskCacheRef = useRef(null)
   const agentColor = task.agent ? (AGENT_COLORS[task.agent] || '#888') : '#444'
   const daysLeft = task.deadline ? deadlineDaysRemaining(task.raw || task.text) : null
   const urgentColor = daysLeft !== null && daysLeft <= 7 ? '#ff2020' : RED
 
   useEffect(() => { if (replyOpen && inputRef.current) inputRef.current.focus() }, [replyOpen])
+  useEffect(() => { if (editing && editRef.current) { editRef.current.focus(); editRef.current.select() } }, [editing])
+
+  const toggleExpand = async () => {
+    const next = !expanded
+    setExpanded(next)
+    if (next && !subtaskCacheRef.current && !loadingSubtasks) {
+      setLoadingSubtasks(true)
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'chat', message: `Break this task into actionable subtasks (3-5 bullet points). Task: "${task.text}"`, agent: task.agent || 'All' }),
+        })
+        const data = await res.json()
+        const bullets = (data.reply || 'Could not generate subtasks.')
+        subtaskCacheRef.current = bullets
+        setSubtasks(bullets)
+      } catch {
+        subtaskCacheRef.current = 'Network error fetching subtasks.'
+        setSubtasks('Network error fetching subtasks.')
+      }
+      setLoadingSubtasks(false)
+    } else if (next && subtaskCacheRef.current) {
+      setSubtasks(subtaskCacheRef.current)
+    }
+  }
 
   const send = async () => {
     const text = input.trim()
@@ -242,6 +276,23 @@ function TaskCard({ task, onRefresh }) {
     setSending(false)
   }
 
+  const saveRename = async () => {
+    const newText = editText.trim()
+    if (!newText || newText === task.text || saving) { setEditing(false); setEditText(task.text); return }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rename_task', oldText: task.text, newText }),
+      })
+      const data = await res.json()
+      if (data.ok) { setTimeout(onRefresh, 1500) }
+    } catch { /* silently fail */ }
+    setSaving(false)
+    setEditing(false)
+  }
+
   return (
     <div style={{ background: '#111', border: `1px solid ${task.deadline ? 'rgba(239,68,68,0.3)' : task.blocked ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, padding: '10px 12px' }}>
       {task.deadline && (
@@ -254,7 +305,41 @@ function TaskCard({ task, onRefresh }) {
           )}
         </div>
       )}
-      <div style={{ fontSize: 12, color: '#ddd', lineHeight: 1.4 }}>{task.text}</div>
+
+      {/* Task title: click to expand, double-click to edit */}
+      {editing ? (
+        <input
+          ref={editRef}
+          value={editText}
+          onChange={e => setEditText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') { setEditing(false); setEditText(task.text) } }}
+          onBlur={saveRename}
+          style={{ fontSize: 12, color: '#fff', lineHeight: 1.4, background: '#0a0a0a', border: '1px solid rgba(255,79,0,0.3)', borderRadius: 4, padding: '3px 6px', width: '100%', outline: 'none', fontFamily: 'inherit' }}
+        />
+      ) : (
+        <div
+          onClick={toggleExpand}
+          onDoubleClick={e => { e.stopPropagation(); setEditing(true); setEditText(task.text) }}
+          style={{ fontSize: 12, color: '#ddd', lineHeight: 1.4, cursor: 'pointer', userSelect: 'none' }}
+        >
+          <span style={{ display: 'inline-block', width: 10, fontSize: 8, color: '#444', marginRight: 4, transition: 'transform 0.15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>&#9654;</span>
+          {task.text}
+          {saving && <span style={{ fontSize: 9, color: '#555', marginLeft: 6 }}>saving...</span>}
+        </div>
+      )}
+
+      {/* Expanded subtasks */}
+      <div style={{ maxHeight: expanded ? 300 : 0, overflow: 'hidden', transition: 'max-height 0.25s ease' }}>
+        {expanded && (
+          <div style={{ padding: '8px 0 4px 14px', borderLeft: '2px solid rgba(255,255,255,0.06)', marginTop: 6, marginLeft: 4 }}>
+            {loadingSubtasks && <div style={{ fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>breaking down...</div>}
+            {subtasks && (
+              <div style={{ fontSize: 11, color: '#888', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{subtasks}</div>
+            )}
+          </div>
+        )}
+      </div>
+
       {(task.agent || task.category) && (
         <div
           onClick={() => { setReplyOpen(!replyOpen); setReply(null) }}
@@ -614,6 +699,8 @@ const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 
 
 function CommandBar({ onRefresh }) {
   const [input, setInput] = useState('')
+  const [taskNotes, setTaskNotes] = useState('')
+  const [notesOpen, setNotesOpen] = useState(false)
   const [selectedAgent, setSelectedAgent] = useState('All')
   const [messages, setMessages] = useState([])
   const [sending, setSending] = useState(false)
@@ -634,12 +721,15 @@ function CommandBar({ onRefresh }) {
     setOpen(true)
 
     if (addTaskMode) {
-      setMessages(m => [...m, { role: 'user', text: `+ ${text}`, type: 'task' }])
+      const notes = taskNotes.trim()
+      setMessages(m => [...m, { role: 'user', text: `+ ${text}${notes ? '\n  ' + notes.split('\n').join('\n  ') : ''}`, type: 'task' }])
+      setTaskNotes('')
+      setNotesOpen(false)
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'add_task', task: text }),
+          body: JSON.stringify({ action: 'add_task', task: text, notes: notes || undefined }),
         })
         const data = await res.json()
         setMessages(m => [...m, { role: 'system', text: data.ok ? `Task added: "${text}"` : (data.error || 'Failed to add task.'), type: 'task' }])
@@ -672,7 +762,7 @@ function CommandBar({ onRefresh }) {
     <>
       {/* Chat panel */}
       {open && messages.length > 0 && (
-        <div style={{ position: 'fixed', bottom: 64, right: 24, width: 420, maxHeight: 400, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}>
+        <div style={{ position: 'fixed', bottom: addTaskMode && notesOpen ? 120 : 64, right: 24, width: 420, maxHeight: 400, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', transition: 'bottom 0.15s ease' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ fontSize: 10, color: '#555', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>Command Log</span>
             <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#555', fontSize: 14, cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -706,6 +796,20 @@ function CommandBar({ onRefresh }) {
         </div>
       )}
 
+      {/* Task notes panel (slides up above command bar when in + TASK mode) */}
+      {addTaskMode && notesOpen && (
+        <div style={{ position: 'fixed', bottom: 56, left: 0, right: 0, background: '#080808', borderTop: '1px solid rgba(34,197,94,0.15)', padding: '8px 20px', zIndex: 98, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <span style={{ fontSize: 9, color: GREEN, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 6, flexShrink: 0 }}>Notes</span>
+          <textarea
+            value={taskNotes}
+            onChange={e => setTaskNotes(e.target.value)}
+            placeholder="Add bullet point context for the agent... (one note per line)"
+            rows={2}
+            style={{ flex: 1, background: '#111', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 6, color: '#ccc', fontSize: 11, padding: '6px 10px', outline: 'none', resize: 'none', fontFamily: 'inherit', lineHeight: 1.5 }}
+          />
+        </div>
+      )}
+
       {/* Bar */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 56, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', zIndex: 99 }}>
         {/* Agent selector */}
@@ -713,7 +817,7 @@ function CommandBar({ onRefresh }) {
           {CHAT_AGENTS.map(a => (
             <button
               key={a}
-              onClick={() => { setSelectedAgent(a); setAddTaskMode(false) }}
+              onClick={() => { setSelectedAgent(a); setAddTaskMode(false); setNotesOpen(false); setTaskNotes('') }}
               style={{
                 padding: '3px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
                 letterSpacing: '0.06em', cursor: 'pointer', border: 'none',
@@ -727,7 +831,7 @@ function CommandBar({ onRefresh }) {
           ))}
           <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)', margin: '0 4px', alignSelf: 'center' }} />
           <button
-            onClick={() => { setAddTaskMode(!addTaskMode); setSelectedAgent('All') }}
+            onClick={() => { setAddTaskMode(!addTaskMode); setSelectedAgent('All'); if (addTaskMode) { setNotesOpen(false); setTaskNotes('') } }}
             style={{
               padding: '3px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
               letterSpacing: '0.06em', cursor: 'pointer', border: 'none',
@@ -745,13 +849,28 @@ function CommandBar({ onRefresh }) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder={addTaskMode ? 'Add a task to the punch list…' : `Message ${selectedAgent === 'All' ? 'all agents' : selectedAgent}…`}
+          placeholder={addTaskMode ? 'Add a task to the punch list...' : `Message ${selectedAgent === 'All' ? 'all agents' : selectedAgent}...`}
           style={{
             flex: 1, background: '#111', border: `1px solid ${addTaskMode ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.08)'}`,
             borderRadius: 8, color: '#fff', fontSize: 13, padding: '8px 14px',
             outline: 'none',
           }}
         />
+
+        {/* Notes toggle (only in task mode) */}
+        {addTaskMode && (
+          <button
+            onClick={() => setNotesOpen(!notesOpen)}
+            style={{
+              background: notesOpen ? 'rgba(34,197,94,0.12)' : 'transparent',
+              border: `1px solid ${notesOpen ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 6, color: notesOpen ? GREEN : '#555', fontSize: 9, fontWeight: 700,
+              padding: '4px 8px', cursor: 'pointer', letterSpacing: '0.06em', whiteSpace: 'nowrap',
+            }}
+          >
+            {notesOpen ? 'NOTES' : '+ NOTES'}
+          </button>
+        )}
 
         <button
           onClick={send}
@@ -764,7 +883,7 @@ function CommandBar({ onRefresh }) {
             transition: 'opacity 0.15s, background 0.15s',
           }}
         >
-          {sending ? '…' : addTaskMode ? 'ADD' : 'SEND'}
+          {sending ? '...' : addTaskMode ? 'ADD' : 'SEND'}
         </button>
 
         {messages.length > 0 && (
@@ -818,6 +937,8 @@ const AGENTS_CONFIG = [
   { name: 'Elon', role: 'System Manager', agentFile: 'projects/sys/AGENT.md' },
 ]
 
+const REFRESH_INTERVAL = 30000
+
 export default function Dashboard() {
   const [authed, setAuthed] = useState(() => localStorage.getItem('aom_ops_auth') === '1')
   const [data, setData] = useState(null)
@@ -825,6 +946,9 @@ export default function Dashboard() {
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
   const [councilOpen, setCouncilOpen] = useState(false)
+  const [refreshProgress, setRefreshProgress] = useState(0)
+  const refreshTimerRef = useRef(null)
+  const progressRef = useRef(null)
 
   const load = useCallback(async () => {
     if (!GITHUB_TOKEN) {
@@ -832,6 +956,7 @@ export default function Dashboard() {
       return
     }
     setLoading(true)
+    setRefreshProgress(0)
     try {
       const [prioritiesMd, punchMd, actionsMd, handoffMd, ...agentMds] = await Promise.all([
         fetchFile('context/current-priorities.md'),
@@ -856,7 +981,31 @@ export default function Dashboard() {
     } finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { if (authed) load() }, [authed, load])
+  // Auto-refresh every 30 seconds with progress bar
+  useEffect(() => {
+    if (!authed) return
+    load()
+
+    // Progress bar animation
+    let startTime = Date.now()
+    const tick = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / REFRESH_INTERVAL, 1)
+      setRefreshProgress(progress)
+      if (progress >= 1) {
+        load().then(() => {
+          startTime = Date.now()
+          setRefreshProgress(0)
+        })
+      }
+      progressRef.current = requestAnimationFrame(tick)
+    }
+    progressRef.current = requestAnimationFrame(tick)
+
+    return () => {
+      if (progressRef.current) cancelAnimationFrame(progressRef.current)
+    }
+  }, [authed, load])
 
   if (!authed) return <PasswordGate onAuth={() => setAuthed(true)} />
 
@@ -867,6 +1016,11 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: 56 }}>
+
+      {/* REFRESH PROGRESS BAR */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2, zIndex: 300, background: 'transparent' }}>
+        <div style={{ height: '100%', width: `${refreshProgress * 100}%`, background: 'rgba(255,255,255,0.12)', transition: refreshProgress === 0 ? 'none' : 'width 0.3s linear' }} />
+      </div>
 
       {/* TOP BAR */}
       <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>

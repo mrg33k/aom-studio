@@ -58,15 +58,22 @@ export default async function handler(req, res) {
     const today = new Date().toISOString().split('T')[0]
     const newItem = `- [ ] ${task.trim()} -- added from dashboard ${today}`
 
+    // Build notes lines if provided
+    const { notes } = req.body
+    const notesLines = notes
+      ? notes.split('\n').filter(n => n.trim()).map(n => `  - ${n.trim()}`).join('\n')
+      : ''
+    const fullItem = notesLines ? `${newItem}\n${notesLines}` : newItem
+
     // Find or create "## Dashboard Tasks" section
     let updated
     if (file.content.includes('## Dashboard Tasks')) {
       updated = file.content.replace(
         '## Dashboard Tasks\n',
-        `## Dashboard Tasks\n${newItem}\n`
+        `## Dashboard Tasks\n${fullItem}\n`
       )
     } else {
-      updated = file.content + `\n\n## Dashboard Tasks\n${newItem}\n`
+      updated = file.content + `\n\n## Dashboard Tasks\n${fullItem}\n`
     }
 
     const ok = await writeGitHubFile(
@@ -78,6 +85,38 @@ export default async function handler(req, res) {
 
     if (!ok) return res.status(500).json({ error: 'GitHub write failed -- token may need write access' })
     return res.status(200).json({ ok: true, message: 'Task added to punch list.' })
+  }
+
+  // ── RENAME TASK ─────────────────────────────────────────────────────────
+  if (action === 'rename_task') {
+    const { oldText, newText } = req.body
+    if (!oldText || !newText) return res.status(400).json({ error: 'oldText and newText required' })
+
+    const file = await fetchGitHubFile('punch-list.md')
+    if (!file) return res.status(500).json({ error: 'Could not fetch punch list' })
+
+    // Find the line containing this task text and replace just the text portion
+    const lines = file.content.split('\n')
+    let found = false
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes(oldText.trim())) {
+        lines[i] = lines[i].replace(oldText.trim(), newText.trim())
+        found = true
+        break
+      }
+    }
+
+    if (!found) return res.status(404).json({ error: 'Task not found in punch list' })
+
+    const ok = await writeGitHubFile(
+      'punch-list.md',
+      lines.join('\n'),
+      file.sha,
+      `Rename task from dashboard: ${newText.slice(0, 60)}`
+    )
+
+    if (!ok) return res.status(500).json({ error: 'GitHub write failed' })
+    return res.status(200).json({ ok: true, message: 'Task renamed.' })
   }
 
   // ── CHAT ──────────────────────────────────────────────────────────────────
