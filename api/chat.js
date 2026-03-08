@@ -4,6 +4,7 @@
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const GITHUB_TOKEN = process.env.VITE_GITHUB_TOKEN
 const REPO = 'mrg33k/AOM-EA'
+const STUDIO_REPO = 'mrg33k/aom-studio'
 const BRANCH = 'master'
 
 async function fetchGitHubFile(path) {
@@ -37,6 +38,37 @@ async function writeGitHubFile(path, content, sha, message) {
   return res.ok
 }
 
+async function fetchRepoFile(repo, branch, path) {
+  const res = await fetch(
+    `https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`,
+    { headers: { Authorization: `token ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
+  )
+  if (!res.ok) return null
+  const data = await res.json()
+  return { content: Buffer.from(data.content, 'base64').toString('utf-8'), sha: data.sha }
+}
+
+async function writeRepoFile(repo, branch, path, content, sha, message) {
+  const res = await fetch(
+    `https://api.github.com/repos/${repo}/contents/${path}`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message,
+        content: Buffer.from(content).toString('base64'),
+        sha,
+        branch,
+      }),
+    }
+  )
+  return res.ok
+}
+
 async function listGitHubDir(path) {
   const res = await fetch(
     `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`,
@@ -51,16 +83,42 @@ async function listGitHubDir(path) {
 const TOOLS = [
   {
     name: 'mark_task_done',
-    description: 'Marks a task as done in the AOM punch list. Use when Patrik confirms a task is complete. Takes the task description and finds the matching line in punch-list.md, checks it off with a completion date.',
+    description: 'Marks a task as done in the AOM punch list.',
     input_schema: {
       type: 'object',
       properties: {
         task_description: {
           type: 'string',
-          description: 'The text of the task to mark as done. Should closely match the task text in the punch list.',
+          description: 'The text of the task to mark as done.',
         },
       },
       required: ['task_description'],
+    },
+  },
+  {
+    name: 'read_file',
+    description: 'Read a file from a GitHub repo. Use repo "aom-ea" for context/agent files, "aom-studio" for dashboard/website code.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        repo: { type: 'string', enum: ['aom-ea', 'aom-studio'], description: 'Which repo to read from' },
+        path: { type: 'string', description: 'File path relative to repo root, e.g. "src/dashboard/Dashboard.jsx"' },
+      },
+      required: ['repo', 'path'],
+    },
+  },
+  {
+    name: 'write_file',
+    description: 'Write/update a file in a GitHub repo. Provide the FULL file content. The file will be committed and pushed automatically. Use repo "aom-studio" for dashboard/website code changes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        repo: { type: 'string', enum: ['aom-ea', 'aom-studio'], description: 'Which repo to write to' },
+        path: { type: 'string', description: 'File path relative to repo root' },
+        content: { type: 'string', description: 'The FULL new file content' },
+        commit_message: { type: 'string', description: 'Short commit message describing the change' },
+      },
+      required: ['repo', 'path', 'content', 'commit_message'],
     },
   },
 ]
@@ -116,9 +174,33 @@ async function executeMarkTaskDone(taskDescription) {
   return { success: true, task: completedTask, date: today, syncErrors: syncErrors.length > 0 ? syncErrors : undefined }
 }
 
+function resolveRepo(repoName) {
+  if (repoName === 'aom-studio') return { repo: STUDIO_REPO, branch: 'main' }
+  return { repo: REPO, branch: BRANCH }
+}
+
 async function executeTool(toolName, toolInput) {
   if (toolName === 'mark_task_done') {
     return await executeMarkTaskDone(toolInput.task_description)
+  }
+  if (toolName === 'read_file') {
+    const { repo: repoName, path } = toolInput
+    const { repo, branch } = resolveRepo(repoName)
+    const file = await fetchRepoFile(repo, branch, path)
+    if (!file) return { success: false, error: `File not found: ${path} in ${repoName}` }
+    // Truncate large files to avoid token explosion
+    const content = file.content.length > 15000 ? file.content.slice(0, 15000) + '\n\n... [truncated, file is ' + file.content.length + ' chars]' : file.content
+    return { success: true, path, content, sha: file.sha }
+  }
+  if (toolName === 'write_file') {
+    const { repo: repoName, path, content, commit_message } = toolInput
+    const { repo, branch } = resolveRepo(repoName)
+    // Get current SHA (file may or may not exist)
+    const existing = await fetchRepoFile(repo, branch, path)
+    const sha = existing ? existing.sha : undefined
+    const ok = await writeRepoFile(repo, branch, path, content, sha, commit_message)
+    if (!ok) return { success: false, error: 'GitHub write failed' }
+    return { success: true, path, message: `File written and committed: ${commit_message}` }
   }
   return { success: false, error: `Unknown tool: ${toolName}` }
 }
@@ -489,25 +571,33 @@ export default async function handler(req, res) {
       punch ? `# PUNCH LIST (first 3000 chars)\n${punch.content.slice(0, 3000)}` : '',
     ].filter(Boolean).join('\n\n---\n\n')
 
-    const systemPrompt = `You are ${agentName}, an AI agent at AOM (Ahead of Market). Patrik has launched you from the dashboard to work on a specific task. You are in EXECUTION mode -- not conversation mode.
+    const systemPrompt = `You are ${agentName}, an AI agent at AOM (Ahead of Market). Patrik has launched you from the dashboard to work on a specific task. You are in EXECUTION mode.
+
+You have real tools:
+- read_file: Read any file from "aom-ea" (context, agents, punch list) or "aom-studio" (dashboard, website code)
+- write_file: Write/edit files in either repo. Commits and pushes automatically. For code changes, read the file first, make your edit, then write the full updated file.
+- mark_task_done: Check off a task in the punch list
 
 Your job:
-1. Analyze the task against your agent context
-2. Determine what concrete actions you would take
-3. Report back with: what you did, what's next, any blockers
+1. Read the relevant files to understand the current state
+2. Make the changes needed to complete the task
+3. Write the updated files back (they auto-deploy on Vercel)
+4. Report what you did
 
-Be specific and action-oriented. No filler. If you can mark the task done based on your analysis, use the mark_task_done tool. If the task needs work you can't do from here (code changes, file creation, bash commands), say exactly what needs to happen and who should do it.
+For code edits: read the file, find the section to change, make the edit in the full file content, write it back. Keep changes minimal and focused. The dashboard is at "src/dashboard/Dashboard.jsx" in aom-studio. The API is at "api/chat.js" in aom-studio.
+
+Be direct. Ship the fix. Report what you did.
 
 ${contextBlock}`
 
     let messages = [{ role: 'user', content: `MISSION: ${taskText}\n\nExecute this task. Report what you did and what's next.` }]
     const actions_taken = []
 
-    // Tool execution loop (max 3 iterations)
-    for (let iteration = 0; iteration < 3; iteration++) {
+    // Tool execution loop (max 5 iterations for read-edit-write cycles)
+    for (let iteration = 0; iteration < 5; iteration++) {
       const apiBody = {
         model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
+        max_tokens: 4096,
         system: systemPrompt,
         messages,
         tools: TOOLS,
@@ -765,3 +855,6 @@ function getAgentFile(agent) {
   }
   return map[agent] || null
 }
+
+// Vercel function config: allow up to 60s for agent tool loops
+export const config = { maxDuration: 60 }
