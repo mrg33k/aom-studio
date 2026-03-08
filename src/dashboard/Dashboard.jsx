@@ -163,7 +163,7 @@ function StatusPill({ status }) {
   )
 }
 
-const AGENT_COLORS = { Bobby: ORANGE, Jacob: BLUE, Alex: PURPLE, Cleo: '#f472b6', Steffen: '#34d399', Mom: RED, Paige: '#06b6d4', Tony: '#a3e635', Patrik: '#fff' }
+const AGENT_COLORS = { Bobby: ORANGE, Jacob: BLUE, Alex: PURPLE, Cleo: '#f472b6', Steffen: '#34d399', Mom: RED, Paige: '#06b6d4', Tony: '#a3e635', Elon: '#8b8b8b', Patrik: '#fff' }
 
 function AgentInitial({ name, size = 28 }) {
   const color = AGENT_COLORS[name] || '#888'
@@ -338,7 +338,7 @@ function ActivityFeed({ actions, handoff }) {
 }
 
 // ─── COUNCIL MODAL ────────────────────────────────────────────────────────────
-const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Paige', 'Tony']
+const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Paige', 'Tony', 'Elon']
 
 function CouncilModal({ onClose }) {
   const [topic, setTopic] = useState('')
@@ -502,7 +502,7 @@ function CouncilModal({ onClose }) {
 }
 
 // ─── COMMAND BAR ──────────────────────────────────────────────────────────────
-const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Paige', 'Tony']
+const CHAT_AGENTS = ['All', 'Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Paige', 'Tony', 'Elon']
 
 function CommandBar({ onRefresh }) {
   const [input, setInput] = useState('')
@@ -707,6 +707,7 @@ const AGENTS_CONFIG = [
   { name: 'Steffen', role: 'Brand Guidelines', agentFile: null },
   { name: 'Paige', role: 'Client Success', agentFile: 'projects/paige/AGENT.md' },
   { name: 'Tony', role: 'Social Media', agentFile: 'projects/tony/AGENT.md' },
+  { name: 'Elon', role: 'System Manager', agentFile: 'projects/sys/AGENT.md' },
 ]
 
 export default function Dashboard() {

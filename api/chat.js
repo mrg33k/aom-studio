@@ -173,6 +173,7 @@ function getAgentFile(agent) {
     Steffen: null,
     Paige: 'projects/paige/AGENT.md',
     Tony: 'projects/tony/AGENT.md',
+    Elon: 'projects/sys/AGENT.md',
   }
   return map[agent] || null
 }
