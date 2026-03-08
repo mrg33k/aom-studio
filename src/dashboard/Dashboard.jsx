@@ -250,6 +250,7 @@ function TaskCard({ task, onRefresh }) {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(task.text)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const inputRef = useRef(null)
   const editRef = useRef(null)
   const subtaskCacheRef = useRef(null)
@@ -306,6 +307,21 @@ function TaskCard({ task, onRefresh }) {
     setSending(false)
   }
 
+  const deleteTask = async () => {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_task', taskText: task.text }),
+      })
+      const data = await res.json()
+      if (data.ok) setTimeout(onRefresh, 1000)
+    } catch { /* silently fail */ }
+    setDeleting(false)
+  }
+
   const saveRename = async () => {
     const newText = editText.trim()
     if (!newText || newText === task.text || saving) { setEditing(false); setEditText(task.text); return }
@@ -355,14 +371,25 @@ function TaskCard({ task, onRefresh }) {
           style={{ fontSize: 12, color: '#fff', lineHeight: 1.4, background: '#0a0a0a', border: '1px solid rgba(255,79,0,0.3)', borderRadius: 4, padding: '3px 6px', width: '100%', outline: 'none', fontFamily: 'inherit' }}
         />
       ) : (
-        <div
-          onClick={toggleExpand}
-          onDoubleClick={e => { e.stopPropagation(); setEditing(true); setEditText(task.text) }}
-          style={{ fontSize: 12, color: '#ddd', lineHeight: 1.4, cursor: 'pointer', userSelect: 'none' }}
-        >
-          <span style={{ display: 'inline-block', width: 10, fontSize: 8, color: '#444', marginRight: 4, transition: 'transform 0.15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>&#9654;</span>
-          {task.text}
-          {saving && <span style={{ fontSize: 9, color: '#555', marginLeft: 6 }}>saving...</span>}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+          <div
+            onClick={toggleExpand}
+            onDoubleClick={e => { e.stopPropagation(); setEditing(true); setEditText(task.text) }}
+            style={{ flex: 1, fontSize: 12, color: '#ddd', lineHeight: 1.4, cursor: 'pointer', userSelect: 'none' }}
+          >
+            <span style={{ display: 'inline-block', width: 10, fontSize: 8, color: '#444', marginRight: 4, transition: 'transform 0.15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>&#9654;</span>
+            {task.text}
+            {saving && <span style={{ fontSize: 9, color: '#555', marginLeft: 6 }}>saving...</span>}
+          </div>
+          <button
+            onClick={e => { e.stopPropagation(); deleteTask() }}
+            title="Remove task"
+            style={{ background: 'none', border: 'none', color: '#333', fontSize: 14, cursor: 'pointer', padding: '0 2px', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s' }}
+            onMouseEnter={e => e.target.style.color = '#ef4444'}
+            onMouseLeave={e => e.target.style.color = '#333'}
+          >
+            {deleting ? '...' : '\u00d7'}
+          </button>
         </div>
       )}
 

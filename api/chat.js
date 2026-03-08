@@ -140,6 +140,8 @@ async function syncContextAfterMutation(mutationType, taskText, extra = {}) {
         ? `- [${today} ${now}] Task added from dashboard: ${taskText}`
         : mutationType === 'rename'
         ? `- [${today} ${now}] Task renamed from dashboard: ${extra.oldText} -> ${taskText}`
+        : mutationType === 'delete'
+        ? `- [${today} ${now}] Task removed from dashboard: ${taskText}`
         : `- [${today} ${now}] Task updated from dashboard: ${taskText}`
 
       const updated = actionsFile.content.trimEnd() + '\n' + logLine + '\n'
@@ -394,6 +396,37 @@ export default async function handler(req, res) {
     await syncContextAfterMutation('rename', newText.trim(), { oldText: oldText.trim() })
 
     return res.status(200).json({ ok: true, message: 'Task renamed.' })
+  }
+
+  // ── DELETE TASK ────────────────────────────────────────────────────────────
+  if (action === 'delete_task') {
+    const { taskText } = req.body
+    if (!taskText) return res.status(400).json({ error: 'taskText required' })
+
+    const file = await fetchGitHubFile('punch-list.md')
+    if (!file) return res.status(500).json({ error: 'Could not fetch punch list' })
+
+    const lines = file.content.split('\n')
+    const idx = lines.findIndex(l => l.includes(taskText.trim()))
+    if (idx === -1) return res.status(404).json({ error: 'Task not found in punch list' })
+
+    // Remove the task line and any indented sub-lines below it
+    let end = idx + 1
+    while (end < lines.length && /^  /.test(lines[end])) end++
+    lines.splice(idx, end - idx)
+
+    const ok = await writeGitHubFile(
+      'punch-list.md',
+      lines.join('\n'),
+      file.sha,
+      `Remove task from dashboard: ${taskText.slice(0, 60)}`
+    )
+
+    if (!ok) return res.status(500).json({ error: 'GitHub write failed' })
+
+    await syncContextAfterMutation('delete', taskText.trim())
+
+    return res.status(200).json({ ok: true, message: 'Task removed.' })
   }
 
   // ── CHAT (with tool_use support) ───────────────────────────────────────────
