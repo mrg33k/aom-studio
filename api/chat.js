@@ -360,7 +360,64 @@ export default async function handler(req, res) {
     // Cascade to context files
     await syncContextAfterMutation('add', task.trim())
 
-    return res.status(200).json({ ok: true, message: 'Task added to punch list.' })
+    // Auto-assign agent based on task content
+    const assignedAgent = autoAssignAgent(task.trim())
+
+    // Auto-launch the assigned agent if we have one and an API key
+    let agentReply = null
+    let agentActions = []
+    if (assignedAgent && ANTHROPIC_API_KEY && getAgentFile(assignedAgent)) {
+      try {
+        const [agentMd, handoff, priorities] = await Promise.all([
+          fetchGitHubFile(getAgentFile(assignedAgent)),
+          fetchGitHubFile('HANDOFF.md'),
+          fetchGitHubFile('context/current-priorities.md'),
+        ])
+
+        if (agentMd) {
+          const contextBlock = [
+            `# ${assignedAgent.toUpperCase()} AGENT\n${agentMd.content}`,
+            handoff ? `# HANDOFF\n${handoff.content}` : '',
+            priorities ? `# PRIORITIES\n${priorities.content}` : '',
+          ].filter(Boolean).join('\n\n---\n\n')
+
+          const systemPrompt = `You are ${assignedAgent}, an AI agent at AOM. A new task was just added from the dashboard and auto-assigned to you. Analyze it and respond with: what you understand the task to be, your plan to execute it, and any blockers. Be concise (3-5 sentences max). If you can take action with your available tools, do so.\n\n${contextBlock}`
+
+          const apiBody = {
+            model: 'claude-sonnet-4-6',
+            max_tokens: 800,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: `NEW TASK ASSIGNED: ${task.trim()}\n\nAcknowledge and start working.` }],
+            tools: TOOLS,
+          }
+
+          const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': ANTHROPIC_API_KEY,
+              'anthropic-version': '2023-06-01',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify(apiBody),
+          })
+
+          if (anthropicRes.ok) {
+            const data = await anthropicRes.json()
+            const textBlocks = (data.content || []).filter(b => b.type === 'text')
+            agentReply = textBlocks.map(b => b.text).join('\n') || null
+          }
+        }
+      } catch { /* agent launch is best-effort, don't block the add */ }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: assignedAgent
+        ? `Task added and assigned to ${assignedAgent}.`
+        : 'Task added to punch list.',
+      assignedAgent,
+      agentReply,
+    })
   }
 
   // ── RENAME TASK ─────────────────────────────────────────────────────────
@@ -671,6 +728,27 @@ ${contextBlock}`
   }
 
   return res.status(400).json({ error: 'Unknown action' })
+}
+
+function autoAssignAgent(taskText) {
+  const t = taskText.toLowerCase()
+  // Bobby: web dev, dashboard, website, deploy, CSS, Vercel, Firebase, Ambition site
+  if (/website|dashboard|css|vercel|deploy|firebase|ambition.*site|mobile.*app|responsive|layout|frontend|zoom|input|button|card|swipe/i.test(t)) return 'Bobby'
+  // Jacob: outreach, email, leads, pipeline, Apollo, drafts
+  if (/outreach|email|draft|pipeline|apollo|lead|prospect|cold.*email|gmail/i.test(t)) return 'Jacob'
+  // Alex: revenue, pricing, offers, strategy, retainer, proposals
+  if (/revenue|pricing|offer|retainer|proposal|strategy|deal|upsell|package/i.test(t)) return 'Alex'
+  // Cleo: content, video, editing, footage, reel, b-roll
+  if (/video|edit.*footage|reel|b-roll|footage|film|cut|premiere|content.*produc/i.test(t)) return 'Cleo'
+  // Tony: social media, posting, Instagram, TikTok, LinkedIn, Postiz
+  if (/social.*media|posting|instagram|tiktok|linkedin|postiz|ig|reels/i.test(t)) return 'Tony'
+  // Steffen: brand, design, logo, visual identity, colors
+  if (/brand|design.*language|logo|visual.*identity|color.*palette|typography/i.test(t)) return 'Steffen'
+  // Elon: system, audit, infrastructure, MCP, agents, skills
+  if (/system|audit|infrastructure|mcp|agent.*setup|skill.*setup|cron|webhook/i.test(t)) return 'Elon'
+  // Paige: client, health, check-in, satisfaction, deliverables
+  if (/client.*health|check.*in|satisfaction|deliverable.*status|client.*update/i.test(t)) return 'Paige'
+  return null
 }
 
 function getAgentFile(agent) {

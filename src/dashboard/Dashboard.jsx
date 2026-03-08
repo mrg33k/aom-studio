@@ -1499,8 +1499,16 @@ function CommandBar({ onRefresh, isMobile }) {
           body: JSON.stringify({ action: 'add_task', task: text, notes: notes || undefined }),
         })
         const data = await res.json()
-        setMessages(m => [...m, { role: 'system', text: data.ok ? `Task added: "${text}"` : (data.error || 'Failed to add task.'), type: 'task' }])
-        if (data.ok) { setTimeout(onRefresh, 2000); setAddTaskMode(false) }
+        if (data.ok) {
+          const assignMsg = data.assignedAgent ? ` Assigned to ${data.assignedAgent}.` : ''
+          setMessages(m => [...m, { role: 'system', text: `Task added.${assignMsg}`, type: 'task' }])
+          if (data.agentReply) {
+            setMessages(m => [...m, { role: 'assistant', text: data.agentReply, agent: data.assignedAgent }])
+          }
+          setTimeout(onRefresh, 2000); setAddTaskMode(false)
+        } else {
+          setMessages(m => [...m, { role: 'system', text: data.error || 'Failed to add task.', type: 'error' }])
+        }
       } catch {
         setMessages(m => [...m, { role: 'system', text: 'Network error adding task.', type: 'error' }])
       }
