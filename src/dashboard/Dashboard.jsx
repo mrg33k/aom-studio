@@ -252,6 +252,7 @@ function TaskCard({ task, onRefresh }) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleted, setDeleted] = useState(false)
+  const [deleteFailed, setDeleteFailed] = useState(false)
   const inputRef = useRef(null)
   const editRef = useRef(null)
   const subtaskCacheRef = useRef(null)
@@ -311,6 +312,7 @@ function TaskCard({ task, onRefresh }) {
   const deleteTask = async () => {
     if (deleting || deleted) return
     setDeleting(true)
+    setDeleteFailed(false)
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -321,8 +323,14 @@ function TaskCard({ task, onRefresh }) {
       if (data.ok) {
         setDeleted(true)
         setTimeout(onRefresh, 1200)
+      } else {
+        setDeleteFailed(true)
+        setTimeout(() => setDeleteFailed(false), 2000)
       }
-    } catch { /* silently fail */ }
+    } catch {
+      setDeleteFailed(true)
+      setTimeout(() => setDeleteFailed(false), 2000)
+    }
     setDeleting(false)
   }
 
@@ -344,11 +352,10 @@ function TaskCard({ task, onRefresh }) {
   }
 
   return (
-    <div style={{ background: deleted ? '#0a0a0a' : '#111', border: `1px solid ${deleted ? 'rgba(34,197,94,0.3)' : task.deadline ? 'rgba(239,68,68,0.3)' : task.blocked ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, padding: '10px 12px', opacity: deleted ? 0 : 1, maxHeight: deleted ? 0 : 500, overflow: 'hidden', transition: 'opacity 0.4s ease, max-height 0.5s ease 0.3s, padding 0.5s ease 0.3s, margin 0.5s ease 0.3s', ...(deleted ? { padding: 0, marginBottom: -8 } : {}) }}>
-      {deleted && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px' }}>
-          <span style={{ color: '#22c55e', fontSize: 14 }}>&#10003;</span>
-          <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 600 }}>Removed</span>
+    <div style={{ background: deleted ? '#0a0a0a' : deleteFailed ? '#1a0a0a' : '#111', border: `1px solid ${deleted ? 'rgba(34,197,94,0.3)' : deleteFailed ? 'rgba(239,68,68,0.4)' : task.deadline ? 'rgba(239,68,68,0.3)' : task.blocked ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 8, padding: '10px 12px', opacity: deleted ? 0 : 1, maxHeight: deleted ? 0 : 500, overflow: 'hidden', transition: 'opacity 0.4s ease, max-height 0.5s ease 0.3s, padding 0.5s ease 0.3s, margin 0.5s ease 0.3s, border-color 0.3s ease, background 0.3s ease', ...(deleted ? { padding: 0, marginBottom: -8 } : {}) }}>
+      {deleteFailed && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <span style={{ color: '#ef4444', fontSize: 10, fontWeight: 600 }}>Failed to remove</span>
         </div>
       )}
       {task.deadline && (
