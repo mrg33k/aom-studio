@@ -387,7 +387,7 @@ function PasswordGate({ onAuth }) {
           Enter
         </button>
       </div>
-      <div style={{ fontSize: 9, color: '#2a2a2a', letterSpacing: '0.08em', marginTop: 8 }}>
+      <div style={{ fontSize: 11, color: '#666', letterSpacing: '0.08em', marginTop: 8 }}>
         {DASHBOARD_PASSWORD ? `env: set (${DASHBOARD_PASSWORD.length} chars)` : 'env: not set'}
       </div>
     </div>
