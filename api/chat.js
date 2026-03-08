@@ -107,7 +107,13 @@ async function executeMarkTaskDone(taskDescription) {
   )
 
   if (!ok) return { success: false, error: 'GitHub write failed' }
-  return { success: true, task: originalLine.replace(/^\s*- \[ \]\s*/, '').trim(), date: today }
+
+  const completedTask = originalLine.replace(/^\s*- \[ \]\s*/, '').trim()
+
+  // Cascade to other context files
+  const syncErrors = await syncContextAfterMutation('done', completedTask)
+
+  return { success: true, task: completedTask, date: today, syncErrors: syncErrors.length > 0 ? syncErrors : undefined }
 }
 
 async function executeTool(toolName, toolInput) {
@@ -115,6 +121,87 @@ async function executeTool(toolName, toolInput) {
     return await executeMarkTaskDone(toolInput.task_description)
   }
   return { success: false, error: `Unknown tool: ${toolName}` }
+}
+
+// ── CONTEXT SYNC ─────────────────────────────────────────────────────────────
+// After any task mutation, cascade the change to other context files
+async function syncContextAfterMutation(mutationType, taskText, extra = {}) {
+  const today = new Date().toISOString().split('T')[0]
+  const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Phoenix' })
+  const errors = []
+
+  // 1. Log to actions-log.md (activity feed picks this up)
+  try {
+    const actionsFile = await fetchGitHubFile('context/actions-log.md')
+    if (actionsFile) {
+      const logLine = mutationType === 'done'
+        ? `- [${today} ${now}] Task completed from dashboard: ${taskText}`
+        : mutationType === 'add'
+        ? `- [${today} ${now}] Task added from dashboard: ${taskText}`
+        : mutationType === 'rename'
+        ? `- [${today} ${now}] Task renamed from dashboard: ${extra.oldText} -> ${taskText}`
+        : `- [${today} ${now}] Task updated from dashboard: ${taskText}`
+
+      const updated = actionsFile.content.trimEnd() + '\n' + logLine + '\n'
+      await writeGitHubFile('context/actions-log.md', updated, actionsFile.sha, `Dashboard sync: ${mutationType} -- ${taskText.slice(0, 40)}`)
+    }
+  } catch (e) { errors.push('actions-log: ' + e.message) }
+
+  // 2. If task marked done, check current-priorities.md for references
+  if (mutationType === 'done') {
+    try {
+      const priFile = await fetchGitHubFile('context/current-priorities.md')
+      if (priFile) {
+        // Find lines that reference this task (fuzzy match on key words)
+        const keywords = taskText.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+        const lines = priFile.content.split('\n')
+        let changed = false
+
+        for (let i = 0; i < lines.length; i++) {
+          const lineLower = lines[i].toLowerCase()
+          // Check if enough keywords match this priority line
+          const matchCount = keywords.filter(k => lineLower.includes(k)).length
+          if (matchCount >= Math.min(2, keywords.length) && matchCount / keywords.length > 0.4) {
+            // Don't overwrite the line, just annotate if not already done
+            if (!lines[i].includes('DONE') && !lines[i].includes('done')) {
+              lines[i] = lines[i] + ` [DONE ${today}]`
+              changed = true
+            }
+          }
+        }
+
+        if (changed) {
+          // Update the "Last updated" line
+          const updatedContent = lines.join('\n').replace(
+            /\*Last updated:.*?\*/,
+            `*Last updated: ${today}*`
+          )
+          await writeGitHubFile('context/current-priorities.md', updatedContent, priFile.sha, `Dashboard sync: mark priority done -- ${taskText.slice(0, 40)}`)
+        }
+      }
+    } catch (e) { errors.push('priorities: ' + e.message) }
+
+    // 3. Update HANDOFF.md "What just happened" section
+    try {
+      const handoffFile = await fetchGitHubFile('HANDOFF.md')
+      if (handoffFile) {
+        const content = handoffFile.content
+        // Add to "What just happened" section
+        const marker = '## What just happened'
+        const idx = content.indexOf(marker)
+        if (idx !== -1) {
+          const afterMarker = idx + marker.length
+          const nextNewline = content.indexOf('\n', afterMarker)
+          const insertPoint = nextNewline + 1
+          const newLine = `- [Dashboard] Completed: ${taskText}\n`
+          const updated = content.slice(0, insertPoint) + newLine + content.slice(insertPoint)
+          await writeGitHubFile('HANDOFF.md', updated, handoffFile.sha, `Dashboard sync: handoff update -- ${taskText.slice(0, 40)}`)
+        }
+      }
+    } catch (e) { errors.push('handoff: ' + e.message) }
+  }
+
+  return errors
 }
 
 export default async function handler(req, res) {
@@ -267,6 +354,10 @@ export default async function handler(req, res) {
     )
 
     if (!ok) return res.status(500).json({ error: 'GitHub write failed -- token may need write access' })
+
+    // Cascade to context files
+    await syncContextAfterMutation('add', task.trim())
+
     return res.status(200).json({ ok: true, message: 'Task added to punch list.' })
   }
 
@@ -298,6 +389,10 @@ export default async function handler(req, res) {
     )
 
     if (!ok) return res.status(500).json({ error: 'GitHub write failed' })
+
+    // Cascade to context files
+    await syncContextAfterMutation('rename', newText.trim(), { oldText: oldText.trim() })
+
     return res.status(200).json({ ok: true, message: 'Task renamed.' })
   }
 
