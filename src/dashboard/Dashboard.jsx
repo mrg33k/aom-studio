@@ -165,6 +165,18 @@ function StatusPill({ status }) {
 
 const AGENT_COLORS = { Bobby: ORANGE, Jacob: BLUE, Alex: PURPLE, Cleo: '#f472b6', Steffen: '#34d399', Mom: RED, Paige: '#06b6d4', Tony: '#a3e635', Elon: '#8b8b8b', Patrik: '#fff' }
 
+const AGENT_SKILLS = {
+  Bobby: ['Web Dev', 'Vercel Deploy', 'Pre-flight QA', 'Responsive Design', 'Firebase Admin'],
+  Jacob: ['Lead Research', 'Email Outreach', 'Follow-up Pipeline', 'Apollo Search'],
+  Alex: ['Deal Strategy', 'Proposal Writing', 'Offer Architecture', 'Revenue Planning'],
+  Cleo: ['Content Writing', 'Social Copy', 'Blog Posts', 'Brand Voice'],
+  Mom: ['Accountability', 'Email Triage', 'Session Tracking', 'Blocker Detection'],
+  Steffen: ['Brand Strategy', 'Visual Identity', 'Logo Design', 'Design Systems'],
+  Paige: ['Client Communication', 'Project Updates', 'Onboarding', 'Retention'],
+  Tony: ['Social Strategy', 'Content Calendar', 'Platform Management', 'Analytics'],
+  Elon: ['System Audit', 'Architecture Review', 'Gap Analysis', 'Performance Optimization'],
+}
+
 function AgentInitial({ name, size = 28 }) {
   const color = AGENT_COLORS[name] || '#888'
   return (
@@ -312,6 +324,102 @@ function KanbanColumn({ col, tasks, onRefresh }) {
         {colTasks.length === 0 && (
           <div style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 8, padding: '16px 12px', textAlign: 'center', fontSize: 11, color: '#333' }}>{col.desc}</div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function AgentProfile({ agent }) {
+  const [skillIdea, setSkillIdea] = useState('')
+  const [sending, setSending] = useState(false)
+  const [response, setResponse] = useState(null)
+  const color = AGENT_COLORS[agent.name] || '#888'
+  const skills = AGENT_SKILLS[agent.name] || []
+  const inputRef = useRef(null)
+
+  const submitIdea = async () => {
+    const text = skillIdea.trim()
+    if (!text || sending) return
+    setSkillIdea('')
+    setSending(true)
+    setResponse(null)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'chat', message: `Skill idea for ${agent.name}: ${text}`, agent: agent.name }),
+      })
+      const data = await res.json()
+      setResponse(data.reply || data.error || 'No response.')
+    } catch {
+      setResponse('Network error.')
+    }
+    setSending(false)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Agent header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <AgentInitial name={agent.name} size={38} />
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{agent.name}</div>
+          <div style={{ fontSize: 11, color: color, fontWeight: 600, marginTop: 1 }}>{agent.role}</div>
+        </div>
+      </div>
+
+      {/* Status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <StatusPill status={agent.status} />
+        {agent.lastEntry && (
+          <span style={{ fontSize: 10, color: '#444' }}>Last active {relativeTime(agent.lastEntry.date)}</span>
+        )}
+      </div>
+
+      {/* Skills */}
+      <div>
+        <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Skills</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {skills.map(skill => (
+            <span key={skill} style={{ fontSize: 10, color: color, background: `${color}14`, border: `1px solid ${color}28`, borderRadius: 5, padding: '3px 8px', fontWeight: 600, letterSpacing: '0.02em' }}>
+              {skill}
+            </span>
+          ))}
+          {skills.length === 0 && (
+            <span style={{ fontSize: 10, color: '#333', fontStyle: 'italic' }}>No skills defined</span>
+          )}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.04)' }} />
+
+      {/* Skill idea input */}
+      <div>
+        <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 8 }}>Suggest a Skill</div>
+        {response && (
+          <div style={{ marginBottom: 8, padding: '6px 10px', background: '#111', borderRadius: 6, border: `1px solid ${color}18` }}>
+            <div style={{ fontSize: 9, color, fontWeight: 700, marginBottom: 3, letterSpacing: '0.06em' }}>{agent.name}</div>
+            <div style={{ fontSize: 11, color: '#bbb', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{response}</div>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            ref={inputRef}
+            value={skillIdea}
+            onChange={e => setSkillIdea(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submitIdea() }}
+            placeholder="Skill idea..."
+            style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#fff', fontSize: 11, padding: '6px 10px', outline: 'none' }}
+          />
+          <button
+            onClick={submitIdea}
+            disabled={!skillIdea.trim() || sending}
+            style={{ background: color, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', cursor: skillIdea.trim() ? 'pointer' : 'default', opacity: skillIdea.trim() ? 1 : 0.3, textTransform: 'uppercase', whiteSpace: 'nowrap' }}
+          >
+            {sending ? '...' : 'ADD'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -861,10 +969,16 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* RIGHT SIDEBAR -- ACTIVITY */}
-        <div style={{ width: 260, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', padding: '20px 16px', overflowY: 'auto' }}>
-          <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 14 }}>Activity Feed</div>
-          {data ? <ActivityFeed actions={data.actions} handoff={data.handoff} /> : <div style={{ fontSize: 11, color: '#333' }}>{loading ? 'Loading…' : 'No activity'}</div>}
+        {/* RIGHT SIDEBAR -- AGENT PROFILE / ACTIVITY */}
+        <div style={{ width: 260, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.06)', padding: '20px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {selectedAgent && data?.agents && (() => {
+            const agentData = data.agents.find(a => a.name === selectedAgent)
+            return agentData ? <AgentProfile agent={agentData} /> : null
+          })()}
+          <div>
+            <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 14 }}>Activity Feed</div>
+            {data ? <ActivityFeed actions={data.actions} handoff={data.handoff} /> : <div style={{ fontSize: 11, color: '#333' }}>{loading ? 'Loading…' : 'No activity'}</div>}
+          </div>
         </div>
       </div>
 
