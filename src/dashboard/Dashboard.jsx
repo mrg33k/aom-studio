@@ -755,7 +755,6 @@ export default function Dashboard() {
           {/* No token error state */}
           {!GITHUB_TOKEN && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 16, textAlign: 'center' }}>
-              <div style={{ fontSize: 28 }}>⚠</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>VITE_GITHUB_TOKEN not set</div>
               <div style={{ fontSize: 11, color: '#444', lineHeight: 1.7, maxWidth: 340 }}>
                 Add <code style={{ background: '#1a1a1a', padding: '2px 6px', borderRadius: 4, color: '#aaa', fontSize: 11 }}>VITE_GITHUB_TOKEN</code> to your Vercel environment variables, then redeploy.<br />
