@@ -658,7 +658,10 @@ export default function Dashboard() {
   const [councilOpen, setCouncilOpen] = useState(false)
 
   const load = useCallback(async () => {
-    if (!GITHUB_TOKEN) return
+    if (!GITHUB_TOKEN) {
+      setData(null)
+      return
+    }
     setLoading(true)
     try {
       const [prioritiesMd, punchMd, actionsMd, handoffMd, ...agentMds] = await Promise.all([
@@ -748,13 +751,32 @@ export default function Dashboard() {
 
         {/* MISSION QUEUE */}
         <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
-          <div style={{ marginBottom: 20 }}>
+
+          {/* No token error state */}
+          {!GITHUB_TOKEN && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: 28 }}>⚠</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>VITE_GITHUB_TOKEN not set</div>
+              <div style={{ fontSize: 11, color: '#444', lineHeight: 1.7, maxWidth: 340 }}>
+                Add <code style={{ background: '#1a1a1a', padding: '2px 6px', borderRadius: 4, color: '#aaa', fontSize: 11 }}>VITE_GITHUB_TOKEN</code> to your Vercel environment variables, then redeploy.<br />
+                After redeploying, reload this page.
+              </div>
+              <button
+                onClick={() => window.location.reload()}
+                style={{ background: ORANGE, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', cursor: 'pointer', textTransform: 'uppercase', marginTop: 4 }}
+              >
+                Reload Page
+              </button>
+            </div>
+          )}
+
+          {GITHUB_TOKEN && <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{selectedAgent ? `${selectedAgent}'s Queue` : 'Mission Queue'}</div>
             <div style={{ fontSize: 11, color: '#444' }}>{selectedAgent ? `Tasks assigned to ${selectedAgent} + unassigned gaps` : 'All active work across every agent — gaps surface as unassigned'}</div>
-          </div>
+          </div>}
 
           {/* Priorities */}
-          {!selectedAgent && data?.priorities?.length > 0 && (
+          {GITHUB_TOKEN && !selectedAgent && data?.priorities?.length > 0 && (
             <div style={{ marginBottom: 28 }}>
               <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 12 }}>Current Priorities</div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -772,9 +794,11 @@ export default function Dashboard() {
           )}
 
           {/* Kanban */}
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 8 }}>
-            {COLUMNS.map(col => <KanbanColumn key={col.id} col={col} tasks={filteredTasks} />)}
-          </div>
+          {GITHUB_TOKEN && (
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 8 }}>
+              {COLUMNS.map(col => <KanbanColumn key={col.id} col={col} tasks={filteredTasks} />)}
+            </div>
+          )}
         </div>
 
         {/* RIGHT SIDEBAR -- ACTIVITY */}
