@@ -542,7 +542,7 @@ function MobileTaskCard({ task, onRefresh }) {
             onChange={e => setEditText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') { setEditing(false); setEditText(task.text) } }}
             onBlur={saveRename}
-            style={{ fontSize: 14, color: '#fff', lineHeight: 1.5, background: '#0a0a0a', border: '1px solid rgba(255,79,0,0.3)', borderRadius: 6, padding: '8px 12px', width: '100%', outline: 'none', fontFamily: 'inherit' }}
+            style={{ fontSize: 16, color: '#fff', lineHeight: 1.5, background: '#0a0a0a', border: '1px solid rgba(255,79,0,0.3)', borderRadius: 6, padding: '8px 12px', width: '100%', outline: 'none', fontFamily: 'inherit' }}
           />
         ) : (
           <div
@@ -601,7 +601,7 @@ function MobileTaskCard({ task, onRefresh }) {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') send(); if (e.key === 'Escape') setReplyOpen(false) }}
               placeholder="Quick note..."
-              style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#fff', fontSize: 13, padding: '10px 14px', outline: 'none' }}
+              style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#fff', fontSize: 16, padding: '10px 14px', outline: 'none' }}
             />
             <button
               onClick={send}
@@ -994,7 +994,7 @@ function AgentProfile({ agent }) {
             onChange={e => setSkillIdea(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') submitIdea() }}
             placeholder="Skill idea..."
-            style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#fff', fontSize: 11, padding: '6px 10px', outline: 'none' }}
+            style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#fff', fontSize: 16, padding: '8px 10px', outline: 'none' }}
           />
           <button
             onClick={submitIdea}
@@ -1626,7 +1626,7 @@ function CommandBar({ onRefresh, isMobile }) {
           placeholder={addTaskMode ? 'Add a task to the punch list...' : `Message ${selectedAgent === 'All' ? 'all agents' : selectedAgent}...`}
           style={{
             flex: 1, background: '#111', border: `1px solid ${addTaskMode ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.08)'}`,
-            borderRadius: 8, color: '#fff', fontSize: 13, padding: '8px 14px',
+            borderRadius: 8, color: '#fff', fontSize: isMobile ? 16 : 13, padding: '8px 14px',
             outline: 'none',
           }}
         />
@@ -1689,7 +1689,7 @@ function PasswordGate({ onAuth }) {
       </div>
       <div style={{ transform: shake ? 'translateX(8px)' : 'translateX(0)', transition: shake ? 'transform 0.1s ease' : 'transform 0.3s ease', display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
         <input autoFocus type="password" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && attempt()} placeholder="access code"
-          style={{ background: '#111', border: `1px solid ${shake ? RED : 'rgba(255,255,255,0.1)'}`, borderRadius: 8, color: '#fff', fontSize: 14, padding: '12px 18px', outline: 'none', width: 260, textAlign: 'center', letterSpacing: '0.12em', transition: 'border-color 0.15s' }} />
+          style={{ background: '#111', border: `1px solid ${shake ? RED : 'rgba(255,255,255,0.1)'}`, borderRadius: 8, color: '#fff', fontSize: 16, padding: '12px 18px', outline: 'none', width: 260, textAlign: 'center', letterSpacing: '0.12em', transition: 'border-color 0.15s' }} />
         <button onClick={attempt} style={{ background: ORANGE, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', cursor: 'pointer', textTransform: 'uppercase', width: '100%' }}>
           Enter
         </button>
