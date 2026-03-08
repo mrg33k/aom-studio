@@ -253,6 +253,11 @@ function MobileTaskCard({ task, onRefresh }) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleted, setDeleted] = useState(false)
+  const [deleteFailed, setDeleteFailed] = useState(false)
+  const [marking, setMarking] = useState(false)
+  const [marked, setMarked] = useState(false)
+  const [launching, setLaunching] = useState(false)
+  const [launchResult, setLaunchResult] = useState(null)
   const [swipeX, setSwipeX] = useState(0)
   const [actionsRevealed, setActionsRevealed] = useState(false)
   const inputRef = useRef(null)
@@ -260,6 +265,7 @@ function MobileTaskCard({ task, onRefresh }) {
   const subtaskCacheRef = useRef(null)
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 })
   const isScrollingRef = useRef(false)
+  const swipeWidth = task.agent ? 180 : 140
   const swipeThreshold = 80
   const agentColor = task.agent ? (AGENT_COLORS[task.agent] || '#888') : '#444'
   const daysLeft = task.deadline ? deadlineDaysRemaining(task.raw || task.text) : null
@@ -282,9 +288,9 @@ function MobileTaskCard({ task, onRefresh }) {
     if (deltaY > 20 && Math.abs(deltaX) < deltaY) { isScrollingRef.current = true; return }
     if (isScrollingRef.current) return
     if (actionsRevealed && deltaX > 0) {
-      setSwipeX(Math.min(deltaX - 140, 0))
+      setSwipeX(Math.min(deltaX - swipeWidth, 0))
     } else if (deltaX < 0) {
-      setSwipeX(Math.max(deltaX, -160))
+      setSwipeX(Math.max(deltaX, -swipeWidth - 20))
     }
   }
 
@@ -292,7 +298,7 @@ function MobileTaskCard({ task, onRefresh }) {
     if (isScrollingRef.current) return
     if (swipeX < -swipeThreshold) {
       setActionsRevealed(true)
-      setSwipeX(-140)
+      setSwipeX(-swipeWidth)
     } else {
       setActionsRevealed(false)
       setSwipeX(0)
@@ -353,6 +359,7 @@ function MobileTaskCard({ task, onRefresh }) {
   const deleteTask = async () => {
     if (deleting || deleted) return
     setDeleting(true)
+    setDeleteFailed(false)
     closeActions()
     try {
       const res = await fetch('/api/chat', {
@@ -364,9 +371,52 @@ function MobileTaskCard({ task, onRefresh }) {
       if (data.ok) {
         setDeleted(true)
         setTimeout(onRefresh, 1200)
+      } else {
+        setDeleteFailed(true)
+        setTimeout(() => setDeleteFailed(false), 2000)
+      }
+    } catch {
+      setDeleteFailed(true)
+      setTimeout(() => setDeleteFailed(false), 2000)
+    }
+    setDeleting(false)
+  }
+
+  const markDone = async () => {
+    if (marking || marked) return
+    setMarking(true)
+    closeActions()
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_done', taskText: task.text }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setMarked(true)
+        setTimeout(onRefresh, 1200)
       }
     } catch { /* silently fail */ }
-    setDeleting(false)
+    setMarking(false)
+  }
+
+  const launchAgent = async () => {
+    if (launching || !task.agent) return
+    setLaunching(true)
+    closeActions()
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'launch_agent', taskText: task.text, agentName: task.agent }),
+      })
+      const data = await res.json()
+      setLaunchResult({ text: data.reply || data.error || 'No response.', agent: data.agent || task.agent, actions: data.actions_taken || [] })
+    } catch {
+      setLaunchResult({ text: 'Network error launching agent.', agent: 'System', actions: [] })
+    }
+    setLaunching(false)
   }
 
   const saveRename = async () => {
@@ -386,11 +436,11 @@ function MobileTaskCard({ task, onRefresh }) {
     setEditing(false)
   }
 
-  if (deleted) {
+  if (deleted || marked) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px', background: '#0a0a0a', borderRadius: 10, border: '1px solid rgba(34,197,94,0.3)', opacity: 0.6, transition: 'opacity 0.4s' }}>
         <span style={{ color: '#22c55e', fontSize: 16 }}>&#10003;</span>
-        <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 600 }}>Removed</span>
+        <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 600 }}>{marked ? 'Done' : 'Removed'}</span>
       </div>
     )
   }
@@ -399,42 +449,55 @@ function MobileTaskCard({ task, onRefresh }) {
     <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 10 }}>
       {/* Action buttons revealed by swipe */}
       <div style={{
-        position: 'absolute', right: 0, top: 0, bottom: 0, width: 140,
+        position: 'absolute', right: 0, top: 0, bottom: 0, width: task.agent ? 180 : 140,
         display: 'flex', alignItems: 'stretch', gap: 0, borderRadius: '0 10px 10px 0',
         overflow: 'hidden',
       }}>
+        <button
+          onClick={markDone}
+          style={{
+            flex: 1, background: 'rgba(34,197,94,0.15)', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+            color: '#22c55e', fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
+          }}
+        >
+          <span style={{ fontSize: 18 }}>{marking ? '...' : '\u2713'}</span>
+          DONE
+        </button>
+        {task.agent && (
+          <button
+            onClick={launchAgent}
+            style={{
+              flex: 1, background: 'rgba(255,79,0,0.15)', border: 'none', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+              color: ORANGE, fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
+            }}
+          >
+            <span style={{ fontSize: 18 }}>{launching ? '...' : '\u26A1'}</span>
+            RUN
+          </button>
+        )}
         <button
           onClick={() => { closeActions(); setReplyOpen(!replyOpen) }}
           style={{
             flex: 1, background: 'rgba(96,165,250,0.15)', border: 'none', cursor: 'pointer',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-            color: BLUE, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+            color: BLUE, fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
           }}
         >
           <span style={{ fontSize: 18 }}>&#8617;</span>
           REPLY
         </button>
         <button
-          onClick={() => { setEditing(true); setEditText(task.text); closeActions() }}
-          style={{
-            flex: 1, background: 'rgba(234,179,8,0.15)', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-            color: YELLOW, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
-          }}
-        >
-          <span style={{ fontSize: 18 }}>&#9998;</span>
-          EDIT
-        </button>
-        <button
           onClick={deleteTask}
           style={{
             flex: 1, background: 'rgba(239,68,68,0.15)', border: 'none', cursor: 'pointer',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-            color: RED, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
+            color: RED, fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
           }}
         >
           <span style={{ fontSize: 18 }}>{deleting ? '...' : '\u00d7'}</span>
-          DELETE
+          DEL
         </button>
       </div>
 
@@ -548,6 +611,44 @@ function MobileTaskCard({ task, onRefresh }) {
               {sending ? '...' : 'GO'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Agent launch result */}
+      {(launching || launchResult) && (
+        <div style={{ marginTop: 2, padding: '12px 16px', background: '#0d0d0d', borderRadius: '0 0 10px 10px', border: `1px solid rgba(255,79,0,0.15)`, borderTop: 'none' }}>
+          {launching && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: ORANGE }}>&#9889;</span>
+              <span style={{ fontSize: 11, color: '#888' }}>{task.agent} is working...</span>
+            </div>
+          )}
+          {launchResult && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: ORANGE }}>&#9889;</span>
+                  <span style={{ fontSize: 10, color: AGENT_COLORS[launchResult.agent] || ORANGE, fontWeight: 700, letterSpacing: '0.06em' }}>{launchResult.agent}</span>
+                </div>
+                <button onClick={() => setLaunchResult(null)} style={{ background: 'none', border: 'none', color: '#444', fontSize: 14, cursor: 'pointer', padding: '4px' }}>&times;</button>
+              </div>
+              <div style={{ fontSize: 12, color: '#bbb', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{launchResult.text}</div>
+              {launchResult.actions.length > 0 && (
+                <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  {launchResult.actions.map((a, i) => (
+                    <div key={i} style={{ fontSize: 10, color: '#22c55e', marginBottom: 2 }}>&#10003; {a.tool}: {a.result?.task || a.input?.task_description || 'done'}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delete failed indicator */}
+      {deleteFailed && (
+        <div style={{ marginTop: 2, padding: '8px 16px', background: '#1a0a0a', borderRadius: '0 0 10px 10px', border: '1px solid rgba(239,68,68,0.3)', borderTop: 'none' }}>
+          <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 600 }}>Failed to remove</span>
         </div>
       )}
     </div>

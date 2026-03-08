@@ -398,6 +398,112 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, message: 'Task renamed.' })
   }
 
+  // ── MARK TASK DONE ─────────────────────────────────────────────────────────
+  if (action === 'mark_done') {
+    const { taskText } = req.body
+    if (!taskText) return res.status(400).json({ error: 'taskText required' })
+
+    const result = await executeMarkTaskDone(taskText)
+    if (!result.success) return res.status(result.error.includes('No matching') ? 404 : 500).json({ error: result.error })
+
+    return res.status(200).json({ ok: true, task: result.task, message: 'Task marked done.' })
+  }
+
+  // ── LAUNCH AGENT ──────────────────────────────────────────────────────────
+  if (action === 'launch_agent') {
+    if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' })
+    const { taskText, agentName } = req.body
+    if (!taskText || !agentName) return res.status(400).json({ error: 'taskText and agentName required' })
+
+    // Load agent context + relevant files
+    const [agentMd, handoff, priorities, punch] = await Promise.all([
+      fetchGitHubFile(getAgentFile(agentName)),
+      fetchGitHubFile('HANDOFF.md'),
+      fetchGitHubFile('context/current-priorities.md'),
+      fetchGitHubFile('punch-list.md'),
+    ])
+
+    if (!agentMd) return res.status(404).json({ error: `Agent "${agentName}" not found` })
+
+    const contextBlock = [
+      `# ${agentName.toUpperCase()} AGENT\n${agentMd.content}`,
+      handoff ? `# HANDOFF\n${handoff.content}` : '',
+      priorities ? `# PRIORITIES\n${priorities.content}` : '',
+      punch ? `# PUNCH LIST (first 3000 chars)\n${punch.content.slice(0, 3000)}` : '',
+    ].filter(Boolean).join('\n\n---\n\n')
+
+    const systemPrompt = `You are ${agentName}, an AI agent at AOM (Ahead of Market). Patrik has launched you from the dashboard to work on a specific task. You are in EXECUTION mode -- not conversation mode.
+
+Your job:
+1. Analyze the task against your agent context
+2. Determine what concrete actions you would take
+3. Report back with: what you did, what's next, any blockers
+
+Be specific and action-oriented. No filler. If you can mark the task done based on your analysis, use the mark_task_done tool. If the task needs work you can't do from here (code changes, file creation, bash commands), say exactly what needs to happen and who should do it.
+
+${contextBlock}`
+
+    let messages = [{ role: 'user', content: `MISSION: ${taskText}\n\nExecute this task. Report what you did and what's next.` }]
+    const actions_taken = []
+
+    // Tool execution loop (max 3 iterations)
+    for (let iteration = 0; iteration < 3; iteration++) {
+      const apiBody = {
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages,
+        tools: TOOLS,
+      }
+
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(apiBody),
+      })
+
+      if (!anthropicRes.ok) {
+        const err = await anthropicRes.text()
+        return res.status(500).json({ error: 'Agent launch failed: ' + err })
+      }
+
+      const data = await anthropicRes.json()
+      const toolUseBlocks = (data.content || []).filter(b => b.type === 'tool_use')
+      const textBlocks = (data.content || []).filter(b => b.type === 'text')
+
+      if (toolUseBlocks.length === 0 || data.stop_reason !== 'tool_use') {
+        const reply = textBlocks.map(b => b.text).join('\n') || 'Agent completed with no response.'
+        return res.status(200).json({ ok: true, reply, agent: agentName, actions_taken })
+      }
+
+      const assistantContent = data.content
+      messages.push({ role: 'assistant', content: assistantContent })
+
+      const toolResults = []
+      for (const toolBlock of toolUseBlocks) {
+        const result = await executeTool(toolBlock.name, toolBlock.input)
+        toolResults.push({ type: 'tool_result', tool_use_id: toolBlock.id, content: JSON.stringify(result) })
+        actions_taken.push({ tool: toolBlock.name, input: toolBlock.input, result })
+      }
+      messages.push({ role: 'user', content: toolResults })
+    }
+
+    return res.status(200).json({ ok: true, reply: 'Agent hit max iterations.', agent: agentName, actions_taken })
+  }
+
+  // ── POLL (lightweight SHA check for auto-refresh) ─────────────────────────
+  if (action === 'poll') {
+    const { lastSha } = req.body
+    const file = await fetchGitHubFile('punch-list.md')
+    if (!file) return res.status(500).json({ error: 'Could not fetch punch list' })
+    const changed = lastSha && file.sha !== lastSha
+    return res.status(200).json({ sha: file.sha, changed })
+  }
+
   // ── DELETE TASK ────────────────────────────────────────────────────────────
   if (action === 'delete_task') {
     const { taskText } = req.body
