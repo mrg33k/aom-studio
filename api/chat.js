@@ -411,21 +411,11 @@ export default async function handler(req, res) {
     if (homeMatch && ANTHROPIC_API_KEY) {
       const homeMsg = homeMatch[1].trim()
       const today = new Date().toISOString().split('T')[0]
+      const now = new Date().toISOString().replace('T', ' ').slice(0, 19)
 
-      // Add Patrik's message to punch list
-      const file = await fetchGitHubFile('punch-list.md')
-      if (!file) return res.status(500).json({ error: 'Could not fetch punch list' })
-
-      const homeItem = `- [ ] HOME: ${homeMsg} -- ${today}`
-      let updated
-      if (file.content.includes('## Comms')) {
-        updated = file.content.replace('## Comms\n', `## Comms\n${homeItem}\n`)
-      } else {
-        updated = file.content + `\n\n## Comms\n${homeItem}\n`
-      }
-
-      const writeOk = await writeGitHubFile('punch-list.md', updated, file.sha, `HOME: ${homeMsg.slice(0, 50)}`)
-      if (!writeOk) return res.status(500).json({ error: 'GitHub write failed' })
+      // Detect if this needs full Mac execution power
+      const heavyPatterns = /\b(launch|run|start|session|bobby|colton|cleo|steffen|jacob|alex|elon|mom|playwright|screenshot|calendar|email|send|schedule|outreach|build|deploy|audit)\b/i
+      const needsMac = heavyPatterns.test(homeMsg)
 
       // Load context for Claude to respond
       const [handoff, priorities, workCtx] = await Promise.all([
@@ -434,12 +424,15 @@ export default async function handler(req, res) {
         fetchGitHubFile('context/work.md'),
       ])
 
-      const systemPrompt = `You are Claude Code (CC), Patrik's executive assistant at AOM. Patrik sent you a message from his phone via the dashboard. Respond concisely (2-4 sentences max). Be direct, warm, and useful. If he's asking about status, check the context. If he's giving a directive, acknowledge and confirm. No fluff.
+      const systemPrompt = `You are Claude Code (CC), Patrik's executive assistant at AOM. Patrik sent you a message from his phone via the dashboard HOME chat. Respond concisely (2-4 sentences max). Be direct, warm, and useful.
+
+${needsMac ? 'This message requires full system power (agents, MCP, bash). You will respond with an acknowledgment AND queue it for the Mac loop to execute. Tell Patrik what you are queuing and that it will run on the Mac.' : 'This is a lightweight request you can handle directly. Answer from context.'}
 
 Current priorities:\n${priorities?.content || 'N/A'}
 Handoff:\n${handoff?.content || 'N/A'}
 Work context:\n${(workCtx?.content || '').slice(0, 3000)}`
 
+      let ccReply = "Got it. Will follow up when you're back."
       try {
         const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
@@ -456,35 +449,44 @@ Work context:\n${(workCtx?.content || '').slice(0, 3000)}`
           }),
         })
 
-        let ccReply = "Got it. Will follow up when you're back."
         if (anthropicRes.ok) {
           const data = await anthropicRes.json()
           const textBlocks = (data.content || []).filter(b => b.type === 'text')
           ccReply = textBlocks.map(b => b.text).join('\n') || ccReply
         }
+      } catch { /* best effort */ }
 
-        // Add CC's reply back to punch list
-        const file2 = await fetchGitHubFile('punch-list.md')
-        if (file2) {
-          const ccItem = `- [ ] CC: ${ccReply.replace(/\n/g, ' ').slice(0, 300)} -- ${today}`
-          const updated2 = file2.content.includes('## Comms')
-            ? file2.content.replace('## Comms\n', `## Comms\n${ccItem}\n`)
-            : file2.content + `\n\n## Comms\n${ccItem}\n`
-          await writeGitHubFile('punch-list.md', updated2, file2.sha, `CC reply: ${homeMsg.slice(0, 40)}`)
+      // If heavy command, write to home-queue.md for Mac loop to pick up
+      if (needsMac) {
+        const queueFile = await fetchGitHubFile('context/home-queue.md')
+        if (queueFile) {
+          const queueItem = `[PENDING] ${homeMsg} -- ${now}`
+          const updatedQueue = queueFile.content.replace('---\n', `---\n${queueItem}\n`)
+          await writeGitHubFile('context/home-queue.md', updatedQueue, queueFile.sha, `Queue from HOME: ${homeMsg.slice(0, 40)}`)
         }
-
-        return res.status(200).json({
-          ok: true,
-          message: `CC: ${ccReply}`,
-          isHomeReply: true,
-        })
-      } catch {
-        return res.status(200).json({
-          ok: true,
-          message: 'Message received. CC will respond when able.',
-          isHomeReply: true,
-        })
       }
+
+      // Log the exchange to comms section
+      const file = await fetchGitHubFile('punch-list.md')
+      if (file) {
+        const homeItem = `- [ ] HOME: ${homeMsg} -- ${today}`
+        const ccItem = `- [ ] CC: ${ccReply.replace(/\n/g, ' ').slice(0, 300)} -- ${today}`
+        const commsBlock = `${homeItem}\n${ccItem}`
+        let updated
+        if (file.content.includes('## Comms')) {
+          updated = file.content.replace('## Comms\n', `## Comms\n${commsBlock}\n`)
+        } else {
+          updated = file.content + `\n\n## Comms\n${commsBlock}\n`
+        }
+        await writeGitHubFile('punch-list.md', updated, file.sha, `HOME comms: ${homeMsg.slice(0, 40)}`)
+      }
+
+      return res.status(200).json({
+        ok: true,
+        message: `CC: ${ccReply}`,
+        isHomeReply: true,
+        queuedForMac: needsMac,
+      })
     }
 
     const file = await fetchGitHubFile('punch-list.md')
