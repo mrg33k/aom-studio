@@ -323,7 +323,7 @@ function ColorSwatch({ color, large }) {
 
 function OGBrandUpdate() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0a0e2a', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#0a0e2a', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Noise overlay */}
       <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.025] mix-blend-overlay">
         <svg width="100%" height="100%">
@@ -349,16 +349,12 @@ function OGBrandUpdate() {
 
           {/* Logo placeholder area */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-10 mb-12">
-            <div className="w-52 h-52 md:w-64 md:h-64 rounded-full flex items-center justify-center relative shrink-0" style={{ background: 'radial-gradient(circle, #1a1f45 0%, #111638 40%, #0a0e2a 80%)', border: '2px solid rgba(26, 35, 126, 0.5)', boxShadow: '0 0 60px rgba(26, 35, 126, 0.15), 0 0 120px rgba(26, 35, 126, 0.08), inset 0 0 40px rgba(26, 35, 126, 0.1)' }}>
-              <CircleBadgeFrame size={250} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <SnowflakePattern size={60} color="#283593" opacity={0.5} />
-                  <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', color: '#6b7280', marginTop: '6px', textTransform: 'uppercase' }}>
-                    Existing Logo
-                  </div>
-                </div>
-              </div>
+            <div className="w-52 h-52 md:w-64 md:h-64 rounded-full flex items-center justify-center relative shrink-0" style={{ background: '#ffffff', border: '3px solid rgba(255, 255, 255, 0.9)', boxShadow: '0 0 60px rgba(26, 35, 126, 0.2), 0 0 120px rgba(26, 35, 126, 0.1)' }}>
+              <img
+                src="/ambition-logo.png"
+                alt="Ambition Mechanical Services logo"
+                className="w-[85%] h-[85%] object-contain"
+              />
             </div>
 
             <div>

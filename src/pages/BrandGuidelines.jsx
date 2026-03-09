@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { ArrowLeft, Copy, Check } from 'lucide-react'
 
 /* ------------------------------------------------------------------ */
@@ -379,13 +379,7 @@ function ColorSwatch({ color, name, hex, dark }) {
 /* ================================================================== */
 
 export default function BrandGuidelines() {
-  useEffect(() => {
-    const link = document.createElement('link')
-    link.href = 'https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
-    link.rel = 'stylesheet'
-    document.head.appendChild(link)
-    return () => document.head.removeChild(link)
-  }, [])
+  // Syne + Space Grotesk loaded globally via index.css
 
   const section = {
     padding: '100px 60px',
