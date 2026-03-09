@@ -208,7 +208,7 @@ const StrategicVortexBG = () => {
 };
 
 const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => (
-    <article onClick={() => onPlay({ url, title })} className={`relative group overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-md ${isVertical ? 'aspect-[9/16]' : 'aspect-video shadow-lg'}`}>
+    <article onClick={() => onPlay({ url, title })} className={`relative group overflow-hidden border border-white/5 bg-[#1A1A17]/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-md ${isVertical ? 'aspect-[9/16]' : 'aspect-video shadow-lg'}`}>
         <video muted loop playsInline className="w-full h-full object-cover opacity-40 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 ease-out" onMouseOver={e => e.target.play()} onMouseOut={e => e.target.pause()}>
             <source src={url} />
         </video>
@@ -219,7 +219,7 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => (
             </div>
         </div>
 
-        <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20">
+        <div className="absolute inset-0 p-4 md:p-5 flex flex-col justify-between pointer-events-none z-20">
             <div className="flex justify-between items-start">
                 <div className="flex flex-wrap gap-1.5">
                     {tags.map(tag => <span key={tag} className="text-[9px] font-medium px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm backdrop-blur-sm">{tag}</span>)}
@@ -287,10 +287,10 @@ export default function App() {
 
   useEffect(() => {
     if (loadStatus < 100) {
-      const timer = setTimeout(() => setLoadStatus(prev => prev + 4), 20);
+      const timer = setTimeout(() => setLoadStatus(prev => Math.min(prev + 10, 100)), 15);
       return () => clearTimeout(timer);
     } else {
-      setTimeout(() => setIsInitialized(true), 400);
+      setTimeout(() => setIsInitialized(true), 150);
     }
   }, [loadStatus]);
 
@@ -341,7 +341,7 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 gap-4">
                       {leads.map(lead => (
-                          <div key={lead.id} className="p-6 bg-zinc-900/50 border border-white/5 rounded-lg flex flex-col md:flex-row justify-between gap-6">
+                          <div key={lead.id} className="p-6 bg-[#1A1A17]/50 border border-white/5 rounded-lg flex flex-col md:flex-row justify-between gap-6">
                               <div className="space-y-2">
                                   <div className="text-orange-500 font-bold text-xl">{lead.name || 'Unknown Contact'}</div>
                                   <div className="text-sm text-zinc-400">{lead.email} • {lead.phone}</div>
@@ -470,7 +470,7 @@ export default function App() {
             <div className="inline-flex items-center gap-4 mb-8 border-l-2 border-orange-600 pl-4">
               <p className="text-orange-500 font-bold text-xs uppercase tracking-widest">Video Infrastructure for Market Leaders</p>
             </div>
-            <h2 className="text-[clamp(3rem,7vw,7rem)] font-bold leading-[0.95] tracking-tight text-white max-w-4xl">
+            <h2 className="text-[clamp(2.25rem,7vw,7rem)] font-bold leading-[0.95] tracking-tight text-white max-w-4xl">
               We handle the production. <br />
               <span className="text-zinc-500">You handle the scale.</span>
             </h2>
@@ -493,7 +493,7 @@ export default function App() {
       </section>
 
       {/* --- THE PORTFOLIO ARCHIVE --- */}
-      <section id="work" className="px-6 md:px-12 lg:px-24 py-24 bg-[#050505] relative z-10">
+      <section id="work" className="px-6 md:px-12 lg:px-24 py-24 bg-[#020202] relative z-10">
         <div className="max-w-screen-xl mx-auto w-full">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8 border-b border-white/5 pb-8">
             <div>
@@ -501,7 +501,7 @@ export default function App() {
               <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">The Work.</h2>
             </div>
             <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-              {['builders', 'founders', 'marketing'].map(tab => (
+              {['builders', 'marketing'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all ${activeTab === tab ? 'bg-white text-black' : 'bg-white/5 text-zinc-400 hover:bg-white/10'}`}>
                   {tab}
                 </button>
@@ -541,7 +541,7 @@ export default function App() {
       </section>
 
       {/* --- THE PROCESS --- */}
-      <section id="system" className="px-6 md:px-12 lg:px-24 py-24 bg-zinc-950 border-t border-white/5">
+      <section id="system" className="px-6 md:px-12 lg:px-24 py-24 bg-[#0A0A08] border-t border-white/5">
         <div className="max-w-screen-xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="inline-block px-3 py-1 bg-orange-600/10 border border-orange-600/20 rounded-full mb-6">
@@ -553,7 +553,7 @@ export default function App() {
             </h2>
             <div className="space-y-12">
               <div className="flex gap-6">
-                <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[#1A1A17] border border-white/10 flex items-center justify-center flex-shrink-0">
                     <Briefcase size={20} className="text-white" />
                 </div>
                 <div>
@@ -562,7 +562,7 @@ export default function App() {
                 </div>
               </div>
               <div className="flex gap-6">
-                <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[#1A1A17] border border-white/10 flex items-center justify-center flex-shrink-0">
                     <CheckSquare size={20} className="text-white" />
                 </div>
                 <div>
@@ -572,7 +572,7 @@ export default function App() {
               </div>
             </div>
           </div>
-          <div className="relative h-[600px] bg-zinc-900 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+          <div className="relative h-[600px] bg-[#1A1A17] rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
                <video autoPlay muted loop playsInline className="w-full h-full object-cover opacity-60" onClick={() => setSelectedVideo({ url: "https://dl.dropboxusercontent.com/scl/fi/vq26nf476bebupfv6jwqp/Malapai-Vertical.mov?rlkey=tjar17zqb7czhx5m93v34xoqk&raw=1", title: "Phoenix Studio Environment" })}>
                   <source src="https://dl.dropboxusercontent.com/scl/fi/vq26nf476bebupfv6jwqp/Malapai-Vertical.mov?rlkey=tjar17zqb7czhx5m93v34xoqk&raw=1" />
                </video>
