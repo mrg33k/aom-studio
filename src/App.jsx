@@ -337,7 +337,7 @@ const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) =
 ));
 
 const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
-  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-10 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-aom-orange bg-orange-950/20" : "border-aom-border bg-aom-charcoal hover:border-aom-border-hover"}`}>
+  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-12 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-aom-orange bg-orange-950/20" : "border-aom-border bg-aom-charcoal hover:border-aom-border-hover"}`}>
     <div className="flex items-center justify-between mb-8">
       <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-aom-orange bg-aom-orange text-white" : "border-aom-border bg-black/40 text-aom-stone group-hover:text-aom-warm-white"}`}>
         <idea.icon size={20} />
@@ -653,7 +653,7 @@ export default function App() {
           <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-aom-night/90 to-transparent pointer-events-none">
             <h1 className="text-2xl md:text-3xl font-headline font-black italic tracking-tighter text-aom-warm-white pointer-events-auto">AOM<span className="text-aom-orange">.</span></h1>
             <div className="flex gap-4 pointer-events-auto">
-              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-aom-charcoal text-aom-stone font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-aom-warm-white border border-aom-border transition-all">Call Logistics</button>
+              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-aom-charcoal text-aom-stone font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-aom-warm-white border border-aom-border transition-all">Call Us</button>
               <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-aom-orange text-white font-headline font-black text-[10px] uppercase tracking-[0.2em] rounded-sm hover:bg-aom-orange-hover shadow-xl shadow-aom-orange/20 border border-white/10 transition-all">Get Started</button>
             </div>
           </header>
@@ -688,10 +688,10 @@ export default function App() {
             </div>
           </section>
 
-          <section id="work" className="pt-24 pb-[200px] md:py-36 bg-aom-charcoal relative z-10 overflow-hidden border-t border-aom-border">
+          <section id="work" className="pt-24 pb-[200px] md:py-36 bg-aom-night relative z-10 overflow-hidden border-t border-aom-border">
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-aom-border pb-16 text-aom-warm-white">
               <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-headline font-black tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-aom-orange">.</span></h2></div>
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders', 'founders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-10 py-3 md:py-4 text-[9px] md:text-[11px] font-headline font-black uppercase tracking-[0.15em] md:tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-aom-warm-white text-aom-night border-aom-warm-white' : 'bg-transparent border-aom-border text-aom-dim hover:text-aom-warm-white'}`}>{tab}</button>)}</div>
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-10 py-3 md:py-4 text-[9px] md:text-[11px] font-headline font-black uppercase tracking-[0.15em] md:tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-aom-warm-white text-aom-night border-aom-warm-white' : 'bg-transparent border-aom-border text-aom-dim hover:text-aom-warm-white'}`}>{tab}</button>)}</div>
             </div>
             <div className="space-y-20 md:space-y-36">
               <InteractiveGallery items={shuffledData[activeTab].campaigns} onPlay={setSelectedVideo} />
@@ -699,7 +699,7 @@ export default function App() {
             </div>
           </section>
 
-          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-aom-charcoal border-t border-aom-border text-aom-warm-white">
+          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-aom-night border-t border-aom-border text-aom-warm-white">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-aom-border pb-16">
                 <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Identify Your Needs</span><h2 className="text-5xl md:text-7xl font-headline font-black tracking-tighter uppercase italic leading-[0.85]">Choose Your<br /><span className="text-outline">Execution Path</span><span className="text-aom-orange">.</span></h2></div>
@@ -725,7 +725,7 @@ export default function App() {
               <h2 className="text-6xl md:text-[10rem] font-headline font-black tracking-tighter mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-aom-orange">Scale?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-black uppercase tracking-[0.4em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/20">Start Brief</button>
-                <button onClick={openPhone} className="px-16 py-6 bg-aom-charcoal text-aom-stone font-headline font-black uppercase tracking-[0.4em] text-xs hover:text-aom-warm-white transition-all clip-path-slant border border-aom-border">Book Call</button>
+                <button onClick={openPhone} className="px-16 py-6 bg-aom-charcoal text-aom-stone font-headline font-black uppercase tracking-[0.4em] text-xs hover:text-aom-warm-white transition-all clip-path-slant border border-aom-border">Call Us</button>
               </div>
               <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-aom-border pt-16">
                 <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Production</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-aom-warm-white text-3xl font-headline font-black italic tracking-tighter">Call Production</button></div>
@@ -894,7 +894,7 @@ export default function App() {
                         <p className="text-zinc-500 text-sm leading-relaxed mb-10 max-w-xs mx-auto uppercase font-mono font-bold tracking-widest">A network conflict occurred. Please retry with your selected tier ({pendingBudget}).</p>
                         <div className="space-y-4">
                             <button onClick={() => handleLeadSubmit({ budget: pendingBudget })} className="w-full bg-orange-600 py-4 font-black italic uppercase shadow-xl hover:bg-orange-500 transition-all text-sm tracking-widest text-white flex items-center justify-center gap-3"><Loader2 className={isSubmitting ? "animate-spin" : "hidden"} size={16} /> Retry Submission</button>
-                            <button onClick={() => { closeBrief(); openPhone(); }} className="w-full bg-white/5 border border-white/10 py-4 font-black italic uppercase text-zinc-400 hover:text-white transition-all text-sm tracking-widest">Call Logistics</button>
+                            <button onClick={() => { closeBrief(); openPhone(); }} className="w-full bg-white/5 border border-white/10 py-4 font-black italic uppercase text-zinc-400 hover:text-white transition-all text-sm tracking-widest">Call Us</button>
                         </div>
                     </motion.div>
                   ) : (
