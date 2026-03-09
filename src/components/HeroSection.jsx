@@ -21,7 +21,7 @@ export default function HeroSection() {
   const currentWord = useWordCycle(cycleWords)
 
   return (
-    <section className="relative min-h-[90vh] flex items-center bg-aom-night overflow-hidden">
+    <section className="relative min-h-[70vh] sm:min-h-[90vh] flex items-center bg-aom-night overflow-hidden">
       {/* Noise overlay */}
       <div className="absolute inset-0 pointer-events-none z-20 opacity-[0.03] mix-blend-overlay">
         <svg width="100%" height="100%">
@@ -38,7 +38,7 @@ export default function HeroSection() {
       {/* Ambient glow behind CTA area */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] pointer-events-none opacity-[0.06] bg-aom-orange rounded-full blur-[120px]" />
 
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-24 md:py-32 relative z-10 w-full">
+      <div className="max-w-6xl mx-auto px-6 md:px-12 py-16 sm:py-24 md:py-32 relative z-10 w-full">
         {/* Micro-label */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -83,7 +83,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.0, ease: 'easeOut' }}
-          className="mt-10 flex flex-col sm:flex-row items-start gap-4"
+          className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start gap-4"
         >
           <a
             href="#brief"
@@ -104,7 +104,7 @@ export default function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1.4, ease: 'easeOut' }}
-          className="mt-16 md:mt-24 flex flex-wrap items-center gap-6 text-aom-dim"
+          className="mt-10 sm:mt-16 md:mt-24 flex flex-wrap items-center gap-6 text-aom-dim"
         >
           <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em]">
             <span className="w-1.5 h-1.5 rounded-full bg-aom-sage" />

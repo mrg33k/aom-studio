@@ -5,3 +5,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* FIX: Sticky nav overlaps scrolled content */
+html {
+  scroll-padding-top: 72px;
+}
