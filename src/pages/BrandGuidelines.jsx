@@ -1175,6 +1175,402 @@ export default function BrandGuidelines() {
       </section>
 
       {/* ============================================================ */}
+      {/*  08 SOCIAL MEDIA TEMPLATES                                    */}
+      {/* ============================================================ */}
+      <section style={{ ...section, background: COLORS.cream }}>
+        <div style={inner}>
+          <div style={{ position: 'relative' }}>
+            <SectionNumber num={8} />
+            <div style={{ ...label, paddingTop: 48 }}>SOCIAL MEDIA</div>
+            <h2 style={headline}>Template Kit</h2>
+            <p style={body}>
+              Ready-to-use social media templates for Cleo and Tony. Each template uses the AOM brand
+              system. Swap placeholder content for real copy and imagery.
+            </p>
+          </div>
+
+          {/* Templates grid */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 32, marginTop: 56,
+          }}>
+
+            {/* ---- INSTAGRAM POST 1080x1080 ---- */}
+            <div>
+              <div style={{ ...label, marginBottom: 12, fontSize: 9 }}>INSTAGRAM POST / 1080 x 1080</div>
+              <div style={{
+                aspectRatio: '1/1', background: COLORS.black, borderRadius: 4,
+                border: `1px solid ${COLORS.lightBorder}`, overflow: 'hidden',
+                position: 'relative', display: 'flex', flexDirection: 'column',
+                justifyContent: 'space-between', padding: 32,
+              }}>
+                {/* Decorative starburst */}
+                <div style={{ position: 'absolute', top: -12, right: -12, opacity: 0.08 }}>
+                  <Starburst size={120} color={COLORS.orange} />
+                </div>
+                {/* Radial dots background */}
+                <div style={{ position: 'absolute', bottom: 20, left: 20, opacity: 0.06 }}>
+                  <RadialDots size={200} />
+                </div>
+                {/* Top: badge + kicker */}
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <Badge color={COLORS.orange}>CASE STUDY</Badge>
+                </div>
+                {/* Center: stat/quote */}
+                <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '0 8px' }}>
+                  <div style={{
+                    fontFamily: '"Syne", sans-serif', fontSize: 72, fontWeight: 800,
+                    color: COLORS.orange, lineHeight: 0.9, marginBottom: 8,
+                  }}>94%</div>
+                  <div style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 16, fontWeight: 600,
+                    color: COLORS.cream, lineHeight: 1.3, maxWidth: 240, margin: '0 auto',
+                  }}>of viewers engage more with stat-driven content</div>
+                </div>
+                {/* Bottom: branding bar */}
+                <div style={{
+                  position: 'relative', zIndex: 1,
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+                }}>
+                  <div>
+                    <div style={{ width: 24, height: 2, background: COLORS.orange, marginBottom: 8 }} />
+                    <LogoWordmark color={COLORS.cream} size={20} />
+                  </div>
+                  <div style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, fontWeight: 500,
+                    letterSpacing: '0.15em', color: COLORS.warmGray, textTransform: 'uppercase',
+                  }}>@aom_inhouse</div>
+                </div>
+              </div>
+              <div style={{
+                fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, color: COLORS.warmGray,
+                marginTop: 8, lineHeight: 1.5,
+              }}>Quote / stat overlay. Use for data points, client results, or bold statements. Syne for the hero number, Space Grotesk for support text.</div>
+            </div>
+
+            {/* ---- INSTAGRAM STORY / REEL COVER 1080x1920 ---- */}
+            <div>
+              <div style={{ ...label, marginBottom: 12, fontSize: 9 }}>STORY / REEL COVER / 1080 x 1920</div>
+              <div style={{
+                aspectRatio: '9/16', maxHeight: 520, background: COLORS.black, borderRadius: 4,
+                border: `1px solid ${COLORS.lightBorder}`, overflow: 'hidden',
+                position: 'relative', display: 'flex', flexDirection: 'column',
+                justifyContent: 'flex-end', padding: 28,
+              }}>
+                {/* Top gradient overlay (simulates photo area) */}
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: '65%',
+                  background: `linear-gradient(180deg, ${COLORS.black}33 0%, ${COLORS.black} 100%)`,
+                  zIndex: 1,
+                }} />
+                {/* Simulated photo placeholder area */}
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: '55%',
+                  background: COLORS.darkCream, opacity: 0.08,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, fontWeight: 500,
+                    letterSpacing: '0.2em', color: COLORS.warmGray, textTransform: 'uppercase',
+                    opacity: 0.5,
+                  }}>PHOTO / VIDEO AREA</span>
+                </div>
+                {/* Top bar */}
+                <div style={{
+                  position: 'absolute', top: 16, left: 20, right: 20, zIndex: 2,
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <LogoMark size={28} color={COLORS.cream} accent={COLORS.orange} />
+                  <Badge color={COLORS.cream} style={{ fontSize: 8, padding: '3px 10px' }}>NEW WORK</Badge>
+                </div>
+                {/* Bottom content */}
+                <div style={{ position: 'relative', zIndex: 2 }}>
+                  <div style={{
+                    fontFamily: '"Syne", sans-serif', fontSize: 28, fontWeight: 800,
+                    color: COLORS.cream, lineHeight: 1, marginBottom: 6,
+                  }}>BEHIND</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 28, fontWeight: 300,
+                      color: COLORS.warmGray, lineHeight: 1,
+                    }}>the</span>
+                    <span style={{
+                      fontFamily: '"Syne", sans-serif', fontSize: 28, fontWeight: 800,
+                      color: COLORS.orange, lineHeight: 1,
+                    }}>SCENES</span>
+                  </div>
+                  <div style={{ width: 32, height: 2, background: COLORS.gold, marginTop: 16, marginBottom: 12, opacity: 0.6 }} />
+                  <div style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 12, fontWeight: 400,
+                    color: COLORS.warmGray, lineHeight: 1.5, maxWidth: 220,
+                  }}>See how we brought [Client Name]'s vision to life from concept to final cut.</div>
+                </div>
+              </div>
+              <div style={{
+                fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, color: COLORS.warmGray,
+                marginTop: 8, lineHeight: 1.5,
+              }}>Vertical format with text overlay at bottom. Photo/video fills upper portion with gradient fade to black. Mixed-weight headline treatment.</div>
+            </div>
+
+            {/* ---- BEFORE / AFTER SPLIT ---- */}
+            <div>
+              <div style={{ ...label, marginBottom: 12, fontSize: 9 }}>BEFORE / AFTER SPLIT / 1080 x 1080</div>
+              <div style={{
+                aspectRatio: '1/1', borderRadius: 4,
+                border: `1px solid ${COLORS.lightBorder}`, overflow: 'hidden',
+                position: 'relative', display: 'flex', flexDirection: 'column',
+                background: COLORS.black,
+              }}>
+                {/* Top kicker bar */}
+                <div style={{
+                  padding: '12px 24px', display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'center', borderBottom: '1px solid #222',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Starburst size={14} color={COLORS.orange} />
+                    <span style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, fontWeight: 700,
+                      letterSpacing: '0.15em', textTransform: 'uppercase', color: COLORS.orange,
+                    }}>TRANSFORMATION</span>
+                  </div>
+                  <span style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, fontWeight: 400,
+                    letterSpacing: '0.1em', textTransform: 'uppercase', color: COLORS.warmGray,
+                  }}>CLIENT PROJECT</span>
+                </div>
+                {/* Split area */}
+                <div style={{ flex: 1, display: 'flex', position: 'relative' }}>
+                  {/* Left: Before */}
+                  <div style={{
+                    flex: 1, padding: 20, display: 'flex', flexDirection: 'column',
+                    justifyContent: 'space-between', borderRight: `2px solid ${COLORS.orange}`,
+                    background: '#0d0d0d',
+                  }}>
+                    <Badge color={COLORS.warmGray} style={{ fontSize: 8, alignSelf: 'flex-start' }}>BEFORE</Badge>
+                    <div style={{
+                      flex: 1, margin: '12px 0', borderRadius: 2,
+                      background: 'rgba(255,255,255,0.03)', border: '1px dashed #333',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <span style={{
+                        fontFamily: '"Space Grotesk", sans-serif', fontSize: 9,
+                        color: COLORS.warmGray, letterSpacing: '0.15em', textTransform: 'uppercase', opacity: 0.3,
+                      }}>IMAGE</span>
+                    </div>
+                    <div style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, fontWeight: 400,
+                      color: COLORS.warmGray, lineHeight: 1.4, opacity: 0.6,
+                    }}>Outdated brand, no visual system</div>
+                  </div>
+                  {/* Right: After */}
+                  <div style={{
+                    flex: 1, padding: 20, display: 'flex', flexDirection: 'column',
+                    justifyContent: 'space-between', background: '#151510',
+                  }}>
+                    <Badge color={COLORS.orange} style={{ fontSize: 8, alignSelf: 'flex-start' }}>AFTER</Badge>
+                    <div style={{
+                      flex: 1, margin: '12px 0', borderRadius: 2,
+                      background: 'rgba(255,255,255,0.05)', border: '1px dashed #444',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <span style={{
+                        fontFamily: '"Space Grotesk", sans-serif', fontSize: 9,
+                        color: COLORS.warmGray, letterSpacing: '0.15em', textTransform: 'uppercase', opacity: 0.3,
+                      }}>IMAGE</span>
+                    </div>
+                    <div style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, fontWeight: 400,
+                      color: COLORS.cream, lineHeight: 1.4,
+                    }}>Cohesive system across every touchpoint</div>
+                  </div>
+                  {/* Center divider badge */}
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    width: 30, height: 30, borderRadius: 15, background: COLORS.orange,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: `0 0 0 3px ${COLORS.black}, 0 0 16px rgba(232,93,38,0.3)`,
+                  }}>
+                    <span style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 8, fontWeight: 700,
+                      color: '#fff', letterSpacing: '0.1em',
+                    }}>VS</span>
+                  </div>
+                </div>
+                {/* Bottom brand bar */}
+                <div style={{
+                  padding: '10px 24px', display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'center', borderTop: '1px solid #222',
+                }}>
+                  <LogoWordmark color={COLORS.cream} size={16} />
+                  <span style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, fontWeight: 500,
+                    letterSpacing: '0.1em', textTransform: 'uppercase', color: COLORS.warmGray,
+                  }}>@aom_inhouse</span>
+                </div>
+              </div>
+              <div style={{
+                fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, color: COLORS.warmGray,
+                marginTop: 8, lineHeight: 1.5,
+              }}>Dark split layout for transformation stories. Orange divider with VS badge. Both sides stay dark to match the AOM brand.</div>
+            </div>
+
+            {/* ---- TESTIMONIAL CARD ---- */}
+            <div>
+              <div style={{ ...label, marginBottom: 12, fontSize: 9 }}>TESTIMONIAL CARD / 1080 x 1080</div>
+              <div style={{
+                aspectRatio: '1/1', background: COLORS.cream, borderRadius: 4,
+                border: `1px solid ${COLORS.lightBorder}`, overflow: 'hidden',
+                position: 'relative', display: 'flex', flexDirection: 'column',
+              }}>
+                {/* Top accent: thin orange line */}
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                  background: COLORS.orange,
+                }} />
+                {/* Dotted texture background */}
+                <div style={{ position: 'absolute', top: 20, right: 10, opacity: 0.4 }}>
+                  <DottedTexture width={160} height={160} color={COLORS.black} opacity={0.04} />
+                </div>
+                {/* Content */}
+                <div style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                  padding: '40px 36px',
+                }}>
+                  {/* Quote mark */}
+                  <div style={{
+                    fontFamily: '"Syne", sans-serif', fontSize: 72, fontWeight: 800,
+                    color: COLORS.orange, lineHeight: 0.5, marginBottom: 20, opacity: 0.25,
+                  }}>"</div>
+                  {/* Quote text */}
+                  <div style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 17, fontWeight: 500,
+                    color: COLORS.black, lineHeight: 1.55, marginBottom: 28, maxWidth: 300,
+                  }}>AOM doesn't just produce content. They build systems that make your brand work harder every single day.</div>
+                  {/* Gold accent rule */}
+                  <div style={{ width: 40, height: 2, background: COLORS.gold, marginBottom: 20, opacity: 0.5 }} />
+                  {/* Attribution */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 19, background: COLORS.black,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <span style={{
+                        fontFamily: '"Syne", sans-serif', fontSize: 14, fontWeight: 800,
+                        color: COLORS.cream,
+                      }}>MP</span>
+                    </div>
+                    <div>
+                      <div style={{
+                        fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, fontWeight: 700,
+                        color: COLORS.black,
+                      }}>Marlon Primrose</div>
+                      <div style={{
+                        fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, fontWeight: 400,
+                        color: COLORS.warmGray,
+                      }}>Ambition Mechanical Services</div>
+                    </div>
+                  </div>
+                </div>
+                {/* Bottom brand bar */}
+                <div style={{
+                  padding: '12px 24px', borderTop: `1px solid ${COLORS.lightBorder}`,
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <LogoWordmark color={COLORS.black} size={18} />
+                  <LogoMark size={22} color={COLORS.black} accent={COLORS.orange} />
+                </div>
+              </div>
+              <div style={{
+                fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, color: COLORS.warmGray,
+                marginTop: 8, lineHeight: 1.5,
+              }}>Light background testimonial. Large quote mark as decorative element. Avatar initials in black circle. Dotted texture for depth.</div>
+            </div>
+
+            {/* ---- QUICK TIP / EDUCATIONAL CARD ---- */}
+            <div>
+              <div style={{ ...label, marginBottom: 12, fontSize: 9 }}>QUICK TIP / EDUCATIONAL / 1080 x 1080</div>
+              <div style={{
+                aspectRatio: '1/1', background: COLORS.black, borderRadius: 4,
+                border: `1px solid ${COLORS.lightBorder}`, overflow: 'hidden',
+                position: 'relative', display: 'flex', flexDirection: 'column',
+                padding: 32,
+              }}>
+                {/* Top section */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                  marginBottom: 20,
+                }}>
+                  <Badge color={COLORS.orange} bg={COLORS.orange} style={{ color: COLORS.cream }}>PRO TIP</Badge>
+                  <div style={{
+                    fontFamily: '"Syne", sans-serif', fontSize: 48, fontWeight: 800,
+                    color: COLORS.orange, lineHeight: 0.8, opacity: 0.15,
+                  }}>01</div>
+                </div>
+                {/* Title */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{
+                    fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 800,
+                    color: COLORS.cream, lineHeight: 1.1, marginBottom: 4,
+                  }}>WHY YOUR</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 24, fontWeight: 300,
+                      color: COLORS.warmGray, lineHeight: 1.1,
+                    }}>brand</span>
+                    <span style={{
+                      fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 800,
+                      color: COLORS.orange, lineHeight: 1.1,
+                    }}>MATTERS</span>
+                  </div>
+                </div>
+                {/* Divider */}
+                <div style={{ width: 40, height: 2, background: COLORS.gold, marginBottom: 20, opacity: 0.5 }} />
+                {/* Content bullets */}
+                <div style={{ flex: 1 }}>
+                  {[
+                    'Consistency builds trust faster than any ad campaign.',
+                    'Your brand is what people say when you leave the room.',
+                    'Systems beat one-offs. Every time.',
+                  ].map((tip, i) => (
+                    <div key={i} style={{
+                      display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14,
+                    }}>
+                      <span style={{
+                        fontFamily: '"Syne", sans-serif', fontSize: 14, fontWeight: 800,
+                        color: COLORS.orange, lineHeight: 1.4, flexShrink: 0,
+                      }}>{String(i + 1).padStart(2, '0')}</span>
+                      <span style={{
+                        fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, fontWeight: 400,
+                        color: COLORS.cream, lineHeight: 1.5,
+                      }}>{tip}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Bottom bar */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  borderTop: `1px solid #222`, paddingTop: 16,
+                }}>
+                  <LogoWordmark color={COLORS.cream} size={18} />
+                  <div style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, fontWeight: 500,
+                    letterSpacing: '0.15em', color: COLORS.warmGray, textTransform: 'uppercase',
+                  }}>SAVE FOR LATER</div>
+                </div>
+              </div>
+              <div style={{
+                fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, color: COLORS.warmGray,
+                marginTop: 8, lineHeight: 1.5,
+              }}>Educational format with numbered tips. Mixed-weight headline, numbered bullets, strong CTA footer. Dark background for feed contrast.</div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <div style={thickRule} />
+
+      {/* ============================================================ */}
       {/*  FOOTER                                                       */}
       {/* ============================================================ */}
       <footer style={{

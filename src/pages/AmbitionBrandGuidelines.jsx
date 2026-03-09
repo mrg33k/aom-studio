@@ -813,72 +813,270 @@ function OGBrandUpdate() {
             </div>
           </div>
 
-          {/* Social Media Template */}
+          {/* Social Media Templates -- Full Kit */}
           <div className="mb-10">
-            <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '11px', letterSpacing: '0.2em', color: '#6b7280', textTransform: 'uppercase', marginBottom: '12px', display: 'block' }}>Social Media Templates</span>
-            <div className="grid md:grid-cols-3 gap-4">
-              {/* Instagram Post */}
-              <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
-                <div className="w-full h-full p-6 flex flex-col justify-between relative" style={{ backgroundColor: '#0a0e2a' }}>
-                  <div className="absolute top-0 right-0 opacity-5">
-                    <SnowflakePattern size={200} color="#ffffff" opacity={0.5} />
-                  </div>
-                  <div className="relative z-10">
-                    <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '9px', letterSpacing: '0.2em', color: '#dc2626', textTransform: 'uppercase' }}>PROJECT UPDATE</span>
-                    <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '28px', letterSpacing: '0.03em', color: '#ffffff', textTransform: 'uppercase', lineHeight: 1.0, marginTop: '8px' }}>
-                      DIN TAI FUNG<br />KITCHEN BUILDOUT
-                    </p>
-                  </div>
-                  <div className="relative z-10">
-                    <div className="w-6 h-[2px] mb-3" style={{ backgroundColor: '#dc2626' }} />
-                    <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 500, fontSize: '10px', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>
-                      AMBITION MECHANICAL
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '11px', letterSpacing: '0.2em', color: '#dc2626', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Social Media Template Kit</span>
+            <p style={{ color: '#6b7280', fontSize: '13px', lineHeight: 1.5, marginBottom: '20px', maxWidth: '640px' }}>
+              Five production-ready templates for Cleo and Tony. Each uses the OG brand system (navy, red, white, Barlow Condensed). Swap placeholder content for real project details.
+            </p>
 
-              {/* Instagram Story */}
-              <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '9/16', maxHeight: '400px' }}>
-                <div className="w-full h-full p-6 flex flex-col justify-end relative" style={{ backgroundColor: '#1a237e' }}>
-                  <div className="absolute inset-0 opacity-8">
-                    <HexagonalGrid width={400} height={700} color="#ffffff" opacity={0.06} />
-                  </div>
-                  <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ border: '1px solid rgba(255,255,255,0.3)' }}>
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#dc2626' }} />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+              {/* ---- 1. INSTAGRAM POST: Quote/Stat Overlay 1080x1080 ---- */}
+              <div>
+                <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '10px', letterSpacing: '0.15em', color: '#283593', textTransform: 'uppercase', marginBottom: '8px' }}>Instagram Post / 1080 x 1080</p>
+                <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                  <div className="w-full h-full flex flex-col justify-between relative" style={{ backgroundColor: '#0a0e2a' }}>
+                    {/* Background snowflake */}
+                    <div className="absolute top-0 right-0 opacity-[0.04] pointer-events-none" style={{ transform: 'translate(15%, -15%)' }}>
+                      <SnowflakePattern size={280} color="#ffffff" opacity={0.4} />
                     </div>
-                    <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '8px', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>@ambition_air_conditioning</span>
-                  </div>
-                  <div className="relative z-10">
-                    <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '8px', letterSpacing: '0.2em', color: '#dc2626', textTransform: 'uppercase' }}>3AM EMERGENCY</span>
-                    <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '22px', letterSpacing: '0.03em', color: '#ffffff', textTransform: 'uppercase', lineHeight: 1.0, marginTop: '4px' }}>
-                      ABRAZA CHILLER<br />WENT DOWN
-                    </p>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginTop: '8px', lineHeight: 1.5 }}>
-                      On-site in under an hour. System back online by sunrise.
-                    </p>
+                    {/* Top bar */}
+                    <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ backgroundColor: '#dc2626' }} />
+                    {/* Kicker */}
+                    <div className="p-6 relative z-10">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#dc2626' }} />
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '9px', letterSpacing: '0.2em', color: '#dc2626', textTransform: 'uppercase' }}>BY THE NUMBERS</span>
+                      </div>
+                    </div>
+                    {/* Center stat */}
+                    <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-6">
+                      <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 900, fontSize: '80px', letterSpacing: '0.02em', color: '#ffffff', lineHeight: 0.85, textTransform: 'uppercase' }}>
+                        500+
+                      </p>
+                      <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '18px', letterSpacing: '0.08em', color: '#dc2626', textTransform: 'uppercase', marginTop: '8px' }}>
+                        PROJECTS COMPLETED
+                      </p>
+                      <div className="w-12 h-[2px] mt-4 mb-4" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.5)', textAlign: 'center', maxWidth: '260px', lineHeight: 1.5 }}>
+                        From Intel fabs to restaurant kitchens. 23 years of commercial HVAC precision.
+                      </p>
+                    </div>
+                    {/* Bottom brand bar */}
+                    <div className="p-6 relative z-10 flex items-end justify-between">
+                      <div>
+                        <div className="w-8 h-[2px] mb-3" style={{ backgroundColor: '#dc2626' }} />
+                        <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '11px', letterSpacing: '0.06em', color: '#ffffff', textTransform: 'uppercase' }}>
+                          AMBITION MECHANICAL
+                        </p>
+                      </div>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                        @ambition_air_conditioning
+                      </p>
+                    </div>
                   </div>
                 </div>
+                <p style={{ color: '#4b5563', fontSize: '11px', marginTop: '8px', lineHeight: 1.4 }}>Quote/stat overlay. Use for data points, milestones, or bold claims. ExtraBold number as hero element.</p>
               </div>
 
-              {/* LinkedIn Post */}
-              <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '1.91/1' }}>
-                <div className="w-full h-full p-6 flex flex-col justify-between" style={{ backgroundColor: '#ffffff' }}>
-                  <div>
-                    <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '9px', letterSpacing: '0.2em', color: '#dc2626', textTransform: 'uppercase' }}>NOW HIRING</span>
-                    <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '20px', letterSpacing: '0.03em', color: '#1a237e', textTransform: 'uppercase', lineHeight: 1.0, marginTop: '6px' }}>
-                      HVAC TECHNICIANS
-                    </p>
-                  </div>
-                  <div>
-                    <div className="w-6 h-[2px]" style={{ backgroundColor: '#dc2626' }} />
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#6b7280', marginTop: '6px' }}>
-                      Tempe, AZ | Full-time | ROC #320923
-                    </p>
+              {/* ---- 2. STORY / REEL COVER 1080x1920 ---- */}
+              <div>
+                <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '10px', letterSpacing: '0.15em', color: '#283593', textTransform: 'uppercase', marginBottom: '8px' }}>Story / Reel Cover / 1080 x 1920</p>
+                <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '9/16', maxHeight: '440px' }}>
+                  <div className="w-full h-full flex flex-col justify-end relative" style={{ backgroundColor: '#1a237e' }}>
+                    {/* Hex grid background */}
+                    <div className="absolute inset-0 opacity-[0.06] pointer-events-none">
+                      <HexagonalGrid width={400} height={800} color="#ffffff" opacity={0.2} />
+                    </div>
+                    {/* Photo area placeholder */}
+                    <div className="absolute top-0 left-0 right-0" style={{ height: '55%', background: 'linear-gradient(180deg, rgba(26,35,126,0.2) 0%, #1a237e 100%)' }}>
+                      <div className="w-full h-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 500, fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>PHOTO / VIDEO AREA</span>
+                      </div>
+                    </div>
+                    {/* Top bar with handle */}
+                    <div className="absolute top-4 left-5 right-5 flex justify-between items-center z-10">
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ border: '1.5px solid rgba(255,255,255,0.25)' }}>
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#dc2626' }} />
+                      </div>
+                      <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '8px', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>@ambition_air_conditioning</span>
+                    </div>
+                    {/* Bottom content */}
+                    <div className="relative z-10 p-6">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#dc2626' }} />
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '8px', letterSpacing: '0.2em', color: '#dc2626', textTransform: 'uppercase' }}>3AM EMERGENCY</span>
+                      </div>
+                      <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '26px', letterSpacing: '0.03em', color: '#ffffff', textTransform: 'uppercase', lineHeight: 0.95 }}>
+                        ABRAZA CHILLER<br />WENT DOWN
+                      </p>
+                      <div className="w-10 h-[2px] mt-4 mb-3" style={{ backgroundColor: '#dc2626' }} />
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5, maxWidth: '240px' }}>
+                        On-site in under an hour. System back online by sunrise.
+                      </p>
+                      {/* Swipe CTA */}
+                      <div className="mt-4 flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: '#dc2626' }}>
+                          <span style={{ color: '#ffffff', fontSize: '10px', lineHeight: 1 }}>&#8593;</span>
+                        </div>
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>LEARN MORE</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
+                <p style={{ color: '#4b5563', fontSize: '11px', marginTop: '8px', lineHeight: 1.4 }}>Vertical format with text overlay. Photo fills upper area with gradient fade to navy. Emergency response stories perform best.</p>
               </div>
+
+              {/* ---- 3. BEFORE / AFTER SPLIT 1080x1080 ---- */}
+              <div>
+                <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '10px', letterSpacing: '0.15em', color: '#283593', textTransform: 'uppercase', marginBottom: '8px' }}>Before / After Split / 1080 x 1080</p>
+                <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '1/1', position: 'relative' }}>
+                  <div className="w-full h-full flex flex-col" style={{ backgroundColor: '#0a0e2a' }}>
+                    {/* Top kicker bar */}
+                    <div className="py-3 px-5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(26,35,126,0.4)' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#dc2626' }} />
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '9px', letterSpacing: '0.2em', color: '#dc2626', textTransform: 'uppercase' }}>TRANSFORMATION</span>
+                      </div>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>DIN TAI FUNG</span>
+                    </div>
+                    {/* Split area */}
+                    <div className="flex-1 flex" style={{ position: 'relative' }}>
+                      {/* Left: Before */}
+                      <div className="flex-1 flex flex-col p-5" style={{ borderRight: '2px solid #dc2626' }}>
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '11px', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: '8px' }}>BEFORE</span>
+                        <div className="flex-1 rounded flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', color: 'rgba(255,255,255,0.12)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>IMAGE</span>
+                        </div>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '8px', lineHeight: 1.4 }}>Empty kitchen shell, bare ductwork exposed</p>
+                      </div>
+                      {/* Right: After */}
+                      <div className="flex-1 flex flex-col p-5">
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '11px', letterSpacing: '0.15em', color: '#dc2626', textTransform: 'uppercase', marginBottom: '8px' }}>AFTER</span>
+                        <div className="flex-1 rounded flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', color: 'rgba(255,255,255,0.12)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>IMAGE</span>
+                        </div>
+                        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginTop: '8px', lineHeight: 1.4 }}>Full HVAC system installed, tested, and running</p>
+                      </div>
+                      {/* Center badge */}
+                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '28px', height: '28px', borderRadius: '14px', backgroundColor: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 3px #0a0e2a, 0 0 12px rgba(220,38,38,0.4)' }}>
+                        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '8px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.1em' }}>VS</span>
+                      </div>
+                    </div>
+                    {/* Bottom brand bar */}
+                    <div className="py-3 px-5 flex items-center justify-between" style={{ borderTop: '1px solid rgba(26,35,126,0.4)' }}>
+                      <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', color: '#ffffff', textTransform: 'uppercase' }}>
+                        AMBITION MECHANICAL
+                      </p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', color: 'rgba(255,255,255,0.3)' }}>
+                        ROC #320923
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p style={{ color: '#4b5563', fontSize: '11px', marginTop: '8px', lineHeight: 1.4 }}>Split layout for project transformations. Red center divider with VS badge. This is the #1 performing content format in construction.</p>
+              </div>
+
+              {/* ---- 4. TESTIMONIAL CARD 1080x1080 ---- */}
+              <div>
+                <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '10px', letterSpacing: '0.15em', color: '#283593', textTransform: 'uppercase', marginBottom: '8px' }}>Testimonial Card / 1080 x 1080</p>
+                <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                  <div className="w-full h-full flex flex-col relative" style={{ backgroundColor: '#ffffff' }}>
+                    {/* Top red accent bar */}
+                    <div className="w-full h-[4px]" style={{ backgroundColor: '#dc2626' }} />
+                    {/* Navy sidebar accent */}
+                    <div className="absolute left-0 top-[4px] bottom-0 w-[4px]" style={{ backgroundColor: '#1a237e' }} />
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col justify-center p-8 pl-10">
+                      {/* Large quote mark */}
+                      <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '96px', fontWeight: 900, color: '#1a237e', lineHeight: 0.5, opacity: 0.08, marginBottom: '8px' }}>"</div>
+                      {/* Quote text */}
+                      <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '20px', letterSpacing: '0.01em', color: '#1a237e', lineHeight: 1.3, maxWidth: '320px', textTransform: 'uppercase' }}>
+                        AMBITION DOESN'T JUST FIX SYSTEMS. THEY BUILD RELATIONSHIPS THAT LAST DECADES.
+                      </p>
+                      {/* Attribution */}
+                      <div className="mt-6 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#1a237e' }}>
+                          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '13px', color: '#ffffff' }}>JD</span>
+                        </div>
+                        <div>
+                          <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.04em', color: '#1a237e', textTransform: 'uppercase' }}>JOHN DOE</p>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', color: '#6b7280' }}>Facilities Director, Banner Health</p>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Bottom brand bar */}
+                    <div className="px-8 py-4 flex items-center justify-between" style={{ borderTop: '1px solid #e5e7eb' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ border: '1.5px solid #1a237e' }}>
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#dc2626' }} />
+                        </div>
+                        <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', color: '#1a237e', textTransform: 'uppercase' }}>
+                          AMBITION MECHANICAL
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="w-3 h-3" style={{ color: '#dc2626' }}>
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p style={{ color: '#4b5563', fontSize: '11px', marginTop: '8px', lineHeight: 1.4 }}>White background testimonial. Navy sidebar accent, red top bar. Initials avatar. Star rating in bottom bar builds social proof.</p>
+              </div>
+
+              {/* ---- 5. QUICK TIP / EDUCATIONAL 1080x1080 ---- */}
+              <div>
+                <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600, fontSize: '10px', letterSpacing: '0.15em', color: '#283593', textTransform: 'uppercase', marginBottom: '8px' }}>Quick Tip / Educational / 1080 x 1080</p>
+                <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                  <div className="w-full h-full flex flex-col relative" style={{ backgroundColor: '#0a0e2a' }}>
+                    {/* Background hex grid */}
+                    <div className="absolute inset-0 opacity-[0.04] pointer-events-none">
+                      <HexagonalGrid width={500} height={500} color="#283593" opacity={0.3} />
+                    </div>
+                    {/* Top section with badge + number */}
+                    <div className="p-6 flex items-start justify-between relative z-10">
+                      <div className="flex items-center gap-2">
+                        <div className="px-3 py-1 rounded-sm" style={{ backgroundColor: '#dc2626' }}>
+                          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '9px', letterSpacing: '0.15em', color: '#ffffff', textTransform: 'uppercase' }}>PRO TIP</span>
+                        </div>
+                      </div>
+                      <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 900, fontSize: '48px', color: '#1a237e', lineHeight: 0.8, opacity: 0.4 }}>01</span>
+                    </div>
+                    {/* Title */}
+                    <div className="px-6 relative z-10">
+                      <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '28px', letterSpacing: '0.03em', color: '#ffffff', textTransform: 'uppercase', lineHeight: 0.95 }}>
+                        WHY PREVENTIVE<br />MAINTENANCE<br /><span style={{ color: '#dc2626' }}>SAVES YOU 40%</span>
+                      </p>
+                    </div>
+                    {/* Divider */}
+                    <div className="px-6 mt-4 relative z-10">
+                      <div className="w-10 h-[2px]" style={{ backgroundColor: '#dc2626' }} />
+                    </div>
+                    {/* Bullet points */}
+                    <div className="flex-1 px-6 mt-4 relative z-10">
+                      {[
+                        'Extend equipment lifespan by 5-10 years',
+                        'Reduce emergency callouts by 60%',
+                        'Lower energy costs with optimized systems',
+                      ].map((tip, i) => (
+                        <div key={i} className="flex items-start gap-3 mb-3">
+                          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '13px', color: '#dc2626', lineHeight: 1.5, flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</span>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{tip}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Bottom brand bar */}
+                    <div className="px-6 py-4 flex items-center justify-between relative z-10" style={{ borderTop: '1px solid rgba(26,35,126,0.3)' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#dc2626' }} />
+                        </div>
+                        <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: '10px', letterSpacing: '0.06em', color: '#ffffff', textTransform: 'uppercase' }}>
+                          AMBITION MECHANICAL
+                        </p>
+                      </div>
+                      <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '9px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>SAVE THIS</span>
+                    </div>
+                  </div>
+                </div>
+                <p style={{ color: '#4b5563', fontSize: '11px', marginTop: '8px', lineHeight: 1.4 }}>Educational format with numbered tips. ExtraBold headline, numbered bullets. Dark background for feed contrast. "Save this" CTA drives bookmarks.</p>
+              </div>
+
             </div>
           </div>
 
