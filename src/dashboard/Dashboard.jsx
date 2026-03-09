@@ -32,7 +32,10 @@ async function fetchFile(path) {
   )
   if (!res.ok) return null
   const data = await res.json()
-  return atob(data.content.replace(/\n/g, ''))
+  const raw = atob(data.content.replace(/\n/g, ''))
+  // atob only handles Latin-1; decode as UTF-8 to preserve emojis
+  const bytes = Uint8Array.from(raw, c => c.charCodeAt(0))
+  return new TextDecoder().decode(bytes)
 }
 
 // ─── MARKDOWN PARSERS ─────────────────────────────────────────────────────────
@@ -240,8 +243,8 @@ function AgentRow({ agent, selected, onClick, taskCount }) {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
-          <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.role}</div>
-          {lastActive && <span style={{ fontSize: 9, color: '#383838', flexShrink: 0, marginLeft: 4 }}>{lastActive}</span>}
+          <div style={{ fontSize: 11, color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.role}</div>
+          {lastActive && <span style={{ fontSize: 10, color: '#383838', flexShrink: 0, marginLeft: 4 }}>{lastActive}</span>}
         </div>
       </div>
     </button>
@@ -1605,7 +1608,7 @@ function CommandBar({ onRefresh, isMobile }) {
       {/* Bar */}
       <div style={{ position: 'fixed', bottom: isMobile ? 56 : 0, left: 0, right: 0, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', zIndex: 99 }}>
         {/* Mode tabs + agent selector row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, padding: isMobile ? '0 10px' : '0 20px', height: 32, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, padding: isMobile ? '0 10px' : '0 20px', height: isMobile ? 44 : 32, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           {[
             { id: 'task', label: 'TASK', color: GREEN },
             { id: 'chat', label: 'CHAT', color: ORANGE },
@@ -1620,12 +1623,12 @@ function CommandBar({ onRefresh, isMobile }) {
                 if (m.id === 'task') { setNotesOpen(false); setTaskNotes('') }
               }}
               style={{
-                padding: '4px 12px', borderRadius: 0, fontSize: 10, fontWeight: 800,
+                padding: isMobile ? '10px 14px' : '4px 12px', borderRadius: 0, fontSize: 10, fontWeight: 800,
                 letterSpacing: '0.1em', cursor: 'pointer', border: 'none',
                 background: barMode === m.id ? `${m.color}15` : 'transparent',
                 color: barMode === m.id ? m.color : '#444',
                 borderBottom: barMode === m.id ? `2px solid ${m.color}` : '2px solid transparent',
-                transition: 'all 0.15s',
+                transition: 'all 0.15s', minHeight: 44,
               }}
             >
               {m.label}
@@ -1774,6 +1777,7 @@ export default function Dashboard() {
   const [mobileFilter, setMobileFilter] = useState('all') // 'all' | 'unassigned' | 'assigned' | 'blocked'
   const [mobileAgentPanel, setMobileAgentPanel] = useState(false)
   const [refreshProgress, setRefreshProgress] = useState(0)
+  const [collapsedSections, setCollapsedSections] = useState({}) // mobile collapsible sections
   const refreshTimerRef = useRef(null)
   const progressRef = useRef(null)
 
@@ -1870,9 +1874,9 @@ export default function Dashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
           {loading && <span style={{ fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>syncing…</span>}
           {lastFetched && !loading && !isMobile && <span style={{ fontSize: 10, color: '#333' }}>{lastFetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>}
-          <button onClick={() => setCouncilOpen(true)} style={{ background: `${ORANGE}12`, border: `1px solid ${ORANGE}30`, borderRadius: 6, color: ORANGE, fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700 }}>COUNCIL</button>
+          <button onClick={() => setCouncilOpen(true)} style={{ background: `${ORANGE}12`, border: `1px solid ${ORANGE}30`, borderRadius: 6, color: ORANGE, fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700, minHeight: 44, display: 'flex', alignItems: 'center' }}>COUNCIL</button>
           {!isMobile && <button onClick={load} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#666', fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 600 }}>REFRESH</button>}
-          <button onClick={() => { localStorage.removeItem('aom_ops_auth'); setAuthed(false) }} style={{ background: 'none', border: 'none', color: '#333', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em' }}>LOCK</button>
+          <button onClick={() => { localStorage.removeItem('aom_ops_auth'); setAuthed(false) }} style={{ background: 'none', border: 'none', color: '#333', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em', minHeight: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>LOCK</button>
         </div>
       </div>
 
@@ -1968,7 +1972,7 @@ export default function Dashboard() {
                         <StatusPill status={a.status} />
                       </div>
                     </div>
-                    <div style={{ fontSize: 10, color: '#555', marginTop: 2 }}>{a.role}</div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{a.role}</div>
                   </div>
                 </div>
               )
@@ -2018,7 +2022,7 @@ export default function Dashboard() {
                     return (
                       <div key={i} style={{
                         background: '#111', border: `1px solid ${isUrgent ? 'rgba(255,79,0,0.15)' : 'rgba(255,255,255,0.06)'}`,
-                        borderRadius: 12, padding: '14px 16px', minWidth: 200, maxWidth: 260, flexShrink: 0,
+                        borderRadius: 12, padding: '14px 16px', width: 'calc(100vw - 80px)', maxWidth: 280, flexShrink: 0,
                         scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: 6,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -2085,7 +2089,7 @@ export default function Dashboard() {
                           background: active ? `${f.color}20` : 'rgba(255,255,255,0.03)',
                           border: `1px solid ${active ? `${f.color}40` : 'rgba(255,255,255,0.06)'}`,
                           borderRadius: 8, padding: '8px 14px', cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, minHeight: 40,
+                          display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, minHeight: 44,
                         }}
                       >
                         <span style={{ fontSize: 12, fontWeight: 700, color: active ? f.color : '#666' }}>{f.label}</span>
@@ -2095,29 +2099,47 @@ export default function Dashboard() {
                   })}
                 </div>
 
-                {/* Filtered columns */}
-                {(mobileFilter === 'all' ? COLUMNS : COLUMNS.filter(c => c.id === mobileFilter)).map(col => {
+                {/* Filtered columns (collapsible on mobile when showing all) */}
+                {(mobileFilter === 'all' ? COLUMNS : COLUMNS.filter(c => c.id === mobileFilter)).map((col, colIdx) => {
                   const colTasks = filteredTasks.filter(t => t.column === col.id)
                   if (mobileFilter !== 'all' && colTasks.length === 0) {
                     return (
                       <div key={col.id} style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', fontSize: 12, color: '#333' }}>No {col.label.toLowerCase()} tasks</div>
                     )
                   }
+                  // Default: first section expanded, rest collapsed
+                  const isCollapsed = mobileFilter === 'all' && (collapsedSections[col.id] !== undefined ? collapsedSections[col.id] : colIdx > 0)
+                  const toggleSection = () => {
+                    setCollapsedSections(prev => ({
+                      ...prev,
+                      [col.id]: prev[col.id] !== undefined ? !prev[col.id] : colIdx === 0,
+                    }))
+                  }
                   return (
                     <div key={col.id}>
                       {mobileFilter === 'all' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, position: 'sticky', top: 0, background: '#020202', zIndex: 5, paddingTop: 4, paddingBottom: 4 }}>
-                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: col.color }} />
+                        <button
+                          onClick={toggleSection}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8, marginBottom: isCollapsed ? 0 : 10,
+                            position: 'sticky', top: 0, background: '#020202', zIndex: 5, paddingTop: 8, paddingBottom: 8,
+                            width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left', minHeight: 44,
+                          }}
+                        >
+                          <span style={{ fontSize: 10, color: '#444', transition: 'transform 0.15s', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)', flexShrink: 0 }}>&#9654;</span>
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: col.color, flexShrink: 0 }} />
                           <span style={{ fontSize: 12, fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{col.label}</span>
                           <span style={{ fontSize: 11, color: col.color, background: `${col.color}18`, borderRadius: 5, padding: '2px 8px', fontWeight: 700 }}>{colTasks.length}</span>
+                        </button>
+                      )}
+                      {!isCollapsed && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {colTasks.map(t => <MobileTaskCard key={t.id} task={t} onRefresh={load} />)}
+                          {colTasks.length === 0 && mobileFilter === 'all' && (
+                            <div style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', fontSize: 12, color: '#333' }}>{col.desc}</div>
+                          )}
                         </div>
                       )}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {colTasks.map(t => <MobileTaskCard key={t.id} task={t} onRefresh={load} />)}
-                        {colTasks.length === 0 && mobileFilter === 'all' && (
-                          <div style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', fontSize: 12, color: '#333' }}>{col.desc}</div>
-                        )}
-                      </div>
                     </div>
                   )
                 })}
@@ -2204,7 +2226,7 @@ function Stat({ label, value, color, compact }) {
   return (
     <div style={{ display: 'flex', alignItems: compact ? 'center' : 'baseline', gap: compact ? 3 : 5 }}>
       <span style={{ fontSize: compact ? 13 : 15, fontWeight: 800, color: color || '#fff', letterSpacing: '-0.02em' }}>{value}</span>
-      <span style={{ fontSize: compact ? 8 : 9, color: '#444', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: compact ? 10 : 9, color: '#444', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>{label}</span>
     </div>
   )
 }
