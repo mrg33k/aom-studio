@@ -55,8 +55,10 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: 'easeOut' }}
         >
-          <h1 className="font-headline text-[2.6rem] sm:text-6xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter text-aom-warm-white leading-[0.85] max-w-[45ch]">
-            BRAND INFRASTRUCTURE
+          <h1 className="font-headline text-[2.25rem] sm:text-6xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter text-aom-warm-white leading-[0.85] max-w-[45ch]">
+            BRAND
+            <br className="sm:hidden" />
+            INFRASTRUCTURE
             <br />
             <span className="text-aom-stone">FOR COMPANIES</span>
             <br />
