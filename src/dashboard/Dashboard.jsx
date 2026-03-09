@@ -149,23 +149,9 @@ function getTaskPriorityTier(task) {
 }
 
 function sortTasksByPriority(tasks) {
-  // Attach priority info, preserving original index for stable sort
-  const tagged = tasks.map((t, i) => ({ ...t, _pri: getTaskPriorityTier(t), _origIdx: i }))
-
-  tagged.sort((a, b) => {
-    // Sort by tier first
-    if (a._pri.tier !== b._pri.tier) return a._pri.tier - b._pri.tier
-    // Within Tier 1, sort by closest deadline
-    if (a._pri.tier === 1) {
-      const da = a._pri.daysLeft ?? Infinity
-      const db = b._pri.daysLeft ?? Infinity
-      if (da !== db) return da - db
-    }
-    // Otherwise maintain original order
-    return a._origIdx - b._origIdx
-  })
-
-  return tagged
+  // Newest first (reverse of file order, since newest are added to top of section)
+  // Tasks from punch-list.md are already newest-first, just preserve that order
+  return tasks.map((t, i) => ({ ...t, _pri: getTaskPriorityTier(t), _origIdx: i }))
 }
 
 function inferAgentStatus(md) {
