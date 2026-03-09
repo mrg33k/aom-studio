@@ -20,7 +20,7 @@ const proofPoints = [
   },
 ]
 
-export default function ConstructionCallout() {
+export default function ConstructionCallout({ openBrief }) {
   return (
     <section id="construction" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
       {/* Subtle warm accent */}
@@ -118,12 +118,12 @@ export default function ConstructionCallout() {
                   See Ambition Mechanical <ArrowRight size={14} />
                 </a>
 
-                <a
-                  href="#brief"
-                  className="block bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
+                <button
+                  onClick={() => openBrief()}
+                  className="block w-full bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
                 >
                   See What We'd Build For You
-                </a>
+                </button>
               </div>
             </div>
           </motion.div>

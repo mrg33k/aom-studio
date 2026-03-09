@@ -29,7 +29,7 @@ const pathways = [
   },
 ]
 
-export default function HeroSection() {
+export default function HeroSection({ openBrief }) {
 
   return (
     <section className="relative min-h-[85vh] flex items-center bg-aom-night overflow-hidden">
@@ -91,12 +91,12 @@ export default function HeroSection() {
           transition={{ duration: 0.7, delay: 1.0, ease: 'easeOut' }}
           className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start gap-4"
         >
-          <a
-            href="#brief"
+          <button
+            onClick={() => openBrief()}
             className="bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 flex items-center gap-2 text-sm md:text-base"
           >
             See What We'd Build For You <ArrowRight size={16} />
-          </a>
+          </button>
           <a
             href="#work"
             className="border border-aom-warm-white text-aom-warm-white font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-aom-warm-white hover:text-aom-night transition-all text-sm md:text-base"

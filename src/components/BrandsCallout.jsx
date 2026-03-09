@@ -20,7 +20,7 @@ const proofPoints = [
   },
 ]
 
-export default function BrandsCallout() {
+export default function BrandsCallout({ openBrief }) {
   return (
     <section id="brands" className="py-16 md:py-24 bg-aom-surface relative overflow-hidden">
       {/* Subtle warm amber gradient wash */}
@@ -108,12 +108,12 @@ export default function BrandsCallout() {
               </div>
 
               <div className="mt-auto">
-                <a
-                  href="#brief"
-                  className="block bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
+                <button
+                  onClick={() => openBrief()}
+                  className="block w-full bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
                 >
                   See What We'd Produce For You
-                </a>
+                </button>
               </div>
             </div>
           </motion.div>

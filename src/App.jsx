@@ -697,16 +697,16 @@ export default function App() {
           </header>
 
           {/* --- NEW HERO --- */}
-          <HeroSection />
+          <HeroSection openBrief={openBrief} />
 
           {/* --- SERVICES --- */}
           <ServicesGrid />
 
           {/* --- CONSTRUCTION VERTICAL --- */}
-          <ConstructionCallout />
+          <ConstructionCallout openBrief={openBrief} />
 
           {/* --- BRANDS + CORPORATE --- */}
-          <BrandsCallout />
+          <BrandsCallout openBrief={openBrief} />
 
           {/* --- DIGITAL + SYSTEMS --- */}
           <AITeaser />
