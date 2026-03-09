@@ -5,6 +5,7 @@ import App from './App.jsx'
 import BrandGuidelines from './pages/BrandGuidelines.jsx'
 import BrandsHub from './pages/BrandsHub.jsx'
 import AmbitionBrandGuidelines from './pages/AmbitionBrandGuidelines.jsx'
+import AmbitionBrandGuidelinesV2 from './pages/AmbitionBrandGuidelinesV2.jsx'
 import Social from './pages/Social.jsx'
 import BrandGuidelinesV4 from './pages/BrandGuidelinesV4.jsx'
 import './index.css'
@@ -27,14 +28,15 @@ function ConstructionRedirect() {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Suspense fallback={<div className="min-h-screen bg-[#FDF6EC] flex items-center justify-center text-[#7A7267] font-body text-sm">Loading...</div>}>
+      <Suspense fallback={<div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-[#8A847C] font-body text-sm">Loading...</div>}>
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandGuidelines />} />
           <Route path="/brand/v4" element={<BrandGuidelinesV4 />} />
           <Route path="/brands" element={<BrandsHub />} />
-          <Route path="/brands/ambition" element={<AmbitionBrandGuidelines />} />
+          <Route path="/brands/ambition" element={<AmbitionBrandGuidelinesV2 />} />
+          <Route path="/brands/ambition/v1" element={<AmbitionBrandGuidelines />} />
           <Route path="/social" element={<Social />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>

@@ -53,8 +53,8 @@ const TIMING_OPTIONS = ["ASAP (1-2 weeks)", "This month", "Next 30-60 days", "Qu
 const CHARS = "-_~*+[]!@#%&";
 
 const INITIAL_FORM_STATE = {
-  name: '', 
-  email: '', 
+  name: '',
+  email: '',
   budget: '',
   goal: '',
   problem: '',
@@ -69,8 +69,6 @@ const TRUST_METRICS = [
   { icon: Users, label: "Lean Crew", value: "Cinema-grade", sub: "Small team. Big output. No layers of account managers between you and the people doing the work." },
   { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Every piece looks like it came from the same team. Because it did." },
 ];
-
-
 
 const TESTIMONIALS = [
   {
@@ -121,8 +119,6 @@ const PORTFOLIO_DATA = {
       { title: "United Food Bank", sub: "Year End Impact", url: "https://gumlet.tv/watch/698a5fcdfc23d3d76fa893b8/", tags: ["Non-Profit"] },
       { title: "UFB Volunteer", sub: "Community Doc", url: "https://gumlet.tv/watch/698a5fc4fc23d3d76fa892d9/", tags: ["Doc"] },
       { title: "Aiper Pool Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a58c0aec3d4e420c21b78/", tags: ["Consumer"] },
-
-      // added from your note
       { title: "Ducor Event Recap", sub: "Event Recap", url: "https://gumlet.tv/watch/698a53a4aec3d4e420c17ee0/", tags: ["Event", "Brand"] },
       { title: "Cook & Craft Website Background", sub: "Website Background", url: "https://gumlet.tv/watch/698a53a9873071aec5c8b9d7/", tags: ["Web", "Food"] },
       { title: "Ulisgold Pilates", sub: "Wellness Brand", url: "https://gumlet.tv/watch/698a5ebcaec3d4e420c2c573/", tags: ["Wellness", "Brand"] },
@@ -130,7 +126,6 @@ const PORTFOLIO_DATA = {
       { title: "Ernie Stevens Jr. Tribute", sub: "Tribute Film", url: "https://gumlet.tv/watch/698a5a6cfc23d3d76fa812a7/", tags: ["Doc", "Tribute"] },
       { title: "Aiper Homeshow Event Recap", sub: "Event Recap", url: "https://gumlet.tv/watch/698a58ae873071aec5c953ea/", tags: ["Event", "Consumer"] },
       { title: "Founders Retreat", sub: "Event Story", url: "https://gumlet.tv/watch/698a5b05873071aec5c9a7cd/", tags: ["Event", "Culture"] }
-
     ],
     social: [
       { title: "Lagos White Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a596eaec3d4e420c22a9a/", tags: ["9:16", "Promo"] },
@@ -154,8 +149,6 @@ const PORTFOLIO_DATA = {
     social: [
       { title: "Tiffanys Walkthrough", sub: "Luxury Walkthrough", url: "https://gumlet.tv/watch/698a580bfc23d3d76fa7bd7c/", tags: ["9:16", "Retail"] },
       { title: "Primrose Ambition", sub: "Build Update", url: "https://gumlet.tv/watch/698a581daec3d4e420c20b94/", tags: ["9:16", "Build"] },
-
-      // added from your note
       { title: "NGOTS Restoration", sub: "Service Promo", url: "https://gumlet.tv/watch/698a5a7d873071aec5c99b08/", tags: ["9:16", "Service"] }
     ]
   },
@@ -168,8 +161,6 @@ const PORTFOLIO_DATA = {
       { title: "N2 Local News", sub: "Media Re-imagined", url: "https://gumlet.tv/watch/698a5b26aec3d4e420c27039/", tags: ["Media", "Tech"] },
       { title: "NEB Docs / HUUB", sub: "SaaS Case Study", url: "https://gumlet.tv/watch/698a63acfc23d3d76fa8f585/", tags: ["GovTech"] },
       { title: "Gitex Dubai", sub: "Global Tech Expo", url: "https://gumlet.tv/watch/698a6227fc23d3d76fa8cd57/", tags: ["Tech", "Global"] },
-
-      // added from your note
       { title: "IAAPA 2026 Full Recap", sub: "Tech Event Recap", url: "https://gumlet.tv/watch/698a5391aec3d4e420c17bd3/", tags: ["Event", "Tech"] }
     ],
     social: [
@@ -201,14 +192,36 @@ const getGumletPlayerEmbed = (url) => {
   return id ? `https://play.gumlet.io/embed/${id}?autoplay=true` : url;
 };
 
+// --- PATTERN STRIP DIVIDER ---
+const PatternStrip = ({ variant = 'diagonal' }) => {
+  const patterns = {
+    diagonal: {
+      background: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(232,93,38,0.08) 5px, rgba(232,93,38,0.08) 6px)',
+    },
+    dots: {
+      background: 'radial-gradient(circle, #E85D26 1px, transparent 1px)',
+      backgroundSize: '20px 20px',
+    },
+    crosshatch: {
+      background: `repeating-linear-gradient(45deg, rgba(232,93,38,0.05) 0px, rgba(232,93,38,0.05) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(-45deg, rgba(232,93,38,0.05) 0px, rgba(232,93,38,0.05) 1px, transparent 1px, transparent 8px)`,
+    },
+  };
+  return (
+    <div className="w-full h-8 md:h-12 relative overflow-hidden">
+      <div className="absolute inset-0" style={patterns[variant]} />
+    </div>
+  );
+};
+
 // --- REUSABLE COMPONENTS ---
 
 const TextureOverlay = () => (
   <>
     <style dangerouslySetInnerHTML={{ __html: `
       .clip-path-slant { clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%); }
-      .text-outline { -webkit-text-stroke: 1.5px #0A0A0A; color: transparent; }
+      .text-outline { -webkit-text-stroke: 1.5px #F0ECE6; color: transparent; }
       .text-outline-white { -webkit-text-stroke: 1.5px white; color: transparent; }
+      .text-outline-dark { -webkit-text-stroke: 1.5px #0A0A0A; color: transparent; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -238,33 +251,6 @@ const ScrambleText = ({ text, className = "", hover = true }) => {
   return <span className={`inline-block ${className}`} onMouseEnter={hover ? startScramble : undefined}>{displayText}</span>;
 };
 
-const TypewriterCycle = ({ words, className = "" }) => {
-  const [index, setIndex] = useState(0);
-  const [subIndex, setSubIndex] = useState(0);
-  const [reverse, setReverse] = useState(false);
-  const [blink, setBlink] = useState(true);
-  useEffect(() => {
-    if (index >= words.length) { setIndex(0); return; }
-    const currentWord = words[index];
-    if (subIndex === currentWord.length + 1 && !reverse) {
-      const timeout = setTimeout(() => setReverse(true), 1500);
-      return () => clearTimeout(timeout);
-    }
-    if (subIndex === 0 && reverse) {
-      setReverse(false);
-      setIndex((prev) => (prev + 1) % words.length);
-      return;
-    }
-    const timeout = setTimeout(() => { setSubIndex((prev) => prev + (reverse ? -1 : 1)); }, reverse ? 30 : 60);
-    return () => clearTimeout(timeout);
-  }, [subIndex, index, reverse, words]);
-  useEffect(() => {
-    const timeout = setTimeout(() => setBlink((prev) => !prev), 500);
-    return () => clearTimeout(timeout);
-  }, [blink]);
-  return <span className={`${className}`}>{words[index].substring(0, subIndex)}<span className={`ml-1 text-orange-600 ${blink ? "opacity-100" : "opacity-0"}`}>_</span></span>;
-};
-
 const FadeIn = ({ children, className = "", delay = 0 }) => (
   <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-10%" }} transition={{ duration: 0.8, delay }} className={className}>
     {children}
@@ -285,7 +271,7 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
       ([entry]) => {
         if (entry.isIntersecting) {
           setStarted(true);
-          obs.disconnect(); 
+          obs.disconnect();
         }
       },
       {
@@ -317,62 +303,62 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
 };
 
 const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) => (
-  <div className={`relative p-8 border overflow-hidden shadow-sm flex flex-col justify-between ${accent ? "border-2 border-aom-black bg-white" : "border border-aom-light-border bg-white"}`}>
+  <div className={`relative p-8 border overflow-hidden shadow-sm flex flex-col justify-between ${accent ? "border-2 border-aom-orange/40 bg-white/[0.05]" : "border border-white/10 bg-white/[0.03]"}`}>
     <div className="relative z-10">
       <div className="flex items-center justify-between mb-8">
-        <div className="w-10 h-10 border border-aom-light-border bg-aom-cream flex items-center justify-center">{Icon && <Icon className="text-aom-orange" size={18} />}</div>
-        <div className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-warm-gray"><ScrambleText text={kicker} hover={false} /></div>
+        <div className="w-10 h-10 border border-white/10 bg-white/5 flex items-center justify-center">{Icon && <Icon className="text-aom-orange" size={18} />}</div>
+        <div className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted"><ScrambleText text={kicker} hover={false} /></div>
       </div>
       <div>
-        <div className="text-5xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] leading-[0.85] text-aom-black">{valueNode}</div>
-        <p className="text-aom-warm-gray text-xs mt-6 leading-relaxed max-w-xs font-body">{sub}</p>
+        <div className="text-5xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] leading-[0.85] text-aom-text-light">{valueNode}</div>
+        <p className="text-aom-text-muted text-xs mt-6 leading-relaxed max-w-xs font-body">{sub}</p>
       </div>
     </div>
   </div>
 ));
 
 const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
-  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-12 border shadow-sm overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-2 border-aom-orange bg-aom-orange/5" : "border border-aom-light-border bg-white hover:border-aom-black/30"}`}>
+  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-12 border shadow-sm overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-2 border-aom-orange bg-aom-orange/10" : "border border-white/10 bg-white/[0.03] hover:border-white/20"}`}>
     <div className="flex items-center justify-between mb-8">
-      <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-aom-orange bg-aom-orange text-white" : "border-aom-light-border bg-aom-cream text-aom-warm-gray group-hover:text-aom-black"}`}>
+      <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-aom-orange bg-aom-orange text-white" : "border-white/10 bg-white/5 text-aom-text-muted group-hover:text-aom-text-light"}`}>
         <idea.icon size={20} />
       </div>
       {isSelected && <CheckCircle2 size={24} className="text-aom-orange" />}
     </div>
     <div className="flex-grow">
-      <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-3">{idea.title}</p>
-      <h3 className={`text-xl md:text-2xl font-body font-normal leading-relaxed transition-colors ${isSelected ? "text-aom-black" : "text-aom-warm-gray group-hover:text-aom-black"}`}>"{idea.statement}"</h3>
+      <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-3">{idea.title}</p>
+      <h3 className={`text-xl md:text-2xl font-body font-normal leading-relaxed transition-colors ${isSelected ? "text-aom-text-light" : "text-aom-text-muted group-hover:text-aom-text-light"}`}>"{idea.statement}"</h3>
     </div>
-    <div className="mt-8 pt-6 border-t border-aom-light-border flex justify-between items-end">
-      <div><p className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-warm-gray mb-1">Starting At</p><p className="text-lg font-headline font-extrabold text-aom-orange tracking-tight">{idea.price}</p></div>
-      <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isSelected ? "bg-aom-black text-white border-aom-black rotate-0" : "bg-transparent text-aom-warm-gray border-aom-light-border -rotate-45 group-hover:text-aom-black group-hover:border-aom-black/30"}`}><ArrowRight size={14} /></div>
+    <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-end">
+      <div><p className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted mb-1">Starting At</p><p className="text-lg font-headline font-extrabold text-aom-orange tracking-tight">{idea.price}</p></div>
+      <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isSelected ? "bg-aom-orange text-white border-aom-orange rotate-0" : "bg-transparent text-aom-text-muted border-white/10 -rotate-45 group-hover:text-aom-text-light group-hover:border-white/20"}`}><ArrowRight size={14} /></div>
     </div>
   </button>
 ));
 
 const TestimonialCard = memo(({ t }) => (
-  <div className="p-8 border border-aom-light-border bg-white shadow-sm hover:border-aom-orange/40 transition-colors">
+  <div className="p-8 border border-white/10 bg-white/[0.03] backdrop-blur-sm hover:border-aom-orange/40 transition-all hover:-translate-y-1 duration-300">
     <div className="inline-flex items-center gap-2 bg-aom-orange/10 border border-aom-orange/20 px-3 py-1.5 mb-6">
       <TrendingUp size={10} className="text-aom-orange" /><span className="text-aom-orange font-bold text-[10px] uppercase tracking-[0.15em] font-body">{t.metric}</span>
     </div>
-    <p className="text-aom-black text-lg font-headline font-bold tracking-[-0.01em] leading-snug">"{t.quote}"</p>
-    <div className="mt-8 pt-4 border-t border-aom-light-border">
-      <p className="text-[11px] font-headline font-bold uppercase tracking-[0.15em] text-aom-black">{t.name}</p>
-      <p className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-warm-gray mt-1">{t.company}</p>
+    <p className="text-aom-text-light text-lg font-headline font-bold tracking-[-0.01em] leading-snug">"{t.quote}"</p>
+    <div className="mt-8 pt-4 border-t border-white/10">
+      <p className="text-[11px] font-headline font-bold uppercase tracking-[0.15em] text-aom-text-light">{t.name}</p>
+      <p className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted mt-1">{t.company}</p>
     </div>
   </div>
 ));
 
 const FAQItem = memo(({ item, open, onToggle }) => (
-  <div className="border border-aom-light-border bg-white">
+  <div className="border border-white/10 bg-white/[0.03]">
     <button onClick={onToggle} className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left hover:bg-aom-orange/5 transition-colors">
-      <span className="text-aom-black font-headline font-bold uppercase tracking-[-0.01em] text-base">{item.q}</span>
-      <ChevronRight className={`text-aom-orange transition-transform ${open ? "rotate-90" : "rotate-0"}`} />
+      <span className="text-aom-text-light font-headline font-bold uppercase tracking-[-0.01em] text-base">{item.q}</span>
+      <ChevronRight className={`text-aom-orange transition-transform shrink-0 ${open ? "rotate-90" : "rotate-0"}`} />
     </button>
     <AnimatePresence initial={false}>
       {open && (
         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-          <div className="px-6 pb-8 text-aom-warm-gray text-sm leading-relaxed font-body">{item.a}</div>
+          <div className="px-6 pb-8 text-aom-text-muted text-sm leading-relaxed font-body">{item.a}</div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -394,7 +380,7 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, isGrid = false
       ? 'aspect-video w-full shadow-lg'
       : 'aspect-video w-[360px] md:w-[640px] shadow-lg shrink-0';
   return (
-    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-aom-light-border bg-aom-cream h-full cursor-pointer transition-all duration-300 hover:border-aom-orange/60 hover:shadow-aom-orange/10 hover:shadow-lg select-none ${sizeClasses}`}>
+    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-white/10 bg-aom-night h-full cursor-pointer transition-all duration-300 hover:border-aom-orange/60 hover:shadow-aom-orange/10 hover:shadow-lg select-none ${sizeClasses}`}>
       <div className="absolute inset-0 bg-aom-black">
         {shouldLoad && embedUrl && (
           <iframe src={embedUrl} loading="lazy" className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105" title={title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
@@ -427,7 +413,7 @@ const PortfolioExpander = ({ campaigns, onPlay }) => {
         )}
       </AnimatePresence>
       {!expanded && (
-        <button onClick={() => setExpanded(true)} className="w-full py-6 border border-aom-light-border bg-white text-aom-warm-gray font-headline font-bold uppercase tracking-[0.1em] text-sm hover:border-aom-orange/40 hover:text-aom-black transition-all mt-8">
+        <button onClick={() => setExpanded(true)} className="w-full py-6 border border-white/10 bg-white/[0.03] text-aom-text-muted font-headline font-bold uppercase tracking-[0.1em] text-sm hover:border-aom-orange/40 hover:text-aom-text-light transition-all mt-8">
           See All Work <span className="text-aom-orange ml-2">+</span>
         </button>
       )}
@@ -460,17 +446,17 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
   return (
     <div className="relative group/gallery">
       <div className="flex items-center justify-between mb-4 md:hidden px-6">
-        <div className="flex items-center gap-2 text-[10px] font-headline font-bold uppercase tracking-[0.15em] text-aom-warm-gray animate-pulse"><MousePointer2 size={12} className="text-aom-orange" /> Swipe to explore</div>
+        <div className="flex items-center gap-2 text-[10px] font-headline font-bold uppercase tracking-[0.15em] text-aom-text-muted animate-pulse"><MousePointer2 size={12} className="text-aom-orange" /> Swipe to explore</div>
       </div>
       <div ref={containerRef} className="flex gap-4 md:gap-6 overflow-x-auto hide-scrollbar px-6 md:px-12 py-4 scroll-smooth cursor-grab active:cursor-grabbing snap-none touch-pan-x">
         {items.map((v, i) => ( <VideoModule key={i} onPlay={onPlay} isVertical={isVertical} {...v} /> ))}
         <div className="w-4 shrink-0 md:hidden" />
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 left-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
-        <button onClick={() => scroll('left')} className={`w-12 h-12 bg-aom-black flex items-center justify-center text-white shadow-2xl transition-all ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronLeft size={24} /></button>
+        <button onClick={() => scroll('left')} className={`w-12 h-12 bg-aom-night flex items-center justify-center text-white shadow-2xl transition-all border border-white/10 ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110 hover:border-aom-orange/40'}`}><ChevronLeft size={24} /></button>
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 right-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
-        <button onClick={() => scroll('right')} className={`w-12 h-12 bg-aom-black flex items-center justify-center text-white shadow-2xl transition-all ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronRight size={24} /></button>
+        <button onClick={() => scroll('right')} className={`w-12 h-12 bg-aom-night flex items-center justify-center text-white shadow-2xl transition-all border border-white/10 ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'hover:scale-110 hover:border-aom-orange/40'}`}><ChevronRight size={24} /></button>
       </div>
     </div>
   );
@@ -485,15 +471,15 @@ const PhoneModal = ({ isOpen, onClose }) => {
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
-        <div className="w-full max-w-lg p-10 border border-aom-border bg-aom-night relative shadow-2xl rounded-xl overflow-hidden">
-          <button onClick={onClose} className="absolute top-6 right-6 text-aom-stone hover:text-aom-warm-white transition-colors z-20"><X size={20} /></button>
+        <div className="w-full max-w-lg p-10 border border-white/10 bg-aom-night relative shadow-2xl overflow-hidden">
+          <button onClick={onClose} className="absolute top-6 right-6 text-aom-text-muted hover:text-aom-text-light transition-colors z-20"><X size={20} /></button>
           <AnimatePresence mode="wait">
             {view === 'list' ? (
               <motion.div key="list" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 rounded-full flex items-center justify-center mx-auto mb-4"><Phone size={24} className="text-aom-orange" /></div>
-                  <h2 className="text-3xl font-headline font-black text-aom-warm-white italic uppercase tracking-tighter">Connect<span className="text-aom-orange">.</span></h2>
-                  <p className="text-aom-dim text-[10px] font-mono font-bold uppercase tracking-[0.3em] mt-3">Select Department</p>
+                  <div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 flex items-center justify-center mx-auto mb-4"><Phone size={24} className="text-aom-orange" /></div>
+                  <h2 className="text-3xl font-headline font-extrabold text-aom-text-light uppercase tracking-tighter">Connect<span className="text-aom-orange">.</span></h2>
+                  <p className="text-aom-text-muted text-[10px] font-body font-bold uppercase tracking-[0.3em] mt-3">Select Department</p>
                 </div>
                 <div className="space-y-2">
                   {[
@@ -502,24 +488,24 @@ const PhoneModal = ({ isOpen, onClose }) => {
                     { label: "Support", icon: ShieldCheck, sub: "Operations & Billing", number: MAIN_PHONE },
                     { label: "Accounting", icon: Landmark, sub: "Invoicing & Vendors", type: 'accounting' }
                   ].map(item => (
-                    <button key={item.label} onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)} className="w-full p-4 border border-aom-border bg-aom-charcoal hover:border-aom-orange/30 hover:bg-aom-orange/5 transition-all group flex items-center justify-between text-left text-aom-warm-white">
+                    <button key={item.label} onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)} className="w-full p-4 border border-white/10 bg-white/[0.03] hover:border-aom-orange/30 hover:bg-aom-orange/5 transition-all group flex items-center justify-between text-left text-aom-text-light">
                       <div className="flex items-center gap-4">
-                        <item.icon size={16} className="text-aom-dim group-hover:text-aom-orange transition-colors" />
-                        <div><p className="text-aom-warm-white font-headline font-black uppercase tracking-widest text-xs italic">{item.label}</p><p className="text-[9px] font-mono text-aom-dim mt-0.5">{item.sub}</p></div>
+                        <item.icon size={16} className="text-aom-text-muted group-hover:text-aom-orange transition-colors" />
+                        <div><p className="text-aom-text-light font-headline font-extrabold uppercase tracking-widest text-xs">{item.label}</p><p className="text-[9px] font-body text-aom-text-muted mt-0.5">{item.sub}</p></div>
                       </div>
-                      <ChevronRight size={14} className="text-aom-dim group-hover:text-aom-warm-white transition-colors" />
+                      <ChevronRight size={14} className="text-aom-text-muted group-hover:text-aom-text-light transition-colors" />
                     </button>
                   ))}
                 </div>
               </motion.div>
             ) : (
               <motion.div key="accounting" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                <div className="text-center mb-8"><div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 rounded-full flex items-center justify-center mx-auto mb-4"><Mail size={24} className="text-aom-orange" /></div><h2 className="text-2xl font-headline font-black text-aom-warm-white italic uppercase tracking-tighter">Accounting</h2></div>
-                <div className="p-6 border border-aom-orange/10 bg-aom-orange/5 text-center rounded-sm">
-                  <p className="text-aom-stone text-xs leading-relaxed mb-6">Please send an email to <span className="text-aom-orange font-bold">hello@aom-inhouse.com</span> to accompany your call.</p>
-                  <button onClick={() => handleRoute(MAIN_PHONE)} className="w-full bg-aom-orange py-3 text-white font-headline font-black italic uppercase tracking-widest text-xs hover:bg-aom-orange-hover transition-all flex items-center justify-center gap-2 shadow-xl"><Phone size={14} className="fill-white" /> Call Accounting</button>
+                <div className="text-center mb-8"><div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 flex items-center justify-center mx-auto mb-4"><Mail size={24} className="text-aom-orange" /></div><h2 className="text-2xl font-headline font-extrabold text-aom-text-light uppercase tracking-tighter">Accounting</h2></div>
+                <div className="p-6 border border-aom-orange/10 bg-aom-orange/5 text-center">
+                  <p className="text-aom-text-muted text-xs leading-relaxed mb-6">Please send an email to <span className="text-aom-orange font-bold">hello@aom-inhouse.com</span> to accompany your call.</p>
+                  <button onClick={() => handleRoute(MAIN_PHONE)} className="w-full bg-aom-orange py-3 text-white font-headline font-extrabold uppercase tracking-widest text-xs hover:bg-aom-orange-hover transition-all flex items-center justify-center gap-2 shadow-xl"><Phone size={14} className="fill-white" /> Call Accounting</button>
                 </div>
-                <button onClick={() => setView('list')} className="w-full mt-6 text-aom-dim hover:text-aom-warm-white text-[9px] font-mono uppercase tracking-widest transition-colors">Back</button>
+                <button onClick={() => setView('list')} className="w-full mt-6 text-aom-text-muted hover:text-aom-text-light text-[9px] font-body uppercase tracking-widest transition-colors">Back</button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -547,14 +533,13 @@ export default function App() {
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingBudget, setPendingBudget] = useState(null);
+  const [navSolid, setNavSolid] = useState(false);
   const playerFrameRef = useRef(null);
 
-  // Interaction State Logic
   const isModalOpen = isInquiryOpen || !!selectedVideo || isPhoneModalOpen;
 
   // SESSION-BASED RANDOMIZATION
   const shuffledData = useMemo(() => {
-    // Merge founders into brands (marketing + founders = brands)
     const brandsCampaigns = [...PORTFOLIO_DATA.marketing.campaigns, ...PORTFOLIO_DATA.founders.campaigns];
     const brandsSocial = [...PORTFOLIO_DATA.marketing.social, ...PORTFOLIO_DATA.founders.social];
     const constructionCampaigns = PORTFOLIO_DATA.builders.campaigns;
@@ -605,15 +590,25 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Nav scroll listener
+  useEffect(() => {
+    if (!isInitialized) return;
+    const main = document.querySelector('main');
+    if (!main) return;
+    const handleScroll = () => setNavSolid(main.scrollTop > 80);
+    main.addEventListener('scroll', handleScroll, { passive: true });
+    return () => main.removeEventListener('scroll', handleScroll);
+  }, [isInitialized]);
+
   const videoTotal = useMemo(() => Object.values(PORTFOLIO_DATA).reduce((acc, cat) => acc + cat.campaigns.length + cat.social.length, 0), []);
 
   const openBrief = (intent = null) => { if (intent) setSelectedIntent(intent); setIsInquiryOpen(true); };
-  const closeBrief = () => { 
-    setIsInquiryOpen(false); 
-    setIsSuccess(false); 
-    setIsError(false); 
-    setStep(1); 
-    setSelectedIntent(null); 
+  const closeBrief = () => {
+    setIsInquiryOpen(false);
+    setIsSuccess(false);
+    setIsError(false);
+    setStep(1);
+    setSelectedIntent(null);
     setFormData(INITIAL_FORM_STATE);
     setPendingBudget(null);
   };
@@ -623,7 +618,7 @@ export default function App() {
   const handleLeadSubmit = async (overrides = {}) => {
     setIsSubmitting(true);
     setIsError(false);
-    
+
     const finalPayload = {
       ...formData,
       ...overrides,
@@ -659,17 +654,17 @@ export default function App() {
   const handleRoute = (number) => { window.location.href = `tel:${number}`; };
 
   return (
-    <div className="bg-aom-cream text-aom-black min-h-screen font-body selection:bg-aom-orange/30 antialiased overflow-hidden">
+    <div className="bg-aom-night text-aom-text-light min-h-screen font-body selection:bg-aom-orange/30 antialiased overflow-hidden">
       <AnimatePresence>
         {!isInitialized && (
-          <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-aom-cream flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
+          <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-aom-night flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
             <div className="relative mb-12 flex items-center justify-center">
-              <h1 className="text-7xl font-headline font-extrabold tracking-[-0.03em] text-aom-black/10 relative">
-                AOM<span className="text-aom-black/5">.</span>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${loadStatus}%` }} className="absolute top-0 left-0 text-aom-black overflow-hidden whitespace-nowrap logo-shine">AOM<span className="text-aom-orange">.</span></motion.div>
+              <h1 className="text-7xl font-headline font-extrabold tracking-[-0.03em] text-white/10 relative">
+                AOM<span className="text-white/5">.</span>
+                <motion.div initial={{ width: 0 }} animate={{ width: `${loadStatus}%` }} className="absolute top-0 left-0 text-aom-text-light overflow-hidden whitespace-nowrap logo-shine">AOM<span className="text-aom-orange">.</span></motion.div>
               </h1>
             </div>
-            <div className="w-48 h-[1px] bg-aom-light-border relative overflow-hidden rounded-full"><motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-aom-orange shadow-[0_0_10px_#E85D26]" /></div>
+            <div className="w-48 h-[1px] bg-white/10 relative overflow-hidden rounded-full"><motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-aom-orange shadow-[0_0_10px_#E85D26]" /></div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -679,62 +674,48 @@ export default function App() {
           <TextureOverlay />
           <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />
 
-          <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-aom-cream/95 to-aom-cream/0 pointer-events-none backdrop-blur-sm">
-            <h1 className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-black pointer-events-auto">AOM<span className="text-aom-orange">.</span></h1>
+          {/* --- NAV: Transparent on hero, solid dark on scroll --- */}
+          <header className={`fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center pointer-events-none transition-all duration-300 ${navSolid ? 'bg-aom-night/95 backdrop-blur-md border-b border-white/5' : 'bg-gradient-to-b from-black/40 to-transparent'}`}>
+            <h1 className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto">AOM<span className="text-aom-orange">.</span></h1>
             <div className="flex gap-4 pointer-events-auto">
-              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-white text-aom-warm-gray font-body font-bold text-[10px] uppercase tracking-[0.15em] hover:text-aom-black border border-aom-light-border transition-all">Talk to Us</button>
+              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-white/5 text-aom-text-muted font-body font-bold text-[10px] uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
               <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-aom-orange text-white font-headline font-extrabold text-[10px] uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all">Start a Brief</button>
             </div>
           </header>
 
-          {/* --- NEW HERO --- */}
+          {/* === SECTION ORDER: Hook > Prove > Show > Explain > Convert === */}
+
+          {/* 1. HERO (dark, video bg) */}
           <HeroSection openBrief={openBrief} />
 
-          {/* --- SERVICES --- */}
-          <ServicesGrid />
+          {/* Pattern strip */}
+          <PatternStrip variant="diagonal" />
 
-          {/* --- CONSTRUCTION VERTICAL --- */}
+          {/* 2. CONSTRUCTION CALLOUT (dark, #1 target audience) */}
           <ConstructionCallout openBrief={openBrief} />
 
-          {/* --- BRANDS + CORPORATE --- */}
-          <BrandsCallout openBrief={openBrief} />
+          {/* Pattern strip */}
+          <PatternStrip variant="dots" />
 
-          {/* --- DIGITAL + SYSTEMS --- */}
-          <AITeaser />
-
-          {/* --- PULL QUOTE BREAK --- */}
-          <section className="py-20 md:py-32 bg-aom-cream relative overflow-hidden">
-            {/* Decorative starburst */}
-            <div className="absolute top-8 right-16 pointer-events-none opacity-[0.06]">
-              <svg viewBox="0 0 48 48" width="48" height="48">
-                <polygon
-                  points={Array.from({ length: 16 }).map((_, i) => {
-                    const angle = (i * 360 / 16) * Math.PI / 180
-                    const r = i % 2 === 0 ? 24 : 10
-                    return `${24 + r * Math.cos(angle)},${24 + r * Math.sin(angle)}`
-                  }).join(' ')}
-                  fill="#E85D26"
-                />
+          {/* 3. STATS + TESTIMONIALS (dark, social proof) */}
+          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-night relative">
+            {/* Film grain */}
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay z-0">
+              <svg width="100%" height="100%">
+                <filter id="stats-grain">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" />
+                  <feColorMatrix type="saturate" values="0" />
+                </filter>
+                <rect width="100%" height="100%" filter="url(#stats-grain)" />
               </svg>
             </div>
-            <div className="max-w-4xl mx-auto px-6 text-center">
-              <p className="font-headline text-2xl md:text-4xl font-extrabold uppercase tracking-[-0.02em] text-aom-black leading-[0.95]">
-                If the asset doesn't move trust or attention, it's just expensive footage.
-              </p>
-              <p className="font-body text-[11px] uppercase tracking-[0.2em] text-aom-warm-gray mt-6 font-medium">
-                That's how we think about every project.
-              </p>
-            </div>
-          </section>
-
-          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-cream-dark relative">
-            <div className="max-w-screen-2xl mx-auto w-full">
-              <FadeIn className="border-b border-aom-light-border pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
+            <div className="max-w-screen-2xl mx-auto w-full relative z-10">
+              <FadeIn className="border-b border-white/10 pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
                 <div className="max-w-3xl">
                   <span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block"><ScrambleText text="The Work Speaks" /></span>
-                  <h2 className="text-5xl md:text-7xl font-headline font-extrabold text-aom-black tracking-[-0.02em] uppercase leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
+                  <h2 className="text-5xl md:text-7xl font-headline font-extrabold text-aom-text-light tracking-[-0.02em] uppercase leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
                 </div>
-                <div className="w-full lg:max-w-md p-7 border border-aom-light-border bg-white"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-warm-gray text-sm leading-relaxed font-body">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
+                <div className="w-full lg:max-w-md p-7 border border-white/10 bg-white/[0.03]"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-text-muted text-sm leading-relaxed font-body">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FadeIn><VibeStat icon={Building2} kicker="Projects Shipped" valueNode={<span><CountUp to={63} /><span className="text-aom-orange">+</span></span>} sub="Across construction, hospitality, non-profit, tech, and events." /></FadeIn>
@@ -745,7 +726,11 @@ export default function App() {
             </div>
           </section>
 
-          <section id="work" className="py-24 md:py-36 bg-aom-black relative z-10 overflow-hidden">
+          {/* Pattern strip */}
+          <PatternStrip variant="crosshatch" />
+
+          {/* 4. PORTFOLIO (dark) */}
+          <section id="work" className="py-24 md:py-36 bg-aom-night-card relative z-10 overflow-hidden">
             {/* Accent divider */}
             <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12 mb-16" />
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/10 pb-16 text-white">
@@ -756,7 +741,7 @@ export default function App() {
               <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-12 py-3 md:py-5 text-[9px] md:text-[11px] font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/40 hover:text-white/60'}`}>{tab}</button>)}</div>
             </div>
 
-            {/* Featured project (first campaign) */}
+            {/* Featured project */}
             {shuffledData[activeTab]?.campaigns?.[0] && (
               <div className="px-6 md:px-12 mb-8">
                 <article onClick={() => setSelectedVideo(shuffledData[activeTab].campaigns[0])} className="relative aspect-[21/9] w-full overflow-hidden border border-white/10 group cursor-pointer">
@@ -775,14 +760,13 @@ export default function App() {
               </div>
             )}
 
-            {/* Campaign grid (remaining) */}
+            {/* Campaign grid */}
             <div className="px-6 md:px-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-16">
               {shuffledData[activeTab]?.campaigns?.slice(1, 7).map((v, i) => (
                 <VideoModule key={i} onPlay={setSelectedVideo} isGrid {...v} />
               ))}
             </div>
 
-            {/* See All Work expander */}
             {shuffledData[activeTab]?.campaigns?.length > 7 && (
               <PortfolioExpander campaigns={shuffledData[activeTab].campaigns.slice(7)} onPlay={setSelectedVideo} />
             )}
@@ -797,16 +781,36 @@ export default function App() {
             </div>
           </section>
 
-          <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-cream-dark text-aom-black">
+          {/* Pattern strip */}
+          <PatternStrip variant="diagonal" />
+
+          {/* 5. BRANDS + CORPORATE (dark charcoal) */}
+          <BrandsCallout openBrief={openBrief} />
+
+          {/* Pattern strip */}
+          <PatternStrip variant="dots" />
+
+          {/* 6. SERVICES -- cream breathing section */}
+          <ServicesGrid />
+
+          {/* Pattern strip */}
+          <PatternStrip variant="crosshatch" />
+
+          {/* 7. ENGAGEMENT IDEAS / "Pick What Fits" (dark) */}
+          <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-night text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-aom-light-border pb-16">
+              <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/10 pb-16">
                 <div><span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Pick What<br /><span className="text-outline">Fits</span><span className="text-aom-orange">.</span></h2></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => ( <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={() => openBrief(idea)} /> ))}</div>
             </div>
           </section>
 
-          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-cream overflow-hidden text-aom-black">
+          {/* Pattern strip */}
+          <PatternStrip variant="diagonal" />
+
+          {/* 8. TRUST METRICS / "Why It Works" (dark card bg) */}
+          <section className="px-6 md:px-12 py-16 md:py-24 overflow-hidden bg-aom-night-card text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="mb-20">
                 <div className="max-w-xl">
@@ -814,12 +818,40 @@ export default function App() {
                   <h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-aom-light-border bg-white shadow-sm hover:border-aom-orange/40 transition-all"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-body font-medium uppercase tracking-[0.15em] text-aom-warm-gray mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-black uppercase">{m.value}</h4><p className="text-aom-warm-gray text-xs mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-xs mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
-          {/* --- FAQ SECTION --- */}
-          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-cream-dark text-aom-black">
+          {/* Pattern strip */}
+          <PatternStrip variant="crosshatch" />
+
+          {/* 9. AI / DIGITAL (dark) */}
+          <AITeaser />
+
+          {/* Pattern strip */}
+          <PatternStrip variant="dots" />
+
+          {/* 10. PULL QUOTE (dark, visual emphasis) */}
+          <section className="py-20 md:py-32 bg-aom-night relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{
+              background: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(232,93,38,0.08) 5px, rgba(232,93,38,0.08) 6px)'
+            }} />
+            <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+              <div className="w-12 h-[2px] bg-aom-orange mx-auto mb-8" />
+              <p className="font-headline text-2xl md:text-4xl font-bold uppercase tracking-[-0.02em] text-aom-text-light leading-[1.05]">
+                If the asset doesn't move trust or attention, it's just expensive footage.
+              </p>
+              <p className="font-body text-[11px] uppercase tracking-[0.2em] text-aom-text-muted mt-6 font-medium">
+                That's how we think about every project.
+              </p>
+            </div>
+          </section>
+
+          {/* Pattern strip */}
+          <PatternStrip variant="diagonal" />
+
+          {/* 11. FAQ (dark) */}
+          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-night-card text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="mb-12">
                 <span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block">FAQ</span>
@@ -831,13 +863,13 @@ export default function App() {
             </div>
           </section>
 
-          {/* --- FOOTER --- */}
+          {/* 12. FOOTER (dark, seamless) */}
           <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
-          <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-black text-center pb-24 text-white">
+          <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-night text-center pb-24 text-white">
             <div className="max-w-screen-2xl mx-auto w-full">
               <h2 className="text-6xl md:text-[10rem] font-headline font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Build?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/20">Start a Brief</button>
+                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/30">Start a Brief</button>
                 <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:text-white transition-all clip-path-slant border border-white/10">Talk to Us</button>
               </div>
               <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-white/10 pt-16">
@@ -851,137 +883,137 @@ export default function App() {
           <AnimatePresence>
             {selectedVideo && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[2000] bg-black/98 flex items-center justify-center p-4 md:p-10 backdrop-blur-3xl">
-                <button onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); setSelectedVideo(null); }} className="absolute top-6 right-6 md:top-10 md:right-10 text-aom-warm-white p-3 md:p-4 bg-aom-charcoal rounded-full z-50 hover:bg-aom-orange/20 transition-all"><X size={28} /></button>
-                <div className="w-[96vw] h-[90vh] md:w-[92vw] md:h-[88vh] bg-aom-night shadow-2xl relative border border-aom-border">
-                  <iframe 
+                <button onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); setSelectedVideo(null); }} className="absolute top-6 right-6 md:top-10 md:right-10 text-aom-text-light p-3 md:p-4 bg-aom-night-card rounded-full z-50 hover:bg-aom-orange/20 transition-all"><X size={28} /></button>
+                <div className="w-[96vw] h-[90vh] md:w-[92vw] md:h-[88vh] bg-aom-night shadow-2xl relative border border-white/10">
+                  <iframe
                     ref={playerFrameRef}
-                    src={getGumletPlayerEmbed(selectedVideo.url)} 
-                    className="w-full h-full border-none" 
-                    allow="autoplay; fullscreen" 
+                    src={getGumletPlayerEmbed(selectedVideo.url)}
+                    className="w-full h-full border-none"
+                    allow="autoplay; fullscreen"
                     allowFullScreen
-                    title={selectedVideo.title} 
+                    title={selectedVideo.title}
                   />
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           <AnimatePresence>
             {isInquiryOpen && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
-                <div className="w-full max-w-xl p-8 md:p-12 border border-white/5 bg-[#0a0a0a] relative shadow-2xl rounded-xl overflow-y-auto max-h-[90vh]">
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-600/10 via-transparent to-orange-600/5 pointer-events-none rounded-xl" />
-                  <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden rounded-t-xl z-30">
-                    <motion.div 
+                <div className="w-full max-w-xl p-8 md:p-12 border border-white/5 bg-aom-night relative shadow-2xl overflow-y-auto max-h-[90vh]">
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-600/10 via-transparent to-orange-600/5 pointer-events-none" />
+                  <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden z-30">
+                    <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(step/3) * 100}%` }}
                       className="h-full bg-orange-600 shadow-[0_0_15px_#FF4F00]"
                     />
                   </div>
-                  <button onClick={closeBrief} className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors z-40" disabled={isSubmitting}><X size={24} /></button>
+                  <button onClick={closeBrief} className="absolute top-8 right-8 text-white/30 hover:text-white transition-colors z-40" disabled={isSubmitting}><X size={24} /></button>
                   {!isSuccess && !isError ? (
                     <div className="space-y-10 relative z-10">
                       <div>
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Start Brief<span className="text-orange-600">.</span></h2>
-                            <span className="text-[10px] font-mono text-zinc-600 font-bold tracking-widest uppercase">Step {step} of 3</span>
+                            <h2 className="text-3xl font-headline font-extrabold text-white uppercase tracking-tighter">Start Brief<span className="text-orange-600">.</span></h2>
+                            <span className="text-[10px] font-body text-white/30 font-bold tracking-widest uppercase">Step {step} of 3</span>
                         </div>
-                        {selectedIntent && step === 1 && ( <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1.5 rounded-sm"><span className="text-orange-600 text-[9px] font-black uppercase tracking-widest">{selectedIntent.title}</span></div> )}
+                        {selectedIntent && step === 1 && ( <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1.5"><span className="text-orange-600 text-[9px] font-extrabold uppercase tracking-widest">{selectedIntent.title}</span></div> )}
                       </div>
                       <AnimatePresence mode="wait">
                         {step === 1 && (
                           <motion.div key="step1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
                             <div className="space-y-6">
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-2 block">Your Name</label>
-                                    <input type="text" placeholder="FULL NAME" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-zinc-800 transition-colors" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                                    <label className="text-[9px] font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-2 block">Your Name</label>
+                                    <input type="text" placeholder="FULL NAME" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-white/10 transition-colors" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-2 block">Direct Email</label>
-                                    <input type="email" placeholder="EMAIL@DOMAIN.COM" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-zinc-800 transition-colors" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                                    <label className="text-[9px] font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-2 block">Direct Email</label>
+                                    <input type="email" placeholder="EMAIL@DOMAIN.COM" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-white/10 transition-colors" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                                 </div>
                             </div>
-                            <button onClick={() => setStep(2)} disabled={!isStep1Valid} className={`w-full py-5 font-black italic uppercase shadow-xl transition-all text-sm tracking-widest ${isStep1Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'}`}>Next Step</button>
-                            <p className="text-[10px] text-zinc-600 font-mono text-center uppercase tracking-widest">A creative lead will reply within 24 hours.</p>
+                            <button onClick={() => setStep(2)} disabled={!isStep1Valid} className={`w-full py-5 font-extrabold uppercase shadow-xl transition-all text-sm tracking-widest ${isStep1Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}>Next Step</button>
+                            <p className="text-[10px] text-white/30 font-body text-center uppercase tracking-widest">A creative lead will reply within 24 hours.</p>
                           </motion.div>
                         )}
                         {step === 2 && (
                           <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
-                             <div className="p-4 border border-orange-600/20 bg-orange-600/5 rounded-sm">
-                                <p className="text-[8px] font-mono text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles size={10}/> Logic Preview</p>
+                             <div className="p-4 border border-orange-600/20 bg-orange-600/5">
+                                <p className="text-[8px] font-body text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles size={10}/> Logic Preview</p>
                                 <div className="flex gap-4">
-                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Goal</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.goal || 'PENDING'}</p></div>
-                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Platform</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.placement || 'PENDING'}</p></div>
+                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Goal</p><p className="text-[10px] text-white uppercase font-extrabold tracking-tighter">{formData.goal || 'PENDING'}</p></div>
+                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Platform</p><p className="text-[10px] text-white uppercase font-extrabold tracking-tighter">{formData.placement || 'PENDING'}</p></div>
                                 </div>
                              </div>
                              <div className="space-y-6">
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Primary Objective</label>
+                                    <label className="text-[9px] font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">Primary Objective</label>
                                     <div className="flex flex-wrap gap-2">
                                         {GOAL_OPTIONS.map(g => (
-                                            <button key={g} onClick={() => setFormData({...formData, goal: g})} className={`px-4 py-2 border text-[10px] font-black uppercase transition-all tracking-widest ${formData.goal === g ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.3)]' : 'border-white/5 bg-white/5 text-zinc-500 hover:border-zinc-700'}`}>{g}</button>
+                                            <button key={g} onClick={() => setFormData({...formData, goal: g})} className={`px-4 py-2 border text-[10px] font-extrabold uppercase transition-all tracking-widest ${formData.goal === g ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.3)]' : 'border-white/5 bg-white/5 text-white/40 hover:border-white/20'}`}>{g}</button>
                                         ))}
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">What's the challenge?</label>
-                                    <textarea maxLength={180} placeholder="We're winning jobs but nobody knows it. We need content that shows the work we do." className="w-full bg-zinc-900/50 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-zinc-800 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
+                                    <label className="text-[9px] font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">What's the challenge?</label>
+                                    <textarea maxLength={180} placeholder="We're winning jobs but nobody knows it. We need content that shows the work we do." className="w-full bg-white/5 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-white/10 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
                                     <div className="flex justify-between mt-2">
-                                        {formData.problem.length < 15 && <span className="text-[9px] font-mono text-orange-500/60 uppercase animate-pulse">Min. 15 characters required</span>}
-                                        <span className="text-[9px] font-mono text-zinc-700 ml-auto">{formData.problem.length}/180</span>
+                                        {formData.problem.length < 15 && <span className="text-[9px] font-body text-orange-500/60 uppercase animate-pulse">Min. 15 characters required</span>}
+                                        <span className="text-[9px] font-body text-white/20 ml-auto">{formData.problem.length}/180</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Asset Placement</label>
+                                    <label className="text-[9px] font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">Asset Placement</label>
                                     <div className="flex flex-wrap gap-2">
                                         {PLACEMENT_OPTIONS.map(p => (
-                                            <button key={p} onClick={() => setFormData({...formData, placement: p})} className={`px-4 py-2 border text-[10px] font-black uppercase transition-all tracking-widest ${formData.placement === p ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'border-white/5 bg-white/5 text-zinc-500 hover:border-zinc-700'}`}>{p}</button>
+                                            <button key={p} onClick={() => setFormData({...formData, placement: p})} className={`px-4 py-2 border text-[10px] font-extrabold uppercase transition-all tracking-widest ${formData.placement === p ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'border-white/5 bg-white/5 text-white/40 hover:border-white/20'}`}>{p}</button>
                                         ))}
                                     </div>
                                 </div>
                              </div>
                              <div className="flex gap-4">
-                                <button onClick={() => setStep(1)} className="px-8 py-5 border border-white/5 bg-zinc-900 text-zinc-500 font-black italic uppercase text-xs tracking-widest hover:text-white transition-all">Back</button>
-                                <button onClick={() => setStep(3)} disabled={!isStep2Valid} className={`flex-grow py-5 font-black italic uppercase shadow-xl transition-all text-sm tracking-widest ${isStep2Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-zinc-900 text-zinc-700 cursor-not-allowed'}`}>Set Logistics</button>
+                                <button onClick={() => setStep(1)} className="px-8 py-5 border border-white/5 bg-white/5 text-white/40 font-extrabold uppercase text-xs tracking-widest hover:text-white transition-all">Back</button>
+                                <button onClick={() => setStep(3)} disabled={!isStep2Valid} className={`flex-grow py-5 font-extrabold uppercase shadow-xl transition-all text-sm tracking-widest ${isStep2Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}>Set Logistics</button>
                              </div>
                           </motion.div>
                         )}
                         {step === 3 && (
                           <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
-                             <div className="p-4 border border-orange-600/20 bg-orange-600/5 rounded-sm">
-                                <p className="text-[8px] font-mono text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Clock3 size={10}/> Strategy Summary</p>
+                             <div className="p-4 border border-orange-600/20 bg-orange-600/5">
+                                <p className="text-[8px] font-body text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Clock3 size={10}/> Strategy Summary</p>
                                 <div className="grid grid-cols-3 gap-4">
-                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Goal</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter truncate">{formData.goal}</p></div>
-                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Timing</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.timing || 'PENDING'}</p></div>
-                                  <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Tier</p><p className="text-[10px] text-white uppercase italic font-black tracking-tighter">{formData.budget || 'PENDING'}</p></div>
+                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Goal</p><p className="text-[10px] text-white uppercase font-extrabold tracking-tighter truncate">{formData.goal}</p></div>
+                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Timing</p><p className="text-[10px] text-white uppercase font-extrabold tracking-tighter">{formData.timing || 'PENDING'}</p></div>
+                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Tier</p><p className="text-[10px] text-white uppercase font-extrabold tracking-tighter">{formData.budget || 'PENDING'}</p></div>
                                 </div>
                              </div>
                              <div className="space-y-8">
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Preferred Timeline</label>
+                                    <label className="text-[9px] font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">Preferred Timeline</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         {TIMING_OPTIONS.map(t => (
-                                            <button key={t} onClick={() => setFormData({...formData, timing: t})} className={`px-4 py-3 border text-[9px] font-black uppercase transition-all tracking-widest text-left ${formData.timing === t ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.3)]' : 'border-white/5 bg-white/5 text-zinc-500 hover:border-zinc-700'}`}>{t}</button>
+                                            <button key={t} onClick={() => setFormData({...formData, timing: t})} className={`px-4 py-3 border text-[9px] font-extrabold uppercase transition-all tracking-widest text-left ${formData.timing === t ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.3)]' : 'border-white/5 bg-white/5 text-white/40 hover:border-white/20'}`}>{t}</button>
                                         ))}
                                     </div>
-                                    {!formData.timing && <p className="text-[9px] font-mono text-orange-500/60 uppercase mt-3 italic text-left">Select timing to enable budget tiers</p>}
+                                    {!formData.timing && <p className="text-[9px] font-body text-orange-500/60 uppercase mt-3 text-left">Select timing to enable budget tiers</p>}
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block text-left">What's your budget? <span className="text-zinc-700 italic font-mono lowercase tracking-normal font-normal">(This submits your brief)</span></label>
+                                    <label className="text-[9px] font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block text-left">What's your budget? <span className="text-white/20 font-normal tracking-normal lowercase">(This submits your brief)</span></label>
                                     <div className="space-y-2">
                                         {BUDGET_OPTIONS.map(o => {
                                           const isActive = pendingBudget === o && isSubmitting;
                                           return (
-                                            <button 
-                                              key={o} 
-                                              onClick={() => { 
+                                            <button
+                                              key={o}
+                                              onClick={() => {
                                                 const b = o;
                                                 setFormData(prev => ({...prev, budget: b}));
-                                                setPendingBudget(b); 
-                                                handleLeadSubmit({ budget: b }); 
-                                              }} 
-                                              disabled={isSubmitting || !formData.timing} 
-                                              className={`w-full p-4 border transition-all uppercase font-black italic text-left text-xs tracking-widest flex justify-between items-center ${!formData.timing ? 'opacity-30 cursor-not-allowed bg-zinc-950 border-white/5 text-zinc-800' : 'bg-white/5 border-white/5 text-white hover:bg-orange-600 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(255,79,0,0.2)]'}`}
+                                                setPendingBudget(b);
+                                                handleLeadSubmit({ budget: b });
+                                              }}
+                                              disabled={isSubmitting || !formData.timing}
+                                              className={`w-full p-4 border transition-all uppercase font-extrabold text-left text-xs tracking-widest flex justify-between items-center ${!formData.timing ? 'opacity-30 cursor-not-allowed bg-white/5 border-white/5 text-white/20' : 'bg-white/5 border-white/5 text-white hover:bg-orange-600 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(255,79,0,0.2)]'}`}
                                             >
                                                 {o} {isActive && <Loader2 className="animate-spin" size={14} />}
                                             </button>
@@ -991,8 +1023,8 @@ export default function App() {
                                 </div>
                              </div>
                              <div className="flex gap-4">
-                                <button onClick={() => setStep(2)} className="px-8 py-5 border border-white/5 bg-zinc-900 text-zinc-500 font-black italic uppercase text-xs tracking-widest hover:text-white transition-all">Back</button>
-                                <div className="flex-grow flex items-center justify-center text-[10px] text-zinc-700 font-mono uppercase tracking-widest animate-pulse italic">
+                                <button onClick={() => setStep(2)} className="px-8 py-5 border border-white/5 bg-white/5 text-white/40 font-extrabold uppercase text-xs tracking-widest hover:text-white transition-all">Back</button>
+                                <div className="flex-grow flex items-center justify-center text-[10px] text-white/20 font-body uppercase tracking-widest animate-pulse">
                                   {!formData.timing ? "Waiting for timing..." : "Select tier to finish"}
                                 </div>
                              </div>
@@ -1003,28 +1035,28 @@ export default function App() {
                   ) : isError ? (
                     <motion.div key="error" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12 relative z-10">
                         <AlertCircle size={64} className="mx-auto text-red-600 mb-8" />
-                        <h3 className="text-3xl font-black italic text-white uppercase tracking-tighter mb-4">Submission Failed</h3>
-                        <p className="text-zinc-500 text-sm leading-relaxed mb-10 max-w-xs mx-auto uppercase font-mono font-bold tracking-widest">A network conflict occurred. Please retry with your selected tier ({pendingBudget}).</p>
+                        <h3 className="text-3xl font-extrabold text-white uppercase tracking-tighter mb-4">Submission Failed</h3>
+                        <p className="text-white/40 text-sm leading-relaxed mb-10 max-w-xs mx-auto uppercase font-body font-bold tracking-widest">A network conflict occurred. Please retry with your selected tier ({pendingBudget}).</p>
                         <div className="space-y-4">
-                            <button onClick={() => handleLeadSubmit({ budget: pendingBudget })} className="w-full bg-orange-600 py-4 font-black italic uppercase shadow-xl hover:bg-orange-500 transition-all text-sm tracking-widest text-white flex items-center justify-center gap-3"><Loader2 className={isSubmitting ? "animate-spin" : "hidden"} size={16} /> Retry Submission</button>
-                            <button onClick={() => { closeBrief(); openPhone(); }} className="w-full bg-white/5 border border-white/10 py-4 font-black italic uppercase text-zinc-400 hover:text-white transition-all text-sm tracking-widest">Call Us</button>
+                            <button onClick={() => handleLeadSubmit({ budget: pendingBudget })} className="w-full bg-orange-600 py-4 font-extrabold uppercase shadow-xl hover:bg-orange-500 transition-all text-sm tracking-widest text-white flex items-center justify-center gap-3"><Loader2 className={isSubmitting ? "animate-spin" : "hidden"} size={16} /> Retry Submission</button>
+                            <button onClick={() => { closeBrief(); openPhone(); }} className="w-full bg-white/5 border border-white/10 py-4 font-extrabold uppercase text-white/40 hover:text-white transition-all text-sm tracking-widest">Call Us</button>
                         </div>
                     </motion.div>
                   ) : (
                     <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12 relative z-10">
                         <CheckCircle2 size={64} className="mx-auto text-orange-600 mb-8" />
-                        <h3 className="text-3xl font-black italic text-white uppercase tracking-tighter">Brief Received<span className="text-orange-600">.</span></h3>
-                        <div className="mt-8 p-6 border border-white/5 bg-white/5 text-left rounded-sm space-y-4">
-                            <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2"><Target size={10} className="text-orange-600"/> Brief Summary:</p>
+                        <h3 className="text-3xl font-extrabold text-white uppercase tracking-tighter">Brief Received<span className="text-orange-600">.</span></h3>
+                        <div className="mt-8 p-6 border border-white/5 bg-white/5 text-left space-y-4">
+                            <p className="text-[9px] font-body text-white/40 uppercase tracking-[0.2em] mb-2 flex items-center gap-2"><Target size={10} className="text-orange-600"/> Brief Summary:</p>
                             <div className="grid grid-cols-2 gap-4 border-l-2 border-orange-600 pl-4">
-                                <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Goal</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.goal}</p></div>
-                                <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Placement</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.placement}</p></div>
-                                <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Timing</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.timing}</p></div>
-                                <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Budget</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.budget}</p></div>
+                                <div><p className="text-[8px] text-white/30 uppercase font-bold">Goal</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.goal}</p></div>
+                                <div><p className="text-[8px] text-white/30 uppercase font-bold">Placement</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.placement}</p></div>
+                                <div><p className="text-[8px] text-white/30 uppercase font-bold">Timing</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.timing}</p></div>
+                                <div><p className="text-[8px] text-white/30 uppercase font-bold">Budget</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.budget}</p></div>
                             </div>
                         </div>
-                        <p className="text-zinc-500 text-[10px] mt-10 leading-relaxed font-mono uppercase tracking-widest max-w-sm mx-auto">We've archived your brief. A creative lead will review and contact you via <span className="text-white">{formData.email}</span> shortly.</p>
-                        <button onClick={closeBrief} className="mt-12 w-full px-8 py-4 bg-white text-black font-black uppercase text-xs tracking-widest italic hover:bg-zinc-200 transition-all shadow-2xl">Return to Work</button>
+                        <p className="text-white/40 text-[10px] mt-10 leading-relaxed font-body uppercase tracking-widest max-w-sm mx-auto">We've archived your brief. A creative lead will review and contact you via <span className="text-white">{formData.email}</span> shortly.</p>
+                        <button onClick={closeBrief} className="mt-12 w-full px-8 py-4 bg-white text-black font-extrabold uppercase text-xs tracking-widest hover:bg-white/90 transition-all shadow-2xl">Return to Work</button>
                     </motion.div>
                   )}
                 </div>
@@ -1036,4 +1068,3 @@ export default function App() {
     </div>
   );
 }
-

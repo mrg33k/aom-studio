@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Building2, Clapperboard, Cpu } from 'lucide-react'
 
-// ── Video background config ──────────────────────────────────────────
-// Gumlet embed IDs from the portfolio. Shuffled randomly on each load.
+// Video background config -- Gumlet embed IDs from the portfolio
 const GUMLET_IDS = [
   '698a6296fc23d3d76fa8d992', // Journey To Gary Vee
   '698a5b86fc23d3d76fa82ece', // Noble Real Estate
@@ -20,9 +19,8 @@ const GUMLET_IDS = [
   '698a53a9873071aec5c8b9d7', // Cook & Craft
   '698a5ebcaec3d4e420c2c573', // Ulisgold Pilates
 ]
-const VIDEO_HOLD_SECONDS = 10 // time each embed shows before crossfade
+const VIDEO_HOLD_SECONDS = 10
 
-// Fisher-Yates shuffle, pick first N
 function shufflePick(arr, n) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -60,91 +58,86 @@ const pathways = [
 ]
 
 export default function HeroSection({ openBrief }) {
-  // ── Video rotation: pick 5 random videos, cycle through them ──────
   const [playlist] = useState(() => shufflePick(GUMLET_IDS, 5))
   const [activeIdx, setActiveIdx] = useState(0)
   const [visible, setVisible] = useState(true)
+  const [scrollY, setScrollY] = useState(0)
 
   useEffect(() => {
     if (playlist.length <= 1) return
     const interval = setInterval(() => {
-      setVisible(false) // fade out
+      setVisible(false)
       setTimeout(() => {
         setActiveIdx((prev) => (prev + 1) % playlist.length)
-        setVisible(true) // fade in next
-      }, 1500) // wait for fade-out to finish
+        setVisible(true)
+      }, 1500)
     }, VIDEO_HOLD_SECONDS * 1000)
     return () => clearInterval(interval)
   }, [playlist])
 
-  return (
-    <section className="relative min-h-[85vh] flex items-center bg-aom-cream overflow-hidden">
+  // Parallax on scroll
+  useEffect(() => {
+    const main = document.querySelector('main')
+    if (!main) return
+    const handleScroll = () => setScrollY(main.scrollTop)
+    main.addEventListener('scroll', handleScroll, { passive: true })
+    return () => main.removeEventListener('scroll', handleScroll)
+  }, [])
 
-      {/* ── Video background layer (Gumlet embed reel) ────────────── */}
+  return (
+    <section className="relative min-h-screen flex items-center bg-aom-night overflow-hidden">
+
+      {/* Video background layer */}
       <div className="hero-video-bg absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
         <iframe
           key={playlist[activeIdx]}
           src={`https://play.gumlet.io/embed/${playlist[activeIdx]}?autoplay=true&muted=true&loop=true&preload=true&controls=false`}
           className="absolute inset-0 w-full h-full border-none transition-opacity duration-[1500ms] ease-in-out"
           style={{
-            opacity: visible ? 0.18 : 0,
-            filter: 'grayscale(0.3) contrast(1.1)',
-            transform: 'scale(1.15)', // crop out player chrome
+            opacity: visible ? 0.55 : 0,
+            filter: 'grayscale(0.2) contrast(1.1)',
+            transform: `scale(${1.15 + scrollY * 0.0001})`,
             transformOrigin: 'center center',
           }}
           allow="autoplay"
           tabIndex={-1}
         />
-        {/* Cream overlay for readability */}
-        <div className="absolute inset-0 bg-aom-cream/[0.88]" />
-        {/* Bottom gradient fade into content */}
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-aom-cream to-transparent" />
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-aom-night/[0.60]" />
+        {/* Vignette */}
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #0C0C0C 100%)' }} />
+        {/* Bottom gradient fade into next section */}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-aom-night to-transparent" />
       </div>
 
-      {/* Mobile: hide iframe entirely for performance */}
+      {/* Film grain overlay */}
+      <div className="absolute inset-0 z-[1] pointer-events-none opacity-[0.04] mix-blend-overlay">
+        <svg width="100%" height="100%">
+          <filter id="hero-grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" />
+            <feColorMatrix type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#hero-grain)" />
+        </svg>
+      </div>
+
+      {/* Mobile: hide iframe for performance, show on tablet+ */}
       <style>{`
         @media (max-width: 639px) {
           .hero-video-bg iframe { display: none; }
         }
       `}</style>
 
-      {/* Subtle geometric accent */}
-      <div className="absolute top-12 right-12 w-16 h-16 pointer-events-none opacity-10 z-[1]">
-        <svg viewBox="0 0 40 40" width="64" height="64">
-          {Array.from({ length: 16 }).map((_, i) => {
-            const angle = (i * 360 / 16) * Math.PI / 180
-            const r = i % 2 === 0 ? 20 : 8
-            return null
-          })}
-          <polygon
-            points={Array.from({ length: 16 }).map((_, i) => {
-              const angle = (i * 360 / 16) * Math.PI / 180
-              const r = i % 2 === 0 ? 20 : 8
-              return `${20 + r * Math.cos(angle)},${20 + r * Math.sin(angle)}`
-            }).join(' ')}
-            fill="#E85D26"
-          />
-        </svg>
-      </div>
-
-      {/* Dotted texture background */}
-      <div className="absolute bottom-16 right-24 pointer-events-none opacity-[0.06] z-[1]">
-        <svg width="120" height="80">
-          {Array.from({ length: 9 }).map((_, x) =>
-            Array.from({ length: 6 }).map((_, y) => (
-              <circle key={`${x}-${y}`} cx={x * 14 + 7} cy={y * 14 + 7} r={1.5} fill="#0A0A0A" />
-            ))
-          )}
-        </svg>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 md:px-12 py-16 sm:py-24 md:py-32 relative z-10 w-full">
+      <div
+        className="max-w-6xl mx-auto px-6 md:px-12 py-24 sm:py-32 md:py-40 relative z-10 w-full"
+        style={{ transform: `translateY(${scrollY * 0.15}px)` }}
+      >
         {/* Micro-label */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
-          className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-6"
+          className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-6"
         >
           Creative Production + AI Systems
         </motion.p>
@@ -155,7 +148,7 @@ export default function HeroSection({ openBrief }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: 'easeOut' }}
         >
-          <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-7xl font-extrabold uppercase tracking-[-0.01em] text-aom-black leading-[0.95] max-w-[45ch]">
+          <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold uppercase tracking-[-0.03em] text-aom-text-light leading-[0.92] max-w-[45ch]">
             WE MAKE COMPANIES
             <br />
             <span className="text-aom-orange">IMPOSSIBLE TO IGNORE</span>
@@ -168,9 +161,9 @@ export default function HeroSection({ openBrief }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.8, ease: 'easeOut' }}
-          className="text-aom-warm-gray text-lg md:text-xl mt-8 max-w-xl leading-relaxed font-body"
+          className="text-aom-text-muted text-lg md:text-xl mt-8 max-w-xl leading-relaxed font-body"
         >
-          Content, websites, and systems for companies that build, grow, and ship.
+          Video, social media, and websites for construction companies and brands that need to be taken seriously.
         </motion.p>
 
         {/* CTA */}
@@ -182,13 +175,13 @@ export default function HeroSection({ openBrief }) {
         >
           <button
             onClick={() => openBrief()}
-            className="bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 flex items-center gap-2 text-sm md:text-base"
+            className="bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/30 flex items-center gap-2 text-sm md:text-base"
           >
             See What We'd Build For You <ArrowRight size={16} />
           </button>
           <a
             href="#work"
-            className="border-2 border-aom-black text-aom-black font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-aom-black hover:text-aom-cream transition-all text-sm md:text-base"
+            className="border-2 border-white/20 text-white font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-white hover:text-aom-black transition-all text-sm md:text-base"
           >
             See the Work
           </a>
@@ -199,23 +192,23 @@ export default function HeroSection({ openBrief }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1.4, ease: 'easeOut' }}
-          className="mt-10 sm:mt-16 md:mt-24 flex flex-wrap items-center gap-6 text-aom-warm-gray"
+          className="mt-10 sm:mt-16 md:mt-24 flex flex-wrap items-center gap-6 text-aom-text-muted"
         >
           <span className="inline-flex items-center gap-2 font-body text-[11px] font-medium uppercase tracking-[0.15em]">
             <span className="w-1.5 h-1.5 rounded-full bg-aom-orange" />
             Phoenix, AZ
           </span>
-          <span className="hidden sm:block w-px h-3 bg-aom-light-border" />
+          <span className="hidden sm:block w-px h-3 bg-white/10" />
           <span className="font-body text-[11px] font-medium uppercase tracking-[0.15em]">
             Video / Web / Social / Systems
           </span>
-          <span className="hidden sm:block w-px h-3 bg-aom-light-border" />
+          <span className="hidden sm:block w-px h-3 bg-white/10" />
           <span className="font-body text-[11px] font-medium uppercase tracking-[0.15em]">
             Est. 2020
           </span>
         </motion.div>
 
-        {/* Pathway Gate */}
+        {/* Pathway Gate -- frosted glass on dark */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -229,11 +222,11 @@ export default function HeroSection({ openBrief }) {
               <a
                 key={p.title}
                 href={p.href}
-                className={`p-4 md:p-6 border border-aom-light-border bg-white/60 backdrop-blur-sm hover:border-aom-orange/40 transition-all duration-300 border-t-2 ${borderColor}`}
+                className={`p-4 md:p-6 border border-white/10 bg-white/[0.06] backdrop-blur-md hover:border-aom-orange/40 hover:bg-white/[0.1] transition-all duration-300 border-t-2 ${borderColor}`}
               >
                 <Icon size={24} className={p.accent === 'sage' ? 'text-aom-sage mb-3' : 'text-aom-orange mb-3'} />
-                <p className="font-headline text-sm font-bold text-aom-black mb-1">{p.title}</p>
-                <p className="text-aom-warm-gray text-xs leading-relaxed mb-3 font-body">{p.hook}</p>
+                <p className="font-headline text-sm font-bold text-aom-text-light mb-1">{p.title}</p>
+                <p className="text-aom-text-muted text-xs leading-relaxed mb-3 font-body">{p.hook}</p>
                 <span className={`text-xs font-bold flex items-center gap-1 font-body ${p.accent === 'sage' ? 'text-aom-sage' : 'text-aom-orange'}`}>
                   {p.cta} <ArrowRight size={12} />
                 </span>

@@ -6,7 +6,7 @@ const services = [
   {
     icon: Repeat,
     label: 'Retainer',
-    title: 'Content Engine',
+    title: 'Monthly Content',
     description: 'Your in-house media team without the overhead. We show up, shoot, and turn it into a month of content. Strategy, production, and posting handled.',
     accent: 'orange',
     cta: 'See how it works',
@@ -14,7 +14,7 @@ const services = [
   {
     icon: Clapperboard,
     label: 'Project',
-    title: 'Production',
+    title: 'Brand Videos',
     description: 'Brand videos, documentaries, event coverage. Cinema-grade execution for the moments that define your company.',
     accent: 'orange',
     cta: 'See the work',
@@ -22,7 +22,7 @@ const services = [
   {
     icon: Cpu,
     label: 'System',
-    title: 'Digital Infrastructure',
+    title: 'Websites + Systems',
     description: 'Websites, AI workflows, and automation that make everything repeatable. The engine behind the brand.',
     accent: 'sage',
     cta: 'See what we\'d build',
@@ -45,7 +45,7 @@ function ServiceCard({ service, index }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
       transition={{ duration: 0.7, delay: index * 0.15, ease: 'easeOut' }}
-      className={`p-6 md:p-8 border border-aom-light-border bg-white shadow-sm ${hoverBorder} transition-colors duration-300 flex flex-col`}
+      className={`p-6 md:p-8 border border-aom-light-border bg-white shadow-md ${hoverBorder} hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col`}
     >
       {/* Icon container */}
       <div className="w-12 h-12 border border-aom-light-border bg-aom-cream flex items-center justify-center mb-4">
@@ -77,7 +77,7 @@ function ServiceCard({ service, index }) {
 
 export default function ServicesGrid() {
   return (
-    <section className="py-20 md:py-32 bg-aom-cream-dark">
+    <section className="py-20 md:py-32 bg-aom-cream">
       <div className="max-w-6xl mx-auto px-6 md:px-12">
         {/* Section header */}
         <div className="mb-12">
@@ -85,7 +85,7 @@ export default function ServicesGrid() {
             What We Build
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />
-          <h2 className="font-headline text-3xl md:text-5xl lg:text-5xl font-extrabold uppercase tracking-[-0.01em] text-aom-black max-w-[45ch] leading-[0.95]">
+          <h2 className="font-headline text-3xl md:text-5xl lg:text-5xl font-extrabold uppercase tracking-[-0.02em] text-aom-black max-w-[45ch] leading-[0.95]">
             THREE WAYS IN
           </h2>
           <p className="text-aom-warm-gray text-lg md:text-xl mt-4 max-w-2xl leading-relaxed font-body">

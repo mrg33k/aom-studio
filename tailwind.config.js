@@ -6,7 +6,7 @@ export default {
       colors: {
         orange: { 600: '#E85D26' },
         aom: {
-          // Bold Graphic brand direction
+          // Bold Graphic v4 brand direction
           cream: '#FDF6EC',
           'cream-dark': '#EDE7DF',
           'cream-alt': '#F5EFE6',
@@ -19,10 +19,15 @@ export default {
           'warm-gray': '#7A7267',
           'light-border': '#D9D3CB',
 
-          // Dark surfaces (modals, video overlays, preloader)
-          night: '#0A0A0A',
+          // Dark Frame system (v4)
+          night: '#0C0C0C',
+          'night-card': '#151515',
+          'night-border': 'rgba(255,255,255,0.10)',
+          'night-border-hover': 'rgba(255,255,255,0.18)',
           charcoal: '#141412',
           surface: '#1A1A17',
+          'text-light': '#F0ECE6',
+          'text-muted': '#8A847C',
 
           // Legacy aliases for components not yet refactored
           'warm-white': '#F5F0EB',
@@ -42,6 +47,10 @@ export default {
         headline: ['Syne', 'system-ui', 'sans-serif'],
         body: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
         mono: ['"Space Grotesk"', 'monospace'],
+      },
+      boxShadow: {
+        'orange-glow': '0 0 30px rgba(232,93,38,0.15)',
+        'orange-glow-lg': '0 0 60px rgba(232,93,38,0.2)',
       }
     }
   },
