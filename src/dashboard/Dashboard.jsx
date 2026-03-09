@@ -268,45 +268,51 @@ function assignTasksToAgents(punchItems) {
     // 1. Check for explicit [Patrik] tag first -- overrides everything
     if (/\[patrik\]/i.test(text)) { agent = 'Patrik' }
 
-    // 2. Category-based assignment
+    // 2. Keyword-based overrides run BEFORE category assignment
+    //    These catch tasks that live under a project category but belong to a different agent.
+
+    // 2a. Payment/financial tasks go to Paige, regardless of project category
+    if (!agent && /\b(?:payment|invoice|deposit|churn|upsell)\b/i.test(lower)) agent = 'Paige'
+    if (!agent && /\bpaige\b|client.*check-in/i.test(lower)) agent = 'Paige'
+
+    // 2b. Social media tasks go to Tony, regardless of project category
+    if (!agent && /\btony\b|\bpostiz\b|content.*calendar/i.test(lower)) agent = 'Tony'
+    if (!agent && /\b(?:social\s*media|posting|reels?\b.*week|ramp.*social|accounts?\s*in\s*postiz)\b/i.test(lower)) agent = 'Tony'
+
+    // 2c. Filming/on-site production goes to Cleo/Patrik, not Bobby
+    if (!agent && /\b(?:on-site\s*filming|schedule.*filming|execute.*filming)\b/i.test(lower)) agent = 'Cleo'
+
+    // 3. Category-based assignment (fallback for tasks without keyword overrides)
     if (!agent) {
       for (const [cat, name] of Object.entries(ownerMap)) {
         if (p.category.toLowerCase().includes(cat.toLowerCase())) { agent = name; break }
       }
     }
 
-    // 3. Payment/financial tasks go to Paige or Patrik, NOT Cleo
-    if (!agent && /\b(?:payment|invoice|deposit|churn|upsell)\b/i.test(lower)) agent = 'Paige'
-    if (!agent && /\bpaige\b|client.*check-in/i.test(lower)) agent = 'Paige'
-
-    // 4. Social media tasks go to Tony, NOT Bobby
-    if (!agent && /\btony\b|\bpostiz\b|content.*calendar/i.test(lower)) agent = 'Tony'
-    if (!agent && /\b(?:social\s*media|posting|reels?\b.*week|ramp.*social)\b/i.test(lower)) agent = 'Tony'
-
-    // 5. Revenue strategy goes to Alex, NOT Jacob
+    // 4. Revenue strategy goes to Alex, NOT Jacob
     if (!agent && /\balex\b|\bdeal\b|\boffer\b/i.test(lower)) agent = 'Alex'
     if (!agent && /\b(?:revenue.*strategy|close.*gap|retainer.*client|target.*compan)/i.test(lower)) agent = 'Alex'
 
-    // 6. Bobby: web dev specific tasks (not social, not filming)
+    // 5. Bobby: web dev specific tasks (not social, not filming)
     if (!agent && /\bbobby\b|\bambition\b/i.test(lower)) agent = 'Bobby'
     if (!agent && /\b(?:website|web\s*dev|deploy|frontend|homepage|CTA|case study.*page)\b/i.test(lower)) agent = 'Bobby'
 
-    // 7. Jacob: outreach execution (not strategy)
+    // 6. Jacob: outreach execution (not strategy)
     if (!agent && /\bjacob\b|\boutreach\b|\bapollo\b/i.test(lower)) agent = 'Jacob'
     if (!agent && /\b(?:email.*batch|send.*draft|lead.*research)\b/i.test(lower)) agent = 'Jacob'
 
-    // 8. Cleo: video/content production (not social posting, not payments)
+    // 7. Cleo: video/content production (not social posting, not payments)
     if (!agent && /\bcleo\b/i.test(lower)) agent = 'Cleo'
     if (!agent && /\b(?:video|edit(?:ing)?|footage|filming|documentary|music video)\b/i.test(lower)) agent = 'Cleo'
 
-    // 9. Steffen: brand/design (but not if tagged [Patrik])
+    // 8. Steffen: brand/design (but not if tagged [Patrik])
     if (!agent && /\bsteffen\b/i.test(lower)) agent = 'Steffen'
     if (!agent && /\b(?:brand\s*(?:strategy|identity|guidelines?|direction)|visual\s*identity|logo\s*design|design\s*system)\b/i.test(lower)) agent = 'Steffen'
 
-    // 10. Mom: accountability + routing
+    // 9. Mom: accountability + routing
     if (!agent && /\bmom\b|\bstuck\b|\bblocked\b/i.test(lower)) agent = 'Mom'
 
-    // 11. Patrik: decisions + manual actions
+    // 10. Patrik: decisions + manual actions
     if (!agent && /\b(?:review|sign off|configure|confirm|green light|launch|block.*session|re-engage|decide)\b/i.test(lower)) agent = 'Patrik'
 
     let column = agent ? 'assigned' : 'unassigned'
@@ -2051,7 +2057,27 @@ export default function Dashboard() {
       const agents = AGENTS_CONFIG.map((a, i) => ({ ...a, md: agentMds[i] || '', status: inferAgentStatus(agentMds[i] || ''), lastEntry: agentMds[i] ? parseAgentLog(agentMds[i]) : null }))
       const punchItems = punchMd ? parsePunchList(punchMd) : []
       const priorities = prioritiesMd ? parsePriorities(prioritiesMd) : []
-      const tasks = assignTasksToAgents(punchItems)
+      const allTasks = assignTasksToAgents(punchItems)
+
+      // Cross-source dedup: remove kanban tasks that match a priority item
+      // Uses the same normalization logic as deduplicateTasks
+      const normalize = (t) => t.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
+      const FILLER = new Set(['that', 'this', 'with', 'from', 'have', 'been', 'will', 'about', 'into', 'also', 'just', 'more', 'some', 'than', 'them', 'then', 'when', 'what', 'your', 'each', 'which', 'their', 'would', 'make', 'like', 'need', 'back', 'once'])
+      const keyTerms = (t) => normalize(t).split(' ').filter(w => w.length >= 4 && !FILLER.has(w))
+      const overlapScore = (a, b) => {
+        const termsA = keyTerms(a)
+        const termsB = keyTerms(b)
+        if (termsA.length === 0 || termsB.length === 0) return 0
+        const setB = new Set(termsB)
+        const shared = termsA.filter(t => setB.has(t)).length
+        return shared / Math.min(termsA.length, termsB.length)
+      }
+      const priTexts = priorities.map(p => `${p.label} ${p.desc || ''}`)
+      const tasks = allTasks.filter(task => {
+        // Check if this kanban task is a duplicate of any priority item
+        return !priTexts.some(priText => overlapScore(task.text, priText) >= 0.5)
+      })
+
       const actions = actionsMd ? parseActionsLog(actionsMd) : []
       const handoff = handoffMd ? parseHandoff(handoffMd) : []
       const openCount = punchItems.filter(p => !p.done).length
