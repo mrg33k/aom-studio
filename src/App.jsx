@@ -3,11 +3,11 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import {
   X, ChevronRight, Loader2,
   Activity, Target, Layers, Zap, Smartphone, Clapperboard, CheckCircle2,
-  Volume2, ArrowRight, Radio, ArrowDownRight,
+  Volume2, ArrowRight, ArrowDownRight,
   ShieldCheck, Clock3, Users, Building2, BadgeCheck, Star, Sparkles, Coins, ScrollText,
   Lightbulb, Rocket, Repeat, Crown, Fingerprint, Mic2,
   Download, Calendar, TrendingUp, PlaneTakeoff, Globe, Navigation, MapPin, Truck,
-  Phone, Video, Mic, Monitor, Cpu, Headphones, Speaker, MousePointer2, Mail, Landmark,
+  Phone, Mic, Monitor, Cpu, Headphones, Speaker, MousePointer2, Mail, Landmark,
   ChevronLeft, AlertCircle
 } from 'lucide-react';
 
@@ -40,7 +40,6 @@ const shuffleArray = (array) => {
 const ORANGE = "#FF4F00";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xbdalqvg";
 const MAIN_PHONE = "6023732164";
-const RENTAL_REALESTATE_PHONE = "4806954462";
 const BUDGET_OPTIONS = ["$2k - $5k", "$5k - $10k", "$10k - $25k", "$25k+"];
 const GOAL_OPTIONS = ["Close more sales", "Recruiting", "Investor / fundraising", "Brand trust", "Event recap", "Launch", "Other"];
 const PLACEMENT_OPTIONS = ["Website", "Ads", "LinkedIn", "Instagram/TikTok", "Sales outreach", "Internal", "Not sure"];
@@ -65,7 +64,7 @@ const TRUST_METRICS = [
   { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Systems for matching style across assets." },
 ];
 
-const TRUST_LOGOS = ["INDUSTRIAL", "CONSTRUCTION", "REAL ESTATE", "HOSPITALITY", "SAAS", "HEALTHCARE", "NONPROFIT", "EVENTS", "EDUCATION", "FINANCE"];
+
 
 const TESTIMONIALS = [
   {
@@ -471,8 +470,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
                   {[
                     { label: "Scheduling", icon: Calendar, sub: "Inquiries & Logistics", number: MAIN_PHONE },
                     { label: "Creative", icon: Target, sub: "Vision & Strategy", number: MAIN_PHONE },
-                    { label: "Support", icon: ShieldCheck, sub: "Operations & Billing", number: RENTAL_REALESTATE_PHONE },
-                    { label: "Rentals", icon: Video, sub: "Gear & Studio Hire", number: RENTAL_REALESTATE_PHONE },
+                    { label: "Support", icon: ShieldCheck, sub: "Operations & Billing", number: MAIN_PHONE },
                     { label: "Accounting", icon: Landmark, sub: "Invoicing & Vendors", type: 'accounting' }
                   ].map(item => (
                     <button key={item.label} onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)} className="w-full p-4 border border-white/5 bg-white/5 hover:border-orange-600/30 hover:bg-orange-600/5 transition-all group flex items-center justify-between text-left text-white">
@@ -490,7 +488,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
                 <div className="text-center mb-8"><div className="w-16 h-16 bg-orange-600/5 border border-orange-600/20 rounded-full flex items-center justify-center mx-auto mb-4"><Mail size={24} className="text-orange-600" /></div><h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Accounting</h2></div>
                 <div className="p-6 border border-orange-600/10 bg-orange-600/5 text-center rounded-sm">
                   <p className="text-zinc-500 text-xs leading-relaxed mb-6">Please send an email to <span className="text-orange-500 font-bold">hello@aom-inhouse.com</span> to accompany your call.</p>
-                  <button onClick={() => handleRoute(RENTAL_REALESTATE_PHONE)} className="w-full bg-orange-600 py-3 text-white font-black italic uppercase tracking-widest text-xs hover:bg-orange-500 transition-all flex items-center justify-center gap-2 shadow-xl"><Phone size={14} className="fill-white" /> Call Accounting</button>
+                  <button onClick={() => handleRoute(MAIN_PHONE)} className="w-full bg-orange-600 py-3 text-white font-black italic uppercase tracking-widest text-xs hover:bg-orange-500 transition-all flex items-center justify-center gap-2 shadow-xl"><Phone size={14} className="fill-white" /> Call Accounting</button>
                 </div>
                 <button onClick={() => setView('list')} className="w-full mt-6 text-zinc-700 hover:text-white text-[9px] font-mono uppercase tracking-widest transition-colors">← Back</button>
               </motion.div>
@@ -749,13 +747,10 @@ export default function App() {
 
           <section className="px-6 md:px-12 py-36 bg-black border-t border-white/5 overflow-hidden text-white snap-start scroll-mt-24 md:scroll-mt-32">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <div className="flex flex-col lg:flex-row items-end justify-between gap-12 mb-20">
+              <div className="mb-20">
                 <div className="max-w-xl">
                   <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Why Us</span>
                   <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-orange-600">.</span></h2>
-                </div>
-                <div className="w-full lg:max-w-md border border-white/10 bg-black/40 overflow-hidden relative">
-                  <div className="flex whitespace-nowrap animate-scroll py-6 md:opacity-100 opacity-70 [animation-duration:28s] md:[animation-duration:40s]">{[...Array(4)].flatMap(() => TRUST_LOGOS).map((t, i) => ( <div key={i} className="mx-10 flex items-center gap-3"><Building2 size={16} className="text-orange-600" /><span className="text-[11px] font-mono font-bold uppercase tracking-[0.35em] text-zinc-400">{t}</span></div> ))}</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/5 bg-zinc-900/10 rounded-sm hover:border-orange-600/30 transition-all"><m.icon className="text-orange-600 mb-8" size={24} /><p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-600 mb-3">{m.label}</p><h4 className="text-xl font-black italic text-white uppercase">{m.value}</h4><p className="text-zinc-500 text-xs mt-4 leading-relaxed">{m.sub}</p></div>)}</div>
@@ -769,23 +764,13 @@ export default function App() {
                 <button onClick={() => openBrief()} className="px-16 py-6 bg-orange-600 text-white font-black uppercase tracking-[0.4em] text-xs hover:bg-orange-500 transition-all clip-path-slant shadow-2xl">Start Brief</button>
                 <button onClick={openPhone} className="px-16 py-6 bg-zinc-900 text-zinc-400 font-black uppercase tracking-[0.4em] text-xs hover:text-white transition-all clip-path-slant border border-white/5">Book Call</button>
               </div>
-              <div className="mt-48 grid grid-cols-1 md:grid-cols-3 gap-20 text-left border-t border-white/5 pt-16">
+              <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-white/5 pt-16">
                 <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Production</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-white text-3xl font-black italic tracking-tighter">Call Production</button></div>
-                <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Rentals</p><button onClick={() => handleRoute(RENTAL_REALESTATE_PHONE)} className="text-white text-3xl font-black italic tracking-tighter">Call Rentals</button></div>
                 <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-black italic tracking-tighter underline decoration-orange-600 underline-offset-8">hello@aom-inhouse.com</a></div>
               </div>
             </div>
           </footer>
 
-          <div className="fixed bottom-0 left-0 w-full z-[100] h-12 bg-black border-t border-zinc-800 flex items-center shadow-2xl pointer-events-none">
-            <div className="flex-1 overflow-hidden relative h-full flex items-center bg-black/90">
-              <div className="flex whitespace-nowrap animate-scroll items-center [animation-duration:60s]">{[...Array(4)].flatMap(() => TICKER_TEXTS).map((text, i) => ( <div key={i} className="flex items-center mx-6"><Radio size={12} className="text-orange-600 animate-pulse mr-3" /><span className="text-[9px] md:text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.3em] flex items-center">{text}</span></div> ))}</div>
-            </div>
-            <div className="h-full flex items-center z-20 pointer-events-auto">
-              <button onClick={openPhone} className="h-full px-5 md:px-6 bg-zinc-900 text-zinc-400 font-black italic uppercase tracking-[0.15em] text-[10px] hover:text-white transition-all flex items-center gap-2 border-l border-zinc-800"><Calendar size={14} /><span className="hidden sm:inline">15-Min Call</span></button>
-              <button onClick={() => openBrief()} className="h-full px-6 md:px-8 bg-orange-600 text-white font-black italic uppercase tracking-[0.15em] text-[10px] md:text-xs transition-all flex items-center gap-3 border-l border-orange-400/30 group"><Zap size={16} className="fill-white" /><span>Start Project</span></button>
-            </div>
-          </div>
 
           <AnimatePresence>
             {selectedVideo && (
@@ -976,4 +961,3 @@ export default function App() {
   );
 }
 
-const TICKER_TEXTS = ["PHOENIX VIDEO PRODUCTION", "PARTNER VERIFIED // THE RIGHT TEAM", "REAL ESTATE MEDIA", "TURNKEY CONTENT SCALE", "AHEAD OF MARKET // EST 2021", "SCOTTSDALE BRAND NARRATIVE"];
