@@ -1714,7 +1714,7 @@ function CommandBar({ onRefresh, isMobile }) {
     <>
       {/* Chat panel */}
       {open && messages.length > 0 && (
-        <div style={{ position: 'fixed', bottom: addTaskMode && notesOpen ? 120 : 64, right: isMobile ? 0 : 24, left: isMobile ? 0 : 'auto', width: isMobile ? '100%' : 420, maxHeight: isMobile ? '70vh' : 400, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: isMobile ? '12px 12px 0 0' : 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', transition: 'bottom 0.15s ease' }}>
+        <div style={{ position: 'fixed', bottom: isMobile ? (addTaskMode && notesOpen ? 210 : 156) : (addTaskMode && notesOpen ? 120 : 64), right: isMobile ? 0 : 24, left: isMobile ? 0 : 'auto', width: isMobile ? '100%' : 420, maxHeight: isMobile ? '60vh' : 400, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: isMobile ? '12px 12px 0 0' : 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', transition: 'bottom 0.15s ease' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ fontSize: 10, color: '#555', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>Command Log</span>
             <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#555', fontSize: 14, cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -1755,7 +1755,7 @@ function CommandBar({ onRefresh, isMobile }) {
 
       {/* Task notes panel (slides up above command bar when in + TASK mode) */}
       {addTaskMode && notesOpen && (
-        <div style={{ position: 'fixed', bottom: 56, left: 0, right: 0, background: '#080808', borderTop: '1px solid rgba(34,197,94,0.15)', padding: '8px 20px', zIndex: 98, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ position: 'fixed', bottom: isMobile ? 152 : 56, left: 0, right: 0, background: '#080808', borderTop: '1px solid rgba(34,197,94,0.15)', padding: '8px 20px', zIndex: 98, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <span style={{ fontSize: 9, color: GREEN, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 6, flexShrink: 0 }}>Notes</span>
           <textarea
             value={taskNotes}
@@ -2013,7 +2013,7 @@ export default function Dashboard() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 116 : 56 }}>
+    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 160 : 56 }}>
 
       {/* REFRESH PROGRESS BAR */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2, zIndex: 300, background: 'transparent' }}>
@@ -2354,7 +2354,7 @@ export default function Dashboard() {
 
       {/* MOBILE BOTTOM TABS */}
       {isMobile && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 56, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'stretch', justifyContent: 'space-around', zIndex: 101 }}>
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 'calc(56px + env(safe-area-inset-bottom, 0px))', paddingBottom: 'env(safe-area-inset-bottom, 0px)', background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'stretch', justifyContent: 'space-around', zIndex: 101 }}>
           {[
             { id: 'queue', label: 'Queue', icon: '\u25A0' },
             { id: 'agents', label: 'Agents', icon: '\u{1F464}' },
