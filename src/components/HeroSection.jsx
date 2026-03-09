@@ -1,6 +1,15 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Building2, Clapperboard, Cpu } from 'lucide-react'
+
+// ── Video background config ──────────────────────────────────────────
+// Swap these URLs with actual AOM showreel / b-roll clips.
+// Each entry gets crossfaded on a loop. Keep clips short (10-20s).
+const HERO_VIDEOS = [
+  // PLACEHOLDER: Replace with real showreel / construction b-roll URLs
+  'https://videos.pexels.com/video-files/5765446/5765446-uhd_2560_1440_30fps.mp4',
+]
+const VIDEO_HOLD_SECONDS = 12 // time each clip plays before crossfade
 
 const pathways = [
   {
@@ -30,11 +39,53 @@ const pathways = [
 ]
 
 export default function HeroSection({ openBrief }) {
+  // ── Video rotation state ──────────────────────────────────────────
+  const [activeIdx, setActiveIdx] = useState(0)
+  const videoRefs = useRef([])
+
+  useEffect(() => {
+    if (HERO_VIDEOS.length <= 1) return
+    const interval = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % HERO_VIDEOS.length)
+    }, VIDEO_HOLD_SECONDS * 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <section className="relative min-h-[85vh] flex items-center bg-aom-cream overflow-hidden">
+
+      {/* ── Video background layer ─────────────────────────────────── */}
+      <div className="hero-video-bg absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+        {HERO_VIDEOS.map((src, i) => (
+          <video
+            key={src}
+            ref={(el) => { videoRefs.current[i] = el }}
+            src={src}
+            muted
+            autoPlay
+            loop
+            playsInline
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ease-in-out ${
+              i === activeIdx ? 'opacity-[0.18]' : 'opacity-0'
+            }`}
+            style={{ filter: 'grayscale(0.3) contrast(1.1)' }}
+          />
+        ))}
+        {/* Cream overlay for readability */}
+        <div className="absolute inset-0 bg-aom-cream/[0.88]" />
+        {/* Bottom gradient fade into content */}
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-aom-cream to-transparent" />
+      </div>
+
+      {/* Mobile: hide video entirely for performance */}
+      <style>{`
+        @media (max-width: 639px) {
+          .hero-video-bg video { display: none; }
+        }
+      `}</style>
+
       {/* Subtle geometric accent */}
-      <div className="absolute top-12 right-12 w-16 h-16 pointer-events-none opacity-10">
+      <div className="absolute top-12 right-12 w-16 h-16 pointer-events-none opacity-10 z-[1]">
         <svg viewBox="0 0 40 40" width="64" height="64">
           {Array.from({ length: 16 }).map((_, i) => {
             const angle = (i * 360 / 16) * Math.PI / 180
@@ -53,7 +104,7 @@ export default function HeroSection({ openBrief }) {
       </div>
 
       {/* Dotted texture background */}
-      <div className="absolute bottom-16 right-24 pointer-events-none opacity-[0.06]">
+      <div className="absolute bottom-16 right-24 pointer-events-none opacity-[0.06] z-[1]">
         <svg width="120" height="80">
           {Array.from({ length: 9 }).map((_, x) =>
             Array.from({ length: 6 }).map((_, y) => (
@@ -80,7 +131,7 @@ export default function HeroSection({ openBrief }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: 'easeOut' }}
         >
-          <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold uppercase tracking-[-0.03em] text-aom-black leading-[0.9] max-w-[45ch]">
+          <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-7xl font-extrabold uppercase tracking-[-0.01em] text-aom-black leading-[0.95] max-w-[45ch]">
             WE MAKE COMPANIES
             <br />
             <span className="text-aom-orange">IMPOSSIBLE TO IGNORE</span>

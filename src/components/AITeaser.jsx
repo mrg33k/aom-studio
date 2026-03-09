@@ -61,7 +61,7 @@ export default function AITeaser() {
             The Engine
           </p>
           <div className="w-12 h-[2px] bg-aom-sage mb-4" />
-          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] text-aom-black max-w-[45ch]">
+          <h2 className="font-headline text-3xl md:text-5xl lg:text-5xl font-extrabold uppercase tracking-[-0.01em] text-aom-black max-w-[45ch] leading-[0.95]">
             THE ENGINE BEHIND THE BRAND
           </h2>
           <p className="text-aom-warm-gray text-lg md:text-xl mt-4 max-w-2xl leading-relaxed font-body">
