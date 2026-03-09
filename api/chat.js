@@ -456,7 +456,7 @@ Work context:\n${(workCtx?.content || '').slice(0, 3000)}`
           }),
         })
 
-        let ccReply = 'Got it. Will follow up when you're back.'
+        let ccReply = "Got it. Will follow up when you're back."
         if (anthropicRes.ok) {
           const data = await anthropicRes.json()
           const textBlocks = (data.content || []).filter(b => b.type === 'text')
