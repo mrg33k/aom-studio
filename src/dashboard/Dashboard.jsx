@@ -122,6 +122,52 @@ function deadlineDaysRemaining(taskText) {
   return null
 }
 
+// ─── PRIORITY SORTING ────────────────────────────────────────────────────────
+const URGENCY_RE = /urgent|owe|behind|overdue|blocking|asap|bottleneck/i
+
+function getTaskPriorityTier(task) {
+  const text = task.raw || task.text
+  const daysLeft = deadlineDaysRemaining(text)
+
+  // Tier 1: deadline within 14 days
+  if (task.deadline && daysLeft !== null && daysLeft <= 14) {
+    return { tier: 1, daysLeft }
+  }
+
+  // Tier 2: urgency keywords
+  if (URGENCY_RE.test(text)) {
+    return { tier: 2, daysLeft }
+  }
+
+  // Tier 3: has a deadline beyond 14 days
+  if (task.deadline && daysLeft !== null && daysLeft > 14) {
+    return { tier: 3, daysLeft }
+  }
+
+  // Tier 4: everything else
+  return { tier: 4, daysLeft }
+}
+
+function sortTasksByPriority(tasks) {
+  // Attach priority info, preserving original index for stable sort
+  const tagged = tasks.map((t, i) => ({ ...t, _pri: getTaskPriorityTier(t), _origIdx: i }))
+
+  tagged.sort((a, b) => {
+    // Sort by tier first
+    if (a._pri.tier !== b._pri.tier) return a._pri.tier - b._pri.tier
+    // Within Tier 1, sort by closest deadline
+    if (a._pri.tier === 1) {
+      const da = a._pri.daysLeft ?? Infinity
+      const db = b._pri.daysLeft ?? Infinity
+      if (da !== db) return da - db
+    }
+    // Otherwise maintain original order
+    return a._origIdx - b._origIdx
+  })
+
+  return tagged
+}
+
 function inferAgentStatus(md) {
   if (!md) return 'idle'
   if (/holding|blocked|waiting on.*patrik|3 open questions/i.test(md)) return 'hold'
@@ -550,9 +596,18 @@ function MobileTaskCard({ task, onRefresh }) {
           position: 'relative', zIndex: 2,
         }}
       >
-        {/* Deadline + blocker badges */}
-        {(task.deadline || blockerCtx) && (
+        {/* Priority + Deadline + blocker badges */}
+        {(task._pri?.tier === 1 || task._pri?.tier === 2 || task.deadline || blockerCtx) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            {task._pri?.tier === 1 && (
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', color: ORANGE, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: ORANGE, display: 'inline-block', boxShadow: '0 0 6px rgba(255,79,0,0.5)' }} />
+                RIGHT NOW
+              </span>
+            )}
+            {task._pri?.tier === 2 && !task.deadline && (
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: YELLOW, textTransform: 'uppercase' }}>URGENT</span>
+            )}
             {task.deadline && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span style={{ fontSize: 10, color: urgentColor, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Deadline</span>
@@ -856,8 +911,20 @@ function TaskCard({ task, onRefresh }) {
           <span style={{ color: '#ef4444', fontSize: 10, fontWeight: 600 }}>Failed to remove</span>
         </div>
       )}
+      {task._pri?.tier === 1 && !task.deadline && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: ORANGE, display: 'inline-block', boxShadow: '0 0 5px rgba(255,79,0,0.5)' }} />
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: ORANGE, textTransform: 'uppercase' }}>Right Now</span>
+        </div>
+      )}
+      {task._pri?.tier === 2 && !task.deadline && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: YELLOW, textTransform: 'uppercase' }}>Urgent</span>
+        </div>
+      )}
       {task.deadline && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          {task._pri?.tier === 1 && <span style={{ width: 6, height: 6, borderRadius: '50%', background: ORANGE, display: 'inline-block', boxShadow: '0 0 5px rgba(255,79,0,0.5)', flexShrink: 0 }} />}
           <span style={{ fontSize: 9, color: urgentColor, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Hard Deadline</span>
           {daysLeft !== null ? (
             <span style={{ fontSize: 9, fontWeight: 700, color: urgentColor, background: `${urgentColor}18`, borderRadius: 4, padding: '1px 5px' }}>{daysLeft}d</span>
@@ -1910,9 +1977,11 @@ export default function Dashboard() {
   if (!authed) return <PasswordGate onAuth={() => setAuthed(true)} />
 
   const activeAgents = data?.agents?.filter(a => a.status === 'active').length || 0
-  const filteredTasks = selectedAgent
-    ? data?.tasks?.filter(t => t.agent === selectedAgent || t.column === 'unassigned')
-    : data?.tasks || []
+  const filteredTasks = sortTasksByPriority(
+    selectedAgent
+      ? data?.tasks?.filter(t => t.agent === selectedAgent || t.column === 'unassigned') || []
+      : data?.tasks || []
+  )
 
   return (
     <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 116 : 56 }}>
