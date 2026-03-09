@@ -651,6 +651,41 @@ ${contextBlock}`
     return res.status(200).json({ sha: file.sha, changed })
   }
 
+  // ── ASSIGN AGENT ─────────────────────────────────────────────────────────
+  if (action === 'assign_agent') {
+    const { taskText, agentName } = req.body
+    if (!taskText || !agentName) return res.status(400).json({ error: 'taskText and agentName required' })
+
+    const file = await fetchGitHubFile('punch-list.md')
+    if (!file) return res.status(500).json({ error: 'Could not fetch punch list' })
+
+    const lines = file.content.split('\n')
+    const idx = lines.findIndex(l => l.includes(taskText.trim()))
+    if (idx === -1) return res.status(404).json({ error: 'Task not found in punch list' })
+
+    // Update agent tag: replace existing [Agent] or prepend new one after checkbox
+    const line = lines[idx]
+    const agentTagRegex = /^(\s*- \[[ xX]\]\s*)\[(?:Bobby|Jacob|Alex|Cleo|Tony|Steffen|Elon|Paige|Mom)\]\s*/
+    if (agentTagRegex.test(line)) {
+      lines[idx] = line.replace(agentTagRegex, `$1[${agentName}] `)
+    } else {
+      lines[idx] = line.replace(/^(\s*- \[[ xX]\]\s*)/, `$1[${agentName}] `)
+    }
+
+    const ok = await writeGitHubFile(
+      'punch-list.md',
+      lines.join('\n'),
+      file.sha,
+      `Assign ${agentName} to task: ${taskText.slice(0, 60)}`
+    )
+
+    if (!ok) return res.status(500).json({ error: 'GitHub write failed' })
+
+    await syncContextAfterMutation('assign', taskText.trim(), { agent: agentName })
+
+    return res.status(200).json({ ok: true, message: `Assigned to ${agentName}.`, agent: agentName })
+  }
+
   // ── DELETE TASK ────────────────────────────────────────────────────────────
   if (action === 'delete_task') {
     const { taskText } = req.body

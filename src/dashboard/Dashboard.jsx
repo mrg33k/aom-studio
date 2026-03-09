@@ -272,6 +272,9 @@ function MobileTaskCard({ task, onRefresh }) {
   const [launchResult, setLaunchResult] = useState(null)
   const [swipeX, setSwipeX] = useState(0)
   const [actionsRevealed, setActionsRevealed] = useState(false)
+  const [agentPickerOpen, setAgentPickerOpen] = useState(false)
+  const [assigning, setAssigning] = useState(false)
+  const [assignFlash, setAssignFlash] = useState(null)
   const inputRef = useRef(null)
   const editRef = useRef(null)
   const subtaskCacheRef = useRef(null)
@@ -448,6 +451,27 @@ function MobileTaskCard({ task, onRefresh }) {
     setEditing(false)
   }
 
+  const ASSIGNABLE_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Tony', 'Steffen', 'Elon', 'Paige', 'Mom']
+
+  const assignAgent = async (agentName) => {
+    if (assigning) return
+    setAssigning(true)
+    setAgentPickerOpen(false)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'assign_agent', taskText: task.text, agentName }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setAssignFlash(agentName)
+        setTimeout(() => { setAssignFlash(null); onRefresh() }, 1200)
+      }
+    } catch { /* silently fail */ }
+    setAssigning(false)
+  }
+
   if (deleted || marked) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px', background: '#0a0a0a', borderRadius: 10, border: '1px solid rgba(34,197,94,0.3)', opacity: 0.6, transition: 'opacity 0.4s' }}>
@@ -582,17 +606,62 @@ function MobileTaskCard({ task, onRefresh }) {
         </div>
 
         {/* Agent + category footer */}
-        {(task.agent || task.category) && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            {task.category && <span style={{ fontSize: 11, color: '#444' }}>{task.category}</span>}
-            {task.agent ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <AgentInitial name={task.agent} size={20} />
-                <span style={{ fontSize: 11, color: agentColor, fontWeight: 600 }}>{task.agent}</span>
-              </div>
-            ) : (
-              <span style={{ fontSize: 11, color: '#333', fontStyle: 'italic' }}>unassigned</span>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          {task.category && <span style={{ fontSize: 11, color: '#444' }}>{task.category}</span>}
+          {!task.category && <span />}
+          {assignFlash ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#22c55e', fontSize: 14 }}>&#10003;</span>
+              <span style={{ fontSize: 11, color: '#22c55e', fontWeight: 600 }}>{assignFlash}</span>
+            </div>
+          ) : task.agent ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); setAgentPickerOpen(!agentPickerOpen) }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', minHeight: 44, minWidth: 44, justifyContent: 'flex-end' }}
+            >
+              <AgentInitial name={task.agent} size={20} />
+              <span style={{ fontSize: 11, color: agentColor, fontWeight: 600 }}>{task.agent}</span>
+              <span style={{ fontSize: 8, color: '#444', marginLeft: 2 }}>&#9660;</span>
+            </button>
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); setAgentPickerOpen(!agentPickerOpen) }}
+              style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 6, cursor: 'pointer', padding: '4px 10px', minHeight: 44, display: 'flex', alignItems: 'center' }}
+            >
+              <span style={{ fontSize: 11, color: '#444', fontStyle: 'italic' }}>Unassigned</span>
+              <span style={{ fontSize: 8, color: '#333', marginLeft: 6 }}>&#9660;</span>
+            </button>
+          )}
+        </div>
+
+        {/* Agent picker dropdown */}
+        {agentPickerOpen && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              marginTop: 6, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10,
+              padding: '6px 0', overflow: 'hidden',
+            }}
+          >
+            {ASSIGNABLE_AGENTS.map(name => {
+              const c = AGENT_COLORS[name] || '#888'
+              const isCurrentAgent = task.agent === name
+              return (
+                <button
+                  key={name}
+                  onClick={() => { if (!isCurrentAgent) assignAgent(name) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px',
+                    background: isCurrentAgent ? `${c}12` : 'transparent', border: 'none', cursor: isCurrentAgent ? 'default' : 'pointer',
+                    textAlign: 'left', minHeight: 44,
+                  }}
+                >
+                  <AgentInitial name={name} size={22} />
+                  <span style={{ fontSize: 13, color: isCurrentAgent ? c : '#ccc', fontWeight: isCurrentAgent ? 700 : 500 }}>{name}</span>
+                  {isCurrentAgent && <span style={{ fontSize: 10, color: c, marginLeft: 'auto', fontWeight: 700 }}>&#10003;</span>}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
