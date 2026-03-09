@@ -11,6 +11,45 @@ function useIsMobile(breakpoint = 768) {
   return isMobile
 }
 
+// ─── DRAG & DROP REORDER ────────────────────────────────────────────────────
+function useDragReorder(storageKey, items, idKey = 'id') {
+  // Apply saved order from localStorage
+  const applyOrder = useCallback((itemList) => {
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (!saved) return itemList
+      const order = JSON.parse(saved)
+      const orderMap = {}
+      order.forEach((id, i) => { orderMap[id] = i })
+      return [...itemList].sort((a, b) => {
+        const aIdx = orderMap[a[idKey]] !== undefined ? orderMap[a[idKey]] : 9999
+        const bIdx = orderMap[b[idKey]] !== undefined ? orderMap[b[idKey]] : 9999
+        return aIdx - bIdx
+      })
+    } catch { return itemList }
+  }, [storageKey, idKey])
+
+  const saveOrder = useCallback((orderedItems) => {
+    try {
+      const ids = orderedItems.map(item => item[idKey])
+      localStorage.setItem(storageKey, JSON.stringify(ids))
+    } catch {}
+  }, [storageKey, idKey])
+
+  return { applyOrder, saveOrder }
+}
+
+// Shared drag state (module-level to avoid prop drilling)
+let _dragItem = null
+let _dragOverItem = null
+let _dragSource = null
+
+function DragHandle({ style }) {
+  return (
+    <span style={{ cursor: 'grab', color: '#333', fontSize: 14, lineHeight: 1, userSelect: 'none', touchAction: 'none', padding: '4px 2px', ...style }}>&#8942;&#8942;</span>
+  )
+}
+
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN
 const REPO = 'mrg33k/AOM-EA'
@@ -398,7 +437,7 @@ function AgentRow({ agent, selected, onClick, taskCount }) {
 }
 
 // ─── MOBILE TASK CARD ─────────────────────────────────────────────────────────
-function MobileTaskCard({ task, onRefresh }) {
+function MobileTaskCard({ task, onRefresh, dragTouchHandlers }) {
   const [replyOpen, setReplyOpen] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [subtasks, setSubtasks] = useState(null)
@@ -753,6 +792,13 @@ function MobileTaskCard({ task, onRefresh }) {
             onClick={toggleExpand}
             style={{ minHeight: 44, display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', userSelect: 'none' }}
           >
+            {dragTouchHandlers && (
+              <span
+                {...dragTouchHandlers}
+                onClick={e => e.stopPropagation()}
+                style={{ display: 'inline-flex', alignItems: 'center', color: '#333', fontSize: 14, lineHeight: 1, userSelect: 'none', touchAction: 'none', padding: '4px 2px', cursor: 'grab', flexShrink: 0, marginTop: 2 }}
+              >&#8942;&#8942;</span>
+            )}
             <span style={{ display: 'inline-block', width: 12, fontSize: 10, color: '#444', marginTop: 5, transition: 'transform 0.15s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', flexShrink: 0 }}>&#9654;</span>
             <span style={{ fontSize: 14, color: '#ddd', lineHeight: 1.5 }}>
               {task.text}
@@ -1283,13 +1329,14 @@ function TaskCard({ task, onRefresh }) {
 }
 
 const COLUMNS = [
-  { id: 'unassigned', label: 'Unassigned', color: '#444', desc: 'No owner yet' },
   { id: 'assigned', label: 'Assigned', color: BLUE, desc: 'Queued for agent' },
   { id: 'blocked', label: 'Blocked', color: YELLOW, desc: 'Needs action' },
+  { id: 'unassigned', label: 'Unassigned', color: '#444', desc: 'No owner yet' },
 ]
 
-function KanbanColumn({ col, tasks, onRefresh }) {
-  const colTasks = tasks.filter(t => t.column === col.id)
+function KanbanColumn({ col, tasks, onRefresh, dragHandlersFn, applyOrderFn }) {
+  const rawColTasks = tasks.filter(t => t.column === col.id)
+  const colTasks = applyOrderFn ? applyOrderFn(rawColTasks) : rawColTasks
   return (
     <div style={{ minWidth: 260, maxWidth: 300, flex: '1 1 260px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -1298,7 +1345,11 @@ function KanbanColumn({ col, tasks, onRefresh }) {
         <span style={{ fontSize: 10, color: col.color, background: `${col.color}18`, borderRadius: 4, padding: '1px 6px', fontWeight: 700 }}>{colTasks.length}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {colTasks.map(t => <TaskCard key={t.id} task={t} onRefresh={onRefresh} />)}
+        {colTasks.map(t => (
+          <div key={t.id} {...(dragHandlersFn ? dragHandlersFn(t, colTasks) : {})} style={{ transition: 'opacity 0.15s' }}>
+            <TaskCard task={t} onRefresh={onRefresh} />
+          </div>
+        ))}
         {colTasks.length === 0 && (
           <div style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 8, padding: '16px 12px', textAlign: 'center', fontSize: 11, color: '#333' }}>{col.desc}</div>
         )}
@@ -2189,8 +2240,16 @@ export default function Dashboard() {
   const [mobileAgentPanel, setMobileAgentPanel] = useState(false)
   const [refreshProgress, setRefreshProgress] = useState(0)
   const [collapsedSections, setCollapsedSections] = useState({}) // mobile collapsible sections
+  const [dragVersion, setDragVersion] = useState(0) // eslint-disable-line no-unused-vars -- bump to force re-render after drag reorder
   const refreshTimerRef = useRef(null)
   const progressRef = useRef(null)
+  const touchDragRef = useRef({ active: false, itemId: null, sourceKey: null, startY: 0, currentY: 0, el: null, ghost: null, items: [] })
+
+  // Drag reorder hooks for priorities and each kanban column
+  const priDrag = useDragReorder('aom_pri_order', data?.priorities || [], 'id')
+  const assignedDrag = useDragReorder('aom_kanban_assigned', [], 'id')
+  const blockedDrag = useDragReorder('aom_kanban_blocked', [], 'id')
+  const unassignedDrag = useDragReorder('aom_kanban_unassigned', [], 'id')
 
   const load = useCallback(async () => {
     if (!GITHUB_TOKEN) {
@@ -2283,6 +2342,106 @@ export default function Dashboard() {
       ? realTasks.filter(t => t.agent === selectedAgent || t.column === 'unassigned')
       : realTasks
   )
+
+  // Apply user drag-reorder from localStorage
+  const orderedPriorities = priDrag.applyOrder(data?.priorities || [])
+  const dragLookup = { assigned: assignedDrag, blocked: blockedDrag, unassigned: unassignedDrag }
+
+  // HTML5 drag handlers for list items
+  const makeDragHandlers = (item, sourceKey, itemList, saveFn) => ({
+    draggable: true,
+    onDragStart: (e) => {
+      _dragItem = item
+      _dragSource = sourceKey
+      e.dataTransfer.effectAllowed = 'move'
+      e.currentTarget.style.opacity = '0.4'
+    },
+    onDragEnd: (e) => {
+      e.currentTarget.style.opacity = '1'
+      _dragItem = null
+      _dragOverItem = null
+      _dragSource = null
+    },
+    onDragOver: (e) => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      _dragOverItem = item
+    },
+    onDrop: (e) => {
+      e.preventDefault()
+      if (!_dragItem || _dragSource !== sourceKey || _dragItem.id === item.id) return
+      const list = [...itemList]
+      const fromIdx = list.findIndex(i => i.id === _dragItem.id)
+      const toIdx = list.findIndex(i => i.id === item.id)
+      if (fromIdx === -1 || toIdx === -1) return
+      const [moved] = list.splice(fromIdx, 1)
+      list.splice(toIdx, 0, moved)
+      saveFn(list)
+      setDragVersion(v => v + 1)
+    },
+  })
+
+  // Touch drag handlers for mobile reordering
+  const makeTouchDragHandlers = (item, sourceKey, getItems, saveFn) => ({
+    onTouchStart: (e) => {
+      const touch = e.touches[0]
+      const el = e.currentTarget
+      const rect = el.getBoundingClientRect()
+      // Create ghost element
+      const ghost = el.cloneNode(true)
+      ghost.style.position = 'fixed'
+      ghost.style.left = `${rect.left}px`
+      ghost.style.top = `${rect.top}px`
+      ghost.style.width = `${rect.width}px`
+      ghost.style.opacity = '0.85'
+      ghost.style.zIndex = '1000'
+      ghost.style.pointerEvents = 'none'
+      ghost.style.transform = 'scale(1.03)'
+      ghost.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)'
+      ghost.style.transition = 'none'
+      document.body.appendChild(ghost)
+      el.style.opacity = '0.2'
+      touchDragRef.current = { active: true, itemId: item.id, sourceKey, startY: touch.clientY, currentY: touch.clientY, el, ghost, startTop: rect.top, items: getItems() }
+    },
+    onTouchMove: (e) => {
+      const ref = touchDragRef.current
+      if (!ref.active) return
+      e.preventDefault()
+      const touch = e.touches[0]
+      const deltaY = touch.clientY - ref.startY
+      ref.currentY = touch.clientY
+      if (ref.ghost) {
+        ref.ghost.style.top = `${ref.startTop + deltaY}px`
+      }
+    },
+    onTouchEnd: () => {
+      const ref = touchDragRef.current
+      if (!ref.active) return
+      if (ref.ghost) { ref.ghost.remove() }
+      if (ref.el) { ref.el.style.opacity = '1' }
+      // Find which item we're over based on Y position
+      const items = ref.items
+      const el = ref.el
+      if (!el || items.length < 2) { ref.active = false; return }
+      const parent = el.parentElement
+      if (!parent) { ref.active = false; return }
+      const children = Array.from(parent.children)
+      let dropIdx = -1
+      for (let i = 0; i < children.length; i++) {
+        const r = children[i].getBoundingClientRect()
+        if (ref.currentY >= r.top && ref.currentY <= r.bottom) { dropIdx = i; break }
+      }
+      if (dropIdx === -1) { ref.active = false; return }
+      const fromIdx = items.findIndex(it => it.id === ref.itemId)
+      if (fromIdx === -1 || fromIdx === dropIdx) { ref.active = false; return }
+      const list = [...items]
+      const [moved] = list.splice(fromIdx, 1)
+      list.splice(dropIdx, 0, moved)
+      saveFn(list)
+      setDragVersion(v => v + 1)
+      ref.active = false
+    },
+  })
 
   return (
     <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 148 : 56 }}>
@@ -2451,21 +2610,21 @@ export default function Dashboard() {
           {/* Priorities */}
           {GITHUB_TOKEN && !selectedAgent && data?.priorities?.length > 0 && (
             isMobile ? (
-              /* Mobile: horizontal scrollable priority chips with expanded info */
+              /* Mobile: horizontal scrollable priority chips with expanded info + drag to reorder */
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Priorities</div>
+                <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Priorities <span style={{ color: '#333', fontWeight: 400 }}>(hold to reorder)</span></div>
                 <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', marginLeft: -12, marginRight: -12, paddingLeft: 12, paddingRight: 12 }}>
-                  {data.priorities.map((p, i) => {
+                  {orderedPriorities.map((p, i) => {
                     // Only show deadline badge if the priority text contains an actual date or known deadline keyword
                     const combinedText = `${p.label} ${p.desc || ''}`
                     const hasDeadlineSignal = /hard deadline|\b\d{4}-\d{2}-\d{2}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},\s*\d{4}\b/i.test(combinedText)
                     const daysLeft = hasDeadlineSignal ? deadlineDaysRemaining(combinedText) : null
                     const isUrgent = i < 3
                     return (
-                      <div key={i} style={{
+                      <div key={p.id} {...makeDragHandlers(p, 'priorities', orderedPriorities, (list) => priDrag.saveOrder(list))} style={{
                         background: '#111', border: `1px solid ${isUrgent ? 'rgba(255,79,0,0.15)' : 'rgba(255,255,255,0.06)'}`,
                         borderRadius: 12, padding: '14px 16px', width: 'calc(100vw - 80px)', maxWidth: 280, flexShrink: 0,
-                        scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: 6,
+                        scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: 6, cursor: 'grab', transition: 'opacity 0.15s',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2497,10 +2656,11 @@ export default function Dashboard() {
               </div>
             ) : (
               <div style={{ marginBottom: 28 }}>
-                <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Current Priorities</div>
+                <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Current Priorities <span style={{ color: '#333', fontWeight: 400 }}>(drag to reorder)</span></div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {data.priorities.map((p, i) => (
-                    <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-start', flex: '1 1 200px', maxWidth: 300 }}>
+                  {orderedPriorities.map((p, i) => (
+                    <div key={p.id} {...makeDragHandlers(p, 'priorities', orderedPriorities, (list) => priDrag.saveOrder(list))} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-start', flex: '1 1 200px', maxWidth: 300, cursor: 'grab', transition: 'opacity 0.15s' }}>
+                      <DragHandle style={{ marginTop: 1, marginRight: -4 }} />
                       <span style={{ fontSize: 11, fontWeight: 800, color: ORANGE, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: '#ddd' }}>{p.label}</div>
@@ -2543,7 +2703,9 @@ export default function Dashboard() {
 
                 {/* Filtered columns (collapsible on mobile when showing all) */}
                 {(mobileFilter === 'all' ? COLUMNS : COLUMNS.filter(c => c.id === mobileFilter)).map((col, colIdx) => {
-                  const colTasks = filteredTasks.filter(t => t.column === col.id)
+                  const colDrag = dragLookup[col.id]
+                  const rawColTasks = filteredTasks.filter(t => t.column === col.id)
+                  const colTasks = colDrag ? colDrag.applyOrder(rawColTasks) : rawColTasks
                   if (mobileFilter !== 'all' && colTasks.length === 0) {
                     return (
                       <div key={col.id} style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', fontSize: 12, color: '#333' }}>No {col.label.toLowerCase()} tasks</div>
@@ -2576,7 +2738,14 @@ export default function Dashboard() {
                       )}
                       {!isCollapsed && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          {colTasks.map(t => <MobileTaskCard key={t.id} task={t} onRefresh={load} />)}
+                          {colTasks.map(t => {
+                            const touchHandlers = colDrag ? makeTouchDragHandlers(t, `kanban_${col.id}`, () => colTasks, (list) => colDrag.saveOrder(list)) : {}
+                            return (
+                              <div key={t.id} {...(colDrag ? makeDragHandlers(t, `kanban_${col.id}`, colTasks, (list) => colDrag.saveOrder(list)) : {})} style={{ transition: 'opacity 0.15s' }}>
+                                <MobileTaskCard task={t} onRefresh={load} dragTouchHandlers={touchHandlers} />
+                              </div>
+                            )
+                          })}
                           {colTasks.length === 0 && mobileFilter === 'all' && (
                             <div style={{ border: '1px dashed rgba(255,255,255,0.06)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', fontSize: 12, color: '#333' }}>{col.desc}</div>
                           )}
@@ -2588,7 +2757,13 @@ export default function Dashboard() {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 8 }}>
-                {COLUMNS.map(col => <KanbanColumn key={col.id} col={col} tasks={filteredTasks} onRefresh={load} />)}
+                {COLUMNS.map(col => {
+                  const colDrag = dragLookup[col.id]
+                  return <KanbanColumn key={col.id} col={col} tasks={filteredTasks} onRefresh={load}
+                    applyOrderFn={colDrag ? (items) => colDrag.applyOrder(items) : undefined}
+                    dragHandlersFn={colDrag ? (task, colTasks) => makeDragHandlers(task, `kanban_${col.id}`, colTasks, (list) => colDrag.saveOrder(list)) : undefined}
+                  />
+                })}
               </div>
             )
           )}
