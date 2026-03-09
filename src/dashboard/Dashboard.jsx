@@ -647,8 +647,8 @@ function MobileTaskCard({ task, onRefresh }) {
         </div>
 
         {/* Agent + category footer */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          {task.category && <span style={{ fontSize: 11, color: '#444' }}>{task.category}</span>}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)', gap: 8 }}>
+          {task.category && <span style={{ fontSize: 11, color: '#444', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{task.category}</span>}
           {!task.category && <span />}
           {assignFlash ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1700,7 +1700,7 @@ function CommandBar({ onRefresh, isMobile }) {
     <>
       {/* Chat panel */}
       {open && messages.length > 0 && (
-        <div style={{ position: 'fixed', bottom: isMobile ? (addTaskMode && notesOpen ? 210 : 156) : (addTaskMode && notesOpen ? 120 : 64), right: isMobile ? 0 : 24, left: isMobile ? 0 : 'auto', width: isMobile ? '100%' : 420, maxHeight: isMobile ? '60vh' : 400, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: isMobile ? '12px 12px 0 0' : 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', transition: 'bottom 0.15s ease' }}>
+        <div style={{ position: 'fixed', bottom: isMobile ? (addTaskMode && notesOpen ? 200 : 144) : (addTaskMode && notesOpen ? 120 : 64), right: isMobile ? 0 : 24, left: isMobile ? 0 : 'auto', width: isMobile ? '100%' : 420, maxHeight: isMobile ? '60vh' : 400, background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.1)', borderRadius: isMobile ? '12px 12px 0 0' : 12, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 40px rgba(0,0,0,0.6)', transition: 'bottom 0.15s ease' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ fontSize: 10, color: '#555', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase' }}>Command Log</span>
             <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#555', fontSize: 14, cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -1741,7 +1741,7 @@ function CommandBar({ onRefresh, isMobile }) {
 
       {/* Task notes panel (slides up above command bar when in + TASK mode) */}
       {addTaskMode && notesOpen && (
-        <div style={{ position: 'fixed', bottom: isMobile ? 152 : 56, left: 0, right: 0, background: '#080808', borderTop: '1px solid rgba(34,197,94,0.15)', padding: '8px 20px', zIndex: 98, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ position: 'fixed', bottom: isMobile ? 140 : 56, left: 0, right: 0, background: '#080808', borderTop: '1px solid rgba(34,197,94,0.15)', padding: '8px 16px', zIndex: 98, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <span style={{ fontSize: 9, color: GREEN, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 6, flexShrink: 0 }}>Notes</span>
           <textarea
             value={taskNotes}
@@ -1756,7 +1756,7 @@ function CommandBar({ onRefresh, isMobile }) {
       {/* Bar */}
       <div style={{ position: 'fixed', bottom: isMobile ? 56 : 0, left: 0, right: 0, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', zIndex: 99 }}>
         {/* Mode tabs + agent selector row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, padding: isMobile ? '0 10px' : '0 20px', height: isMobile ? 44 : 32, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, padding: isMobile ? '0 8px' : '0 20px', height: isMobile ? 40 : 32, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           {[
             { id: 'task', label: 'TASK', color: GREEN },
             { id: 'chat', label: 'CHAT', color: ORANGE },
@@ -1773,12 +1773,12 @@ function CommandBar({ onRefresh, isMobile }) {
                 if (m.id === 'home') { setNotesOpen(false); setTaskNotes('') }
               }}
               style={{
-                padding: isMobile ? '10px 14px' : '4px 12px', borderRadius: 0, fontSize: 10, fontWeight: 800,
+                padding: isMobile ? '8px 12px' : '4px 12px', borderRadius: 0, fontSize: 10, fontWeight: 800,
                 letterSpacing: '0.1em', cursor: 'pointer', border: 'none',
                 background: barMode === m.id ? `${m.color}15` : 'transparent',
                 color: barMode === m.id ? m.color : '#444',
                 borderBottom: barMode === m.id ? `2px solid ${m.color}` : '2px solid transparent',
-                transition: 'all 0.15s', minHeight: 44,
+                transition: 'all 0.15s', minHeight: 40,
               }}
             >
               {m.label}
@@ -1818,7 +1818,7 @@ function CommandBar({ onRefresh, isMobile }) {
         </div>
 
         {/* Input row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, padding: isMobile ? '8px 10px' : '8px 20px', height: 48 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, padding: isMobile ? '6px 8px' : '8px 20px', height: isMobile ? 44 : 48 }}>
           <input
             ref={inputRef}
             value={input}
@@ -1999,7 +1999,7 @@ export default function Dashboard() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 160 : 56 }}>
+    <div style={{ minHeight: '100vh', background: '#020202', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 148 : 56 }}>
 
       {/* REFRESH PROGRESS BAR */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2, zIndex: 300, background: 'transparent' }}>
@@ -2007,15 +2007,15 @@ export default function Dashboard() {
       </div>
 
       {/* TOP BAR */}
-      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: isMobile ? '0 12px' : '0 24px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 20 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: isMobile ? '0 10px' : '0 24px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 20, minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0 }}>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.16em', color: '#fff', textTransform: 'uppercase' }}>AOM</span>
             {!isMobile && <span style={{ fontSize: 10, letterSpacing: '0.14em', color: ORANGE, fontWeight: 700, textTransform: 'uppercase' }}>Mission Control</span>}
           </div>
           {!isMobile && <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />}
           {data && (
-            <div style={{ display: 'flex', gap: isMobile ? 10 : 20 }}>
+            <div style={{ display: 'flex', gap: isMobile ? 8 : 20, minWidth: 0 }}>
               <Stat label="OPEN" value={data.openCount} compact={isMobile} />
               <Stat label="BLOCKED" value={data.blockedCount} color={data.blockedCount > 0 ? YELLOW : undefined} compact={isMobile} />
               <Stat label="DUE" value={data.deadlineCount} color={data.deadlineCount > 0 ? RED : undefined} compact={isMobile} />
@@ -2024,12 +2024,12 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 12, flexShrink: 0 }}>
           {loading && <span style={{ fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>syncing…</span>}
           {lastFetched && !loading && !isMobile && <span style={{ fontSize: 10, color: '#333' }}>{lastFetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>}
-          <button onClick={() => setCouncilOpen(true)} style={{ background: `${ORANGE}12`, border: `1px solid ${ORANGE}30`, borderRadius: 6, color: ORANGE, fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700, minHeight: 44, display: 'flex', alignItems: 'center' }}>COUNCIL</button>
+          <button onClick={() => setCouncilOpen(true)} style={{ background: `${ORANGE}12`, border: `1px solid ${ORANGE}30`, borderRadius: 6, color: ORANGE, fontSize: 10, padding: '4px 10px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700, minHeight: 44, display: 'flex', alignItems: 'center' }}>COUNCIL</button>
           {!isMobile && <button onClick={load} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#666', fontSize: 10, padding: '4px 12px', cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 600 }}>REFRESH</button>}
-          <button onClick={() => { localStorage.removeItem('aom_ops_auth'); setAuthed(false) }} style={{ background: 'none', border: 'none', color: '#333', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em', minHeight: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>LOCK</button>
+          <button onClick={() => { localStorage.removeItem('aom_ops_auth'); setAuthed(false) }} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#444', fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em', minHeight: 44, minWidth: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>LOCK</button>
         </div>
       </div>
 
@@ -2138,7 +2138,7 @@ export default function Dashboard() {
             {data ? <ActivityFeed actions={data.actions} handoff={data.handoff} /> : <div style={{ fontSize: 11, color: '#333' }}>No activity</div>}
           </div>
         ) : (
-        <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 24 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? '12px 14px' : 24 }}>
 
           {/* No token error state */}
           {!GITHUB_TOKEN && (
@@ -2157,8 +2157,8 @@ export default function Dashboard() {
             </div>
           )}
 
-          {GITHUB_TOKEN && <div style={{ marginBottom: isMobile ? 12 : 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{selectedAgent ? `${selectedAgent}'s Queue` : 'Mission Queue'}</div>
+          {GITHUB_TOKEN && <div style={{ marginBottom: isMobile ? 16 : 20 }}>
+            <div style={{ fontSize: isMobile ? 15 : 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{selectedAgent ? `${selectedAgent}'s Queue` : 'Mission Queue'}</div>
             <div style={{ fontSize: 11, color: '#444' }}>{selectedAgent ? `Tasks assigned to ${selectedAgent} + unassigned gaps` : 'All active work across every agent'}</div>
           </div>}
 
@@ -2340,7 +2340,7 @@ export default function Dashboard() {
 
       {/* MOBILE BOTTOM TABS */}
       {isMobile && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 'calc(56px + env(safe-area-inset-bottom, 0px))', paddingBottom: 'env(safe-area-inset-bottom, 0px)', background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'stretch', justifyContent: 'space-around', zIndex: 101 }}>
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)', background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 101, height: 56 }}>
           {[
             { id: 'queue', label: 'Queue', icon: '\u25A0' },
             { id: 'agents', label: 'Agents', icon: '\u{1F464}' },
@@ -2352,14 +2352,14 @@ export default function Dashboard() {
               key={tab.id}
               onClick={() => setActiveView(tab.id)}
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
                 background: 'none', border: 'none', cursor: 'pointer',
-                padding: '6px 12px', minWidth: 56, minHeight: 44,
+                padding: '4px 0', minWidth: 56, minHeight: 48,
                 color: activeView === tab.id ? ORANGE : '#444',
-                transition: 'color 0.15s',
+                transition: 'color 0.15s', flex: 1,
               }}
             >
-              <span style={{ fontSize: 18 }}>{tab.icon}</span>
+              <span style={{ fontSize: 16 }}>{tab.icon}</span>
               <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{tab.label}</span>
             </button>
           ))}
