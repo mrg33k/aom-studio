@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { ArrowLeft, Copy, Check } from 'lucide-react'
 
 /* ------------------------------------------------------------------ */
-/*  AOM Brand Guidelines v2 -- Before/After Skill Upgrade              */
-/*  Direction C: Bold Graphic (LOCKED)                                 */
+/*  AOM Brand Guidelines -- Final                                      */
+/*  Direction C: Bold Graphic                                          */
 /*  Fonts: Syne (display) + Space Grotesk (headlines + body)           */
 /*  Colors: Cream #FDF6EC, Black #0A0A0A, Orange #E85D26, Gold #C9A84C */
 /* ------------------------------------------------------------------ */
@@ -60,76 +60,218 @@ function SectionNumber({ num, color = COLORS.orange }) {
 }
 
 /* ================================================================== */
-/*  V1 LOGOS (BEFORE) -- kept as-is from original                       */
+/*  LOGO SYSTEM -- Refined from v1 concepts                            */
+/*  Wordmark: Syne ExtraBold <text> with refined kerning + orange dot  */
+/*  Geometric mark: Circle + "A" polygon, orange crossbar, gold accent */
+/*  Badge: Double-ring seal with circular text                         */
+/*  Stacked lockup: "AHEAD OF" / "MARKET" with tagline                */
 /* ================================================================== */
 
-function V1LogoWordmark({ color = COLORS.black, size = 72 }) {
+function LogoWordmark({ color = COLORS.black, size = 72 }) {
+  // Syne ExtraBold "AOM" with tighter kerning and refined orange dot
+  // The dot sits precisely after the M, sized at 10% of cap height
+  // Positioned optically (not mathematically) for visual balance
+  const scale = size / 72
+  const w = 240 * scale
   return (
-    <svg viewBox="0 0 300 80" width={size * (300/80)} height={size} aria-label="V1 AOM Wordmark">
-      <text x="0" y="65" fontFamily="Syne, sans-serif" fontSize="72" fontWeight="800" fill={color} letterSpacing="-2">
+    <svg viewBox="0 0 240 80" width={w} height={size} aria-label="AOM Wordmark" role="img">
+      <text
+        x="0" y="64"
+        fontFamily="Syne, sans-serif"
+        fontSize="72"
+        fontWeight="800"
+        fill={color}
+        letterSpacing="-3"
+      >
         AOM
       </text>
-      <rect x="210" y="52" width="8" height="8" rx="4" fill={COLORS.orange} />
+      {/* Orange dot: 7px radius, optically placed after M */}
+      <circle cx="212" cy="57" r="7" fill={COLORS.orange} />
     </svg>
   )
 }
 
-function V1LogoMark({ color = COLORS.black, accent = COLORS.orange, size = 80 }) {
+function LogoMark({ color = COLORS.black, accent = COLORS.orange, size = 80 }) {
+  // Abstract "A" inside a circle
+  // Circle: 2px stroke, clean and simple
+  // "A": refined polygon with slightly wider base for stability
+  // Crossbar: orange, optically centered (slightly above mathematical center)
+  // Gold accent dot at apex: smaller, more intentional
+  // All proportions checked against 80x80 viewBox
   return (
-    <svg viewBox="0 0 80 80" width={size} height={size} aria-label="V1 AOM Mark">
-      <circle cx="40" cy="40" r="38" fill="none" stroke={color} strokeWidth="2" />
-      <polygon points="40,14 18,62 28,62 40,34 52,62 62,62" fill={color} />
-      <rect x="25" y="46" width="30" height="4" rx="2" fill={accent} />
-      <circle cx="40" cy="26" r="3" fill={COLORS.gold} />
+    <svg viewBox="0 0 80 80" width={size} height={size} aria-label="AOM Geometric Mark" role="img">
+      {/* Outer circle */}
+      <circle cx="40" cy="40" r="37" fill="none" stroke={color} strokeWidth="2.5" />
+      {/* "A" shape: wider legs, cleaner angles */}
+      <polygon
+        points="40,16 19,61 27,61 40,32 53,61 61,61"
+        fill={color}
+      />
+      {/* Orange crossbar: optically centered at ~44 (above math center 40) */}
+      <rect x="27" y="44" width="26" height="3.5" rx="1.75" fill={accent} />
+      {/* Gold apex accent: smaller, more precise */}
+      <circle cx="40" cy="16" r="2.5" fill={COLORS.gold} />
     </svg>
   )
 }
 
-function V1LogoBadge({ color = COLORS.black, size = 120 }) {
+function LogoBadge({ color = COLORS.black, accent = COLORS.orange, size = 120 }) {
+  // Double-ring seal with circular text
+  // Outer ring: 2px, solid
+  // Inner ring: 1.5px, tighter gap (4px between rings)
+  // Circular text: "AHEAD OF MARKET" top, "PHOENIX AZ . EST 2020" bottom
+  // Dot separators at cardinal points: orange top/bottom, gold left/right
+  // Center: "AOM" in Syne ExtraBold, dominant
   return (
-    <svg viewBox="0 0 160 160" width={size} height={size} aria-label="V1 AOM Badge">
+    <svg viewBox="0 0 160 160" width={size} height={size} aria-label="AOM Badge" role="img">
+      {/* Outer ring */}
       <circle cx="80" cy="80" r="76" fill="none" stroke={color} strokeWidth="2" />
+      {/* Inner ring: tight gap, crisp definition */}
       <circle cx="80" cy="80" r="70" fill="none" stroke={color} strokeWidth="1" />
-      <text x="80" y="90" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="800" fill={color} textAnchor="middle" letterSpacing="-1">
+
+      {/* Center text: "AOM" large and bold */}
+      <text
+        x="80" y="88"
+        fontFamily="Syne, sans-serif"
+        fontSize="42"
+        fontWeight="800"
+        fill={color}
+        textAnchor="middle"
+        letterSpacing="-1"
+      >
         AOM
       </text>
+
+      {/* Circular text paths: radius 58 for text between inner ring and outer ring */}
       <defs>
-        <path id="v1topArc" d="M 25,80 a 55,55 0 0,1 110,0" fill="none" />
-        <path id="v1bottomArc" d="M 135,80 a 55,55 0 0,1 -110,0" fill="none" />
+        <path id="topArc" d="M 22,80 a 58,58 0 0,1 116,0" fill="none" />
+        <path id="bottomArc" d="M 138,80 a 58,58 0 0,1 -116,0" fill="none" />
       </defs>
-      <text fontFamily="Space Grotesk, sans-serif" fontSize="8" fontWeight="700" fill={color} letterSpacing="4" textAnchor="middle">
-        <textPath href="#v1topArc" startOffset="50%">AHEAD OF MARKET</textPath>
+
+      {/* Top arc: "AHEAD OF MARKET" */}
+      <text
+        fontFamily="Space Grotesk, sans-serif"
+        fontSize="7.5"
+        fontWeight="700"
+        fill={color}
+        letterSpacing="4"
+        textAnchor="middle"
+      >
+        <textPath href="#topArc" startOffset="50%">AHEAD OF MARKET</textPath>
       </text>
-      <text fontFamily="Space Grotesk, sans-serif" fontSize="7" fontWeight="500" fill={COLORS.warmGray} letterSpacing="3" textAnchor="middle">
-        <textPath href="#v1bottomArc" startOffset="50%">PHOENIX AZ &#8226; EST 2020</textPath>
+
+      {/* Bottom arc: "PHOENIX AZ . EST 2020" */}
+      <text
+        fontFamily="Space Grotesk, sans-serif"
+        fontSize="6.5"
+        fontWeight="500"
+        fill={COLORS.warmGray}
+        letterSpacing="3"
+        textAnchor="middle"
+      >
+        <textPath href="#bottomArc" startOffset="50%">PHOENIX AZ &#8226; EST 2020</textPath>
       </text>
-      <circle cx="80" cy="10" r="2.5" fill={COLORS.orange} />
-      <circle cx="80" cy="150" r="2.5" fill={COLORS.orange} />
-      <circle cx="10" cy="80" r="2.5" fill={COLORS.gold} />
-      <circle cx="150" cy="80" r="2.5" fill={COLORS.gold} />
+
+      {/* Cardinal dot separators */}
+      <circle cx="80" cy="8" r="2.5" fill={accent} />
+      <circle cx="80" cy="152" r="2.5" fill={accent} />
+      <circle cx="8" cy="80" r="2" fill={COLORS.gold} />
+      <circle cx="152" cy="80" r="2" fill={COLORS.gold} />
     </svg>
   )
 }
 
-function V1LogoStacked({ color = COLORS.black, size = 80 }) {
+function LogoStacked({ color = COLORS.black, size = 80 }) {
+  // Stacked lockup: "AHEAD OF" small tracked caps, "MARKET" large bold
+  // Rule line separating tagline
+  // Tagline: "CREATIVE PRODUCTION + AI SYSTEMS"
+  // Tighter vertical spacing for better cohesion
   return (
-    <svg viewBox="0 0 180 120" width={size * (180/120)} height={size} aria-label="V1 AOM Stacked">
-      <text x="0" y="42" fontFamily="Syne, sans-serif" fontSize="18" fontWeight="800" fill={COLORS.orange} letterSpacing="8">
+    <svg viewBox="0 0 220 110" width={size * (220/110)} height={size} aria-label="AOM Stacked Lockup" role="img">
+      {/* "AHEAD OF" in orange tracked caps */}
+      <text
+        x="2" y="18"
+        fontFamily="Syne, sans-serif"
+        fontSize="13"
+        fontWeight="800"
+        fill={COLORS.orange}
+        letterSpacing="8"
+      >
         AHEAD OF
       </text>
-      <text x="0" y="90" fontFamily="Syne, sans-serif" fontSize="52" fontWeight="800" fill={color} letterSpacing="-1">
+
+      {/* "MARKET" large bold */}
+      <text
+        x="0" y="62"
+        fontFamily="Syne, sans-serif"
+        fontSize="46"
+        fontWeight="800"
+        fill={color}
+        letterSpacing="-1"
+      >
         MARKET
       </text>
-      <rect x="0" y="100" width="178" height="3" fill={color} />
-      <text x="0" y="114" fontFamily="Space Grotesk, sans-serif" fontSize="8" fontWeight="500" fill={COLORS.warmGray} letterSpacing="3">
+
+      {/* Orange dot after MARKET */}
+      <circle cx="204" cy="55" r="4.5" fill={COLORS.orange} />
+
+      {/* Rule line */}
+      <rect x="0" y="72" width="212" height="2.5" fill={color} />
+
+      {/* Tagline */}
+      <text
+        x="0" y="88"
+        fontFamily="Space Grotesk, sans-serif"
+        fontSize="7.5"
+        fontWeight="500"
+        fill={COLORS.warmGray}
+        letterSpacing="2.5"
+      >
         CREATIVE PRODUCTION + AI SYSTEMS
       </text>
+
+      {/* Thin gold accent */}
+      <rect x="0" y="96" width="50" height="1.5" fill={COLORS.gold} opacity="0.5" />
     </svg>
   )
 }
 
-// V1 Patterns
-function V1Starburst({ size = 40, color = COLORS.orange, style = {} }) {
+/* Full horizontal lockup: Mark + Wordmark */
+function LogoLockup({ color = COLORS.black, accent = COLORS.orange, size = 48 }) {
+  return (
+    <svg viewBox="0 0 340 80" width={size * (340/80)} height={size} fill="none" role="img" aria-label="AOM Full Lockup">
+      {/* Mark (scaled down) */}
+      <g transform="translate(0, 0)">
+        <circle cx="40" cy="40" r="37" fill="none" stroke={color} strokeWidth="2.5" />
+        <polygon points="40,16 19,61 27,61 40,32 53,61 61,61" fill={color} />
+        <rect x="27" y="44" width="26" height="3.5" rx="1.75" fill={accent} />
+        <circle cx="40" cy="16" r="2.5" fill={COLORS.gold} />
+      </g>
+
+      {/* Divider line */}
+      <line x1="96" y1="12" x2="96" y2="68" stroke={accent} strokeWidth="1.5" />
+
+      {/* Wordmark */}
+      <text
+        x="114" y="56"
+        fontFamily="Syne, sans-serif"
+        fontSize="52"
+        fontWeight="800"
+        fill={color}
+        letterSpacing="-2"
+      >
+        AOM
+      </text>
+      <circle cx="290" cy="50" r="5" fill={accent} />
+    </svg>
+  )
+}
+
+/* ================================================================== */
+/*  BRAND PATTERNS                                                      */
+/* ================================================================== */
+
+function Starburst({ size = 40, color = COLORS.orange, style = {} }) {
   const points = Array.from({ length: 16 }).map((_, i) => {
     const angle = (i * 360 / 16) * Math.PI / 180
     const r = i % 2 === 0 ? size / 2 : size / 5
@@ -142,11 +284,11 @@ function V1Starburst({ size = 40, color = COLORS.orange, style = {} }) {
   )
 }
 
-function V1DottedTexture({ width = 120, height = 80, color = COLORS.black, opacity = 0.15, style = {} }) {
+function DottedTexture({ width = 120, height = 80, color = COLORS.black, opacity = 0.12, style = {} }) {
   const dots = []
-  for (let x = 0; x < width; x += 12) {
-    for (let y = 0; y < height; y += 12) {
-      dots.push(<circle key={`${x}-${y}`} cx={x + 6} cy={y + 6} r={1.5} fill={color} opacity={opacity} />)
+  for (let x = 0; x < width; x += 14) {
+    for (let y = 0; y < height; y += 14) {
+      dots.push(<circle key={`${x}-${y}`} cx={x + 7} cy={y + 7} r={1.5} fill={color} opacity={opacity} />)
     }
   }
   return (
@@ -156,367 +298,11 @@ function V1DottedTexture({ width = 120, height = 80, color = COLORS.black, opaci
   )
 }
 
-/* ================================================================== */
-/*  V2 LOGOS (AFTER) -- Grid-based, geometric, professional             */
-/* ================================================================== */
-
-/*
- * Construction notes:
- * - 96x96 viewBox on an 8-unit grid (12 grid lines per axis)
- * - Golden ratio: 1.618:1 applied to key proportions
- * - All coordinates snap to multiples of 8
- * - Optical overshoot: circles extend 3% beyond grid bounds
- * - fillRule="evenodd" for all negative space cutouts
- */
-
-// V2 Primary Logomark: "A" as forward arrow, negative space creates the crossbar
-function V2LogoMark({ color = COLORS.black, accent = COLORS.orange, size = 80, showGrid = false }) {
-  // 96x96 viewBox, 8-unit grid
-  // The "A" is built from two angled strokes meeting at apex
-  // Negative space triangle creates the crossbar void
-  // The form reads as both an "A" and an upward arrow (ahead / ambition)
-  const G = 8 // grid unit
-  return (
-    <svg viewBox="0 0 96 96" width={size} height={size} fill="none" role="img" aria-label="AOM Mark v2">
-      {showGrid && (
-        <g opacity="0.08">
-          {Array.from({ length: 13 }).map((_, i) => (
-            <React.Fragment key={i}>
-              <line x1={i * G} y1="0" x2={i * G} y2="96" stroke={color} strokeWidth="0.5" />
-              <line x1="0" y1={i * G} x2="96" y2={i * G} stroke={color} strokeWidth="0.5" />
-            </React.Fragment>
-          ))}
-        </g>
-      )}
-      {/* Main "A" mark with negative space crossbar cutout */}
-      <path
-        fillRule="evenodd"
-        fill={color}
-        d={`
-          M 48,8
-          L 88,80
-          L 72,80
-          L 48,32
-          L 24,80
-          L 8,80
-          Z
-          M 48,48
-          L 36,72
-          L 60,72
-          Z
-        `}
-      />
-      {/* Orange accent: precise dot at apex, radius follows golden ratio to stroke */}
-      <circle cx="48" cy="8" r="5" fill={accent} />
-      {/* Gold baseline anchor */}
-      <rect x="8" y="84" width="80" height="4" rx="2" fill={COLORS.gold} opacity="0.6" />
-    </svg>
-  )
-}
-
-// V2 Wordmark: Custom letter construction, not SVG text
-function V2LogoWordmark({ color = COLORS.black, size = 56 }) {
-  // Each letter is a hand-built path on the 8-unit grid
-  // Stroke weight: 8px consistent throughout
-  // Proportions: each letter fits in a 40x56 grid cell
-  // Spacing: 8px between letters
-  const sw = 8 // stroke width
-  return (
-    <svg viewBox="0 0 260 64" width={size * (260/64)} height={size} fill="none" role="img" aria-label="AOM Wordmark v2">
-      {/* "A" - two angled strokes + crossbar, with negative space triangle */}
-      <path
-        fill={color}
-        fillRule="evenodd"
-        d={`
-          M 32,4 L 60,60 L 52,60 L 32,18 L 12,60 L 4,60 Z
-          M 32,36 L 24,52 L 40,52 Z
-        `}
-      />
-
-      {/* "O" - circle with counter (negative space center) */}
-      <path
-        fill={color}
-        fillRule="evenodd"
-        d={`
-          M 108,4 A 28,28 0 1,1 108,60 A 28,28 0 1,1 108,4 Z
-          M 108,16 A 16,16 0 1,0 108,48 A 16,16 0 1,0 108,16 Z
-        `}
-      />
-
-      {/* "M" - three vertical strokes with angled peaks */}
-      <path
-        fill={color}
-        d={`
-          M 148,60 L 148,16 L 172,40 L 196,16 L 196,60 L 188,60 L 188,32 L 172,50 L 156,32 L 156,60 Z
-        `}
-      />
-
-      {/* Orange dot after M, acts as the brand punctuation */}
-      <circle cx="212" cy="56" r="5" fill={COLORS.orange} />
-
-      {/* Thin gold underline, anchors the wordmark */}
-      <rect x="0" y="62" width="220" height="2" fill={COLORS.gold} opacity="0.4" />
-    </svg>
-  )
-}
-
-// V2 Extended Lockup: Mark + Wordmark with clear spacing rules
-function V2LogoLockup({ color = COLORS.black, accent = COLORS.orange, size = 48 }) {
-  return (
-    <svg viewBox="0 0 360 72" width={size * (360/72)} height={size} fill="none" role="img" aria-label="AOM Full Lockup v2">
-      {/* Mark (scaled to fit 72x72) */}
-      <g transform="translate(0,0)">
-        <path
-          fillRule="evenodd"
-          fill={color}
-          d={`
-            M 36,4 L 68,64 L 56,64 L 36,24 L 16,64 L 4,64 Z
-            M 36,36 L 27,56 L 45,56 Z
-          `}
-        />
-        <circle cx="36" cy="4" r="4" fill={accent} />
-      </g>
-
-      {/* Vertical divider with 16px clear space on each side */}
-      <line x1="88" y1="8" x2="88" y2="64" stroke={accent} strokeWidth="2" />
-
-      {/* Custom wordmark letters */}
-      <g transform="translate(104, 8)">
-        {/* A */}
-        <path fill={color} fillRule="evenodd"
-          d="M 20,2 L 38,48 L 32,48 L 20,14 L 8,48 L 2,48 Z M 20,28 L 14,42 L 26,42 Z" />
-        {/* O */}
-        <path fill={color} fillRule="evenodd"
-          d="M 68,2 A 24,24 0 1,1 68,50 A 24,24 0 1,1 68,2 Z M 68,12 A 14,14 0 1,0 68,40 A 14,14 0 1,0 68,12 Z" />
-        {/* M */}
-        <path fill={color}
-          d="M 104,48 L 104,10 L 124,30 L 144,10 L 144,48 L 138,48 L 138,22 L 124,38 L 110,22 L 110,48 Z" />
-      </g>
-
-      {/* Tagline below */}
-      <text x="104" y="68" fontFamily="Space Grotesk, sans-serif" fontSize="8" fontWeight="500" fill={COLORS.warmGray} letterSpacing="3">
-        AHEAD OF MARKET
-      </text>
-    </svg>
-  )
-}
-
-// V2 Badge: Circular stamp with compound paths, no SVG text for main mark
-function V2LogoBadge({ color = COLORS.black, accent = COLORS.orange, size = 120 }) {
-  return (
-    <svg viewBox="0 0 192 192" width={size} height={size} fill="none" role="img" aria-label="AOM Badge v2">
-      <defs>
-        <path id="v2topArc" d="M 30,96 a 66,66 0 0,1 132,0" />
-        <path id="v2bottomArc" d="M 162,96 a 66,66 0 0,1 -132,0" />
-        <clipPath id="badgeClip">
-          <circle cx="96" cy="96" r="90" />
-        </clipPath>
-      </defs>
-
-      {/* Outer ring */}
-      <circle cx="96" cy="96" r="92" stroke={color} strokeWidth="2" fill="none" />
-      {/* Inner ring */}
-      <circle cx="96" cy="96" r="84" stroke={color} strokeWidth="0.75" fill="none" />
-
-      {/* Starburst accent at compass points */}
-      <circle cx="96" cy="6" r="3" fill={accent} />
-      <circle cx="96" cy="186" r="3" fill={accent} />
-      <circle cx="6" cy="96" r="3" fill={COLORS.gold} />
-      <circle cx="186" cy="96" r="3" fill={COLORS.gold} />
-
-      {/* Center "A" mark - larger, dominant */}
-      <g transform="translate(56, 48)">
-        <path
-          fillRule="evenodd"
-          fill={color}
-          d={`
-            M 40,8 L 76,80 L 64,80 L 40,28 L 16,80 L 4,80 Z
-            M 40,44 L 30,68 L 50,68 Z
-          `}
-        />
-        <circle cx="40" cy="8" r="4.5" fill={accent} />
-      </g>
-
-      {/* Circular text */}
-      <text fontFamily="Space Grotesk, sans-serif" fontSize="8.5" fontWeight="700" fill={color} letterSpacing="5" textAnchor="middle">
-        <textPath href="#v2topArc" startOffset="50%">AHEAD OF MARKET</textPath>
-      </text>
-      <text fontFamily="Space Grotesk, sans-serif" fontSize="7.5" fontWeight="500" fill={COLORS.warmGray} letterSpacing="4" textAnchor="middle">
-        <textPath href="#v2bottomArc" startOffset="50%">PHOENIX AZ &#8226; EST 2020</textPath>
-      </text>
-
-      {/* Dotted inner circle */}
-      <circle cx="96" cy="96" r="74" fill="none" stroke={color} strokeWidth="0.75" strokeDasharray="2 5" opacity="0.3" />
-    </svg>
-  )
-}
-
-// V2 Stacked Lockup
-function V2LogoStacked({ color = COLORS.black, size = 80 }) {
-  return (
-    <svg viewBox="0 0 200 140" width={size * (200/140)} height={size} fill="none" role="img" aria-label="AOM Stacked v2">
-      {/* "AHEAD OF" in small tracked caps */}
-      <text x="4" y="16" fontFamily="Space Grotesk, sans-serif" fontSize="12" fontWeight="700" fill={COLORS.orange} letterSpacing="8">
-        AHEAD OF
-      </text>
-
-      {/* Large geometric "AOM" wordmark */}
-      <g transform="translate(4, 28)">
-        {/* A */}
-        <path fill={color} fillRule="evenodd"
-          d="M 28,4 L 52,56 L 44,56 L 28,16 L 12,56 L 4,56 Z M 28,32 L 20,48 L 36,48 Z" />
-        {/* O */}
-        <path fill={color} fillRule="evenodd"
-          d="M 82,4 A 26,26 0 1,1 82,56 A 26,26 0 1,1 82,4 Z M 82,14 A 16,16 0 1,0 82,46 A 16,16 0 1,0 82,14 Z" />
-        {/* M */}
-        <path fill={color}
-          d="M 120,56 L 120,12 L 142,34 L 164,12 L 164,56 L 156,56 L 156,28 L 142,42 L 128,28 L 128,56 Z" />
-      </g>
-
-      {/* Orange dot */}
-      <circle cx="180" cy="80" r="4" fill={COLORS.orange} />
-
-      {/* Thick rule */}
-      <rect x="4" y="92" width="192" height="3" fill={color} />
-
-      {/* Tagline */}
-      <text x="4" y="110" fontFamily="Space Grotesk, sans-serif" fontSize="8" fontWeight="500" fill={COLORS.warmGray} letterSpacing="3">
-        CREATIVE PRODUCTION + AI SYSTEMS
-      </text>
-
-      {/* Thin gold accent line */}
-      <rect x="4" y="118" width="80" height="1.5" fill={COLORS.gold} opacity="0.5" />
-    </svg>
-  )
-}
-
-/* ================================================================== */
-/*  V2 BRAND PATTERNS                                                   */
-/* ================================================================== */
-
-// Precision starburst with gradient fill and varying ray widths
-function V2Starburst({ size = 48, style = {} }) {
-  const cx = size / 2, cy = size / 2
-  const rays = 24
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={style}>
-      <defs>
-        <linearGradient id="starGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={COLORS.orange} />
-          <stop offset="100%" stopColor={COLORS.gold} />
-        </linearGradient>
-      </defs>
-      {Array.from({ length: rays }).map((_, i) => {
-        const angle = (i * 360 / rays) * Math.PI / 180
-        const innerR = size * 0.18
-        const outerR = i % 2 === 0 ? size * 0.48 : size * 0.32
-        return (
-          <line
-            key={i}
-            x1={cx + innerR * Math.cos(angle)}
-            y1={cy + innerR * Math.sin(angle)}
-            x2={cx + outerR * Math.cos(angle)}
-            y2={cy + outerR * Math.sin(angle)}
-            stroke="url(#starGrad)"
-            strokeWidth={i % 3 === 0 ? 2 : 1}
-            strokeLinecap="round"
-          />
-        )
-      })}
-      <circle cx={cx} cy={cy} r={size * 0.08} fill={COLORS.orange} />
-    </svg>
-  )
-}
-
-// Noise/grain texture overlay using SVG filters
-function V2NoiseTexture({ width = 400, height = 200, opacity = 0.04, style = {} }) {
-  return (
-    <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', ...style }}>
-      <defs>
-        <filter id="grain">
-          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-          <feBlend in="SourceGraphic" mode="multiply" />
-        </filter>
-      </defs>
-      <rect width={width} height={height} filter="url(#grain)" opacity={opacity} />
-    </svg>
-  )
-}
-
-// Interlocking rings pattern
-function V2InterlockRings({ size = 120, color = COLORS.orange, style = {} }) {
-  const sw = 2
-  return (
-    <svg width={size} height={size * 0.6} viewBox="0 0 200 120" style={style} fill="none">
-      <defs>
-        <clipPath id="ringClipLeft">
-          <rect x="100" y="0" width="100" height="120" />
-        </clipPath>
-        <clipPath id="ringClipRight">
-          <rect x="0" y="0" width="100" height="120" />
-        </clipPath>
-      </defs>
-      {/* Left ring - front half */}
-      <circle cx="70" cy="60" r="40" stroke={color} strokeWidth={sw} />
-      {/* Right ring - front portion clips over left */}
-      <circle cx="130" cy="60" r="40" stroke={COLORS.gold} strokeWidth={sw} />
-      {/* Re-draw left ring's front arc that should appear on top in the overlap zone */}
-      <path
-        d="M 100,28 A 40,40 0 0,0 100,92"
-        stroke={color}
-        strokeWidth={sw + 0.5}
-        fill="none"
-      />
-    </svg>
-  )
-}
-
-// Woven grid pattern
-function V2WovenGrid({ width = 200, height = 100, style = {} }) {
-  const gap = 16
-  return (
-    <svg width={width} height={height} style={style}>
-      <defs>
-        <linearGradient id="wovenGradH" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={COLORS.orange} stopOpacity="0.15" />
-          <stop offset="50%" stopColor={COLORS.orange} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={COLORS.orange} stopOpacity="0.15" />
-        </linearGradient>
-        <linearGradient id="wovenGradV" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={COLORS.gold} stopOpacity="0.15" />
-          <stop offset="50%" stopColor={COLORS.gold} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={COLORS.gold} stopOpacity="0.15" />
-        </linearGradient>
-      </defs>
-      {/* Horizontal lines */}
-      {Array.from({ length: Math.floor(height / gap) }).map((_, i) => (
-        <line key={`h${i}`} x1="0" y1={i * gap + gap/2} x2={width} y2={i * gap + gap/2}
-          stroke="url(#wovenGradH)" strokeWidth="1.5" />
-      ))}
-      {/* Vertical lines */}
-      {Array.from({ length: Math.floor(width / gap) }).map((_, i) => (
-        <line key={`v${i}`} x1={i * gap + gap/2} y1="0" x2={i * gap + gap/2} y2={height}
-          stroke="url(#wovenGradV)" strokeWidth="1.5" />
-      ))}
-      {/* Intersection dots */}
-      {Array.from({ length: Math.floor(width / gap) }).map((_, x) =>
-        Array.from({ length: Math.floor(height / gap) }).map((_, y) => (
-          <circle key={`d${x}-${y}`} cx={x * gap + gap/2} cy={y * gap + gap/2} r="2"
-            fill={(x + y) % 2 === 0 ? COLORS.orange : COLORS.gold} opacity="0.25" />
-        ))
-      )}
-    </svg>
-  )
-}
-
-// Radial dotted circle
-function V2RadialDots({ size = 100, style = {} }) {
+function RadialDots({ size = 100, style = {} }) {
   const cx = size / 2, cy = size / 2
   const rings = [
-    { r: size * 0.42, count: 24, dotR: 1.5, color: COLORS.black, opacity: 0.12 },
-    { r: size * 0.32, count: 16, dotR: 1.5, color: COLORS.orange, opacity: 0.2 },
-    { r: size * 0.22, count: 10, dotR: 2, color: COLORS.gold, opacity: 0.25 },
+    { r: size * 0.42, count: 24, dotR: 1.5, color: COLORS.black, opacity: 0.1 },
+    { r: size * 0.28, count: 12, dotR: 2, color: COLORS.orange, opacity: 0.15 },
   ]
   return (
     <svg width={size} height={size} style={style}>
@@ -530,39 +316,6 @@ function V2RadialDots({ size = 100, style = {} }) {
               r={ring.dotR} fill={ring.color} opacity={ring.opacity} />
           )
         })
-      )}
-      <circle cx={cx} cy={cy} r="3" fill={COLORS.orange} opacity="0.4" />
-    </svg>
-  )
-}
-
-// Construction grid (measuring grid with labels)
-function V2ConstructionGrid({ width = 300, height = 200, style = {} }) {
-  const step = 24
-  return (
-    <svg width={width} height={height} style={{ position: 'absolute', top: 0, right: 0, pointerEvents: 'none', ...style }}>
-      <defs>
-        <linearGradient id="gridFade" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={COLORS.black} stopOpacity="0.06" />
-          <stop offset="100%" stopColor={COLORS.black} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {Array.from({ length: Math.ceil(width / step) + 1 }).map((_, i) => (
-        <line key={`v${i}`} x1={i * step} y1={0} x2={i * step} y2={height}
-          stroke="url(#gridFade)" strokeWidth="0.5" />
-      ))}
-      {Array.from({ length: Math.ceil(height / step) + 1 }).map((_, i) => (
-        <line key={`h${i}`} x1={0} y1={i * step} x2={width} y2={i * step}
-          stroke="url(#gridFade)" strokeWidth="0.5" />
-      ))}
-      {/* Cross markers at key intersections */}
-      {[0, 4, 8].map(xi =>
-        [0, 4, 8].map(yi => (
-          <g key={`c${xi}-${yi}`} transform={`translate(${xi * step}, ${yi * step})`}>
-            <line x1="-3" y1="0" x2="3" y2="0" stroke={COLORS.orange} strokeWidth="0.75" opacity="0.3" />
-            <line x1="0" y1="-3" x2="0" y2="3" stroke={COLORS.orange} strokeWidth="0.75" opacity="0.3" />
-          </g>
-        ))
       )}
     </svg>
   )
@@ -696,16 +449,12 @@ export default function BrandGuidelines() {
         ...section,
         padding: '80px 60px 100px',
         background: COLORS.cream,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
       }}>
-        <V2ConstructionGrid width={500} height={500} />
         <div style={{ position: 'absolute', top: 40, right: 60, zIndex: 2 }}>
-          <V2Starburst size={56} />
+          <Starburst size={48} color={COLORS.orange} />
         </div>
-        <div style={{ position: 'absolute', bottom: 80, right: 120, zIndex: 0 }}>
-          <V2RadialDots size={180} />
+        <div style={{ position: 'absolute', bottom: 80, right: 140, zIndex: 0 }}>
+          <RadialDots size={160} />
         </div>
         <div style={inner}>
           <a href="/" style={{
@@ -718,7 +467,7 @@ export default function BrandGuidelines() {
           </a>
 
           <div style={{ marginBottom: 48 }}>
-            <V2LogoMark size={72} color={COLORS.black} accent={COLORS.orange} />
+            <LogoMark size={72} color={COLORS.black} accent={COLORS.orange} />
           </div>
 
           <h1 style={{ margin: 0, padding: 0 }}>
@@ -744,7 +493,6 @@ export default function BrandGuidelines() {
             <Badge>WEB</Badge>
             <Badge>BRAND</Badge>
             <Badge>AI</Badge>
-            <Badge color={COLORS.orange}>V2 UPGRADE</Badge>
           </div>
 
           <div style={{
@@ -756,7 +504,7 @@ export default function BrandGuidelines() {
             <span style={{ color: COLORS.orange }}>&#8226;</span>
             <span>Est. 2020</span>
             <span style={{ color: COLORS.orange }}>&#8226;</span>
-            <span>Bold Graphic</span>
+            <span>Direction C: Bold Graphic</span>
           </div>
         </div>
       </section>
@@ -764,204 +512,87 @@ export default function BrandGuidelines() {
       <div style={thickRule} />
 
       {/* ============================================================ */}
-      {/*  BEFORE SECTION                                               */}
+      {/*  01 LOGO SYSTEM                                               */}
       {/* ============================================================ */}
-      <section style={{ ...section, background: '#f0ebe4' }}>
-        <div style={inner}>
-          <div style={{
-            display: 'inline-block',
-            padding: '6px 20px',
-            background: COLORS.warmGray,
-            borderRadius: 100,
-            marginBottom: 32,
-          }}>
-            <span style={{
-              fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.15em', textTransform: 'uppercase', color: COLORS.cream,
-            }}>BEFORE</span>
-          </div>
-
-          <h2 style={{ ...headline, fontSize: 36, color: COLORS.warmGray }}>
-            v1 Logo System
-          </h2>
-          <p style={{ ...body, marginBottom: 48 }}>
-            The original logo concepts. SVG text elements (not paths), no geometric grid,
-            no negative space storytelling. Basic shapes, font-dependent rendering.
-            This is where I started.
-          </p>
-
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: 20,
-          }}>
-            {/* V1 Wordmark */}
-            <div style={logoCard(COLORS.cream)}>
-              <V1LogoWordmark color={COLORS.black} size={56} />
-              <span style={{ ...label, marginTop: 16, marginBottom: 0, fontSize: 9 }}>V1 WORDMARK</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#bbb', marginTop: 4 }}>SVG text element</span>
-            </div>
-
-            {/* V1 Mark */}
-            <div style={logoCard(COLORS.cream)}>
-              <V1LogoMark color={COLORS.black} size={72} />
-              <span style={{ ...label, marginTop: 16, marginBottom: 0, fontSize: 9 }}>V1 GEOMETRIC MARK</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#bbb', marginTop: 4 }}>Basic polygon "A"</span>
-            </div>
-
-            {/* V1 Badge */}
-            <div style={logoCard(COLORS.cream)}>
-              <V1LogoBadge color={COLORS.black} size={100} />
-              <span style={{ ...label, marginTop: 16, marginBottom: 0, fontSize: 9 }}>V1 BADGE</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#bbb', marginTop: 4 }}>Font-dependent text</span>
-            </div>
-
-            {/* V1 Stacked */}
-            <div style={logoCard(COLORS.cream)}>
-              <V1LogoStacked color={COLORS.black} size={72} />
-              <span style={{ ...label, marginTop: 16, marginBottom: 0, fontSize: 9 }}>V1 STACKED</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#bbb', marginTop: 4 }}>SVG text, no paths</span>
-            </div>
-          </div>
-
-          {/* V1 Patterns */}
-          <div style={{ marginTop: 48 }}>
-            <div style={{ ...label, color: COLORS.warmGray }}>V1 PATTERNS</div>
-            <div style={{ display: 'flex', gap: 32, marginTop: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ textAlign: 'center' }}>
-                <V1Starburst size={48} color={COLORS.orange} />
-                <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#bbb', marginTop: 8 }}>Basic starburst</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <V1DottedTexture width={100} height={60} />
-                <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#bbb', marginTop: 8 }}>Uniform dots</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Critique callout */}
-          <div style={{
-            marginTop: 48, padding: 32, background: COLORS.cream, borderRadius: 4,
-            borderLeft: `4px solid ${COLORS.warmGray}`,
-          }}>
-            <div style={{ ...label, color: COLORS.warmGray, fontSize: 9 }}>SELF-CRITIQUE</div>
-            <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 14, lineHeight: 1.7, color: COLORS.black, marginTop: 12 }}>
-              Problems with v1: (1) Logos use SVG &lt;text&gt; elements that break without font loading.
-              (2) No geometric grid. Coordinates are arbitrary. (3) The "A" mark is a basic polygon, not a refined shape with negative space.
-              (4) Patterns are simplistic. Uniform dots and a generic starburst. (5) No compound paths or fillRule techniques.
-              (6) No hidden meaning in the mark. Nothing to discover.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Orange divider between Before and After */}
-      <div style={{ width: '100%', height: 6, background: COLORS.orange, border: 'none', margin: 0 }} />
-
-      {/* ============================================================ */}
-      {/*  AFTER SECTION                                                */}
-      {/* ============================================================ */}
-
-      {/* AFTER: Logos */}
       <section style={{ ...section, background: COLORS.cream }}>
-        <V2ConstructionGrid width={400} height={300} />
         <div style={inner}>
-          <div style={{
-            display: 'inline-block',
-            padding: '6px 20px',
-            background: COLORS.orange,
-            borderRadius: 100,
-            marginBottom: 32,
-          }}>
-            <span style={{
-              fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.15em', textTransform: 'uppercase', color: COLORS.cream,
-            }}>AFTER</span>
-          </div>
-
           <div style={{ position: 'relative' }}>
             <SectionNumber num={1} />
-            <div style={{ ...label, paddingTop: 48 }}>LOGO SYSTEM V2</div>
-            <h2 style={headline}>Rebuilt From Geometry</h2>
+            <div style={{ ...label, paddingTop: 48 }}>LOGO SYSTEM</div>
+            <h2 style={headline}>Primary Marks</h2>
             <p style={body}>
-              Every mark is built on a 96x96 grid with 8-unit snapping. Letters use compound
-              paths with fillRule="evenodd" for true negative space cutouts. No SVG text elements.
-              The "A" reads as both a letter and an upward arrow. It works at 16px and 800px.
+              Four marks built to work together or independently. The wordmark uses Syne ExtraBold
+              with a signature orange dot. The geometric mark abstracts the "A" inside a circle with
+              an orange crossbar and gold apex accent. Clean, confident, recognizable at any size.
             </p>
           </div>
 
-          {/* V2 Logo grid */}
+          {/* Logo grid */}
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: 24, marginTop: 56,
           }}>
-            {/* V2 Mark */}
+            {/* Wordmark */}
             <div style={logoCard(COLORS.cream)}>
-              <V2LogoMark size={96} color={COLORS.black} accent={COLORS.orange} />
-              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>LOGOMARK</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Grid-built, negative space crossbar</span>
+              <LogoWordmark color={COLORS.black} size={56} />
+              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>WORDMARK</span>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Syne ExtraBold + orange dot</span>
             </div>
 
-            {/* V2 Mark with grid visible */}
+            {/* Geometric mark */}
             <div style={logoCard(COLORS.cream)}>
-              <V2LogoMark size={96} color={COLORS.black} accent={COLORS.orange} showGrid />
-              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>CONSTRUCTION GRID</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>8-unit grid overlay</span>
+              <LogoMark color={COLORS.black} size={80} />
+              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>GEOMETRIC MARK</span>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Abstract "A" with crossbar accent</span>
             </div>
 
-            {/* V2 Wordmark */}
+            {/* Badge */}
             <div style={logoCard(COLORS.cream)}>
-              <V2LogoWordmark size={48} color={COLORS.black} />
-              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>CUSTOM WORDMARK</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Path-built letterforms, no text element</span>
+              <LogoBadge color={COLORS.black} size={120} />
+              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>BADGE / SEAL</span>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Double-ring with circular text</span>
             </div>
 
-            {/* V2 Full Lockup */}
+            {/* Stacked lockup */}
             <div style={logoCard(COLORS.cream)}>
-              <V2LogoLockup size={48} color={COLORS.black} accent={COLORS.orange} />
-              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>FULL LOCKUP</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Mark + wordmark with clear space rules</span>
-            </div>
-
-            {/* V2 Badge */}
-            <div style={logoCard(COLORS.cream)}>
-              <V2LogoBadge size={130} color={COLORS.black} accent={COLORS.orange} />
-              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>BADGE / STAMP</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Compound mark + dotted ring</span>
-            </div>
-
-            {/* V2 Stacked */}
-            <div style={logoCard(COLORS.cream)}>
-              <V2LogoStacked size={80} color={COLORS.black} />
+              <LogoStacked color={COLORS.black} size={80} />
               <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>STACKED LOCKUP</span>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Path letterforms + tagline</span>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>"Ahead of Market" with tagline</span>
             </div>
 
-            {/* Dark background */}
+            {/* Full horizontal lockup */}
+            <div style={{ ...logoCard(COLORS.cream), gridColumn: 'span 2' }}>
+              <LogoLockup color={COLORS.black} accent={COLORS.orange} size={56} />
+              <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>HORIZONTAL LOCKUP</span>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa', marginTop: 2 }}>Mark + wordmark with divider</span>
+            </div>
+
+            {/* On dark */}
             <div style={logoCard(COLORS.black, COLORS.black)}>
-              <V2LogoMark size={96} color={COLORS.cream} accent={COLORS.orange} />
+              <LogoMark size={80} color={COLORS.cream} accent={COLORS.orange} />
               <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9, color: COLORS.warmGray }}>ON DARK</span>
             </div>
 
-            {/* Dark wordmark */}
+            {/* Wordmark on dark */}
             <div style={logoCard(COLORS.black, COLORS.black)}>
-              <V2LogoWordmark size={48} color={COLORS.cream} />
+              <LogoWordmark size={48} color={COLORS.cream} />
               <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9, color: COLORS.warmGray }}>WORDMARK ON DARK</span>
             </div>
 
-            {/* Single color */}
+            {/* Mono */}
             <div style={logoCard('#fff', COLORS.lightBorder)}>
-              <V2LogoMark size={96} color={COLORS.black} accent={COLORS.black} />
+              <LogoMark size={80} color={COLORS.black} accent={COLORS.black} />
               <span style={{ ...label, marginTop: 20, marginBottom: 0, fontSize: 9 }}>MONO / SINGLE COLOR</span>
             </div>
           </div>
 
-          {/* Size test strip */}
+          {/* Size test */}
           <div style={{ marginTop: 56 }}>
             <div style={{ ...label }}>SIZE TEST</div>
             <div style={{ display: 'flex', gap: 32, alignItems: 'flex-end', marginTop: 16 }}>
               {[16, 24, 32, 48, 64, 96, 128].map(s => (
                 <div key={s} style={{ textAlign: 'center' }}>
-                  <V2LogoMark size={s} color={COLORS.black} accent={COLORS.orange} />
+                  <LogoMark size={s} color={COLORS.black} accent={COLORS.orange} />
                   <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: COLORS.warmGray, marginTop: 8 }}>{s}px</div>
                 </div>
               ))}
@@ -972,7 +603,9 @@ export default function BrandGuidelines() {
 
       <div style={thickRule} />
 
-      {/* AFTER: Color Palette */}
+      {/* ============================================================ */}
+      {/*  02 COLOR PALETTE                                             */}
+      {/* ============================================================ */}
       <section style={{ ...section, background: COLORS.black }}>
         <div style={inner}>
           <div style={{ position: 'relative' }}>
@@ -1026,9 +659,10 @@ export default function BrandGuidelines() {
 
       <div style={{ ...thickRule, background: COLORS.orange }} />
 
-      {/* AFTER: Typography */}
+      {/* ============================================================ */}
+      {/*  03 TYPOGRAPHY                                                */}
+      {/* ============================================================ */}
       <section style={{ ...section, background: COLORS.cream }}>
-        <V2ConstructionGrid width={400} height={300} />
         <div style={inner}>
           <div style={{ position: 'relative' }}>
             <SectionNumber num={3} />
@@ -1152,17 +786,18 @@ export default function BrandGuidelines() {
 
       <div style={thickRule} />
 
-      {/* AFTER: Patterns & Elements */}
+      {/* ============================================================ */}
+      {/*  04 PATTERNS & ELEMENTS                                       */}
+      {/* ============================================================ */}
       <section style={{ ...section, background: COLORS.cream }}>
         <div style={inner}>
           <div style={{ position: 'relative' }}>
             <SectionNumber num={4} />
-            <div style={{ ...label, paddingTop: 48 }}>BRAND ELEMENTS V2</div>
+            <div style={{ ...label, paddingTop: 48 }}>BRAND ELEMENTS</div>
             <h2 style={headline}>Patterns & Elements</h2>
             <p style={body}>
-              Upgraded visual language. Gradient starbursts, noise textures, interlocking rings,
-              woven grids, and radial dot patterns. Each element uses SVG gradients, masks, or
-              filters for depth. These feel crafted, not generated.
+              Supporting visual elements that add texture and personality. Starbursts for energy,
+              dot textures for structure, pill badges for categorization. Simple, reusable, consistent.
             </p>
           </div>
 
@@ -1170,48 +805,38 @@ export default function BrandGuidelines() {
             display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
             gap: 24, marginTop: 56,
           }}>
-            {/* Gradient Starburst */}
+            {/* Starburst */}
             <div style={{
               border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
             }}>
-              <div style={{ ...label, marginBottom: 0, fontSize: 9, alignSelf: 'flex-start' }}>GRADIENT STARBURST</div>
+              <div style={{ ...label, marginBottom: 0, fontSize: 9, alignSelf: 'flex-start' }}>STARBURST</div>
               <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-                <V2Starburst size={56} />
-                <V2Starburst size={40} />
-                <V2Starburst size={28} />
+                <Starburst size={56} color={COLORS.orange} />
+                <Starburst size={40} color={COLORS.orange} />
+                <Starburst size={28} color={COLORS.gold} />
               </div>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Orange-to-gold gradient, varied ray widths</span>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Orange primary, gold accent</span>
             </div>
 
-            {/* Interlocking Rings */}
+            {/* Dotted texture */}
             <div style={{
               border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
             }}>
-              <div style={{ ...label, marginBottom: 0, fontSize: 9, alignSelf: 'flex-start' }}>INTERLOCKING RINGS</div>
-              <V2InterlockRings size={160} />
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Orange + gold, woven overlap</span>
+              <div style={{ ...label, marginBottom: 0, fontSize: 9, alignSelf: 'flex-start' }}>DOT TEXTURE</div>
+              <DottedTexture width={180} height={80} />
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Background texture, 12% opacity</span>
             </div>
 
-            {/* Radial Dots */}
+            {/* Radial dots */}
             <div style={{
               border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
             }}>
               <div style={{ ...label, marginBottom: 0, fontSize: 9, alignSelf: 'flex-start' }}>RADIAL DOTS</div>
-              <V2RadialDots size={120} />
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Multi-ring, multi-color, multi-size</span>
-            </div>
-
-            {/* Woven Grid */}
-            <div style={{
-              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
-              display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden',
-            }}>
-              <div style={{ ...label, marginBottom: 0, fontSize: 9 }}>WOVEN GRID</div>
-              <V2WovenGrid width={260} height={100} />
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Gradient lines with intersection dots</span>
+              <RadialDots size={120} />
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Decorative accent element</span>
             </div>
 
             {/* Pill Badges */}
@@ -1236,17 +861,34 @@ export default function BrandGuidelines() {
               </div>
             </div>
 
-            {/* Construction Grid */}
+            {/* Orange dot punctuation */}
             <div style={{
               border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
-              position: 'relative', overflow: 'hidden',
               display: 'flex', flexDirection: 'column', gap: 16,
             }}>
-              <div style={{ ...label, marginBottom: 0, fontSize: 9, zIndex: 1 }}>CONSTRUCTION GRID</div>
-              <div style={{ position: 'relative', height: 120 }}>
-                <V2ConstructionGrid width={260} height={120} style={{ position: 'relative' }} />
+              <div style={{ ...label, marginBottom: 0, fontSize: 9 }}>SIGNATURE DOT</div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div style={{ width: 24, height: 24, borderRadius: 12, background: COLORS.orange }} />
+                <div style={{ width: 16, height: 16, borderRadius: 8, background: COLORS.orange }} />
+                <div style={{ width: 10, height: 10, borderRadius: 5, background: COLORS.orange }} />
+                <div style={{ width: 6, height: 6, borderRadius: 3, background: COLORS.orange }} />
               </div>
-              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Fading grid with crosshair markers</span>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Brand punctuation, always orange</span>
+            </div>
+
+            {/* Divider lines */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
+              display: 'flex', flexDirection: 'column', gap: 16,
+            }}>
+              <div style={{ ...label, marginBottom: 0, fontSize: 9 }}>RULE LINES</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+                <div style={{ height: 3, background: COLORS.black, width: '100%' }} />
+                <div style={{ height: 2, background: COLORS.orange, width: '100%' }} />
+                <div style={{ height: 1, background: COLORS.lightBorder, width: '100%' }} />
+                <div style={{ height: 1.5, background: COLORS.gold, width: '60%', opacity: 0.5 }} />
+              </div>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, color: '#aaa' }}>Thick black, orange, thin gray, gold accent</span>
             </div>
           </div>
 
@@ -1260,8 +902,8 @@ export default function BrandGuidelines() {
                 background: COLORS.black, padding: '16px 24px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
-                <V2LogoWordmark color={COLORS.cream} size={24} />
-                <V2Starburst size={20} />
+                <LogoWordmark color={COLORS.cream} size={24} />
+                <Starburst size={20} color={COLORS.orange} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
                 {[
@@ -1298,7 +940,9 @@ export default function BrandGuidelines() {
 
       <div style={{ ...thickRule, background: COLORS.gold }} />
 
-      {/* AFTER: Photography */}
+      {/* ============================================================ */}
+      {/*  05 PHOTOGRAPHY                                               */}
+      {/* ============================================================ */}
       <section style={{ ...section, background: COLORS.black }}>
         <div style={inner}>
           <div style={{ position: 'relative' }}>
@@ -1353,7 +997,9 @@ export default function BrandGuidelines() {
 
       <div style={thickRule} />
 
-      {/* AFTER: Voice & Tone */}
+      {/* ============================================================ */}
+      {/*  06 VOICE & TONE                                              */}
+      {/* ============================================================ */}
       <section style={{ ...section, background: COLORS.cream }}>
         <div style={inner}>
           <div style={{ position: 'relative' }}>
@@ -1431,7 +1077,9 @@ export default function BrandGuidelines() {
 
       <div style={thickRule} />
 
-      {/* AFTER: Do's and Don'ts */}
+      {/* ============================================================ */}
+      {/*  07 DO'S AND DON'TS                                           */}
+      {/* ============================================================ */}
       <section style={{ ...section, background: COLORS.cream, paddingBottom: 48 }}>
         <div style={inner}>
           <div style={{ position: 'relative' }}>
@@ -1497,7 +1145,7 @@ export default function BrandGuidelines() {
               border: `1px dashed ${COLORS.lightBorder}`, borderRadius: 4,
               position: 'relative',
             }}>
-              <V2LogoWordmark color={COLORS.black} size={48} />
+              <LogoWordmark color={COLORS.black} size={48} />
               <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                 border: `1px dashed ${COLORS.orange}`, borderRadius: 4, opacity: 0.4,
@@ -1510,15 +1158,15 @@ export default function BrandGuidelines() {
             <div style={{ ...label, marginBottom: 24 }}>MINIMUM SIZES</div>
             <div style={{ display: 'flex', gap: 48, alignItems: 'flex-end' }}>
               <div style={{ textAlign: 'center' }}>
-                <V2LogoWordmark color={COLORS.black} size={48} />
+                <LogoWordmark color={COLORS.black} size={48} />
                 <div style={{ ...label, marginTop: 8, marginBottom: 0, fontSize: 9 }}>DIGITAL (48PX)</div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <V2LogoMark color={COLORS.black} accent={COLORS.orange} size={32} />
+                <LogoMark color={COLORS.black} accent={COLORS.orange} size={32} />
                 <div style={{ ...label, marginTop: 8, marginBottom: 0, fontSize: 9 }}>MARK MIN (32PX)</div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <V2LogoBadge color={COLORS.black} size={48} />
+                <LogoBadge color={COLORS.black} size={48} />
                 <div style={{ ...label, marginTop: 8, marginBottom: 0, fontSize: 9 }}>BADGE MIN (48PX)</div>
               </div>
             </div>
@@ -1536,7 +1184,7 @@ export default function BrandGuidelines() {
         <div style={{ ...inner, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48 }}>
           <div>
             <div style={{ marginBottom: 24 }}>
-              <V2LogoWordmark color={COLORS.cream} size={48} />
+              <LogoWordmark color={COLORS.cream} size={48} />
             </div>
             <div style={{
               fontFamily: '"Space Grotesk", sans-serif', fontSize: 14, fontWeight: 400,
@@ -1556,7 +1204,7 @@ export default function BrandGuidelines() {
             {[
               { label: 'DIRECTION', value: 'C: Bold Graphic' },
               { label: 'FONTS', value: 'Syne + Space Grotesk' },
-              { label: 'VERSION', value: 'v2 (Skill Upgrade)' },
+              { label: 'VERSION', value: 'Final' },
               { label: 'AGENT', value: 'Steffen' },
             ].map((item, i) => (
               <div key={i} style={{
