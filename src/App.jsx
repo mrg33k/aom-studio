@@ -564,8 +564,8 @@ export default function App() {
   }, [selectedVideo]);
 
   useEffect(() => {
-    if (loadStatus < 100) { const timer = setTimeout(() => setLoadStatus(prev => prev + 2.5), 20); return () => clearTimeout(timer); } 
-    else { const timer = setTimeout(() => { setIsLoaderExiting(true); const finalTimer = setTimeout(() => setIsInitialized(true), 600); return () => clearTimeout(finalTimer); }, 1500); return () => clearTimeout(timer); }
+    if (loadStatus < 100) { const timer = setTimeout(() => setLoadStatus(prev => prev + 10), 15); return () => clearTimeout(timer); }
+    else { const timer = setTimeout(() => { setIsLoaderExiting(true); const finalTimer = setTimeout(() => setIsInitialized(true), 300); return () => clearTimeout(finalTimer); }, 100); return () => clearTimeout(timer); }
   }, [loadStatus]);
 
   useEffect(() => {
