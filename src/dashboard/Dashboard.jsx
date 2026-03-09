@@ -2184,20 +2184,19 @@ function CommandBar({ onRefresh, isMobile }) {
   )
 }
 
-// ─── CHAT WIDGET (RELAY TO CLAUDE CODE) ──────────────────────────────────────
+// ─── RELAY CHAT PANEL (integrated into main views) ──────────────────────────
 const CHAT_STORAGE_KEY = 'aom_chat_history'
 const CHAT_LAST_OUTBOX_KEY = 'aom_chat_last_outbox_id'
 const POLL_INTERVAL = 15000
 
-function ChatWidget() {
-  const [open, setOpen] = useState(false)
+function RelayChatPanel() {
   const [messages, setMessages] = useState(() => {
     try { return JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]') } catch { return [] }
   })
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
-  const [hasNew, setHasNew] = useState(false)
   const messagesEndRef = useRef(null)
+  const inputRef = useRef(null)
   const pollRef = useRef(null)
 
   // Persist messages to localStorage
@@ -2207,15 +2206,13 @@ function ChatWidget() {
 
   // Auto-scroll to bottom
   useEffect(() => {
-    if (open && messagesEndRef.current) {
+    if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, open])
+  }, [messages])
 
   // Poll for responses
   useEffect(() => {
-    if (!open) return
-
     const poll = async () => {
       try {
         const sinceId = localStorage.getItem(CHAT_LAST_OUTBOX_KEY) || ''
@@ -2238,25 +2235,12 @@ function ChatWidget() {
     poll()
     pollRef.current = setInterval(poll, POLL_INTERVAL)
     return () => clearInterval(pollRef.current)
-  }, [open])
+  }, [])
 
-  // Poll in background for notification dot
+  // Focus input on mount
   useEffect(() => {
-    if (open) { setHasNew(false); return }
-
-    const bgPoll = async () => {
-      try {
-        const sinceId = localStorage.getItem(CHAT_LAST_OUTBOX_KEY) || ''
-        const res = await fetch(`/api/relay?since_id=${sinceId}`)
-        if (!res.ok) return
-        const data = await res.json()
-        if (data.messages && data.messages.length > 0) setHasNew(true)
-      } catch {}
-    }
-
-    const timer = setInterval(bgPoll, POLL_INTERVAL * 2)
-    return () => clearInterval(timer)
-  }, [open])
+    if (inputRef.current) inputRef.current.focus()
+  }, [])
 
   const send = async () => {
     const text = input.trim()
@@ -2312,54 +2296,13 @@ function ChatWidget() {
     } catch { return '' }
   }
 
-  // Floating button
-  const bubbleStyle = {
-    position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-    width: 52, height: 52, borderRadius: '50%',
-    background: ORANGE, border: 'none', cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 4px 20px rgba(255,79,0,0.35)',
-    transition: 'transform 0.2s, box-shadow 0.2s',
-  }
-
-  // Panel
-  const panelStyle = {
-    position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-    width: 380, maxWidth: 'calc(100vw - 32px)',
-    height: 520, maxHeight: 'calc(100vh - 48px)',
-    background: '#0A0A08', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 16, display: 'flex', flexDirection: 'column',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-    overflow: 'hidden',
-  }
-
-  if (!open) {
-    return (
-      <button onClick={() => { setOpen(true); setHasNew(false) }} style={bubbleStyle}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)' }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-        {hasNew && (
-          <span style={{
-            position: 'absolute', top: -2, right: -2,
-            width: 14, height: 14, borderRadius: '50%',
-            background: '#22c55e', border: '2px solid #0A0A08',
-          }} />
-        )}
-      </button>
-    )
-  }
-
   return (
-    <div style={panelStyle}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{
-        padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+        padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: '#0D0D0B',
+        flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
@@ -2369,32 +2312,23 @@ function ChatWidget() {
           <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>Claude Code</span>
           <span style={{ fontSize: 9, color: '#444', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>RELAY</span>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={clearHistory} title="Clear history"
-            style={{ background: 'none', border: 'none', color: '#333', cursor: 'pointer', fontSize: 11, padding: '4px 6px' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#888'}
-            onMouseLeave={e => e.currentTarget.style.color = '#333'}
-          >
-            Clear
-          </button>
-          <button onClick={() => setOpen(false)}
-            style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 18, padding: '2px 6px', lineHeight: 1 }}
-            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-            onMouseLeave={e => e.currentTarget.style.color = '#555'}
-          >
-            &times;
-          </button>
-        </div>
+        <button onClick={clearHistory} title="Clear history"
+          style={{ background: 'none', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 5, color: '#444', cursor: 'pointer', fontSize: 10, padding: '4px 10px', letterSpacing: '0.06em', fontWeight: 600 }}
+          onMouseEnter={e => e.currentTarget.style.color = '#888'}
+          onMouseLeave={e => e.currentTarget.style.color = '#444'}
+        >
+          Clear
+        </button>
       </div>
 
       {/* Messages */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '16px',
+        flex: 1, overflowY: 'auto', padding: '16px 20px',
         display: 'flex', flexDirection: 'column', gap: 12,
       }}>
         {messages.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.3 }}>
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ marginBottom: 12, opacity: 0.3 }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline' }}>
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
@@ -2411,7 +2345,7 @@ function ChatWidget() {
           return (
             <div key={msg.id} style={{
               alignSelf: isSent ? 'flex-end' : 'flex-start',
-              maxWidth: '85%',
+              maxWidth: '75%',
             }}>
               <div style={{
                 padding: '10px 14px',
@@ -2443,11 +2377,12 @@ function ChatWidget() {
 
       {/* Input */}
       <div style={{
-        padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)',
+        padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.06)',
         display: 'flex', gap: 8, alignItems: 'center',
-        background: '#0D0D0B',
+        flexShrink: 0,
       }}>
         <input
+          ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
@@ -2465,7 +2400,7 @@ function ChatWidget() {
           disabled={!input.trim() || sending}
           style={{
             background: ORANGE, color: '#fff', border: 'none',
-            borderRadius: 8, padding: '10px 14px', fontSize: 11, fontWeight: 800,
+            borderRadius: 8, padding: '10px 16px', fontSize: 11, fontWeight: 800,
             letterSpacing: '0.06em', cursor: input.trim() ? 'pointer' : 'default',
             opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase',
             transition: 'opacity 0.15s',
@@ -2530,7 +2465,7 @@ export default function Dashboard() {
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [lastFetched, setLastFetched] = useState(null)
   const [councilOpen, setCouncilOpen] = useState(false)
-  const [activeView, setActiveView] = useState('queue') // 'queue' | 'reports' | 'skills' | 'agents' | 'activity'
+  const [activeView, setActiveView] = useState('chat') // 'chat' | 'queue' | 'reports' | 'skills' | 'agents' | 'activity'
   const [mobileFilter, setMobileFilter] = useState('all') // 'all' | 'unassigned' | 'assigned' | 'blocked'
   const [mobileAgentPanel, setMobileAgentPanel] = useState(false)
   const [refreshProgress, setRefreshProgress] = useState(0)
@@ -2795,6 +2730,18 @@ export default function Dashboard() {
             {/* View switcher */}
             <div style={{ padding: '8px 8px 0', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
               <button
+                onClick={() => setActiveView('chat')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 6, width: '100%',
+                  background: activeView === 'chat' ? 'rgba(255,79,0,0.08)' : 'transparent',
+                  border: `1px solid ${activeView === 'chat' ? 'rgba(255,79,0,0.15)' : 'transparent'}`,
+                  cursor: 'pointer', textAlign: 'left', fontSize: 11, fontWeight: 600,
+                  color: activeView === 'chat' ? '#fff' : '#555',
+                }}
+              >
+                <span style={{ fontSize: 12 }}>&#128172;</span> Chat
+              </button>
+              <button
                 onClick={() => setActiveView('queue')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 6, width: '100%',
@@ -2840,7 +2787,9 @@ export default function Dashboard() {
         )}
 
         {/* MAIN CONTENT */}
-        {activeView === 'reports' ? (
+        {activeView === 'chat' ? (
+          <RelayChatPanel />
+        ) : activeView === 'reports' ? (
           <ReportsPanel />
         ) : activeView === 'skills' ? (
           <SkillsPanel />
@@ -3118,10 +3067,10 @@ export default function Dashboard() {
       {isMobile && (
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)', background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 101, height: 56 }}>
           {[
+            { id: 'chat', label: 'Chat', icon: '\u{1F4AC}' },
             { id: 'queue', label: 'Queue', icon: '\u25A0' },
             { id: 'agents', label: 'Agents', icon: '\u{1F464}' },
             { id: 'reports', label: 'Reports', icon: '\u2630' },
-            { id: 'skills', label: 'Skills', icon: '\u2699' },
             { id: 'activity', label: 'Activity', icon: '\u26A1' },
           ].map(tab => (
             <button
@@ -3148,8 +3097,7 @@ export default function Dashboard() {
       {/* COUNCIL MODAL */}
       {councilOpen && <CouncilModal onClose={() => setCouncilOpen(false)} />}
 
-      {/* CHAT RELAY WIDGET */}
-      <ChatWidget />
+      {/* Chat relay is now integrated as a view via activeView === 'chat' */}
     </div>
   )
 }
