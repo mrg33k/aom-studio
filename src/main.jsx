@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import App from './App.jsx'
 import BrandGuidelines from './pages/BrandGuidelines.jsx'
+import BrandsHub from './pages/BrandsHub.jsx'
+import AmbitionBrandGuidelines from './pages/AmbitionBrandGuidelines.jsx'
 import './index.css'
 
 const Dashboard = lazy(() => import('./dashboard/Dashboard.jsx'))
@@ -28,6 +30,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/" element={<App />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandGuidelines />} />
+          <Route path="/brands" element={<BrandsHub />} />
+          <Route path="/brands/ambition" element={<AmbitionBrandGuidelines />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>
