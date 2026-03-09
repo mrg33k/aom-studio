@@ -1,16 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Building2, Clapperboard, Cpu } from 'lucide-react'
 
 // ── Video background config ──────────────────────────────────────────
-// Swap these URLs with actual AOM showreel / b-roll clips.
-// Each entry gets crossfaded on a loop. Keep clips short (10-20s).
-const HERO_VIDEOS = [
-  // Drop your showreel / b-roll clips in public/ and reference them here.
-  // Example: '/hero-reel.mp4', '/construction-broll.mp4'
-  '/hero-reel.mp4',
+// Gumlet embed IDs from the portfolio. Shuffled randomly on each load.
+const GUMLET_IDS = [
+  '698a6296fc23d3d76fa8d992', // Journey To Gary Vee
+  '698a5b86fc23d3d76fa82ece', // Noble Real Estate
+  '698a6106aec3d4e420c2fd85', // Rainbow Rider
+  '698a5d24aec3d4e420c2a0a0', // Pretty Penny
+  '698a5ef5fc23d3d76fa87ef4', // Virtu Hospitality
+  '698a64e5873071aec5ca99ac', // AZ Arts Foundation
+  '698a63e5aec3d4e420c34783', // Cynshine Pilates
+  '698a6127873071aec5ca3b36', // ASU:Peoria Forward
+  '698a6177873071aec5ca4374', // Keep it Cut
+  '698a5fcdfc23d3d76fa893b8', // United Food Bank
+  '698a58c0aec3d4e420c21b78', // Aiper Pool Party
+  '698a53a4aec3d4e420c17ee0', // Ducor Event Recap
+  '698a53a9873071aec5c8b9d7', // Cook & Craft
+  '698a5ebcaec3d4e420c2c573', // Ulisgold Pilates
 ]
-const VIDEO_HOLD_SECONDS = 12 // time each clip plays before crossfade
+const VIDEO_HOLD_SECONDS = 10 // time each embed shows before crossfade
+
+// Fisher-Yates shuffle, pick first N
+function shufflePick(arr, n) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a.slice(0, n)
+}
 
 const pathways = [
   {
@@ -40,49 +60,51 @@ const pathways = [
 ]
 
 export default function HeroSection({ openBrief }) {
-  // ── Video rotation state ──────────────────────────────────────────
+  // ── Video rotation: pick 5 random videos, cycle through them ──────
+  const [playlist] = useState(() => shufflePick(GUMLET_IDS, 5))
   const [activeIdx, setActiveIdx] = useState(0)
-  const videoRefs = useRef([])
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    if (HERO_VIDEOS.length <= 1) return
+    if (playlist.length <= 1) return
     const interval = setInterval(() => {
-      setActiveIdx((prev) => (prev + 1) % HERO_VIDEOS.length)
+      setVisible(false) // fade out
+      setTimeout(() => {
+        setActiveIdx((prev) => (prev + 1) % playlist.length)
+        setVisible(true) // fade in next
+      }, 1500) // wait for fade-out to finish
     }, VIDEO_HOLD_SECONDS * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [playlist])
 
   return (
     <section className="relative min-h-[85vh] flex items-center bg-aom-cream overflow-hidden">
 
-      {/* ── Video background layer ─────────────────────────────────── */}
+      {/* ── Video background layer (Gumlet embed reel) ────────────── */}
       <div className="hero-video-bg absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
-        {HERO_VIDEOS.map((src, i) => (
-          <video
-            key={src}
-            ref={(el) => { videoRefs.current[i] = el }}
-            src={src}
-            muted
-            autoPlay
-            loop
-            playsInline
-            preload="none"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ease-in-out ${
-              i === activeIdx ? 'opacity-[0.18]' : 'opacity-0'
-            }`}
-            style={{ filter: 'grayscale(0.3) contrast(1.1)' }}
-          />
-        ))}
+        <iframe
+          key={playlist[activeIdx]}
+          src={`https://play.gumlet.io/embed/${playlist[activeIdx]}?autoplay=true&muted=true&loop=true&preload=true&controls=false`}
+          className="absolute inset-0 w-full h-full border-none transition-opacity duration-[1500ms] ease-in-out"
+          style={{
+            opacity: visible ? 0.18 : 0,
+            filter: 'grayscale(0.3) contrast(1.1)',
+            transform: 'scale(1.15)', // crop out player chrome
+            transformOrigin: 'center center',
+          }}
+          allow="autoplay"
+          tabIndex={-1}
+        />
         {/* Cream overlay for readability */}
         <div className="absolute inset-0 bg-aom-cream/[0.88]" />
         {/* Bottom gradient fade into content */}
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-aom-cream to-transparent" />
       </div>
 
-      {/* Mobile: hide video entirely for performance */}
+      {/* Mobile: hide iframe entirely for performance */}
       <style>{`
         @media (max-width: 639px) {
-          .hero-video-bg video { display: none; }
+          .hero-video-bg iframe { display: none; }
         }
       `}</style>
 
