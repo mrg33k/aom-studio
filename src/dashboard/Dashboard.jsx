@@ -1636,29 +1636,49 @@ function CommandBar({ onRefresh, isMobile }) {
     setSending(true)
     setOpen(true)
 
-    if (addTaskMode) {
-      const isHome = barMode === 'home'
-      const taskText = isHome ? `HOME: ${text}` : text
+    if (barMode === 'home') {
+      // HOME mode: full conversation with CC
+      const newUserMsg = { role: 'user', text, type: 'home' }
+      setMessages(m => [...m, newUserMsg])
+      // Build conversation history for context
+      const homeHistory = [...messages.filter(m => m.type === 'home' || (m.agent === 'CC' && m.role === 'assistant')), newUserMsg]
+        .map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', text: m.text }))
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'home_chat', message: text, history: homeHistory.slice(-10) }),
+        })
+        const data = await res.json()
+        if (data.error) {
+          setMessages(m => [...m, { role: 'system', text: data.error, type: 'error' }])
+        } else {
+          setMessages(m => [...m, { role: 'assistant', text: data.reply || data.message, agent: 'CC' }])
+          if (data.queuedForMac) {
+            setMessages(m => [...m, { role: 'system', text: 'Queued for Mac execution.', type: 'task' }])
+          }
+          if (data.actions_taken?.length > 0) setTimeout(onRefresh, 2000)
+        }
+      } catch {
+        setMessages(m => [...m, { role: 'system', text: 'Network error reaching CC.', type: 'error' }])
+      }
+    } else if (addTaskMode) {
       const notes = taskNotes.trim()
-      setMessages(m => [...m, { role: 'user', text: isHome ? text : `+ ${text}${notes ? '\n  ' + notes.split('\n').join('\n  ') : ''}`, type: isHome ? 'home' : 'task' }])
+      setMessages(m => [...m, { role: 'user', text: `+ ${text}${notes ? '\n  ' + notes.split('\n').join('\n  ') : ''}`, type: 'task' }])
       setTaskNotes('')
       setNotesOpen(false)
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'add_task', task: taskText, notes: notes || undefined }),
+          body: JSON.stringify({ action: 'add_task', task: text, notes: notes || undefined }),
         })
         const data = await res.json()
         if (data.ok) {
-          if (data.isHomeReply) {
-            setMessages(m => [...m, { role: 'assistant', text: data.message, agent: 'CC' }])
-          } else {
-            const assignMsg = data.assignedAgent ? ` Assigned to ${data.assignedAgent}.` : ''
-            setMessages(m => [...m, { role: 'system', text: `Task added.${assignMsg}`, type: 'task' }])
-            if (data.agentReply) {
-              setMessages(m => [...m, { role: 'assistant', text: data.agentReply, agent: data.assignedAgent }])
-            }
+          const assignMsg = data.assignedAgent ? ` Assigned to ${data.assignedAgent}.` : ''
+          setMessages(m => [...m, { role: 'system', text: `Task added.${assignMsg}`, type: 'task' }])
+          if (data.agentReply) {
+            setMessages(m => [...m, { role: 'assistant', text: data.agentReply, agent: data.assignedAgent }])
           }
           setTimeout(onRefresh, 2000); setAddTaskMode(false)
         } else {
@@ -1761,9 +1781,10 @@ function CommandBar({ onRefresh, isMobile }) {
               key={m.id}
               onClick={() => {
                 setBarMode(m.id)
-                setAddTaskMode(m.id === 'task' || m.id === 'home')
+                setAddTaskMode(m.id === 'task')
                 if (m.id === 'chat') setSelectedAgent('All')
-                if (m.id === 'task' || m.id === 'home') { setNotesOpen(false); setTaskNotes('') }
+                if (m.id === 'task') { setNotesOpen(false); setTaskNotes('') }
+                if (m.id === 'home') { setNotesOpen(false); setTaskNotes('') }
               }}
               style={{
                 padding: isMobile ? '10px 14px' : '4px 12px', borderRadius: 0, fontSize: 10, fontWeight: 800,

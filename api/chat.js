@@ -402,6 +402,99 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── HOME CHAT ────────────────────────────────────────────────────────────
+  if (action === 'home_chat') {
+    const message = req.body.message
+    if (!message) return res.status(400).json({ error: 'message required' })
+    if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' })
+
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19)
+
+    // Detect if this needs full Mac execution power
+    const heavyPatterns = /\b(launch|run|start|session|bobby|colton|cleo|steffen|jacob|alex|elon|mom|tony|paige|playwright|screenshot|calendar|email|send|schedule|outreach|build|deploy|audit|loop)\b/i
+    const needsMac = heavyPatterns.test(message)
+
+    // Load full context
+    const [handoff, priorities, workCtx, punchList, homeQueue] = await Promise.all([
+      fetchGitHubFile('HANDOFF.md'),
+      fetchGitHubFile('context/current-priorities.md'),
+      fetchGitHubFile('context/work.md'),
+      fetchGitHubFile('punch-list.md'),
+      fetchGitHubFile('context/home-queue.md'),
+    ])
+
+    // Build conversation history from the messages sent by the client
+    const history = req.body.history || []
+
+    const systemPrompt = `You are Claude Code (CC), Patrik Matheson's executive assistant at AOM. This is a real-time conversation via the dashboard HOME chat on his phone.
+
+PERSONALITY: Direct, warm, concise. Match his energy. No em dashes. No emojis unless he uses them first. Bullet points over paragraphs.
+
+CAPABILITIES:
+- You can answer questions from context (priorities, clients, tasks, work status)
+- You can read and discuss any file in the AOM-EA repo
+- For heavy operations (launching agents, calendar, email, builds, screenshots), you queue them to home-queue.md and the Mac loop executes them
+${needsMac ? '\nThis message likely needs Mac execution. Acknowledge what you will queue and confirm it will run.' : ''}
+
+CONTEXT:
+Priorities: ${priorities?.content || 'N/A'}
+Handoff: ${handoff?.content || 'N/A'}
+Work: ${(workCtx?.content || '').slice(0, 2000)}
+Recent tasks: ${(punchList?.content || '').slice(-1500)}
+Queue: ${homeQueue?.content || 'Empty'}
+
+Keep responses to 2-5 sentences. Be useful, not verbose.`
+
+    const messages = [
+      ...history.map(h => ({ role: h.role === 'assistant' || h.role === 'agent' ? 'assistant' : 'user', content: h.text || h.content || '' })).filter(m => m.content),
+      { role: 'user', content: message },
+    ]
+
+    let ccReply = "Got it. Will follow up shortly."
+    let queuedForMac = false
+
+    try {
+      const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 600,
+          system: systemPrompt,
+          messages,
+        }),
+      })
+
+      if (anthropicRes.ok) {
+        const data = await anthropicRes.json()
+        const textBlocks = (data.content || []).filter(b => b.type === 'text')
+        ccReply = textBlocks.map(b => b.text).join('\n') || ccReply
+      }
+    } catch { /* best effort */ }
+
+    // Queue heavy commands for Mac loop
+    if (needsMac) {
+      const queueFile = await fetchGitHubFile('context/home-queue.md')
+      if (queueFile) {
+        const queueItem = `[PENDING] ${message} -- ${now}`
+        const updatedQueue = queueFile.content.replace('---\n', `---\n${queueItem}\n`)
+        await writeGitHubFile('context/home-queue.md', updatedQueue, queueFile.sha, `Queue from HOME: ${message.slice(0, 40)}`)
+        queuedForMac = true
+      }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      reply: ccReply,
+      agent: 'CC',
+      queuedForMac,
+    })
+  }
+
   // ── ADD TASK ──────────────────────────────────────────────────────────────
   if (action === 'add_task') {
     if (!task) return res.status(400).json({ error: 'task required' })
