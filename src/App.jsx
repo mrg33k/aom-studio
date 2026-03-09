@@ -43,7 +43,7 @@ const shuffleArray = (array) => {
 };
 
 // --- BRAND CONSTANTS ---
-const ORANGE = "#FF4F00";
+const ORANGE = "#E85D26";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xbdalqvg";
 const MAIN_PHONE = "6023732164";
 const BUDGET_OPTIONS = ["$2k - $5k", "$5k - $10k", "$10k - $25k", "$25k+"];
@@ -205,24 +205,15 @@ const getGumletPlayerEmbed = (url) => {
 
 const TextureOverlay = () => (
   <>
-    <div className="fixed inset-0 pointer-events-none z-[999] opacity-[0.03] contrast-125 mix-blend-overlay">
-      <svg className="h-full w-full">
-        <filter id="noise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#noise)" />
-      </svg>
-    </div>
-    <div className="fixed inset-0 pointer-events-none z-[998] opacity-[0.02] bg-gradient-to-b from-transparent via-orange-500/5 to-transparent" />
     <style dangerouslySetInnerHTML={{ __html: `
       .clip-path-slant { clip-path: polygon(0 0, 100% 0, 95% 100%, 0% 100%); }
-      .text-outline { -webkit-text-stroke: 1px white; color: transparent; }
+      .text-outline { -webkit-text-stroke: 1.5px #0A0A0A; color: transparent; }
+      .text-outline-white { -webkit-text-stroke: 1.5px white; color: transparent; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       .hide-scrollbar::-webkit-scrollbar { display: none; }
       .logo-shine { animation: logo-shine 2.5s ease-in-out infinite; }
-      @keyframes logo-shine { 0% { opacity: 0.3; } 50% { opacity: 1; text-shadow: 0 0 20px rgba(255, 79, 0, 0.4); } 100% { opacity: 0.3; } }
+      @keyframes logo-shine { 0% { opacity: 0.3; } 50% { opacity: 1; text-shadow: 0 0 20px rgba(232, 93, 38, 0.4); } 100% { opacity: 0.3; } }
       @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
       .animate-scroll { animation: scroll linear infinite; }
     `}} />
@@ -326,62 +317,62 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
 };
 
 const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) => (
-  <div className={`relative p-8 border rounded-sm overflow-hidden shadow-2xl flex flex-col justify-between ${accent ? "border-aom-orange/40 bg-orange-950/10" : "border-aom-border bg-aom-charcoal"}`}>
+  <div className={`relative p-8 border overflow-hidden shadow-sm flex flex-col justify-between ${accent ? "border-2 border-aom-black bg-white" : "border border-aom-light-border bg-white"}`}>
     <div className="relative z-10">
       <div className="flex items-center justify-between mb-8">
-        <div className="w-10 h-10 border border-aom-border bg-black/40 flex items-center justify-center">{Icon && <Icon className="text-aom-orange" size={18} />}</div>
-        <div className="text-[9px] font-mono uppercase tracking-[0.3em] text-aom-dim"><ScrambleText text={kicker} hover={false} /></div>
+        <div className="w-10 h-10 border border-aom-light-border bg-aom-cream flex items-center justify-center">{Icon && <Icon className="text-aom-orange" size={18} />}</div>
+        <div className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-warm-gray"><ScrambleText text={kicker} hover={false} /></div>
       </div>
       <div>
-        <div className="text-5xl md:text-6xl font-headline font-black italic tracking-[-0.025em] leading-[0.85] text-aom-warm-white">{valueNode}</div>
-        <p className="text-aom-stone text-xs mt-6 leading-relaxed max-w-xs">{sub}</p>
+        <div className="text-5xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] leading-[0.85] text-aom-black">{valueNode}</div>
+        <p className="text-aom-warm-gray text-xs mt-6 leading-relaxed max-w-xs font-body">{sub}</p>
       </div>
     </div>
   </div>
 ));
 
 const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
-  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-12 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-aom-orange bg-orange-950/20" : "border-aom-border bg-aom-charcoal hover:border-aom-border-hover"}`}>
+  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-12 border shadow-sm overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-2 border-aom-orange bg-aom-orange/5" : "border border-aom-light-border bg-white hover:border-aom-black/30"}`}>
     <div className="flex items-center justify-between mb-8">
-      <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-aom-orange bg-aom-orange text-white" : "border-aom-border bg-black/40 text-aom-stone group-hover:text-aom-warm-white"}`}>
+      <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-aom-orange bg-aom-orange text-white" : "border-aom-light-border bg-aom-cream text-aom-warm-gray group-hover:text-aom-black"}`}>
         <idea.icon size={20} />
       </div>
       {isSelected && <CheckCircle2 size={24} className="text-aom-orange" />}
     </div>
     <div className="flex-grow">
-      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-3">{idea.title}</p>
-      <h3 className={`text-xl md:text-2xl font-medium leading-relaxed transition-colors ${isSelected ? "text-aom-warm-white" : "text-aom-stone group-hover:text-aom-warm-white"}`}>"{idea.statement}"</h3>
+      <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-3">{idea.title}</p>
+      <h3 className={`text-xl md:text-2xl font-body font-normal leading-relaxed transition-colors ${isSelected ? "text-aom-black" : "text-aom-warm-gray group-hover:text-aom-black"}`}>"{idea.statement}"</h3>
     </div>
-    <div className="mt-8 pt-6 border-t border-aom-border flex justify-between items-end">
-      <div><p className="text-[9px] font-mono uppercase tracking-widest text-aom-dim mb-1">Starting At</p><p className="text-lg font-headline font-black italic text-aom-orange tracking-tight">{idea.price}</p></div>
-      <div className={`w-8 h-8 rounded-full border border-aom-border flex items-center justify-center transition-all ${isSelected ? "bg-aom-warm-white text-aom-night border-aom-warm-white rotate-0" : "bg-transparent text-aom-dim -rotate-45 group-hover:text-aom-warm-white group-hover:border-aom-border-hover"}`}><ArrowRight size={14} /></div>
+    <div className="mt-8 pt-6 border-t border-aom-light-border flex justify-between items-end">
+      <div><p className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-warm-gray mb-1">Starting At</p><p className="text-lg font-headline font-extrabold text-aom-orange tracking-tight">{idea.price}</p></div>
+      <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isSelected ? "bg-aom-black text-white border-aom-black rotate-0" : "bg-transparent text-aom-warm-gray border-aom-light-border -rotate-45 group-hover:text-aom-black group-hover:border-aom-black/30"}`}><ArrowRight size={14} /></div>
     </div>
   </button>
 ));
 
 const TestimonialCard = memo(({ t }) => (
-  <div className="p-8 border border-aom-border bg-aom-charcoal rounded-sm shadow-xl hover:border-aom-orange/30 transition-colors">
-    <div className="inline-flex items-center gap-2 bg-aom-orange/10 border border-aom-orange/20 px-3 py-1.5 rounded-sm mb-6">
-      <TrendingUp size={10} className="text-aom-orange" /><span className="text-aom-orange font-black text-[9px] uppercase tracking-widest">{t.metric}</span>
+  <div className="p-8 border border-aom-light-border bg-white shadow-sm hover:border-aom-orange/40 transition-colors">
+    <div className="inline-flex items-center gap-2 bg-aom-orange/10 border border-aom-orange/20 px-3 py-1.5 mb-6">
+      <TrendingUp size={10} className="text-aom-orange" /><span className="text-aom-orange font-bold text-[10px] uppercase tracking-[0.15em] font-body">{t.metric}</span>
     </div>
-    <p className="text-aom-warm-white text-lg font-headline font-bold italic tracking-[-0.015em] leading-snug">"{t.quote}"</p>
-    <div className="mt-8 pt-4 border-t border-aom-border">
-      <p className="text-[10px] font-headline font-black uppercase tracking-[0.2em] text-aom-warm-white">{t.name}</p>
-      <p className="text-[9px] font-mono uppercase tracking-[0.3em] text-aom-stone-muted mt-1">{t.company}</p>
+    <p className="text-aom-black text-lg font-headline font-bold tracking-[-0.01em] leading-snug">"{t.quote}"</p>
+    <div className="mt-8 pt-4 border-t border-aom-light-border">
+      <p className="text-[11px] font-headline font-bold uppercase tracking-[0.15em] text-aom-black">{t.name}</p>
+      <p className="text-[10px] font-body font-medium uppercase tracking-[0.15em] text-aom-warm-gray mt-1">{t.company}</p>
     </div>
   </div>
 ));
 
 const FAQItem = memo(({ item, open, onToggle }) => (
-  <div className="border border-aom-border bg-aom-charcoal">
+  <div className="border border-aom-light-border bg-white">
     <button onClick={onToggle} className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left hover:bg-aom-orange/5 transition-colors">
-      <span className="text-aom-warm-white font-headline font-bold uppercase tracking-[-0.015em] text-base">{item.q}</span>
+      <span className="text-aom-black font-headline font-bold uppercase tracking-[-0.01em] text-base">{item.q}</span>
       <ChevronRight className={`text-aom-orange transition-transform ${open ? "rotate-90" : "rotate-0"}`} />
     </button>
     <AnimatePresence initial={false}>
       {open && (
         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-          <div className="px-6 pb-8 text-aom-stone text-sm leading-relaxed">{item.a}</div>
+          <div className="px-6 pb-8 text-aom-warm-gray text-sm leading-relaxed font-body">{item.a}</div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -403,17 +394,17 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, isGrid = false
       ? 'aspect-video w-full shadow-lg'
       : 'aspect-video w-[360px] md:w-[640px] shadow-lg shrink-0';
   return (
-    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-aom-border bg-aom-surface h-full cursor-pointer transition-all duration-300 hover:border-aom-orange/60 hover:shadow-aom-orange/10 hover:shadow-lg rounded-sm select-none ${sizeClasses}`}>
-      <div className="absolute inset-0 bg-aom-night">
+    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-aom-light-border bg-aom-cream h-full cursor-pointer transition-all duration-300 hover:border-aom-orange/60 hover:shadow-aom-orange/10 hover:shadow-lg select-none ${sizeClasses}`}>
+      <div className="absolute inset-0 bg-aom-black">
         {shouldLoad && embedUrl && (
           <iframe src={embedUrl} loading="lazy" className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105" title={title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
         )}
       </div>
       <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20 bg-gradient-to-t from-black/95 via-black/10 to-transparent">
-        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-[9px] font-headline font-black px-2 py-1 bg-black/80 border border-aom-border text-aom-stone rounded-sm uppercase tracking-widest">{t}</span>)}</div></div>
+        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-[9px] font-headline font-bold px-2 py-1 bg-black/80 border border-white/10 text-white/60 uppercase tracking-[0.15em]">{t}</span>)}</div></div>
         <div className="max-w-[95%]">
-          <h3 className={`font-headline font-black tracking-tight text-aom-warm-white leading-[0.9] transition-colors group-hover:text-aom-orange uppercase italic ${isVertical ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>{title}</h3>
-          <p className="text-[10px] font-mono text-aom-stone-muted mt-2 uppercase tracking-widest italic flex items-center gap-2"><span className="w-1 h-1 bg-aom-orange rounded-full" />{sub}</p>
+          <h3 className={`font-headline font-extrabold tracking-tight text-white leading-[0.9] transition-colors group-hover:text-aom-orange uppercase ${isVertical ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>{title}</h3>
+          <p className="text-[10px] font-body text-white/50 mt-2 uppercase tracking-[0.15em] flex items-center gap-2"><span className="w-1 h-1 bg-aom-orange rounded-full" />{sub}</p>
         </div>
       </div>
     </article>
@@ -436,7 +427,7 @@ const PortfolioExpander = ({ campaigns, onPlay }) => {
         )}
       </AnimatePresence>
       {!expanded && (
-        <button onClick={() => setExpanded(true)} className="w-full py-6 border border-aom-border bg-aom-charcoal text-aom-stone font-headline font-bold uppercase tracking-[0.1em] text-sm hover:border-aom-orange/30 hover:text-aom-warm-white transition-all mt-8">
+        <button onClick={() => setExpanded(true)} className="w-full py-6 border border-aom-light-border bg-white text-aom-warm-gray font-headline font-bold uppercase tracking-[0.1em] text-sm hover:border-aom-orange/40 hover:text-aom-black transition-all mt-8">
           See All Work <span className="text-aom-orange ml-2">+</span>
         </button>
       )}
@@ -469,17 +460,17 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
   return (
     <div className="relative group/gallery">
       <div className="flex items-center justify-between mb-4 md:hidden px-6">
-        <div className="flex items-center gap-2 text-[10px] font-headline font-black uppercase tracking-widest text-aom-dim animate-pulse"><MousePointer2 size={12} className="text-aom-orange" /> Swipe to explore</div>
+        <div className="flex items-center gap-2 text-[10px] font-headline font-bold uppercase tracking-[0.15em] text-aom-warm-gray animate-pulse"><MousePointer2 size={12} className="text-aom-orange" /> Swipe to explore</div>
       </div>
       <div ref={containerRef} className="flex gap-4 md:gap-6 overflow-x-auto hide-scrollbar px-6 md:px-12 py-4 scroll-smooth cursor-grab active:cursor-grabbing snap-none touch-pan-x">
         {items.map((v, i) => ( <VideoModule key={i} onPlay={onPlay} isVertical={isVertical} {...v} /> ))}
         <div className="w-4 shrink-0 md:hidden" />
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 left-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
-        <button onClick={() => scroll('left')} className={`w-12 h-12 bg-aom-warm-white flex items-center justify-center text-aom-night shadow-2xl transition-all ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronLeft size={24} /></button>
+        <button onClick={() => scroll('left')} className={`w-12 h-12 bg-aom-black flex items-center justify-center text-white shadow-2xl transition-all ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronLeft size={24} /></button>
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 right-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
-        <button onClick={() => scroll('right')} className={`w-12 h-12 bg-aom-warm-white flex items-center justify-center text-aom-night shadow-2xl transition-all ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronRight size={24} /></button>
+        <button onClick={() => scroll('right')} className={`w-12 h-12 bg-aom-black flex items-center justify-center text-white shadow-2xl transition-all ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronRight size={24} /></button>
       </div>
     </div>
   );
@@ -668,17 +659,17 @@ export default function App() {
   const handleRoute = (number) => { window.location.href = `tel:${number}`; };
 
   return (
-    <div className="bg-aom-night text-aom-warm-white min-h-screen font-body selection:bg-orange-600 antialiased overflow-hidden">
+    <div className="bg-aom-cream text-aom-black min-h-screen font-body selection:bg-aom-orange/30 antialiased overflow-hidden">
       <AnimatePresence>
         {!isInitialized && (
-          <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-aom-night flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
+          <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-aom-cream flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
             <div className="relative mb-12 flex items-center justify-center">
-              <h1 className="text-7xl font-headline font-black italic tracking-tighter text-white/10 relative">
-                AOM<span className="text-white/5">.</span>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${loadStatus}%` }} className="absolute top-0 left-0 text-white overflow-hidden whitespace-nowrap logo-shine">AOM<span className="text-aom-orange">.</span></motion.div>
+              <h1 className="text-7xl font-headline font-extrabold tracking-[-0.03em] text-aom-black/10 relative">
+                AOM<span className="text-aom-black/5">.</span>
+                <motion.div initial={{ width: 0 }} animate={{ width: `${loadStatus}%` }} className="absolute top-0 left-0 text-aom-black overflow-hidden whitespace-nowrap logo-shine">AOM<span className="text-aom-orange">.</span></motion.div>
               </h1>
             </div>
-            <div className="w-48 h-[1px] bg-aom-border relative overflow-hidden rounded-full"><motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-aom-orange shadow-[0_0_10px_#FF4F00]" /></div>
+            <div className="w-48 h-[1px] bg-aom-light-border relative overflow-hidden rounded-full"><motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-aom-orange shadow-[0_0_10px_#E85D26]" /></div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -688,11 +679,11 @@ export default function App() {
           <TextureOverlay />
           <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />
 
-          <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-aom-night/90 to-transparent pointer-events-none">
-            <h1 className="text-2xl md:text-3xl font-headline font-black italic tracking-tighter text-aom-warm-white pointer-events-auto">AOM<span className="text-aom-orange">.</span></h1>
+          <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-aom-cream/95 to-aom-cream/0 pointer-events-none backdrop-blur-sm">
+            <h1 className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-black pointer-events-auto">AOM<span className="text-aom-orange">.</span></h1>
             <div className="flex gap-4 pointer-events-auto">
-              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-aom-charcoal text-aom-stone font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-aom-warm-white border border-aom-border transition-all">Talk to Us</button>
-              <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-aom-orange text-white font-headline font-black text-[10px] uppercase tracking-[0.2em] rounded-sm hover:bg-aom-orange-hover shadow-xl shadow-aom-orange/20 border border-white/10 transition-all">Start a Brief</button>
+              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-white text-aom-warm-gray font-body font-bold text-[10px] uppercase tracking-[0.15em] hover:text-aom-black border border-aom-light-border transition-all">Talk to Us</button>
+              <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-aom-orange text-white font-headline font-extrabold text-[10px] uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all">Start a Brief</button>
             </div>
           </header>
 
@@ -712,25 +703,38 @@ export default function App() {
           <AITeaser />
 
           {/* --- PULL QUOTE BREAK --- */}
-          <section className="py-20 md:py-32 bg-aom-night">
+          <section className="py-20 md:py-32 bg-aom-cream relative overflow-hidden">
+            {/* Decorative starburst */}
+            <div className="absolute top-8 right-16 pointer-events-none opacity-[0.06]">
+              <svg viewBox="0 0 48 48" width="48" height="48">
+                <polygon
+                  points={Array.from({ length: 16 }).map((_, i) => {
+                    const angle = (i * 360 / 16) * Math.PI / 180
+                    const r = i % 2 === 0 ? 24 : 10
+                    return `${24 + r * Math.cos(angle)},${24 + r * Math.sin(angle)}`
+                  }).join(' ')}
+                  fill="#E85D26"
+                />
+              </svg>
+            </div>
             <div className="max-w-4xl mx-auto px-6 text-center">
-              <p className="font-headline text-2xl md:text-4xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white leading-[0.95]">
+              <p className="font-headline text-2xl md:text-4xl font-extrabold uppercase tracking-[-0.02em] text-aom-black leading-[0.95]">
                 If the asset doesn't move trust or attention, it's just expensive footage.
               </p>
-              <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-aom-stone-muted mt-6">
+              <p className="font-body text-[11px] uppercase tracking-[0.2em] text-aom-warm-gray mt-6 font-medium">
                 That's how we think about every project.
               </p>
             </div>
           </section>
 
-          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-surface relative">
+          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-cream-dark relative">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <FadeIn className="border-b border-aom-border pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
+              <FadeIn className="border-b border-aom-light-border pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
                 <div className="max-w-3xl">
-                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block"><ScrambleText text="The Work Speaks" /></span>
-                  <h2 className="text-5xl md:text-7xl font-headline font-black text-aom-warm-white tracking-[-0.025em] uppercase italic leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
+                  <span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block"><ScrambleText text="The Work Speaks" /></span>
+                  <h2 className="text-5xl md:text-7xl font-headline font-extrabold text-aom-black tracking-[-0.02em] uppercase leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
                 </div>
-                <div className="w-full lg:max-w-md p-7 border border-aom-border bg-aom-charcoal"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-stone text-sm leading-relaxed">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
+                <div className="w-full lg:max-w-md p-7 border border-aom-light-border bg-white"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-warm-gray text-sm leading-relaxed font-body">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FadeIn><VibeStat icon={Building2} kicker="Projects Shipped" valueNode={<span><CountUp to={63} /><span className="text-aom-orange">+</span></span>} sub="Across construction, hospitality, non-profit, tech, and events." /></FadeIn>
@@ -741,30 +745,30 @@ export default function App() {
             </div>
           </section>
 
-          <section id="work" className="py-24 md:py-36 bg-aom-night relative z-10 overflow-hidden">
+          <section id="work" className="py-24 md:py-36 bg-aom-black relative z-10 overflow-hidden">
             {/* Accent divider */}
             <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12 mb-16" />
-            <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-aom-border pb-16 text-aom-warm-white">
+            <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/10 pb-16 text-white">
               <div>
-                <h2 className="text-[clamp(3.5rem,10vw,8rem)] font-headline font-black tracking-[-0.025em] uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-aom-orange">.</span></h2>
-                <p className="text-aom-stone text-lg md:text-xl mt-4 max-w-2xl leading-relaxed">Real projects. Real clients. All of it shipped.</p>
+                <h2 className="text-[clamp(3.5rem,10vw,8rem)] font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.8]">The<br /><span className="text-outline-white">Portfolio</span><span className="text-aom-orange">.</span></h2>
+                <p className="text-white/60 text-lg md:text-xl mt-4 max-w-2xl leading-relaxed font-body">Real projects. Real clients. All of it shipped.</p>
               </div>
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-12 py-3 md:py-5 text-[9px] md:text-[11px] font-headline font-black uppercase tracking-[0.15em] md:tracking-[0.3em] transition-all border-b-2 shrink-0 ${activeTab === tab ? 'text-aom-warm-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-aom-dim hover:text-aom-stone'}`}>{tab}</button>)}</div>
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-12 py-3 md:py-5 text-[9px] md:text-[11px] font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/40 hover:text-white/60'}`}>{tab}</button>)}</div>
             </div>
 
             {/* Featured project (first campaign) */}
             {shuffledData[activeTab]?.campaigns?.[0] && (
               <div className="px-6 md:px-12 mb-8">
-                <article onClick={() => setSelectedVideo(shuffledData[activeTab].campaigns[0])} className="relative aspect-[21/9] w-full overflow-hidden border border-aom-border rounded-sm group cursor-pointer">
-                  <div className="absolute inset-0 bg-aom-night">
+                <article onClick={() => setSelectedVideo(shuffledData[activeTab].campaigns[0])} className="relative aspect-[21/9] w-full overflow-hidden border border-white/10 group cursor-pointer">
+                  <div className="absolute inset-0 bg-aom-black">
                     <iframe src={getGumletBackgroundEmbed(shuffledData[activeTab].campaigns[0].url)} loading="lazy" className="w-full h-full border-none opacity-70 grayscale-[0.2] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 scale-105 group-hover:scale-100" title={shuffledData[activeTab].campaigns[0].title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />
                   <div className="absolute inset-0 flex items-end p-8 md:p-12">
                     <div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-aom-orange mb-2">{shuffledData[activeTab].campaigns[0].tags?.[0] || 'Featured'}</p>
-                      <h3 className="font-headline text-3xl md:text-5xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white leading-[0.9]">{shuffledData[activeTab].campaigns[0].title}</h3>
-                      <p className="text-aom-stone text-sm mt-3 max-w-md">{shuffledData[activeTab].campaigns[0].sub}</p>
+                      <p className="font-body text-[10px] uppercase tracking-[0.2em] text-aom-orange mb-2 font-medium">{shuffledData[activeTab].campaigns[0].tags?.[0] || 'Featured'}</p>
+                      <h3 className="font-headline text-3xl md:text-5xl font-extrabold uppercase tracking-[-0.02em] text-white leading-[0.9]">{shuffledData[activeTab].campaigns[0].title}</h3>
+                      <p className="text-white/50 text-sm mt-3 max-w-md font-body">{shuffledData[activeTab].campaigns[0].sub}</p>
                     </div>
                   </div>
                 </article>
@@ -787,39 +791,39 @@ export default function App() {
             <div className="mt-16 md:mt-24">
               <div className="px-6 md:px-12 mb-6 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-aom-sage" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-aom-stone-muted">Social Clips</span>
+                <span className="font-body text-[10px] uppercase tracking-[0.2em] text-white/40 font-medium">Social Clips</span>
               </div>
               <InteractiveGallery items={shuffledData.feed} onPlay={setSelectedVideo} isVertical={true} />
             </div>
           </section>
 
-          <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-surface text-aom-warm-white">
+          <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-cream-dark text-aom-black">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-aom-border pb-16">
-                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-headline font-black tracking-[-0.025em] uppercase italic leading-[0.85]">Pick What<br /><span className="text-outline">Fits</span><span className="text-aom-orange">.</span></h2></div>
+              <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-aom-light-border pb-16">
+                <div><span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Pick What<br /><span className="text-outline">Fits</span><span className="text-aom-orange">.</span></h2></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => ( <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={() => openBrief(idea)} /> ))}</div>
             </div>
           </section>
 
-          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-night overflow-hidden text-aom-warm-white">
+          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-cream overflow-hidden text-aom-black">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="mb-20">
                 <div className="max-w-xl">
-                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">Why Us</span>
-                  <h2 className="text-5xl md:text-7xl font-headline font-black tracking-[-0.025em] uppercase italic leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
+                  <span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block">Why Us</span>
+                  <h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-aom-border bg-aom-charcoal rounded-sm hover:border-aom-orange/30 transition-all"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[10px] font-mono uppercase tracking-[0.35em] text-aom-dim mb-3">{m.label}</p><h4 className="text-xl font-headline font-black italic text-aom-warm-white uppercase">{m.value}</h4><p className="text-aom-stone text-xs mt-4 leading-relaxed">{m.sub}</p></div>)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-aom-light-border bg-white shadow-sm hover:border-aom-orange/40 transition-all"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-body font-medium uppercase tracking-[0.15em] text-aom-warm-gray mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-black uppercase">{m.value}</h4><p className="text-aom-warm-gray text-xs mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
           {/* --- FAQ SECTION --- */}
-          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-surface text-aom-warm-white">
+          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-cream-dark text-aom-black">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="mb-12">
-                <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">FAQ</span>
-                <h2 className="text-4xl md:text-6xl font-headline font-black tracking-[-0.025em] uppercase italic leading-[0.85]">Common<br /><span className="text-outline">Questions</span><span className="text-aom-orange">.</span></h2>
+                <span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block">FAQ</span>
+                <h2 className="text-4xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Common<br /><span className="text-outline">Questions</span><span className="text-aom-orange">.</span></h2>
               </FadeIn>
               <div className="max-w-3xl space-y-3">
                 {FAQS.map((item, i) => <FAQItem key={i} item={item} open={openFAQ === i} onToggle={() => setOpenFAQ(openFAQ === i ? -1 : i)} />)}
@@ -829,16 +833,16 @@ export default function App() {
 
           {/* --- FOOTER --- */}
           <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
-          <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-night text-center pb-24 text-aom-warm-white">
+          <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-black text-center pb-24 text-white">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <h2 className="text-6xl md:text-[10rem] font-headline font-black tracking-[-0.025em] mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-aom-orange">Build?</span></h2>
+              <h2 className="text-6xl md:text-[10rem] font-headline font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Build?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-black uppercase tracking-[0.4em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/20">Start a Brief</button>
-                <button onClick={openPhone} className="px-16 py-6 bg-aom-charcoal text-aom-stone font-headline font-black uppercase tracking-[0.4em] text-xs hover:text-aom-warm-white transition-all clip-path-slant border border-aom-border">Talk to Us</button>
+                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/20">Start a Brief</button>
+                <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:text-white transition-all clip-path-slant border border-white/10">Talk to Us</button>
               </div>
-              <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-aom-border pt-16">
-                <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Talk</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-aom-warm-white text-3xl font-headline font-black italic tracking-[-0.025em]">Call the Team</button></div>
-                <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-aom-warm-white text-3xl font-headline font-black italic tracking-[-0.025em] underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
+              <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-white/10 pt-16">
+                <div><p className="text-aom-orange font-headline font-bold uppercase text-[10px] tracking-[0.15em] mb-4">Talk</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em]">Call the Team</button></div>
+                <div><p className="text-aom-orange font-headline font-bold uppercase text-[10px] tracking-[0.15em] mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em] underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
               </div>
             </div>
           </footer>

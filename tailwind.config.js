@@ -4,30 +4,44 @@ export default {
   theme: {
     extend: {
       colors: {
-        orange: { 600: '#FF4F00' },
+        orange: { 600: '#E85D26' },
         aom: {
-          orange: '#FF4F00',
-          'orange-hover': '#FF6B2B',
-          'orange-muted': '#CC3F00',
+          // Bold Graphic brand direction
+          cream: '#FDF6EC',
+          'cream-dark': '#EDE7DF',
+          'cream-alt': '#F5EFE6',
+          black: '#0A0A0A',
+          orange: '#E85D26',
+          'orange-hover': '#D14E1C',
+          'orange-muted': '#C44A1F',
+          gold: '#C9A84C',
+          'gold-light': '#D4B85E',
+          'warm-gray': '#7A7267',
+          'light-border': '#D9D3CB',
+
+          // Dark surfaces (modals, video overlays, preloader)
+          night: '#0A0A0A',
+          charcoal: '#141412',
+          surface: '#1A1A17',
+
+          // Legacy aliases for components not yet refactored
+          'warm-white': '#F5F0EB',
+          stone: '#7A7267',
+          'stone-muted': '#9A9189',
+          dim: '#A89F96',
+          border: '#D9D3CB',
+          'border-hover': '#C4BDB4',
+
+          // Accent
           sage: '#7C9A72',
           'sage-light': '#9BB593',
           'sage-muted': '#5C7A54',
-          night: '#0A0A08',
-          charcoal: '#141412',
-          surface: '#1A1A17',
-          cream: '#FAF5EF',
-          'warm-white': '#F5F0EB',
-          stone: '#A8A29E',
-          'stone-muted': '#78716C',
-          dim: '#57534E',
-          border: '#292524',
-          'border-hover': '#44403C',
         }
       },
       fontFamily: {
-        headline: ['"Inter Tight"', 'system-ui', 'sans-serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        headline: ['Syne', 'system-ui', 'sans-serif'],
+        body: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        mono: ['"Space Grotesk"', 'monospace'],
       }
     }
   },

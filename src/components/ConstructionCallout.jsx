@@ -22,18 +22,18 @@ const proofPoints = [
 
 export default function ConstructionCallout({ openBrief }) {
   return (
-    <section id="construction" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
+    <section id="construction" className="py-16 md:py-24 bg-aom-black relative overflow-hidden">
       {/* Subtle warm accent */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.02] bg-gradient-to-b from-transparent via-orange-500/5 to-transparent" />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-gradient-to-b from-transparent via-orange-500/10 to-transparent" />
 
       <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section header */}
         <div className="mb-12">
-          <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-4">
+          <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-4">
             Construction Companies
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />
-          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white max-w-[45ch] leading-[0.9]">
+          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] text-white max-w-[45ch] leading-[0.9]">
             YOUR COMPETITOR'S INSTAGRAM IS THEIR BEST RECRUITER. IS YOURS?
           </h2>
         </div>
@@ -50,17 +50,17 @@ export default function ConstructionCallout({ openBrief }) {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-50px' }}
                   transition={{ duration: 0.7, delay: i * 0.12, ease: 'easeOut' }}
-                  className="p-6 md:p-8 rounded-sm border border-aom-border bg-aom-charcoal shadow-xl hover:border-aom-orange/30 transition-colors duration-300"
+                  className="p-6 md:p-8 border border-white/10 bg-white/5 shadow-xl hover:border-aom-orange/30 transition-colors duration-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 border border-aom-border bg-black/40 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 border border-white/10 bg-white/5 flex items-center justify-center shrink-0">
                       <Icon size={20} className="text-aom-orange" />
                     </div>
                     <div>
-                      <p className="font-headline text-lg font-bold text-aom-warm-white mb-1">
+                      <p className="font-headline text-lg font-bold text-white mb-1">
                         {point.stat}
                       </p>
-                      <p className="text-aom-stone text-sm leading-relaxed">
+                      <p className="text-white/60 text-sm leading-relaxed font-body">
                         {point.description}
                       </p>
                     </div>
@@ -79,32 +79,32 @@ export default function ConstructionCallout({ openBrief }) {
             className="md:col-span-5 flex flex-col"
           >
             {/* Proof card */}
-            <div className="p-6 md:p-8 rounded-sm border border-aom-orange/40 bg-orange-950/10 shadow-2xl flex-1 flex flex-col">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-aom-orange mb-4">
+            <div className="p-6 md:p-8 border border-aom-orange/40 bg-aom-orange/5 shadow-2xl flex-1 flex flex-col">
+              <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-orange mb-4">
                 Proof Point
               </p>
 
-              <h3 className="font-headline text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-aom-warm-white mb-4">
+              <h3 className="font-headline text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-white mb-4">
                 AMBITION MECHANICAL
               </h3>
 
-              <p className="text-aom-stone text-sm leading-relaxed mb-2">
+              <p className="text-white/60 text-sm leading-relaxed mb-2 font-body">
                 One HVAC company that decided their brand should match the quality of their work. Website, social media, and a content engine that runs every month.
               </p>
 
-              <p className="text-aom-stone text-sm leading-relaxed mb-6">
+              <p className="text-white/60 text-sm leading-relaxed mb-6 font-body">
                 The result: a digital presence that recruits talent, wins contracts, and makes general contractors take notice.
               </p>
 
               {/* Mini stats */}
               <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="p-4 rounded-sm border border-aom-border bg-aom-charcoal">
-                  <p className="font-headline text-2xl font-black italic text-aom-orange">30+</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-aom-stone-muted mt-1">Posts / Month</p>
+                <div className="p-4 border border-white/10 bg-white/5">
+                  <p className="font-headline text-2xl font-extrabold text-aom-orange">30+</p>
+                  <p className="font-body text-[10px] uppercase tracking-[0.15em] text-white/40 mt-1">Posts / Month</p>
                 </div>
-                <div className="p-4 rounded-sm border border-aom-border bg-aom-charcoal">
-                  <p className="font-headline text-2xl font-bold italic text-aom-orange">Monthly</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-aom-stone-muted mt-1">Filming + Posting</p>
+                <div className="p-4 border border-white/10 bg-white/5">
+                  <p className="font-headline text-2xl font-bold text-aom-orange">Monthly</p>
+                  <p className="font-body text-[10px] uppercase tracking-[0.15em] text-white/40 mt-1">Filming + Posting</p>
                 </div>
               </div>
 
@@ -113,14 +113,14 @@ export default function ConstructionCallout({ openBrief }) {
                   href="https://ambitionac.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-aom-orange text-sm font-bold hover:text-aom-orange-hover transition-colors flex items-center gap-1"
+                  className="text-aom-orange text-sm font-bold hover:text-aom-orange-hover transition-colors flex items-center gap-1 font-body"
                 >
                   See Ambition Mechanical <ArrowRight size={14} />
                 </a>
 
                 <button
                   onClick={() => openBrief()}
-                  className="block w-full bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
+                  className="block w-full bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
                 >
                   See What We'd Build For You
                 </button>
@@ -130,7 +130,7 @@ export default function ConstructionCallout({ openBrief }) {
         </div>
 
         {/* Stat bar */}
-        <p className="mt-8 font-headline text-lg font-bold text-aom-warm-white">
+        <p className="mt-8 font-headline text-lg font-bold text-white">
           Consistent filming. Consistent posting. That's the whole system.
         </p>
       </div>

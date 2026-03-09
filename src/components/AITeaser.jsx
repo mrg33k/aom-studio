@@ -39,21 +39,32 @@ export default function AITeaser() {
   }
 
   return (
-    <section id="digital" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
-      {/* Subtle sage gradient wash */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.04] bg-gradient-to-b from-transparent via-emerald-500/10 to-transparent" />
+    <section id="digital" className="py-16 md:py-24 bg-aom-cream-dark relative overflow-hidden">
+      {/* Starburst accent */}
+      <div className="absolute top-16 right-20 pointer-events-none opacity-[0.06]">
+        <svg viewBox="0 0 48 48" width="48" height="48">
+          <polygon
+            points={Array.from({ length: 16 }).map((_, i) => {
+              const angle = (i * 360 / 16) * Math.PI / 180
+              const r = i % 2 === 0 ? 24 : 10
+              return `${24 + r * Math.cos(angle)},${24 + r * Math.sin(angle)}`
+            }).join(' ')}
+            fill="#7C9A72"
+          />
+        </svg>
+      </div>
 
       <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section header */}
         <div className="mb-12">
-          <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-aom-sage mb-4">
+          <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-sage mb-4">
             The Engine
           </p>
           <div className="w-12 h-[2px] bg-aom-sage mb-4" />
-          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white max-w-[45ch]">
+          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] text-aom-black max-w-[45ch]">
             THE ENGINE BEHIND THE BRAND
           </h2>
-          <p className="text-aom-stone text-lg md:text-xl mt-4 max-w-2xl leading-relaxed">
+          <p className="text-aom-warm-gray text-lg md:text-xl mt-4 max-w-2xl leading-relaxed font-body">
             We built the system that runs our own content pipeline, client ops, and reporting. Now we're building them for a small group of businesses.
           </p>
         </div>
@@ -67,9 +78,9 @@ export default function AITeaser() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, ease: 'easeOut' }}
-              className="p-6 md:p-8 rounded-sm border border-aom-sage-muted/30 bg-emerald-950/10 shadow-xl mb-6"
+              className="p-6 md:p-8 border border-aom-sage/30 bg-white shadow-sm mb-6"
             >
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-aom-sage mb-6">
+              <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-sage mb-6">
                 How It Works
               </p>
 
@@ -82,16 +93,16 @@ export default function AITeaser() {
                     }`} />
 
                     {/* Label */}
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-aom-dim w-16 shrink-0">
+                    <span className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-warm-gray w-16 shrink-0">
                       {step.label}
                     </span>
 
                     {/* Connector */}
-                    <div className="flex-1 border-t border-dashed border-aom-sage-muted/20" />
+                    <div className="flex-1 border-t border-dashed border-aom-sage/20" />
 
                     {/* Value */}
-                    <span className={`font-mono text-sm ${
-                      step.label === 'system' ? 'text-aom-sage' : 'text-aom-warm-white'
+                    <span className={`font-body text-sm ${
+                      step.label === 'system' ? 'text-aom-sage font-medium' : 'text-aom-black'
                     }`}>
                       {step.value}
                     </span>
@@ -106,9 +117,9 @@ export default function AITeaser() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
-              className="p-6 md:p-8 rounded-sm border border-aom-border bg-aom-charcoal"
+              className="p-6 md:p-8 border border-aom-light-border bg-white"
             >
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-4">
+              <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-4">
                 What the system handles
               </p>
               <ul className="space-y-3">
@@ -120,7 +131,7 @@ export default function AITeaser() {
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-aom-sage shrink-0" />
-                    <span className="text-aom-stone text-sm leading-relaxed">{item}</span>
+                    <span className="text-aom-warm-gray text-sm leading-relaxed font-body">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -135,43 +146,43 @@ export default function AITeaser() {
             transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}
             className="flex flex-col"
           >
-            <div className="p-6 md:p-8 rounded-sm border border-aom-sage-muted/30 bg-emerald-950/10 shadow-2xl flex-1 flex flex-col">
+            <div className="p-6 md:p-8 border-2 border-aom-black bg-white shadow-xl flex-1 flex flex-col">
               {/* Status badge */}
               <div className="flex items-center gap-2 mb-6">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-aom-sage-muted/30 bg-aom-charcoal font-mono text-[10px] text-aom-sage uppercase tracking-[0.2em]">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-aom-sage/30 bg-aom-cream font-body text-[11px] text-aom-sage uppercase tracking-[0.15em] font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-aom-sage animate-pulse" />
                   Early Access
                 </span>
               </div>
 
-              <h3 className="font-headline text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-aom-warm-white mb-4">
+              <h3 className="font-headline text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-aom-black mb-4">
                 WE BUILT THIS FOR OURSELVES FIRST
               </h3>
 
-              <p className="text-aom-stone text-sm leading-relaxed mb-2">
+              <p className="text-aom-warm-gray text-sm leading-relaxed mb-2 font-body">
                 The same system that runs AOM's content pipeline, client reporting, and internal operations. We're opening it up to a small group of businesses who want the same infrastructure without building it from scratch.
               </p>
 
-              <p className="font-mono text-sm text-aom-sage mb-8">
+              <p className="font-body text-sm text-aom-sage font-medium mb-8">
                 No pricing on the site. No chatbot demos. Just real systems that replace real work.
               </p>
 
               {/* Waitlist form */}
               <div className="mt-auto">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-4">
+                <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-4">
                   Join the Waitlist
                 </p>
 
                 {status === 'success' ? (
-                  <div className="flex items-center gap-3 p-4 rounded-sm border border-green-500/30 bg-green-950/10">
-                    <Check size={18} className="text-green-500 shrink-0" />
-                    <p className="font-mono text-sm text-green-500">
+                  <div className="flex items-center gap-3 p-4 border border-green-600/30 bg-green-50">
+                    <Check size={18} className="text-green-600 shrink-0" />
+                    <p className="font-body text-sm text-green-700">
                       You're on the list. We'll reach out when it's your turn.
                     </p>
                   </div>
                 ) : status === 'error' ? (
-                  <div className="flex items-center gap-3 p-4 rounded-sm border border-red-500/30 bg-red-950/10">
-                    <p className="font-mono text-sm text-red-400">
+                  <div className="flex items-center gap-3 p-4 border border-red-600/30 bg-red-50">
+                    <p className="font-body text-sm text-red-600">
                       Something went wrong. Try again in a moment.
                     </p>
                   </div>
@@ -183,12 +194,12 @@ export default function AITeaser() {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="your@email.com"
                       required
-                      className="flex-1 px-4 py-3 rounded-sm border border-aom-border bg-aom-surface text-aom-warm-white font-mono text-sm placeholder:text-aom-dim focus:outline-none focus:border-aom-sage transition-colors"
+                      className="flex-1 px-4 py-3 border border-aom-light-border bg-aom-cream text-aom-black font-body text-sm placeholder:text-aom-warm-gray/50 focus:outline-none focus:border-aom-sage transition-colors"
                     />
                     <button
                       type="submit"
                       disabled={status === 'loading'}
-                      className="bg-aom-sage text-white font-headline font-black uppercase tracking-tight px-6 py-3 hover:bg-aom-sage-light transition-colors shadow-lg shadow-aom-sage/20 flex items-center justify-center gap-2 disabled:opacity-60"
+                      className="bg-aom-sage text-white font-headline font-extrabold uppercase tracking-tight px-6 py-3 hover:bg-aom-sage-light transition-colors shadow-lg shadow-aom-sage/20 flex items-center justify-center gap-2 disabled:opacity-60"
                     >
                       {status === 'loading' ? (
                         <Loader2 size={16} className="animate-spin" />

@@ -22,18 +22,26 @@ const proofPoints = [
 
 export default function BrandsCallout({ openBrief }) {
   return (
-    <section id="brands" className="py-16 md:py-24 bg-aom-surface relative overflow-hidden">
-      {/* Subtle warm amber gradient wash */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
+    <section id="brands" className="py-16 md:py-24 bg-aom-cream relative overflow-hidden">
+      {/* Dotted texture accent */}
+      <div className="absolute top-20 right-16 pointer-events-none opacity-[0.06]">
+        <svg width="100" height="100">
+          {Array.from({ length: 7 }).map((_, x) =>
+            Array.from({ length: 7 }).map((_, y) => (
+              <circle key={`${x}-${y}`} cx={x * 14 + 7} cy={y * 14 + 7} r={1.5} fill="#0A0A0A" />
+            ))
+          )}
+        </svg>
+      </div>
 
       <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section header */}
         <div className="mb-12">
-          <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-4">
+          <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-4">
             Brands + Corporate
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />
-          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white max-w-[45ch] leading-[0.9]">
+          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] text-aom-black max-w-[45ch] leading-[0.9]">
             THE STORY IS ALREADY THERE. WE JUST KNOW HOW TO TELL IT.
           </h2>
         </div>
@@ -50,17 +58,17 @@ export default function BrandsCallout({ openBrief }) {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-50px' }}
                   transition={{ duration: 0.7, delay: i * 0.12, ease: 'easeOut' }}
-                  className="p-6 md:p-8 rounded-sm border border-aom-border bg-aom-charcoal shadow-xl hover:border-aom-orange/30 transition-colors duration-300"
+                  className="p-6 md:p-8 border border-aom-light-border bg-white shadow-sm hover:border-aom-orange/40 transition-colors duration-300"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 border border-aom-border bg-black/40 flex items-center justify-center shrink-0">
+                    <div className="w-12 h-12 border border-aom-light-border bg-aom-cream flex items-center justify-center shrink-0">
                       <Icon size={20} className="text-aom-orange" />
                     </div>
                     <div>
-                      <p className="font-headline text-lg font-bold text-aom-warm-white mb-1">
+                      <p className="font-headline text-lg font-bold text-aom-black mb-1">
                         {point.stat}
                       </p>
-                      <p className="text-aom-stone text-sm leading-relaxed">
+                      <p className="text-aom-warm-gray text-sm leading-relaxed font-body">
                         {point.description}
                       </p>
                     </div>
@@ -78,39 +86,39 @@ export default function BrandsCallout({ openBrief }) {
             transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}
             className="md:col-span-5 flex flex-col"
           >
-            <div className="p-6 md:p-8 rounded-sm border border-aom-orange/40 bg-orange-950/10 shadow-2xl flex-1 flex flex-col">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-aom-orange mb-4">
+            <div className="p-6 md:p-8 border-2 border-aom-black bg-white shadow-xl flex-1 flex flex-col">
+              <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-orange mb-4">
                 Proof Point
               </p>
 
-              <h3 className="font-headline text-2xl md:text-3xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white mb-4">
+              <h3 className="font-headline text-2xl md:text-3xl font-extrabold uppercase tracking-[-0.02em] text-aom-black mb-4">
                 VIRTU HOSPITALITY GROUP
               </h3>
 
-              <p className="text-aom-stone text-sm leading-relaxed mb-2">
+              <p className="text-aom-warm-gray text-sm leading-relaxed mb-2 font-body">
                 "They didn't just shoot beautiful footage. They showed people the place I created had legacy."
               </p>
 
-              <p className="text-aom-stone-muted text-xs leading-relaxed mb-6">
+              <p className="text-aom-warm-gray/60 text-xs leading-relaxed mb-6 font-body">
                 Gio Osso, Virtu Hospitality Group
               </p>
 
               {/* Mini stats */}
               <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="p-4 rounded-sm border border-aom-border bg-aom-charcoal">
-                  <p className="font-headline text-2xl font-black italic text-aom-orange">3</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-aom-stone-muted mt-1">Venue Launches</p>
+                <div className="p-4 border border-aom-light-border bg-aom-cream">
+                  <p className="font-headline text-2xl font-extrabold text-aom-orange">3</p>
+                  <p className="font-body text-[10px] uppercase tracking-[0.15em] text-aom-warm-gray mt-1">Venue Launches</p>
                 </div>
-                <div className="p-4 rounded-sm border border-aom-border bg-aom-charcoal">
-                  <p className="font-headline text-2xl font-black italic text-aom-orange">$9k+</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-aom-stone-muted mt-1">Projects</p>
+                <div className="p-4 border border-aom-light-border bg-aom-cream">
+                  <p className="font-headline text-2xl font-extrabold text-aom-orange">$9k+</p>
+                  <p className="font-body text-[10px] uppercase tracking-[0.15em] text-aom-warm-gray mt-1">Projects</p>
                 </div>
               </div>
 
               <div className="mt-auto">
                 <button
                   onClick={() => openBrief()}
-                  className="block w-full bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
+                  className="block w-full bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
                 >
                   See What We'd Produce For You
                 </button>
