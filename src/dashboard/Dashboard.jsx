@@ -63,7 +63,11 @@ function parsePunchList(md) {
     const deadline = /HARD DEADLINE/i.test(raw)
     const blocked = /blocked|waiting on|need.*before|holding/i.test(raw)
     const text = raw.replace(/\s*--\s*HARD DEADLINE.*$/i, '').replace(/\s*--.*$/, '').trim()
-    items.push({ id: `punch-${items.length}`, text, done, deadline, blocked, category: currentClient || currentCategory, raw })
+    // Extract [AgentName] tag from start of task text (written by assign_agent API)
+    const agentTag = text.match(/^\[(\w+)\]\s*/)
+    const manualAgent = agentTag ? agentTag[1] : null
+    const cleanText = manualAgent ? text.replace(agentTag[0], '') : text
+    items.push({ id: `punch-${items.length}`, text: cleanText, done, deadline, blocked, category: currentClient || currentCategory, raw, manualAgent })
   }
   return items
 }
@@ -265,8 +269,11 @@ function assignTasksToAgents(punchItems) {
     const text = p.text
     const lower = text.toLowerCase()
 
+    // 0. Manual assignment from [AgentName] tag in punch-list.md -- always wins
+    if (p.manualAgent) { agent = p.manualAgent }
+
     // 1. Check for explicit [Patrik] tag first -- overrides everything
-    if (/\[patrik\]/i.test(text)) { agent = 'Patrik' }
+    if (!agent && /\[patrik\]/i.test(text)) { agent = 'Patrik' }
 
     // 2. Keyword-based overrides run BEFORE category assignment
     //    These catch tasks that live under a project category but belong to a different agent.
@@ -524,7 +531,7 @@ function MobileTaskCard({ task, onRefresh }) {
       const data = await res.json()
       if (data.ok) {
         setDeleted(true)
-        setTimeout(onRefresh, 1200)
+        setTimeout(onRefresh, 800)
       } else {
         setDeleteFailed(true)
         setTimeout(() => setDeleteFailed(false), 2000)
@@ -549,9 +556,15 @@ function MobileTaskCard({ task, onRefresh }) {
       const data = await res.json()
       if (data.ok) {
         setMarked(true)
-        setTimeout(onRefresh, 1200)
+        setTimeout(onRefresh, 800)
+      } else {
+        setDeleteFailed(true)
+        setTimeout(() => setDeleteFailed(false), 2000)
       }
-    } catch { /* silently fail */ }
+    } catch {
+      setDeleteFailed(true)
+      setTimeout(() => setDeleteFailed(false), 2000)
+    }
     setMarking(false)
   }
 
@@ -584,8 +597,9 @@ function MobileTaskCard({ task, onRefresh }) {
         body: JSON.stringify({ action: 'rename_task', oldText: task.text, newText }),
       })
       const data = await res.json()
-      if (data.ok) { setTimeout(onRefresh, 1500) }
-    } catch { /* silently fail */ }
+      if (data.ok) { setTimeout(onRefresh, 800) }
+      else { setDeleteFailed(true); setTimeout(() => setDeleteFailed(false), 2000) }
+    } catch { setDeleteFailed(true); setTimeout(() => setDeleteFailed(false), 2000) }
     setSaving(false)
     setEditing(false)
   }
@@ -605,9 +619,15 @@ function MobileTaskCard({ task, onRefresh }) {
       const data = await res.json()
       if (data.ok) {
         setAssignFlash(agentName)
-        setTimeout(() => { setAssignFlash(null); onRefresh() }, 1200)
+        setTimeout(() => { setAssignFlash(null); onRefresh() }, 600)
+      } else {
+        setDeleteFailed(true)
+        setTimeout(() => setDeleteFailed(false), 2000)
       }
-    } catch { /* silently fail */ }
+    } catch {
+      setDeleteFailed(true)
+      setTimeout(() => setDeleteFailed(false), 2000)
+    }
     setAssigning(false)
   }
 
@@ -782,35 +802,42 @@ function MobileTaskCard({ task, onRefresh }) {
           )}
         </div>
 
-        {/* Agent picker dropdown */}
+        {/* Agent picker dropdown with click-outside overlay */}
         {agentPickerOpen && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              marginTop: 6, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10,
-              padding: '6px 0', overflow: 'hidden',
-            }}
-          >
-            {ASSIGNABLE_AGENTS.map(name => {
-              const c = AGENT_COLORS[name] || '#888'
-              const isCurrentAgent = task.agent === name
-              return (
-                <button
-                  key={name}
-                  onClick={() => { if (!isCurrentAgent) assignAgent(name) }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px',
-                    background: isCurrentAgent ? `${c}12` : 'transparent', border: 'none', cursor: isCurrentAgent ? 'default' : 'pointer',
-                    textAlign: 'left', minHeight: 44,
-                  }}
-                >
-                  <AgentInitial name={name} size={22} />
-                  <span style={{ fontSize: 13, color: isCurrentAgent ? c : '#ccc', fontWeight: isCurrentAgent ? 700 : 500 }}>{name}</span>
-                  {isCurrentAgent && <span style={{ fontSize: 10, color: c, marginLeft: 'auto', fontWeight: 700 }}>&#10003;</span>}
-                </button>
-              )
-            })}
-          </div>
+          <>
+            <div
+              onClick={(e) => { e.stopPropagation(); setAgentPickerOpen(false) }}
+              style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9 }}
+            />
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'relative', zIndex: 10,
+                marginTop: 6, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10,
+                padding: '6px 0', overflow: 'hidden',
+              }}
+            >
+              {ASSIGNABLE_AGENTS.map(name => {
+                const c = AGENT_COLORS[name] || '#888'
+                const isCurrentAgent = task.agent === name
+                return (
+                  <button
+                    key={name}
+                    onClick={() => { if (!isCurrentAgent) assignAgent(name) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px',
+                      background: isCurrentAgent ? `${c}12` : 'transparent', border: 'none', cursor: isCurrentAgent ? 'default' : 'pointer',
+                      textAlign: 'left', minHeight: 44,
+                    }}
+                  >
+                    <AgentInitial name={name} size={22} />
+                    <span style={{ fontSize: 13, color: isCurrentAgent ? c : '#ccc', fontWeight: isCurrentAgent ? 700 : 500 }}>{name}</span>
+                    {isCurrentAgent && <span style={{ fontSize: 10, color: c, marginLeft: 'auto', fontWeight: 700 }}>&#10003;</span>}
+                  </button>
+                )
+              })}
+            </div>
+          </>
         )}
       </div>
 
@@ -899,6 +926,12 @@ function TaskCard({ task, onRefresh }) {
   const [deleting, setDeleting] = useState(false)
   const [deleted, setDeleted] = useState(false)
   const [deleteFailed, setDeleteFailed] = useState(false)
+  const [marking, setMarking] = useState(false)
+  const [marked, setMarked] = useState(false)
+  const [agentPickerOpen, setAgentPickerOpen] = useState(false)
+  const [assigning, setAssigning] = useState(false)
+  const [assignFlash, setAssignFlash] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const inputRef = useRef(null)
   const editRef = useRef(null)
   const subtaskCacheRef = useRef(null)
@@ -957,8 +990,10 @@ function TaskCard({ task, onRefresh }) {
 
   const deleteTask = async () => {
     if (deleting || deleted) return
+    if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3000); return }
     setDeleting(true)
     setDeleteFailed(false)
+    setConfirmDelete(false)
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -968,7 +1003,7 @@ function TaskCard({ task, onRefresh }) {
       const data = await res.json()
       if (data.ok) {
         setDeleted(true)
-        setTimeout(onRefresh, 1200)
+        setTimeout(onRefresh, 800)
       } else {
         setDeleteFailed(true)
         setTimeout(() => setDeleteFailed(false), 2000)
@@ -978,6 +1013,57 @@ function TaskCard({ task, onRefresh }) {
       setTimeout(() => setDeleteFailed(false), 2000)
     }
     setDeleting(false)
+  }
+
+  const markDone = async () => {
+    if (marking || marked) return
+    setMarking(true)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_done', taskText: task.text }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setMarked(true)
+        setTimeout(onRefresh, 800)
+      } else {
+        setDeleteFailed(true)
+        setTimeout(() => setDeleteFailed(false), 2000)
+      }
+    } catch {
+      setDeleteFailed(true)
+      setTimeout(() => setDeleteFailed(false), 2000)
+    }
+    setMarking(false)
+  }
+
+  const ASSIGNABLE_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Tony', 'Steffen', 'Elon', 'Paige', 'Mom']
+
+  const assignAgent = async (agentName) => {
+    if (assigning) return
+    setAssigning(true)
+    setAgentPickerOpen(false)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'assign_agent', taskText: task.text, agentName }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setAssignFlash(agentName)
+        setTimeout(() => { setAssignFlash(null); onRefresh() }, 600)
+      } else {
+        setDeleteFailed(true)
+        setTimeout(() => setDeleteFailed(false), 2000)
+      }
+    } catch {
+      setDeleteFailed(true)
+      setTimeout(() => setDeleteFailed(false), 2000)
+    }
+    setAssigning(false)
   }
 
   const saveRename = async () => {
@@ -991,10 +1077,20 @@ function TaskCard({ task, onRefresh }) {
         body: JSON.stringify({ action: 'rename_task', oldText: task.text, newText }),
       })
       const data = await res.json()
-      if (data.ok) { setTimeout(onRefresh, 1500) }
-    } catch { /* silently fail */ }
+      if (data.ok) { setTimeout(onRefresh, 800) }
+      else { setDeleteFailed(true); setTimeout(() => setDeleteFailed(false), 2000) }
+    } catch { setDeleteFailed(true); setTimeout(() => setDeleteFailed(false), 2000) }
     setSaving(false)
     setEditing(false)
+  }
+
+  if (deleted || marked) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: '#0a0a0a', borderRadius: 8, border: '1px solid rgba(34,197,94,0.3)', opacity: 0.6, transition: 'opacity 0.4s' }}>
+        <span style={{ color: '#22c55e', fontSize: 14 }}>&#10003;</span>
+        <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 600 }}>{marked ? 'Done' : 'Removed'}</span>
+      </div>
+    )
   }
 
   return (
@@ -1056,14 +1152,25 @@ function TaskCard({ task, onRefresh }) {
             {task.text}
             {saving && <span style={{ fontSize: 9, color: '#555', marginLeft: 6 }}>saving...</span>}
           </div>
+          {/* Mark done button */}
           <button
-            onClick={e => { e.stopPropagation(); deleteTask() }}
-            title="Remove task"
-            style={{ background: 'none', border: 'none', color: '#333', fontSize: 14, cursor: 'pointer', padding: '0 2px', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s' }}
-            onMouseEnter={e => e.target.style.color = '#ef4444'}
+            onClick={e => { e.stopPropagation(); markDone() }}
+            title="Mark done"
+            style={{ background: 'none', border: 'none', color: '#333', fontSize: 13, cursor: 'pointer', padding: '0 2px', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s' }}
+            onMouseEnter={e => e.target.style.color = '#22c55e'}
             onMouseLeave={e => e.target.style.color = '#333'}
           >
-            {deleting ? '...' : '\u00d7'}
+            {marking ? '...' : '\u2713'}
+          </button>
+          {/* Delete button with confirmation */}
+          <button
+            onClick={e => { e.stopPropagation(); deleteTask() }}
+            title={confirmDelete ? 'Click again to confirm' : 'Remove task'}
+            style={{ background: confirmDelete ? 'rgba(239,68,68,0.15)' : 'none', border: 'none', color: confirmDelete ? '#ef4444' : '#333', fontSize: confirmDelete ? 9 : 14, cursor: 'pointer', padding: confirmDelete ? '2px 6px' : '0 2px', lineHeight: 1, flexShrink: 0, transition: 'color 0.15s', borderRadius: 4, fontWeight: confirmDelete ? 700 : 400, letterSpacing: confirmDelete ? '0.04em' : 'normal' }}
+            onMouseEnter={e => { if (!confirmDelete) e.target.style.color = '#ef4444' }}
+            onMouseLeave={e => { if (!confirmDelete) e.target.style.color = '#333' }}
+          >
+            {deleting ? '...' : confirmDelete ? 'confirm?' : '\u00d7'}
           </button>
         </div>
       )}
@@ -1080,19 +1187,65 @@ function TaskCard({ task, onRefresh }) {
         )}
       </div>
 
-      {(task.agent || task.category) && (
-        <div
-          onClick={() => { setReplyOpen(!replyOpen); setReply(null) }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
-        >
-          {task.category && <span style={{ fontSize: 10, color: replyOpen ? '#666' : '#444', transition: 'color 0.15s' }}>{task.category}</span>}
-          {task.agent ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <AgentInitial name={task.agent} size={16} />
-              <span style={{ fontSize: 10, color: agentColor, fontWeight: 600 }}>{task.agent}</span>
+      {(task.agent || task.category || true) && (
+        <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+          >
+            <span onClick={() => { setReplyOpen(!replyOpen); setReply(null) }} style={{ fontSize: 10, color: replyOpen ? '#666' : '#444', transition: 'color 0.15s', cursor: 'pointer' }}>{task.category || ''}</span>
+            {assignFlash ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ color: '#22c55e', fontSize: 12 }}>&#10003;</span>
+                <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 600 }}>{assignFlash}</span>
+              </div>
+            ) : task.agent ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); setAgentPickerOpen(!agentPickerOpen) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}
+              >
+                <AgentInitial name={task.agent} size={16} />
+                <span style={{ fontSize: 10, color: agentColor, fontWeight: 600 }}>{task.agent}</span>
+                <span style={{ fontSize: 7, color: '#444', marginLeft: 2 }}>&#9660;</span>
+              </button>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); setAgentPickerOpen(!agentPickerOpen) }}
+                style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 4, cursor: 'pointer', padding: '2px 8px', display: 'flex', alignItems: 'center' }}
+              >
+                <span style={{ fontSize: 10, color: '#444', fontStyle: 'italic' }}>Unassigned</span>
+                <span style={{ fontSize: 7, color: '#333', marginLeft: 4 }}>&#9660;</span>
+              </button>
+            )}
+          </div>
+          {/* Agent picker dropdown */}
+          {agentPickerOpen && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                marginTop: 4, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
+                padding: '4px 0', overflow: 'hidden',
+              }}
+            >
+              {ASSIGNABLE_AGENTS.map(name => {
+                const c = AGENT_COLORS[name] || '#888'
+                const isCurrentAgent = task.agent === name
+                return (
+                  <button
+                    key={name}
+                    onClick={() => { if (!isCurrentAgent) assignAgent(name) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '6px 10px',
+                      background: isCurrentAgent ? `${c}12` : 'transparent', border: 'none', cursor: isCurrentAgent ? 'default' : 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <AgentInitial name={name} size={18} />
+                    <span style={{ fontSize: 11, color: isCurrentAgent ? c : '#ccc', fontWeight: isCurrentAgent ? 700 : 500 }}>{name}</span>
+                    {isCurrentAgent && <span style={{ fontSize: 9, color: c, marginLeft: 'auto', fontWeight: 700 }}>&#10003;</span>}
+                  </button>
+                )
+              })}
             </div>
-          ) : (
-            <span style={{ fontSize: 10, color: '#333', fontStyle: 'italic' }}>unassigned</span>
           )}
         </div>
       )}
