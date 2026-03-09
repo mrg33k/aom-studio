@@ -1056,6 +1056,13 @@ ${contextBlock}`
 }
 
 function autoAssignAgent(taskText) {
+  // Explicit [Agent] tag always wins over keyword matching
+  const explicitTag = taskText.match(/\[(Bobby|Colton|Jacob|Alex|Cleo|Tony|Steffen|Elon|Paige|Mom|Patrik)\]/i)
+  if (explicitTag) {
+    const name = explicitTag[1]
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
+  }
+
   const t = taskText.toLowerCase()
   // Bobby: web dev, dashboard, website, deploy, CSS, Vercel, Firebase, Ambition site
   if (/website|dashboard|css|vercel|deploy|firebase|ambition.*site|mobile.*app|responsive|layout|frontend|zoom|input|button|card|swipe/i.test(t)) return 'Bobby'
