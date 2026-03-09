@@ -149,9 +149,18 @@ function getTaskPriorityTier(task) {
 }
 
 function sortTasksByPriority(tasks) {
-  // Newest first (reverse of file order, since newest are added to top of section)
-  // Tasks from punch-list.md are already newest-first, just preserve that order
-  return tasks.map((t, i) => ({ ...t, _pri: getTaskPriorityTier(t), _origIdx: i }))
+  // RIGHT NOW tasks always sort to top, then by priority tier, then file order
+  return tasks
+    .map((t, i) => ({ ...t, _pri: getTaskPriorityTier(t), _origIdx: i }))
+    .sort((a, b) => {
+      // RIGHT NOW items first
+      if (a._rightNow && !b._rightNow) return -1
+      if (!a._rightNow && b._rightNow) return 1
+      // Then by priority tier
+      if (a._pri.tier !== b._pri.tier) return a._pri.tier - b._pri.tier
+      // Then by original file order
+      return a._origIdx - b._origIdx
+    })
 }
 
 function inferAgentStatus(md) {
@@ -199,6 +208,7 @@ function assignTasksToAgents(punchItems) {
     'Ambition Mechanical': 'Bobby', 'Skylar Music Video': 'Cleo',
     'ISA Energy': 'Cleo', 'Brandon Wiley': 'Cleo', 'KOHRS': 'Cleo',
     'Included Health': 'Cleo', 'Outreach': 'Jacob', 'Revenue': 'Jacob',
+    'RIGHT NOW': 'Patrik', 'ADMIN': 'Patrik', 'TEAM': 'Patrik',
   }
   return punchItems.filter(p => !p.done).map(p => {
     let agent = null
@@ -213,9 +223,12 @@ function assignTasksToAgents(punchItems) {
     if (!agent && /mom|stuck|blocked|push/i.test(p.text)) agent = 'Mom'
     if (!agent && /paige|client.*check|payment|invoice|deposit|churn|upsell/i.test(p.text)) agent = 'Paige'
     if (!agent && /tony|social|posting|instagram|linkedin|tiktok|postiz|content.*calendar/i.test(p.text)) agent = 'Tony'
+    if (!agent && /review|sign off|configure|confirm|green light|launch|block.*session|re-engage/i.test(p.text)) agent = 'Patrik'
     let column = agent ? 'assigned' : 'unassigned'
     if (p.blocked) column = 'blocked'
-    return { ...p, agent, column }
+    // RIGHT NOW items get boosted to top via _rightNow flag
+    const isRightNow = p.category === 'RIGHT NOW'
+    return { ...p, agent, column, _rightNow: isRightNow }
   })
 }
 
