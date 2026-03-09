@@ -6,8 +6,9 @@ import { ArrowRight, Building2, Clapperboard, Cpu } from 'lucide-react'
 // Swap these URLs with actual AOM showreel / b-roll clips.
 // Each entry gets crossfaded on a loop. Keep clips short (10-20s).
 const HERO_VIDEOS = [
-  // PLACEHOLDER: Replace with real showreel / construction b-roll URLs
-  'https://videos.pexels.com/video-files/5765446/5765446-uhd_2560_1440_30fps.mp4',
+  // Drop your showreel / b-roll clips in public/ and reference them here.
+  // Example: '/hero-reel.mp4', '/construction-broll.mp4'
+  '/hero-reel.mp4',
 ]
 const VIDEO_HOLD_SECONDS = 12 // time each clip plays before crossfade
 
@@ -65,6 +66,7 @@ export default function HeroSection({ openBrief }) {
             autoPlay
             loop
             playsInline
+            preload="none"
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ease-in-out ${
               i === activeIdx ? 'opacity-[0.18]' : 'opacity-0'
             }`}
