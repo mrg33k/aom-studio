@@ -575,6 +575,14 @@ export default function AmbitionBrandGuidelines() {
                 <SnowflakePattern size={500} color="#283593" opacity={0.1} />
               </div>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 relative z-10">
+                {/* OG Ambition Mechanical Logo */}
+                <div className="mb-12 flex justify-center md:justify-start">
+                  <img
+                    src="/ambition-logo.png"
+                    alt="Ambition Mechanical Services - Original Logo"
+                    className="w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 object-contain drop-shadow-[0_0_40px_rgba(220,38,38,0.15)]"
+                  />
+                </div>
                 <div className="flex items-center gap-3 mb-8">
                   <div className="w-10 h-[3px] bg-[#dc2626]" />
                   <span style={{ fontFamily: tokens.fonts.display, fontWeight: 600, fontSize: '11px', letterSpacing: '0.2em', color: '#dc2626', textTransform: 'uppercase' }}>
