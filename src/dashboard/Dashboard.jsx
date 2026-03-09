@@ -1481,7 +1481,8 @@ function CommandBar({ onRefresh, isMobile }) {
   const [messages, setMessages] = useState([])
   const [sending, setSending] = useState(false)
   const [open, setOpen] = useState(false)
-  const [addTaskMode, setAddTaskMode] = useState(false)
+  const [addTaskMode, setAddTaskMode] = useState(true) // default to task mode
+  const [barMode, setBarMode] = useState('task') // 'task' | 'chat' | 'agent'
   const inputRef = useRef(null)
   const messagesEndRef = useRef(null)
 
@@ -1602,86 +1603,117 @@ function CommandBar({ onRefresh, isMobile }) {
       )}
 
       {/* Bar */}
-      <div style={{ position: 'fixed', bottom: isMobile ? 56 : 0, left: 0, right: 0, height: 56, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, padding: isMobile ? '0 10px' : '0 20px', zIndex: 99 }}>
-        {/* Agent selector */}
-        <div style={{ display: 'flex', gap: 4, overflowX: isMobile ? 'auto' : 'visible', flexShrink: isMobile ? 0 : undefined, maxWidth: isMobile ? 120 : undefined, WebkitOverflowScrolling: 'touch' }}>
-          {CHAT_AGENTS.map(a => (
+      <div style={{ position: 'fixed', bottom: isMobile ? 56 : 0, left: 0, right: 0, background: '#080808', borderTop: '1px solid rgba(255,255,255,0.08)', zIndex: 99 }}>
+        {/* Mode tabs + agent selector row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, padding: isMobile ? '0 10px' : '0 20px', height: 32, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          {[
+            { id: 'task', label: 'TASK', color: GREEN },
+            { id: 'chat', label: 'CHAT', color: ORANGE },
+            { id: 'agent', label: 'AGENT', color: BLUE },
+          ].map(m => (
             <button
-              key={a}
-              onClick={() => { setSelectedAgent(a); setAddTaskMode(false); setNotesOpen(false); setTaskNotes('') }}
+              key={m.id}
+              onClick={() => {
+                setBarMode(m.id)
+                setAddTaskMode(m.id === 'task')
+                if (m.id === 'chat') setSelectedAgent('All')
+                if (m.id === 'task') { setNotesOpen(false); setTaskNotes('') }
+              }}
               style={{
-                padding: '3px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
-                letterSpacing: '0.06em', cursor: 'pointer', border: 'none',
-                background: !addTaskMode && selectedAgent === a ? `${AGENT_COLORS[a] || ORANGE}20` : 'transparent',
-                color: !addTaskMode && selectedAgent === a ? (AGENT_COLORS[a] || ORANGE) : '#444',
-                transition: 'all 0.1s',
+                padding: '4px 12px', borderRadius: 0, fontSize: 10, fontWeight: 800,
+                letterSpacing: '0.1em', cursor: 'pointer', border: 'none',
+                background: barMode === m.id ? `${m.color}15` : 'transparent',
+                color: barMode === m.id ? m.color : '#444',
+                borderBottom: barMode === m.id ? `2px solid ${m.color}` : '2px solid transparent',
+                transition: 'all 0.15s',
               }}
             >
-              {a}
+              {m.label}
             </button>
           ))}
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)', margin: '0 4px', alignSelf: 'center' }} />
-          <button
-            onClick={() => { setAddTaskMode(!addTaskMode); setSelectedAgent('All'); if (addTaskMode) { setNotesOpen(false); setTaskNotes('') } }}
-            style={{
-              padding: '3px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
-              letterSpacing: '0.06em', cursor: 'pointer', border: 'none',
-              background: addTaskMode ? 'rgba(34,197,94,0.15)' : 'transparent',
-              color: addTaskMode ? GREEN : '#444',
-            }}
-          >
-            + TASK
-          </button>
+
+          {/* Agent selector (only in agent mode) */}
+          {barMode === 'agent' && (
+            <>
+              <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', margin: '0 8px' }} />
+              <div style={{ display: 'flex', gap: 4, overflowX: 'auto', flex: 1, WebkitOverflowScrolling: 'touch' }}>
+                {CHAT_AGENTS.filter(a => a !== 'All').map(a => (
+                  <button
+                    key={a}
+                    onClick={() => setSelectedAgent(a)}
+                    style={{
+                      padding: '3px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
+                      letterSpacing: '0.06em', cursor: 'pointer', border: 'none',
+                      background: selectedAgent === a ? `${AGENT_COLORS[a] || BLUE}20` : 'transparent',
+                      color: selectedAgent === a ? (AGENT_COLORS[a] || BLUE) : '#444',
+                      transition: 'all 0.1s', flexShrink: 0,
+                    }}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Log toggle */}
+          {messages.length > 0 && (
+            <button onClick={() => setOpen(!open)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 5, color: '#444', fontSize: 9, padding: '2px 8px', cursor: 'pointer', letterSpacing: '0.06em', marginLeft: 'auto', flexShrink: 0 }}>
+              {open ? 'HIDE' : `${messages.length}`}
+            </button>
+          )}
         </div>
 
-        {/* Input */}
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder={addTaskMode ? 'Add a task to the punch list...' : `Message ${selectedAgent === 'All' ? 'all agents' : selectedAgent}...`}
-          style={{
-            flex: 1, background: '#111', border: `1px solid ${addTaskMode ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.08)'}`,
-            borderRadius: 8, color: '#fff', fontSize: isMobile ? 16 : 13, padding: '8px 14px',
-            outline: 'none',
-          }}
-        />
-
-        {/* Notes toggle (only in task mode) */}
-        {addTaskMode && (
-          <button
-            onClick={() => setNotesOpen(!notesOpen)}
+        {/* Input row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, padding: isMobile ? '8px 10px' : '8px 20px', height: 48 }}>
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && send()}
+            placeholder={
+              barMode === 'task' ? 'Add a task...'
+              : barMode === 'agent' ? `Message ${selectedAgent}...`
+              : 'Message all agents...'
+            }
             style={{
-              background: notesOpen ? 'rgba(34,197,94,0.12)' : 'transparent',
-              border: `1px solid ${notesOpen ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.08)'}`,
-              borderRadius: 6, color: notesOpen ? GREEN : '#555', fontSize: 9, fontWeight: 700,
-              padding: '4px 8px', cursor: 'pointer', letterSpacing: '0.06em', whiteSpace: 'nowrap',
+              flex: 1, background: '#111',
+              border: `1px solid ${barMode === 'task' ? 'rgba(34,197,94,0.2)' : barMode === 'agent' ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 8, color: '#fff', fontSize: isMobile ? 16 : 13, padding: '8px 14px',
+              outline: 'none',
+            }}
+          />
+
+          {/* Notes toggle (task mode only) */}
+          {barMode === 'task' && (
+            <button
+              onClick={() => setNotesOpen(!notesOpen)}
+              style={{
+                background: notesOpen ? 'rgba(34,197,94,0.12)' : 'transparent',
+                border: `1px solid ${notesOpen ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                borderRadius: 6, color: notesOpen ? GREEN : '#555', fontSize: 9, fontWeight: 700,
+                padding: '6px 8px', cursor: 'pointer', letterSpacing: '0.06em', whiteSpace: 'nowrap',
+              }}
+            >
+              {notesOpen ? 'NOTES' : '+'}
+            </button>
+          )}
+
+          <button
+            onClick={send}
+            disabled={!input.trim() || sending}
+            style={{
+              background: barMode === 'task' ? GREEN : barMode === 'agent' ? BLUE : ORANGE,
+              color: '#fff', border: 'none',
+              borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 800,
+              letterSpacing: '0.08em', cursor: input.trim() ? 'pointer' : 'default',
+              opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase',
+              transition: 'opacity 0.15s, background 0.15s',
             }}
           >
-            {notesOpen ? 'NOTES' : '+ NOTES'}
+            {sending ? '...' : barMode === 'task' ? 'ADD' : 'SEND'}
           </button>
-        )}
-
-        <button
-          onClick={send}
-          disabled={!input.trim() || sending}
-          style={{
-            background: addTaskMode ? GREEN : ORANGE, color: '#fff', border: 'none',
-            borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 800,
-            letterSpacing: '0.08em', cursor: input.trim() ? 'pointer' : 'default',
-            opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase',
-            transition: 'opacity 0.15s, background 0.15s',
-          }}
-        >
-          {sending ? '...' : addTaskMode ? 'ADD' : 'SEND'}
-        </button>
-
-        {messages.length > 0 && (
-          <button onClick={() => setOpen(!open)} style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#555', fontSize: 10, padding: '4px 10px', cursor: 'pointer', letterSpacing: '0.06em' }}>
-            {open ? 'HIDE' : `LOG (${messages.length})`}
-          </button>
-        )}
+        </div>
       </div>
     </>
   )
