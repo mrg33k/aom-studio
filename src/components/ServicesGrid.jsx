@@ -7,9 +7,9 @@ const services = [
     icon: Repeat,
     label: 'Retainer',
     title: 'Content Engine',
-    description: 'Your in-house media team without the overhead. One filming day in, 30 days of social content out. Strategy, production, and posting handled.',
+    description: 'Your in-house media team without the overhead. We show up, shoot, and turn it into a month of content. Strategy, production, and posting handled.',
     accent: 'orange',
-    cta: 'Learn more',
+    cta: 'See how it works',
   },
   {
     icon: Clapperboard,
@@ -17,7 +17,7 @@ const services = [
     title: 'Production',
     description: 'Brand videos, documentaries, event coverage. Cinema-grade execution for the moments that define your company.',
     accent: 'orange',
-    cta: 'Learn more',
+    cta: 'See the work',
   },
   {
     icon: Cpu,
@@ -25,7 +25,7 @@ const services = [
     title: 'Digital Infrastructure',
     description: 'Websites, AI workflows, and automation that make everything repeatable. The engine behind the brand.',
     accent: 'sage',
-    cta: 'Learn more',
+    cta: 'See what we\'d build',
   },
 ]
 
@@ -77,7 +77,7 @@ function ServiceCard({ service, index }) {
 
 export default function ServicesGrid() {
   return (
-    <section className="py-16 md:py-24 bg-aom-night">
+    <section className="py-20 md:py-32 bg-aom-surface">
       <div className="max-w-6xl mx-auto px-6 md:px-12">
         {/* Section header */}
         <div className="mb-12">
@@ -85,11 +85,11 @@ export default function ServicesGrid() {
             What We Build
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />
-          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-tighter text-aom-warm-white max-w-[45ch]">
+          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white max-w-[45ch]">
             THREE WAYS IN
           </h2>
-          <p className="text-aom-stone text-base mt-4 max-w-2xl leading-relaxed">
-            Every company needs different things at different stages. Pick the door that fits where you are right now.
+          <p className="text-aom-stone text-lg md:text-xl mt-4 max-w-2xl leading-relaxed">
+            Whether you need monthly content, a single production, or the systems to tie it all together.
           </p>
         </div>
 

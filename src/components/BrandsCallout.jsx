@@ -1,40 +1,40 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, HardHat, Users, Trophy, Building2 } from 'lucide-react'
+import { ArrowRight, Clapperboard, Mic2, ScrollText } from 'lucide-react'
 
 const proofPoints = [
   {
-    icon: Users,
-    stat: 'Recruiting',
-    description: 'Your best crews aren\'t on Indeed. They\'re on Instagram watching your competitor\'s content. Show them why your company is the one to work for.',
+    icon: Clapperboard,
+    stat: 'Brand Videos',
+    description: 'A 90-second video that explains who you are, what you do, and why it matters. The asset that works harder than any sales call.',
   },
   {
-    icon: Trophy,
-    stat: 'Winning Bids',
-    description: 'General contractors check your online presence before they return your call. Professional content is the difference between shortlist and no-list.',
+    icon: Mic2,
+    stat: 'Event Coverage',
+    description: "Conferences, summits, launches. We capture the energy and turn it into assets that extend the event's shelf life by months.",
   },
   {
-    icon: Building2,
-    stat: 'Looking Legitimate',
-    description: 'Stand out from the sea of blue-and-orange logos. When your digital presence matches your work quality, the right contracts find you.',
+    icon: ScrollText,
+    stat: 'Documentaries + Long-form',
+    description: 'When the story needs more than 60 seconds. Fundraising films, impact stories, and brand docs that build real trust.',
   },
 ]
 
-export default function ConstructionCallout() {
+export default function BrandsCallout() {
   return (
-    <section id="construction" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
-      {/* Subtle warm accent */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.02] bg-gradient-to-b from-transparent via-orange-500/5 to-transparent" />
+    <section id="brands" className="py-16 md:py-24 bg-aom-surface relative overflow-hidden">
+      {/* Subtle warm amber gradient wash */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
 
       <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section header */}
         <div className="mb-12">
           <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-4">
-            Construction Companies
+            Brands + Corporate
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />
           <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white max-w-[45ch] leading-[0.9]">
-            YOUR COMPETITOR'S INSTAGRAM IS THEIR BEST RECRUITER. IS YOURS?
+            THE STORY IS ALREADY THERE. WE JUST KNOW HOW TO TELL IT.
           </h2>
         </div>
 
@@ -70,7 +70,7 @@ export default function ConstructionCallout() {
             })}
           </div>
 
-          {/* Right column: Ambition proof + CTA */}
+          {/* Right column: Virtu proof card + CTA */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -78,61 +78,46 @@ export default function ConstructionCallout() {
             transition={{ duration: 0.7, delay: 0.3, ease: 'easeOut' }}
             className="md:col-span-5 flex flex-col"
           >
-            {/* Proof card */}
             <div className="p-6 md:p-8 rounded-sm border border-aom-orange/40 bg-orange-950/10 shadow-2xl flex-1 flex flex-col">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-aom-orange mb-4">
                 Proof Point
               </p>
 
-              <h3 className="font-headline text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-aom-warm-white mb-4">
-                AMBITION MECHANICAL
+              <h3 className="font-headline text-2xl md:text-3xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white mb-4">
+                VIRTU HOSPITALITY GROUP
               </h3>
 
               <p className="text-aom-stone text-sm leading-relaxed mb-2">
-                One HVAC company that decided their brand should match the quality of their work. Website, social media, and a content engine that runs every month.
+                "They didn't just shoot beautiful footage. They showed people the place I created had legacy."
               </p>
 
-              <p className="text-aom-stone text-sm leading-relaxed mb-6">
-                The result: a digital presence that recruits talent, wins contracts, and makes general contractors take notice.
+              <p className="text-aom-stone-muted text-xs leading-relaxed mb-6">
+                Gio Osso, Virtu Hospitality Group
               </p>
 
               {/* Mini stats */}
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="p-4 rounded-sm border border-aom-border bg-aom-charcoal">
-                  <p className="font-headline text-2xl font-black italic text-aom-orange">30+</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-aom-stone-muted mt-1">Posts / Month</p>
+                  <p className="font-headline text-2xl font-black italic text-aom-orange">3</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-aom-stone-muted mt-1">Venue Launches</p>
                 </div>
                 <div className="p-4 rounded-sm border border-aom-border bg-aom-charcoal">
-                  <p className="font-headline text-2xl font-bold italic text-aom-orange">Monthly</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-aom-stone-muted mt-1">Filming + Posting</p>
+                  <p className="font-headline text-2xl font-black italic text-aom-orange">$9k+</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-aom-stone-muted mt-1">Projects</p>
                 </div>
               </div>
 
-              <div className="mt-auto space-y-3">
-                <a
-                  href="https://ambitionac.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-aom-orange text-sm font-bold hover:text-aom-orange-hover transition-colors flex items-center gap-1"
-                >
-                  See Ambition Mechanical <ArrowRight size={14} />
-                </a>
-
+              <div className="mt-auto">
                 <a
                   href="#brief"
                   className="block bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20 text-center text-sm"
                 >
-                  See What We'd Build For You
+                  See What We'd Produce For You
                 </a>
               </div>
             </div>
           </motion.div>
         </div>
-
-        {/* Stat bar */}
-        <p className="mt-8 font-headline text-lg font-bold text-aom-warm-white">
-          Consistent filming. Consistent posting. That's the whole system.
-        </p>
       </div>
     </section>
   )

@@ -1,27 +1,38 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Building2, Clapperboard, Cpu } from 'lucide-react'
 
-const cycleWords = ['BUILD', 'GROW', 'SHIP', 'SCALE']
-
-function useWordCycle(words, intervalMs = 2800) {
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % words.length)
-    }, intervalMs)
-    return () => clearInterval(timer)
-  }, [words.length, intervalMs])
-
-  return words[index]
-}
+const pathways = [
+  {
+    icon: Building2,
+    title: 'Construction Companies',
+    hook: 'Social content from your actual job sites.',
+    cta: 'See what we build for contractors',
+    accent: 'orange',
+    href: '#construction',
+  },
+  {
+    icon: Clapperboard,
+    title: 'Brands + Corporate',
+    hook: 'Video and content that tells your story and closes deals.',
+    cta: 'See the production work',
+    accent: 'orange',
+    href: '#brands',
+  },
+  {
+    icon: Cpu,
+    title: 'Digital + Systems',
+    hook: 'Websites, workflows, and the systems that make it all run.',
+    cta: 'See how we build',
+    accent: 'sage',
+    href: '#digital',
+  },
+]
 
 export default function HeroSection() {
-  const currentWord = useWordCycle(cycleWords)
 
   return (
-    <section className="relative min-h-[70vh] sm:min-h-[90vh] flex items-center bg-aom-night overflow-hidden">
+    <section className="relative min-h-[85vh] flex items-center bg-aom-night overflow-hidden">
       {/* Noise overlay */}
       <div className="absolute inset-0 pointer-events-none z-20 opacity-[0.03] mix-blend-overlay">
         <svg width="100%" height="100%">
@@ -55,17 +66,10 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: 'easeOut' }}
         >
-          <h1 className="font-headline text-[2.25rem] sm:text-6xl md:text-7xl lg:text-8xl font-black italic uppercase tracking-tighter text-aom-warm-white leading-[0.85] max-w-[45ch]">
-            BRAND
-            <br className="sm:hidden" />
-            INFRASTRUCTURE
+          <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white leading-[0.85] max-w-[45ch]">
+            WE MAKE COMPANIES
             <br />
-            <span className="text-aom-stone">FOR COMPANIES</span>
-            <br />
-            <span className="text-aom-stone">THAT </span>
-            <span className="text-aom-orange inline-block min-w-[3ch]">
-              {currentWord}
-            </span>
+            <span className="text-aom-orange">IMPOSSIBLE TO IGNORE</span>
             <span className="text-aom-orange">.</span>
           </h1>
         </motion.div>
@@ -75,9 +79,9 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.8, ease: 'easeOut' }}
-          className="text-aom-stone text-base md:text-lg mt-8 max-w-xl leading-relaxed"
+          className="text-aom-stone text-lg md:text-xl mt-8 max-w-xl leading-relaxed"
         >
-          Video, websites, social content, and AI systems. We build the engine that makes your brand impossible to ignore.
+          Content, websites, and systems for companies that build, grow, and ship.
         </motion.p>
 
         {/* CTA */}
@@ -120,6 +124,33 @@ export default function HeroSection() {
           <span className="font-mono text-[10px] uppercase tracking-[0.2em]">
             Est. 2020
           </span>
+        </motion.div>
+
+        {/* Pathway Gate */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.6, ease: 'easeOut' }}
+          className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-3"
+        >
+          {pathways.map((p) => {
+            const Icon = p.icon
+            const borderColor = p.accent === 'sage' ? 'border-t-aom-sage' : 'border-t-aom-orange'
+            return (
+              <a
+                key={p.title}
+                href={p.href}
+                className={`p-4 md:p-6 rounded-sm border border-aom-border/50 bg-aom-charcoal/60 backdrop-blur-sm hover:border-aom-orange/30 transition-all duration-300 border-t-2 ${borderColor}`}
+              >
+                <Icon size={24} className={p.accent === 'sage' ? 'text-aom-sage mb-3' : 'text-aom-orange mb-3'} />
+                <p className="font-headline text-sm font-bold text-aom-warm-white mb-1">{p.title}</p>
+                <p className="text-aom-stone text-xs leading-relaxed mb-3">{p.hook}</p>
+                <span className={`text-xs font-bold flex items-center gap-1 ${p.accent === 'sage' ? 'text-aom-sage' : 'text-aom-orange'}`}>
+                  {p.cta} <ArrowRight size={12} />
+                </span>
+              </a>
+            )
+          })}
         </motion.div>
       </div>
     </section>

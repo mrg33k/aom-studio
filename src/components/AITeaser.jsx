@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, Check, Loader2 } from 'lucide-react'
 
 const processSteps = [
-  { label: 'input', value: '1 filming day' },
+  { label: 'input', value: 'filming days / month' },
   { label: 'system', value: 'content.pipeline.run()' },
   { label: 'output', value: '30 days of social content' },
 ]
@@ -39,7 +39,7 @@ export default function AITeaser() {
   }
 
   return (
-    <section className="py-16 md:py-24 bg-aom-surface relative overflow-hidden">
+    <section id="digital" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
       {/* Subtle sage gradient wash */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.04] bg-gradient-to-b from-transparent via-emerald-500/10 to-transparent" />
 
@@ -50,11 +50,11 @@ export default function AITeaser() {
             The Engine
           </p>
           <div className="w-12 h-[2px] bg-aom-sage mb-4" />
-          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-tighter text-aom-warm-white max-w-[45ch]">
-            THE SYSTEM BEHIND THE BRAND
+          <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white max-w-[45ch]">
+            THE ENGINE BEHIND THE BRAND
           </h2>
-          <p className="text-aom-stone text-base md:text-lg mt-4 max-w-2xl leading-relaxed">
-            We built an AI system that runs our own business. Now we're building them for clients.
+          <p className="text-aom-stone text-lg md:text-xl mt-4 max-w-2xl leading-relaxed">
+            We built the system that runs our own content pipeline, client ops, and reporting. Now we're building them for a small group of businesses.
           </p>
         </div>
 

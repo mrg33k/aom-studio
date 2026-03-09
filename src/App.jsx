@@ -15,6 +15,7 @@ import HeroSection from './components/HeroSection';
 import ServicesGrid from './components/ServicesGrid';
 import ConstructionCallout from './components/ConstructionCallout';
 import AITeaser from './components/AITeaser';
+import BrandsCallout from './components/BrandsCallout';
 
 // --- FIREBASE & STORAGE CONFIG ---
 import { initializeApp } from 'firebase/app';
@@ -48,7 +49,7 @@ const MAIN_PHONE = "6023732164";
 const BUDGET_OPTIONS = ["$2k - $5k", "$5k - $10k", "$10k - $25k", "$25k+"];
 const GOAL_OPTIONS = ["Close more sales", "Recruiting", "Investor / fundraising", "Brand trust", "Event recap", "Launch", "Other"];
 const PLACEMENT_OPTIONS = ["Website", "Ads", "LinkedIn", "Instagram/TikTok", "Sales outreach", "Internal", "Not sure"];
-const TIMING_OPTIONS = ["ASAP (1–2 weeks)", "This month", "Next 30–60 days", "Quarterly/ongoing"];
+const TIMING_OPTIONS = ["ASAP (1-2 weeks)", "This month", "Next 30-60 days", "Quarterly/ongoing"];
 const CHARS = "-_~*+[]!@#%&";
 
 const INITIAL_FORM_STATE = {
@@ -63,17 +64,17 @@ const INITIAL_FORM_STATE = {
 
 // --- DATA: TRUST & AUTHORITY ---
 const TRUST_METRICS = [
-  { icon: ShieldCheck, label: "Predictable Delivery", value: "Tight timelines", sub: "Structured pre-pro + capture + edit pipeline." },
-  { icon: Clock3, label: "Fast Turnarounds", value: "24–72hr", sub: "For selects + social cuts when needed." },
-  { icon: Users, label: "Lean Crew", value: "Cinema-grade", sub: "Efficient staffing, zero chaos, high output." },
-  { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Systems for matching style across assets." },
+  { icon: ShieldCheck, label: "Predictable Delivery", value: "Tight timelines", sub: "You'll know what's happening and when. No surprises, no delays, no scope creep." },
+  { icon: Clock3, label: "Fast Turnarounds", value: "24-72hr", sub: "When you need social cuts or selects fast, we deliver. Not weeks. Days." },
+  { icon: Users, label: "Lean Crew", value: "Cinema-grade", sub: "Small team. Big output. No layers of account managers between you and the people doing the work." },
+  { icon: BadgeCheck, label: "Brand Consistency", value: "Repeatable", sub: "Every piece looks like it came from the same team. Because it did." },
 ];
 
 
 
 const TESTIMONIALS = [
   {
-    quote: "The video was a huge recruiting tool in recruiting our first 3 cohorts and showing people what we're about.",
+    quote: "The video was a huge tool in recruiting our first 3 cohorts and showing people what we're about.",
     metric: "Attracted 3-Cohorts and 40+ Founders",
     name: "Brandon Clarke",
     company: "Startup AZ Foundation",
@@ -87,7 +88,7 @@ const TESTIMONIALS = [
     industry: "SaaS"
   },
   {
-    quote: "They didn't just shoot beautiful footage. They showed people the place I created had legacy",
+    quote: "They didn't just shoot beautiful footage. They showed people the place I created had legacy.",
     metric: "3 venue launches",
     name: "Gio Osso",
     company: "Virtu Hospitality Group",
@@ -96,9 +97,12 @@ const TESTIMONIALS = [
 ];
 
 const FAQS = [
-  { q: "What happens after I hit “Start Brief”?", a: "You submit your scope, budget, and timing. We reply with a fast scope call and a simple plan for deliverables." },
-  { q: "Do you handle strategy or just production?", a: "Both. Strategy first. If the asset doesn’t move trust or attention, it’s just expensive footage." },
-  { q: "How fast can you turn edits?", a: "Social selects can be 24–72 hours. Hero edits typically land on a planned cadence." }
+  { q: "What happens after I hit 'Start Brief'?", a: "You submit your scope, budget, and timing. We reply with a fast scope call and a simple plan for deliverables." },
+  { q: "Do you handle strategy or just production?", a: "Both. Strategy first. If the asset doesn't move trust or attention, it's just expensive footage." },
+  { q: "How fast can you turn edits?", a: "Social selects can be 24\u201372 hours. Hero edits typically land on a planned cadence." },
+  { q: "What industries do you work with?", a: "Construction, hospitality, tech, non-profit. We specialize in construction companies that need consistent content to recruit and win contracts. But the production quality and systems we've built work across all of them." },
+  { q: "What does a retainer include?", a: "Regular filming sessions, a full month of social content, strategy, editing, and posting. The scope scales to fit your business. Everything handled." },
+  { q: "Can we start with a single project?", a: "Yes. A lot of retainer clients start with one brand video or event capture to see how we work. No commitment required." },
 ];
 
 // --- MASTER PORTFOLIO LIBRARY ---
@@ -132,7 +136,7 @@ const PORTFOLIO_DATA = {
       { title: "Lagos White Party", sub: "Event Promo", url: "https://gumlet.tv/watch/698a596eaec3d4e420c22a9a/", tags: ["9:16", "Promo"] },
       { title: "Lagos Recap", sub: "Event Highlight", url: "https://gumlet.tv/watch/698a5946873071aec5c96163/", tags: ["9:16", "Vibe"] },
       { title: "Nook 10 Year", sub: "ASMR Piece", url: "https://gumlet.tv/watch/698a5a8b873071aec5c99c6f/", tags: ["9:16", "Creative"] },
-      { title: "PA’LA x HARUMI", sub: "Collab Feature", url: "https://gumlet.tv/watch/698a5391fc23d3d76fa7306c/", tags: ["9:16", "Food"] },
+      { title: "PA'LA x HARUMI", sub: "Collab Feature", url: "https://gumlet.tv/watch/698a5391fc23d3d76fa7306c/", tags: ["9:16", "Food"] },
       { title: "Cook & Craft Pretzel", sub: "Food Feature", url: "https://gumlet.tv/watch/698a53bcfc23d3d76fa736e4/", tags: ["9:16", "Food"] },
       { title: "Killer Whale Club", sub: "Nightlife Promo", url: "https://gumlet.tv/watch/698a5c0afc23d3d76fa83ba6/", tags: ["9:16", "Vibe"] }
     ]
@@ -176,12 +180,12 @@ const PORTFOLIO_DATA = {
 
 
 const ENGAGEMENT_IDEAS = [
-  { id: "launch", icon: Rocket, title: "The Big Launch", statement: "We are bringing a new development or product to market and need a full asset suite.", price: "$10k - $25k" },
+  { id: "launch", icon: Rocket, title: "Product Launch", statement: "We are bringing a new development or product to market and need a full asset suite.", price: "$10k - $25k" },
   { id: "engine", icon: Repeat, title: "Content Engine", statement: "We need a system that delivers consistent video volume every month.", price: "$3k/mo" },
-  { id: "authority", icon: Crown, title: "Founder Authority", statement: "I need to establish personal credibility and trust with investors or talent quickly.", price: "$5k+" },
-  { id: "proof", icon: Fingerprint, title: "Social Proof", statement: "We have great projects but no cinematic case studies. We need to prove our expertise.", price: "$5k+" },
+  { id: "authority", icon: Crown, title: "Brand Authority", statement: "We need to establish credibility and trust with clients, investors, or future hires.", price: "$5k+" },
+  { id: "proof", icon: Fingerprint, title: "Case Study", statement: "We have great projects but no cinematic case studies. We need to prove our expertise.", price: "$5k+" },
   { id: "event", icon: Mic2, title: "Event Capture", statement: "We have a major activation or conference coming up. We need recap assets.", price: "$3k+" },
-  { id: "custom", icon: Lightbulb, title: "The Wildcard", statement: "We have a specific vision that doesn't fit in a box. We need a creative partner.", price: "Tailored" }
+  { id: "custom", icon: Lightbulb, title: "Custom Brief", statement: "We have a specific vision that doesn't fit a template. We need a creative partner who gets it.", price: "Tailored" }
 ];
 
 // --- GUMLET UTILITIES ---
@@ -326,10 +330,10 @@ const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) =
     <div className="relative z-10">
       <div className="flex items-center justify-between mb-8">
         <div className="w-10 h-10 border border-aom-border bg-black/40 flex items-center justify-center">{Icon && <Icon className="text-aom-orange" size={18} />}</div>
-        <div className="text-[9px] font-mono uppercase tracking-[0.35em] text-aom-dim"><ScrambleText text={kicker} hover={false} /></div>
+        <div className="text-[9px] font-mono uppercase tracking-[0.3em] text-aom-dim"><ScrambleText text={kicker} hover={false} /></div>
       </div>
       <div>
-        <div className="text-5xl md:text-6xl font-headline font-black italic tracking-tighter leading-[0.85] text-aom-warm-white">{valueNode}</div>
+        <div className="text-5xl md:text-6xl font-headline font-black italic tracking-[-0.025em] leading-[0.85] text-aom-warm-white">{valueNode}</div>
         <p className="text-aom-stone text-xs mt-6 leading-relaxed max-w-xs">{sub}</p>
       </div>
     </div>
@@ -346,7 +350,7 @@ const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
     </div>
     <div className="flex-grow">
       <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-3">{idea.title}</p>
-      <h3 className={`text-xl md:text-2xl font-medium leading-snug transition-colors ${isSelected ? "text-aom-warm-white" : "text-aom-stone group-hover:text-aom-warm-white"}`}>"{idea.statement}"</h3>
+      <h3 className={`text-xl md:text-2xl font-medium leading-relaxed transition-colors ${isSelected ? "text-aom-warm-white" : "text-aom-stone group-hover:text-aom-warm-white"}`}>"{idea.statement}"</h3>
     </div>
     <div className="mt-8 pt-6 border-t border-aom-border flex justify-between items-end">
       <div><p className="text-[9px] font-mono uppercase tracking-widest text-aom-dim mb-1">Starting At</p><p className="text-lg font-headline font-black italic text-aom-orange tracking-tight">{idea.price}</p></div>
@@ -360,7 +364,7 @@ const TestimonialCard = memo(({ t }) => (
     <div className="inline-flex items-center gap-2 bg-aom-orange/10 border border-aom-orange/20 px-3 py-1.5 rounded-sm mb-6">
       <TrendingUp size={10} className="text-aom-orange" /><span className="text-aom-orange font-black text-[9px] uppercase tracking-widest">{t.metric}</span>
     </div>
-    <p className="text-aom-warm-white text-lg font-headline font-black italic tracking-tight leading-snug">"{t.quote}"</p>
+    <p className="text-aom-warm-white text-lg font-headline font-bold italic tracking-[-0.015em] leading-snug">"{t.quote}"</p>
     <div className="mt-8 pt-4 border-t border-aom-border">
       <p className="text-[10px] font-headline font-black uppercase tracking-[0.2em] text-aom-warm-white">{t.name}</p>
       <p className="text-[9px] font-mono uppercase tracking-[0.3em] text-aom-stone-muted mt-1">{t.company}</p>
@@ -371,7 +375,7 @@ const TestimonialCard = memo(({ t }) => (
 const FAQItem = memo(({ item, open, onToggle }) => (
   <div className="border border-aom-border bg-aom-charcoal">
     <button onClick={onToggle} className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left hover:bg-aom-orange/5 transition-colors">
-      <span className="text-aom-warm-white font-headline font-black italic uppercase tracking-tight text-lg">{item.q}</span>
+      <span className="text-aom-warm-white font-headline font-bold uppercase tracking-[-0.015em] text-base">{item.q}</span>
       <ChevronRight className={`text-aom-orange transition-transform ${open ? "rotate-90" : "rotate-0"}`} />
     </button>
     <AnimatePresence initial={false}>
@@ -384,7 +388,7 @@ const FAQItem = memo(({ item, open, onToggle }) => (
   </div>
 ));
 
-const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
+const VideoModule = ({ url, title, sub, tags, isVertical = false, isGrid = false, onPlay }) => {
   const [shouldLoad, setShouldLoad] = useState(false);
   const ref = useRef(null);
   const embedUrl = getGumletBackgroundEmbed(url);
@@ -393,8 +397,13 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
+  const sizeClasses = isVertical
+    ? 'aspect-[9/16] w-[240px] md:w-[300px] shrink-0'
+    : isGrid
+      ? 'aspect-video w-full shadow-lg'
+      : 'aspect-video w-[360px] md:w-[640px] shadow-lg shrink-0';
   return (
-    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-aom-border bg-aom-surface h-full cursor-pointer transition-all duration-300 hover:border-aom-orange/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[280px] md:w-[380px]' : 'aspect-video w-[360px] md:w-[640px] shadow-lg'}`}>
+    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-aom-border bg-aom-surface h-full cursor-pointer transition-all duration-300 hover:border-aom-orange/60 hover:shadow-aom-orange/10 hover:shadow-lg rounded-sm select-none ${sizeClasses}`}>
       <div className="absolute inset-0 bg-aom-night">
         {shouldLoad && embedUrl && (
           <iframe src={embedUrl} loading="lazy" className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105" title={title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
@@ -408,6 +417,30 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
         </div>
       </div>
     </article>
+  );
+};
+
+// --- PORTFOLIO EXPANDER ---
+const PortfolioExpander = ({ campaigns, onPlay }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!campaigns || campaigns.length === 0) return null;
+  return (
+    <div className="px-6 md:px-12">
+      <AnimatePresence>
+        {expanded && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
+              {campaigns.map((v, i) => <VideoModule key={i} onPlay={onPlay} isGrid {...v} />)}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {!expanded && (
+        <button onClick={() => setExpanded(true)} className="w-full py-6 border border-aom-border bg-aom-charcoal text-aom-stone font-headline font-bold uppercase tracking-[0.1em] text-sm hover:border-aom-orange/30 hover:text-aom-warm-white transition-all mt-8">
+          See All Work <span className="text-aom-orange ml-2">+</span>
+        </button>
+      )}
+    </div>
   );
 };
 
@@ -510,7 +543,7 @@ export default function App() {
   const [loadStatus, setLoadStatus] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoaderExiting, setIsLoaderExiting] = useState(false);
-  const [activeTab, setActiveTab] = useState('marketing');
+  const [activeTab, setActiveTab] = useState('all');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
@@ -530,24 +563,29 @@ export default function App() {
 
   // SESSION-BASED RANDOMIZATION
   const shuffledData = useMemo(() => {
-    const feed = shuffleArray([
-      ...PORTFOLIO_DATA.builders.social,
-      ...PORTFOLIO_DATA.founders.social,
-      ...PORTFOLIO_DATA.marketing.social,
-    ]);
+    // Merge founders into brands (marketing + founders = brands)
+    const brandsCampaigns = [...PORTFOLIO_DATA.marketing.campaigns, ...PORTFOLIO_DATA.founders.campaigns];
+    const brandsSocial = [...PORTFOLIO_DATA.marketing.social, ...PORTFOLIO_DATA.founders.social];
+    const constructionCampaigns = PORTFOLIO_DATA.builders.campaigns;
+    const constructionSocial = PORTFOLIO_DATA.builders.social;
+
+    const allCampaigns = [...brandsCampaigns, ...constructionCampaigns];
+    const allSocial = [...brandsSocial, ...constructionSocial];
+
+    const feed = shuffleArray(allSocial);
 
     return {
-      marketing: {
-        campaigns: shuffleArray(PORTFOLIO_DATA.marketing.campaigns),
-        social: shuffleArray(PORTFOLIO_DATA.marketing.social),
+      brands: {
+        campaigns: shuffleArray(brandsCampaigns),
+        social: shuffleArray(brandsSocial),
       },
-      builders: {
-        campaigns: shuffleArray(PORTFOLIO_DATA.builders.campaigns),
-        social: shuffleArray(PORTFOLIO_DATA.builders.social),
+      construction: {
+        campaigns: shuffleArray(constructionCampaigns),
+        social: shuffleArray(constructionSocial),
       },
-      founders: {
-        campaigns: shuffleArray(PORTFOLIO_DATA.founders.campaigns),
-        social: shuffleArray(PORTFOLIO_DATA.founders.social),
+      all: {
+        campaigns: shuffleArray(allCampaigns),
+        social: feed,
       },
       feed,
     };
@@ -653,8 +691,8 @@ export default function App() {
           <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-aom-night/90 to-transparent pointer-events-none">
             <h1 className="text-2xl md:text-3xl font-headline font-black italic tracking-tighter text-aom-warm-white pointer-events-auto">AOM<span className="text-aom-orange">.</span></h1>
             <div className="flex gap-4 pointer-events-auto">
-              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-aom-charcoal text-aom-stone font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-aom-warm-white border border-aom-border transition-all">Call Us</button>
-              <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-aom-orange text-white font-headline font-black text-[10px] uppercase tracking-[0.2em] rounded-sm hover:bg-aom-orange-hover shadow-xl shadow-aom-orange/20 border border-white/10 transition-all">Get Started</button>
+              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-aom-charcoal text-aom-stone font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-aom-warm-white border border-aom-border transition-all">Talk to Us</button>
+              <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-aom-orange text-white font-headline font-black text-[10px] uppercase tracking-[0.2em] rounded-sm hover:bg-aom-orange-hover shadow-xl shadow-aom-orange/20 border border-white/10 transition-all">Start a Brief</button>
             </div>
           </header>
 
@@ -667,69 +705,140 @@ export default function App() {
           {/* --- CONSTRUCTION VERTICAL --- */}
           <ConstructionCallout />
 
-          {/* --- AI TEASER --- */}
+          {/* --- BRANDS + CORPORATE --- */}
+          <BrandsCallout />
+
+          {/* --- DIGITAL + SYSTEMS --- */}
           <AITeaser />
 
-          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-night border-t border-aom-border relative">
+          {/* --- PULL QUOTE BREAK --- */}
+          <section className="py-20 md:py-32 bg-aom-night">
+            <div className="max-w-4xl mx-auto px-6 text-center">
+              <p className="font-headline text-2xl md:text-4xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white leading-[0.95]">
+                If the asset doesn't move trust or attention, it's just expensive footage.
+              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-aom-stone-muted mt-6">
+                That's how we think about every project.
+              </p>
+            </div>
+          </section>
+
+          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-surface relative">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="border-b border-aom-border pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
                 <div className="max-w-3xl">
-                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block"><ScrambleText text="Market Authority" /></span>
-                  <h2 className="text-5xl md:text-7xl font-headline font-black text-aom-warm-white tracking-tighter uppercase italic leading-[0.85]">Phoenix Production<br /><span className="text-outline">Proven Scale</span><span className="text-aom-orange">.</span></h2>
+                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block"><ScrambleText text="The Work Speaks" /></span>
+                  <h2 className="text-5xl md:text-7xl font-headline font-black text-aom-warm-white tracking-[-0.025em] uppercase italic leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
                 </div>
-                <div className="w-full lg:max-w-md p-7 border border-aom-border bg-aom-charcoal"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-stone text-sm leading-relaxed">System-driven storytelling for Arizona businesses where reliability is the baseline.</p></div>
+                <div className="w-full lg:max-w-md p-7 border border-aom-border bg-aom-charcoal"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-stone text-sm leading-relaxed">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FadeIn><VibeStat icon={Building2} kicker="Phoenix Impact" valueNode={<span><CountUp to={63} /><span className="text-aom-orange">+</span></span>} sub="Supporting teams across industrial services, hospitality, and STEAM." /></FadeIn>
-                <FadeIn delay={0.1}><VibeStat icon={PlaneTakeoff} kicker="Regional Reach" valueNode={<span><CountUp to={34} /><span className="text-aom-orange">+</span></span>} sub="Executing projects across the nation for Arizona-based market leaders." accent /></FadeIn>
-                <FadeIn delay={0.2}><VibeStat icon={Clapperboard} kicker="Assets Shipped" valueNode={<span><CountUp to={100} /><span className="text-aom-orange">+</span></span>} sub={<span>Archive verified: <span className="text-aom-orange">{videoTotal}</span> projects found in current build.</span>} /></FadeIn>
+                <FadeIn><VibeStat icon={Building2} kicker="Projects Shipped" valueNode={<span><CountUp to={63} /><span className="text-aom-orange">+</span></span>} sub="Across construction, hospitality, non-profit, tech, and events." /></FadeIn>
+                <FadeIn delay={0.1}><VibeStat icon={PlaneTakeoff} kicker="Clients Served" valueNode={<span><CountUp to={34} /><span className="text-aom-orange">+</span></span>} sub="Phoenix-based, nationally active. Every project gets the same team, the same standard." accent /></FadeIn>
+                <FadeIn delay={0.2}><VibeStat icon={Clapperboard} kicker="Videos Delivered" valueNode={<span><CountUp to={100} /><span className="text-aom-orange">+</span></span>} sub={<span>Archive verified: <span className="text-aom-orange">{videoTotal}</span> projects found in current build.</span>} /></FadeIn>
               </div>
               <FadeIn className="mt-16"><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{TESTIMONIALS.map((t, i) => <TestimonialCard key={i} t={t} />)}</div></FadeIn>
             </div>
           </section>
 
-          <section id="work" className="pt-24 pb-[200px] md:py-36 bg-aom-night relative z-10 overflow-hidden border-t border-aom-border">
+          <section id="work" className="py-24 md:py-36 bg-aom-night relative z-10 overflow-hidden">
+            {/* Accent divider */}
+            <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12 mb-16" />
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-aom-border pb-16 text-aom-warm-white">
-              <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-headline font-black tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-aom-orange">.</span></h2></div>
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-10 py-3 md:py-4 text-[9px] md:text-[11px] font-headline font-black uppercase tracking-[0.15em] md:tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-aom-warm-white text-aom-night border-aom-warm-white' : 'bg-transparent border-aom-border text-aom-dim hover:text-aom-warm-white'}`}>{tab}</button>)}</div>
+              <div>
+                <h2 className="text-[clamp(3.5rem,10vw,8rem)] font-headline font-black tracking-[-0.025em] uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-aom-orange">.</span></h2>
+                <p className="text-aom-stone text-lg md:text-xl mt-4 max-w-2xl leading-relaxed">Real projects. Real clients. All of it shipped.</p>
+              </div>
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-12 py-3 md:py-5 text-[9px] md:text-[11px] font-headline font-black uppercase tracking-[0.15em] md:tracking-[0.3em] transition-all border-b-2 shrink-0 ${activeTab === tab ? 'text-aom-warm-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-aom-dim hover:text-aom-stone'}`}>{tab}</button>)}</div>
             </div>
-            <div className="space-y-20 md:space-y-36">
-              <InteractiveGallery items={shuffledData[activeTab].campaigns} onPlay={setSelectedVideo} />
+
+            {/* Featured project (first campaign) */}
+            {shuffledData[activeTab]?.campaigns?.[0] && (
+              <div className="px-6 md:px-12 mb-8">
+                <article onClick={() => setSelectedVideo(shuffledData[activeTab].campaigns[0])} className="relative aspect-[21/9] w-full overflow-hidden border border-aom-border rounded-sm group cursor-pointer">
+                  <div className="absolute inset-0 bg-aom-night">
+                    <iframe src={getGumletBackgroundEmbed(shuffledData[activeTab].campaigns[0].url)} loading="lazy" className="w-full h-full border-none opacity-70 grayscale-[0.2] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 scale-105 group-hover:scale-100" title={shuffledData[activeTab].campaigns[0].title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />
+                  <div className="absolute inset-0 flex items-end p-8 md:p-12">
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-aom-orange mb-2">{shuffledData[activeTab].campaigns[0].tags?.[0] || 'Featured'}</p>
+                      <h3 className="font-headline text-3xl md:text-5xl font-black italic uppercase tracking-[-0.025em] text-aom-warm-white leading-[0.9]">{shuffledData[activeTab].campaigns[0].title}</h3>
+                      <p className="text-aom-stone text-sm mt-3 max-w-md">{shuffledData[activeTab].campaigns[0].sub}</p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            )}
+
+            {/* Campaign grid (remaining) */}
+            <div className="px-6 md:px-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-16">
+              {shuffledData[activeTab]?.campaigns?.slice(1, 7).map((v, i) => (
+                <VideoModule key={i} onPlay={setSelectedVideo} isGrid {...v} />
+              ))}
+            </div>
+
+            {/* See All Work expander */}
+            {shuffledData[activeTab]?.campaigns?.length > 7 && (
+              <PortfolioExpander campaigns={shuffledData[activeTab].campaigns.slice(7)} onPlay={setSelectedVideo} />
+            )}
+
+            {/* Social clips row */}
+            <div className="mt-16 md:mt-24">
+              <div className="px-6 md:px-12 mb-6 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-aom-sage" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-aom-stone-muted">Social Clips</span>
+              </div>
               <InteractiveGallery items={shuffledData.feed} onPlay={setSelectedVideo} isVertical={true} />
             </div>
           </section>
 
-          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-aom-night border-t border-aom-border text-aom-warm-white">
+          <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-surface text-aom-warm-white">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-aom-border pb-16">
-                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Identify Your Needs</span><h2 className="text-5xl md:text-7xl font-headline font-black tracking-tighter uppercase italic leading-[0.85]">Choose Your<br /><span className="text-outline">Execution Path</span><span className="text-aom-orange">.</span></h2></div>
+                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-headline font-black tracking-[-0.025em] uppercase italic leading-[0.85]">Pick What<br /><span className="text-outline">Fits</span><span className="text-aom-orange">.</span></h2></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => ( <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={() => openBrief(idea)} /> ))}</div>
             </div>
           </section>
 
-          <section className="px-6 md:px-12 py-36 bg-aom-night border-t border-aom-border overflow-hidden text-aom-warm-white">
+          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-night overflow-hidden text-aom-warm-white">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="mb-20">
                 <div className="max-w-xl">
-                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Why Us</span>
-                  <h2 className="text-5xl md:text-7xl font-headline font-black tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-aom-orange">.</span></h2>
+                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">Why Us</span>
+                  <h2 className="text-5xl md:text-7xl font-headline font-black tracking-[-0.025em] uppercase italic leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-aom-border bg-aom-charcoal rounded-sm hover:border-aom-orange/30 transition-all"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[10px] font-mono uppercase tracking-[0.35em] text-aom-dim mb-3">{m.label}</p><h4 className="text-xl font-headline font-black italic text-aom-warm-white uppercase">{m.value}</h4><p className="text-aom-stone text-xs mt-4 leading-relaxed">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
-          <footer className="px-6 md:px-12 py-24 md:py-48 border-t border-aom-border bg-aom-night text-center pb-64 text-aom-warm-white">
+          {/* --- FAQ SECTION --- */}
+          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-surface text-aom-warm-white">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <h2 className="text-6xl md:text-[10rem] font-headline font-black tracking-tighter mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-aom-orange">Scale?</span></h2>
+              <FadeIn className="mb-12">
+                <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.3em] mb-6 block">FAQ</span>
+                <h2 className="text-4xl md:text-6xl font-headline font-black tracking-[-0.025em] uppercase italic leading-[0.85]">Common<br /><span className="text-outline">Questions</span><span className="text-aom-orange">.</span></h2>
+              </FadeIn>
+              <div className="max-w-3xl space-y-3">
+                {FAQS.map((item, i) => <FAQItem key={i} item={item} open={openFAQ === i} onToggle={() => setOpenFAQ(openFAQ === i ? -1 : i)} />)}
+              </div>
+            </div>
+          </section>
+
+          {/* --- FOOTER --- */}
+          <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
+          <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-night text-center pb-24 text-aom-warm-white">
+            <div className="max-w-screen-2xl mx-auto w-full">
+              <h2 className="text-6xl md:text-[10rem] font-headline font-black tracking-[-0.025em] mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-aom-orange">Build?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-black uppercase tracking-[0.4em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/20">Start Brief</button>
-                <button onClick={openPhone} className="px-16 py-6 bg-aom-charcoal text-aom-stone font-headline font-black uppercase tracking-[0.4em] text-xs hover:text-aom-warm-white transition-all clip-path-slant border border-aom-border">Call Us</button>
+                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-black uppercase tracking-[0.4em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/20">Start a Brief</button>
+                <button onClick={openPhone} className="px-16 py-6 bg-aom-charcoal text-aom-stone font-headline font-black uppercase tracking-[0.4em] text-xs hover:text-aom-warm-white transition-all clip-path-slant border border-aom-border">Talk to Us</button>
               </div>
               <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-aom-border pt-16">
-                <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Production</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-aom-warm-white text-3xl font-headline font-black italic tracking-tighter">Call Production</button></div>
-                <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-aom-warm-white text-3xl font-headline font-black italic tracking-tighter underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
+                <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Talk</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-aom-warm-white text-3xl font-headline font-black italic tracking-[-0.025em]">Call the Team</button></div>
+                <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-aom-warm-white text-3xl font-headline font-black italic tracking-[-0.025em] underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
               </div>
             </div>
           </footer>
@@ -811,8 +920,8 @@ export default function App() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">Current Bottleneck</label>
-                                    <textarea maxLength={180} placeholder="Example: We have great work but no case study video that wins industrial contracts." className="w-full bg-zinc-900/50 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-zinc-800 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block">What's the challenge?</label>
+                                    <textarea maxLength={180} placeholder="We're winning jobs but nobody knows it. We need content that shows the work we do." className="w-full bg-zinc-900/50 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-zinc-800 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
                                     <div className="flex justify-between mt-2">
                                         {formData.problem.length < 15 && <span className="text-[9px] font-mono text-orange-500/60 uppercase animate-pulse">Min. 15 characters required</span>}
                                         <span className="text-[9px] font-mono text-zinc-700 ml-auto">{formData.problem.length}/180</span>
@@ -854,7 +963,7 @@ export default function App() {
                                     {!formData.timing && <p className="text-[9px] font-mono text-orange-500/60 uppercase mt-3 italic text-left">Select timing to enable budget tiers</p>}
                                 </div>
                                 <div>
-                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block text-left">Select Budget Tier <span className="text-zinc-700 italic font-mono lowercase tracking-normal font-normal">(Submits Brief)</span></label>
+                                    <label className="text-[9px] font-mono font-black text-zinc-600 uppercase tracking-[0.3em] mb-4 block text-left">What's your budget? <span className="text-zinc-700 italic font-mono lowercase tracking-normal font-normal">(This submits your brief)</span></label>
                                     <div className="space-y-2">
                                         {BUDGET_OPTIONS.map(o => {
                                           const isActive = pendingBudget === o && isSubmitting;
@@ -902,7 +1011,7 @@ export default function App() {
                         <CheckCircle2 size={64} className="mx-auto text-orange-600 mb-8" />
                         <h3 className="text-3xl font-black italic text-white uppercase tracking-tighter">Brief Received<span className="text-orange-600">.</span></h3>
                         <div className="mt-8 p-6 border border-white/5 bg-white/5 text-left rounded-sm space-y-4">
-                            <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2"><Target size={10} className="text-orange-600"/> Engagement Logic Verified:</p>
+                            <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2"><Target size={10} className="text-orange-600"/> Brief Summary:</p>
                             <div className="grid grid-cols-2 gap-4 border-l-2 border-orange-600 pl-4">
                                 <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Goal</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.goal}</p></div>
                                 <div><p className="text-[8px] text-zinc-600 uppercase font-bold">Placement</p><p className="text-xs font-black uppercase italic text-white leading-tight tracking-tighter">{formData.placement}</p></div>
