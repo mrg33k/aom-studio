@@ -1621,7 +1621,7 @@ function CommandBar({ onRefresh, isMobile }) {
   const [sending, setSending] = useState(false)
   const [open, setOpen] = useState(false)
   const [addTaskMode, setAddTaskMode] = useState(true) // default to task mode
-  const [barMode, setBarMode] = useState('task') // 'task' | 'chat' | 'agent'
+  const [barMode, setBarMode] = useState('task') // 'task' | 'chat' | 'agent' | 'home'
   const inputRef = useRef(null)
   const messagesEndRef = useRef(null)
 
@@ -1637,15 +1637,17 @@ function CommandBar({ onRefresh, isMobile }) {
     setOpen(true)
 
     if (addTaskMode) {
+      const isHome = barMode === 'home'
+      const taskText = isHome ? `HOME: ${text}` : text
       const notes = taskNotes.trim()
-      setMessages(m => [...m, { role: 'user', text: `+ ${text}${notes ? '\n  ' + notes.split('\n').join('\n  ') : ''}`, type: 'task' }])
+      setMessages(m => [...m, { role: 'user', text: isHome ? text : `+ ${text}${notes ? '\n  ' + notes.split('\n').join('\n  ') : ''}`, type: isHome ? 'home' : 'task' }])
       setTaskNotes('')
       setNotesOpen(false)
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'add_task', task: text, notes: notes || undefined }),
+          body: JSON.stringify({ action: 'add_task', task: taskText, notes: notes || undefined }),
         })
         const data = await res.json()
         if (data.ok) {
@@ -1753,14 +1755,15 @@ function CommandBar({ onRefresh, isMobile }) {
             { id: 'task', label: 'TASK', color: GREEN },
             { id: 'chat', label: 'CHAT', color: ORANGE },
             { id: 'agent', label: 'AGENT', color: BLUE },
+            { id: 'home', label: 'HOME', color: '#F5F0EB' },
           ].map(m => (
             <button
               key={m.id}
               onClick={() => {
                 setBarMode(m.id)
-                setAddTaskMode(m.id === 'task')
+                setAddTaskMode(m.id === 'task' || m.id === 'home')
                 if (m.id === 'chat') setSelectedAgent('All')
-                if (m.id === 'task') { setNotesOpen(false); setTaskNotes('') }
+                if (m.id === 'task' || m.id === 'home') { setNotesOpen(false); setTaskNotes('') }
               }}
               style={{
                 padding: isMobile ? '10px 14px' : '4px 12px', borderRadius: 0, fontSize: 10, fontWeight: 800,
@@ -1816,12 +1819,13 @@ function CommandBar({ onRefresh, isMobile }) {
             onKeyDown={e => e.key === 'Enter' && send()}
             placeholder={
               barMode === 'task' ? 'Add a task...'
+              : barMode === 'home' ? 'Talk to CC...'
               : barMode === 'agent' ? `Message ${selectedAgent}...`
               : 'Message all agents...'
             }
             style={{
               flex: 1, background: '#111',
-              border: `1px solid ${barMode === 'task' ? 'rgba(34,197,94,0.2)' : barMode === 'agent' ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.08)'}`,
+              border: `1px solid ${barMode === 'task' ? 'rgba(34,197,94,0.2)' : barMode === 'home' ? 'rgba(245,240,235,0.2)' : barMode === 'agent' ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.08)'}`,
               borderRadius: 8, color: '#fff', fontSize: isMobile ? 16 : 13, padding: '8px 14px',
               outline: 'none',
             }}
@@ -1846,15 +1850,15 @@ function CommandBar({ onRefresh, isMobile }) {
             onClick={send}
             disabled={!input.trim() || sending}
             style={{
-              background: barMode === 'task' ? GREEN : barMode === 'agent' ? BLUE : ORANGE,
-              color: '#fff', border: 'none',
+              background: barMode === 'task' ? GREEN : barMode === 'home' ? '#F5F0EB' : barMode === 'agent' ? BLUE : ORANGE,
+              color: barMode === 'home' ? '#0A0A08' : '#fff', border: 'none',
               borderRadius: 8, padding: '8px 16px', fontSize: 11, fontWeight: 800,
               letterSpacing: '0.08em', cursor: input.trim() ? 'pointer' : 'default',
               opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase',
               transition: 'opacity 0.15s, background 0.15s',
             }}
           >
-            {sending ? '...' : barMode === 'task' ? 'ADD' : 'SEND'}
+            {sending ? '...' : barMode === 'task' ? 'ADD' : barMode === 'home' ? 'SEND' : 'SEND'}
           </button>
         </div>
       </div>
