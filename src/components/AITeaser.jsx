@@ -12,17 +12,30 @@ export default function AITeaser() {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState('idle') // idle | loading | success | error
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email || !email.includes('@')) return
 
     setStatus('loading')
 
-    // Simulate submission. Replace with real endpoint later.
-    setTimeout(() => {
-      setStatus('success')
-      setEmail('')
-    }, 1200)
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json()
+      if (res.ok && data.ok) {
+        setStatus('success')
+        setEmail('')
+      } else {
+        setStatus('error')
+        setTimeout(() => setStatus('idle'), 3000)
+      }
+    } catch {
+      setStatus('error')
+      setTimeout(() => setStatus('idle'), 3000)
+    }
   }
 
   return (
@@ -154,6 +167,12 @@ export default function AITeaser() {
                     <Check size={18} className="text-green-500 shrink-0" />
                     <p className="font-mono text-sm text-green-500">
                       You're on the list. We'll reach out when it's your turn.
+                    </p>
+                  </div>
+                ) : status === 'error' ? (
+                  <div className="flex items-center gap-3 p-4 rounded-sm border border-red-500/30 bg-red-950/10">
+                    <p className="font-mono text-sm text-red-400">
+                      Something went wrong. Try again in a moment.
                     </p>
                   </div>
                 ) : (
