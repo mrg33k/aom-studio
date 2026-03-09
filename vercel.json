@@ -7,6 +7,7 @@
     { "source": "/brand", "destination": "/index.html" },
     { "source": "/brands", "destination": "/index.html" },
     { "source": "/brands/:path*", "destination": "/index.html" },
+    { "source": "/social", "destination": "/index.html" },
     { "source": "/construction", "destination": "/index.html" }
   ]
 }
