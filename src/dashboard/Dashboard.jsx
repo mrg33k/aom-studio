@@ -1649,10 +1649,14 @@ function CommandBar({ onRefresh, isMobile }) {
         })
         const data = await res.json()
         if (data.ok) {
-          const assignMsg = data.assignedAgent ? ` Assigned to ${data.assignedAgent}.` : ''
-          setMessages(m => [...m, { role: 'system', text: `Task added.${assignMsg}`, type: 'task' }])
-          if (data.agentReply) {
-            setMessages(m => [...m, { role: 'assistant', text: data.agentReply, agent: data.assignedAgent }])
+          if (data.isHomeReply) {
+            setMessages(m => [...m, { role: 'assistant', text: data.message, agent: 'CC' }])
+          } else {
+            const assignMsg = data.assignedAgent ? ` Assigned to ${data.assignedAgent}.` : ''
+            setMessages(m => [...m, { role: 'system', text: `Task added.${assignMsg}`, type: 'task' }])
+            if (data.agentReply) {
+              setMessages(m => [...m, { role: 'assistant', text: data.agentReply, agent: data.assignedAgent }])
+            }
           }
           setTimeout(onRefresh, 2000); setAddTaskMode(false)
         } else {
