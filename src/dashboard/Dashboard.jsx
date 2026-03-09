@@ -113,9 +113,13 @@ function deadlineDaysRemaining(taskText) {
     if (k.pattern.test(taskText)) return daysDiff(localDate(k.date))
   }
 
-  // Try to extract a date from the raw text (match "Apr 27, 2026" or "2026-04-27" but NOT "Mar 9-11")
-  const dateMatch = taskText.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},\s*\d{4}|\b\d{4}-\d{2}-\d{2}\b/i)
+  // Only show countdown if there's an actual parseable date (not just "urgent" or "deadline")
+  // Match "Apr 27, 2026" or "April 27, 2026" or "2026-04-27" but NOT date ranges like "Mar 9-11"
+  const dateMatch = taskText.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},\s*\d{4}\b|\b\d{4}-\d{2}-\d{2}\b/i)
   if (dateMatch) {
+    // Verify this is a standalone date, not part of a range (e.g. "Mar 9-11")
+    const afterMatch = taskText.slice(taskText.indexOf(dateMatch[0]) + dateMatch[0].length)
+    if (/^\s*-\s*\d/.test(afterMatch)) return null // date range, skip
     const parsed = localDate(dateMatch[0].replace(',', ''))
     if (parsed) return daysDiff(parsed)
   }
@@ -188,14 +192,14 @@ function parseHandoff(md) {
 // ─── BLOCKER CONTEXT ─────────────────────────────────────────────────────────
 function getBlockerContext(taskText) {
   const lower = taskText.toLowerCase()
-  // Desktop-required tasks
-  if (/postiz|docker|vercel|deploy|firebase console|gcp console|codespaces|terminal|cli|npm|git push/i.test(lower))
-    return { label: 'Needs desktop', icon: '\u{1F5A5}' }
-  // Needs client response
-  if (/client.*confirm|waiting.*client|need.*from.*client|stats bar.*confirm|client.*approve/i.test(lower))
+  // Needs client response (check BEFORE desktop so "client logos" routes here)
+  if (/client.*confirm|waiting.*client|need.*from.*client|stats bar.*confirm|client.*approve|client.*logo|logo.*from.*client|real client/i.test(lower))
     return { label: 'Waiting on client', icon: '\u{23F3}' }
-  // Needs Patrik in person
-  if (/filming|on-site|on site|load-in|shoot|set up.*gear/i.test(lower))
+  // Desktop-required tasks
+  if (/postiz|docker|vercel|deploy|firebase console|gcp console|codespaces|terminal|cli\b|npm|git push/i.test(lower))
+    return { label: 'Needs desktop', icon: '\u{1F5A5}' }
+  // Needs Patrik in person -- require filming/shoot context, not just "on site" in regular text
+  if (/\b(?:filming|load-in|shoot(?:ing)?|set up.*gear)\b/i.test(lower) || /\bon[- ]site\s+(?:production|filming|shoot|setup|load)/i.test(lower))
     return { label: 'On-site required', icon: '\u{1F4CD}' }
   // Manual action in external tool
   if (/manually|gmail ui|send.*gmail|schedule.*gmail/i.test(lower))
@@ -203,33 +207,117 @@ function getBlockerContext(taskText) {
   return null
 }
 
+// ─── DEDUPLICATION ───────────────────────────────────────────────────────────
+function deduplicateTasks(tasks) {
+  // Normalize text for fuzzy comparison: lowercase, strip punctuation, collapse whitespace
+  function normalize(text) {
+    return text.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
+  }
+
+  // Extract key terms for matching (words 4+ chars, excluding common filler)
+  const FILLER = new Set(['that', 'this', 'with', 'from', 'have', 'been', 'will', 'about', 'into', 'also', 'just', 'more', 'some', 'than', 'them', 'then', 'when', 'what', 'your', 'each', 'which', 'their', 'would', 'make', 'like', 'need', 'back', 'once'])
+  function keyTerms(text) {
+    return normalize(text).split(' ').filter(w => w.length >= 4 && !FILLER.has(w))
+  }
+
+  // Score overlap between two tasks (0-1)
+  function overlapScore(a, b) {
+    const termsA = keyTerms(a)
+    const termsB = keyTerms(b)
+    if (termsA.length === 0 || termsB.length === 0) return 0
+    const setB = new Set(termsB)
+    const shared = termsA.filter(t => setB.has(t)).length
+    return shared / Math.min(termsA.length, termsB.length)
+  }
+
+  const keep = []
+  const used = new Set()
+
+  for (let i = 0; i < tasks.length; i++) {
+    if (used.has(i)) continue
+    let best = tasks[i]
+    for (let j = i + 1; j < tasks.length; j++) {
+      if (used.has(j)) continue
+      const score = overlapScore(best.text, tasks[j].text)
+      if (score >= 0.5) {
+        // Keep the more specific one (longer text or the one with an agent assigned)
+        used.add(j)
+        const other = tasks[j]
+        if (!best.agent && other.agent) best = other
+        else if (other.text.length > best.text.length && (!best.agent || other.agent)) best = other
+      }
+    }
+    keep.push(best)
+  }
+  return keep
+}
+
 function assignTasksToAgents(punchItems) {
   const ownerMap = {
     'Ambition Mechanical': 'Bobby', 'Skylar Music Video': 'Cleo',
     'ISA Energy': 'Cleo', 'Brandon Wiley': 'Cleo', 'KOHRS': 'Cleo',
-    'Included Health': 'Cleo', 'Outreach': 'Jacob', 'Revenue': 'Jacob',
+    'Included Health': 'Cleo', 'Outreach': 'Jacob',
     'RIGHT NOW': 'Patrik', 'ADMIN': 'Patrik', 'TEAM': 'Patrik',
   }
-  return punchItems.filter(p => !p.done).map(p => {
+
+  const assigned = punchItems.filter(p => !p.done).map(p => {
     let agent = null
-    for (const [cat, name] of Object.entries(ownerMap)) {
-      if (p.category.toLowerCase().includes(cat.toLowerCase())) { agent = name; break }
+    const text = p.text
+    const lower = text.toLowerCase()
+
+    // 1. Check for explicit [Patrik] tag first -- overrides everything
+    if (/\[patrik\]/i.test(text)) { agent = 'Patrik' }
+
+    // 2. Category-based assignment
+    if (!agent) {
+      for (const [cat, name] of Object.entries(ownerMap)) {
+        if (p.category.toLowerCase().includes(cat.toLowerCase())) { agent = name; break }
+      }
     }
-    if (!agent && /bobby|ambition|web/i.test(p.text)) agent = 'Bobby'
-    if (!agent && /jacob|outreach|email|apollo/i.test(p.text)) agent = 'Jacob'
-    if (!agent && /alex|deal|offer|revenue/i.test(p.text)) agent = 'Alex'
-    if (!agent && /cleo|video|edit|reel|tiktok|instagram/i.test(p.text)) agent = 'Cleo'
-    if (!agent && /steffen|brand|guideline/i.test(p.text)) agent = 'Steffen'
-    if (!agent && /mom|stuck|blocked|push/i.test(p.text)) agent = 'Mom'
-    if (!agent && /paige|client.*check|payment|invoice|deposit|churn|upsell/i.test(p.text)) agent = 'Paige'
-    if (!agent && /tony|social|posting|instagram|linkedin|tiktok|postiz|content.*calendar/i.test(p.text)) agent = 'Tony'
-    if (!agent && /review|sign off|configure|confirm|green light|launch|block.*session|re-engage/i.test(p.text)) agent = 'Patrik'
+
+    // 3. Payment/financial tasks go to Paige or Patrik, NOT Cleo
+    if (!agent && /\b(?:payment|invoice|deposit|churn|upsell)\b/i.test(lower)) agent = 'Paige'
+    if (!agent && /\bpaige\b|client.*check-in/i.test(lower)) agent = 'Paige'
+
+    // 4. Social media tasks go to Tony, NOT Bobby
+    if (!agent && /\btony\b|\bpostiz\b|content.*calendar/i.test(lower)) agent = 'Tony'
+    if (!agent && /\b(?:social\s*media|posting|reels?\b.*week|ramp.*social)\b/i.test(lower)) agent = 'Tony'
+
+    // 5. Revenue strategy goes to Alex, NOT Jacob
+    if (!agent && /\balex\b|\bdeal\b|\boffer\b/i.test(lower)) agent = 'Alex'
+    if (!agent && /\b(?:revenue.*strategy|close.*gap|retainer.*client|target.*compan)/i.test(lower)) agent = 'Alex'
+
+    // 6. Bobby: web dev specific tasks (not social, not filming)
+    if (!agent && /\bbobby\b|\bambition\b/i.test(lower)) agent = 'Bobby'
+    if (!agent && /\b(?:website|web\s*dev|deploy|frontend|homepage|CTA|case study.*page)\b/i.test(lower)) agent = 'Bobby'
+
+    // 7. Jacob: outreach execution (not strategy)
+    if (!agent && /\bjacob\b|\boutreach\b|\bapollo\b/i.test(lower)) agent = 'Jacob'
+    if (!agent && /\b(?:email.*batch|send.*draft|lead.*research)\b/i.test(lower)) agent = 'Jacob'
+
+    // 8. Cleo: video/content production (not social posting, not payments)
+    if (!agent && /\bcleo\b/i.test(lower)) agent = 'Cleo'
+    if (!agent && /\b(?:video|edit(?:ing)?|footage|filming|documentary|music video)\b/i.test(lower)) agent = 'Cleo'
+
+    // 9. Steffen: brand/design (but not if tagged [Patrik])
+    if (!agent && /\bsteffen\b/i.test(lower)) agent = 'Steffen'
+    if (!agent && /\b(?:brand\s*(?:strategy|identity|guidelines?|direction)|visual\s*identity|logo\s*design|design\s*system)\b/i.test(lower)) agent = 'Steffen'
+
+    // 10. Mom: accountability + routing
+    if (!agent && /\bmom\b|\bstuck\b|\bblocked\b/i.test(lower)) agent = 'Mom'
+
+    // 11. Patrik: decisions + manual actions
+    if (!agent && /\b(?:review|sign off|configure|confirm|green light|launch|block.*session|re-engage|decide)\b/i.test(lower)) agent = 'Patrik'
+
     let column = agent ? 'assigned' : 'unassigned'
     if (p.blocked) column = 'blocked'
     // RIGHT NOW items get boosted to top via _rightNow flag
     const isRightNow = p.category === 'RIGHT NOW'
     return { ...p, agent, column, _rightNow: isRightNow }
   })
+
+  // Deduplicate tasks that refer to the same thing
+  return deduplicateTasks(assigned)
 }
 
 // ─── UI COMPONENTS ────────────────────────────────────────────────────────────
@@ -2005,10 +2093,16 @@ export default function Dashboard() {
   if (!authed) return <PasswordGate onAuth={() => setAuthed(true)} />
 
   const activeAgents = data?.agents?.filter(a => a.status === 'active').length || 0
+
+  // Separate ephemeral CC: comms from real tasks
+  const allTasks = data?.tasks || []
+  const commsTasks = allTasks.filter(t => /^CC:/i.test(t.text.trim()))
+  const realTasks = allTasks.filter(t => !/^CC:/i.test(t.text.trim()))
+
   const filteredTasks = sortTasksByPriority(
     selectedAgent
-      ? data?.tasks?.filter(t => t.agent === selectedAgent || t.column === 'unassigned') || []
-      : data?.tasks || []
+      ? realTasks.filter(t => t.agent === selectedAgent || t.column === 'unassigned')
+      : realTasks
   )
 
   return (
@@ -2183,7 +2277,10 @@ export default function Dashboard() {
                 <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', fontWeight: 600, textTransform: 'uppercase', marginBottom: 10 }}>Priorities</div>
                 <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, WebkitOverflowScrolling: 'touch', scrollSnapType: 'x mandatory', marginLeft: -12, marginRight: -12, paddingLeft: 12, paddingRight: 12 }}>
                   {data.priorities.map((p, i) => {
-                    const daysLeft = deadlineDaysRemaining(p.desc || p.label)
+                    // Only show deadline badge if the priority text contains an actual date or known deadline keyword
+                    const combinedText = `${p.label} ${p.desc || ''}`
+                    const hasDeadlineSignal = /hard deadline|\b\d{4}-\d{2}-\d{2}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},\s*\d{4}\b/i.test(combinedText)
+                    const daysLeft = hasDeadlineSignal ? deadlineDaysRemaining(combinedText) : null
                     const isUrgent = i < 3
                     return (
                       <div key={i} style={{
@@ -2315,6 +2412,23 @@ export default function Dashboard() {
                 {COLUMNS.map(col => <KanbanColumn key={col.id} col={col} tasks={filteredTasks} onRefresh={load} />)}
               </div>
             )
+          )}
+
+          {/* CC: Comms (ephemeral items, collapsed by default) */}
+          {commsTasks.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'default' }}>
+                <span style={{ fontSize: 9, letterSpacing: '0.1em', color: '#333', fontWeight: 600, textTransform: 'uppercase' }}>Comms</span>
+                <span style={{ fontSize: 9, color: '#333', background: 'rgba(255,255,255,0.03)', borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>{commsTasks.length}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {commsTasks.map(t => (
+                  <div key={t.id} style={{ fontSize: 11, color: '#333', padding: '4px 8px', background: 'rgba(255,255,255,0.02)', borderRadius: 6 }}>
+                    {t.text}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
         )}
