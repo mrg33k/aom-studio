@@ -6,6 +6,7 @@ import BrandGuidelines from './pages/BrandGuidelines.jsx'
 import BrandsHub from './pages/BrandsHub.jsx'
 import AmbitionBrandGuidelines from './pages/AmbitionBrandGuidelines.jsx'
 import Social from './pages/Social.jsx'
+import BrandGuidelinesV4 from './pages/BrandGuidelinesV4.jsx'
 import './index.css'
 
 const Dashboard = lazy(() => import('./dashboard/Dashboard.jsx'))
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/" element={<App />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandGuidelines />} />
+          <Route path="/brand/v4" element={<BrandGuidelinesV4 />} />
           <Route path="/brands" element={<BrandsHub />} />
           <Route path="/brands/ambition" element={<AmbitionBrandGuidelines />} />
           <Route path="/social" element={<Social />} />
