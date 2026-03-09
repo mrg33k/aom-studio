@@ -11,6 +11,11 @@ import {
   ChevronLeft, AlertCircle
 } from 'lucide-react';
 
+import HeroSection from './components/HeroSection';
+import ServicesGrid from './components/ServicesGrid';
+import ConstructionCallout from './components/ConstructionCallout';
+import AITeaser from './components/AITeaser';
+
 // --- FIREBASE & STORAGE CONFIG ---
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
@@ -317,62 +322,62 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
 };
 
 const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) => (
-  <div className={`relative p-8 border rounded-sm overflow-hidden shadow-2xl flex flex-col justify-between ${accent ? "border-orange-600/40 bg-orange-950/10" : "border-white/5 bg-zinc-900/20"}`}>
+  <div className={`relative p-8 border rounded-sm overflow-hidden shadow-2xl flex flex-col justify-between ${accent ? "border-aom-orange/40 bg-orange-950/10" : "border-aom-border bg-aom-charcoal"}`}>
     <div className="relative z-10">
       <div className="flex items-center justify-between mb-8">
-        <div className="w-10 h-10 border border-white/5 bg-black/40 flex items-center justify-center">{Icon && <Icon className="text-orange-600" size={18} />}</div>
-        <div className="text-[9px] font-mono uppercase tracking-[0.35em] text-zinc-600"><ScrambleText text={kicker} hover={false} /></div>
+        <div className="w-10 h-10 border border-aom-border bg-black/40 flex items-center justify-center">{Icon && <Icon className="text-aom-orange" size={18} />}</div>
+        <div className="text-[9px] font-mono uppercase tracking-[0.35em] text-aom-dim"><ScrambleText text={kicker} hover={false} /></div>
       </div>
       <div>
-        <div className="text-5xl md:text-6xl font-black italic tracking-tighter leading-[0.85] text-white">{valueNode}</div>
-        <p className="text-zinc-500 text-xs mt-6 leading-relaxed max-w-xs">{sub}</p>
+        <div className="text-5xl md:text-6xl font-headline font-black italic tracking-tighter leading-[0.85] text-aom-warm-white">{valueNode}</div>
+        <p className="text-aom-stone text-xs mt-6 leading-relaxed max-w-xs">{sub}</p>
       </div>
     </div>
   </div>
 ));
 
 const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
-  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-10 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-orange-600 bg-orange-950/20" : "border-white/10 bg-zinc-900/30 hover:border-white/30 hover:bg-zinc-900/60"}`}>
+  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-10 border rounded-sm shadow-2xl overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-aom-orange bg-orange-950/20" : "border-aom-border bg-aom-charcoal hover:border-aom-border-hover"}`}>
     <div className="flex items-center justify-between mb-8">
-      <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-orange-600 bg-orange-600 text-white" : "border-white/10 bg-black/40 text-zinc-400 group-hover:text-white"}`}>
+      <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-aom-orange bg-aom-orange text-white" : "border-aom-border bg-black/40 text-aom-stone group-hover:text-aom-warm-white"}`}>
         <idea.icon size={20} />
       </div>
-      {isSelected && <CheckCircle2 size={24} className="text-orange-600" />}
+      {isSelected && <CheckCircle2 size={24} className="text-aom-orange" />}
     </div>
     <div className="flex-grow">
-      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-zinc-500 mb-3">{idea.title}</p>
-      <h3 className={`text-xl md:text-2xl font-medium leading-snug transition-colors ${isSelected ? "text-white" : "text-zinc-300 group-hover:text-white"}`}>"{idea.statement}"</h3>
+      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-3">{idea.title}</p>
+      <h3 className={`text-xl md:text-2xl font-medium leading-snug transition-colors ${isSelected ? "text-aom-warm-white" : "text-aom-stone group-hover:text-aom-warm-white"}`}>"{idea.statement}"</h3>
     </div>
-    <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-end">
-      <div><p className="text-[9px] font-mono uppercase tracking-widest text-zinc-600 mb-1">Starting At</p><p className="text-lg font-black italic text-orange-600 tracking-tight">{idea.price}</p></div>
-      <div className={`w-8 h-8 rounded-full border border-white/10 flex items-center justify-center transition-all ${isSelected ? "bg-white text-black border-white rotate-0" : "bg-transparent text-zinc-600 -rotate-45 group-hover:text-white group-hover:border-white/50"}`}><ArrowRight size={14} /></div>
+    <div className="mt-8 pt-6 border-t border-aom-border flex justify-between items-end">
+      <div><p className="text-[9px] font-mono uppercase tracking-widest text-aom-dim mb-1">Starting At</p><p className="text-lg font-headline font-black italic text-aom-orange tracking-tight">{idea.price}</p></div>
+      <div className={`w-8 h-8 rounded-full border border-aom-border flex items-center justify-center transition-all ${isSelected ? "bg-aom-warm-white text-aom-night border-aom-warm-white rotate-0" : "bg-transparent text-aom-dim -rotate-45 group-hover:text-aom-warm-white group-hover:border-aom-border-hover"}`}><ArrowRight size={14} /></div>
     </div>
   </button>
 ));
 
 const TestimonialCard = memo(({ t }) => (
-  <div className="p-8 border border-white/5 bg-zinc-900/20 rounded-sm shadow-xl hover:border-orange-600/30 transition-colors">
-    <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1.5 rounded-sm mb-6">
-      <TrendingUp size={10} className="text-orange-500" /><span className="text-orange-500 font-black text-[9px] uppercase tracking-widest">{t.metric}</span>
+  <div className="p-8 border border-aom-border bg-aom-charcoal rounded-sm shadow-xl hover:border-aom-orange/30 transition-colors">
+    <div className="inline-flex items-center gap-2 bg-aom-orange/10 border border-aom-orange/20 px-3 py-1.5 rounded-sm mb-6">
+      <TrendingUp size={10} className="text-aom-orange" /><span className="text-aom-orange font-black text-[9px] uppercase tracking-widest">{t.metric}</span>
     </div>
-    <p className="text-white text-lg font-black italic tracking-tight leading-snug">"{t.quote}"</p>
-    <div className="mt-8 pt-4 border-t border-white/5">
-      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white">{t.name}</p>
-      <p className="text-[9px] font-mono uppercase tracking-[0.3em] text-zinc-500 mt-1">{t.company}</p>
+    <p className="text-aom-warm-white text-lg font-headline font-black italic tracking-tight leading-snug">"{t.quote}"</p>
+    <div className="mt-8 pt-4 border-t border-aom-border">
+      <p className="text-[10px] font-headline font-black uppercase tracking-[0.2em] text-aom-warm-white">{t.name}</p>
+      <p className="text-[9px] font-mono uppercase tracking-[0.3em] text-aom-stone-muted mt-1">{t.company}</p>
     </div>
   </div>
 ));
 
 const FAQItem = memo(({ item, open, onToggle }) => (
-  <div className="border border-white/5 bg-black/30">
-    <button onClick={onToggle} className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left hover:bg-orange-600/5 transition-colors">
-      <span className="text-white font-black italic uppercase tracking-tight text-lg">{item.q}</span>
-      <ChevronRight className={`text-orange-600 transition-transform ${open ? "rotate-90" : "rotate-0"}`} />
+  <div className="border border-aom-border bg-aom-charcoal">
+    <button onClick={onToggle} className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left hover:bg-aom-orange/5 transition-colors">
+      <span className="text-aom-warm-white font-headline font-black italic uppercase tracking-tight text-lg">{item.q}</span>
+      <ChevronRight className={`text-aom-orange transition-transform ${open ? "rotate-90" : "rotate-0"}`} />
     </button>
     <AnimatePresence initial={false}>
       {open && (
         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-          <div className="px-6 pb-8 text-zinc-500 text-sm leading-relaxed">{item.a}</div>
+          <div className="px-6 pb-8 text-aom-stone text-sm leading-relaxed">{item.a}</div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -389,17 +394,17 @@ const VideoModule = ({ url, title, sub, tags, isVertical = false, onPlay }) => {
     return () => observer.disconnect();
   }, []);
   return (
-    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-white/5 bg-zinc-900/50 h-full cursor-pointer transition-all duration-300 hover:border-orange-600/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[280px] md:w-[380px]' : 'aspect-video w-[360px] md:w-[640px] shadow-lg'}`}>
-      <div className="absolute inset-0 bg-zinc-950">
+    <article ref={ref} onClick={() => onPlay({ url, title })} className={`group relative overflow-hidden border border-aom-border bg-aom-surface h-full cursor-pointer transition-all duration-300 hover:border-aom-orange/60 rounded-sm shrink-0 select-none ${isVertical ? 'aspect-[9/16] w-[280px] md:w-[380px]' : 'aspect-video w-[360px] md:w-[640px] shadow-lg'}`}>
+      <div className="absolute inset-0 bg-aom-night">
         {shouldLoad && embedUrl && (
           <iframe src={embedUrl} loading="lazy" className="w-full h-full border-none opacity-60 grayscale-[0.3] group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-105" title={title} allow="autoplay; encrypted-media" style={{ pointerEvents: 'none' }} />
         )}
       </div>
       <div className="absolute inset-0 p-5 flex flex-col justify-between pointer-events-none z-20 bg-gradient-to-t from-black/95 via-black/10 to-transparent">
-        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-[9px] font-black px-2 py-1 bg-black/80 border border-white/5 text-zinc-300 rounded-sm uppercase tracking-widest">{t}</span>)}</div></div>
+        <div className="flex justify-between items-start"><div className="flex flex-wrap gap-1.5">{tags.slice(0, 2).map(t => <span key={t} className="text-[9px] font-headline font-black px-2 py-1 bg-black/80 border border-aom-border text-aom-stone rounded-sm uppercase tracking-widest">{t}</span>)}</div></div>
         <div className="max-w-[95%]">
-          <h3 className={`font-black tracking-tight text-white leading-[0.9] transition-colors group-hover:text-orange-500 uppercase italic ${isVertical ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>{title}</h3>
-          <p className="text-[10px] font-mono text-zinc-400 mt-2 uppercase tracking-widest italic flex items-center gap-2"><span className="w-1 h-1 bg-orange-600 rounded-full" />{sub}</p>
+          <h3 className={`font-headline font-black tracking-tight text-aom-warm-white leading-[0.9] transition-colors group-hover:text-aom-orange uppercase italic ${isVertical ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>{title}</h3>
+          <p className="text-[10px] font-mono text-aom-stone-muted mt-2 uppercase tracking-widest italic flex items-center gap-2"><span className="w-1 h-1 bg-aom-orange rounded-full" />{sub}</p>
         </div>
       </div>
     </article>
@@ -431,17 +436,17 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
   return (
     <div className="relative group/gallery">
       <div className="flex items-center justify-between mb-4 md:hidden px-6">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-600 animate-pulse"><MousePointer2 size={12} className="text-orange-600" /> Swipe to explore</div>
+        <div className="flex items-center gap-2 text-[10px] font-headline font-black uppercase tracking-widest text-aom-dim animate-pulse"><MousePointer2 size={12} className="text-aom-orange" /> Swipe to explore</div>
       </div>
       <div ref={containerRef} className="flex gap-4 md:gap-6 overflow-x-auto hide-scrollbar px-6 md:px-12 py-4 scroll-smooth cursor-grab active:cursor-grabbing snap-none touch-pan-x">
         {items.map((v, i) => ( <VideoModule key={i} onPlay={onPlay} isVertical={isVertical} {...v} /> ))}
         <div className="w-4 shrink-0 md:hidden" />
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 left-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
-        <button onClick={() => scroll('left')} className={`w-12 h-12 bg-white flex items-center justify-center text-black shadow-2xl transition-all ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronLeft size={24} /></button>
+        <button onClick={() => scroll('left')} className={`w-12 h-12 bg-aom-warm-white flex items-center justify-center text-aom-night shadow-2xl transition-all ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronLeft size={24} /></button>
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 right-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
-        <button onClick={() => scroll('right')} className={`w-12 h-12 bg-white flex items-center justify-center text-black shadow-2xl transition-all ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronRight size={24} /></button>
+        <button onClick={() => scroll('right')} className={`w-12 h-12 bg-aom-warm-white flex items-center justify-center text-aom-night shadow-2xl transition-all ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'hover:scale-110'}`}><ChevronRight size={24} /></button>
       </div>
     </div>
   );
@@ -456,15 +461,15 @@ const PhoneModal = ({ isOpen, onClose }) => {
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
-        <div className="w-full max-w-lg p-10 border border-white/5 bg-[#0a0a0a] relative shadow-2xl rounded-xl overflow-hidden">
-          <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors z-20"><X size={20} /></button>
+        <div className="w-full max-w-lg p-10 border border-aom-border bg-aom-night relative shadow-2xl rounded-xl overflow-hidden">
+          <button onClick={onClose} className="absolute top-6 right-6 text-aom-stone hover:text-aom-warm-white transition-colors z-20"><X size={20} /></button>
           <AnimatePresence mode="wait">
             {view === 'list' ? (
               <motion.div key="list" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-orange-600/5 border border-orange-600/20 rounded-full flex items-center justify-center mx-auto mb-4"><Phone size={24} className="text-orange-600" /></div>
-                  <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Connect<span className="text-orange-600">.</span></h2>
-                  <p className="text-zinc-600 text-[10px] font-mono font-bold uppercase tracking-[0.3em] mt-3">Select Department</p>
+                  <div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 rounded-full flex items-center justify-center mx-auto mb-4"><Phone size={24} className="text-aom-orange" /></div>
+                  <h2 className="text-3xl font-headline font-black text-aom-warm-white italic uppercase tracking-tighter">Connect<span className="text-aom-orange">.</span></h2>
+                  <p className="text-aom-dim text-[10px] font-mono font-bold uppercase tracking-[0.3em] mt-3">Select Department</p>
                 </div>
                 <div className="space-y-2">
                   {[
@@ -473,24 +478,24 @@ const PhoneModal = ({ isOpen, onClose }) => {
                     { label: "Support", icon: ShieldCheck, sub: "Operations & Billing", number: MAIN_PHONE },
                     { label: "Accounting", icon: Landmark, sub: "Invoicing & Vendors", type: 'accounting' }
                   ].map(item => (
-                    <button key={item.label} onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)} className="w-full p-4 border border-white/5 bg-white/5 hover:border-orange-600/30 hover:bg-orange-600/5 transition-all group flex items-center justify-between text-left text-white">
+                    <button key={item.label} onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)} className="w-full p-4 border border-aom-border bg-aom-charcoal hover:border-aom-orange/30 hover:bg-aom-orange/5 transition-all group flex items-center justify-between text-left text-aom-warm-white">
                       <div className="flex items-center gap-4">
-                        <item.icon size={16} className="text-zinc-600 group-hover:text-orange-600 transition-colors" />
-                        <div><p className="text-white font-black uppercase tracking-widest text-xs italic">{item.label}</p><p className="text-[9px] font-mono text-zinc-600 mt-0.5">{item.sub}</p></div>
+                        <item.icon size={16} className="text-aom-dim group-hover:text-aom-orange transition-colors" />
+                        <div><p className="text-aom-warm-white font-headline font-black uppercase tracking-widest text-xs italic">{item.label}</p><p className="text-[9px] font-mono text-aom-dim mt-0.5">{item.sub}</p></div>
                       </div>
-                      <ChevronRight size={14} className="text-zinc-800 group-hover:text-white transition-colors" />
+                      <ChevronRight size={14} className="text-aom-dim group-hover:text-aom-warm-white transition-colors" />
                     </button>
                   ))}
                 </div>
               </motion.div>
             ) : (
               <motion.div key="accounting" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                <div className="text-center mb-8"><div className="w-16 h-16 bg-orange-600/5 border border-orange-600/20 rounded-full flex items-center justify-center mx-auto mb-4"><Mail size={24} className="text-orange-600" /></div><h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Accounting</h2></div>
-                <div className="p-6 border border-orange-600/10 bg-orange-600/5 text-center rounded-sm">
-                  <p className="text-zinc-500 text-xs leading-relaxed mb-6">Please send an email to <span className="text-orange-500 font-bold">hello@aom-inhouse.com</span> to accompany your call.</p>
-                  <button onClick={() => handleRoute(MAIN_PHONE)} className="w-full bg-orange-600 py-3 text-white font-black italic uppercase tracking-widest text-xs hover:bg-orange-500 transition-all flex items-center justify-center gap-2 shadow-xl"><Phone size={14} className="fill-white" /> Call Accounting</button>
+                <div className="text-center mb-8"><div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 rounded-full flex items-center justify-center mx-auto mb-4"><Mail size={24} className="text-aom-orange" /></div><h2 className="text-2xl font-headline font-black text-aom-warm-white italic uppercase tracking-tighter">Accounting</h2></div>
+                <div className="p-6 border border-aom-orange/10 bg-aom-orange/5 text-center rounded-sm">
+                  <p className="text-aom-stone text-xs leading-relaxed mb-6">Please send an email to <span className="text-aom-orange font-bold">hello@aom-inhouse.com</span> to accompany your call.</p>
+                  <button onClick={() => handleRoute(MAIN_PHONE)} className="w-full bg-aom-orange py-3 text-white font-headline font-black italic uppercase tracking-widest text-xs hover:bg-aom-orange-hover transition-all flex items-center justify-center gap-2 shadow-xl"><Phone size={14} className="fill-white" /> Call Accounting</button>
                 </div>
-                <button onClick={() => setView('list')} className="w-full mt-6 text-zinc-700 hover:text-white text-[9px] font-mono uppercase tracking-widest transition-colors">← Back</button>
+                <button onClick={() => setView('list')} className="w-full mt-6 text-aom-dim hover:text-aom-warm-white text-[9px] font-mono uppercase tracking-widest transition-colors">Back</button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -518,7 +523,6 @@ export default function App() {
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingBudget, setPendingBudget] = useState(null);
-  const [isMobile, setIsMobile] = useState(false);
   const playerFrameRef = useRef(null);
 
   // Interaction State Logic
@@ -546,32 +550,7 @@ export default function App() {
         social: shuffleArray(PORTFOLIO_DATA.founders.social),
       },
       feed,
-      hero: shuffleArray([
-        ...PORTFOLIO_DATA.marketing.campaigns.slice(0, 5),
-        ...PORTFOLIO_DATA.builders.campaigns.slice(0, 5),
-      ])[0],
-      heroMobile: feed[0],
     };
-  }, []);
-
-  const heroDesktopEmbed = useMemo(
-    () => getGumletBackgroundEmbed(shuffledData.hero.url),
-    [shuffledData.hero.url]
-  );
-
-  const heroMobileEmbed = useMemo(
-    () => getGumletBackgroundEmbed(shuffledData.heroMobile?.url),
-    [shuffledData.heroMobile?.url]
-  );
-
-  const heroVideoEmbed = isMobile ? heroMobileEmbed : heroDesktopEmbed;
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    const apply = () => setIsMobile(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
   }, []);
 
   useEffect(() => {
@@ -651,84 +630,68 @@ export default function App() {
   const handleRoute = (number) => { window.location.href = `tel:${number}`; };
 
   return (
-    <div className="bg-[#020202] text-zinc-100 min-h-screen font-sans selection:bg-orange-600 antialiased overflow-hidden">
+    <div className="bg-aom-night text-aom-warm-white min-h-screen font-body selection:bg-orange-600 antialiased overflow-hidden">
       <AnimatePresence>
         {!isInitialized && (
-          <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-[#020202] flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
+          <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-aom-night flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
             <div className="relative mb-12 flex items-center justify-center">
-              <h1 className="text-7xl font-black italic tracking-tighter text-white/10 relative">
+              <h1 className="text-7xl font-headline font-black italic tracking-tighter text-white/10 relative">
                 AOM<span className="text-white/5">.</span>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${loadStatus}%` }} className="absolute top-0 left-0 text-white overflow-hidden whitespace-nowrap logo-shine">AOM<span className="text-orange-600">.</span></motion.div>
+                <motion.div initial={{ width: 0 }} animate={{ width: `${loadStatus}%` }} className="absolute top-0 left-0 text-white overflow-hidden whitespace-nowrap logo-shine">AOM<span className="text-aom-orange">.</span></motion.div>
               </h1>
             </div>
-            <div className="w-48 h-[1px] bg-white/5 relative overflow-hidden rounded-full"><motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-orange-600 shadow-[0_0_10px_#FF4F00]" /></div>
+            <div className="w-48 h-[1px] bg-aom-border relative overflow-hidden rounded-full"><motion.div animate={{ width: `${loadStatus}%` }} className="absolute inset-0 bg-aom-orange shadow-[0_0_10px_#FF4F00]" /></div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {isInitialized && (
-        <main className={`pb-24 text-left h-screen overflow-y-auto scroll-smooth hide-scrollbar ${isModalOpen ? 'snap-none overflow-hidden' : 'snap-y snap-mandatory'}`}>
+        <main className={`pb-24 text-left h-screen overflow-y-auto scroll-smooth hide-scrollbar ${isModalOpen ? 'snap-none overflow-hidden' : ''}`}>
           <TextureOverlay />
           <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />
-          
-          <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter text-white pointer-events-auto">AOM<span className="text-orange-600">.</span></h1>
+
+          <header className="fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center bg-gradient-to-b from-aom-night/90 to-transparent pointer-events-none">
+            <h1 className="text-2xl md:text-3xl font-headline font-black italic tracking-tighter text-aom-warm-white pointer-events-auto">AOM<span className="text-aom-orange">.</span></h1>
             <div className="flex gap-4 pointer-events-auto">
-              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-zinc-900 text-zinc-400 font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-white border border-white/5 transition-all">Call Logistics</button>
-              <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-orange-600 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-sm hover:bg-orange-500 shadow-xl border border-white/10 transition-all">Get Started</button>
+              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-aom-charcoal text-aom-stone font-bold text-[10px] uppercase tracking-[0.2em] rounded-sm hover:text-aom-warm-white border border-aom-border transition-all">Call Logistics</button>
+              <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-aom-orange text-white font-headline font-black text-[10px] uppercase tracking-[0.2em] rounded-sm hover:bg-aom-orange-hover shadow-xl shadow-aom-orange/20 border border-white/10 transition-all">Get Started</button>
             </div>
           </header>
 
-          <section className="min-h-[100svh] md:min-h-screen flex flex-col justify-start md:justify-center px-6 md:px-24 relative overflow-hidden pt-24 sm:pt-28 md:pt-40 pb-28 md:pb-0 snap-start scroll-mt-24 md:scroll-mt-32">
-            <div className="absolute inset-0 z-0 opacity-20 overflow-hidden">
-              {heroVideoEmbed && (
-                <div className="absolute inset-0 h-[100svh] md:h-full">
-                  <iframe
-                    src={heroVideoEmbed}
-                    className="absolute inset-0 w-full h-full scale-[1.15] md:scale-100 grayscale pointer-events-none"
-                    title="Hero Background"
-                    allow="autoplay; encrypted-media"
-                  />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
-            </div>
+          {/* --- NEW HERO --- */}
+          <HeroSection />
 
-            <div className="max-w-7xl mx-auto w-full relative z-10">
-              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
-                <div className="inline-flex items-center gap-4 mb-10 border-l-4 border-orange-600 pl-4 md:pl-6 max-w-full"><p className="text-orange-600 font-mono font-bold text-[clamp(10px,2.2vw,12px)] uppercase tracking-[0.4em] leading-tight block">Story-Driven // Phoenix Video Production</p></div>
-                <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-black leading-[0.85] tracking-tighter text-white uppercase italic">PHOENIX TEAMS <br /><TypewriterCycle words={["CLOSE FASTER", "RECRUIT BETTER", "RAISE CAPITAL", "OWN ATTENTION", "BUILD TRUST", "SCALE FASTER"]} /><br /><span className="text-outline">WITH VIDEO</span></h2>
-              </motion.div>
-              <div className="mt-12 md:mt-24 grid grid-cols-1 md:grid-cols-2 gap-12 border-t border-white/10 pt-12 md:pt-16 items-end">
-                <p className="text-lg md:text-xl text-zinc-300 leading-relaxed max-w-xl font-medium">Building repeatable story-driven content systems for founders, developers, and SaaS teams.<span className="text-orange-500 font-black block mt-4">No agencies. No delays. Just outcomes.</span></p>
-                <div className="flex justify-start md:justify-end"><button onClick={() => openBrief()} className="group flex items-center gap-4 md:gap-6 text-white hover:text-orange-500 transition-colors"><span className="text-2xl md:text-4xl font-black uppercase italic tracking-tighter border-b-2 border-white/10 pb-2 group-hover:border-orange-500 transition-all text-left">Let's Work</span><Zap size={32} className="group-hover:scale-125 transition-transform text-orange-600 md:w-10 md:h-10" /></button></div>
-              </div>
-            </div>
-          </section>
+          {/* --- SERVICES --- */}
+          <ServicesGrid />
 
-          <section className="px-6 md:px-12 py-24 md:py-36 bg-black border-t border-white/5 relative snap-start scroll-mt-24 md:scroll-mt-32">
+          {/* --- CONSTRUCTION VERTICAL --- */}
+          <ConstructionCallout />
+
+          {/* --- AI TEASER --- */}
+          <AITeaser />
+
+          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-night border-t border-aom-border relative">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <FadeIn className="border-b border-white/5 pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
+              <FadeIn className="border-b border-aom-border pb-16 mb-20 flex flex-col lg:flex-row items-end justify-between gap-12">
                 <div className="max-w-3xl">
-                  <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block"><ScrambleText text="Market Authority" /></span>
-                  <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-[0.85]">Phoenix Production<br /><span className="text-outline">Proven Scale</span><span className="text-orange-600">.</span></h2>
+                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block"><ScrambleText text="Market Authority" /></span>
+                  <h2 className="text-5xl md:text-7xl font-headline font-black text-aom-warm-white tracking-tighter uppercase italic leading-[0.85]">Phoenix Production<br /><span className="text-outline">Proven Scale</span><span className="text-aom-orange">.</span></h2>
                 </div>
-                <div className="w-full lg:max-w-md p-7 border border-white/5 bg-zinc-900/10"><ShieldCheck className="text-orange-600 mb-6" size={24} /><p className="text-zinc-500 text-sm leading-relaxed">System-driven storytelling for Arizona businesses where reliability is the baseline.</p></div>
+                <div className="w-full lg:max-w-md p-7 border border-aom-border bg-aom-charcoal"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-stone text-sm leading-relaxed">System-driven storytelling for Arizona businesses where reliability is the baseline.</p></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FadeIn><VibeStat icon={Building2} kicker="Phoenix Impact" valueNode={<span><CountUp to={63} /><span className="text-orange-600">+</span></span>} sub="Supporting teams across industrial services, hospitality, and STEAM." /></FadeIn>
-                <FadeIn delay={0.1}><VibeStat icon={PlaneTakeoff} kicker="Regional Reach" valueNode={<span><CountUp to={34} /><span className="text-orange-600">+</span></span>} sub="Executing projects across the nation for Arizona-based market leaders." accent /></FadeIn>
-                <FadeIn delay={0.2}><VibeStat icon={Clapperboard} kicker="Assets Shipped" valueNode={<span><CountUp to={100} /><span className="text-orange-600">+</span></span>} sub={<span>Archive verified: <span className="text-orange-500">{videoTotal}</span> projects found in current build.</span>} /></FadeIn>
+                <FadeIn><VibeStat icon={Building2} kicker="Phoenix Impact" valueNode={<span><CountUp to={63} /><span className="text-aom-orange">+</span></span>} sub="Supporting teams across industrial services, hospitality, and STEAM." /></FadeIn>
+                <FadeIn delay={0.1}><VibeStat icon={PlaneTakeoff} kicker="Regional Reach" valueNode={<span><CountUp to={34} /><span className="text-aom-orange">+</span></span>} sub="Executing projects across the nation for Arizona-based market leaders." accent /></FadeIn>
+                <FadeIn delay={0.2}><VibeStat icon={Clapperboard} kicker="Assets Shipped" valueNode={<span><CountUp to={100} /><span className="text-aom-orange">+</span></span>} sub={<span>Archive verified: <span className="text-aom-orange">{videoTotal}</span> projects found in current build.</span>} /></FadeIn>
               </div>
               <FadeIn className="mt-16"><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{TESTIMONIALS.map((t, i) => <TestimonialCard key={i} t={t} />)}</div></FadeIn>
             </div>
           </section>
 
-          <section id="work" className="pt-24 pb-[200px] md:py-36 bg-[#050505] relative z-10 overflow-hidden border-t border-white/5 snap-start scroll-mt-24 md:scroll-mt-32">
-            <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/5 pb-16 text-white">
-              <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-black tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-orange-600">.</span></h2></div>
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders', 'founders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-10 py-3 md:py-4 text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-white text-black border-white' : 'bg-transparent border-white/10 text-zinc-600 hover:text-white'}`}>{tab}</button>)}</div>
+          <section id="work" className="pt-24 pb-[200px] md:py-36 bg-aom-charcoal relative z-10 overflow-hidden border-t border-aom-border">
+            <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-aom-border pb-16 text-aom-warm-white">
+              <div><h2 className="text-[clamp(3.5rem,10vw,8rem)] font-headline font-black tracking-tighter uppercase italic leading-[0.8]">The<br /><span className="text-outline">Portfolio</span><span className="text-aom-orange">.</span></h2></div>
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['marketing', 'builders', 'founders'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-10 py-3 md:py-4 text-[10px] md:text-[11px] font-headline font-black uppercase tracking-[0.3em] rounded-sm transition-all border shrink-0 ${activeTab === tab ? 'bg-aom-warm-white text-aom-night border-aom-warm-white' : 'bg-transparent border-aom-border text-aom-dim hover:text-aom-warm-white'}`}>{tab}</button>)}</div>
             </div>
             <div className="space-y-20 md:space-y-36">
               <InteractiveGallery items={shuffledData[activeTab].campaigns} onPlay={setSelectedVideo} />
@@ -736,37 +699,37 @@ export default function App() {
             </div>
           </section>
 
-          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-[#050505] border-t border-white/5 text-white snap-start scroll-mt-24 md:scroll-mt-32">
+          <section id="packages" className="px-6 md:px-12 py-24 md:py-36 bg-aom-charcoal border-t border-aom-border text-aom-warm-white">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/5 pb-16">
-                <div><span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Identify Your Needs</span><h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">Choose Your<br /><span className="text-outline">Execution Path</span><span className="text-orange-600">.</span></h2></div>
+              <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-aom-border pb-16">
+                <div><span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Identify Your Needs</span><h2 className="text-5xl md:text-7xl font-headline font-black tracking-tighter uppercase italic leading-[0.85]">Choose Your<br /><span className="text-outline">Execution Path</span><span className="text-aom-orange">.</span></h2></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">{ENGAGEMENT_IDEAS.map(idea => ( <IdeaCard key={idea.id} idea={idea} isSelected={selectedIntent?.id === idea.id} onSelect={() => openBrief(idea)} /> ))}</div>
             </div>
           </section>
 
-          <section className="px-6 md:px-12 py-36 bg-black border-t border-white/5 overflow-hidden text-white snap-start scroll-mt-24 md:scroll-mt-32">
+          <section className="px-6 md:px-12 py-36 bg-aom-night border-t border-aom-border overflow-hidden text-aom-warm-white">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="mb-20">
                 <div className="max-w-xl">
-                  <span className="text-orange-600 text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Why Us</span>
-                  <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-orange-600">.</span></h2>
+                  <span className="text-aom-orange text-[11px] font-mono font-bold uppercase tracking-[0.5em] mb-6 block">Why Us</span>
+                  <h2 className="text-5xl md:text-7xl font-headline font-black tracking-tighter uppercase italic leading-[0.85]">The reason<br /><span className="text-outline">this</span> works<span className="text-aom-orange">.</span></h2>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/5 bg-zinc-900/10 rounded-sm hover:border-orange-600/30 transition-all"><m.icon className="text-orange-600 mb-8" size={24} /><p className="text-[10px] font-mono uppercase tracking-[0.35em] text-zinc-600 mb-3">{m.label}</p><h4 className="text-xl font-black italic text-white uppercase">{m.value}</h4><p className="text-zinc-500 text-xs mt-4 leading-relaxed">{m.sub}</p></div>)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-aom-border bg-aom-charcoal rounded-sm hover:border-aom-orange/30 transition-all"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[10px] font-mono uppercase tracking-[0.35em] text-aom-dim mb-3">{m.label}</p><h4 className="text-xl font-headline font-black italic text-aom-warm-white uppercase">{m.value}</h4><p className="text-aom-stone text-xs mt-4 leading-relaxed">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
-          <footer className="px-6 md:px-12 py-24 md:py-48 border-t border-white/5 bg-[#020202] text-center pb-64 text-white snap-start scroll-mt-24 md:scroll-mt-32">
+          <footer className="px-6 md:px-12 py-24 md:py-48 border-t border-aom-border bg-aom-night text-center pb-64 text-aom-warm-white">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <h2 className="text-6xl md:text-[10rem] font-black tracking-tighter mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-orange-600">Scale?</span></h2>
+              <h2 className="text-6xl md:text-[10rem] font-headline font-black tracking-tighter mb-24 uppercase italic leading-[0.8]">Ready to <span className="text-aom-orange">Scale?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <button onClick={() => openBrief()} className="px-16 py-6 bg-orange-600 text-white font-black uppercase tracking-[0.4em] text-xs hover:bg-orange-500 transition-all clip-path-slant shadow-2xl">Start Brief</button>
-                <button onClick={openPhone} className="px-16 py-6 bg-zinc-900 text-zinc-400 font-black uppercase tracking-[0.4em] text-xs hover:text-white transition-all clip-path-slant border border-white/5">Book Call</button>
+                <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-black uppercase tracking-[0.4em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/20">Start Brief</button>
+                <button onClick={openPhone} className="px-16 py-6 bg-aom-charcoal text-aom-stone font-headline font-black uppercase tracking-[0.4em] text-xs hover:text-aom-warm-white transition-all clip-path-slant border border-aom-border">Book Call</button>
               </div>
-              <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-white/5 pt-16">
-                <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Production</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-white text-3xl font-black italic tracking-tighter">Call Production</button></div>
-                <div><p className="text-orange-600 font-black uppercase text-[10px] tracking-widest mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-black italic tracking-tighter underline decoration-orange-600 underline-offset-8">hello@aom-inhouse.com</a></div>
+              <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-aom-border pt-16">
+                <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Production</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-aom-warm-white text-3xl font-headline font-black italic tracking-tighter">Call Production</button></div>
+                <div><p className="text-aom-orange font-headline font-black uppercase text-[10px] tracking-widest mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-aom-warm-white text-3xl font-headline font-black italic tracking-tighter underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
               </div>
             </div>
           </footer>
@@ -775,8 +738,8 @@ export default function App() {
           <AnimatePresence>
             {selectedVideo && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[2000] bg-black/98 flex items-center justify-center p-4 md:p-10 backdrop-blur-3xl">
-                <button onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); setSelectedVideo(null); }} className="absolute top-6 right-6 md:top-10 md:right-10 text-white p-3 md:p-4 bg-white/5 rounded-full z-50 hover:bg-orange-600/20 transition-all"><X size={28} /></button>
-                <div className="w-[96vw] h-[90vh] md:w-[92vw] md:h-[88vh] bg-black shadow-2xl relative border border-white/5">
+                <button onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); setSelectedVideo(null); }} className="absolute top-6 right-6 md:top-10 md:right-10 text-aom-warm-white p-3 md:p-4 bg-aom-charcoal rounded-full z-50 hover:bg-aom-orange/20 transition-all"><X size={28} /></button>
+                <div className="w-[96vw] h-[90vh] md:w-[92vw] md:h-[88vh] bg-aom-night shadow-2xl relative border border-aom-border">
                   <iframe 
                     ref={playerFrameRef}
                     src={getGumletPlayerEmbed(selectedVideo.url)} 
