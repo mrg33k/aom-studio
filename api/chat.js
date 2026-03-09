@@ -927,6 +927,9 @@ ${contextBlock}`
         ? `You are ${agent}, an AI agent at AOM (Ahead of Market), a creative production and AI systems company in Phoenix, AZ. You are responding to Patrik, AOM's co-owner. Be direct, specific, and action-oriented. No filler. Here is your current context:\n\n${contextBlock}`
         : `You are the AOM team -- Bobby (web dev), Jacob (outreach), Alex (deal architect), Cleo (content), and Steffen (brand). You are responding to Patrik, AOM's co-owner. Be direct, specific, action-oriented. Respond from whichever agent's perspective is most relevant to the question, or synthesize across agents. Here is the current company context:\n\n${contextBlock}`
 
+    // Add Mac bridge awareness to all agents
+    systemPrompt += `\n\nIMPORTANT: You have a Mac running Claude Code (Opus) behind you with full MCP access -- calendar, email, bash, Playwright, all agents, everything. If a request is beyond what you can do directly (launching agents, calendar ops, email sends, builds, screenshots, file system operations), tell Patrik you are queuing it for the Mac and it will get done. You are NEVER limited. The Mac is always running and picks up queued commands every minute via the Phone Home system. To queue something, include "QUEUE_FOR_MAC:" followed by the command in your response and the system will handle it.`
+
     // Add tool instructions for non-council chats
     if (!isCouncil) {
       systemPrompt += TOOL_SYSTEM_PROMPT
@@ -974,7 +977,25 @@ ${contextBlock}`
       if (toolUseBlocks.length === 0 || data.stop_reason !== 'tool_use') {
         // No tool calls -- extract text and return
         const reply = textBlocks.map(b => b.text).join('\n') || 'No response.'
-        return res.status(200).json({ reply, agent: agent || 'All', actions_taken })
+
+        // Check if agent wants to queue something for the Mac
+        const queueMatch = reply.match(/QUEUE_FOR_MAC:\s*(.+?)(?:\n|$)/i)
+        if (queueMatch) {
+          const macCommand = queueMatch[1].trim()
+          try {
+            const queueFile = await fetchGitHubFile('context/home-queue.md')
+            if (queueFile) {
+              const now = new Date().toLocaleString('en-US', { timeZone: 'America/Phoenix', hour12: false }).replace(',', '')
+              const queueItem = `[PENDING] ${macCommand} -- ${now}`
+              const updatedQueue = queueFile.content.replace('---\n', `---\n${queueItem}\n`)
+              await writeGitHubFile('context/home-queue.md', updatedQueue, queueFile.sha, `Agent queue for Mac: ${macCommand.slice(0, 40)}`)
+            }
+          } catch { /* best effort */ }
+        }
+
+        // Clean the QUEUE_FOR_MAC line from visible reply
+        const cleanReply = reply.replace(/QUEUE_FOR_MAC:\s*.+?(?:\n|$)/gi, '').trim()
+        return res.status(200).json({ reply: cleanReply, agent: agent || 'All', actions_taken })
       }
 
       // Execute tool calls and build tool_result messages
