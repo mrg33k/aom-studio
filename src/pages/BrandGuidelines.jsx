@@ -1,920 +1,1242 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ArrowLeft, Copy, Check } from 'lucide-react'
 
 /* ------------------------------------------------------------------ */
-/*  Theme definitions from Steffen's 3 brand directions                */
+/*  AOM Brand Guidelines -- Direction C: Bold Graphic (LOCKED)         */
+/*  Fonts: Syne (display) + Space Grotesk (headlines + body)           */
+/*  Colors: Cream #FDF6EC, Black #0A0A0A, Orange #E85D26, Gold #C9A84C */
 /* ------------------------------------------------------------------ */
 
-const themes = {
-  A: {
-    id: 'A',
-    label: 'A: INDUSTRIAL',
-    vibe: 'Type is the architecture. Everything else is restraint.',
-    headlineFont: '"Bebas Neue", sans-serif',
-    bodyFont: '"IBM Plex Mono", monospace',
-    displayFont: '"Bebas Neue", sans-serif',
-    colors: {
-      bgPrimary: '#0A0A0A',
-      bgAlt: '#111111',
-      textPrimary: '#F5F5F5',
-      textSecondary: '#8A8A8A',
-      accent: '#FF4D00',
-      accentSecondary: '#FF4D00',
-      border: '#222222',
-      borderHover: '#333333',
-    },
-    hero: {
-      fontSize: '120px',
-      mobileFontSize: '64px',
-      lineHeight: '0.95',
-      tracking: '0.05em',
-      weight: '400',
-    },
-    section: {
-      labelSize: '11px',
-      labelWeight: '500',
-      labelTracking: '0.2em',
-      bodySize: '15px',
-      bodyLineHeight: '1.7',
-      bodyTracking: '0.01em',
-      spacing: '160px',
-      mobileSpacing: '80px',
-    },
-    unique: 'noise', // noise texture + orange bar
-  },
-  B: {
-    id: 'B',
-    label: 'B: EDITORIAL',
-    vibe: 'The quiet confidence of a studio that doesn\'t need to shout.',
-    headlineFont: '"Playfair Display", serif',
-    bodyFont: '"Inter", sans-serif',
-    displayFont: '"Playfair Display", serif',
-    colors: {
-      bgPrimary: '#F7F5F2',
-      bgAlt: '#1A1A1A',
-      textPrimary: '#1A1A1A',
-      textSecondary: '#6B6B6B',
-      accent: '#E85D26',
-      accentSecondary: '#E85D26',
-      border: '#E0DCD7',
-      borderHover: '#CCC8C2',
-    },
-    hero: {
-      fontSize: '64px',
-      mobileFontSize: '40px',
-      lineHeight: '1.05',
-      tracking: '-0.02em',
-      weight: '700',
-    },
-    section: {
-      labelSize: '11px',
-      labelWeight: '600',
-      labelTracking: '0.15em',
-      bodySize: '16px',
-      bodyLineHeight: '1.75',
-      bodyTracking: '0',
-      spacing: '120px',
-      mobileSpacing: '64px',
-    },
-    unique: 'circle', // orange circle motif
-  },
-  C: {
-    id: 'C',
-    label: 'C: BOLD GRAPHIC',
-    vibe: 'Structured personality. The brand has a voice you can hear through the typography.',
-    headlineFont: '"Space Grotesk", sans-serif',
-    bodyFont: '"Space Grotesk", sans-serif',
-    displayFont: '"Syne", sans-serif',
-    displayWeight: '800',
-    colors: {
-      bgPrimary: '#F2EDE8',
-      bgAlt: '#0A0A0A',
-      textPrimary: '#0A0A0A',
-      textSecondary: '#7A7267',
-      accent: '#FF5C1A',
-      accentSecondary: '#D4A843',
-      border: '#0A0A0A',
-      borderHover: '#333333',
-    },
-    hero: {
-      fontSize: '96px',
-      mobileFontSize: '48px',
-      lineHeight: '0.9',
-      tracking: '-0.03em',
-      weight: '800',
-    },
-    section: {
-      labelSize: '11px',
-      labelWeight: '500',
-      labelTracking: '0.2em',
-      bodySize: '16px',
-      bodyLineHeight: '1.7',
-      bodyTracking: '0',
-      spacing: '100px',
-      mobileSpacing: '56px',
-    },
-    unique: 'badges', // badge system + mixed weight
-  },
+const COLORS = {
+  cream: '#FDF6EC',
+  black: '#0A0A0A',
+  orange: '#E85D26',
+  gold: '#C9A84C',
+  warmGray: '#7A7267',
+  lightBorder: '#D9D3CB',
+  darkCream: '#EDE7DF',
 }
 
 /* ------------------------------------------------------------------ */
-/*  Color palettes per direction                                       */
+/*  Color swatch copy helper                                            */
 /* ------------------------------------------------------------------ */
-
-const colorSets = {
-  A: [
-    { name: 'True Black', hex: '#0A0A0A', role: 'Background (primary)' },
-    { name: 'Off-black', hex: '#111111', role: 'Background (alternate)' },
-    { name: 'White', hex: '#F5F5F5', role: 'Text (primary)' },
-    { name: 'Warm Gray', hex: '#8A8A8A', role: 'Text (secondary)' },
-    { name: 'Safety Orange', hex: '#FF4D00', role: 'Accent (primary)' },
-  ],
-  B: [
-    { name: 'Warm White', hex: '#F7F5F2', role: 'Background (primary)' },
-    { name: 'Deep Charcoal', hex: '#1A1A1A', role: 'Background (alternate)' },
-    { name: 'Near-black', hex: '#1A1A1A', role: 'Text (on light)' },
-    { name: 'Warm White', hex: '#F7F5F2', role: 'Text (on dark)' },
-    { name: 'Mid Gray', hex: '#6B6B6B', role: 'Text (secondary)' },
-    { name: 'Burnt Orange', hex: '#E85D26', role: 'Accent (primary)' },
-  ],
-  C: [
-    { name: 'Cream', hex: '#F2EDE8', role: 'Background (primary)' },
-    { name: 'True Black', hex: '#0A0A0A', role: 'Background (alternate)' },
-    { name: 'Black', hex: '#0A0A0A', role: 'Text (on light)' },
-    { name: 'Cream', hex: '#F2EDE8', role: 'Text (on dark)' },
-    { name: 'Warm Mid-gray', hex: '#7A7267', role: 'Text (secondary)' },
-    { name: 'Vivid Orange', hex: '#FF5C1A', role: 'Accent (primary)' },
-    { name: 'Warm Gold', hex: '#D4A843', role: 'Accent (secondary)' },
-  ],
-}
-
-/* ------------------------------------------------------------------ */
-/*  Typography specs per direction                                     */
-/* ------------------------------------------------------------------ */
-
-const typeSpecs = {
-  A: [
-    { role: 'Headlines', font: 'Bebas Neue', weight: '400', size: '72-120px', lh: '0.95', tracking: '+0.05em' },
-    { role: 'Section Labels', font: 'IBM Plex Mono', weight: '500', size: '11px', lh: '1.4', tracking: '+0.2em' },
-    { role: 'Body', font: 'IBM Plex Mono', weight: '400', size: '15px', lh: '1.7', tracking: '+0.01em' },
-    { role: 'Micro-labels', font: 'IBM Plex Mono', weight: '600', size: '10px', lh: '1.2', tracking: '+0.25em' },
-    { role: 'Stat Numbers', font: 'Bebas Neue', weight: '400', size: '96-144px', lh: '1.0', tracking: '0' },
-  ],
-  B: [
-    { role: 'Headlines', font: 'Playfair Display', weight: '700', size: '56-80px', lh: '1.05', tracking: '-0.02em' },
-    { role: 'Subheadlines', font: 'Inter', weight: '500', size: '20px', lh: '1.4', tracking: '+0.02em' },
-    { role: 'Section Labels', font: 'Inter', weight: '600', size: '11px', lh: '1.4', tracking: '+0.15em' },
-    { role: 'Body', font: 'Inter', weight: '400', size: '16px', lh: '1.75', tracking: '0' },
-    { role: 'Pull Quotes', font: 'Playfair Display Italic', weight: '400', size: '28px', lh: '1.3', tracking: '0' },
-  ],
-  C: [
-    { role: 'Hero Display', font: 'Syne', weight: '800', size: '80-120px', lh: '0.9', tracking: '-0.03em' },
-    { role: 'Section Headlines', font: 'Space Grotesk', weight: '700', size: '36-48px', lh: '1.1', tracking: '-0.01em' },
-    { role: 'Section Labels', font: 'Space Grotesk', weight: '500', size: '11px', lh: '1.4', tracking: '+0.2em' },
-    { role: 'Body', font: 'Space Grotesk', weight: '400', size: '16px', lh: '1.7', tracking: '0' },
-    { role: 'Badges', font: 'Space Grotesk', weight: '700', size: '10px', lh: '1.2', tracking: '+0.15em' },
-  ],
-}
-
-/* ------------------------------------------------------------------ */
-/*  Voice content per direction                                        */
-/* ------------------------------------------------------------------ */
-
-const voiceContent = {
-  A: {
-    tone: 'Direct. Minimal. Let the work speak.',
-    principles: [
-      'Type does the talking. Less color, more structure.',
-      'Every pixel earns its place. No decoration.',
-      'The constraint IS the system.',
-      'Monospace = the machine layer. Headlines = the human statement.',
-    ],
-    sample: '"We build systems. The content runs itself."',
-  },
-  B: {
-    tone: 'Confident and warm. Editorial authority without pretension.',
-    principles: [
-      'Write like someone who truly understands.',
-      'Serif headlines carry weight. Sans body keeps it readable.',
-      'Warmth through restraint, not through excess.',
-      'The orange circle is punctuation. It appears, it means something.',
-    ],
-    sample: '"We make things that impact."',
-  },
-  C: {
-    tone: 'Energetic and structured. Personality with a system behind it.',
-    principles: [
-      'Mixed weight headlines create visual rhythm.',
-      'Badges make capabilities scannable.',
-      'Bold and regular alternate within a single line.',
-      'Two accent colors give range without chaos.',
-    ],
-    sample: '"WE make THINGS that BRING opportunity."',
-  },
-}
-
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-function CopyButton({ text, theme }) {
+function ColorSwatch({ color, name, hex, dark }) {
   const [copied, setCopied] = useState(false)
   const handleCopy = () => {
-    navigator.clipboard.writeText(text)
+    navigator.clipboard.writeText(hex)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
   return (
-    <button
-      onClick={handleCopy}
-      style={{ color: theme.colors.textSecondary, marginLeft: '8px', display: 'inline-flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer' }}
-      title="Copy"
-    >
-      {copied ? <Check size={12} /> : <Copy size={12} />}
-    </button>
-  )
-}
-
-function isMobile() {
-  return typeof window !== 'undefined' && window.innerWidth < 768
-}
-
-/* ------------------------------------------------------------------ */
-/*  Direction A: INDUSTRIAL                                            */
-/* ------------------------------------------------------------------ */
-
-function IndustrialPage({ theme, scrollTo }) {
-  const t = theme
-  const c = t.colors
-  const mobile = isMobile()
-  const sectionSpacing = mobile ? t.section.mobileSpacing : t.section.spacing
-
-  return (
-    <div style={{ background: c.bgPrimary, color: c.textPrimary, minHeight: '100vh', position: 'relative' }}>
-      {/* Noise overlay */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50, opacity: 0.04, mixBlendMode: 'overlay' }}>
-        <svg width="100%" height="100%">
-          <filter id="noise-a"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" /></filter>
-          <rect width="100%" height="100%" filter="url(#noise-a)" />
-        </svg>
+    <div style={{ flex: '1 1 200px', minWidth: 180 }}>
+      <div
+        onClick={handleCopy}
+        style={{
+          background: color,
+          width: '100%',
+          height: 120,
+          borderRadius: 4,
+          border: `1px solid ${dark ? 'transparent' : COLORS.lightBorder}`,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'flex-end',
+          padding: 12,
+          position: 'relative',
+          transition: 'transform 0.2s',
+        }}
+      >
+        {copied && (
+          <span style={{
+            position: 'absolute', top: 8, right: 8,
+            fontFamily: '"Space Grotesk", sans-serif', fontSize: 10,
+            fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase',
+            color: dark ? COLORS.cream : COLORS.black, opacity: 0.8,
+          }}>COPIED</span>
+        )}
       </div>
-
-      {/* Hero */}
-      <section style={{ padding: mobile ? '80px 24px' : '160px 48px', maxWidth: '1100px', margin: '0 auto' }}>
-        <div style={{ fontFamily: t.headlineFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: t.hero.weight, letterSpacing: t.hero.tracking, lineHeight: t.hero.lineHeight, color: c.textPrimary, textTransform: 'uppercase' }}>
-          AHEAD<br />OF<br />MARKET
-        </div>
-        {/* Orange bar */}
-        <div style={{ width: '40vw', height: '8px', background: c.accent, margin: '32px 0 24px' }} />
-        <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary, lineHeight: 1.4 }}>
-          CREATIVE PRODUCTION + AI SYSTEMS
-        </p>
-      </section>
-
-      {/* Section 01: Colors */}
-      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px' }}>
-        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '48px' }}>
-            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>01</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>COLOR SYSTEM</p>
-              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>PALETTE</h2>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(5, 1fr)', gap: '16px' }}>
-            {colorSets.A.map(col => (
-              <div key={col.hex + col.role}>
-                <div style={{ height: mobile ? '80px' : '120px', background: col.hex, border: `1px solid ${c.border}`, position: 'relative' }}>
-                  <span style={{ position: 'absolute', bottom: '8px', left: '12px', fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, color: col.hex === '#0A0A0A' || col.hex === '#111111' ? '#F5F5F5' : '#0A0A0A' }}>{col.hex}</span>
-                </div>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary, marginTop: '8px' }}>{col.name}</p>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '10px', color: c.textSecondary, opacity: 0.6 }}>{col.role}</p>
-              </div>
-            ))}
-          </div>
-          <p style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textSecondary, lineHeight: t.section.bodyLineHeight, marginTop: '32px', maxWidth: '560px' }}>
-            No gradients. No additional colors. The constraint IS the system.
-          </p>
-        </div>
-      </section>
-
-      {/* Section 02: Typography */}
-      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px' }}>
-        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '48px' }}>
-            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>02</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>TYPOGRAPHY</p>
-              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>TYPE SYSTEM</h2>
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {typeSpecs.A.map(spec => (
-              <div key={spec.role} style={{ borderBottom: `1px solid ${c.border}`, paddingBottom: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                  <span style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.accent }}>{spec.role}</span>
-                  <span style={{ fontFamily: t.bodyFont, fontSize: '10px', color: c.textSecondary }}>{spec.font} / {spec.weight} / {spec.size}</span>
-                </div>
-                <div style={{ fontFamily: spec.font === 'Bebas Neue' ? t.headlineFont : t.bodyFont, fontSize: spec.role === 'Stat Numbers' ? (mobile ? '64px' : '96px') : spec.role === 'Headlines' ? (mobile ? '40px' : '72px') : spec.size.split('-').pop() || spec.size, fontWeight: spec.weight, letterSpacing: spec.tracking, lineHeight: spec.lh, textTransform: spec.role === 'Headlines' || spec.role === 'Section Labels' || spec.role === 'Micro-labels' || spec.role === 'Stat Numbers' ? 'uppercase' : 'none' }}>
-                  {spec.role === 'Headlines' && 'BRAND INFRASTRUCTURE'}
-                  {spec.role === 'Section Labels' && 'OUR SERVICES'}
-                  {spec.role === 'Body' && 'AOM builds the content, websites, and systems that make companies impossible to ignore.'}
-                  {spec.role === 'Micro-labels' && 'PHOENIX, AZ / EST. 2020'}
-                  {spec.role === 'Stat Numbers' && '30+'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Section 03: Layout */}
-      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px' }}>
-        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '48px' }}>
-            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>03</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>LAYOUT</p>
-              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>VISUAL RULES</h2>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: '32px' }}>
-            {[
-              { label: 'GRID', value: '12-column, content in 8-10 columns, left-aligned' },
-              { label: 'SECTION SPACING', value: '160px desktop / 80px mobile' },
-              { label: 'DIVIDERS', value: '1px horizontal rules in #222222, full-width' },
-              { label: 'BODY MAX-WIDTH', value: '560px' },
-              { label: 'IMAGERY', value: 'Desaturated or B&W, high contrast, film grain 4-6%' },
-              { label: 'CORNERS', value: 'Sharp edges only. No rounded corners.' },
-            ].map(item => (
-              <div key={item.label} style={{ borderBottom: `1px solid ${c.border}`, paddingBottom: '16px' }}>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary, marginBottom: '6px' }}>{item.label}</p>
-                <p style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textPrimary, lineHeight: t.section.bodyLineHeight }}>{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Section 04: Voice */}
-      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px' }}>
-        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '48px' }}>
-            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>04</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>VOICE</p>
-              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>HOW WE TALK</h2>
-            </div>
-          </div>
-          <p style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textSecondary, lineHeight: t.section.bodyLineHeight, marginBottom: '32px', maxWidth: '560px' }}>
-            {voiceContent.A.tone}
-          </p>
-          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 48px' }}>
-            {voiceContent.A.principles.map((p, i) => (
-              <li key={i} style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textPrimary, lineHeight: t.section.bodyLineHeight, padding: '12px 0', borderBottom: `1px solid ${c.border}`, display: 'flex', gap: '16px', alignItems: 'baseline' }}>
-                <span style={{ color: c.accent, fontFamily: t.headlineFont, fontSize: '20px' }}>{String(i + 1).padStart(2, '0')}</span>
-                {p}
-              </li>
-            ))}
-          </ul>
-          <div style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '48px', color: c.textPrimary, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>
-            {voiceContent.A.sample}
-          </div>
-        </div>
-      </section>
-
-      {/* Unique element callout */}
-      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px', paddingBottom: '80px' }}>
-        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '32px' }}>
-            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>05</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>SIGNATURE ELEMENT</p>
-              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>NOISE + BAR</h2>
-            </div>
-          </div>
-          <p style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textSecondary, lineHeight: t.section.bodyLineHeight, maxWidth: '560px', marginBottom: '32px' }}>
-            Subtle film grain (SVG noise filter) at 3-5% opacity layered over all backgrounds. A single horizontal orange bar (8px tall, full-width) between the hero and content. This bar is the brand mark. It appears once, prominently.
-          </p>
-          <div style={{ width: '100%', height: '8px', background: c.accent }} />
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer style={{ borderTop: `1px solid ${c.border}`, padding: '48px', maxWidth: '1100px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : 'repeat(3, 1fr)', gap: '16px' }}>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary }}>AOM Brand Direction A</p>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary }}>Industrial</p>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary }}>Phoenix, AZ</p>
-        </div>
-      </footer>
+      <div style={{ marginTop: 10 }}>
+        <div style={{
+          fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, fontWeight: 700,
+          letterSpacing: '0.05em', textTransform: 'uppercase', color: COLORS.black,
+        }}>{name}</div>
+        <div style={{
+          fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, fontWeight: 400,
+          color: COLORS.warmGray, marginTop: 2,
+        }}>{hex}</div>
+      </div>
     </div>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/*  Direction B: EDITORIAL                                             */
+/*  Pill Badge component                                                */
 /* ------------------------------------------------------------------ */
-
-function EditorialPage({ theme }) {
-  const t = theme
-  const c = t.colors
-  const mobile = isMobile()
-  const sectionSpacing = mobile ? t.section.mobileSpacing : t.section.spacing
-
-  const lightSection = { background: c.bgPrimary, color: '#1A1A1A' }
-  const darkSection = { background: c.bgAlt, color: '#F7F5F2' }
-
+function Badge({ children, color = COLORS.black, bg = 'transparent', style = {} }) {
   return (
-    <div style={{ background: c.bgPrimary, color: c.textPrimary, minHeight: '100vh' }}>
-      {/* Hero - light */}
-      <section style={{ ...lightSection, padding: mobile ? '80px 24px' : '120px 120px', textAlign: 'center' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.textSecondary, marginBottom: '40px' }}>AOM Brand Direction</p>
-          <h1 style={{ fontFamily: t.headlineFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: t.hero.weight, letterSpacing: t.hero.tracking, lineHeight: t.hero.lineHeight }}>
-            We make things<br />that <em>impact</em><span style={{ display: 'inline-block', width: '16px', height: '16px', borderRadius: '50%', background: c.accent, verticalAlign: 'baseline', marginLeft: '4px', position: 'relative', top: '-2px' }} />
-          </h1>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textSecondary, marginTop: '24px', lineHeight: 1.75, maxWidth: '640px', margin: '24px auto 0' }}>
-            Creative production and AI systems for companies that build.
-          </p>
-        </div>
-      </section>
-
-      {/* Colors - dark section */}
-      <section style={{ ...darkSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginBottom: '16px' }}>Color System</p>
-          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: '#F7F5F2', marginBottom: '48px' }}>
-            Warm, <em>not cold</em>
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: '24px' }}>
-            {colorSets.B.map(col => (
-              <div key={col.hex + col.role}>
-                <div style={{ height: '100px', background: col.hex, border: col.hex === '#F7F5F2' ? '1px solid #333' : 'none', position: 'relative' }}>
-                  <span style={{ position: 'absolute', bottom: '8px', left: '12px', fontFamily: t.bodyFont, fontSize: '11px', color: col.hex === '#1A1A1A' || col.hex === '#6B6B6B' ? '#F7F5F2' : '#1A1A1A' }}>{col.hex}</span>
-                </div>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginTop: '12px' }}>{col.name}</p>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '14px', color: '#F7F5F2', marginTop: '4px' }}>{col.role}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Typography - light section */}
-      <section style={{ ...lightSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.textSecondary, marginBottom: '16px' }}>Typography</p>
-          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: '48px' }}>
-            Serif meets <em>sans</em>
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {typeSpecs.B.map(spec => (
-              <div key={spec.role} style={{ paddingBottom: '32px', borderBottom: '1px solid #E0DCD7' }}>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.accent, marginBottom: '8px' }}>{spec.role}</p>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '14px', color: c.textSecondary, marginBottom: '16px' }}>
-                  {spec.font} / Weight {spec.weight} / {spec.size}
-                </p>
-                <div style={{ fontFamily: spec.font.includes('Playfair') ? t.headlineFont : t.bodyFont, fontSize: spec.role === 'Headlines' ? (mobile ? '32px' : '56px') : spec.role === 'Pull Quotes' ? '28px' : spec.role === 'Subheadlines' ? '20px' : spec.size, fontWeight: spec.weight, letterSpacing: spec.tracking, lineHeight: spec.lh, fontStyle: spec.font.includes('Italic') || spec.role === 'Pull Quotes' ? 'italic' : 'normal', textTransform: spec.role === 'Section Labels' ? 'uppercase' : 'none', maxWidth: '640px' }}>
-                  {spec.role === 'Headlines' && 'Brand Infrastructure'}
-                  {spec.role === 'Subheadlines' && 'The system behind the brand'}
-                  {spec.role === 'Section Labels' && 'Our Services'}
-                  {spec.role === 'Body' && 'AOM builds the content, websites, and systems that make companies impossible to ignore.'}
-                  {spec.role === 'Pull Quotes' && '"We built this for ourselves first. Now we\'re opening it up."'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Layout - dark section */}
-      <section style={{ ...darkSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginBottom: '16px' }}>Layout & Visual Language</p>
-          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: '#F7F5F2', marginBottom: '48px' }}>
-            Let things <em>breathe</em>
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {[
-              { label: 'Grid', desc: '12-column, generous margins (120px desktop sides)' },
-              { label: 'Section Rhythm', desc: 'Alternating light and dark sections. Every other major section flips. Magazine-spread rhythm.' },
-              { label: 'Spacing', desc: '120px between sections desktop, 64px mobile. Minimum 40px between any two elements.' },
-              { label: 'Dividers', desc: 'None. The light/dark alternation IS the divider.' },
-              { label: 'Images', desc: '80% viewport width, centered. Small caption below in 11px uppercase.' },
-              { label: 'CTAs', desc: 'Single orange circle (64px) with white text, or orange text link with arrow. Never full-width.' },
-            ].map(item => (
-              <div key={item.label} style={{ paddingBottom: '24px', borderBottom: '1px solid #333' }}>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginBottom: '8px' }}>{item.label}</p>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: '#F7F5F2', lineHeight: 1.75 }}>{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Voice - light section */}
-      <section style={{ ...lightSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.textSecondary, marginBottom: '16px' }}>Voice & Tone</p>
-          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: '48px' }}>
-            How we <em>talk</em>
-          </h2>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textSecondary, lineHeight: 1.75, marginBottom: '40px', maxWidth: '640px' }}>
-            {voiceContent.B.tone}
-          </p>
-          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 48px' }}>
-            {voiceContent.B.principles.map((p, i) => (
-              <li key={i} style={{ fontFamily: t.bodyFont, fontSize: '16px', color: '#1A1A1A', lineHeight: 1.75, padding: '16px 0', borderBottom: '1px solid #E0DCD7' }}>
-                {p}
-              </li>
-            ))}
-          </ul>
-          {/* Pull quote with orange circle */}
-          <div style={{ fontFamily: t.headlineFont, fontSize: mobile ? '24px' : '28px', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.3, color: '#1A1A1A' }}>
-            {voiceContent.B.sample}
-            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: c.accent, marginLeft: '6px', verticalAlign: 'baseline' }} />
-          </div>
-        </div>
-      </section>
-
-      {/* Unique element - dark section */}
-      <section style={{ ...darkSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginBottom: '16px' }}>Signature Element</p>
-          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: '#F7F5F2', marginBottom: '48px' }}>
-            The orange <em>circle</em>
-          </h2>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '40px' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: c.accent }} />
-          </div>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: '#6B6B6B', lineHeight: 1.75, maxWidth: '640px', margin: '0 auto' }}>
-            A single filled circle in {c.accent} used as a recurring brand element. It appears as the CTA button shape, a dot on the navigation indicator, a period at the end of the main headline, and as an overlay accent on B&W photography. It's always the same size relative to context. It's the punctuation mark of the brand.
-          </p>
-        </div>
-      </section>
-
-      {/* Footer - light */}
-      <footer style={{ ...lightSection, padding: '48px 120px', textAlign: 'center' }}>
-        <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.textSecondary }}>
-          AOM Brand Direction B / Editorial
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: c.accent }} />
-        </div>
-      </footer>
-    </div>
+    <span style={{
+      display: 'inline-block',
+      fontFamily: '"Space Grotesk", sans-serif',
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: '0.15em',
+      textTransform: 'uppercase',
+      color: color,
+      border: `1px solid ${color}`,
+      borderRadius: 100,
+      padding: '4px 14px',
+      background: bg,
+      lineHeight: 1.4,
+      ...style,
+    }}>{children}</span>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/*  Direction C: BOLD GRAPHIC                                          */
+/*  Section Number                                                      */
 /* ------------------------------------------------------------------ */
-
-function BoldGraphicPage({ theme }) {
-  const t = theme
-  const c = t.colors
-  const mobile = isMobile()
-  const sectionSpacing = mobile ? t.section.mobileSpacing : t.section.spacing
-
-  const Badge = ({ children, color }) => (
-    <span style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', border: `1px solid ${color || c.textPrimary}`, padding: '2px 10px', display: 'inline-block', color: color || c.textPrimary }}>
-      {children}
-    </span>
-  )
-
+function SectionNumber({ num }) {
   return (
-    <div style={{ background: c.bgPrimary, color: c.textPrimary, minHeight: '100vh' }}>
-      {/* Hero - cream */}
-      <section style={{ background: c.bgPrimary, padding: mobile ? '80px 24px' : '120px 48px', maxWidth: '1100px', margin: '0 auto' }}>
-        <div>
-          <h1 style={{ lineHeight: t.hero.lineHeight, letterSpacing: t.hero.tracking, marginBottom: '32px' }}>
-            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 800 }}>WE </span>
-            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 400 }}>make </span>
-            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 800 }}>THINGS</span>
-            <br />
-            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 400 }}>that </span>
-            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 800 }}>BRING</span>
-            <br />
-            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 400 }}>opportunity.</span>
-          </h1>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
-            <Badge>VIDEO</Badge>
-            <Badge>WEB</Badge>
-            <Badge>AI</Badge>
-          </div>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary }}>
-            Phoenix, AZ &bull; Est. 2020
-          </p>
-        </div>
-      </section>
-
-      {/* Thick divider */}
-      <div style={{ height: '3px', background: c.textPrimary, margin: '0 48px' }} />
-
-      {/* Colors - black section */}
-      <section style={{ background: c.bgAlt, color: c.bgPrimary, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accent, lineHeight: 1 }}>01</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>COLOR SYSTEM</p>
-              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1, color: '#F2EDE8' }}>Palette</h2>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '16px' }}>
-            {colorSets.C.map(col => (
-              <div key={col.hex + col.role} style={{ border: `1px solid ${col.hex === '#0A0A0A' ? '#333' : c.textPrimary}`, padding: '0' }}>
-                <div style={{ height: '80px', background: col.hex }} />
-                <div style={{ padding: '12px', background: c.bgAlt, borderTop: `1px solid ${col.hex === '#0A0A0A' ? '#333' : '#333'}` }}>
-                  <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#F2EDE8' }}>{col.name}</p>
-                  <p style={{ fontFamily: t.bodyFont, fontSize: '10px', color: c.textSecondary, marginTop: '2px' }}>{col.hex}</p>
-                  <p style={{ fontFamily: t.bodyFont, fontSize: '10px', color: c.textSecondary, marginTop: '2px' }}>{col.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Thick divider */}
-      <div style={{ height: '3px', background: c.textPrimary }} />
-
-      {/* Typography - cream section */}
-      <section style={{ background: c.bgPrimary, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accent, lineHeight: 1 }}>02</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>TYPOGRAPHY</p>
-              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1 }}>Type System</h2>
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {typeSpecs.C.map((spec, i) => (
-              <div key={spec.role} style={{ padding: '24px 0', borderBottom: `1px solid ${c.textPrimary}` }}>
-                <div style={{ display: mobile ? 'block' : 'flex', justifyContent: 'space-between', gap: '24px' }}>
-                  <div style={{ minWidth: mobile ? 'auto' : '200px', marginBottom: mobile ? '12px' : 0 }}>
-                    <Badge color={c.accent}>{spec.role}</Badge>
-                    <p style={{ fontFamily: t.bodyFont, fontSize: '14px', color: c.textSecondary, marginTop: '8px' }}>
-                      {spec.font} / {spec.weight} / {spec.size}
-                    </p>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: spec.font === 'Syne' ? t.displayFont : t.bodyFont, fontSize: spec.role === 'Hero Display' ? (mobile ? '48px' : '80px') : spec.role === 'Section Headlines' ? (mobile ? '28px' : '40px') : spec.size.split('-').pop() || spec.size, fontWeight: spec.weight, letterSpacing: spec.tracking, lineHeight: spec.lh, textTransform: spec.role === 'Section Labels' || spec.role === 'Badges' ? 'uppercase' : 'none' }}>
-                      {spec.role === 'Hero Display' && (
-                        <>
-                          <span style={{ fontWeight: 800 }}>MAKING </span>
-                          <span style={{ fontWeight: 400, fontFamily: t.bodyFont }}>visual </span>
-                          <span style={{ fontWeight: 800 }}>IDENTITY</span>
-                        </>
-                      )}
-                      {spec.role === 'Section Headlines' && 'Brand Infrastructure'}
-                      {spec.role === 'Section Labels' && 'Our Services'}
-                      {spec.role === 'Body' && 'AOM builds the content, websites, and systems that make companies impossible to ignore.'}
-                      {spec.role === 'Badges' && (
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          <Badge>PRODUCTION</Badge>
-                          <Badge>SOCIAL</Badge>
-                          <Badge>SYSTEMS</Badge>
-                          <Badge color={c.accentSecondary}>GOLD</Badge>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Thick divider */}
-      <div style={{ height: '3px', background: c.textPrimary }} />
-
-      {/* Layout - black section */}
-      <section style={{ background: c.bgAlt, color: '#F2EDE8', padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accentSecondary, lineHeight: 1 }}>03</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>LAYOUT & VISUAL</p>
-              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1, color: '#F2EDE8' }}>Visual Rules</h2>
-            </div>
-          </div>
-          {/* Card grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: '8px' }}>
-            {[
-              { label: 'Grid', value: '12-column, intentional breaks. Asymmetric splits (5/7, 4/8).' },
-              { label: 'Dividers', value: 'Thick black rules (3px) between sections. Thin (1px) within.' },
-              { label: 'Badges', value: 'Key descriptors in bordered pills: VIDEO, WEB, BRAND, AI.' },
-              { label: 'Cards', value: 'Visible 1px border, 24px padding, stacked with 8px gaps.' },
-              { label: 'Imagery', value: 'Full color, warm. In bordered containers. Duotone option for hero.' },
-              { label: 'Numbers', value: 'Syne 64px for numbers + Space Grotesk 400 for labels.' },
-            ].map(item => (
-              <div key={item.label} style={{ border: '1px solid #333', padding: '24px', background: c.bgAlt }}>
-                <Badge color="#F2EDE8">{item.label}</Badge>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: '#F2EDE8', lineHeight: 1.7, marginTop: '12px' }}>{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Thick divider */}
-      <div style={{ height: '3px', background: c.textPrimary }} />
-
-      {/* Voice - cream section */}
-      <section style={{ background: c.bgPrimary, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accent, lineHeight: 1 }}>04</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>VOICE</p>
-              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1 }}>How We Talk</h2>
-            </div>
-          </div>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textSecondary, lineHeight: 1.7, marginBottom: '32px' }}>
-            {voiceContent.C.tone}
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {voiceContent.C.principles.map((p, i) => (
-              <div key={i} style={{ display: 'flex', gap: '24px', alignItems: 'baseline', padding: '16px 0', borderBottom: `1px solid ${c.textPrimary}` }}>
-                <span style={{ fontFamily: t.displayFont, fontSize: '32px', fontWeight: 800, color: c.accent, minWidth: '48px' }}>{String(i + 1).padStart(2, '0')}</span>
-                <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textPrimary, lineHeight: 1.7 }}>{p}</p>
-              </div>
-            ))}
-          </div>
-          {/* Mixed-weight sample headline */}
-          <div style={{ marginTop: '64px', lineHeight: 0.9, letterSpacing: '-0.03em' }}>
-            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? '40px' : '64px', fontWeight: 800 }}>WE </span>
-            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? '40px' : '64px', fontWeight: 400 }}>make </span>
-            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? '40px' : '64px', fontWeight: 800 }}>THINGS </span>
-            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? '40px' : '64px', fontWeight: 400 }}>that </span>
-            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? '40px' : '64px', fontWeight: 800, color: c.accent }}>BRING </span>
-            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? '40px' : '64px', fontWeight: 400 }}>opportunity.</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Thick divider */}
-      <div style={{ height: '3px', background: c.textPrimary }} />
-
-      {/* Signature - black section */}
-      <section style={{ background: c.bgAlt, color: '#F2EDE8', padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accentSecondary, lineHeight: 1 }}>05</span>
-            <div>
-              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>SIGNATURE ELEMENT</p>
-              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1, color: '#F2EDE8' }}>Badges + Mixed Weight</h2>
-            </div>
-          </div>
-          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textSecondary, lineHeight: 1.7, marginBottom: '32px' }}>
-            Every service, project, and capability gets a bordered pill badge. These badges are scannable, sortable, and give the page a data-rich, designed-information feeling. Combined with mixed-weight headline treatment, this creates a brand voice that feels structured but not stiff.
-          </p>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            {['VIDEO', 'WEB', 'BRAND', 'AI', 'SOCIAL', 'SYSTEMS', 'PRODUCTION', 'STRATEGY'].map(badge => (
-              <Badge key={badge} color="#F2EDE8">{badge}</Badge>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer - cream */}
-      <footer style={{ background: c.bgPrimary, padding: '48px', borderTop: `3px solid ${c.textPrimary}` }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: mobile ? 'block' : 'flex', justifyContent: 'space-between' }}>
-          <div>
-            <p style={{ fontFamily: t.displayFont, fontSize: '32px', fontWeight: 800, lineHeight: 1 }}>AOM</p>
-            <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginTop: '4px' }}>Brand Direction C / Bold Graphic</p>
-          </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: mobile ? '16px' : 0 }}>
-            <Badge>PHOENIX</Badge>
-            <Badge color={c.accentSecondary}>2020</Badge>
-          </div>
-        </div>
-      </footer>
-    </div>
+    <span style={{
+      fontFamily: '"Syne", sans-serif',
+      fontSize: 64,
+      fontWeight: 800,
+      lineHeight: 1,
+      color: COLORS.orange,
+      opacity: 0.15,
+      position: 'absolute',
+      top: -20,
+      left: 0,
+      userSelect: 'none',
+    }}>{String(num).padStart(2, '0')}</span>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/*  Load Google Fonts                                                  */
+/*  SVG Logo Concepts                                                   */
 /* ------------------------------------------------------------------ */
 
-function useGoogleFonts() {
-  useEffect(() => {
-    const fonts = [
-      'Bebas+Neue',
-      'IBM+Plex+Mono:wght@400;500;600;700',
-      'Playfair+Display:ital,wght@0,400;0,700;1,400;1,700',
-      'Inter:wght@400;500;600;700',
-      'Syne:wght@400;700;800',
-      'Space+Grotesk:wght@400;500;700',
-    ]
-    const id = 'brand-directions-fonts'
-    if (!document.getElementById(id)) {
-      const link = document.createElement('link')
-      link.id = id
-      link.rel = 'stylesheet'
-      link.href = `https://fonts.googleapis.com/css2?${fonts.map(f => `family=${f}`).join('&')}&display=swap`
-      document.head.appendChild(link)
+// 1. Primary Wordmark - Syne ExtraBold with mixed weights
+function LogoWordmark({ color = COLORS.black, size = 72 }) {
+  return (
+    <svg viewBox="0 0 300 80" width={size * (300/80)} height={size} aria-label="AOM Wordmark">
+      <text x="0" y="65" fontFamily="Syne, sans-serif" fontSize="72" fontWeight="800" fill={color} letterSpacing="-2">
+        AOM
+      </text>
+      <rect x="210" y="52" width="8" height="8" rx="4" fill={COLORS.orange} />
+    </svg>
+  )
+}
+
+// 2. Extended wordmark with tagline
+function LogoWordmarkExtended({ color = COLORS.black, size = 60 }) {
+  return (
+    <svg viewBox="0 0 420 90" width={size * (420/90)} height={size} aria-label="AOM Extended Wordmark">
+      <text x="0" y="58" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill={color} letterSpacing="-2">
+        AOM
+      </text>
+      {/* Vertical divider */}
+      <line x1="185" y1="12" x2="185" y2="62" stroke={COLORS.orange} strokeWidth="2" />
+      {/* Tagline */}
+      <text x="200" y="32" fontFamily="Space Grotesk, sans-serif" fontSize="11" fontWeight="500" fill={COLORS.warmGray} letterSpacing="3" textAnchor="start">
+        AHEAD OF
+      </text>
+      <text x="200" y="54" fontFamily="Space Grotesk, sans-serif" fontSize="11" fontWeight="700" fill={color} letterSpacing="3" textAnchor="start">
+        MARKET
+      </text>
+    </svg>
+  )
+}
+
+// 3. Geometric mark / icon - abstract "A" formed from triangular shapes
+function LogoMark({ color = COLORS.black, accent = COLORS.orange, size = 80 }) {
+  return (
+    <svg viewBox="0 0 80 80" width={size} height={size} aria-label="AOM Mark">
+      {/* Outer circle */}
+      <circle cx="40" cy="40" r="38" fill="none" stroke={color} strokeWidth="2" />
+      {/* Abstract A shape */}
+      <polygon points="40,14 18,62 28,62 40,34 52,62 62,62" fill={color} />
+      {/* Orange crossbar */}
+      <rect x="25" y="46" width="30" height="4" rx="2" fill={accent} />
+      {/* Gold dot */}
+      <circle cx="40" cy="26" r="3" fill={COLORS.gold} />
+    </svg>
+  )
+}
+
+// 4. Badge / Stamp variation
+function LogoBadge({ color = COLORS.black, size = 120 }) {
+  return (
+    <svg viewBox="0 0 160 160" width={size} height={size} aria-label="AOM Badge">
+      {/* Outer ring */}
+      <circle cx="80" cy="80" r="76" fill="none" stroke={color} strokeWidth="2" />
+      <circle cx="80" cy="80" r="70" fill="none" stroke={color} strokeWidth="1" />
+      {/* Center text */}
+      <text x="80" y="90" fontFamily="Syne, sans-serif" fontSize="48" fontWeight="800" fill={color} textAnchor="middle" letterSpacing="-1">
+        AOM
+      </text>
+      {/* Circular text - top */}
+      <defs>
+        <path id="topArc" d="M 25,80 a 55,55 0 0,1 110,0" fill="none" />
+        <path id="bottomArc" d="M 135,80 a 55,55 0 0,1 -110,0" fill="none" />
+      </defs>
+      <text fontFamily="Space Grotesk, sans-serif" fontSize="8" fontWeight="700" fill={color} letterSpacing="4" textAnchor="middle">
+        <textPath href="#topArc" startOffset="50%">AHEAD OF MARKET</textPath>
+      </text>
+      <text fontFamily="Space Grotesk, sans-serif" fontSize="7" fontWeight="500" fill={COLORS.warmGray} letterSpacing="3" textAnchor="middle">
+        <textPath href="#bottomArc" startOffset="50%">PHOENIX AZ &#8226; EST 2020</textPath>
+      </text>
+      {/* Decorative dots at cardinal points */}
+      <circle cx="80" cy="10" r="2.5" fill={COLORS.orange} />
+      <circle cx="80" cy="150" r="2.5" fill={COLORS.orange} />
+      <circle cx="10" cy="80" r="2.5" fill={COLORS.gold} />
+      <circle cx="150" cy="80" r="2.5" fill={COLORS.gold} />
+    </svg>
+  )
+}
+
+// 5. Minimal stacked wordmark
+function LogoStacked({ color = COLORS.black, size = 80 }) {
+  return (
+    <svg viewBox="0 0 180 120" width={size * (180/120)} height={size} aria-label="AOM Stacked">
+      <text x="0" y="42" fontFamily="Syne, sans-serif" fontSize="18" fontWeight="800" fill={COLORS.orange} letterSpacing="8">
+        AHEAD OF
+      </text>
+      <text x="0" y="90" fontFamily="Syne, sans-serif" fontSize="52" fontWeight="800" fill={color} letterSpacing="-1">
+        MARKET
+      </text>
+      <rect x="0" y="100" width="178" height="3" fill={color} />
+      <text x="0" y="114" fontFamily="Space Grotesk, sans-serif" fontSize="8" fontWeight="500" fill={COLORS.warmGray} letterSpacing="3">
+        CREATIVE PRODUCTION + AI SYSTEMS
+      </text>
+    </svg>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Decorative SVG Elements                                             */
+/* ------------------------------------------------------------------ */
+
+// Grid pattern background
+function GridPattern({ width = 400, height = 200, color = COLORS.black, opacity = 0.04 }) {
+  return (
+    <svg width={width} height={height} style={{ position: 'absolute', top: 0, right: 0, pointerEvents: 'none' }}>
+      {Array.from({ length: Math.ceil(width / 40) + 1 }).map((_, i) => (
+        <line key={`v${i}`} x1={i * 40} y1={0} x2={i * 40} y2={height} stroke={color} strokeWidth="0.5" opacity={opacity} />
+      ))}
+      {Array.from({ length: Math.ceil(height / 40) + 1 }).map((_, i) => (
+        <line key={`h${i}`} x1={0} y1={i * 40} x2={width} y2={i * 40} stroke={color} strokeWidth="0.5" opacity={opacity} />
+      ))}
+    </svg>
+  )
+}
+
+// Starburst mark
+function Starburst({ size = 40, color = COLORS.orange, style = {} }) {
+  const points = Array.from({ length: 16 }).map((_, i) => {
+    const angle = (i * 360 / 16) * Math.PI / 180
+    const r = i % 2 === 0 ? size / 2 : size / 5
+    return `${size / 2 + r * Math.cos(angle)},${size / 2 + r * Math.sin(angle)}`
+  }).join(' ')
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={style}>
+      <polygon points={points} fill={color} />
+    </svg>
+  )
+}
+
+// Dotted texture block
+function DottedTexture({ width = 120, height = 80, color = COLORS.black, opacity = 0.08, style = {} }) {
+  const dots = []
+  for (let x = 0; x < width; x += 12) {
+    for (let y = 0; y < height; y += 12) {
+      dots.push(<circle key={`${x}-${y}`} cx={x + 6} cy={y + 6} r={1.5} fill={color} opacity={opacity} />)
     }
-  }, [])
+  }
+  return (
+    <svg width={width} height={height} style={style}>
+      {dots}
+    </svg>
+  )
+}
+
+// Diagonal lines pattern
+function DiagonalLines({ width = 200, height = 100, color = COLORS.orange, opacity = 0.06, style = {} }) {
+  const lines = []
+  for (let x = -height; x < width + height; x += 16) {
+    lines.push(<line key={x} x1={x} y1={0} x2={x + height} y2={height} stroke={color} strokeWidth="1" opacity={opacity} />)
+  }
+  return (
+    <svg width={width} height={height} style={{ overflow: 'hidden', ...style }}>
+      {lines}
+    </svg>
+  )
+}
+
+// Concentric circles decoration
+function ConcentricCircles({ size = 120, color = COLORS.gold, style = {} }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" style={style}>
+      <circle cx="60" cy="60" r="56" fill="none" stroke={color} strokeWidth="0.5" opacity="0.2" />
+      <circle cx="60" cy="60" r="44" fill="none" stroke={color} strokeWidth="0.5" opacity="0.3" />
+      <circle cx="60" cy="60" r="32" fill="none" stroke={color} strokeWidth="0.5" opacity="0.4" />
+      <circle cx="60" cy="60" r="20" fill="none" stroke={color} strokeWidth="1" opacity="0.5" />
+      <circle cx="60" cy="60" r="4" fill={color} opacity="0.6" />
+    </svg>
+  )
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main Page                                                          */
+/*  Main BrandGuidelines Component                                      */
 /* ------------------------------------------------------------------ */
 
 export default function BrandGuidelines() {
-  const [activeDirection, setActiveDirection] = useState('A')
-  const [transitioning, setTransitioning] = useState(false)
+  useEffect(() => {
+    // Load Google Fonts
+    const link = document.createElement('link')
+    link.href = 'https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
+    link.rel = 'stylesheet'
+    document.head.appendChild(link)
+    return () => document.head.removeChild(link)
+  }, [])
 
-  useGoogleFonts()
-
-  const theme = themes[activeDirection]
-
-  const switchDirection = (dir) => {
-    if (dir === activeDirection) return
-    setTransitioning(true)
-    setTimeout(() => {
-      setActiveDirection(dir)
-      window.scrollTo({ top: 0, behavior: 'instant' })
-      setTimeout(() => setTransitioning(false), 50)
-    }, 300)
+  const sectionStyle = {
+    padding: '100px 60px',
+    position: 'relative',
+    overflow: 'hidden',
   }
 
-  const switcherBg = activeDirection === 'A' ? '#0A0A0A' : activeDirection === 'B' ? '#F7F5F2' : '#F2EDE8'
-  const switcherText = activeDirection === 'A' ? '#F5F5F5' : '#1A1A1A'
-  const switcherBorder = activeDirection === 'A' ? '#222222' : activeDirection === 'B' ? '#E0DCD7' : '#0A0A0A'
+  const maxWidth = { maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }
+
+  const sectionLabel = {
+    fontFamily: '"Space Grotesk", sans-serif',
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase',
+    color: COLORS.warmGray,
+    marginBottom: 12,
+  }
+
+  const sectionHeadline = {
+    fontFamily: '"Space Grotesk", sans-serif',
+    fontSize: 42,
+    fontWeight: 700,
+    letterSpacing: '-0.01em',
+    lineHeight: 1.1,
+    color: COLORS.black,
+    marginBottom: 32,
+  }
+
+  const bodyText = {
+    fontFamily: '"Space Grotesk", sans-serif',
+    fontSize: 16,
+    fontWeight: 400,
+    lineHeight: 1.7,
+    color: COLORS.warmGray,
+    maxWidth: 640,
+  }
+
+  const thickRule = {
+    width: '100%',
+    height: 3,
+    background: COLORS.black,
+    border: 'none',
+    margin: 0,
+  }
+
+  const thinRule = {
+    width: '100%',
+    height: 1,
+    background: COLORS.lightBorder,
+    border: 'none',
+    margin: 0,
+  }
 
   return (
-    <div style={{ position: 'relative' }}>
-      {/* Direction switcher - floating at top */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        background: switcherBg,
-        borderBottom: `1px solid ${switcherBorder}`,
-        backdropFilter: 'blur(12px)',
-        transition: 'background 0.3s ease, border-color 0.3s ease',
+    <div style={{ background: COLORS.cream, minHeight: '100vh', color: COLORS.black }}>
+
+      {/* ============================================================ */}
+      {/*  HERO                                                         */}
+      {/* ============================================================ */}
+      <section style={{
+        ...sectionStyle,
+        padding: '80px 60px 100px',
+        background: COLORS.cream,
+        minHeight: '90vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
       }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.colors.textSecondary, textDecoration: 'none', transition: 'color 0.3s' }}>
-            <ArrowLeft size={14} />
-            <span style={{ fontFamily: theme.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.2em' }}>Back</span>
+        <GridPattern width={600} height={600} />
+        <div style={{ position: 'absolute', top: 40, right: 60, zIndex: 2 }}>
+          <Starburst size={48} color={COLORS.orange} />
+        </div>
+        <div style={{ position: 'absolute', bottom: 80, right: 120, zIndex: 0 }}>
+          <ConcentricCircles size={200} color={COLORS.gold} />
+        </div>
+        <div style={maxWidth}>
+          {/* Back link */}
+          <a href="/" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            fontFamily: '"Space Grotesk", sans-serif', fontSize: 12, fontWeight: 500,
+            color: COLORS.warmGray, textDecoration: 'none', letterSpacing: '0.1em',
+            textTransform: 'uppercase', marginBottom: 80,
+          }}>
+            <ArrowLeft size={14} /> BACK
           </a>
 
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {Object.entries(themes).map(([key, t]) => {
-              const isActive = key === activeDirection
-              return (
-                <button
-                  key={key}
-                  onClick={() => switchDirection(key)}
-                  style={{
-                    fontFamily: '"Space Grotesk", "Inter", system-ui, sans-serif',
-                    fontSize: '11px',
-                    fontWeight: isActive ? 700 : 500,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    padding: '8px 16px',
-                    border: isActive ? `1px solid ${theme.colors.accent}` : `1px solid transparent`,
-                    background: isActive ? (activeDirection === 'A' ? 'rgba(255,77,0,0.1)' : 'rgba(0,0,0,0.05)') : 'transparent',
-                    color: isActive ? theme.colors.accent : theme.colors.textSecondary,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {t.label}
-                </button>
-              )
-            })}
+          {/* Logo mark */}
+          <div style={{ marginBottom: 48 }}>
+            <LogoMark size={64} color={COLORS.black} accent={COLORS.orange} />
           </div>
 
-          <span style={{ fontFamily: theme.bodyFont, fontSize: '10px', color: theme.colors.textSecondary, letterSpacing: '0.15em', textTransform: 'uppercase', transition: 'color 0.3s' }}>
-            v2.0
-          </span>
+          {/* Hero headline - mixed weight treatment */}
+          <h1 style={{ margin: 0, padding: 0 }}>
+            <span style={{
+              fontFamily: '"Syne", sans-serif', fontSize: 96, fontWeight: 800,
+              lineHeight: 0.9, letterSpacing: '-0.03em', display: 'block',
+              color: COLORS.black,
+            }}>
+              BRAND
+            </span>
+            <span style={{
+              fontFamily: '"Space Grotesk", sans-serif', fontSize: 96, fontWeight: 300,
+              lineHeight: 0.9, letterSpacing: '-0.03em', display: 'block',
+              color: COLORS.warmGray,
+            }}>
+              guide
+            </span>
+            <span style={{
+              fontFamily: '"Syne", sans-serif', fontSize: 96, fontWeight: 800,
+              lineHeight: 0.9, letterSpacing: '-0.03em', display: 'block',
+              color: COLORS.orange,
+            }}>
+              LINES
+            </span>
+          </h1>
+
+          {/* Badges row */}
+          <div style={{ display: 'flex', gap: 10, marginTop: 40, flexWrap: 'wrap' }}>
+            <Badge>VIDEO</Badge>
+            <Badge>WEB</Badge>
+            <Badge>BRAND</Badge>
+            <Badge>AI</Badge>
+            <Badge color={COLORS.orange}>DIRECTION C</Badge>
+          </div>
+
+          {/* Meta info */}
+          <div style={{
+            display: 'flex', gap: 24, marginTop: 24, alignItems: 'center',
+            fontFamily: '"Space Grotesk", sans-serif', fontSize: 12, fontWeight: 400,
+            color: COLORS.warmGray, letterSpacing: '0.05em',
+          }}>
+            <span>Phoenix, AZ</span>
+            <span style={{ color: COLORS.orange }}>&#8226;</span>
+            <span>Est. 2020</span>
+            <span style={{ color: COLORS.orange }}>&#8226;</span>
+            <span>Bold Graphic</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Spacer for fixed header */}
-      <div style={{ height: '56px' }} />
+      <div style={thickRule} />
 
-      {/* Page content with transition */}
-      <div style={{
-        opacity: transitioning ? 0 : 1,
-        transition: 'opacity 0.3s ease',
+      {/* ============================================================ */}
+      {/*  01 - LOGO VARIATIONS                                         */}
+      {/* ============================================================ */}
+      <section style={{ ...sectionStyle, background: COLORS.cream }}>
+        <DottedTexture width={160} height={160} style={{ position: 'absolute', top: 20, right: 40, opacity: 0.5 }} />
+        <div style={maxWidth}>
+          <div style={{ position: 'relative' }}>
+            <SectionNumber num={1} />
+            <div style={{ ...sectionLabel, paddingTop: 48 }}>LOGO SYSTEM</div>
+            <h2 style={sectionHeadline}>Logo Variations</h2>
+            <p style={bodyText}>
+              The AOM mark system is built for range. Each variation serves a different context while
+              maintaining the same confident, structured personality. The wordmark leads. The mark
+              stands alone. The badge stamps.
+            </p>
+          </div>
+
+          {/* Logo grid */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 24, marginTop: 56,
+          }}>
+            {/* Primary Wordmark */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 40,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              minHeight: 200, background: COLORS.cream,
+            }}>
+              <LogoWordmark color={COLORS.black} size={64} />
+              <span style={{ ...sectionLabel, marginTop: 20, marginBottom: 0, fontSize: 9 }}>PRIMARY WORDMARK</span>
+            </div>
+
+            {/* Extended Wordmark */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 40,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              minHeight: 200, background: COLORS.cream,
+            }}>
+              <LogoWordmarkExtended color={COLORS.black} size={50} />
+              <span style={{ ...sectionLabel, marginTop: 20, marginBottom: 0, fontSize: 9 }}>EXTENDED WORDMARK</span>
+            </div>
+
+            {/* Geometric Mark */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 40,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              minHeight: 200, background: COLORS.cream,
+            }}>
+              <LogoMark color={COLORS.black} size={80} />
+              <span style={{ ...sectionLabel, marginTop: 20, marginBottom: 0, fontSize: 9 }}>GEOMETRIC MARK</span>
+            </div>
+
+            {/* Badge */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 40,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              minHeight: 200, background: COLORS.cream,
+            }}>
+              <LogoBadge color={COLORS.black} size={120} />
+              <span style={{ ...sectionLabel, marginTop: 20, marginBottom: 0, fontSize: 9 }}>BADGE / STAMP</span>
+            </div>
+
+            {/* Stacked */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 40,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              minHeight: 200, background: COLORS.cream,
+            }}>
+              <LogoStacked color={COLORS.black} size={80} />
+              <span style={{ ...sectionLabel, marginTop: 20, marginBottom: 0, fontSize: 9 }}>STACKED LOCKUP</span>
+            </div>
+
+            {/* Dark background variation */}
+            <div style={{
+              border: `1px solid ${COLORS.black}`, borderRadius: 4, padding: 40,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              minHeight: 200, background: COLORS.black,
+            }}>
+              <LogoWordmark color={COLORS.cream} size={64} />
+              <span style={{ ...sectionLabel, marginTop: 20, marginBottom: 0, fontSize: 9, color: COLORS.warmGray }}>ON DARK</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style={thickRule} />
+
+      {/* ============================================================ */}
+      {/*  02 - COLOR PALETTE                                           */}
+      {/* ============================================================ */}
+      <section style={{ ...sectionStyle, background: COLORS.black }}>
+        <DiagonalLines width={300} height={200} color={COLORS.orange} opacity={0.08} style={{ position: 'absolute', bottom: 0, left: 0 }} />
+        <div style={maxWidth}>
+          <div style={{ position: 'relative' }}>
+            <SectionNumber num={2} />
+            <div style={{ ...sectionLabel, paddingTop: 48, color: COLORS.warmGray }}>COLOR SYSTEM</div>
+            <h2 style={{ ...sectionHeadline, color: COLORS.cream }}>Palette</h2>
+            <p style={{ ...bodyText, color: COLORS.warmGray }}>
+              Four colors. No gradients. The cream grounds, the black anchors, the orange activates,
+              and the gold elevates. Every combination has been tested for contrast and legibility.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: 24, marginTop: 56, flexWrap: 'wrap' }}>
+            <ColorSwatch color={COLORS.cream} name="Cream" hex="#FDF6EC" />
+            <ColorSwatch color={COLORS.black} name="Black" hex="#0A0A0A" dark />
+            <ColorSwatch color={COLORS.orange} name="Orange" hex="#E85D26" dark />
+            <ColorSwatch color={COLORS.gold} name="Gold" hex="#C9A84C" dark />
+          </div>
+
+          {/* Color roles */}
+          <div style={{ marginTop: 56 }}>
+            <div style={{ height: 1, background: '#333', marginBottom: 24 }} />
+            {[
+              { role: 'Background (primary)', color: 'Cream', hex: '#FDF6EC' },
+              { role: 'Background (alternate)', color: 'Black', hex: '#0A0A0A' },
+              { role: 'Text on light', color: 'Black', hex: '#0A0A0A' },
+              { role: 'Text on dark', color: 'Cream', hex: '#FDF6EC' },
+              { role: 'Accent (primary)', color: 'Orange', hex: '#E85D26' },
+              { role: 'Accent (secondary)', color: 'Gold', hex: '#C9A84C' },
+              { role: 'Secondary text', color: 'Warm Gray', hex: '#7A7267' },
+            ].map((item, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '12px 0', borderBottom: '1px solid #222',
+              }}>
+                <span style={{
+                  fontFamily: '"Space Grotesk", sans-serif', fontSize: 14, fontWeight: 400,
+                  color: COLORS.cream,
+                }}>{item.role}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 16, height: 16, borderRadius: 3, background: item.hex, border: '1px solid #333' }} />
+                  <span style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, fontWeight: 400,
+                    color: COLORS.warmGray,
+                  }}>{item.hex}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div style={{ ...thickRule, background: COLORS.orange }} />
+
+      {/* ============================================================ */}
+      {/*  03 - TYPOGRAPHY                                              */}
+      {/* ============================================================ */}
+      <section style={{ ...sectionStyle, background: COLORS.cream }}>
+        <GridPattern width={400} height={300} color={COLORS.black} opacity={0.03} />
+        <div style={maxWidth}>
+          <div style={{ position: 'relative' }}>
+            <SectionNumber num={3} />
+            <div style={{ ...sectionLabel, paddingTop: 48 }}>TYPE SYSTEM</div>
+            <h2 style={sectionHeadline}>Typography</h2>
+          </div>
+
+          {/* Font families */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginTop: 48 }}>
+            {/* Syne */}
+            <div>
+              <div style={{ ...sectionLabel, marginBottom: 16, color: COLORS.orange }}>DISPLAY FONT</div>
+              <div style={{
+                fontFamily: '"Syne", sans-serif', fontSize: 56, fontWeight: 800,
+                lineHeight: 1, color: COLORS.black, marginBottom: 8,
+              }}>Syne</div>
+              <div style={{
+                fontFamily: '"Syne", sans-serif', fontSize: 16, fontWeight: 400,
+                color: COLORS.warmGray, lineHeight: 1.6,
+              }}>
+                Bold, wide, expressive. Used for hero moments, display numbers, and
+                anywhere the brand needs to be loud.
+              </div>
+              <div style={{ marginTop: 24 }}>
+                {[400, 500, 600, 700, 800].map(w => (
+                  <div key={w} style={{
+                    fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: w,
+                    lineHeight: 1.6, color: COLORS.black,
+                  }}>
+                    Syne {w} - Ahead of Market
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Space Grotesk */}
+            <div>
+              <div style={{ ...sectionLabel, marginBottom: 16, color: COLORS.gold }}>HEADLINE + BODY FONT</div>
+              <div style={{
+                fontFamily: '"Space Grotesk", sans-serif', fontSize: 56, fontWeight: 700,
+                lineHeight: 1, color: COLORS.black, marginBottom: 8,
+              }}>Space Grotesk</div>
+              <div style={{
+                fontFamily: '"Space Grotesk", sans-serif', fontSize: 16, fontWeight: 400,
+                color: COLORS.warmGray, lineHeight: 1.6,
+              }}>
+                Geometric sans with character. Carries the brand from section headlines
+                down to body copy and micro-labels.
+              </div>
+              <div style={{ marginTop: 24 }}>
+                {[300, 400, 500, 600, 700].map(w => (
+                  <div key={w} style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, fontWeight: w,
+                    lineHeight: 1.6, color: COLORS.black,
+                  }}>
+                    Space Grotesk {w} - We make things that bring opportunity
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Type scale */}
+          <div style={{ marginTop: 80 }}>
+            <div style={thinRule} />
+            <div style={{ ...sectionLabel, marginTop: 32, marginBottom: 32 }}>TYPE SCALE</div>
+
+            {[
+              { label: 'HERO DISPLAY', family: '"Syne", sans-serif', size: 80, weight: 800, tracking: '-0.03em', sample: 'AOM', lh: 0.9 },
+              { label: 'SECTION HEADLINE', family: '"Space Grotesk", sans-serif', size: 42, weight: 700, tracking: '-0.01em', sample: 'We make things that bring opportunity', lh: 1.1 },
+              { label: 'SUBSECTION', family: '"Space Grotesk", sans-serif', size: 28, weight: 600, tracking: '0', sample: 'Creative production and AI systems', lh: 1.2 },
+              { label: 'BODY', family: '"Space Grotesk", sans-serif', size: 16, weight: 400, tracking: '0', sample: 'AOM is a creative production and AI systems company based in Phoenix, AZ. We make things that impact for companies that build.', lh: 1.7 },
+              { label: 'SECTION LABEL', family: '"Space Grotesk", sans-serif', size: 11, weight: 500, tracking: '0.2em', sample: 'ABOUT US', lh: 1.4, upper: true },
+              { label: 'MICRO / BADGE', family: '"Space Grotesk", sans-serif', size: 10, weight: 700, tracking: '0.15em', sample: 'VIDEO  WEB  BRAND  AI', lh: 1.4, upper: true },
+            ].map((item, i) => (
+              <div key={i} style={{
+                display: 'grid', gridTemplateColumns: '180px 1fr',
+                gap: 24, alignItems: 'baseline', padding: '24px 0',
+                borderBottom: `1px solid ${COLORS.lightBorder}`,
+              }}>
+                <div>
+                  <div style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 10, fontWeight: 700,
+                    letterSpacing: '0.15em', textTransform: 'uppercase', color: COLORS.orange,
+                    marginBottom: 4,
+                  }}>{item.label}</div>
+                  <div style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 11, fontWeight: 400,
+                    color: COLORS.warmGray,
+                  }}>{item.size}px / {item.weight} / {item.tracking}</div>
+                </div>
+                <div style={{
+                  fontFamily: item.family,
+                  fontSize: item.size,
+                  fontWeight: item.weight,
+                  letterSpacing: item.tracking,
+                  lineHeight: item.lh,
+                  textTransform: item.upper ? 'uppercase' : 'none',
+                  color: COLORS.black,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>{item.sample}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Mixed weight demo */}
+          <div style={{ marginTop: 80, padding: '56px 0' }}>
+            <div style={{ ...sectionLabel, marginBottom: 24 }}>MIXED-WEIGHT HEADLINES</div>
+            <p style={{ ...bodyText, marginBottom: 32 }}>
+              Within a single headline, alternate between bold and regular weights. This creates
+              typographic rhythm and is the signature of the Bold Graphic direction.
+            </p>
+            <div style={{ lineHeight: 1, marginBottom: 32 }}>
+              <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 64, fontWeight: 800, color: COLORS.black }}>WE </span>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 64, fontWeight: 300, color: COLORS.warmGray }}>make </span>
+              <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 64, fontWeight: 800, color: COLORS.black }}>THINGS</span>
+            </div>
+            <div style={{ lineHeight: 1, marginBottom: 32 }}>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 64, fontWeight: 300, color: COLORS.warmGray }}>that </span>
+              <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 64, fontWeight: 800, color: COLORS.orange }}>BRING</span>
+            </div>
+            <div style={{ lineHeight: 1 }}>
+              <span style={{ fontFamily: '"Space Grotesk", sans-serif', fontSize: 64, fontWeight: 300, color: COLORS.warmGray }}>opportunity</span>
+              <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 64, fontWeight: 800, color: COLORS.gold }}>.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style={thickRule} />
+
+      {/* ============================================================ */}
+      {/*  04 - BRAND PATTERNS & ELEMENTS                               */}
+      {/* ============================================================ */}
+      <section style={{ ...sectionStyle, background: COLORS.cream }}>
+        <div style={maxWidth}>
+          <div style={{ position: 'relative' }}>
+            <SectionNumber num={4} />
+            <div style={{ ...sectionLabel, paddingTop: 48 }}>BRAND ELEMENTS</div>
+            <h2 style={sectionHeadline}>Patterns & Elements</h2>
+            <p style={bodyText}>
+              These aren't decorations. They're the visual language. Pill badges, numbered sections,
+              grid textures, starburst marks. They show up across everything AOM produces
+              and reinforce the structured personality of the brand.
+            </p>
+          </div>
+
+          {/* Elements gallery */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 24, marginTop: 56,
+          }}>
+            {/* Pill Badges */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
+              display: 'flex', flexDirection: 'column', gap: 16,
+            }}>
+              <div style={{ ...sectionLabel, marginBottom: 0, fontSize: 9 }}>PILL BADGES</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Badge>VIDEO</Badge>
+                <Badge>WEB</Badge>
+                <Badge>BRAND</Badge>
+                <Badge>AI</Badge>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Badge color={COLORS.orange}>FEATURED</Badge>
+                <Badge color={COLORS.gold}>PREMIUM</Badge>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Badge color={COLORS.cream} bg={COLORS.black}>INVERTED</Badge>
+                <Badge color={COLORS.cream} bg={COLORS.orange}>FILLED</Badge>
+              </div>
+            </div>
+
+            {/* Numbered sections */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
+              display: 'flex', flexDirection: 'column', gap: 20,
+            }}>
+              <div style={{ ...sectionLabel, marginBottom: 0, fontSize: 9 }}>NUMBERED SECTIONS</div>
+              {[1, 2, 3].map(n => (
+                <div key={n} style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
+                  <span style={{
+                    fontFamily: '"Syne", sans-serif', fontSize: 36, fontWeight: 800,
+                    color: COLORS.orange, lineHeight: 1, minWidth: 48,
+                  }}>{String(n).padStart(2, '0')}</span>
+                  <span style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 14, fontWeight: 400,
+                    color: COLORS.warmGray,
+                  }}>Section label goes here</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Grid pattern */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
+              position: 'relative', overflow: 'hidden',
+              display: 'flex', flexDirection: 'column', gap: 16,
+            }}>
+              <div style={{ ...sectionLabel, marginBottom: 0, fontSize: 9, zIndex: 1 }}>GRID TEXTURE</div>
+              <div style={{ position: 'relative', height: 120 }}>
+                <GridPattern width={300} height={120} color={COLORS.black} opacity={0.1} />
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                  fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 800, color: COLORS.black,
+                }}>AOM</div>
+              </div>
+            </div>
+
+            {/* Starburst */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+            }}>
+              <div style={{ ...sectionLabel, marginBottom: 0, fontSize: 9, alignSelf: 'flex-start' }}>STARBURST MARK</div>
+              <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                <Starburst size={48} color={COLORS.orange} />
+                <Starburst size={36} color={COLORS.gold} />
+                <Starburst size={24} color={COLORS.black} />
+              </div>
+            </div>
+
+            {/* Dotted texture */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
+              display: 'flex', flexDirection: 'column', gap: 16,
+            }}>
+              <div style={{ ...sectionLabel, marginBottom: 0, fontSize: 9 }}>DOTTED TEXTURE</div>
+              <DottedTexture width={220} height={80} color={COLORS.black} opacity={0.15} />
+            </div>
+
+            {/* Diagonal lines */}
+            <div style={{
+              border: `1px solid ${COLORS.lightBorder}`, borderRadius: 4, padding: 32,
+              display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden',
+            }}>
+              <div style={{ ...sectionLabel, marginBottom: 0, fontSize: 9 }}>DIAGONAL PATTERN</div>
+              <DiagonalLines width={220} height={80} color={COLORS.orange} opacity={0.2} />
+            </div>
+          </div>
+
+          {/* Data grid / boarding pass aesthetic */}
+          <div style={{ marginTop: 56 }}>
+            <div style={{ ...sectionLabel, marginBottom: 16 }}>DATA GRID (BOARDING PASS AESTHETIC)</div>
+            <div style={{
+              border: `2px solid ${COLORS.black}`, borderRadius: 4, overflow: 'hidden',
+            }}>
+              {/* Header */}
+              <div style={{
+                background: COLORS.black, padding: '16px 24px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{
+                  fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 800,
+                  color: COLORS.cream, letterSpacing: '0.05em',
+                }}>AOM</span>
+                <Starburst size={20} color={COLORS.orange} />
+              </div>
+              {/* Data rows */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                {[
+                  { label: 'CLIENT', value: 'AMBITION MECH.' },
+                  { label: 'PROJECT', value: 'SOCIAL + WEB' },
+                  { label: 'STATUS', value: 'IN PROGRESS' },
+                  { label: 'DATE', value: 'MAR 2026' },
+                  { label: 'DELIVERABLES', value: '18 BRIEFS' },
+                  { label: 'PLATFORM', value: 'IG + FB' },
+                  { label: 'RATE', value: '$3.5K/MO' },
+                  { label: 'VERTICAL', value: 'CONSTRUCTION' },
+                ].map((item, i) => (
+                  <div key={i} style={{
+                    padding: '16px 24px',
+                    borderRight: (i + 1) % 4 !== 0 ? `1px solid ${COLORS.lightBorder}` : 'none',
+                    borderBottom: i < 4 ? `1px solid ${COLORS.lightBorder}` : 'none',
+                  }}>
+                    <div style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 9, fontWeight: 500,
+                      letterSpacing: '0.2em', textTransform: 'uppercase', color: COLORS.warmGray,
+                      marginBottom: 4,
+                    }}>{item.label}</div>
+                    <div style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 14, fontWeight: 700,
+                      color: COLORS.black,
+                    }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style={{ ...thickRule, background: COLORS.gold }} />
+
+      {/* ============================================================ */}
+      {/*  05 - PHOTOGRAPHY & IMAGERY                                   */}
+      {/* ============================================================ */}
+      <section style={{ ...sectionStyle, background: COLORS.black }}>
+        <div style={maxWidth}>
+          <div style={{ position: 'relative' }}>
+            <SectionNumber num={5} />
+            <div style={{ ...sectionLabel, paddingTop: 48, color: COLORS.warmGray }}>IMAGERY</div>
+            <h2 style={{ ...sectionHeadline, color: COLORS.cream }}>Photography Direction</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginTop: 48 }}>
+            <div>
+              <div style={{ ...sectionLabel, color: COLORS.orange, marginBottom: 16 }}>WHAT WE SHOOT</div>
+              <ul style={{ ...bodyText, color: '#999', padding: 0, listStyle: 'none', margin: 0 }}>
+                {[
+                  'Active jobsite footage. Workers building, welding, framing.',
+                  'Tight action shots with shallow depth of field.',
+                  'Before/after transformation shots.',
+                  'Architectural details: scaffolding geometry, rebar patterns, concrete textures.',
+                  'Real people doing real work. Never stock, never posed.',
+                  'Golden hour and dramatic natural lighting.',
+                  'Close-ups of hands, tools, materials.',
+                ].map((item, i) => (
+                  <li key={i} style={{
+                    padding: '8px 0', borderBottom: '1px solid #222',
+                    display: 'flex', gap: 12, alignItems: 'flex-start',
+                  }}>
+                    <span style={{ color: COLORS.orange, fontWeight: 700, fontSize: 14 }}>+</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <div style={{ ...sectionLabel, color: COLORS.gold, marginBottom: 16 }}>TREATMENT</div>
+              <ul style={{ ...bodyText, color: '#999', padding: 0, listStyle: 'none', margin: 0 }}>
+                {[
+                  'Full color, slightly warm (+5-10% warmth in post).',
+                  'Photos in defined containers with visible 1px black borders.',
+                  'No full-bleed images. Always contained, always structured.',
+                  'Duotone option: orange + black overlay for select hero images.',
+                  'Mix of action shots and detail shots for rhythm.',
+                  'Content-dense but organized. Photography does the heavy lifting.',
+                ].map((item, i) => (
+                  <li key={i} style={{
+                    padding: '8px 0', borderBottom: '1px solid #222',
+                    display: 'flex', gap: 12, alignItems: 'flex-start',
+                  }}>
+                    <span style={{ color: COLORS.gold, fontWeight: 700, fontSize: 14 }}>+</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Photo container demo */}
+          <div style={{ marginTop: 56 }}>
+            <div style={{ ...sectionLabel, color: COLORS.warmGray, marginBottom: 16 }}>PHOTO CONTAINER TREATMENT</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12 }}>
+              {[
+                { h: 240, label: 'HERO / 2:1' },
+                { h: 240, label: 'SQUARE' },
+                { h: 240, label: 'PORTRAIT' },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  height: item.h, border: `1px solid #333`, borderRadius: 2,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: '#111',
+                }}>
+                  <span style={{
+                    fontFamily: '"Space Grotesk", sans-serif', fontSize: 10, fontWeight: 500,
+                    letterSpacing: '0.15em', color: '#444',
+                  }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style={thickRule} />
+
+      {/* ============================================================ */}
+      {/*  06 - VOICE & TONE                                            */}
+      {/* ============================================================ */}
+      <section style={{ ...sectionStyle, background: COLORS.cream }}>
+        <ConcentricCircles size={160} color={COLORS.gold} style={{ position: 'absolute', top: 20, right: 60, opacity: 0.4 }} />
+        <div style={maxWidth}>
+          <div style={{ position: 'relative' }}>
+            <SectionNumber num={6} />
+            <div style={{ ...sectionLabel, paddingTop: 48 }}>BRAND VOICE</div>
+            <h2 style={sectionHeadline}>Voice & Tone</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginTop: 48 }}>
+            {/* Voice attributes */}
+            <div>
+              {[
+                { title: 'Confident', desc: 'We know what we do and we do it well. No hedging, no "maybe."' },
+                { title: 'Human', desc: 'Anti-BS. Real personality, real warmth. Not corporate speak.' },
+                { title: 'Direct', desc: 'Say it, don\'t decorate it. Bullet points over paragraphs.' },
+                { title: 'Knowledgeable', desc: '"We get it." Industry insider, not outsider looking in.' },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  padding: '24px 0',
+                  borderBottom: `1px solid ${COLORS.lightBorder}`,
+                }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8,
+                  }}>
+                    <span style={{
+                      fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 800,
+                      color: COLORS.orange, lineHeight: 1,
+                    }}>{String(i + 1).padStart(2, '0')}</span>
+                    <span style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 20, fontWeight: 700,
+                      color: COLORS.black,
+                    }}>{item.title}</span>
+                  </div>
+                  <div style={{ ...bodyText, paddingLeft: 48 }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tone spectrum */}
+            <div>
+              <div style={{ ...sectionLabel, color: COLORS.orange, marginBottom: 24 }}>TONE SPECTRUM</div>
+              {[
+                { left: 'Casual', right: 'Formal', pos: 30 },
+                { left: 'Playful', right: 'Serious', pos: 55 },
+                { left: 'Enthusiastic', right: 'Reserved', pos: 35 },
+                { left: 'Irreverent', right: 'Respectful', pos: 45 },
+              ].map((item, i) => (
+                <div key={i} style={{ marginBottom: 24 }}>
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', marginBottom: 8,
+                  }}>
+                    <span style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 12, fontWeight: 500,
+                      color: COLORS.black,
+                    }}>{item.left}</span>
+                    <span style={{
+                      fontFamily: '"Space Grotesk", sans-serif', fontSize: 12, fontWeight: 500,
+                      color: COLORS.warmGray,
+                    }}>{item.right}</span>
+                  </div>
+                  <div style={{
+                    height: 4, background: COLORS.lightBorder, borderRadius: 2, position: 'relative',
+                  }}>
+                    <div style={{
+                      position: 'absolute', top: -4, left: `${item.pos}%`,
+                      width: 12, height: 12, borderRadius: 6,
+                      background: COLORS.orange, transform: 'translateX(-50%)',
+                    }} />
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ marginTop: 40, padding: 24, background: COLORS.darkCream, borderRadius: 4 }}>
+                <div style={{ ...sectionLabel, fontSize: 9, marginBottom: 12 }}>EXAMPLE COPY</div>
+                <div style={{
+                  fontFamily: '"Space Grotesk", sans-serif', fontSize: 18, fontWeight: 600,
+                  color: COLORS.black, lineHeight: 1.4, marginBottom: 8,
+                }}>"We make things that impact."</div>
+                <div style={{ ...bodyText, fontSize: 14 }}>
+                  Not "We leverage synergies to drive impactful outcomes." People are tired
+                  of that. Write like someone who truly understands what it takes.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style={thickRule} />
+
+      {/* ============================================================ */}
+      {/*  07 - USAGE GUIDELINES                                        */}
+      {/* ============================================================ */}
+      <section style={{ ...sectionStyle, background: COLORS.cream, paddingBottom: 48 }}>
+        <div style={maxWidth}>
+          <div style={{ position: 'relative' }}>
+            <SectionNumber num={7} />
+            <div style={{ ...sectionLabel, paddingTop: 48 }}>USAGE</div>
+            <h2 style={sectionHeadline}>Do's and Don'ts</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginTop: 48 }}>
+            {/* Do's */}
+            <div>
+              <div style={{
+                fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 800,
+                color: COLORS.orange, marginBottom: 24,
+              }}>DO</div>
+              {[
+                'Use mixed-weight headlines to create typographic rhythm.',
+                'Keep the cream/black contrast strong. No muddy mid-tones as backgrounds.',
+                'Use pill badges for categorization. They\'re scannable and structured.',
+                'Let photos live inside bordered containers. Structure is the aesthetic.',
+                'Use Syne for hero moments only. Space Grotesk carries everything else.',
+                'Keep orange as activation. Gold as elevation. Both used intentionally.',
+                'Write direct, human copy. Bullet points over paragraphs.',
+                'Use numbered sections (01, 02, 03) for sequential content.',
+              ].map((item, i) => (
+                <div key={i} style={{
+                  padding: '12px 0', borderBottom: `1px solid ${COLORS.lightBorder}`,
+                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                  fontFamily: '"Space Grotesk", sans-serif', fontSize: 14, fontWeight: 400,
+                  color: COLORS.black, lineHeight: 1.6,
+                }}>
+                  <span style={{ color: COLORS.orange, fontWeight: 700, flexShrink: 0 }}>+</span>
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            {/* Don'ts */}
+            <div>
+              <div style={{
+                fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 800,
+                color: '#C44',
+                marginBottom: 24,
+              }}>DON'T</div>
+              {[
+                'Use gradients. Ever. The palette is flat and intentional.',
+                'Add drop shadows to cards or containers. Use borders instead.',
+                'Use Syne for body text. It\'s a display font, not a workhorse.',
+                'Use stock photography. Every image should be real, ours, on-site.',
+                'Write corporate speak. "Leverage synergies" is the enemy.',
+                'Make the logo smaller than 32px in any context.',
+                'Use colors outside the four-color system without approval.',
+                'Center-align body text. Left-aligned or structured grid only.',
+              ].map((item, i) => (
+                <div key={i} style={{
+                  padding: '12px 0', borderBottom: `1px solid ${COLORS.lightBorder}`,
+                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                  fontFamily: '"Space Grotesk", sans-serif', fontSize: 14, fontWeight: 400,
+                  color: COLORS.black, lineHeight: 1.6,
+                }}>
+                  <span style={{ color: '#C44', fontWeight: 700, flexShrink: 0 }}>&#x2212;</span>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Logo clear space */}
+          <div style={{ marginTop: 56 }}>
+            <div style={thinRule} />
+            <div style={{ ...sectionLabel, marginTop: 32, marginBottom: 24 }}>LOGO CLEAR SPACE</div>
+            <p style={bodyText}>
+              Maintain clear space equal to the height of the "O" in the AOM wordmark on all sides.
+              The mark should never feel crowded. When in doubt, give it more room.
+            </p>
+            <div style={{
+              marginTop: 24, display: 'inline-flex', padding: 48,
+              border: `1px dashed ${COLORS.lightBorder}`, borderRadius: 4,
+              position: 'relative',
+            }}>
+              <LogoWordmark color={COLORS.black} size={48} />
+              {/* Clear space indicators */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                border: `1px dashed ${COLORS.orange}`, borderRadius: 4, opacity: 0.4,
+              }} />
+            </div>
+          </div>
+
+          {/* Minimum sizes */}
+          <div style={{ marginTop: 48 }}>
+            <div style={{ ...sectionLabel, marginBottom: 24 }}>MINIMUM SIZES</div>
+            <div style={{ display: 'flex', gap: 48, alignItems: 'flex-end' }}>
+              <div style={{ textAlign: 'center' }}>
+                <LogoWordmark color={COLORS.black} size={48} />
+                <div style={{ ...sectionLabel, marginTop: 8, marginBottom: 0, fontSize: 9 }}>DIGITAL (48PX)</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <LogoMark color={COLORS.black} size={32} />
+                <div style={{ ...sectionLabel, marginTop: 8, marginBottom: 0, fontSize: 9 }}>MARK MIN (32PX)</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <LogoBadge color={COLORS.black} size={48} />
+                <div style={{ ...sectionLabel, marginTop: 8, marginBottom: 0, fontSize: 9 }}>BADGE MIN (48PX)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================ */}
+      {/*  FOOTER                                                       */}
+      {/* ============================================================ */}
+      <footer style={{
+        background: COLORS.black, padding: '80px 60px',
+        position: 'relative', overflow: 'hidden',
       }}>
-        {activeDirection === 'A' && <IndustrialPage theme={theme} />}
-        {activeDirection === 'B' && <EditorialPage theme={theme} />}
-        {activeDirection === 'C' && <BoldGraphicPage theme={theme} />}
-      </div>
+        <DottedTexture width={200} height={200} color={COLORS.cream} opacity={0.03} style={{ position: 'absolute', bottom: 0, right: 0 }} />
+        <div style={{ ...maxWidth, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48 }}>
+          {/* Left: large stacked type */}
+          <div>
+            <div style={{
+              fontFamily: '"Syne", sans-serif', fontSize: 64, fontWeight: 800,
+              lineHeight: 0.9, color: COLORS.cream, marginBottom: 24,
+            }}>
+              AOM
+            </div>
+            <div style={{
+              fontFamily: '"Space Grotesk", sans-serif', fontSize: 14, fontWeight: 400,
+              color: COLORS.warmGray, lineHeight: 1.7, maxWidth: 320,
+            }}>
+              Creative production and AI systems for companies that build.
+              Phoenix, AZ.
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
+              <Badge color={COLORS.warmGray}>VIDEO</Badge>
+              <Badge color={COLORS.warmGray}>WEB</Badge>
+              <Badge color={COLORS.warmGray}>BRAND</Badge>
+              <Badge color={COLORS.warmGray}>AI</Badge>
+            </div>
+          </div>
+
+          {/* Right: meta */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            {[
+              { label: 'DIRECTION', value: 'C: Bold Graphic' },
+              { label: 'FONTS', value: 'Syne + Space Grotesk' },
+              { label: 'GENERATED', value: 'March 2026' },
+              { label: 'AGENT', value: 'Steffen' },
+            ].map((item, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', padding: '10px 0',
+                borderBottom: '1px solid #222',
+              }}>
+                <span style={{
+                  fontFamily: '"Space Grotesk", sans-serif', fontSize: 10, fontWeight: 500,
+                  letterSpacing: '0.2em', color: COLORS.warmGray,
+                }}>{item.label}</span>
+                <span style={{
+                  fontFamily: '"Space Grotesk", sans-serif', fontSize: 13, fontWeight: 400,
+                  color: COLORS.cream,
+                }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
