@@ -87,25 +87,34 @@ function relativeTime(dateStr) {
 }
 
 function deadlineDaysRemaining(taskText) {
+  // Parse a date string into a local-midnight Date to avoid UTC drift
+  function localDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00')
+    return isNaN(d) ? null : d
+  }
+  function todayLocal() {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  }
+  function daysDiff(target) {
+    if (!target) return null
+    return Math.ceil((target - todayLocal()) / (1000 * 60 * 60 * 24))
+  }
+
   // Known hardcoded deadlines
   const KNOWN = [
     { pattern: /isa energy|brand video|april 27/i, date: '2026-04-27' },
     { pattern: /included health|ih retainer/i, date: '2026-03-11' },
   ]
   for (const k of KNOWN) {
-    if (k.pattern.test(taskText)) {
-      const diff = Math.ceil((new Date(k.date) - new Date()) / (1000 * 60 * 60 * 24))
-      return diff
-    }
+    if (k.pattern.test(taskText)) return daysDiff(localDate(k.date))
   }
-  // Try to extract a date from the raw text
-  const dateMatch = taskText.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:,\s*\d{4})?|\d{4}-\d{2}-\d{2}/i)
+
+  // Try to extract a date from the raw text (match "Apr 27, 2026" or "2026-04-27" but NOT "Mar 9-11")
+  const dateMatch = taskText.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},\s*\d{4}|\b\d{4}-\d{2}-\d{2}\b/i)
   if (dateMatch) {
-    const parsed = new Date(dateMatch[0])
-    if (!isNaN(parsed)) {
-      const diff = Math.ceil((parsed - new Date()) / (1000 * 60 * 60 * 24))
-      return diff
-    }
+    const parsed = localDate(dateMatch[0].replace(',', ''))
+    if (parsed) return daysDiff(parsed)
   }
   return null
 }
