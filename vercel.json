@@ -4,6 +4,9 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/dashboard", "destination": "/dashboard.html" },
-    { "source": "/brand", "destination": "/index.html" }
+    { "source": "/brand", "destination": "/index.html" },
+    { "source": "/brands", "destination": "/index.html" },
+    { "source": "/brands/:path*", "destination": "/index.html" },
+    { "source": "/construction", "destination": "/index.html" }
   ]
 }
