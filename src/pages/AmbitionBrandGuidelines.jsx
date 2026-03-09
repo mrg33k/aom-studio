@@ -91,7 +91,7 @@ function ColorSwatch({ color, large }) {
   return (
     <div className="group">
       <div
-        className={`${large ? 'h-24 md:h-32' : 'h-16 md:h-20'} rounded-sm border border-[#292524] relative overflow-hidden transition-all duration-300 group-hover:border-[#44403C]`}
+        className={`${large ? 'h-24 md:h-32' : 'h-16 md:h-20'} rounded-2xl border border-white/10 relative overflow-hidden transition-all duration-300 group-hover:border-white/20`}
         style={{ backgroundColor: color.hex }}
       >
         <span className={`absolute bottom-2 left-3 font-mono text-[10px] font-bold ${isLight ? 'text-[#0a0a0a]' : 'text-[#d1d5db]'} opacity-80`}>
@@ -114,10 +114,10 @@ function ColorSwatch({ color, large }) {
 function SectionHeader({ label, title, subtitle }) {
   return (
     <div className="mb-12">
-      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-4">{label}</p>
-      <div className="w-12 h-[2px] bg-[#0ea5e9] mb-4" />
-      <h2 className="font-headline text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-[#d1d5db]">{title}</h2>
-      {subtitle && <p className="text-[#9ca3af] text-base mt-4 max-w-2xl leading-relaxed">{subtitle}</p>}
+      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#0ea5e9] mb-4">{label}</p>
+      <div className="w-12 h-[2px] bg-gradient-to-r from-[#dc2626] to-[#0ea5e9] mb-4" />
+      <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-white">{title}</h2>
+      {subtitle && <p className="text-gray-400 text-base mt-4 max-w-2xl leading-relaxed">{subtitle}</p>}
     </div>
   )
 }
@@ -167,7 +167,7 @@ export default function AmbitionBrandGuidelines() {
       </div>
 
       {/* Subtle blue gradient wash */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.02] bg-gradient-to-b from-transparent via-sky-500/5 to-transparent" />
+      <div className="fixed inset-0 pointer-events-none opacity-[0.04] bg-gradient-to-b from-[#0ea5e9]/10 via-transparent to-[#0ea5e9]/5" />
 
       {/* Side nav */}
       <nav className="fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-4 hidden md:flex">
@@ -177,44 +177,48 @@ export default function AmbitionBrandGuidelines() {
       </nav>
 
       {/* Top bar */}
-      <header className="sticky top-0 z-30 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#292524]">
+      <header className="sticky top-0 z-30 bg-[#0a0a0a]/75 backdrop-blur-2xl border-b border-white/8">
         <div className="max-w-6xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between">
-          <Link to="/brands" className="flex items-center gap-3 text-[#9ca3af] hover:text-[#d1d5db] transition-colors">
+          <Link to="/brands" className="flex items-center gap-3 text-gray-400 hover:text-[#0ea5e9] transition-colors">
             <ArrowLeft size={16} />
             <span className="font-mono text-[10px] font-bold uppercase tracking-[0.3em]">All Brands</span>
           </Link>
           <div className="flex items-center gap-3">
-            <span className="font-headline text-sm font-bold uppercase tracking-tight text-[#d1d5db]">Ambition</span>
-            <span className="text-[#292524]">/</span>
-            <span className="font-mono text-[10px] text-[#6b7280] uppercase tracking-[0.2em]">Brand Guidelines</span>
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-gradient-to-r from-[#dc2626] to-[#0ea5e9] shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
+              <span className="text-sm font-semibold uppercase tracking-[0.12em] text-white">Ambition</span>
+              <span className="text-[#38bdf8] text-sm font-semibold uppercase tracking-[0.12em]">Mechanical</span>
+            </span>
+            <span className="text-white/15">/</span>
+            <span className="font-mono text-[10px] text-gray-500 uppercase tracking-[0.2em]">Brand Guidelines</span>
           </div>
-          <span className="font-mono text-[10px] text-[#6b7280]">v1.0</span>
+          <span className="font-mono text-[10px] text-gray-500">v1.0</span>
         </div>
       </header>
 
       {/* Hero */}
       <section className="relative py-24 md:py-40 px-6 md:px-12 max-w-6xl mx-auto">
         <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#0ea5e9] mb-6">Brand System</p>
-        <h1 className="font-headline text-5xl md:text-8xl font-black italic uppercase tracking-tighter text-[#d1d5db] leading-[0.85]">
+        <h1 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-white leading-[0.92]">
           AMBITION<br />
-          <span className="text-[#0ea5e9]">MECHANICAL</span>
+          <span className="text-[#38bdf8]">MECHANICAL</span>
         </h1>
-        <p className="text-[#9ca3af] text-lg mt-8 max-w-xl leading-relaxed">
+        <p className="text-gray-400 text-lg mt-8 max-w-xl leading-relaxed">
           Brand guidelines for Ambition Mechanical Services. Colors, typography, voice, video style, and social media standards.
         </p>
         <div className="flex items-center gap-4 mt-8">
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-[#292524] bg-[#111111] font-mono text-[10px] text-[#6b7280] uppercase tracking-[0.2em]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0ea5e9]" />
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/15 bg-[#0a0a0a]/75 backdrop-blur-xl font-mono text-[10px] text-gray-400 uppercase tracking-[0.2em]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0ea5e9] shadow-[0_0_6px_rgba(14,165,233,0.6)]" />
             Draft
           </span>
-          <span className="font-mono text-[10px] text-[#6b7280]">Last updated: March 2026</span>
+          <span className="font-mono text-[10px] text-gray-500">Last updated: March 2026</span>
         </div>
       </section>
 
       <div className="max-w-6xl mx-auto px-6 md:px-12">
 
         {/* ---- 1. BRAND ESSENCE ---- */}
-        <section id="essence" className="py-16 md:py-24 border-t border-[#292524]">
+        <section id="essence" className="py-16 md:py-24 border-t border-white/8">
           <SectionHeader
             label="01 / Brand Essence"
             title="WHO THEY ARE"
@@ -222,54 +226,54 @@ export default function AmbitionBrandGuidelines() {
           />
 
           <div className="grid md:grid-cols-2 gap-6 mb-12">
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#0ea5e9] mb-6">What They Stand For</p>
               <p className="text-[#9ca3af] text-sm leading-relaxed mb-4">
                 The name says it. Ambition was born from "a strong passion and desire to excel in the HVAC/R industry."
               </p>
               <div className="flex flex-wrap gap-2 mt-4">
                 {['Honesty', 'Integrity', 'Reliability'].map(v => (
-                  <span key={v} className="px-3 py-1.5 rounded-sm border border-[#0ea5e9]/30 bg-sky-950/20 font-mono text-xs text-[#0ea5e9]">{v}</span>
+                  <span key={v} className="px-3 py-1.5 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 font-mono text-xs text-[#0ea5e9]">{v}</span>
                 ))}
               </div>
             </div>
 
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">The Feeling</p>
               <p className="text-[#9ca3af] text-sm leading-relaxed mb-4">
                 Competence you can feel. Not flashy, not corporate-cold. Confident and grounded. When Ambition shows up on a job site, you know the work is going to be done right. They're the contractor other contractors respect.
               </p>
             </div>
 
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">Positioning</p>
               <p className="text-[#9ca3af] text-sm leading-relaxed">
                 Premium commercial/industrial mechanical. Not competing on price. Competing on precision, responsiveness, and breadth of capability (preconstruction through maintenance).
               </p>
             </div>
 
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">Key Clients</p>
               <div className="flex flex-wrap gap-2">
                 {['Intel', 'Banner Health', 'Amazon', 'Honeywell', 'Chase', 'Louis Vuitton', 'Tiffanys', 'Ritz Carlton', 'Apple Store'].map(c => (
-                  <span key={c} className="px-3 py-1.5 rounded-sm border border-[#292524] bg-[#1a1a1a] font-mono text-xs text-[#9ca3af]">{c}</span>
+                  <span key={c} className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] font-mono text-xs text-gray-400">{c}</span>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="p-8 rounded-sm border border-[#292524] bg-[#1a1a1a]">
+          <div className="p-8 rounded-2xl border border-white/10 bg-[#1a1a1a]/70 backdrop-blur-sm">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-4">Services</p>
             <div className="flex flex-wrap gap-2">
               {['HVAC/R Installation', 'Service & Repair', 'Refrigeration', 'Energy Management Systems', 'New Construction Mechanical', 'Preconstruction', 'Preventive Maintenance'].map(s => (
-                <span key={s} className="px-3 py-1.5 rounded-sm border border-[#292524] bg-[#111111] text-xs text-[#d1d5db]">{s}</span>
+                <span key={s} className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] text-xs text-[#d1d5db]">{s}</span>
               ))}
             </div>
           </div>
         </section>
 
         {/* ---- 2. COLORS ---- */}
-        <section id="colors" className="py-16 md:py-24 border-t border-[#292524]">
+        <section id="colors" className="py-16 md:py-24 border-t border-white/8">
           <SectionHeader
             label="02 / Color System"
             title="COOL, NOT WARM"
@@ -309,7 +313,7 @@ export default function AmbitionBrandGuidelines() {
           </div>
 
           {/* Color rules */}
-          <div className="p-8 rounded-sm border border-[#292524] bg-[#1a1a1a]">
+          <div className="p-8 rounded-2xl border border-white/10 bg-[#1a1a1a]/70 backdrop-blur-sm">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">Color Rules</p>
             <ul className="space-y-3">
               {[
@@ -329,7 +333,7 @@ export default function AmbitionBrandGuidelines() {
         </section>
 
         {/* ---- 3. TYPOGRAPHY ---- */}
-        <section id="typography" className="py-16 md:py-24 border-t border-[#292524]">
+        <section id="typography" className="py-16 md:py-24 border-t border-white/8">
           <SectionHeader
             label="03 / Typography"
             title="ONE FONT, CLEAR HIERARCHY"
@@ -338,7 +342,7 @@ export default function AmbitionBrandGuidelines() {
 
           <div className="space-y-4 mb-16">
             {typeRows.map(row => (
-              <div key={row.role} className="p-6 rounded-sm border border-[#292524] bg-[#111111] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div key={row.role} className="p-6 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex-1">
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#0ea5e9]">{row.role}</p>
                   <p className="text-[#6b7280] text-xs mt-1">{row.font} / {row.weight}</p>
@@ -352,7 +356,7 @@ export default function AmbitionBrandGuidelines() {
             ))}
           </div>
 
-          <div className="p-8 rounded-sm border border-[#292524] bg-[#1a1a1a]">
+          <div className="p-8 rounded-2xl border border-white/10 bg-[#1a1a1a]/70 backdrop-blur-sm">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">Type Rules</p>
             <ul className="space-y-3">
               {[
@@ -371,7 +375,7 @@ export default function AmbitionBrandGuidelines() {
         </section>
 
         {/* ---- 4. VISUAL / VIDEO ---- */}
-        <section id="visual" className="py-16 md:py-24 border-t border-[#292524]">
+        <section id="visual" className="py-16 md:py-24 border-t border-white/8">
           <SectionHeader
             label="04 / Visual & Video Style"
             title="HOW IT LOOKS AND MOVES"
@@ -379,7 +383,7 @@ export default function AmbitionBrandGuidelines() {
           />
 
           <div className="grid md:grid-cols-2 gap-6 mb-12">
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#0ea5e9] mb-6">The DNA</p>
               <ul className="space-y-3 text-[#9ca3af] text-sm leading-relaxed">
                 <li>24fps across all footage. Slightly cinematic, deliberate feel.</li>
@@ -388,7 +392,7 @@ export default function AmbitionBrandGuidelines() {
               </ul>
             </div>
 
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">Logo Treatment</p>
               <ul className="space-y-3 text-[#9ca3af] text-sm leading-relaxed">
                 <li>Small gradient dot (accent-500 to secondary-500) with glow effect.</li>
@@ -411,7 +415,7 @@ export default function AmbitionBrandGuidelines() {
                 { element: 'Composition', direction: 'Wide shots show scale. Medium shots show work. Close-ups show precision.' },
                 { element: 'Movement', direction: 'Slow, intentional. No shaky handheld. Slider/gimbal or locked-off tripod.' },
               ].map(row => (
-                <div key={row.element} className="p-4 rounded-sm border border-[#292524] bg-[#111111] flex flex-col md:flex-row gap-4">
+                <div key={row.element} className="p-4 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm flex flex-col md:flex-row gap-4">
                   <span className="font-mono text-xs text-[#0ea5e9] font-bold uppercase tracking-wide md:w-48 shrink-0">{row.element}</span>
                   <span className="text-[#9ca3af] text-sm leading-relaxed">{row.direction}</span>
                 </div>
@@ -420,7 +424,7 @@ export default function AmbitionBrandGuidelines() {
           </div>
 
           {/* What makes Ambition footage feel like Ambition */}
-          <div className="p-8 rounded-sm border border-[#292524] bg-[#1a1a1a] mb-12">
+          <div className="p-8 rounded-2xl border border-white/10 bg-[#1a1a1a]/70 backdrop-blur-sm mb-12">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">What Makes It Feel Like Ambition</p>
             <ul className="space-y-3">
               {[
@@ -438,7 +442,7 @@ export default function AmbitionBrandGuidelines() {
           </div>
 
           {/* Shot list priorities */}
-          <div className="p-8 rounded-sm border border-[#0ea5e9]/20 bg-sky-950/10 shadow-xl">
+          <div className="p-8 rounded-2xl border border-[#0ea5e9]/20 bg-[#0ea5e9]/5 backdrop-blur-sm shadow-xl">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#0ea5e9] mb-6">Shot List Priorities (Future Shoots)</p>
             <div className="space-y-4">
               {[
@@ -457,7 +461,7 @@ export default function AmbitionBrandGuidelines() {
         </section>
 
         {/* ---- 5. VOICE & TONE ---- */}
-        <section id="voice" className="py-16 md:py-24 border-t border-[#292524]">
+        <section id="voice" className="py-16 md:py-24 border-t border-white/8">
           <SectionHeader
             label="05 / Voice & Tone"
             title="HOW AMBITION TALKS"
@@ -469,7 +473,7 @@ export default function AmbitionBrandGuidelines() {
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">Voice Attributes</p>
             <div className="space-y-3">
               {voiceAttributes.map(v => (
-                <div key={v.attr} className="p-6 rounded-sm border border-[#292524] bg-[#111111]">
+                <div key={v.attr} className="p-6 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm">
                   <p className="font-mono text-xs text-[#0ea5e9] font-bold uppercase tracking-wide mb-3">{v.attr}</p>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="flex items-start gap-2">
@@ -491,7 +495,7 @@ export default function AmbitionBrandGuidelines() {
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">Tone Shifts by Context</p>
             <div className="space-y-3">
               {toneShifts.map(t => (
-                <div key={t.context} className="p-4 rounded-sm border border-[#292524] bg-[#111111] flex flex-col md:flex-row gap-4">
+                <div key={t.context} className="p-4 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm flex flex-col md:flex-row gap-4">
                   <span className="font-mono text-xs text-[#0ea5e9] font-bold uppercase tracking-wide md:w-40 shrink-0">{t.context}</span>
                   <span className="text-[#6b7280] text-sm md:w-56 shrink-0">{t.tone}</span>
                   <span className="text-[#9ca3af] text-sm italic">"{t.example}"</span>
@@ -502,7 +506,7 @@ export default function AmbitionBrandGuidelines() {
 
           {/* Words */}
           <div className="grid md:grid-cols-2 gap-6 mb-12">
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#1a1a1a]">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#1a1a1a]/70 backdrop-blur-sm">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#22c55e] mb-6">On-Brand Phrases</p>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -510,18 +514,18 @@ export default function AmbitionBrandGuidelines() {
                   'All makes, all models', 'Licensed since day one',
                   'From preconstruction to preventive maintenance',
                 ].map(w => (
-                  <span key={w} className="px-3 py-1.5 rounded-sm border border-[#292524] bg-[#111111] font-mono text-xs text-[#9ca3af]">{w}</span>
+                  <span key={w} className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] font-mono text-xs text-gray-400">{w}</span>
                 ))}
               </div>
             </div>
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#1a1a1a]">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#1a1a1a]/70 backdrop-blur-sm">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#ef4444] mb-6">Words to Avoid</p>
               <div className="flex flex-wrap gap-2">
                 {[
                   'Best in class', 'World-class', 'Cutting-edge', 'Solutions provider',
                   'Don\'t hesitate to...', 'We\'re passionate about HVAC', 'Em dashes',
                 ].map(w => (
-                  <span key={w} className="px-3 py-1.5 rounded-sm border border-[#ef4444]/20 bg-[#111111] font-mono text-xs text-[#6b7280] line-through">{w}</span>
+                  <span key={w} className="px-3 py-1.5 rounded-full border border-[#ef4444]/20 bg-[#111111]/80 font-mono text-xs text-[#6b7280] line-through">{w}</span>
                 ))}
               </div>
             </div>
@@ -529,7 +533,7 @@ export default function AmbitionBrandGuidelines() {
         </section>
 
         {/* ---- 6. SOCIAL MEDIA ---- */}
-        <section id="social" className="py-16 md:py-24 border-t border-[#292524]">
+        <section id="social" className="py-16 md:py-24 border-t border-white/8">
           <SectionHeader
             label="06 / Social Media"
             title="PLATFORM PLAYBOOK"
@@ -546,7 +550,7 @@ export default function AmbitionBrandGuidelines() {
                 { platform: 'LinkedIn', handle: 'Ambition Mechanical Services', note: 'Professional audience' },
                 { platform: 'Facebook', handle: '@ambitionac', note: 'Lower priority' },
               ].map(a => (
-                <div key={a.platform} className="p-4 rounded-sm border border-[#292524] bg-[#111111] flex items-center gap-4">
+                <div key={a.platform} className="p-4 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm flex items-center gap-4">
                   <span className="font-mono text-xs text-[#0ea5e9] font-bold uppercase tracking-wide w-24 shrink-0">{a.platform}</span>
                   <div>
                     <span className="text-[#d1d5db] text-sm font-semibold">{a.handle}</span>
@@ -559,7 +563,7 @@ export default function AmbitionBrandGuidelines() {
 
           {/* Platform specifics */}
           <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#0ea5e9] mb-4">Instagram</p>
               <p className="font-mono text-[10px] text-[#6b7280] mb-4">3-4x/week</p>
               <ul className="space-y-2 text-[#9ca3af] text-xs leading-relaxed">
@@ -571,7 +575,7 @@ export default function AmbitionBrandGuidelines() {
               </ul>
             </div>
 
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#0ea5e9] mb-4">TikTok</p>
               <p className="font-mono text-[10px] text-[#6b7280] mb-4">3-5x/week</p>
               <ul className="space-y-2 text-[#9ca3af] text-xs leading-relaxed">
@@ -583,7 +587,7 @@ export default function AmbitionBrandGuidelines() {
               </ul>
             </div>
 
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#0ea5e9] mb-4">LinkedIn</p>
               <p className="font-mono text-[10px] text-[#6b7280] mb-4">2-3x/week</p>
               <ul className="space-y-2 text-[#9ca3af] text-xs leading-relaxed">
@@ -597,24 +601,24 @@ export default function AmbitionBrandGuidelines() {
           </div>
 
           {/* Hashtag strategy */}
-          <div className="p-8 rounded-sm border border-[#292524] bg-[#1a1a1a]">
+          <div className="p-8 rounded-2xl border border-white/10 bg-[#1a1a1a]/70 backdrop-blur-sm">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-6">Core Hashtags (Every Post)</p>
             <div className="flex flex-wrap gap-2 mb-6">
               {['#AmbitionMechanical', '#CommercialHVAC', '#PhoenixAZ', '#MechanicalContractor'].map(h => (
-                <span key={h} className="px-3 py-1.5 rounded-sm border border-[#0ea5e9]/30 bg-sky-950/20 font-mono text-xs text-[#0ea5e9]">{h}</span>
+                <span key={h} className="px-3 py-1.5 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 font-mono text-xs text-[#0ea5e9]">{h}</span>
               ))}
             </div>
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#6b7280] mb-4">Rotating</p>
             <div className="flex flex-wrap gap-2">
               {['#HVACLife', '#HVACR', '#PipeFitter', '#BlueCollar', '#ConstructionLife', '#CommercialConstruction', '#HVACTech', '#RefrigerationRepair', '#BuiltToLast', '#PhoenixConstruction', '#ArizonaContractor'].map(h => (
-                <span key={h} className="px-3 py-1.5 rounded-sm border border-[#292524] bg-[#111111] font-mono text-xs text-[#6b7280]">{h}</span>
+                <span key={h} className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] font-mono text-xs text-gray-500">{h}</span>
               ))}
             </div>
           </div>
         </section>
 
         {/* ---- 7. DO'S & DON'TS ---- */}
-        <section id="dos-donts" className="py-16 md:py-24 border-t border-[#292524]">
+        <section id="dos-donts" className="py-16 md:py-24 border-t border-white/8">
           <SectionHeader
             label="07 / Content Guidelines"
             title="DO'S AND DON'TS"
@@ -622,7 +626,7 @@ export default function AmbitionBrandGuidelines() {
           />
 
           <div className="grid md:grid-cols-2 gap-6">
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#22c55e] mb-6">Do</p>
               <ul className="space-y-3">
                 {[
@@ -644,7 +648,7 @@ export default function AmbitionBrandGuidelines() {
               </ul>
             </div>
 
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#111111] shadow-xl">
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm shadow-xl">
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#ef4444] mb-6">Don't</p>
               <ul className="space-y-3">
                 {[
@@ -658,7 +662,7 @@ export default function AmbitionBrandGuidelines() {
                   'Don\'t post inconsistently. Consistency beats perfection.',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
-                    <span className="mt-1.5 w-3 h-[1px] bg-[#ef4444] shrink-0 mt-2.5" />
+                    <span className="mt-2.5 w-3 h-[1px] bg-[#ef4444] shrink-0" />
                     <span className="text-[#9ca3af] text-sm leading-relaxed">{item}</span>
                   </li>
                 ))}
@@ -668,12 +672,15 @@ export default function AmbitionBrandGuidelines() {
         </section>
 
         {/* Footer */}
-        <footer className="py-16 border-t border-[#292524] text-center">
-          <p className="font-mono text-[10px] text-[#6b7280] uppercase tracking-[0.3em]">
-            Ambition Mechanical Brand Guidelines v1.0 / Created by Steffen for AOM agents
-          </p>
-          <p className="font-mono text-[10px] text-[#6b7280]/60 mt-2">
-            Status: Draft. Awaiting Patrik review.
+        <footer className="py-16 border-t border-white/8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="h-2 w-2 rounded-full bg-gradient-to-r from-[#dc2626] to-[#0ea5e9] shadow-[0_0_8px_rgba(14,165,233,0.4)]" />
+            <span className="font-mono text-[10px] text-gray-500 uppercase tracking-[0.3em]">
+              Ambition Mechanical Brand Guidelines v1.0
+            </span>
+          </div>
+          <p className="font-mono text-[10px] text-gray-600">
+            Created by Steffen for AOM agents. Status: Draft.
           </p>
         </footer>
 
