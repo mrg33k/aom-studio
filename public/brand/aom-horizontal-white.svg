@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 80" width="480" height="80">
+  <text x="0" y="60" font-family="Syne, sans-serif" font-size="64" font-weight="800" fill="#F2EDE8" letter-spacing="-3">AOM</text>
+  <circle cx="190" cy="52" r="7" fill="#FF5C1A"/>
+  <line x1="214" y1="20" x2="214" y2="60" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="230" y="46" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="500" fill="#8A847C" letter-spacing="3">AHEAD OF MARKET</text>
+</svg>

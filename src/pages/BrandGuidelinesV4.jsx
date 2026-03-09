@@ -425,16 +425,17 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       <DarkSection>
         <MaxWidth>
-          <SectionHeader num={1} title="Brand Mark" subtitle="Logo usage, clear space, minimum sizes, and approved variations." dark />
+          <SectionHeader num={1} title="Brand Mark" subtitle="The locked AOM. wordmark. Syne ExtraBold, orange dot (#FF5C1A). All variations, clear space, minimum sizes, and usage rules." dark />
 
-          {/* Wordmark display */}
+          {/* ---- PRIMARY VARIATIONS ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Primary Variations</h3>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: 24,
             marginBottom: 48,
           }}>
-            {/* Primary on dark */}
+            {/* 1. Primary on dark */}
             <div style={{
               background: C.nightCard,
               borderRadius: 16,
@@ -446,14 +447,14 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 200,
             }}>
-              <svg viewBox="0 0 240 80" width={180} aria-label="AOM Wordmark on dark">
-                <text x="0" y="64" fontFamily="Syne, sans-serif" fontSize="72" fontWeight="800" fill={C.textLight} letterSpacing="-3">AOM</text>
-                <circle cx="212" cy="57" r="7" fill={C.orange} />
+              <svg viewBox="0 0 260 80" width={200} aria-label="AOM Primary on dark">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Dark</div>
+              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Light on Dark</div>
             </div>
 
-            {/* Primary on light */}
+            {/* 2. Primary on light */}
             <div style={{
               background: C.cream,
               borderRadius: 16,
@@ -465,37 +466,186 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 200,
             }}>
-              <svg viewBox="0 0 240 80" width={180} aria-label="AOM Wordmark on light">
-                <text x="0" y="64" fontFamily="Syne, sans-serif" fontSize="72" fontWeight="800" fill={C.black} letterSpacing="-3">AOM</text>
-                <circle cx="212" cy="57" r="7" fill={C.orange} />
+              <svg viewBox="0 0 260 80" width={200} aria-label="AOM Primary on light">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM</text>
+                <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Light</div>
+              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Dark on Light</div>
             </div>
 
-            {/* Monochrome */}
+            {/* 3. Monochrome black */}
             <div style={{
-              background: C.orange,
+              background: C.cream,
               borderRadius: 16,
               padding: 48,
+              border: `1px solid ${C.lightBorder}`,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               minHeight: 200,
             }}>
-              <svg viewBox="0 0 240 80" width={180} aria-label="AOM Wordmark on orange">
-                <text x="0" y="64" fontFamily="Syne, sans-serif" fontSize="72" fontWeight="800" fill={C.white} letterSpacing="-3">AOM</text>
-                <circle cx="212" cy="57" r="7" fill="rgba(255,255,255,0.5)" />
+              <svg viewBox="0 0 260 80" width={200} aria-label="AOM Monochrome black">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM</text>
+                <circle cx="224" cy="58" r="8" fill="#0A0A0A" />
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Brand / Orange</div>
+              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / Black</div>
+            </div>
+
+            {/* 4. Monochrome white */}
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              padding: 48,
+              border: `1px solid ${C.nightBorder}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 200,
+            }}>
+              <svg viewBox="0 0 260 80" width={200} aria-label="AOM Monochrome white">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                <circle cx="224" cy="58" r="8" fill="#F2EDE8" />
+              </svg>
+              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / White</div>
             </div>
           </div>
 
-          {/* Clear space & minimum size */}
+          {/* ---- ICON MARK ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Icon Mark</h3>
+          <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 24, maxWidth: 560 }}>
+            The "A" with the orange dot. Used for favicons, app icons, social avatars, and anywhere the full wordmark is too small to be legible.
+          </p>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            gap: 16,
+            marginBottom: 48,
+          }}>
+            {[
+              { bg: C.nightCard, border: C.nightBorder, fill: '#F2EDE8', label: 'Dark' },
+              { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', label: 'Light' },
+              { bg: '#0A0A0A', border: C.nightBorder, fill: '#0A0A0A', mono: true, label: 'Mono Dark' },
+              { bg: C.cream, border: C.lightBorder, fill: '#F2EDE8', mono: true, label: 'Mono Light' },
+            ].map((v, i) => (
+              <div key={i} style={{
+                background: v.bg,
+                borderRadius: 12,
+                padding: 24,
+                border: `1px solid ${v.border}`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <svg viewBox="0 0 80 80" width={56} aria-label={`Icon mark ${v.label}`}>
+                  <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={v.fill} letterSpacing="-2">A</text>
+                  <circle cx="62" cy="58" r="7" fill={v.mono ? v.fill : '#FF5C1A'} />
+                </svg>
+                <div style={{ marginTop: 10, fontSize: 10, color: v.bg === C.cream ? C.warmGray : C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{v.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ---- LOCKUPS ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Lockups</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
             gap: 24,
+            marginBottom: 48,
+          }}>
+            {/* Full wordmark / Horizontal */}
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              padding: '40px 32px',
+              border: `1px solid ${C.nightBorder}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 160,
+            }}>
+              <svg viewBox="0 0 480 80" width="100%" style={{ maxWidth: 400 }} aria-label="AOM Horizontal lockup">
+                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                <circle cx="190" cy="52" r="7" fill="#FF5C1A" />
+                <line x1="214" y1="20" x2="214" y2="60" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+                <text x="230" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
+              </svg>
+              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
+            </div>
+
+            {/* Stacked */}
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              padding: '40px 32px',
+              border: `1px solid ${C.nightBorder}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 160,
+            }}>
+              <svg viewBox="0 0 260 110" width={220} aria-label="AOM Stacked lockup">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
+              </svg>
+              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked Lockup</div>
+            </div>
+
+            {/* Full wordmark on light */}
+            <div style={{
+              background: C.cream,
+              borderRadius: 16,
+              padding: '40px 32px',
+              border: `1px solid ${C.lightBorder}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 160,
+            }}>
+              <svg viewBox="0 0 480 80" width="100%" style={{ maxWidth: 400 }} aria-label="AOM Horizontal lockup light">
+                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM</text>
+                <circle cx="190" cy="52" r="7" fill="#FF5C1A" />
+                <line x1="214" y1="20" x2="214" y2="60" stroke="#D9D3CB" strokeWidth="1" />
+                <text x="230" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
+              </svg>
+              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
+            </div>
+
+            {/* Stacked on light */}
+            <div style={{
+              background: C.cream,
+              borderRadius: 16,
+              padding: '40px 32px',
+              border: `1px solid ${C.lightBorder}`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 160,
+            }}>
+              <svg viewBox="0 0 260 110" width={220} aria-label="AOM Stacked lockup light">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM</text>
+                <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#7A7267" letterSpacing="3">AHEAD OF MARKET</text>
+              </svg>
+              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked / Light</div>
+            </div>
+          </div>
+
+          {/* ---- CLEAR SPACE & MIN SIZES ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Clear Space & Minimum Sizes</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+            gap: 24,
+            marginBottom: 48,
           }}>
             <div style={{
               background: C.nightCard,
@@ -503,82 +653,388 @@ export default function BrandGuidelinesV4() {
               padding: 32,
               border: `1px solid ${C.nightBorder}`,
             }}>
-              <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, marginBottom: 12 }}>Clear Space</h3>
+              <h4 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, marginBottom: 12 }}>Clear Space</h4>
               <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 16 }}>
-                Minimum clear space around the wordmark equals the height of the "O" in AOM. No elements, text, or edges should invade this zone.
+                Minimum clear space equals the height of the "O" in AOM. No elements, text, or edges should invade this zone. Apply to all variations.
               </p>
               <div style={{
                 background: C.night,
                 borderRadius: 8,
+                padding: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: `1px dashed rgba(255,92,26,0.25)`,
+                position: 'relative',
+              }}>
+                <svg viewBox="0 0 260 80" width={140}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                  <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                </svg>
+                <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#FF5C1A', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
+                <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#FF5C1A', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
+                <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#FF5C1A', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
+                <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#FF5C1A', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
+              </div>
+            </div>
+
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              padding: 32,
+              border: `1px solid ${C.nightBorder}`,
+            }}>
+              <h4 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, marginBottom: 12 }}>Minimum Sizes</h4>
+              <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 16 }}>
+                Below these minimums, switch to the icon mark (A.).
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  { context: 'Print (full wordmark)', size: '24mm wide' },
+                  { context: 'Digital (full wordmark)', size: '80px wide' },
+                  { context: 'Stacked lockup', size: '120px wide' },
+                  { context: 'Horizontal lockup', size: '200px wide' },
+                  { context: 'Favicon / App Icon', size: 'Icon mark only' },
+                ].map((row, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: C.night, borderRadius: 8 }}>
+                    <span style={{ fontSize: 13, color: C.textLightMuted }}>{row.context}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: C.textLight }}>{row.size}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Actual size demo */}
+              <div style={{ marginTop: 20, display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <svg viewBox="0 0 260 80" width={200}>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                    <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                  </svg>
+                  <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>200px</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <svg viewBox="0 0 260 80" width={120}>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                    <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                  </svg>
+                  <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>120px</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <svg viewBox="0 0 260 80" width={80}>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                    <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                  </svg>
+                  <div style={{ fontSize: 10, color: '#FF5C1A', marginTop: 4 }}>80px min</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <svg viewBox="0 0 80 80" width={32}>
+                    <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-2">A</text>
+                    <circle cx="62" cy="58" r="7" fill="#FF5C1A" />
+                  </svg>
+                  <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>32px icon</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ---- DO / DON'T ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Do / Don't</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: 24,
+            marginBottom: 48,
+          }}>
+            {/* DO examples */}
+            {[
+              { type: 'do', label: 'Use on solid, clean backgrounds', bg: C.nightCard, logoBg: C.night },
+              { type: 'do', label: 'Maintain clear space around the mark', bg: C.nightCard, logoBg: C.night },
+              { type: 'do', label: 'Use the correct variation for the background', bg: C.nightCard, logoBg: C.night },
+            ].map((item, i) => (
+              <div key={`do-${i}`} style={{
+                background: item.bg,
+                borderRadius: 16,
+                overflow: 'hidden',
+                border: `1px solid ${C.nightBorder}`,
+              }}>
+                <div style={{
+                  background: item.logoBg,
+                  padding: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 100,
+                }}>
+                  <svg viewBox="0 0 260 80" width={120}>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                    <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                  </svg>
+                </div>
+                <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, color: C.sage, fontWeight: 700 }}>DO</span>
+                  <span style={{ fontSize: 13, color: C.textLightMuted }}>{item.label}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* DON'T examples */}
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              overflow: 'hidden',
+              border: `1px solid ${C.nightBorder}`,
+            }}>
+              <div style={{
+                background: C.night,
                 padding: 32,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: `1px dashed ${C.orange}33`,
-                position: 'relative',
+                minHeight: 100,
               }}>
-                <svg viewBox="0 0 240 80" width={120}>
-                  <text x="0" y="64" fontFamily="Syne, sans-serif" fontSize="72" fontWeight="800" fill={C.textLight} letterSpacing="-3">AOM</text>
-                  <circle cx="212" cy="57" r="7" fill={C.orange} />
+                {/* Stretched */}
+                <svg viewBox="0 0 260 80" width={160} height={40} preserveAspectRatio="none" style={{ opacity: 0.5 }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                  <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
                 </svg>
-                {/* Clear space indicators */}
-                <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50)', fontSize: 9, color: C.orange, letterSpacing: '0.15em' }}>x</div>
-                <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50)', fontSize: 9, color: C.orange, letterSpacing: '0.15em' }}>x</div>
+              </div>
+              <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#E85D26', fontWeight: 700 }}>DON'T</span>
+                <span style={{ fontSize: 13, color: C.textLightMuted }}>Stretch or distort the wordmark</span>
               </div>
             </div>
 
             <div style={{
               background: C.nightCard,
               borderRadius: 16,
-              padding: 32,
+              overflow: 'hidden',
               border: `1px solid ${C.nightBorder}`,
             }}>
-              <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, marginBottom: 12 }}>Minimum Sizes</h3>
-              <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 16 }}>
-                The wordmark must remain legible at all sizes. Below these minimums, use the "A" mark only.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: C.night, borderRadius: 8 }}>
-                  <span style={{ fontSize: 13, color: C.textLightMuted }}>Print</span>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: C.textLight }}>24mm wide</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: C.night, borderRadius: 8 }}>
-                  <span style={{ fontSize: 13, color: C.textLightMuted }}>Digital</span>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: C.textLight }}>80px wide</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: C.night, borderRadius: 8 }}>
-                  <span style={{ fontSize: 13, color: C.textLightMuted }}>Favicon / App Icon</span>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: C.textLight }}>A mark only</span>
-                </div>
+              <div style={{
+                background: C.night,
+                padding: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+              }}>
+                {/* Wrong color dot */}
+                <svg viewBox="0 0 260 80" width={120} style={{ opacity: 0.5 }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                  <circle cx="224" cy="58" r="8" fill="#4488FF" />
+                </svg>
+              </div>
+              <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#E85D26', fontWeight: 700 }}>DON'T</span>
+                <span style={{ fontSize: 13, color: C.textLightMuted }}>Change the dot color</span>
               </div>
             </div>
 
             <div style={{
               background: C.nightCard,
               borderRadius: 16,
-              padding: 32,
+              overflow: 'hidden',
               border: `1px solid ${C.nightBorder}`,
             }}>
-              <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, marginBottom: 12 }}>Don'ts</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{
+                background: C.night,
+                padding: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+              }}>
+                {/* Rotated */}
+                <svg viewBox="0 0 260 80" width={120} style={{ opacity: 0.5, transform: 'rotate(-15deg)' }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                  <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                </svg>
+              </div>
+              <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#E85D26', fontWeight: 700 }}>DON'T</span>
+                <span style={{ fontSize: 13, color: C.textLightMuted }}>Rotate or tilt the mark</span>
+              </div>
+            </div>
+
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              overflow: 'hidden',
+              border: `1px solid ${C.nightBorder}`,
+            }}>
+              <div style={{
+                background: C.night,
+                padding: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+              }}>
+                {/* Drop shadow */}
+                <svg viewBox="0 0 260 80" width={120} style={{ opacity: 0.5, filter: 'drop-shadow(4px 4px 8px rgba(255,92,26,0.6))' }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                  <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                </svg>
+              </div>
+              <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#E85D26', fontWeight: 700 }}>DON'T</span>
+                <span style={{ fontSize: 13, color: C.textLightMuted }}>Add drop shadows or effects</span>
+              </div>
+            </div>
+
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              overflow: 'hidden',
+              border: `1px solid ${C.nightBorder}`,
+            }}>
+              <div style={{
+                background: C.night,
+                padding: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+              }}>
+                {/* No dot */}
+                <svg viewBox="0 0 220 80" width={110} style={{ opacity: 0.5 }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                </svg>
+              </div>
+              <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#E85D26', fontWeight: 700 }}>DON'T</span>
+                <span style={{ fontSize: 13, color: C.textLightMuted }}>Remove the period/dot</span>
+              </div>
+            </div>
+
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              overflow: 'hidden',
+              border: `1px solid ${C.nightBorder}`,
+            }}>
+              <div style={{
+                backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'20\' height=\'20\'%3E%3Crect fill=\'%23333\' width=\'10\' height=\'10\'/%3E%3Crect fill=\'%23555\' x=\'10\' width=\'10\' height=\'10\'/%3E%3Crect fill=\'%23555\' y=\'10\' width=\'10\' height=\'10\'/%3E%3Crect fill=\'%23333\' x=\'10\' y=\'10\' width=\'10\' height=\'10\'/%3E%3C/svg%3E")',
+                padding: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 100,
+              }}>
+                <svg viewBox="0 0 260 80" width={120} style={{ opacity: 0.5 }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                  <circle cx="224" cy="58" r="8" fill="#FF5C1A" />
+                </svg>
+              </div>
+              <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#E85D26', fontWeight: 700 }}>DON'T</span>
+                <span style={{ fontSize: 13, color: C.textLightMuted }}>Place on busy backgrounds without overlay</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ---- COLOR ON BACKGROUND MATRIX ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Background Matrix</h3>
+          <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 24, maxWidth: 560 }}>
+            Which logo variation to use on each background color.
+          </p>
+          <div style={{
+            background: C.nightCard,
+            borderRadius: 16,
+            padding: 24,
+            border: `1px solid ${C.nightBorder}`,
+            overflowX: 'auto',
+            marginBottom: 48,
+          }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 600 }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${C.nightBorder}` }}>
+                  {['Background', 'Color', 'Use This Variation', 'Preview'].map(h => (
+                    <th key={h} style={{
+                      textAlign: 'left', padding: '10px 12px',
+                      color: C.textLightMuted, fontWeight: 500, fontSize: 11,
+                      letterSpacing: '0.1em', textTransform: 'uppercase',
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
                 {[
-                  'Stretch or distort the wordmark',
-                  'Change the typeface or weight',
-                  'Remove the orange dot',
-                  'Place on busy backgrounds without overlay',
-                  'Rotate or tilt the mark',
-                  'Add drop shadows or effects',
-                ].map((rule, i) => (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 10,
-                    fontSize: 13, color: C.textLightMuted, lineHeight: 1.5,
-                  }}>
-                    <span style={{ color: '#E85D26', fontSize: 14, lineHeight: 1.4, flexShrink: 0 }}>x</span>
-                    {rule}
-                  </div>
+                  { name: 'Night / Black', hex: '#0C0C0C', variation: 'Primary (light on dark)', textFill: '#F2EDE8', dotFill: '#FF5C1A' },
+                  { name: 'Cream / White', hex: '#FDF6EC', variation: 'Primary (dark on light)', textFill: '#0A0A0A', dotFill: '#FF5C1A' },
+                  { name: 'Orange', hex: '#FF5C1A', variation: 'Monochrome white', textFill: '#FFFFFF', dotFill: '#FFFFFF' },
+                  { name: 'Photography (dark)', hex: '#1A1A1A', variation: 'Monochrome white', textFill: '#F2EDE8', dotFill: '#F2EDE8' },
+                  { name: 'Photography (light)', hex: '#E8E0D8', variation: 'Monochrome black', textFill: '#0A0A0A', dotFill: '#0A0A0A' },
+                  { name: 'Sage', hex: '#7C9A72', variation: 'Monochrome white', textFill: '#FFFFFF', dotFill: '#FFFFFF' },
+                ].map((row, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.nightBorder}` }}>
+                    <td style={{ padding: '12px 12px', color: C.textLight, fontWeight: 500 }}>{row.name}</td>
+                    <td style={{ padding: '12px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 4, background: row.hex, border: `1px solid ${C.nightBorder}` }} />
+                        <span style={{ fontSize: 12, color: C.textLightMuted, fontFamily: 'monospace' }}>{row.hex}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px 12px', color: C.textLightMuted }}>{row.variation}</td>
+                    <td style={{ padding: '8px 12px' }}>
+                      <div style={{ background: row.hex, borderRadius: 6, padding: '8px 16px', display: 'inline-flex', border: `1px solid ${C.nightBorder}` }}>
+                        <svg viewBox="0 0 260 80" width={60}>
+                          <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={row.textFill} letterSpacing="-3">AOM</text>
+                          <circle cx="224" cy="58" r="8" fill={row.dotFill} />
+                        </svg>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            </div>
+              </tbody>
+            </table>
+          </div>
+
+          {/* ---- DOWNLOADS ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Downloads</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: 12,
+          }}>
+            {[
+              { file: 'aom-primary-dark.svg', label: 'Primary (dark bg)' },
+              { file: 'aom-primary-light.svg', label: 'Primary (light bg)' },
+              { file: 'aom-mono-black.svg', label: 'Mono Black' },
+              { file: 'aom-mono-white.svg', label: 'Mono White' },
+              { file: 'aom-icon-mark.svg', label: 'Icon Mark' },
+              { file: 'aom-icon-mark-white.svg', label: 'Icon Mark (white)' },
+              { file: 'aom-stacked.svg', label: 'Stacked Lockup' },
+              { file: 'aom-stacked-white.svg', label: 'Stacked (white)' },
+              { file: 'aom-horizontal.svg', label: 'Horizontal Lockup' },
+              { file: 'aom-horizontal-white.svg', label: 'Horizontal (white)' },
+              { file: 'aom-wordmark-full.svg', label: 'Full Wordmark' },
+            ].map(d => (
+              <a
+                key={d.file}
+                href={`/brand/${d.file}`}
+                download={d.file}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '10px 14px',
+                  background: C.night,
+                  borderRadius: 8,
+                  border: `1px solid ${C.nightBorder}`,
+                  color: C.textLight,
+                  textDecoration: 'none',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  transition: 'border-color 0.2s',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 1v10M4 8l4 4 4-4M2 14h12" stroke="#FF5C1A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {d.label}
+              </a>
+            ))}
           </div>
         </MaxWidth>
       </DarkSection>
