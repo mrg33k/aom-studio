@@ -2184,6 +2184,301 @@ function CommandBar({ onRefresh, isMobile }) {
   )
 }
 
+// ─── CHAT WIDGET (RELAY TO CLAUDE CODE) ──────────────────────────────────────
+const CHAT_STORAGE_KEY = 'aom_chat_history'
+const CHAT_LAST_OUTBOX_KEY = 'aom_chat_last_outbox_id'
+const POLL_INTERVAL = 15000
+
+function ChatWidget() {
+  const [open, setOpen] = useState(false)
+  const [messages, setMessages] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]') } catch { return [] }
+  })
+  const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
+  const [hasNew, setHasNew] = useState(false)
+  const messagesEndRef = useRef(null)
+  const pollRef = useRef(null)
+
+  // Persist messages to localStorage
+  useEffect(() => {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages.slice(-100)))
+  }, [messages])
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (open && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages, open])
+
+  // Poll for responses
+  useEffect(() => {
+    if (!open) return
+
+    const poll = async () => {
+      try {
+        const sinceId = localStorage.getItem(CHAT_LAST_OUTBOX_KEY) || ''
+        const res = await fetch(`/api/relay?since_id=${sinceId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.messages && data.messages.length > 0) {
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id))
+            const newMsgs = data.messages.filter(m => !existingIds.has(m.id))
+            if (newMsgs.length === 0) return prev
+            return [...prev, ...newMsgs.map(m => ({ ...m, type: 'response' }))]
+          })
+          const lastId = data.messages[data.messages.length - 1].id
+          localStorage.setItem(CHAT_LAST_OUTBOX_KEY, lastId)
+        }
+      } catch {}
+    }
+
+    poll()
+    pollRef.current = setInterval(poll, POLL_INTERVAL)
+    return () => clearInterval(pollRef.current)
+  }, [open])
+
+  // Poll in background for notification dot
+  useEffect(() => {
+    if (open) { setHasNew(false); return }
+
+    const bgPoll = async () => {
+      try {
+        const sinceId = localStorage.getItem(CHAT_LAST_OUTBOX_KEY) || ''
+        const res = await fetch(`/api/relay?since_id=${sinceId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.messages && data.messages.length > 0) setHasNew(true)
+      } catch {}
+    }
+
+    const timer = setInterval(bgPoll, POLL_INTERVAL * 2)
+    return () => clearInterval(timer)
+  }, [open])
+
+  const send = async () => {
+    const text = input.trim()
+    if (!text || sending) return
+
+    const localMsg = {
+      id: 'local-' + Date.now(),
+      timestamp: new Date().toISOString(),
+      message: text,
+      type: 'sent',
+      status: 'sending',
+    }
+
+    setMessages(prev => [...prev, localMsg])
+    setInput('')
+    setSending(true)
+
+    try {
+      const res = await fetch('/api/relay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setMessages(prev => prev.map(m =>
+          m.id === localMsg.id ? { ...m, id: data.id, status: 'sent' } : m
+        ))
+      } else {
+        setMessages(prev => prev.map(m =>
+          m.id === localMsg.id ? { ...m, status: 'failed' } : m
+        ))
+      }
+    } catch {
+      setMessages(prev => prev.map(m =>
+        m.id === localMsg.id ? { ...m, status: 'failed' } : m
+      ))
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const clearHistory = () => {
+    setMessages([])
+    localStorage.removeItem(CHAT_STORAGE_KEY)
+    localStorage.removeItem(CHAT_LAST_OUTBOX_KEY)
+  }
+
+  const formatTime = (ts) => {
+    try {
+      const d = new Date(ts)
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    } catch { return '' }
+  }
+
+  // Floating button
+  const bubbleStyle = {
+    position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+    width: 52, height: 52, borderRadius: '50%',
+    background: ORANGE, border: 'none', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: '0 4px 20px rgba(255,79,0,0.35)',
+    transition: 'transform 0.2s, box-shadow 0.2s',
+  }
+
+  // Panel
+  const panelStyle = {
+    position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+    width: 380, maxWidth: 'calc(100vw - 32px)',
+    height: 520, maxHeight: 'calc(100vh - 48px)',
+    background: '#0A0A08', border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 16, display: 'flex', flexDirection: 'column',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+    overflow: 'hidden',
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => { setOpen(true); setHasNew(false) }} style={bubbleStyle}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)' }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        {hasNew && (
+          <span style={{
+            position: 'absolute', top: -2, right: -2,
+            width: 14, height: 14, borderRadius: '50%',
+            background: '#22c55e', border: '2px solid #0A0A08',
+          }} />
+        )}
+      </button>
+    )
+  }
+
+  return (
+    <div style={panelStyle}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: '#0D0D0B',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.5)',
+          }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>Claude Code</span>
+          <span style={{ fontSize: 9, color: '#444', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>RELAY</span>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={clearHistory} title="Clear history"
+            style={{ background: 'none', border: 'none', color: '#333', cursor: 'pointer', fontSize: 11, padding: '4px 6px' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#888'}
+            onMouseLeave={e => e.currentTarget.style.color = '#333'}
+          >
+            Clear
+          </button>
+          <button onClick={() => setOpen(false)}
+            style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 18, padding: '2px 6px', lineHeight: 1 }}
+            onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+            onMouseLeave={e => e.currentTarget.style.color = '#555'}
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: '16px',
+        display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        {messages.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.3 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline' }}>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <div style={{ fontSize: 12, color: '#444', lineHeight: 1.6 }}>
+              Messages sent here relay to Claude Code on your Mac.
+              <br />
+              Responses appear when CC writes to the outbox.
+            </div>
+          </div>
+        )}
+        {messages.map((msg) => {
+          const isSent = msg.type === 'sent'
+          return (
+            <div key={msg.id} style={{
+              alignSelf: isSent ? 'flex-end' : 'flex-start',
+              maxWidth: '85%',
+            }}>
+              <div style={{
+                padding: '10px 14px',
+                borderRadius: isSent ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                background: isSent ? ORANGE : '#1A1A17',
+                border: isSent ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                color: '#fff', fontSize: 13, lineHeight: 1.5,
+                wordBreak: 'break-word',
+              }}>
+                {msg.message}
+              </div>
+              <div style={{
+                fontSize: 9, color: '#333', marginTop: 4,
+                textAlign: isSent ? 'right' : 'left',
+                display: 'flex', gap: 6,
+                justifyContent: isSent ? 'flex-end' : 'flex-start',
+                alignItems: 'center',
+              }}>
+                <span>{formatTime(msg.timestamp)}</span>
+                {isSent && msg.status === 'sending' && <span style={{ color: '#555' }}>sending...</span>}
+                {isSent && msg.status === 'failed' && <span style={{ color: RED }}>failed</span>}
+                {!isSent && msg.reply_to && <span style={{ color: '#333' }}>reply</span>}
+              </div>
+            </div>
+          )
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{
+        padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex', gap: 8, alignItems: 'center',
+        background: '#0D0D0B',
+      }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
+          placeholder="Message Claude Code..."
+          style={{
+            flex: 1, background: '#111', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 8, color: '#fff', fontSize: 13, padding: '10px 14px',
+            outline: 'none',
+          }}
+          onFocus={e => e.currentTarget.style.borderColor = 'rgba(255,79,0,0.3)'}
+          onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+        />
+        <button
+          onClick={send}
+          disabled={!input.trim() || sending}
+          style={{
+            background: ORANGE, color: '#fff', border: 'none',
+            borderRadius: 8, padding: '10px 14px', fontSize: 11, fontWeight: 800,
+            letterSpacing: '0.06em', cursor: input.trim() ? 'pointer' : 'default',
+            opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase',
+            transition: 'opacity 0.15s',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {sending ? '...' : 'SEND'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── PASSWORD GATE ────────────────────────────────────────────────────────────
 function PasswordGate({ onAuth }) {
   const [input, setInput] = useState('')
@@ -2852,6 +3147,9 @@ export default function Dashboard() {
 
       {/* COUNCIL MODAL */}
       {councilOpen && <CouncilModal onClose={() => setCouncilOpen(false)} />}
+
+      {/* CHAT RELAY WIDGET */}
+      <ChatWidget />
     </div>
   )
 }
