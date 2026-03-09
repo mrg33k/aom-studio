@@ -1,59 +1,223 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ArrowLeft, Copy, Check } from 'lucide-react'
 
 /* ------------------------------------------------------------------ */
-/*  Color data                                                         */
+/*  Theme definitions from Steffen's 3 brand directions                */
 /* ------------------------------------------------------------------ */
 
-const primaryColors = [
-  { name: 'AOM Orange', hex: '#FF4F00', token: 'aom-orange', role: 'Primary Accent', usage: 'CTAs, active states, emphasis moments. Never more than 10-15% of any screen.' },
-  { name: 'Sage', hex: '#7C9A72', token: 'aom-sage', role: 'AI Accent', usage: 'AI/systems section, status indicators, secondary highlights. The "growth" signal.' },
-]
-
-const bgColors = [
-  { name: 'Night', hex: '#0A0A08', token: 'aom-night', role: 'Primary BG', usage: 'Main page background. Slightly warm black.' },
-  { name: 'Charcoal', hex: '#141412', token: 'aom-charcoal', role: 'Card BG', usage: 'Cards, modals, elevated surfaces.' },
-  { name: 'Deep Warm', hex: '#1A1A17', token: 'aom-surface', role: 'Surface BG', usage: 'Section alternation, input fields, sidebar backgrounds.' },
-  { name: 'Cream', hex: '#FAF5EF', token: 'aom-cream', role: 'Light Surface', usage: 'Light-mode sections (if needed), PDF exports, print.' },
-]
-
-const textColors = [
-  { name: 'Warm White', hex: '#F5F0EB', token: 'aom-warm-white', role: 'Primary Text', usage: 'Headlines, primary body text on dark backgrounds.' },
-  { name: 'Stone', hex: '#A8A29E', token: 'aom-stone', role: 'Secondary Text', usage: 'Subheadings, supporting copy. Replaces zinc-400/zinc-500.' },
-  { name: 'Muted Stone', hex: '#78716C', token: 'aom-stone-muted', role: 'Tertiary Text', usage: 'Captions, timestamps, micro-labels, metadata.' },
-  { name: 'Dim', hex: '#57534E', token: 'aom-dim', role: 'Disabled', usage: 'Placeholder text, disabled states.' },
-]
-
-const accentColors = [
-  { name: 'Bright Orange', hex: '#FF6B2B', token: 'aom-orange-hover', role: 'Orange Hover' },
-  { name: 'Burnt', hex: '#CC3F00', token: 'aom-orange-muted', role: 'Orange Muted' },
-  { name: 'Soft Sage', hex: '#9BB593', token: 'aom-sage-light', role: 'Sage Light' },
-  { name: 'Deep Sage', hex: '#5C7A54', token: 'aom-sage-muted', role: 'Sage Muted' },
-  { name: 'Warm Edge', hex: '#292524', token: 'aom-border', role: 'Border Default' },
-  { name: 'Warm Edge Hover', hex: '#44403C', token: 'aom-border-hover', role: 'Border Hover' },
-  { name: 'Green', hex: '#22C55E', token: 'green-500', role: 'Success' },
-  { name: 'Red', hex: '#EF4444', token: 'red-500', role: 'Error' },
-]
+const themes = {
+  A: {
+    id: 'A',
+    label: 'A: INDUSTRIAL',
+    vibe: 'Type is the architecture. Everything else is restraint.',
+    headlineFont: '"Bebas Neue", sans-serif',
+    bodyFont: '"IBM Plex Mono", monospace',
+    displayFont: '"Bebas Neue", sans-serif',
+    colors: {
+      bgPrimary: '#0A0A0A',
+      bgAlt: '#111111',
+      textPrimary: '#F5F5F5',
+      textSecondary: '#8A8A8A',
+      accent: '#FF4D00',
+      accentSecondary: '#FF4D00',
+      border: '#222222',
+      borderHover: '#333333',
+    },
+    hero: {
+      fontSize: '120px',
+      mobileFontSize: '64px',
+      lineHeight: '0.95',
+      tracking: '0.05em',
+      weight: '400',
+    },
+    section: {
+      labelSize: '11px',
+      labelWeight: '500',
+      labelTracking: '0.2em',
+      bodySize: '15px',
+      bodyLineHeight: '1.7',
+      bodyTracking: '0.01em',
+      spacing: '160px',
+      mobileSpacing: '80px',
+    },
+    unique: 'noise', // noise texture + orange bar
+  },
+  B: {
+    id: 'B',
+    label: 'B: EDITORIAL',
+    vibe: 'The quiet confidence of a studio that doesn\'t need to shout.',
+    headlineFont: '"Playfair Display", serif',
+    bodyFont: '"Inter", sans-serif',
+    displayFont: '"Playfair Display", serif',
+    colors: {
+      bgPrimary: '#F7F5F2',
+      bgAlt: '#1A1A1A',
+      textPrimary: '#1A1A1A',
+      textSecondary: '#6B6B6B',
+      accent: '#E85D26',
+      accentSecondary: '#E85D26',
+      border: '#E0DCD7',
+      borderHover: '#CCC8C2',
+    },
+    hero: {
+      fontSize: '64px',
+      mobileFontSize: '40px',
+      lineHeight: '1.05',
+      tracking: '-0.02em',
+      weight: '700',
+    },
+    section: {
+      labelSize: '11px',
+      labelWeight: '600',
+      labelTracking: '0.15em',
+      bodySize: '16px',
+      bodyLineHeight: '1.75',
+      bodyTracking: '0',
+      spacing: '120px',
+      mobileSpacing: '64px',
+    },
+    unique: 'circle', // orange circle motif
+  },
+  C: {
+    id: 'C',
+    label: 'C: BOLD GRAPHIC',
+    vibe: 'Structured personality. The brand has a voice you can hear through the typography.',
+    headlineFont: '"Space Grotesk", sans-serif',
+    bodyFont: '"Space Grotesk", sans-serif',
+    displayFont: '"Syne", sans-serif',
+    displayWeight: '800',
+    colors: {
+      bgPrimary: '#F2EDE8',
+      bgAlt: '#0A0A0A',
+      textPrimary: '#0A0A0A',
+      textSecondary: '#7A7267',
+      accent: '#FF5C1A',
+      accentSecondary: '#D4A843',
+      border: '#0A0A0A',
+      borderHover: '#333333',
+    },
+    hero: {
+      fontSize: '96px',
+      mobileFontSize: '48px',
+      lineHeight: '0.9',
+      tracking: '-0.03em',
+      weight: '800',
+    },
+    section: {
+      labelSize: '11px',
+      labelWeight: '500',
+      labelTracking: '0.2em',
+      bodySize: '16px',
+      bodyLineHeight: '1.7',
+      bodyTracking: '0',
+      spacing: '100px',
+      mobileSpacing: '56px',
+    },
+    unique: 'badges', // badge system + mixed weight
+  },
+}
 
 /* ------------------------------------------------------------------ */
-/*  Typography data                                                    */
+/*  Color palettes per direction                                       */
 /* ------------------------------------------------------------------ */
 
-const typeRows = [
-  { role: 'Headlines', font: 'Inter Tight', weight: '900 (Black)', style: 'Italic', size: '36-72px', lh: '0.85-0.9', sample: 'BRAND INFRASTRUCTURE', className: 'font-headline text-4xl md:text-6xl font-black italic uppercase tracking-tighter' },
-  { role: 'Subheadlines', font: 'Inter Tight', weight: '700 (Bold)', style: 'Normal', size: '18-24px', lh: '1.2', sample: 'The system behind the brand', className: 'font-headline text-xl md:text-2xl font-bold tracking-tight' },
-  { role: 'Body', font: 'Inter', weight: '400 (Regular)', style: 'Normal', size: '16px', lh: '1.6', sample: 'AOM builds the content, websites, and systems that make companies impossible to ignore.', className: 'font-body text-base' },
-  { role: 'Body Emphasis', font: 'Inter', weight: '600 (SemiBold)', style: 'Normal', size: '16px', lh: '1.6', sample: 'Results that speak for themselves.', className: 'font-body text-base font-semibold' },
-  { role: 'Micro Labels', font: 'JetBrains Mono', weight: '700 (Bold)', style: 'Normal', size: '9-11px', lh: '1.2', sample: 'OUR SERVICES', className: 'font-mono text-[10px] font-bold uppercase tracking-[0.3em]' },
-  { role: 'AI/System Text', font: 'JetBrains Mono', weight: '400 (Regular)', style: 'Normal', size: '13-14px', lh: '1.5', sample: 'pipeline.status: active', className: 'font-mono text-sm' },
-  { role: 'Stat Numbers', font: 'Inter Tight', weight: '900 (Black)', style: 'Italic', size: '48-72px', lh: '0.85', sample: '30+', className: 'font-headline text-5xl md:text-7xl font-black italic' },
-]
+const colorSets = {
+  A: [
+    { name: 'True Black', hex: '#0A0A0A', role: 'Background (primary)' },
+    { name: 'Off-black', hex: '#111111', role: 'Background (alternate)' },
+    { name: 'White', hex: '#F5F5F5', role: 'Text (primary)' },
+    { name: 'Warm Gray', hex: '#8A8A8A', role: 'Text (secondary)' },
+    { name: 'Safety Orange', hex: '#FF4D00', role: 'Accent (primary)' },
+  ],
+  B: [
+    { name: 'Warm White', hex: '#F7F5F2', role: 'Background (primary)' },
+    { name: 'Deep Charcoal', hex: '#1A1A1A', role: 'Background (alternate)' },
+    { name: 'Near-black', hex: '#1A1A1A', role: 'Text (on light)' },
+    { name: 'Warm White', hex: '#F7F5F2', role: 'Text (on dark)' },
+    { name: 'Mid Gray', hex: '#6B6B6B', role: 'Text (secondary)' },
+    { name: 'Burnt Orange', hex: '#E85D26', role: 'Accent (primary)' },
+  ],
+  C: [
+    { name: 'Cream', hex: '#F2EDE8', role: 'Background (primary)' },
+    { name: 'True Black', hex: '#0A0A0A', role: 'Background (alternate)' },
+    { name: 'Black', hex: '#0A0A0A', role: 'Text (on light)' },
+    { name: 'Cream', hex: '#F2EDE8', role: 'Text (on dark)' },
+    { name: 'Warm Mid-gray', hex: '#7A7267', role: 'Text (secondary)' },
+    { name: 'Vivid Orange', hex: '#FF5C1A', role: 'Accent (primary)' },
+    { name: 'Warm Gold', hex: '#D4A843', role: 'Accent (secondary)' },
+  ],
+}
+
+/* ------------------------------------------------------------------ */
+/*  Typography specs per direction                                     */
+/* ------------------------------------------------------------------ */
+
+const typeSpecs = {
+  A: [
+    { role: 'Headlines', font: 'Bebas Neue', weight: '400', size: '72-120px', lh: '0.95', tracking: '+0.05em' },
+    { role: 'Section Labels', font: 'IBM Plex Mono', weight: '500', size: '11px', lh: '1.4', tracking: '+0.2em' },
+    { role: 'Body', font: 'IBM Plex Mono', weight: '400', size: '15px', lh: '1.7', tracking: '+0.01em' },
+    { role: 'Micro-labels', font: 'IBM Plex Mono', weight: '600', size: '10px', lh: '1.2', tracking: '+0.25em' },
+    { role: 'Stat Numbers', font: 'Bebas Neue', weight: '400', size: '96-144px', lh: '1.0', tracking: '0' },
+  ],
+  B: [
+    { role: 'Headlines', font: 'Playfair Display', weight: '700', size: '56-80px', lh: '1.05', tracking: '-0.02em' },
+    { role: 'Subheadlines', font: 'Inter', weight: '500', size: '20px', lh: '1.4', tracking: '+0.02em' },
+    { role: 'Section Labels', font: 'Inter', weight: '600', size: '11px', lh: '1.4', tracking: '+0.15em' },
+    { role: 'Body', font: 'Inter', weight: '400', size: '16px', lh: '1.75', tracking: '0' },
+    { role: 'Pull Quotes', font: 'Playfair Display Italic', weight: '400', size: '28px', lh: '1.3', tracking: '0' },
+  ],
+  C: [
+    { role: 'Hero Display', font: 'Syne', weight: '800', size: '80-120px', lh: '0.9', tracking: '-0.03em' },
+    { role: 'Section Headlines', font: 'Space Grotesk', weight: '700', size: '36-48px', lh: '1.1', tracking: '-0.01em' },
+    { role: 'Section Labels', font: 'Space Grotesk', weight: '500', size: '11px', lh: '1.4', tracking: '+0.2em' },
+    { role: 'Body', font: 'Space Grotesk', weight: '400', size: '16px', lh: '1.7', tracking: '0' },
+    { role: 'Badges', font: 'Space Grotesk', weight: '700', size: '10px', lh: '1.2', tracking: '+0.15em' },
+  ],
+}
+
+/* ------------------------------------------------------------------ */
+/*  Voice content per direction                                        */
+/* ------------------------------------------------------------------ */
+
+const voiceContent = {
+  A: {
+    tone: 'Direct. Minimal. Let the work speak.',
+    principles: [
+      'Type does the talking. Less color, more structure.',
+      'Every pixel earns its place. No decoration.',
+      'The constraint IS the system.',
+      'Monospace = the machine layer. Headlines = the human statement.',
+    ],
+    sample: '"We build systems. The content runs itself."',
+  },
+  B: {
+    tone: 'Confident and warm. Editorial authority without pretension.',
+    principles: [
+      'Write like someone who truly understands.',
+      'Serif headlines carry weight. Sans body keeps it readable.',
+      'Warmth through restraint, not through excess.',
+      'The orange circle is punctuation. It appears, it means something.',
+    ],
+    sample: '"We make things that impact."',
+  },
+  C: {
+    tone: 'Energetic and structured. Personality with a system behind it.',
+    principles: [
+      'Mixed weight headlines create visual rhythm.',
+      'Badges make capabilities scannable.',
+      'Bold and regular alternate within a single line.',
+      'Two accent colors give range without chaos.',
+    ],
+    sample: '"WE make THINGS that BRING opportunity."',
+  },
+}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function CopyButton({ text }) {
+function CopyButton({ text, theme }) {
   const [copied, setCopied] = useState(false)
   const handleCopy = () => {
     navigator.clipboard.writeText(text)
@@ -61,81 +225,602 @@ function CopyButton({ text }) {
     setTimeout(() => setCopied(false), 1500)
   }
   return (
-    <button onClick={handleCopy} className="ml-2 inline-flex items-center text-[#78716C] hover:text-[#F5F0EB] transition-colors" title="Copy">
+    <button
+      onClick={handleCopy}
+      style={{ color: theme.colors.textSecondary, marginLeft: '8px', display: 'inline-flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer' }}
+      title="Copy"
+    >
       {copied ? <Check size={12} /> : <Copy size={12} />}
     </button>
   )
 }
 
-function ColorSwatch({ color, large }) {
-  const isLight = ['#FAF5EF', '#F5F0EB', '#A8A29E', '#9BB593', '#FF6B2B', '#FF4F00', '#22C55E', '#EF4444'].includes(color.hex)
+function isMobile() {
+  return typeof window !== 'undefined' && window.innerWidth < 768
+}
+
+/* ------------------------------------------------------------------ */
+/*  Direction A: INDUSTRIAL                                            */
+/* ------------------------------------------------------------------ */
+
+function IndustrialPage({ theme, scrollTo }) {
+  const t = theme
+  const c = t.colors
+  const mobile = isMobile()
+  const sectionSpacing = mobile ? t.section.mobileSpacing : t.section.spacing
+
   return (
-    <div className="group">
-      <div
-        className={`${large ? 'h-24 md:h-32' : 'h-16 md:h-20'} rounded-sm border border-[#292524] relative overflow-hidden transition-all duration-300 group-hover:border-[#44403C]`}
-        style={{ backgroundColor: color.hex }}
-      >
-        <span className={`absolute bottom-2 left-3 font-mono text-[10px] font-bold ${isLight ? 'text-[#0A0A08]' : 'text-[#F5F0EB]'} opacity-80`}>
-          {color.hex}
-        </span>
+    <div style={{ background: c.bgPrimary, color: c.textPrimary, minHeight: '100vh', position: 'relative' }}>
+      {/* Noise overlay */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50, opacity: 0.04, mixBlendMode: 'overlay' }}>
+        <svg width="100%" height="100%">
+          <filter id="noise-a"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" /></filter>
+          <rect width="100%" height="100%" filter="url(#noise-a)" />
+        </svg>
       </div>
-      <div className="mt-2">
-        <div className="flex items-center gap-2">
-          <span className="text-[#F5F0EB] text-sm font-semibold">{color.name}</span>
-          <CopyButton text={color.hex} />
+
+      {/* Hero */}
+      <section style={{ padding: mobile ? '80px 24px' : '160px 48px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ fontFamily: t.headlineFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: t.hero.weight, letterSpacing: t.hero.tracking, lineHeight: t.hero.lineHeight, color: c.textPrimary, textTransform: 'uppercase' }}>
+          AHEAD<br />OF<br />MARKET
         </div>
-        <span className="font-mono text-[10px] text-[#78716C] uppercase tracking-[0.2em]">{color.role}</span>
-        {color.usage && <p className="text-[#A8A29E] text-xs mt-1 leading-relaxed">{color.usage}</p>}
-      </div>
-    </div>
-  )
-}
+        {/* Orange bar */}
+        <div style={{ width: '40vw', height: '8px', background: c.accent, margin: '32px 0 24px' }} />
+        <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary, lineHeight: 1.4 }}>
+          CREATIVE PRODUCTION + AI SYSTEMS
+        </p>
+      </section>
 
-function CodeBlock({ children, label }) {
-  const [copied, setCopied] = useState(false)
-  const handleCopy = () => {
-    navigator.clipboard.writeText(children)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-  return (
-    <div className="relative rounded-sm border border-[#292524] bg-[#0A0A08] overflow-hidden">
-      {label && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-[#292524] bg-[#141412]">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C]">{label}</span>
-          <button onClick={handleCopy} className="text-[#78716C] hover:text-[#F5F0EB] transition-colors text-xs font-mono flex items-center gap-1">
-            {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
-          </button>
+      {/* Section 01: Colors */}
+      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px' }}>
+        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '48px' }}>
+            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>01</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>COLOR SYSTEM</p>
+              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>PALETTE</h2>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(5, 1fr)', gap: '16px' }}>
+            {colorSets.A.map(col => (
+              <div key={col.hex + col.role}>
+                <div style={{ height: mobile ? '80px' : '120px', background: col.hex, border: `1px solid ${c.border}`, position: 'relative' }}>
+                  <span style={{ position: 'absolute', bottom: '8px', left: '12px', fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, color: col.hex === '#0A0A0A' || col.hex === '#111111' ? '#F5F5F5' : '#0A0A0A' }}>{col.hex}</span>
+                </div>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary, marginTop: '8px' }}>{col.name}</p>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '10px', color: c.textSecondary, opacity: 0.6 }}>{col.role}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textSecondary, lineHeight: t.section.bodyLineHeight, marginTop: '32px', maxWidth: '560px' }}>
+            No gradients. No additional colors. The constraint IS the system.
+          </p>
         </div>
-      )}
-      <pre className="p-4 md:p-6 overflow-x-auto text-sm leading-relaxed font-mono text-[#A8A29E]">
-        <code>{children}</code>
-      </pre>
+      </section>
+
+      {/* Section 02: Typography */}
+      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px' }}>
+        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '48px' }}>
+            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>02</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>TYPOGRAPHY</p>
+              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>TYPE SYSTEM</h2>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {typeSpecs.A.map(spec => (
+              <div key={spec.role} style={{ borderBottom: `1px solid ${c.border}`, paddingBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                  <span style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.accent }}>{spec.role}</span>
+                  <span style={{ fontFamily: t.bodyFont, fontSize: '10px', color: c.textSecondary }}>{spec.font} / {spec.weight} / {spec.size}</span>
+                </div>
+                <div style={{ fontFamily: spec.font === 'Bebas Neue' ? t.headlineFont : t.bodyFont, fontSize: spec.role === 'Stat Numbers' ? (mobile ? '64px' : '96px') : spec.role === 'Headlines' ? (mobile ? '40px' : '72px') : spec.size.split('-').pop() || spec.size, fontWeight: spec.weight, letterSpacing: spec.tracking, lineHeight: spec.lh, textTransform: spec.role === 'Headlines' || spec.role === 'Section Labels' || spec.role === 'Micro-labels' || spec.role === 'Stat Numbers' ? 'uppercase' : 'none' }}>
+                  {spec.role === 'Headlines' && 'BRAND INFRASTRUCTURE'}
+                  {spec.role === 'Section Labels' && 'OUR SERVICES'}
+                  {spec.role === 'Body' && 'AOM builds the content, websites, and systems that make companies impossible to ignore.'}
+                  {spec.role === 'Micro-labels' && 'PHOENIX, AZ / EST. 2020'}
+                  {spec.role === 'Stat Numbers' && '30+'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Section 03: Layout */}
+      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px' }}>
+        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '48px' }}>
+            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>03</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>LAYOUT</p>
+              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>VISUAL RULES</h2>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: '32px' }}>
+            {[
+              { label: 'GRID', value: '12-column, content in 8-10 columns, left-aligned' },
+              { label: 'SECTION SPACING', value: '160px desktop / 80px mobile' },
+              { label: 'DIVIDERS', value: '1px horizontal rules in #222222, full-width' },
+              { label: 'BODY MAX-WIDTH', value: '560px' },
+              { label: 'IMAGERY', value: 'Desaturated or B&W, high contrast, film grain 4-6%' },
+              { label: 'CORNERS', value: 'Sharp edges only. No rounded corners.' },
+            ].map(item => (
+              <div key={item.label} style={{ borderBottom: `1px solid ${c.border}`, paddingBottom: '16px' }}>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary, marginBottom: '6px' }}>{item.label}</p>
+                <p style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textPrimary, lineHeight: t.section.bodyLineHeight }}>{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Section 04: Voice */}
+      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px' }}>
+        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '48px' }}>
+            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>04</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>VOICE</p>
+              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>HOW WE TALK</h2>
+            </div>
+          </div>
+          <p style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textSecondary, lineHeight: t.section.bodyLineHeight, marginBottom: '32px', maxWidth: '560px' }}>
+            {voiceContent.A.tone}
+          </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 48px' }}>
+            {voiceContent.A.principles.map((p, i) => (
+              <li key={i} style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textPrimary, lineHeight: t.section.bodyLineHeight, padding: '12px 0', borderBottom: `1px solid ${c.border}`, display: 'flex', gap: '16px', alignItems: 'baseline' }}>
+                <span style={{ color: c.accent, fontFamily: t.headlineFont, fontSize: '20px' }}>{String(i + 1).padStart(2, '0')}</span>
+                {p}
+              </li>
+            ))}
+          </ul>
+          <div style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '48px', color: c.textPrimary, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>
+            {voiceContent.A.sample}
+          </div>
+        </div>
+      </section>
+
+      {/* Unique element callout */}
+      <section style={{ padding: `${sectionSpacing} 0`, maxWidth: '1100px', margin: '0 auto', paddingLeft: mobile ? '24px' : '48px', paddingRight: mobile ? '24px' : '48px', paddingBottom: '80px' }}>
+        <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '48px' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', marginBottom: '32px' }}>
+            <span style={{ fontFamily: t.headlineFont, fontSize: '48px', color: c.textSecondary, lineHeight: 1, opacity: 0.3 }}>05</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: t.section.labelSize, fontWeight: t.section.labelWeight, textTransform: 'uppercase', letterSpacing: t.section.labelTracking, color: c.textSecondary, marginBottom: '8px' }}>SIGNATURE ELEMENT</p>
+              <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '40px' : '72px', fontWeight: 400, letterSpacing: '0.05em', lineHeight: 0.95, textTransform: 'uppercase' }}>NOISE + BAR</h2>
+            </div>
+          </div>
+          <p style={{ fontFamily: t.bodyFont, fontSize: t.section.bodySize, color: c.textSecondary, lineHeight: t.section.bodyLineHeight, maxWidth: '560px', marginBottom: '32px' }}>
+            Subtle film grain (SVG noise filter) at 3-5% opacity layered over all backgrounds. A single horizontal orange bar (8px tall, full-width) between the hero and content. This bar is the brand mark. It appears once, prominently.
+          </p>
+          <div style={{ width: '100%', height: '8px', background: c.accent }} />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ borderTop: `1px solid ${c.border}`, padding: '48px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : 'repeat(3, 1fr)', gap: '16px' }}>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary }}>AOM Brand Direction A</p>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary }}>Industrial</p>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.25em', color: c.textSecondary }}>Phoenix, AZ</p>
+        </div>
+      </footer>
     </div>
   )
 }
 
-function SectionHeader({ label, title, subtitle }) {
+/* ------------------------------------------------------------------ */
+/*  Direction B: EDITORIAL                                             */
+/* ------------------------------------------------------------------ */
+
+function EditorialPage({ theme }) {
+  const t = theme
+  const c = t.colors
+  const mobile = isMobile()
+  const sectionSpacing = mobile ? t.section.mobileSpacing : t.section.spacing
+
+  const lightSection = { background: c.bgPrimary, color: '#1A1A1A' }
+  const darkSection = { background: c.bgAlt, color: '#F7F5F2' }
+
   return (
-    <div className="mb-12">
-      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-4">{label}</p>
-      <div className="w-12 h-[2px] bg-[#FF4F00] mb-4" />
-      <h2 className="font-headline text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-[#F5F0EB]">{title}</h2>
-      {subtitle && <p className="text-[#A8A29E] text-base mt-4 max-w-2xl leading-relaxed">{subtitle}</p>}
+    <div style={{ background: c.bgPrimary, color: c.textPrimary, minHeight: '100vh' }}>
+      {/* Hero - light */}
+      <section style={{ ...lightSection, padding: mobile ? '80px 24px' : '120px 120px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.textSecondary, marginBottom: '40px' }}>AOM Brand Direction</p>
+          <h1 style={{ fontFamily: t.headlineFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: t.hero.weight, letterSpacing: t.hero.tracking, lineHeight: t.hero.lineHeight }}>
+            We make things<br />that <em>impact</em><span style={{ display: 'inline-block', width: '16px', height: '16px', borderRadius: '50%', background: c.accent, verticalAlign: 'baseline', marginLeft: '4px', position: 'relative', top: '-2px' }} />
+          </h1>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textSecondary, marginTop: '24px', lineHeight: 1.75, maxWidth: '640px', margin: '24px auto 0' }}>
+            Creative production and AI systems for companies that build.
+          </p>
+        </div>
+      </section>
+
+      {/* Colors - dark section */}
+      <section style={{ ...darkSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginBottom: '16px' }}>Color System</p>
+          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: '#F7F5F2', marginBottom: '48px' }}>
+            Warm, <em>not cold</em>
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: '24px' }}>
+            {colorSets.B.map(col => (
+              <div key={col.hex + col.role}>
+                <div style={{ height: '100px', background: col.hex, border: col.hex === '#F7F5F2' ? '1px solid #333' : 'none', position: 'relative' }}>
+                  <span style={{ position: 'absolute', bottom: '8px', left: '12px', fontFamily: t.bodyFont, fontSize: '11px', color: col.hex === '#1A1A1A' || col.hex === '#6B6B6B' ? '#F7F5F2' : '#1A1A1A' }}>{col.hex}</span>
+                </div>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginTop: '12px' }}>{col.name}</p>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '14px', color: '#F7F5F2', marginTop: '4px' }}>{col.role}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Typography - light section */}
+      <section style={{ ...lightSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.textSecondary, marginBottom: '16px' }}>Typography</p>
+          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: '48px' }}>
+            Serif meets <em>sans</em>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {typeSpecs.B.map(spec => (
+              <div key={spec.role} style={{ paddingBottom: '32px', borderBottom: '1px solid #E0DCD7' }}>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.accent, marginBottom: '8px' }}>{spec.role}</p>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '14px', color: c.textSecondary, marginBottom: '16px' }}>
+                  {spec.font} / Weight {spec.weight} / {spec.size}
+                </p>
+                <div style={{ fontFamily: spec.font.includes('Playfair') ? t.headlineFont : t.bodyFont, fontSize: spec.role === 'Headlines' ? (mobile ? '32px' : '56px') : spec.role === 'Pull Quotes' ? '28px' : spec.role === 'Subheadlines' ? '20px' : spec.size, fontWeight: spec.weight, letterSpacing: spec.tracking, lineHeight: spec.lh, fontStyle: spec.font.includes('Italic') || spec.role === 'Pull Quotes' ? 'italic' : 'normal', textTransform: spec.role === 'Section Labels' ? 'uppercase' : 'none', maxWidth: '640px' }}>
+                  {spec.role === 'Headlines' && 'Brand Infrastructure'}
+                  {spec.role === 'Subheadlines' && 'The system behind the brand'}
+                  {spec.role === 'Section Labels' && 'Our Services'}
+                  {spec.role === 'Body' && 'AOM builds the content, websites, and systems that make companies impossible to ignore.'}
+                  {spec.role === 'Pull Quotes' && '"We built this for ourselves first. Now we\'re opening it up."'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Layout - dark section */}
+      <section style={{ ...darkSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginBottom: '16px' }}>Layout & Visual Language</p>
+          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: '#F7F5F2', marginBottom: '48px' }}>
+            Let things <em>breathe</em>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {[
+              { label: 'Grid', desc: '12-column, generous margins (120px desktop sides)' },
+              { label: 'Section Rhythm', desc: 'Alternating light and dark sections. Every other major section flips. Magazine-spread rhythm.' },
+              { label: 'Spacing', desc: '120px between sections desktop, 64px mobile. Minimum 40px between any two elements.' },
+              { label: 'Dividers', desc: 'None. The light/dark alternation IS the divider.' },
+              { label: 'Images', desc: '80% viewport width, centered. Small caption below in 11px uppercase.' },
+              { label: 'CTAs', desc: 'Single orange circle (64px) with white text, or orange text link with arrow. Never full-width.' },
+            ].map(item => (
+              <div key={item.label} style={{ paddingBottom: '24px', borderBottom: '1px solid #333' }}>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginBottom: '8px' }}>{item.label}</p>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: '#F7F5F2', lineHeight: 1.75 }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Voice - light section */}
+      <section style={{ ...lightSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.textSecondary, marginBottom: '16px' }}>Voice & Tone</p>
+          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: '48px' }}>
+            How we <em>talk</em>
+          </h2>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textSecondary, lineHeight: 1.75, marginBottom: '40px', maxWidth: '640px' }}>
+            {voiceContent.B.tone}
+          </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 48px' }}>
+            {voiceContent.B.principles.map((p, i) => (
+              <li key={i} style={{ fontFamily: t.bodyFont, fontSize: '16px', color: '#1A1A1A', lineHeight: 1.75, padding: '16px 0', borderBottom: '1px solid #E0DCD7' }}>
+                {p}
+              </li>
+            ))}
+          </ul>
+          {/* Pull quote with orange circle */}
+          <div style={{ fontFamily: t.headlineFont, fontSize: mobile ? '24px' : '28px', fontStyle: 'italic', fontWeight: 400, lineHeight: 1.3, color: '#1A1A1A' }}>
+            {voiceContent.B.sample}
+            <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: c.accent, marginLeft: '6px', verticalAlign: 'baseline' }} />
+          </div>
+        </div>
+      </section>
+
+      {/* Unique element - dark section */}
+      <section style={{ ...darkSection, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 120px` }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#6B6B6B', marginBottom: '16px' }}>Signature Element</p>
+          <h2 style={{ fontFamily: t.headlineFont, fontSize: mobile ? '32px' : '56px', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.05, color: '#F7F5F2', marginBottom: '48px' }}>
+            The orange <em>circle</em>
+          </h2>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '40px' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: c.accent }} />
+          </div>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: '#6B6B6B', lineHeight: 1.75, maxWidth: '640px', margin: '0 auto' }}>
+            A single filled circle in {c.accent} used as a recurring brand element. It appears as the CTA button shape, a dot on the navigation indicator, a period at the end of the main headline, and as an overlay accent on B&W photography. It's always the same size relative to context. It's the punctuation mark of the brand.
+          </p>
+        </div>
+      </section>
+
+      {/* Footer - light */}
+      <footer style={{ ...lightSection, padding: '48px 120px', textAlign: 'center' }}>
+        <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', color: c.textSecondary }}>
+          AOM Brand Direction B / Editorial
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: c.accent }} />
+        </div>
+      </footer>
     </div>
   )
 }
 
-function NavDot({ label, id, active, onClick }) {
-  return (
-    <button
-      onClick={() => onClick(id)}
-      className={`flex items-center gap-2 group transition-all duration-300 ${active ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
-    >
-      <span className={`block w-1.5 h-1.5 rounded-full transition-colors ${active ? 'bg-[#FF4F00]' : 'bg-[#57534E] group-hover:bg-[#78716C]'}`} />
-      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#A8A29E] hidden lg:block">{label}</span>
-    </button>
+/* ------------------------------------------------------------------ */
+/*  Direction C: BOLD GRAPHIC                                          */
+/* ------------------------------------------------------------------ */
+
+function BoldGraphicPage({ theme }) {
+  const t = theme
+  const c = t.colors
+  const mobile = isMobile()
+  const sectionSpacing = mobile ? t.section.mobileSpacing : t.section.spacing
+
+  const Badge = ({ children, color }) => (
+    <span style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', border: `1px solid ${color || c.textPrimary}`, padding: '2px 10px', display: 'inline-block', color: color || c.textPrimary }}>
+      {children}
+    </span>
   )
+
+  return (
+    <div style={{ background: c.bgPrimary, color: c.textPrimary, minHeight: '100vh' }}>
+      {/* Hero - cream */}
+      <section style={{ background: c.bgPrimary, padding: mobile ? '80px 24px' : '120px 48px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div>
+          <h1 style={{ lineHeight: t.hero.lineHeight, letterSpacing: t.hero.tracking, marginBottom: '32px' }}>
+            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 800 }}>WE </span>
+            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 400 }}>make </span>
+            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 800 }}>THINGS</span>
+            <br />
+            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 400 }}>that </span>
+            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 800 }}>BRING</span>
+            <br />
+            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? t.hero.mobileFontSize : t.hero.fontSize, fontWeight: 400 }}>opportunity.</span>
+          </h1>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            <Badge>VIDEO</Badge>
+            <Badge>WEB</Badge>
+            <Badge>AI</Badge>
+          </div>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary }}>
+            Phoenix, AZ &bull; Est. 2020
+          </p>
+        </div>
+      </section>
+
+      {/* Thick divider */}
+      <div style={{ height: '3px', background: c.textPrimary, margin: '0 48px' }} />
+
+      {/* Colors - black section */}
+      <section style={{ background: c.bgAlt, color: c.bgPrimary, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accent, lineHeight: 1 }}>01</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>COLOR SYSTEM</p>
+              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1, color: '#F2EDE8' }}>Palette</h2>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '16px' }}>
+            {colorSets.C.map(col => (
+              <div key={col.hex + col.role} style={{ border: `1px solid ${col.hex === '#0A0A0A' ? '#333' : c.textPrimary}`, padding: '0' }}>
+                <div style={{ height: '80px', background: col.hex }} />
+                <div style={{ padding: '12px', background: c.bgAlt, borderTop: `1px solid ${col.hex === '#0A0A0A' ? '#333' : '#333'}` }}>
+                  <p style={{ fontFamily: t.bodyFont, fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#F2EDE8' }}>{col.name}</p>
+                  <p style={{ fontFamily: t.bodyFont, fontSize: '10px', color: c.textSecondary, marginTop: '2px' }}>{col.hex}</p>
+                  <p style={{ fontFamily: t.bodyFont, fontSize: '10px', color: c.textSecondary, marginTop: '2px' }}>{col.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Thick divider */}
+      <div style={{ height: '3px', background: c.textPrimary }} />
+
+      {/* Typography - cream section */}
+      <section style={{ background: c.bgPrimary, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accent, lineHeight: 1 }}>02</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>TYPOGRAPHY</p>
+              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1 }}>Type System</h2>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {typeSpecs.C.map((spec, i) => (
+              <div key={spec.role} style={{ padding: '24px 0', borderBottom: `1px solid ${c.textPrimary}` }}>
+                <div style={{ display: mobile ? 'block' : 'flex', justifyContent: 'space-between', gap: '24px' }}>
+                  <div style={{ minWidth: mobile ? 'auto' : '200px', marginBottom: mobile ? '12px' : 0 }}>
+                    <Badge color={c.accent}>{spec.role}</Badge>
+                    <p style={{ fontFamily: t.bodyFont, fontSize: '14px', color: c.textSecondary, marginTop: '8px' }}>
+                      {spec.font} / {spec.weight} / {spec.size}
+                    </p>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: spec.font === 'Syne' ? t.displayFont : t.bodyFont, fontSize: spec.role === 'Hero Display' ? (mobile ? '48px' : '80px') : spec.role === 'Section Headlines' ? (mobile ? '28px' : '40px') : spec.size.split('-').pop() || spec.size, fontWeight: spec.weight, letterSpacing: spec.tracking, lineHeight: spec.lh, textTransform: spec.role === 'Section Labels' || spec.role === 'Badges' ? 'uppercase' : 'none' }}>
+                      {spec.role === 'Hero Display' && (
+                        <>
+                          <span style={{ fontWeight: 800 }}>MAKING </span>
+                          <span style={{ fontWeight: 400, fontFamily: t.bodyFont }}>visual </span>
+                          <span style={{ fontWeight: 800 }}>IDENTITY</span>
+                        </>
+                      )}
+                      {spec.role === 'Section Headlines' && 'Brand Infrastructure'}
+                      {spec.role === 'Section Labels' && 'Our Services'}
+                      {spec.role === 'Body' && 'AOM builds the content, websites, and systems that make companies impossible to ignore.'}
+                      {spec.role === 'Badges' && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <Badge>PRODUCTION</Badge>
+                          <Badge>SOCIAL</Badge>
+                          <Badge>SYSTEMS</Badge>
+                          <Badge color={c.accentSecondary}>GOLD</Badge>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Thick divider */}
+      <div style={{ height: '3px', background: c.textPrimary }} />
+
+      {/* Layout - black section */}
+      <section style={{ background: c.bgAlt, color: '#F2EDE8', padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accentSecondary, lineHeight: 1 }}>03</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>LAYOUT & VISUAL</p>
+              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1, color: '#F2EDE8' }}>Visual Rules</h2>
+            </div>
+          </div>
+          {/* Card grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: mobile ? '1fr' : '1fr 1fr', gap: '8px' }}>
+            {[
+              { label: 'Grid', value: '12-column, intentional breaks. Asymmetric splits (5/7, 4/8).' },
+              { label: 'Dividers', value: 'Thick black rules (3px) between sections. Thin (1px) within.' },
+              { label: 'Badges', value: 'Key descriptors in bordered pills: VIDEO, WEB, BRAND, AI.' },
+              { label: 'Cards', value: 'Visible 1px border, 24px padding, stacked with 8px gaps.' },
+              { label: 'Imagery', value: 'Full color, warm. In bordered containers. Duotone option for hero.' },
+              { label: 'Numbers', value: 'Syne 64px for numbers + Space Grotesk 400 for labels.' },
+            ].map(item => (
+              <div key={item.label} style={{ border: '1px solid #333', padding: '24px', background: c.bgAlt }}>
+                <Badge color="#F2EDE8">{item.label}</Badge>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: '#F2EDE8', lineHeight: 1.7, marginTop: '12px' }}>{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Thick divider */}
+      <div style={{ height: '3px', background: c.textPrimary }} />
+
+      {/* Voice - cream section */}
+      <section style={{ background: c.bgPrimary, padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accent, lineHeight: 1 }}>04</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>VOICE</p>
+              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1 }}>How We Talk</h2>
+            </div>
+          </div>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textSecondary, lineHeight: 1.7, marginBottom: '32px' }}>
+            {voiceContent.C.tone}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            {voiceContent.C.principles.map((p, i) => (
+              <div key={i} style={{ display: 'flex', gap: '24px', alignItems: 'baseline', padding: '16px 0', borderBottom: `1px solid ${c.textPrimary}` }}>
+                <span style={{ fontFamily: t.displayFont, fontSize: '32px', fontWeight: 800, color: c.accent, minWidth: '48px' }}>{String(i + 1).padStart(2, '0')}</span>
+                <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textPrimary, lineHeight: 1.7 }}>{p}</p>
+              </div>
+            ))}
+          </div>
+          {/* Mixed-weight sample headline */}
+          <div style={{ marginTop: '64px', lineHeight: 0.9, letterSpacing: '-0.03em' }}>
+            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? '40px' : '64px', fontWeight: 800 }}>WE </span>
+            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? '40px' : '64px', fontWeight: 400 }}>make </span>
+            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? '40px' : '64px', fontWeight: 800 }}>THINGS </span>
+            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? '40px' : '64px', fontWeight: 400 }}>that </span>
+            <span style={{ fontFamily: t.displayFont, fontSize: mobile ? '40px' : '64px', fontWeight: 800, color: c.accent }}>BRING </span>
+            <span style={{ fontFamily: t.bodyFont, fontSize: mobile ? '40px' : '64px', fontWeight: 400 }}>opportunity.</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Thick divider */}
+      <div style={{ height: '3px', background: c.textPrimary }} />
+
+      {/* Signature - black section */}
+      <section style={{ background: c.bgAlt, color: '#F2EDE8', padding: mobile ? `${sectionSpacing} 24px` : `${sectionSpacing} 48px` }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'baseline', marginBottom: '48px', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: t.displayFont, fontSize: '64px', fontWeight: 800, color: c.accentSecondary, lineHeight: 1 }}>05</span>
+            <div>
+              <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginBottom: '8px' }}>SIGNATURE ELEMENT</p>
+              <h2 style={{ fontFamily: t.bodyFont, fontSize: mobile ? '32px' : '48px', fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.1, color: '#F2EDE8' }}>Badges + Mixed Weight</h2>
+            </div>
+          </div>
+          <p style={{ fontFamily: t.bodyFont, fontSize: '16px', color: c.textSecondary, lineHeight: 1.7, marginBottom: '32px' }}>
+            Every service, project, and capability gets a bordered pill badge. These badges are scannable, sortable, and give the page a data-rich, designed-information feeling. Combined with mixed-weight headline treatment, this creates a brand voice that feels structured but not stiff.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            {['VIDEO', 'WEB', 'BRAND', 'AI', 'SOCIAL', 'SYSTEMS', 'PRODUCTION', 'STRATEGY'].map(badge => (
+              <Badge key={badge} color="#F2EDE8">{badge}</Badge>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer - cream */}
+      <footer style={{ background: c.bgPrimary, padding: '48px', borderTop: `3px solid ${c.textPrimary}` }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: mobile ? 'block' : 'flex', justifyContent: 'space-between' }}>
+          <div>
+            <p style={{ fontFamily: t.displayFont, fontSize: '32px', fontWeight: 800, lineHeight: 1 }}>AOM</p>
+            <p style={{ fontFamily: t.bodyFont, fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: c.textSecondary, marginTop: '4px' }}>Brand Direction C / Bold Graphic</p>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: mobile ? '16px' : 0 }}>
+            <Badge>PHOENIX</Badge>
+            <Badge color={c.accentSecondary}>2020</Badge>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Load Google Fonts                                                  */
+/* ------------------------------------------------------------------ */
+
+function useGoogleFonts() {
+  useEffect(() => {
+    const fonts = [
+      'Bebas+Neue',
+      'IBM+Plex+Mono:wght@400;500;600;700',
+      'Playfair+Display:ital,wght@0,400;0,700;1,400;1,700',
+      'Inter:wght@400;500;600;700',
+      'Syne:wght@400;700;800',
+      'Space+Grotesk:wght@400;500;700',
+    ]
+    const id = 'brand-directions-fonts'
+    if (!document.getElementById(id)) {
+      const link = document.createElement('link')
+      link.id = id
+      link.rel = 'stylesheet'
+      link.href = `https://fonts.googleapis.com/css2?${fonts.map(f => `family=${f}`).join('&')}&display=swap`
+      document.head.appendChild(link)
+    }
+  }, [])
 }
 
 /* ------------------------------------------------------------------ */
@@ -143,556 +828,92 @@ function NavDot({ label, id, active, onClick }) {
 /* ------------------------------------------------------------------ */
 
 export default function BrandGuidelines() {
-  const [activeSection, setActiveSection] = useState('positioning')
+  const [activeDirection, setActiveDirection] = useState('A')
+  const [transitioning, setTransitioning] = useState(false)
 
-  const sections = [
-    { id: 'positioning', label: 'Positioning' },
-    { id: 'colors', label: 'Colors' },
-    { id: 'typography', label: 'Typography' },
-    { id: 'visual', label: 'Visual Language' },
-    { id: 'components', label: 'Components' },
-    { id: 'voice', label: 'Voice' },
-  ]
+  useGoogleFonts()
 
-  const scrollTo = (id) => {
-    setActiveSection(id)
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const theme = themes[activeDirection]
+
+  const switchDirection = (dir) => {
+    if (dir === activeDirection) return
+    setTransitioning(true)
+    setTimeout(() => {
+      setActiveDirection(dir)
+      window.scrollTo({ top: 0, behavior: 'instant' })
+      setTimeout(() => setTransitioning(false), 50)
+    }, 300)
   }
+
+  const switcherBg = activeDirection === 'A' ? '#0A0A0A' : activeDirection === 'B' ? '#F7F5F2' : '#F2EDE8'
+  const switcherText = activeDirection === 'A' ? '#F5F5F5' : '#1A1A1A'
+  const switcherBorder = activeDirection === 'A' ? '#222222' : activeDirection === 'B' ? '#E0DCD7' : '#0A0A0A'
 
   return (
-    <div className="min-h-screen bg-[#0A0A08] text-[#F5F0EB] relative">
-      {/* Noise overlay */}
-      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03] mix-blend-overlay">
-        <svg width="100%" height="100%">
-          <filter id="brand-noise"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" /></filter>
-          <rect width="100%" height="100%" filter="url(#brand-noise)" />
-        </svg>
+    <div style={{ position: 'relative' }}>
+      {/* Direction switcher - floating at top */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        background: switcherBg,
+        borderBottom: `1px solid ${switcherBorder}`,
+        backdropFilter: 'blur(12px)',
+        transition: 'background 0.3s ease, border-color 0.3s ease',
+      }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '56px' }}>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: theme.colors.textSecondary, textDecoration: 'none', transition: 'color 0.3s' }}>
+            <ArrowLeft size={14} />
+            <span style={{ fontFamily: theme.bodyFont, fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.2em' }}>Back</span>
+          </a>
+
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {Object.entries(themes).map(([key, t]) => {
+              const isActive = key === activeDirection
+              return (
+                <button
+                  key={key}
+                  onClick={() => switchDirection(key)}
+                  style={{
+                    fontFamily: '"Space Grotesk", "Inter", system-ui, sans-serif',
+                    fontSize: '11px',
+                    fontWeight: isActive ? 700 : 500,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    padding: '8px 16px',
+                    border: isActive ? `1px solid ${theme.colors.accent}` : `1px solid transparent`,
+                    background: isActive ? (activeDirection === 'A' ? 'rgba(255,77,0,0.1)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                    color: isActive ? theme.colors.accent : theme.colors.textSecondary,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+
+          <span style={{ fontFamily: theme.bodyFont, fontSize: '10px', color: theme.colors.textSecondary, letterSpacing: '0.15em', textTransform: 'uppercase', transition: 'color 0.3s' }}>
+            v2.0
+          </span>
+        </div>
       </div>
 
-      {/* Subtle orange gradient wash */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.02] bg-gradient-to-b from-transparent via-orange-500/5 to-transparent" />
+      {/* Spacer for fixed header */}
+      <div style={{ height: '56px' }} />
 
-      {/* Side nav */}
-      <nav className="fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-4 hidden md:flex">
-        {sections.map(s => (
-          <NavDot key={s.id} {...s} active={activeSection === s.id} onClick={scrollTo} />
-        ))}
-      </nav>
-
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 bg-[#0A0A08]/90 backdrop-blur-md border-b border-[#292524]">
-        <div className="max-w-6xl mx-auto px-6 md:px-12 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3 text-[#A8A29E] hover:text-[#F5F0EB] transition-colors">
-            <ArrowLeft size={16} />
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.3em]">Back to Site</span>
-          </a>
-          <div className="flex items-center gap-3">
-            <span className="font-headline text-sm font-bold uppercase tracking-tight text-[#F5F0EB]">AOM</span>
-            <span className="text-[#292524]">/</span>
-            <span className="font-mono text-[10px] text-[#78716C] uppercase tracking-[0.2em]">Brand Guidelines</span>
-          </div>
-          <span className="font-mono text-[10px] text-[#57534E]">v1.0</span>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <section className="relative py-24 md:py-40 px-6 md:px-12 max-w-6xl mx-auto">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#FF4F00] mb-6">Brand System</p>
-        <h1 className="font-headline text-5xl md:text-8xl font-black italic uppercase tracking-tighter text-[#F5F0EB] leading-[0.85]">
-          AOM BRAND<br />GUIDELINES
-        </h1>
-        <p className="text-[#A8A29E] text-lg mt-8 max-w-xl leading-relaxed">
-          The source of truth for AOM's visual identity. Colors, type, voice, and component patterns. Everything the team needs to ship on-brand work.
-        </p>
-        <div className="flex items-center gap-4 mt-8">
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-[#292524] bg-[#141412] font-mono text-[10px] text-[#78716C] uppercase tracking-[0.2em]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#7C9A72]" />
-            Active
-          </span>
-          <span className="font-mono text-[10px] text-[#57534E]">Last updated: March 2026</span>
-        </div>
-      </section>
-
-      <div className="max-w-6xl mx-auto px-6 md:px-12">
-
-        {/* ---- 1. POSITIONING ---- */}
-        <section id="positioning" className="py-16 md:py-24 border-t border-[#292524]">
-          <SectionHeader label="01 / Positioning" title="WHO WE ARE" subtitle="AOM builds the content, websites, and systems that make companies impossible to ignore." />
-
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            {/* Tagline candidates */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Tagline Candidates</p>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#FF4F00] shrink-0" />
-                  <div>
-                    <p className="text-[#F5F0EB] font-semibold">"Brand infrastructure for companies that build."</p>
-                    <p className="text-[#78716C] text-xs mt-1">Lead candidate. Construction-forward, works for all verticals.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#7C9A72] shrink-0" />
-                  <div>
-                    <p className="text-[#F5F0EB] font-semibold">"The system behind the brand."</p>
-                    <p className="text-[#78716C] text-xs mt-1">AI/systems angle. Works as secondary tagline.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[#57534E] shrink-0" />
-                  <div>
-                    <p className="text-[#A8A29E] font-semibold">"We make what moves you forward."</p>
-                    <p className="text-[#78716C] text-xs mt-1">Broader, warmer, good for general use.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Who AOM is NOT */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Who AOM Is Not</p>
-              <ul className="space-y-3">
-                {[
-                  'Not a template shop',
-                  'Not a freelancer collective',
-                  'Not a "we do everything" agency',
-                  'Not selling AI hype or chatbot demos',
-                  'Not chasing trends. Building infrastructure.',
-                  'Not corporate. Not scrappy either. Somewhere more intentional than both.',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="mt-1.5 w-3 h-[1px] bg-[#EF4444] shrink-0" />
-                    <span className="text-[#A8A29E] text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Full positioning paragraph */}
-          <div className="p-8 rounded-sm border border-[#292524] bg-[#1A1A17]">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-4">One Paragraph</p>
-            <p className="text-[#A8A29E] leading-relaxed max-w-3xl">
-              AOM is a creative production and systems company based in Phoenix. We build the things that actually grow businesses: video that recruits and closes deals, websites that convert, social content that runs like a machine, and AI-powered workflows that make it all repeatable. We're not a video production company. We're the team that builds the engine behind your brand.
-            </p>
-          </div>
-        </section>
-
-        {/* ---- 2. COLORS ---- */}
-        <section id="colors" className="py-16 md:py-24 border-t border-[#292524]">
-          <SectionHeader
-            label="02 / Color System"
-            title="WARM, NOT COLD"
-            subtitle="Dark foundation with warm neutrals. Orange stays, but with restraint. Sage green gives AOM a visual layer no competitor has."
-          />
-
-          {/* Primary accents */}
-          <div className="mb-16">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Primary Accents</p>
-            <div className="grid grid-cols-2 gap-6">
-              {primaryColors.map(c => <ColorSwatch key={c.hex} color={c} large />)}
-            </div>
-          </div>
-
-          {/* Backgrounds */}
-          <div className="mb-16">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Backgrounds</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {bgColors.map(c => <ColorSwatch key={c.hex} color={c} />)}
-            </div>
-          </div>
-
-          {/* Text colors */}
-          <div className="mb-16">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Text Colors</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {textColors.map(c => <ColorSwatch key={c.hex} color={c} />)}
-            </div>
-          </div>
-
-          {/* Accent / utility */}
-          <div className="mb-16">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Accent & Utility</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {accentColors.map(c => <ColorSwatch key={c.hex} color={c} />)}
-            </div>
-          </div>
-
-          {/* Tailwind config */}
-          <CodeBlock label="tailwind.config.js">{`module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        aom: {
-          orange: '#FF4F00',
-          'orange-hover': '#FF6B2B',
-          'orange-muted': '#CC3F00',
-          sage: '#7C9A72',
-          'sage-light': '#9BB593',
-          'sage-muted': '#5C7A54',
-          night: '#0A0A08',
-          charcoal: '#141412',
-          surface: '#1A1A17',
-          cream: '#FAF5EF',
-          'warm-white': '#F5F0EB',
-          stone: '#A8A29E',
-          'stone-muted': '#78716C',
-          dim: '#57534E',
-          border: '#292524',
-          'border-hover': '#44403C',
-        }
-      }
-    }
-  }
-}`}</CodeBlock>
-        </section>
-
-        {/* ---- 3. TYPOGRAPHY ---- */}
-        <section id="typography" className="py-16 md:py-24 border-t border-[#292524]">
-          <SectionHeader
-            label="03 / Typography"
-            title="THREE FONTS, CLEAR ROLES"
-            subtitle="Inter Tight for headlines. Inter for body. JetBrains Mono for the system layer."
-          />
-
-          {/* Live type samples */}
-          <div className="space-y-8 mb-16">
-            {typeRows.map(row => (
-              <div key={row.role} className="p-6 md:p-8 rounded-sm border border-[#292524] bg-[#141412]">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-                  <div>
-                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#FF4F00]">{row.role}</p>
-                    <p className="text-[#78716C] text-xs mt-1">{row.font} / {row.weight} / {row.style}</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="font-mono text-[10px] text-[#57534E]">Size: {row.size}</span>
-                    <span className="font-mono text-[10px] text-[#57534E]">LH: {row.lh}</span>
-                  </div>
-                </div>
-                <div className={`${row.className} text-[#F5F0EB]`}>
-                  {row.sample}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Typography rules */}
-          <div className="p-8 rounded-sm border border-[#292524] bg-[#1A1A17] mb-12">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Rules</p>
-            <ul className="space-y-3">
-              {[
-                'Headlines are ALWAYS uppercase, italic, black weight, tight tracking',
-                'Subheadlines are sentence case, bold weight, normal style',
-                'Body text minimum #A8A29E on dark backgrounds. Never darker than #78716C for readable body copy.',
-                'Micro-labels: uppercase, tracking-[0.3em], mono font, #78716C or #57534E',
-                'Line lengths: max 65ch for body text, max 45ch for headlines',
-                'No font sizes below 9px anywhere on the site',
-              ].map((rule, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#FF4F00] shrink-0" />
-                  <span className="text-[#A8A29E] text-sm leading-relaxed">{rule}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Font imports */}
-          <CodeBlock label="Font Imports (CSS or HTML)">{`@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');`}</CodeBlock>
-
-          <div className="mt-8">
-            <CodeBlock label="tailwind.config.js">{`module.exports = {
-  theme: {
-    extend: {
-      fontFamily: {
-        headline: ['"Inter Tight"', 'system-ui', 'sans-serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
-      }
-    }
-  }
-}`}</CodeBlock>
-          </div>
-        </section>
-
-        {/* ---- 4. VISUAL LANGUAGE ---- */}
-        <section id="visual" className="py-16 md:py-24 border-t border-[#292524]">
-          <SectionHeader
-            label="04 / Visual Language"
-            title="LOOK AND FEEL"
-            subtitle="Photography, icons, borders, spacing, animation, and dark mode specifics."
-          />
-
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            {/* Photography */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#FF4F00] mb-6">Photography</p>
-              <ul className="space-y-3 text-[#A8A29E] text-sm leading-relaxed">
-                <li>Real shots only. No stock photography. Ever.</li>
-                <li>Slightly desaturated, warm midtones, deep shadows. Filmic, not Instagram.</li>
-                <li>Shadows lean warm (not blue/teal).</li>
-                <li>Lift blacks slightly, warm highlights, subtle grain encouraged.</li>
-              </ul>
-            </div>
-
-            {/* Icons */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#7C9A72] mb-6">Icons</p>
-              <ul className="space-y-3 text-[#A8A29E] text-sm leading-relaxed">
-                <li>Lucide icons. 18-20px in UI.</li>
-                <li>Stroke weight: default (2px). Never filled.</li>
-                <li>Color: <span className="font-mono text-[#78716C]">#A8A29E</span> default, <span className="font-mono text-[#FF4F00]">#FF4F00</span> active.</li>
-                <li>Containers: 40-48px square, <span className="font-mono text-xs text-[#78716C]">border border-aom-border bg-black/40</span></li>
-              </ul>
-            </div>
-
-            {/* Borders */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Borders & Corners</p>
-              <ul className="space-y-3 text-[#A8A29E] text-sm leading-relaxed">
-                <li>Borders: 1px solid <span className="font-mono text-[#78716C]">#292524</span> (warm, not cool zinc)</li>
-                <li>No rounded corners on primary containers. <span className="font-mono text-xs text-[#78716C]">rounded-sm</span> (2px) maximum.</li>
-                <li>Hover: transition to <span className="font-mono text-[#78716C]">#44403C</span> or <span className="font-mono text-[#FF4F00]">orange/30</span></li>
-                <li>Cards get <span className="font-mono text-xs text-[#78716C]">shadow-xl</span> or <span className="font-mono text-xs text-[#78716C]">shadow-2xl</span></li>
-              </ul>
-            </div>
-
-            {/* Spacing */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Spacing</p>
-              <ul className="space-y-3 text-[#A8A29E] text-sm leading-relaxed">
-                <li>Vertical between sections: <span className="font-mono text-xs text-[#78716C]">py-24</span> desktop, <span className="font-mono text-xs text-[#78716C]">py-16</span> mobile</li>
-                <li>Card padding: <span className="font-mono text-xs text-[#78716C]">p-8</span> desktop, <span className="font-mono text-xs text-[#78716C]">p-6</span> mobile</li>
-                <li>Component gaps: <span className="font-mono text-xs text-[#78716C]">gap-6</span> cards, <span className="font-mono text-xs text-[#78716C]">gap-4</span> tighter</li>
-                <li>Dark space is a premium signal. Let things breathe.</li>
-              </ul>
-            </div>
-
-            {/* Animation */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Animation</p>
-              <ul className="space-y-3 text-[#A8A29E] text-sm leading-relaxed">
-                <li>Hovers: <span className="font-mono text-xs text-[#78716C]">duration-300</span></li>
-                <li>Scroll reveals: <span className="font-mono text-xs text-[#78716C]">duration-700</span>, fade up from y:30</li>
-                <li>Hero entrance: <span className="font-mono text-xs text-[#78716C]">duration-1000+</span></li>
-                <li>Easing: ease-out. Never linear except infinite loops.</li>
-                <li>Rule: If it doesn't serve comprehension or delight, it doesn't animate.</li>
-              </ul>
-            </div>
-
-            {/* Dark Mode */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Dark Mode</p>
-              <ul className="space-y-3 text-[#A8A29E] text-sm leading-relaxed">
-                <li>The site IS dark mode. No light mode toggle.</li>
-                <li>Cream and Light Surface exist only for exports (PDFs, proposals, print).</li>
-                <li>Noise/grain overlay: <span className="font-mono text-xs text-[#78716C]">opacity-[0.03]</span>, fractalNoise, mix-blend-overlay</li>
-                <li>Subtle orange gradient wash: <span className="font-mono text-xs text-[#78716C]">opacity-[0.02]</span></li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* ---- 5. COMPONENTS ---- */}
-        <section id="components" className="py-16 md:py-24 border-t border-[#292524]">
-          <SectionHeader
-            label="05 / Component Patterns"
-            title="BUILD WITH THESE"
-            subtitle="Section headers, cards, CTAs, and service grid patterns. Guidelines, not rigid templates."
-          />
-
-          {/* Section Header pattern */}
-          <div className="mb-16">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Section Header Pattern</p>
-            <div className="p-8 md:p-12 rounded-sm border border-[#292524] bg-[#1A1A17] mb-4">
-              <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-4">Our Work</p>
-              <div className="w-12 h-[2px] bg-[#FF4F00] mb-4" />
-              <h2 className="font-headline text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-[#F5F0EB]">PORTFOLIO</h2>
-              <p className="text-[#A8A29E] text-base mt-4 max-w-2xl">The work speaks. Real clients, real results.</p>
-            </div>
-            <CodeBlock label="Section Header Classes">{`<p class="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-aom-stone-muted mb-4">Our Work</p>
-<div class="w-12 h-[2px] bg-aom-orange mb-4"></div>
-<h2 class="font-headline text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-aom-warm-white">Portfolio</h2>
-<p class="text-aom-stone text-base mt-4 max-w-2xl">The work speaks. Real clients, real results.</p>`}</CodeBlock>
-          </div>
-
-          {/* Card patterns */}
-          <div className="mb-16">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Card Patterns</p>
-            <div className="grid md:grid-cols-3 gap-6 mb-4">
-              {/* Standard */}
-              <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl hover:border-[#FF4F00]/30 transition-colors duration-300">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-3">Standard Card</p>
-                <p className="font-headline text-lg font-bold text-[#F5F0EB] mb-2">Default State</p>
-                <p className="text-[#A8A29E] text-sm">bg-aom-charcoal, border-aom-border. Hover shifts border to orange/30.</p>
-              </div>
-              {/* Accent */}
-              <div className="p-8 rounded-sm border border-[#FF4F00]/40 bg-orange-950/10 shadow-xl">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#FF4F00] mb-3">Accent Card</p>
-                <p className="font-headline text-lg font-bold text-[#F5F0EB] mb-2">Featured State</p>
-                <p className="text-[#A8A29E] text-sm">border-aom-orange/40, bg-orange-950/10. For selected or featured items.</p>
-              </div>
-              {/* AI/Systems */}
-              <div className="p-8 rounded-sm border border-[#5C7A54]/30 bg-emerald-950/10 shadow-xl">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#7C9A72] mb-3">AI/Systems Card</p>
-                <p className="font-headline text-lg font-bold text-[#F5F0EB] mb-2">System State</p>
-                <p className="text-[#A8A29E] text-sm font-mono">border-aom-sage-muted/30, bg-emerald-950/10. Mono font for system labels.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA patterns */}
-          <div className="mb-16">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">CTA Patterns</p>
-            <div className="p-8 md:p-12 rounded-sm border border-[#292524] bg-[#1A1A17] flex flex-wrap items-center gap-6 mb-4">
-              <button className="bg-[#FF4F00] text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-[#FF6B2B] transition-colors shadow-lg shadow-[#FF4F00]/20">
-                Primary CTA
-              </button>
-              <button className="border border-[#F5F0EB] text-[#F5F0EB] font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-[#F5F0EB] hover:text-[#0A0A08] transition-all">
-                Secondary CTA
-              </button>
-              <button className="text-[#FF4F00] font-bold hover:text-[#FF6B2B] transition-colors flex items-center gap-1">
-                Ghost CTA &rarr;
-              </button>
-            </div>
-            <CodeBlock label="CTA Classes">{`<!-- Primary -->
-<button class="bg-aom-orange text-white font-headline font-black uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/20">
-  See What We'd Build For You
-</button>
-
-<!-- Secondary -->
-<button class="border border-aom-warm-white text-aom-warm-white font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-aom-warm-white hover:text-aom-night transition-all">
-  Start a Brief
-</button>
-
-<!-- Ghost -->
-<a class="text-aom-orange font-bold hover:text-aom-orange-hover">
-  Learn more <ArrowRight size={14} />
-</a>`}</CodeBlock>
-          </div>
-
-          {/* Services Grid */}
-          <div className="mb-16">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Services Grid (3 Lanes)</p>
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Content Engine */}
-              <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl hover:border-[#FF4F00]/30 transition-colors duration-300">
-                <div className="w-12 h-12 border border-[#292524] bg-black/40 flex items-center justify-center mb-4">
-                  <svg className="text-[#FF4F00]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.2v-2a4 4 0 0 1 4-4h12.8M7 21.9l-4-4 4-4"/><path d="M21 11.8v2a4 4 0 0 1-4 4H4.2"/></svg>
-                </div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-2">Retainer</p>
-                <p className="font-headline text-lg font-bold text-[#F5F0EB] mb-2">Content Engine</p>
-                <p className="text-[#A8A29E] text-sm leading-relaxed">Monthly content system. One filming day in, 30 days of content out.</p>
-                <button className="text-[#FF4F00] text-sm font-bold mt-4 hover:text-[#FF6B2B] transition-colors">Learn more &rarr;</button>
-              </div>
-              {/* Production */}
-              <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl hover:border-[#FF4F00]/30 transition-colors duration-300">
-                <div className="w-12 h-12 border border-[#292524] bg-black/40 flex items-center justify-center mb-4">
-                  <svg className="text-[#FF4F00]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 8V4a2 2 0 0 1 2-2h2"/><path d="M4 16v4a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v4"/><path d="M16 20h2a2 2 0 0 0 2-2v-4"/><circle cx="12" cy="11" r="3"/><path d="m12 14 0 4"/></svg>
-                </div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-2">Project</p>
-                <p className="font-headline text-lg font-bold text-[#F5F0EB] mb-2">Production</p>
-                <p className="text-[#A8A29E] text-sm leading-relaxed">Brand videos, documentaries, event coverage. Cinema-grade execution.</p>
-                <button className="text-[#FF4F00] text-sm font-bold mt-4 hover:text-[#FF6B2B] transition-colors">Learn more &rarr;</button>
-              </div>
-              {/* Digital Infrastructure */}
-              <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl hover:border-[#5C7A54]/30 transition-colors duration-300">
-                <div className="w-12 h-12 border border-[#292524] bg-black/40 flex items-center justify-center mb-4">
-                  <svg className="text-[#7C9A72]" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
-                </div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-2">System</p>
-                <p className="font-headline text-lg font-bold text-[#F5F0EB] mb-2">Digital Infrastructure</p>
-                <p className="text-[#A8A29E] text-sm leading-relaxed font-mono">Websites, AI workflows, and systems that make everything repeatable.</p>
-                <button className="text-[#7C9A72] text-sm font-bold mt-4 hover:text-[#9BB593] transition-colors">Learn more &rarr;</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ---- 6. VOICE ---- */}
-        <section id="voice" className="py-16 md:py-24 border-t border-[#292524]">
-          <SectionHeader
-            label="06 / Voice"
-            title="HOW WE TALK"
-            subtitle="Direct. Warm. Anti-BS. We speak results, not production jargon."
-          />
-
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            {/* Construction voice */}
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#FF4F00] mb-6">To Construction Companies</p>
-              <ul className="space-y-3 text-[#A8A29E] text-sm leading-relaxed">
-                <li>Speak results, not production jargon.</li>
-                <li>"Your best crews aren't on Indeed. They're on Instagram watching your competitor's content."</li>
-                <li>Reference what they care about: recruiting, winning bids, looking legitimate to GCs.</li>
-                <li>Be direct. Construction people respect directness.</li>
-                <li>Show the gap: their current presence vs what's possible.</li>
-              </ul>
-            </div>
-
-            {/* AI voice */}
-            <div className="p-8 rounded-sm border border-[#5C7A54]/30 bg-emerald-950/10 shadow-xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#7C9A72] mb-6">About AI/Systems</p>
-              <ul className="space-y-3 text-[#A8A29E] text-sm leading-relaxed">
-                <li>Show the system, not the technology.</li>
-                <li>Lead with the outcome: "We built a system that turns one filming day into 30 days of content."</li>
-                <li>Never lead with "AI-powered" or "leveraging artificial intelligence."</li>
-                <li>Acceptable: "We built internal systems that..." / "The engine behind..."</li>
-                <li>"We built this for ourselves first. Now we're opening it up."</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Words */}
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#1A1A17]">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#22C55E] mb-6">Words We Use</p>
-              <div className="flex flex-wrap gap-2">
-                {['Build', 'Ship', 'System', 'Engine', 'Pipeline', 'Infrastructure', 'Real', 'Intentional', 'Repeatable', 'Consistent', 'Impact', 'Results', 'Proof', 'Output', 'Crew', 'Team'].map(w => (
-                  <span key={w} className="px-3 py-1.5 rounded-sm border border-[#292524] bg-[#141412] font-mono text-xs text-[#A8A29E]">{w}</span>
-                ))}
-              </div>
-            </div>
-            <div className="p-8 rounded-sm border border-[#292524] bg-[#1A1A17]">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#EF4444] mb-6">Words We Don't Use</p>
-              <div className="flex flex-wrap gap-2">
-                {['Leverage', 'Utilize', 'Synergy', 'Optimize', 'Cutting-edge', 'Revolutionary', 'Disruptive', 'Content creator', 'AI-powered', 'Machine learning', 'Neural network', 'Book a call'].map(w => (
-                  <span key={w} className="px-3 py-1.5 rounded-sm border border-[#EF4444]/20 bg-[#141412] font-mono text-xs text-[#78716C] line-through">{w}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Headline formula */}
-          <div className="p-8 rounded-sm border border-[#292524] bg-[#141412] shadow-xl">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">Headline Formula</p>
-            <p className="text-[#A8A29E] text-sm mb-6">[Bold claim or result] + [who it's for or what it replaces]</p>
-            <div className="space-y-4">
-              {[
-                'Brand infrastructure for companies that build.',
-                "Your competitor's Instagram is their best recruiter. Is yours?",
-                'One filming day. 30 days of content. Zero guesswork.',
-                "We don't make videos. We build systems that use video.",
-              ].map((hl, i) => (
-                <p key={i} className="font-headline text-xl md:text-2xl font-black italic uppercase tracking-tighter text-[#F5F0EB]">
-                  "{hl}"
-                </p>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="py-16 border-t border-[#292524] text-center">
-          <p className="font-mono text-[10px] text-[#57534E] uppercase tracking-[0.3em]">
-            AOM Brand Guidelines v1.0 / Source of truth for all AOM-facing work
-          </p>
-          <p className="font-mono text-[10px] text-[#57534E]/60 mt-2">
-            Bobby, Cleo, Tony, and the team reference this before shipping.
-          </p>
-        </footer>
-
+      {/* Page content with transition */}
+      <div style={{
+        opacity: transitioning ? 0 : 1,
+        transition: 'opacity 0.3s ease',
+      }}>
+        {activeDirection === 'A' && <IndustrialPage theme={theme} />}
+        {activeDirection === 'B' && <EditorialPage theme={theme} />}
+        {activeDirection === 'C' && <BoldGraphicPage theme={theme} />}
       </div>
     </div>
   )
