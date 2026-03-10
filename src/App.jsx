@@ -491,8 +491,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
     { label: "Accounting", icon: Landmark, sub: "Invoicing & Vendors", number: MAIN_PHONE, hasEmail: true }
   ];
   return (
-    <AnimatePresence>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+      <motion.div key="phone-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="w-full max-w-lg p-10 border border-white/10 bg-aom-night relative shadow-2xl overflow-hidden">
           <button onClick={onClose} className="absolute top-6 right-6 text-aom-text-muted hover:text-aom-text-light transition-colors z-20"><X size={20} /></button>
           <AnimatePresence mode="wait">
@@ -543,7 +542,6 @@ const PhoneModal = ({ isOpen, onClose }) => {
           </AnimatePresence>
         </div>
       </motion.div>
-    </AnimatePresence>
   );
 };
 
@@ -719,7 +717,9 @@ export default function App() {
       {isInitialized && (
         <main className={`pb-24 text-left h-screen overflow-y-auto scroll-smooth hide-scrollbar ${isModalOpen ? 'snap-none overflow-hidden' : ''}`}>
           <TextureOverlay />
-          <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />
+          <AnimatePresence>
+            {isPhoneModalOpen && <PhoneModal isOpen={isPhoneModalOpen} onClose={closePhone} />}
+          </AnimatePresence>
 
           {/* --- NAV: Transparent on hero, solid dark on scroll --- */}
           <header className={`fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center pointer-events-none transition-all duration-300 ${navSolid ? 'bg-aom-night/95 backdrop-blur-md border-b border-white/5' : 'bg-gradient-to-b from-black/40 to-transparent'}`}>
