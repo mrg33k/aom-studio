@@ -10,37 +10,7 @@ const PURPLE = '#a78bfa'
 const CYAN = '#22d3ee'
 const MUTED = '#8A847C'
 
-// ─── PIPELINE DATA ────────────────────────────────────────────────────────────
-const PIPELINE_STATS = {
-  totalContacts: 712,
-  apolloExport: 675,
-  logOnlyBatch: 37,
-  tier1: { total: 114, icp: 23, offIcp: 91, label: 'Warm (opened, no reply)' },
-  tier2Icp: { total: 160, label: 'ICP (uncontacted, on-target)' },
-  tier2OffIcp: { total: 190, label: 'Off-ICP (uncontacted, low priority)' },
-  tier3: { total: 198, icp: 48, offIcp: 150, label: 'Cold Ghost (sent, never opened)' },
-  skipped: { total: 13, label: 'Bounced / Replied / DNC' },
-  feb28Batch: { total: 37, label: 'Feb 28 log-only check-ins' },
-}
-
-const INDUSTRY_BREAKDOWN = [
-  { name: 'Construction', tier2: 50, tier3: 11, tier1: 0, color: ORANGE, priority: 'TOP' },
-  { name: 'Real Estate', tier2: 31, tier3: 30, tier1: 13, color: BLUE, priority: 'HIGH' },
-  { name: 'Hospitality', tier2: 18, tier3: 0, tier1: 0, color: YELLOW, priority: 'GOOD' },
-  { name: 'Nonprofit', tier2: 27, tier3: 0, tier1: 0, color: GREEN, priority: 'MODERATE' },
-  { name: 'Healthcare', tier2: 11, tier3: 7, tier1: 10, color: CYAN, priority: 'NICHE' },
-  { name: 'Off-ICP (Finance, Insurance, Auto, IT)', tier2: 190, tier3: 150, tier1: 91, color: MUTED, priority: 'LOW' },
-]
-
-const CURRENT_STATS = {
-  emailsSentToday: 19,
-  emailsDraftedTomorrow: 17,
-  emailsDraftedDay3: 15,
-  totalPipeline30Day: 385,
-  repliesReceived: 2,
-  replyRate: '0.7%',
-  daysIntoPlan: 4,
-}
+// ─── STATIC DATA (multi-touch + schedule stay hardcoded) ────────────────────
 
 const MULTI_TOUCH_FLOW = [
   { step: 1, label: 'Cold Email', timing: 'Day 0', desc: 'Personalized first touch. Industry-specific angle. Not a template.', color: ORANGE },
@@ -82,13 +52,58 @@ const THIRTY_DAY_SCHEDULE = [
   { day: 30, date: 'Apr 6', count: 15, type: 'Buffer / Review / Q2 Plan', industry: 'All', status: 'planned' },
 ]
 
-const BATCH_HISTORY = [
-  { date: 'Oct 2025', count: 6, status: 're-intro territory', replies: 2, note: 'Big Marble + Keep It Cut replied' },
-  { date: 'Feb 18-19', count: 140, status: 'hook window (35+ days)', replies: 0, note: 'Agencies, Defense, Nonprofit, Tech, RE, Healthcare, Events' },
-  { date: 'Feb 22-23', count: 90, status: 'nudge window (15+ days)', replies: 2, note: 'Elijah Salazar replied. Paige Soucie DNC.' },
-  { date: 'Feb 28', count: 37, status: 'check-in window (10 days)', replies: 0, note: 'Apollo pipeline run. All enriched + emailed.' },
-  { date: 'Mar 11-13', count: 51, status: 'sending now', replies: 0, note: 'Tier 1 re-engage + Tier 2 ICP first-touch' },
-]
+// ─── FALLBACK DATA (used if API is unreachable) ─────────────────────────────
+const FALLBACK_PIPELINE = {
+  icpContacts: 281,
+  offIcpContacts: 431,
+  totalContacts: 712,
+  statusCounts: { no_response: 706, replied: 4, meeting: 0, closed: 0, dead: 0 },
+  icpByIndustry: {
+    Construction: { total: 61, no_response: 61, replied: 0 },
+    'Real Estate': { total: 61, no_response: 61, replied: 0 },
+    Hospitality: { total: 18, no_response: 18, replied: 0 },
+    Nonprofit: { total: 87, no_response: 87, replied: 0 },
+    Healthcare: { total: 46, no_response: 46, replied: 0 },
+    Events: { total: 8, no_response: 8, replied: 0 },
+  },
+  offIcpByIndustry: {
+    'Tech/SaaS': { total: 280 },
+    Defense: { total: 8 },
+    'Media/Agency': { total: 25 },
+    'Research/Energy': { total: 12 },
+    Other: { total: 5 },
+  },
+  batches: {},
+  lastUpdated: null,
+}
+
+// Industry display config
+const INDUSTRY_COLORS = {
+  Construction: ORANGE,
+  'Real Estate': BLUE,
+  Hospitality: YELLOW,
+  Nonprofit: GREEN,
+  Healthcare: CYAN,
+  Events: PURPLE,
+}
+
+const INDUSTRY_PRIORITY = {
+  Construction: 'TOP',
+  'Real Estate': 'HIGH',
+  Hospitality: 'GOOD',
+  Nonprofit: 'MODERATE',
+  Healthcare: 'NICHE',
+  Events: 'NICHE',
+}
+
+const INDUSTRY_WHY = {
+  Construction: 'Target vertical for $3k/month retainers. Highest value in the pipeline.',
+  'Real Estate': 'Brokers want listings content and agent recruiting videos. Good for project-based.',
+  Hospitality: 'Restaurants, resorts, event venues. Social content is a natural fit. Retainer candidates.',
+  Nonprofit: 'Strong story potential, tighter budgets. Documentary-style projects, not retainers.',
+  Healthcare: 'Niche. Some are national/government-adjacent. Worth one touch for the right ones.',
+  Events: 'Event coverage, recap videos. Project-based with repeat potential.',
+}
 
 // ─── UTILITY COMPONENTS ───────────────────────────────────────────────────────
 
@@ -232,6 +247,34 @@ function StatusBadge({ status }) {
   )
 }
 
+function LiveBadge({ isLive }) {
+  if (!isLive) return null
+  return (
+    <span style={{
+      fontSize: 11,
+      fontWeight: 600,
+      letterSpacing: '0.05em',
+      color: GREEN,
+      background: `${GREEN}18`,
+      padding: '3px 10px',
+      borderRadius: 20,
+      whiteSpace: 'nowrap',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+    }}>
+      <span style={{
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        background: GREEN,
+        display: 'inline-block',
+      }} />
+      LIVE DATA
+    </span>
+  )
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 function useIsMobile(breakpoint = 768) {
@@ -246,7 +289,31 @@ function useIsMobile(breakpoint = 768) {
 
 export default function OutreachPlan() {
   const [activeTab, setActiveTab] = useState('overview')
+  const [pipeline, setPipeline] = useState(FALLBACK_PIPELINE)
+  const [isLive, setIsLive] = useState(false)
+  const [dataError, setDataError] = useState(null)
   const isMobile = useIsMobile()
+
+  // Fetch live data from API
+  useEffect(() => {
+    let cancelled = false
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/outreach-data')
+        if (!res.ok) throw new Error(`API returned ${res.status}`)
+        const data = await res.json()
+        if (!cancelled && data.icpContacts != null) {
+          setPipeline(data)
+          setIsLive(true)
+        }
+      } catch (err) {
+        console.warn('Outreach API unavailable, using fallback data:', err.message)
+        setDataError(err.message)
+      }
+    }
+    fetchData()
+    return () => { cancelled = true }
+  }, [])
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -266,6 +333,36 @@ export default function OutreachPlan() {
       .filter(d => d.status !== 'done' && d.status !== 'rest')
       .reduce((sum, d) => sum + d.count, 0)
   }, [])
+
+  // Build industry list from live data
+  const icpIndustries = useMemo(() => {
+    if (!pipeline.icpByIndustry) return []
+    return Object.entries(pipeline.icpByIndustry)
+      .map(([name, data]) => ({
+        name,
+        total: data.total,
+        replied: data.replied || 0,
+        no_response: data.no_response || 0,
+        color: INDUSTRY_COLORS[name] || MUTED,
+        priority: INDUSTRY_PRIORITY[name] || 'OTHER',
+        why: INDUSTRY_WHY[name] || '',
+      }))
+      .sort((a, b) => b.total - a.total)
+  }, [pipeline])
+
+  const offIcpTotal = pipeline.offIcpContacts || 0
+  const icpTotal = pipeline.icpContacts || 0
+  const repliesCount = pipeline.statusCounts?.replied || 0
+  const replyRate = pipeline.totalContacts > 0
+    ? ((repliesCount / pipeline.totalContacts) * 100).toFixed(1) + '%'
+    : '0%'
+
+  // Format last updated
+  const lastUpdatedStr = useMemo(() => {
+    if (!pipeline.lastUpdated) return 'Static data'
+    const d = new Date(pipeline.lastUpdated)
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }, [pipeline.lastUpdated])
 
   return (
     <div style={{
@@ -290,9 +387,10 @@ export default function OutreachPlan() {
           <span style={{ fontSize: 18, fontWeight: 600 }}>Outreach Plan</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: MUTED }}>
+          <LiveBadge isLive={isLive} />
           <span>Jacob's Pipeline</span>
           <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
-          <span>Updated Mar 10, 2026</span>
+          <span>{isLive ? `Updated ${lastUpdatedStr}` : 'Static data'}</span>
         </div>
       </header>
 
@@ -335,10 +433,53 @@ export default function OutreachPlan() {
             {/* Stats Row */}
             <div style={{ marginTop: 32 }}>
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <StatCard label="Total Pipeline" value={PIPELINE_STATS.totalContacts} color={ORANGE} large sub="675 Apollo + 37 log-only" />
+                <StatCard
+                  label="ICP Pipeline"
+                  value={icpTotal}
+                  color={ORANGE}
+                  large
+                  sub={`${offIcpTotal} off-ICP excluded`}
+                />
                 <StatCard label="Emails Sent" value={emailsSent} color={GREEN} large sub="Days 1-3 complete" />
                 <StatCard label="Remaining (30-day)" value={emailsRemaining} color={YELLOW} large sub={`${THIRTY_DAY_SCHEDULE.filter(d => d.status !== 'done' && d.status !== 'rest').length} send days left`} />
-                <StatCard label="Replies" value={CURRENT_STATS.repliesReceived} color={BLUE} large sub={`${CURRENT_STATS.replyRate} reply rate (historical)`} />
+                <StatCard label="Replies" value={repliesCount} color={BLUE} large sub={`${replyRate} reply rate`} />
+              </div>
+            </div>
+
+            {/* ICP Breakdown Mini */}
+            <div style={{
+              marginTop: 16,
+              display: 'flex',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}>
+              {icpIndustries.map(ind => (
+                <div key={ind.name} style={{
+                  background: '#151515',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 8,
+                  padding: '10px 16px',
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 8,
+                  borderLeft: `3px solid ${ind.color}`,
+                }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: ind.color }}>{ind.total}</span>
+                  <span style={{ fontSize: 13, color: MUTED }}>{ind.name}</span>
+                </div>
+              ))}
+              <div style={{
+                background: '#0e0e0e',
+                border: '1px solid rgba(255,255,255,0.04)',
+                borderRadius: 8,
+                padding: '10px 16px',
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 8,
+                opacity: 0.6,
+              }}>
+                <span style={{ fontSize: 20, fontWeight: 700, color: MUTED }}>{offIcpTotal}</span>
+                <span style={{ fontSize: 13, color: '#555' }}>Off-ICP</span>
               </div>
             </div>
 
@@ -416,45 +557,28 @@ export default function OutreachPlan() {
               ))}
             </div>
 
-            {/* Batch History */}
-            <SectionTitle sub="Everything sent so far, grouped by batch">Outreach History</SectionTitle>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {BATCH_HISTORY.map((batch, i) => (
-                <div key={i} style={{
-                  background: '#151515',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 10,
-                  padding: '16px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: 12,
-                }}>
-                  <div style={{ flex: '1 1 200px' }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#F0ECE6' }}>{batch.date}</div>
-                    <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{batch.note}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: ORANGE }}>{batch.count}</div>
-                      <div style={{ fontSize: 11, color: MUTED }}>contacts</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: batch.replies > 0 ? GREEN : '#333' }}>{batch.replies}</div>
-                      <div style={{ fontSize: 11, color: MUTED }}>replies</div>
-                    </div>
-                    <span style={{
-                      fontSize: 12,
-                      color: batch.status === 'sending now' ? ORANGE : MUTED,
-                      fontWeight: 500,
-                      background: batch.status === 'sending now' ? `${ORANGE}18` : 'rgba(255,255,255,0.04)',
-                      padding: '4px 12px',
-                      borderRadius: 20,
-                      whiteSpace: 'nowrap',
-                    }}>{batch.status}</span>
-                  </div>
-                </div>
+            {/* Status Breakdown */}
+            <SectionTitle sub="Current status across all contacts">Contact Status</SectionTitle>
+            <div style={{
+              background: '#151515',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 12,
+              padding: '28px 24px',
+            }}>
+              {[
+                { label: 'No Response', count: pipeline.statusCounts?.no_response || 0, color: MUTED },
+                { label: 'Replied', count: pipeline.statusCounts?.replied || 0, color: GREEN },
+                { label: 'Meeting Scheduled', count: pipeline.statusCounts?.meeting || 0, color: BLUE },
+                { label: 'Closed (Client)', count: pipeline.statusCounts?.closed || 0, color: ORANGE },
+                { label: 'Dead / DNC', count: pipeline.statusCounts?.dead || 0, color: RED },
+              ].filter(s => s.count > 0 || s.label === 'Replied' || s.label === 'Meeting Scheduled').map(s => (
+                <TierBar
+                  key={s.label}
+                  label={s.label}
+                  count={s.count}
+                  maxCount={pipeline.totalContacts || 1}
+                  color={s.color}
+                />
               ))}
             </div>
           </>
@@ -463,7 +587,7 @@ export default function OutreachPlan() {
         {/* ═══ 30-DAY SCHEDULE TAB ═══ */}
         {activeTab === 'schedule' && (
           <>
-            <SectionTitle sub={`${CURRENT_STATS.totalPipeline30Day} emails over 30 days. Weekends off. ~15 per send day.`}>
+            <SectionTitle sub={`385 emails over 30 days. Weekends off. ~15 per send day.`}>
               30-Day Outreach Calendar
             </SectionTitle>
 
@@ -477,11 +601,11 @@ export default function OutreachPlan() {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ fontSize: 14, color: '#F0ECE6' }}>Progress</span>
-                <span style={{ fontSize: 14, color: ORANGE, fontWeight: 600 }}>Day {CURRENT_STATS.daysIntoPlan} of 30</span>
+                <span style={{ fontSize: 14, color: ORANGE, fontWeight: 600 }}>Day 4 of 30</span>
               </div>
               <div style={{ background: '#1A1A1A', borderRadius: 6, height: 8, overflow: 'hidden' }}>
                 <div style={{
-                  width: `${(CURRENT_STATS.daysIntoPlan / 30) * 100}%`,
+                  width: `${(4 / 30) * 100}%`,
                   height: '100%',
                   background: `linear-gradient(90deg, ${ORANGE}, ${YELLOW})`,
                   borderRadius: 6,
@@ -560,7 +684,7 @@ export default function OutreachPlan() {
         {/* ═══ PIPELINE TIERS TAB ═══ */}
         {activeTab === 'pipeline' && (
           <>
-            <SectionTitle sub="Contacts segmented by engagement level and ICP fit">Pipeline Breakdown</SectionTitle>
+            <SectionTitle sub="ICP contacts by industry with status breakdown">ICP Pipeline Breakdown</SectionTitle>
 
             <div style={{
               background: '#151515',
@@ -568,48 +692,33 @@ export default function OutreachPlan() {
               borderRadius: 12,
               padding: '28px 24px',
             }}>
-              <TierBar
-                label="Tier 1: Warm (opened, no reply)"
-                count={PIPELINE_STATS.tier1.total}
-                maxCount={200}
-                color={ORANGE}
-                sub={`${PIPELINE_STATS.tier1.icp} ICP (healthcare + real estate)  |  ${PIPELINE_STATS.tier1.offIcp} off-ICP`}
-              />
-              <TierBar
-                label="Tier 2 ICP: Uncontacted, On-Target"
-                count={PIPELINE_STATS.tier2Icp.total}
-                maxCount={200}
-                color={GREEN}
-                sub="Construction, Real Estate, Hospitality, Nonprofit, Healthcare"
-              />
-              <TierBar
-                label="Tier 2 Off-ICP: Uncontacted, Low Priority"
-                count={PIPELINE_STATS.tier2OffIcp.total}
-                maxCount={200}
-                color={MUTED}
-                sub="Financial services, Insurance, Automotive, IT/SaaS"
-              />
-              <TierBar
-                label="Tier 3: Cold Ghost (sent, never opened)"
-                count={PIPELINE_STATS.tier3.total}
-                maxCount={200}
-                color={RED}
-                sub={`${PIPELINE_STATS.tier3.icp} ICP  |  ${PIPELINE_STATS.tier3.offIcp} off-ICP  |  All 290+ days old`}
-              />
-              <TierBar
-                label="Feb 28 Log Batch (check-in window)"
-                count={PIPELINE_STATS.feb28Batch.total}
-                maxCount={200}
-                color={BLUE}
-                sub="Apollo pipeline run. All enriched + emailed. 10 days old."
-              />
-              <TierBar
-                label="Skipped (bounced / replied / DNC)"
-                count={PIPELINE_STATS.skipped.total}
-                maxCount={200}
-                color="#333"
-                sub="Includes Paige Soucie (DNC) and bounced emails"
-              />
+              {icpIndustries.map(ind => (
+                <TierBar
+                  key={ind.name}
+                  label={ind.name}
+                  count={ind.total}
+                  maxCount={Math.max(...icpIndustries.map(i => i.total), 1)}
+                  color={ind.color}
+                  sub={ind.replied > 0 ? `${ind.replied} replied` : `${ind.no_response} awaiting response`}
+                />
+              ))}
+
+              {/* Off-ICP summary */}
+              <div style={{
+                marginTop: 24,
+                paddingTop: 20,
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                  <span style={{ fontSize: 15, color: MUTED, fontWeight: 500 }}>Off-ICP (excluded from pipeline count)</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#444' }}>{offIcpTotal}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 13, color: '#555' }}>
+                  {pipeline.offIcpByIndustry && Object.entries(pipeline.offIcpByIndustry).map(([name, data]) => (
+                    <span key={name}>{name}: {data.total}</span>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* ICP Priority */}
@@ -621,36 +730,36 @@ export default function OutreachPlan() {
               padding: '24px',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[
-                  { rank: 1, vertical: 'Construction', why: 'Target vertical for $3k/month retainers. 50 fresh contacts + 11 re-intros. Most valuable in the entire export.', color: ORANGE },
-                  { rank: 2, vertical: 'Real Estate', why: '31 fresh + 30 re-intros. Brokers want listings content and agent recruiting videos. Good for project-based.', color: BLUE },
-                  { rank: 3, vertical: 'Hospitality', why: '18 fresh contacts. Restaurants, resorts, event venues. Social content is a natural fit. Retainer candidates.', color: YELLOW },
-                  { rank: 4, vertical: 'Nonprofit', why: '27 fresh contacts. Strong story potential, tighter budgets. Documentary-style projects, not retainers.', color: GREEN },
-                  { rank: 5, vertical: 'Healthcare', why: '11 fresh + 7 re-intros. Niche. Some are national/government-adjacent. Worth one touch for the right ones.', color: CYAN },
-                ].map(item => (
-                  <div key={item.rank} style={{
+                {icpIndustries
+                  .filter(ind => INDUSTRY_WHY[ind.name])
+                  .map((ind, idx) => (
+                  <div key={ind.name} style={{
                     display: 'flex',
                     gap: 16,
                     alignItems: 'flex-start',
                     padding: '12px 0',
-                    borderBottom: item.rank < 5 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                    borderBottom: idx < icpIndustries.filter(i => INDUSTRY_WHY[i.name]).length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
                   }}>
                     <div style={{
                       width: 32,
                       height: 32,
                       borderRadius: '50%',
-                      border: `2px solid ${item.color}`,
+                      border: `2px solid ${ind.color}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: 14,
                       fontWeight: 700,
-                      color: item.color,
+                      color: ind.color,
                       flexShrink: 0,
-                    }}>{item.rank}</div>
+                    }}>{idx + 1}</div>
                     <div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#F0ECE6' }}>{item.vertical}</div>
-                      <div style={{ fontSize: 14, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>{item.why}</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 600, color: '#F0ECE6' }}>{ind.name}</span>
+                        <span style={{ fontSize: 20, fontWeight: 700, color: ind.color }}>{ind.total}</span>
+                        <span style={{ fontSize: 12, color: MUTED }}>contacts</span>
+                      </div>
+                      <div style={{ fontSize: 14, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>{ind.why}</div>
                     </div>
                   </div>
                 ))}
@@ -662,76 +771,96 @@ export default function OutreachPlan() {
         {/* ═══ BY VERTICAL TAB ═══ */}
         {activeTab === 'verticals' && (
           <>
-            <SectionTitle sub="Contact counts by industry across all tiers">Industry Breakdown</SectionTitle>
+            <SectionTitle sub="ICP verticals with live contact counts">Industry Breakdown</SectionTitle>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-              {INDUSTRY_BREAKDOWN.map((ind) => {
-                const total = ind.tier2 + ind.tier3 + ind.tier1
-                return (
-                  <div key={ind.name} style={{
-                    background: '#151515',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 12,
-                    padding: '24px',
-                    borderLeft: `3px solid ${ind.color}`,
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-                      <div>
-                        <div style={{ fontSize: 18, fontWeight: 600, color: '#F0ECE6' }}>{ind.name}</div>
-                        <span style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: ind.color,
-                          background: `${ind.color}18`,
-                          padding: '2px 8px',
-                          borderRadius: 10,
-                          marginTop: 4,
-                          display: 'inline-block',
-                        }}>{ind.priority} PRIORITY</span>
-                      </div>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: ind.color }}>{total}</div>
+              {icpIndustries.map((ind) => (
+                <div key={ind.name} style={{
+                  background: '#151515',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 12,
+                  padding: '24px',
+                  borderLeft: `3px solid ${ind.color}`,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 18, fontWeight: 600, color: '#F0ECE6' }}>{ind.name}</div>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: ind.color,
+                        background: `${ind.color}18`,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        marginTop: 4,
+                        display: 'inline-block',
+                      }}>{ind.priority} PRIORITY</span>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {ind.tier2 > 0 && (
-                        <div style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          borderRadius: 8,
-                          padding: '8px 14px',
-                          flex: '1 1 auto',
-                          textAlign: 'center',
-                        }}>
-                          <div style={{ fontSize: 18, fontWeight: 700, color: GREEN }}>{ind.tier2}</div>
-                          <div style={{ fontSize: 11, color: MUTED }}>Fresh</div>
-                        </div>
-                      )}
-                      {ind.tier1 > 0 && (
-                        <div style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          borderRadius: 8,
-                          padding: '8px 14px',
-                          flex: '1 1 auto',
-                          textAlign: 'center',
-                        }}>
-                          <div style={{ fontSize: 18, fontWeight: 700, color: ORANGE }}>{ind.tier1}</div>
-                          <div style={{ fontSize: 11, color: MUTED }}>Warm</div>
-                        </div>
-                      )}
-                      {ind.tier3 > 0 && (
-                        <div style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          borderRadius: 8,
-                          padding: '8px 14px',
-                          flex: '1 1 auto',
-                          textAlign: 'center',
-                        }}>
-                          <div style={{ fontSize: 18, fontWeight: 700, color: RED }}>{ind.tier3}</div>
-                          <div style={{ fontSize: 11, color: MUTED }}>Ghost</div>
-                        </div>
-                      )}
-                    </div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: ind.color }}>{ind.total}</div>
                   </div>
-                )
-              })}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {ind.no_response > 0 && (
+                      <div style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        borderRadius: 8,
+                        padding: '8px 14px',
+                        flex: '1 1 auto',
+                        textAlign: 'center',
+                      }}>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: MUTED }}>{ind.no_response}</div>
+                        <div style={{ fontSize: 11, color: MUTED }}>No Reply</div>
+                      </div>
+                    )}
+                    {ind.replied > 0 && (
+                      <div style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        borderRadius: 8,
+                        padding: '8px 14px',
+                        flex: '1 1 auto',
+                        textAlign: 'center',
+                      }}>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: GREEN }}>{ind.replied}</div>
+                        <div style={{ fontSize: 11, color: MUTED }}>Replied</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Off-ICP Card */}
+              <div style={{
+                background: '#0e0e0e',
+                border: '1px solid rgba(255,255,255,0.04)',
+                borderRadius: 12,
+                padding: '24px',
+                borderLeft: '3px solid #333',
+                opacity: 0.7,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 600, color: MUTED }}>Off-ICP</div>
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#555',
+                      background: 'rgba(255,255,255,0.03)',
+                      padding: '2px 8px',
+                      borderRadius: 10,
+                      marginTop: 4,
+                      display: 'inline-block',
+                    }}>LOW PRIORITY</span>
+                  </div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: '#444' }}>{offIcpTotal}</div>
+                </div>
+                <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}>
+                  {pipeline.offIcpByIndustry && Object.entries(pipeline.offIcpByIndustry).map(([name, data]) => (
+                    <span key={name} style={{ marginRight: 12 }}>{name} ({data.total})</span>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12, color: '#444', marginTop: 8 }}>
+                  Not counted in ICP pipeline. Finance, Insurance, Auto, IT, Defense, etc.
+                </div>
+              </div>
             </div>
 
             {/* Apollo Credits Note */}
