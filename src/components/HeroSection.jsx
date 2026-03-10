@@ -178,7 +178,7 @@ export default function HeroSection({ openBrief, scrollToSection }) {
             onClick={() => openBrief()}
             className="bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/30 flex items-center gap-2 text-sm md:text-base"
           >
-            See What We'd Build For You <ArrowRight size={16} />
+            Let's Talk <ArrowRight size={16} />
           </button>
           <button
             onClick={() => scrollToSection('work')}
