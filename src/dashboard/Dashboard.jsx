@@ -2186,7 +2186,7 @@ function CommandBar({ onRefresh, isMobile }) {
 
 // ─── RELAY CHAT PANEL (integrated into main views) ──────────────────────────
 const CHAT_STORAGE_KEY = 'aom_chat_history'
-const CHAT_LAST_OUTBOX_KEY = 'aom_chat_last_outbox_id'
+const CHAT_LAST_TS_KEY = 'aom_chat_last_ts'
 const POLL_INTERVAL = 3000
 
 function RelayChatPanel() {
@@ -2198,6 +2198,7 @@ function RelayChatPanel() {
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const pollRef = useRef(null)
+  const isPollingRef = useRef(false)
 
   // Persist messages to localStorage
   useEffect(() => {
@@ -2211,12 +2212,15 @@ function RelayChatPanel() {
     }
   }, [messages])
 
-  // Poll for responses
+  // Poll for all messages (inbox + outbox merged)
   useEffect(() => {
     const poll = async () => {
+      if (isPollingRef.current) return
+      isPollingRef.current = true
       try {
-        const sinceId = localStorage.getItem(CHAT_LAST_OUTBOX_KEY) || ''
-        const res = await fetch(`/api/relay?since_id=${sinceId}`)
+        const sinceTs = localStorage.getItem(CHAT_LAST_TS_KEY) || ''
+        const url = sinceTs ? `/api/relay?since=${encodeURIComponent(sinceTs)}` : '/api/relay'
+        const res = await fetch(url)
         if (!res.ok) return
         const data = await res.json()
         if (data.messages && data.messages.length > 0) {
@@ -2224,17 +2228,27 @@ function RelayChatPanel() {
             const existingIds = new Set(prev.map(m => m.id))
             const newMsgs = data.messages.filter(m => !existingIds.has(m.id))
             if (newMsgs.length === 0) return prev
-            return [...prev, ...newMsgs.map(m => ({ ...m, type: 'response' }))]
+            return [...prev, ...newMsgs]
           })
-          const lastId = data.messages[data.messages.length - 1].id
-          localStorage.setItem(CHAT_LAST_OUTBOX_KEY, lastId)
+          const lastTs = data.messages[data.messages.length - 1].timestamp
+          localStorage.setItem(CHAT_LAST_TS_KEY, lastTs)
         }
-      } catch {}
+      } catch {} finally {
+        isPollingRef.current = false
+      }
     }
 
     poll()
     pollRef.current = setInterval(poll, POLL_INTERVAL)
-    return () => clearInterval(pollRef.current)
+
+    // Also poll when tab regains focus (catches messages from while tab was backgrounded)
+    const onFocus = () => poll()
+    window.addEventListener('focus', onFocus)
+
+    return () => {
+      clearInterval(pollRef.current)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [])
 
   // Focus input on mount
@@ -2280,10 +2294,11 @@ function RelayChatPanel() {
       ))
     } finally {
       setSending(false)
-      // Quick-poll for response after sending
-      setTimeout(() => {
-        const sinceId = localStorage.getItem(CHAT_LAST_OUTBOX_KEY) || ''
-        fetch(`/api/relay?since_id=${sinceId}`)
+      // Quick-poll for response after sending (check at 1s and 3s)
+      const quickPoll = () => {
+        const sinceTs = localStorage.getItem(CHAT_LAST_TS_KEY) || ''
+        const url = sinceTs ? `/api/relay?since=${encodeURIComponent(sinceTs)}` : '/api/relay'
+        fetch(url)
           .then(r => r.ok ? r.json() : null)
           .then(data => {
             if (data?.messages?.length > 0) {
@@ -2291,21 +2306,23 @@ function RelayChatPanel() {
                 const existingIds = new Set(prev.map(m => m.id))
                 const newMsgs = data.messages.filter(m => !existingIds.has(m.id))
                 if (newMsgs.length === 0) return prev
-                return [...prev, ...newMsgs.map(m => ({ ...m, type: 'response' }))]
+                return [...prev, ...newMsgs]
               })
-              const lastId = data.messages[data.messages.length - 1].id
-              localStorage.setItem(CHAT_LAST_OUTBOX_KEY, lastId)
+              const lastTs = data.messages[data.messages.length - 1].timestamp
+              localStorage.setItem(CHAT_LAST_TS_KEY, lastTs)
             }
           })
           .catch(() => {})
-      }, 1500)
+      }
+      setTimeout(quickPoll, 1000)
+      setTimeout(quickPoll, 3000)
     }
   }
 
   const clearHistory = () => {
     setMessages([])
     localStorage.removeItem(CHAT_STORAGE_KEY)
-    localStorage.removeItem(CHAT_LAST_OUTBOX_KEY)
+    localStorage.removeItem(CHAT_LAST_TS_KEY)
   }
 
   const formatTime = (ts) => {

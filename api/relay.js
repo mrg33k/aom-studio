@@ -7,11 +7,16 @@ const BRANCH = 'master'
 const INBOX_PATH = 'context/relay-inbox.jsonl'
 const OUTBOX_PATH = 'context/relay-outbox.jsonl'
 
-async function fetchGitHubFile(path) {
-  const res = await fetch(
-    `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`,
-    { headers: { Authorization: `token ${GITHUB_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
-  )
+async function fetchGitHubFile(path, bustCache = false) {
+  // Use cache-busting timestamp to avoid GitHub API returning stale content
+  const url = `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}${bustCache ? `&_=${Date.now()}` : ''}`
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `token ${GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github.v3+json',
+      ...(bustCache ? { 'If-None-Match': '' } : {}),
+    },
+  })
   if (!res.ok) {
     if (res.status === 404) return { content: '', sha: null }
     return null
@@ -83,32 +88,49 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, id })
     }
 
-    // GET: poll for responses (read outbox)
+    // GET: poll for all messages (inbox + outbox merged, sorted by time)
     if (req.method === 'GET') {
-      const sinceId = req.query.since_id || null
+      const sinceTs = req.query.since || null
 
-      const outbox = await fetchGitHubFile(OUTBOX_PATH)
-      if (!outbox) return res.status(500).json({ error: 'Failed to read outbox' })
+      // Prevent any caching on poll responses
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+      res.setHeader('Pragma', 'no-cache')
 
-      if (!outbox.content || !outbox.content.trim()) {
-        return res.status(200).json({ messages: [] })
+      // Fetch both files in parallel with cache busting
+      const [inbox, outbox] = await Promise.all([
+        fetchGitHubFile(INBOX_PATH, true),
+        fetchGitHubFile(OUTBOX_PATH, true),
+      ])
+
+      const parseLines = (content, type) => {
+        if (!content || !content.trim()) return []
+        return content.trim().split('\n').filter(Boolean).map(line => {
+          try {
+            const msg = JSON.parse(line)
+            return { ...msg, type }
+          } catch { return null }
+        }).filter(Boolean)
       }
 
-      const lines = outbox.content.trim().split('\n').filter(Boolean)
-      let messages = []
-      for (const line of lines) {
-        try { messages.push(JSON.parse(line)) } catch {}
+      const inboxMsgs = inbox ? parseLines(inbox.content, 'sent') : []
+      const outboxMsgs = outbox ? parseLines(outbox.content, 'response') : []
+
+      // Merge and sort by timestamp
+      let all = [...inboxMsgs, ...outboxMsgs]
+      all.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+
+      // Filter by since timestamp if provided
+      if (sinceTs) {
+        const since = new Date(sinceTs)
+        all = all.filter(m => new Date(m.timestamp) > since)
       }
 
-      // If since_id provided, only return messages after that ID
-      if (sinceId) {
-        const idx = messages.findIndex(m => m.id === sinceId)
-        if (idx !== -1) {
-          messages = messages.slice(idx + 1)
-        }
+      // Only return the last 50 messages to keep payloads small
+      if (all.length > 50) {
+        all = all.slice(-50)
       }
 
-      return res.status(200).json({ messages })
+      return res.status(200).json({ messages: all })
     }
 
     return res.status(405).json({ error: 'Method not allowed' })
