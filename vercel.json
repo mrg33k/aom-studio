@@ -6,6 +6,7 @@
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/outreach-plan", "destination": "/outreach-plan.html" },
     { "source": "/growth-plan", "destination": "/growth-plan.html" },
+    { "source": "/system", "destination": "/system.html" },
     { "source": "/brand", "destination": "/index.html" },
     { "source": "/brand/:path*", "destination": "/index.html" },
     { "source": "/brands", "destination": "/index.html" },

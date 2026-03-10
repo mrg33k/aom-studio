@@ -11,6 +11,7 @@ export default defineConfig({
         dashboard: resolve(__dirname, 'dashboard.html'),
         'outreach-plan': resolve(__dirname, 'outreach-plan.html'),
         'growth-plan': resolve(__dirname, 'growth-plan.html'),
+        'system': resolve(__dirname, 'system.html'),
       },
     },
   },
