@@ -2187,7 +2187,7 @@ function CommandBar({ onRefresh, isMobile }) {
 // ─── RELAY CHAT PANEL (integrated into main views) ──────────────────────────
 const CHAT_STORAGE_KEY = 'aom_chat_history'
 const CHAT_LAST_OUTBOX_KEY = 'aom_chat_last_outbox_id'
-const POLL_INTERVAL = 15000
+const POLL_INTERVAL = 3000
 
 function RelayChatPanel() {
   const [messages, setMessages] = useState(() => {
@@ -2280,6 +2280,25 @@ function RelayChatPanel() {
       ))
     } finally {
       setSending(false)
+      // Quick-poll for response after sending
+      setTimeout(() => {
+        const sinceId = localStorage.getItem(CHAT_LAST_OUTBOX_KEY) || ''
+        fetch(`/api/relay?since_id=${sinceId}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (data?.messages?.length > 0) {
+              setMessages(prev => {
+                const existingIds = new Set(prev.map(m => m.id))
+                const newMsgs = data.messages.filter(m => !existingIds.has(m.id))
+                if (newMsgs.length === 0) return prev
+                return [...prev, ...newMsgs.map(m => ({ ...m, type: 'response' }))]
+              })
+              const lastId = data.messages[data.messages.length - 1].id
+              localStorage.setItem(CHAT_LAST_OUTBOX_KEY, lastId)
+            }
+          })
+          .catch(() => {})
+      }, 1500)
     }
   }
 
