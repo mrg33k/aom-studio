@@ -8,7 +8,7 @@ import {
   Lightbulb, Rocket, Repeat, Crown, Fingerprint, Mic2,
   Download, Calendar, TrendingUp, PlaneTakeoff, Globe, Navigation, MapPin, Truck,
   Phone, Mic, Monitor, Cpu, Headphones, Speaker, MousePointer2, Mail, Landmark,
-  ChevronLeft, AlertCircle
+  ChevronLeft, AlertCircle, Menu
 } from 'lucide-react';
 
 import HeroSection from './components/HeroSection';
@@ -480,9 +480,16 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
 // --- ROUTING MODAL ---
 const PhoneModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('list');
-  useEffect(() => { if (!isOpen) setTimeout(() => setView('list'), 300); }, [isOpen]);
+  const [selectedDept, setSelectedDept] = useState(null);
+  useEffect(() => { if (!isOpen) setTimeout(() => { setView('list'); setSelectedDept(null); }, 300); }, [isOpen]);
   if (!isOpen) return null;
   const handleRoute = (number) => { window.location.href = `tel:${number}`; };
+  const departments = [
+    { label: "Scheduling", icon: Calendar, sub: "Inquiries & Logistics", number: MAIN_PHONE },
+    { label: "Creative", icon: Target, sub: "Vision & Strategy", number: MAIN_PHONE },
+    { label: "Support", icon: ShieldCheck, sub: "Operations & Billing", number: MAIN_PHONE },
+    { label: "Accounting", icon: Landmark, sub: "Invoicing & Vendors", number: MAIN_PHONE, hasEmail: true }
+  ];
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
@@ -497,13 +504,8 @@ const PhoneModal = ({ isOpen, onClose }) => {
                   <p className="text-aom-text-muted text-[10px] font-body font-bold uppercase tracking-[0.3em] mt-3">Select Department</p>
                 </div>
                 <div className="space-y-2">
-                  {[
-                    { label: "Scheduling", icon: Calendar, sub: "Inquiries & Logistics", number: MAIN_PHONE },
-                    { label: "Creative", icon: Target, sub: "Vision & Strategy", number: MAIN_PHONE },
-                    { label: "Support", icon: ShieldCheck, sub: "Operations & Billing", number: MAIN_PHONE },
-                    { label: "Accounting", icon: Landmark, sub: "Invoicing & Vendors", type: 'accounting' }
-                  ].map(item => (
-                    <button key={item.label} onClick={() => item.type === 'accounting' ? setView('accounting') : handleRoute(item.number)} className="w-full p-4 border border-white/10 bg-white/[0.03] hover:border-aom-orange/30 hover:bg-aom-orange/5 transition-all group flex items-center justify-between text-left text-aom-text-light">
+                  {departments.map(item => (
+                    <button key={item.label} onClick={() => { setSelectedDept(item); setView('dept'); }} className="w-full p-4 border border-white/10 bg-white/[0.03] hover:border-aom-orange/30 hover:bg-aom-orange/5 transition-all group flex items-center justify-between text-left text-aom-text-light">
                       <div className="flex items-center gap-4">
                         <item.icon size={16} className="text-aom-text-muted group-hover:text-aom-orange transition-colors" />
                         <div><p className="text-aom-text-light font-headline font-extrabold uppercase tracking-widest text-xs">{item.label}</p><p className="text-[9px] font-body text-aom-text-muted mt-0.5">{item.sub}</p></div>
@@ -513,16 +515,31 @@ const PhoneModal = ({ isOpen, onClose }) => {
                   ))}
                 </div>
               </motion.div>
-            ) : (
-              <motion.div key="accounting" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                <div className="text-center mb-8"><div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 flex items-center justify-center mx-auto mb-4"><Mail size={24} className="text-aom-orange" /></div><h2 className="text-2xl font-headline font-extrabold text-aom-text-light uppercase tracking-tighter">Accounting</h2></div>
-                <div className="p-6 border border-aom-orange/10 bg-aom-orange/5 text-center">
-                  <p className="text-aom-text-muted text-xs leading-relaxed mb-6">Please send an email to <span className="text-aom-orange font-bold">hello@aom-inhouse.com</span> to accompany your call.</p>
-                  <button onClick={() => handleRoute(MAIN_PHONE)} className="w-full bg-aom-orange py-3 text-white font-headline font-extrabold uppercase tracking-widest text-xs hover:bg-aom-orange-hover transition-all flex items-center justify-center gap-2 shadow-xl"><Phone size={14} className="fill-white" /> Call Accounting</button>
+            ) : view === 'dept' && selectedDept ? (
+              <motion.div key="dept" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 flex items-center justify-center mx-auto mb-4">
+                    <selectedDept.icon size={24} className="text-aom-orange" />
+                  </div>
+                  <h2 className="text-2xl font-headline font-extrabold text-aom-text-light uppercase tracking-tighter">{selectedDept.label}</h2>
+                  <p className="text-aom-text-muted text-[10px] font-body font-bold uppercase tracking-[0.3em] mt-2">{selectedDept.sub}</p>
                 </div>
-                <button onClick={() => setView('list')} className="w-full mt-6 text-aom-text-muted hover:text-aom-text-light text-[9px] font-body uppercase tracking-widest transition-colors">Back</button>
+                <div className="space-y-4">
+                  {selectedDept.hasEmail && (
+                    <div className="p-4 border border-aom-orange/10 bg-aom-orange/5 text-center">
+                      <p className="text-aom-text-muted text-xs leading-relaxed">Please send an email to <span className="text-aom-orange font-bold">hello@aom-inhouse.com</span> to accompany your call.</p>
+                    </div>
+                  )}
+                  <button onClick={() => handleRoute(selectedDept.number)} className="w-full bg-aom-orange py-4 text-white font-headline font-extrabold uppercase tracking-widest text-xs hover:bg-aom-orange-hover transition-all flex items-center justify-center gap-2 shadow-xl">
+                    <Phone size={14} className="fill-white" /> Call {selectedDept.label}
+                  </button>
+                  <a href="mailto:hello@aom-inhouse.com" className="w-full py-4 border border-white/10 bg-white/[0.03] text-aom-text-muted font-headline font-extrabold uppercase tracking-widest text-xs hover:text-aom-text-light hover:border-white/20 transition-all flex items-center justify-center gap-2">
+                    <Mail size={14} /> Email Instead
+                  </a>
+                </div>
+                <button onClick={() => { setView('list'); setSelectedDept(null); }} className="w-full mt-6 text-aom-text-muted hover:text-aom-text-light text-[9px] font-body uppercase tracking-widest transition-colors">Back</button>
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
       </motion.div>
@@ -549,9 +566,10 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingBudget, setPendingBudget] = useState(null);
   const [navSolid, setNavSolid] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const playerFrameRef = useRef(null);
 
-  const isModalOpen = isInquiryOpen || !!selectedVideo || isPhoneModalOpen;
+  const isModalOpen = isInquiryOpen || !!selectedVideo || isPhoneModalOpen || mobileMenuOpen;
 
   // SESSION-BASED RANDOMIZATION
   const shuffledData = useMemo(() => {
@@ -668,6 +686,20 @@ export default function App() {
 
   const handleRoute = (number) => { window.location.href = `tel:${number}`; };
 
+  const scrollToSection = (id) => {
+    setMobileMenuOpen(false);
+    requestAnimationFrame(() => {
+      const main = document.querySelector('main');
+      const el = document.getElementById(id);
+      if (main && el) {
+        const mainRect = main.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const offset = elRect.top - mainRect.top + main.scrollTop - 80;
+        main.scrollTo({ top: offset, behavior: 'smooth' });
+      }
+    });
+  };
+
   return (
     <div className="bg-aom-night text-aom-text-light min-h-screen font-body selection:bg-aom-orange/30 antialiased overflow-hidden">
       <AnimatePresence>
@@ -692,16 +724,52 @@ export default function App() {
           {/* --- NAV: Transparent on hero, solid dark on scroll --- */}
           <header className={`fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center pointer-events-none transition-all duration-300 ${navSolid ? 'bg-aom-night/95 backdrop-blur-md border-b border-white/5' : 'bg-gradient-to-b from-black/40 to-transparent'}`}>
             <a href="/" className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto">AOM<span className="text-aom-orange">.</span></a>
-            <div className="flex gap-4 pointer-events-auto">
-              <button onClick={openPhone} className="hidden md:flex items-center px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-xs uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
-              <button onClick={() => openBrief()} className="px-6 md:px-8 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-xs uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all flex items-center">Start a Brief</button>
+            {/* Desktop nav */}
+            <nav className="hidden md:flex gap-4 items-center pointer-events-auto">
+              <button onClick={() => scrollToSection('work')} className="text-xs font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Work</button>
+              <button onClick={() => scrollToSection('packages')} className="text-xs font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Services</button>
+              <button onClick={openPhone} className="flex items-center px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-xs uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
+              <button onClick={() => openBrief()} className="px-8 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-xs uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all flex items-center">Start a Brief</button>
+            </nav>
+            {/* Mobile nav */}
+            <div className="flex md:hidden gap-3 items-center pointer-events-auto">
+              <button onClick={() => openBrief()} className="px-5 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-xs uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all">Brief</button>
+              <button onClick={() => setMobileMenuOpen(true)} className="w-11 h-11 flex items-center justify-center bg-white/5 border border-white/10 text-aom-text-light" aria-label="Open menu"><Menu size={20} /></button>
             </div>
           </header>
+
+          {/* --- MOBILE MENU OVERLAY --- */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] bg-aom-night/98 backdrop-blur-xl flex flex-col">
+                <div className="flex justify-between items-center px-6 py-4">
+                  <span className="text-2xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light">AOM<span className="text-aom-orange">.</span></span>
+                  <button onClick={() => setMobileMenuOpen(false)} className="w-11 h-11 flex items-center justify-center text-aom-text-light" aria-label="Close menu"><X size={24} /></button>
+                </div>
+                <nav className="flex-1 flex flex-col items-center justify-center gap-8">
+                  {[
+                    { label: 'Work', target: 'work' },
+                    { label: 'Construction', target: 'construction' },
+                    { label: 'Brands', target: 'brands' },
+                    { label: 'Services', target: 'packages' },
+                    { label: 'Digital', target: 'digital' },
+                  ].map(item => (
+                    <button key={item.target} onClick={() => scrollToSection(item.target)} className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors">
+                      {item.label}
+                    </button>
+                  ))}
+                  <div className="w-12 h-[1px] bg-white/10 my-4" />
+                  <button onClick={() => { setMobileMenuOpen(false); openPhone(); }} className="text-lg font-headline font-bold uppercase tracking-widest text-aom-text-muted hover:text-aom-text-light transition-colors">Talk to Us</button>
+                  <button onClick={() => { setMobileMenuOpen(false); openBrief(); }} className="px-12 py-4 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-widest text-sm hover:bg-aom-orange-hover transition-all shadow-lg shadow-aom-orange/20">Start a Brief</button>
+                </nav>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* === SECTION ORDER: Hook > Prove > Show > Explain > Convert === */}
 
           {/* 1. HERO (dark, video bg) */}
-          <HeroSection openBrief={openBrief} />
+          <HeroSection openBrief={openBrief} scrollToSection={scrollToSection} />
 
           {/* Pattern strip */}
           <PatternStrip variant="diagonal" />
@@ -806,7 +874,7 @@ export default function App() {
           <PatternStrip variant="dots" />
 
           {/* 6. SERVICES -- cream breathing section */}
-          <ServicesGrid />
+          <ServicesGrid scrollToSection={scrollToSection} />
 
           {/* Pattern strip */}
           <PatternStrip variant="crosshatch" />
@@ -888,10 +956,10 @@ export default function App() {
               <h2 className="text-6xl md:text-[10rem] font-headline font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Build?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/30">Start a Brief</button>
-                <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:text-white transition-all clip-path-slant border border-white/10">Talk to Us</button>
+                <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:text-white transition-all clip-path-slant border border-white/10 hover:border-white/20">Talk to Us</button>
               </div>
               <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-white/10 pt-16">
-                <div><p className="text-aom-orange font-headline font-bold uppercase text-[11px] tracking-[0.15em] mb-4">Talk</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em] min-h-[44px]">Call the Team</button></div>
+                <div><p className="text-aom-orange font-headline font-bold uppercase text-[11px] tracking-[0.15em] mb-4">Talk</p><button onClick={openPhone} className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em] min-h-[44px] hover:text-aom-orange transition-colors">Call the Team</button></div>
                 <div><p className="text-aom-orange font-headline font-bold uppercase text-[10px] tracking-[0.15em] mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em] underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
               </div>
             </div>

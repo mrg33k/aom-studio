@@ -10,6 +10,8 @@ const services = [
     description: 'Your in-house media team without the overhead. We show up, shoot, and turn it into a month of content. Strategy, production, and posting handled.',
     accent: 'orange',
     cta: 'See how it works',
+    action: 'scroll',
+    target: 'packages',
   },
   {
     icon: Clapperboard,
@@ -18,6 +20,8 @@ const services = [
     description: 'Brand videos, documentaries, event coverage. Cinema-grade execution for the moments that define your company.',
     accent: 'orange',
     cta: 'See the work',
+    action: 'scroll',
+    target: 'work',
   },
   {
     icon: Cpu,
@@ -26,10 +30,12 @@ const services = [
     description: 'Websites, AI workflows, and automation that make everything repeatable. The engine behind the brand.',
     accent: 'sage',
     cta: 'See what we\'d build',
+    action: 'scroll',
+    target: 'digital',
   },
 ]
 
-function ServiceCard({ service, index }) {
+function ServiceCard({ service, index, scrollToSection }) {
   const isOrange = service.accent === 'orange'
   const iconColor = isOrange ? 'text-aom-orange' : 'text-aom-sage'
   const hoverBorder = isOrange ? 'hover:border-aom-orange/40' : 'hover:border-aom-sage-muted/40'
@@ -68,14 +74,14 @@ function ServiceCard({ service, index }) {
       </p>
 
       {/* Ghost CTA */}
-      <button className={`${ctaColor} text-base font-bold transition-colors flex items-center gap-1 self-start font-body min-h-[44px]`}>
+      <button onClick={() => scrollToSection(service.target)} className={`${ctaColor} text-base font-bold transition-colors flex items-center gap-1 self-start font-body min-h-[44px]`}>
         {service.cta} <ArrowRight size={16} />
       </button>
     </motion.div>
   )
 }
 
-export default function ServicesGrid() {
+export default function ServicesGrid({ scrollToSection }) {
   return (
     <section className="py-20 md:py-32 bg-aom-cream">
       <div className="max-w-6xl mx-auto px-6 md:px-12">
@@ -96,7 +102,7 @@ export default function ServicesGrid() {
         {/* Grid */}
         <div className="grid md:grid-cols-3 gap-6">
           {services.map((service, i) => (
-            <ServiceCard key={service.title} service={service} index={i} />
+            <ServiceCard key={service.title} service={service} index={i} scrollToSection={scrollToSection} />
           ))}
         </div>
       </div>

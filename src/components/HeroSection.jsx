@@ -57,7 +57,7 @@ const pathways = [
   },
 ]
 
-export default function HeroSection({ openBrief }) {
+export default function HeroSection({ openBrief, scrollToSection }) {
   const [playlist] = useState(() => shufflePick(GUMLET_IDS, 5))
   const [activeIdx, setActiveIdx] = useState(0)
   const [visible, setVisible] = useState(true)
@@ -180,12 +180,12 @@ export default function HeroSection({ openBrief }) {
           >
             See What We'd Build For You <ArrowRight size={16} />
           </button>
-          <a
-            href="#work"
+          <button
+            onClick={() => scrollToSection('work')}
             className="border-2 border-white/20 text-white font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-white hover:text-aom-black transition-all text-sm md:text-base"
           >
             See the Work
-          </a>
+          </button>
         </motion.div>
 
         {/* Bottom status bar */}
@@ -220,10 +220,10 @@ export default function HeroSection({ openBrief }) {
             const Icon = p.icon
             const borderColor = p.accent === 'sage' ? 'border-t-aom-sage' : 'border-t-aom-orange'
             return (
-              <a
+              <button
                 key={p.title}
-                href={p.href}
-                className={`p-4 md:p-6 border border-white/10 bg-white/[0.06] backdrop-blur-md hover:border-aom-orange/40 hover:bg-white/[0.1] transition-all duration-300 border-t-2 ${borderColor}`}
+                onClick={() => scrollToSection(p.href.replace('#', ''))}
+                className={`p-4 md:p-6 border border-white/10 bg-white/[0.06] backdrop-blur-md hover:border-aom-orange/40 hover:bg-white/[0.1] transition-all duration-300 border-t-2 ${borderColor} text-left`}
               >
                 <Icon size={24} className={p.accent === 'sage' ? 'text-aom-sage mb-3' : 'text-aom-orange mb-3'} />
                 <p className="font-headline text-base font-bold text-aom-text-light mb-1">{p.title}</p>
@@ -231,7 +231,7 @@ export default function HeroSection({ openBrief }) {
                 <span className={`text-sm font-bold flex items-center gap-1 font-body ${p.accent === 'sage' ? 'text-aom-sage' : 'text-aom-orange'}`}>
                   {p.cta} <ArrowRight size={14} />
                 </span>
-              </a>
+              </button>
             )
           })}
         </motion.div>
