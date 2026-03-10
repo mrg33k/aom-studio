@@ -98,7 +98,7 @@ const FAQS = [
   { q: "What happens after I hit 'Start Brief'?", a: "You submit your scope, budget, and timing. We reply with a fast scope call and a simple plan for deliverables." },
   { q: "Do you handle strategy or just production?", a: "Both. Strategy first. If the asset doesn't move trust or attention, it's just expensive footage." },
   { q: "How fast can you turn edits?", a: "Social selects can be 24\u201372 hours. Hero edits typically land on a planned cadence." },
-  { q: "What industries do you work with?", a: "Construction, hospitality, tech, non-profit. We specialize in construction companies that need consistent content to recruit and win contracts. But the production quality and systems we've built work across all of them." },
+  { q: "What industries do you work with?", a: "Construction, hospitality, tech, non-profit. If your company does real work and needs real content, we know how to make it hit. The production quality and systems we've built work across all of them." },
   { q: "What does a retainer include?", a: "Regular filming sessions, a full month of social content, strategy, editing, and posting. The scope scales to fit your business. Everything handled." },
   { q: "Can we start with a single project?", a: "Yes. A lot of retainer clients start with one brand video or event capture to see how we work. No commitment required." },
 ];
@@ -1043,7 +1043,7 @@ export default function App() {
                                 </div>
                                 <div>
                                     <label className="text-xs font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">What's the challenge?</label>
-                                    <textarea maxLength={180} placeholder="We're winning jobs but nobody knows it. We need content that shows the work we do." className="w-full bg-white/5 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-white/10 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
+                                    <textarea maxLength={180} placeholder="We're growing but nobody knows it. We need content that shows the work we do." className="w-full bg-white/5 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-white/10 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
                                     <div className="flex justify-between mt-2">
                                         {formData.problem.length < 15 && <span className="text-xs font-body text-orange-500/60 uppercase animate-pulse">Min. 15 characters required</span>}
                                         <span className="text-xs font-body text-white/20 ml-auto">{formData.problem.length}/180</span>

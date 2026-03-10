@@ -34,8 +34,8 @@ const pathways = [
   {
     icon: Building2,
     title: 'Construction Companies',
-    hook: 'Social content from your actual job sites.',
-    cta: 'See what we build for contractors',
+    hook: 'Social content from the work you actually do.',
+    cta: 'See what we build for growing companies',
     accent: 'orange',
     href: '#construction',
   },
@@ -164,7 +164,7 @@ export default function HeroSection({ openBrief, scrollToSection }) {
           transition={{ duration: 0.7, delay: 0.8, ease: 'easeOut' }}
           className="text-aom-text-muted text-lg md:text-xl mt-8 max-w-xl leading-relaxed font-body"
         >
-          Video, web, and brand systems for construction companies ready to stand out.
+          Video, web, and brand systems for companies ready to stand out.
         </motion.p>
 
         {/* CTA */}

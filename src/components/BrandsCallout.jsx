@@ -110,8 +110,8 @@ export default function BrandsCallout({ openBrief }) {
                   <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Venue Launches</p>
                 </div>
                 <div className="p-4 border border-white/10 bg-white/5">
-                  <p className="font-headline text-3xl font-extrabold text-aom-orange">$9k+</p>
-                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Projects</p>
+                  <p className="font-headline text-3xl font-extrabold text-aom-orange">50+</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Projects Delivered</p>
                 </div>
               </div>
 
