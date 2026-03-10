@@ -68,7 +68,7 @@ export default function ConstructionCallout({ openBrief }) {
                       <p className="font-headline text-lg font-bold text-aom-text-light mb-1">
                         {point.stat}
                       </p>
-                      <p className="text-white/50 text-sm leading-relaxed font-body">
+                      <p className="text-white/50 text-base leading-relaxed font-body">
                         {point.description}
                       </p>
                     </div>
@@ -96,11 +96,11 @@ export default function ConstructionCallout({ openBrief }) {
                 AMBITION MECHANICAL
               </h3>
 
-              <p className="text-white/50 text-sm leading-relaxed mb-2 font-body">
+              <p className="text-white/50 text-base leading-relaxed mb-2 font-body">
                 One HVAC company that decided their brand should match the quality of their work. Website, social media, and a content engine that runs every month.
               </p>
 
-              <p className="text-white/50 text-sm leading-relaxed mb-6 font-body">
+              <p className="text-white/50 text-base leading-relaxed mb-6 font-body">
                 The result: a digital presence that recruits talent, wins contracts, and makes general contractors take notice.
               </p>
 
@@ -121,14 +121,14 @@ export default function ConstructionCallout({ openBrief }) {
                   href="https://ambitionac.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-aom-orange text-sm font-bold hover:text-aom-orange-hover transition-colors flex items-center gap-1 font-body"
+                  className="text-aom-orange text-base font-bold hover:text-aom-orange-hover transition-colors flex items-center gap-1 font-body min-h-[44px]"
                 >
-                  See Ambition Mechanical <ArrowRight size={14} />
+                  See Ambition Mechanical <ArrowRight size={16} />
                 </a>
 
                 <button
                   onClick={() => openBrief()}
-                  className="block w-full bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/30 text-center text-sm"
+                  className="block w-full bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 min-h-[44px] hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/30 text-center text-base"
                 >
                   See What We'd Build For You
                 </button>

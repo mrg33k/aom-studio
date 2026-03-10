@@ -265,7 +265,9 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const root = el.closest("main") || null;
+
+    // Try using the scrollable main as root first, fall back to viewport (null)
+    const scrollRoot = el.closest("main");
 
     const obs = new IntersectionObserver(
       ([entry]) => {
@@ -275,14 +277,27 @@ const CountUp = ({ to = 0, duration = 1200, className = "" }) => {
         }
       },
       {
-        root,
-        threshold: 0.25,
-        rootMargin: "0px 0px -10% 0px",
+        root: scrollRoot || null,
+        threshold: 0.1,
+        rootMargin: "200px 0px 200px 0px",
       }
     );
 
     obs.observe(el);
-    return () => obs.disconnect();
+
+    // Safety net: if the observer doesn't fire within 2s of scrolling near the element,
+    // check visibility manually once
+    const fallbackTimer = setTimeout(() => {
+      if (!started && el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+          setStarted(true);
+          obs.disconnect();
+        }
+      }
+    }, 3000);
+
+    return () => { obs.disconnect(); clearTimeout(fallbackTimer); };
   }, []);
 
   useEffect(() => {
@@ -676,10 +691,10 @@ export default function App() {
 
           {/* --- NAV: Transparent on hero, solid dark on scroll --- */}
           <header className={`fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center pointer-events-none transition-all duration-300 ${navSolid ? 'bg-aom-night/95 backdrop-blur-md border-b border-white/5' : 'bg-gradient-to-b from-black/40 to-transparent'}`}>
-            <h1 className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto">AOM<span className="text-aom-orange">.</span></h1>
+            <a href="/" className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto">AOM<span className="text-aom-orange">.</span></a>
             <div className="flex gap-4 pointer-events-auto">
-              <button onClick={openPhone} className="hidden md:flex px-5 py-2 bg-white/5 text-aom-text-muted font-body font-bold text-[10px] uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
-              <button onClick={() => openBrief()} className="px-5 md:px-7 py-2 bg-aom-orange text-white font-headline font-extrabold text-[10px] uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all">Start a Brief</button>
+              <button onClick={openPhone} className="hidden md:flex items-center px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-xs uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
+              <button onClick={() => openBrief()} className="px-6 md:px-8 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-xs uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all flex items-center">Start a Brief</button>
             </div>
           </header>
 
@@ -735,10 +750,10 @@ export default function App() {
             <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12 mb-16" />
             <div className="px-6 md:px-12 flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24 gap-12 border-b border-white/10 pb-16 text-white">
               <div>
-                <h2 className="text-[clamp(3.5rem,10vw,8rem)] font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.8]">The<br /><span className="text-outline-white">Portfolio</span><span className="text-aom-orange">.</span></h2>
-                <p className="text-white/60 text-lg md:text-xl mt-4 max-w-2xl leading-relaxed font-body">Real projects. Real clients. All of it shipped.</p>
+                <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.8]">The<br /><span className="text-outline-white">Portfolio</span><span className="text-aom-orange">.</span></h2>
+                <p className="text-white/60 text-base md:text-xl mt-4 max-w-2xl leading-relaxed font-body">Real projects. Real clients. All of it shipped.</p>
               </div>
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 md:px-12 py-3 md:py-5 text-[9px] md:text-[11px] font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/40 hover:text-white/60'}`}>{tab}</button>)}</div>
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-12 py-3 md:py-5 text-[11px] md:text-[11px] font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 min-h-[44px] ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/40 hover:text-white/60'}`}>{tab}</button>)}</div>
             </div>
 
             {/* Featured project */}
@@ -853,12 +868,15 @@ export default function App() {
           {/* 11. FAQ (dark) */}
           <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-night-card text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <FadeIn className="mb-12">
-                <span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block">FAQ</span>
-                <h2 className="text-4xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Common<br /><span className="text-outline">Questions</span><span className="text-aom-orange">.</span></h2>
-              </FadeIn>
-              <div className="max-w-3xl space-y-3">
-                {FAQS.map((item, i) => <FAQItem key={i} item={item} open={openFAQ === i} onToggle={() => setOpenFAQ(openFAQ === i ? -1 : i)} />)}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+                <FadeIn className="lg:col-span-4">
+                  <span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block">FAQ</span>
+                  <h2 className="text-4xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Common<br /><span className="text-outline">Questions</span><span className="text-aom-orange">.</span></h2>
+                  <p className="text-aom-text-muted text-base leading-relaxed mt-6 font-body">Can't find what you're looking for? Start a brief or give us a call.</p>
+                </FadeIn>
+                <div className="lg:col-span-8 space-y-3">
+                  {FAQS.map((item, i) => <FAQItem key={i} item={item} open={openFAQ === i} onToggle={() => setOpenFAQ(openFAQ === i ? -1 : i)} />)}
+                </div>
               </div>
             </div>
           </section>
@@ -873,7 +891,7 @@ export default function App() {
                 <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:text-white transition-all clip-path-slant border border-white/10">Talk to Us</button>
               </div>
               <div className="mt-48 grid grid-cols-1 md:grid-cols-2 gap-20 text-left border-t border-white/10 pt-16">
-                <div><p className="text-aom-orange font-headline font-bold uppercase text-[10px] tracking-[0.15em] mb-4">Talk</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em]">Call the Team</button></div>
+                <div><p className="text-aom-orange font-headline font-bold uppercase text-[11px] tracking-[0.15em] mb-4">Talk</p><button onClick={() => handleRoute(MAIN_PHONE)} className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em] min-h-[44px]">Call the Team</button></div>
                 <div><p className="text-aom-orange font-headline font-bold uppercase text-[10px] tracking-[0.15em] mb-4">Email</p><a href="mailto:hello@aom-inhouse.com" className="text-white text-3xl font-headline font-extrabold tracking-[-0.02em] underline decoration-aom-orange underline-offset-8">hello@aom-inhouse.com</a></div>
               </div>
             </div>

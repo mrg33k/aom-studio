@@ -68,7 +68,7 @@ export default function BrandsCallout({ openBrief }) {
                       <p className="font-headline text-lg font-bold text-aom-text-light mb-1">
                         {point.stat}
                       </p>
-                      <p className="text-white/50 text-sm leading-relaxed font-body">
+                      <p className="text-white/50 text-base leading-relaxed font-body">
                         {point.description}
                       </p>
                     </div>
@@ -95,11 +95,11 @@ export default function BrandsCallout({ openBrief }) {
                 VIRTU HOSPITALITY GROUP
               </h3>
 
-              <p className="text-white/50 text-sm leading-relaxed mb-2 font-body">
+              <p className="text-white/50 text-base leading-relaxed mb-2 font-body">
                 "They didn't just shoot beautiful footage. They showed people the place I created had legacy."
               </p>
 
-              <p className="text-aom-orange text-xs leading-relaxed mb-6 font-body">
+              <p className="text-aom-orange text-sm leading-relaxed mb-6 font-body">
                 Gio Osso, Virtu Hospitality Group
               </p>
 
@@ -118,7 +118,7 @@ export default function BrandsCallout({ openBrief }) {
               <div className="mt-auto">
                 <button
                   onClick={() => openBrief()}
-                  className="block w-full bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/30 text-center text-sm"
+                  className="block w-full bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 min-h-[44px] hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/30 text-center text-base"
                 >
                   See What We'd Produce For You
                 </button>

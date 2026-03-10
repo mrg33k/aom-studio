@@ -93,6 +93,7 @@ export default function HeroSection({ openBrief }) {
           key={playlist[activeIdx]}
           src={`https://play.gumlet.io/embed/${playlist[activeIdx]}?autoplay=true&muted=true&loop=true&preload=true&controls=false`}
           className="absolute inset-0 w-full h-full border-none transition-opacity duration-[1500ms] ease-in-out"
+          loading="eager"
           style={{
             opacity: visible ? 0.55 : 0,
             filter: 'grayscale(0.2) contrast(1.1)',
@@ -121,10 +122,10 @@ export default function HeroSection({ openBrief }) {
         </svg>
       </div>
 
-      {/* Mobile: hide iframe for performance, show on tablet+ */}
+      {/* Mobile: show first video only (no rotation), reduced quality for performance */}
       <style>{`
         @media (max-width: 639px) {
-          .hero-video-bg iframe { display: none; }
+          .hero-video-bg iframe { pointer-events: none; }
         }
       `}</style>
 
@@ -225,10 +226,10 @@ export default function HeroSection({ openBrief }) {
                 className={`p-4 md:p-6 border border-white/10 bg-white/[0.06] backdrop-blur-md hover:border-aom-orange/40 hover:bg-white/[0.1] transition-all duration-300 border-t-2 ${borderColor}`}
               >
                 <Icon size={24} className={p.accent === 'sage' ? 'text-aom-sage mb-3' : 'text-aom-orange mb-3'} />
-                <p className="font-headline text-sm font-bold text-aom-text-light mb-1">{p.title}</p>
-                <p className="text-aom-text-muted text-xs leading-relaxed mb-3 font-body">{p.hook}</p>
-                <span className={`text-xs font-bold flex items-center gap-1 font-body ${p.accent === 'sage' ? 'text-aom-sage' : 'text-aom-orange'}`}>
-                  {p.cta} <ArrowRight size={12} />
+                <p className="font-headline text-base font-bold text-aom-text-light mb-1">{p.title}</p>
+                <p className="text-aom-text-muted text-sm leading-relaxed mb-3 font-body">{p.hook}</p>
+                <span className={`text-sm font-bold flex items-center gap-1 font-body ${p.accent === 'sage' ? 'text-aom-sage' : 'text-aom-orange'}`}>
+                  {p.cta} <ArrowRight size={14} />
                 </span>
               </a>
             )

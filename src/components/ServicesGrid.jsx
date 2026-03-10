@@ -63,13 +63,13 @@ function ServiceCard({ service, index }) {
       </h3>
 
       {/* Description */}
-      <p className="text-aom-warm-gray text-sm leading-relaxed mb-6 flex-1 font-body">
+      <p className="text-aom-warm-gray text-base leading-relaxed mb-6 flex-1 font-body">
         {service.description}
       </p>
 
       {/* Ghost CTA */}
-      <button className={`${ctaColor} text-sm font-bold transition-colors flex items-center gap-1 self-start font-body`}>
-        {service.cta} <ArrowRight size={14} />
+      <button className={`${ctaColor} text-base font-bold transition-colors flex items-center gap-1 self-start font-body min-h-[44px]`}>
+        {service.cta} <ArrowRight size={16} />
       </button>
     </motion.div>
   )
