@@ -10,6 +10,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         dashboard: resolve(__dirname, 'dashboard.html'),
         'outreach-plan': resolve(__dirname, 'outreach-plan.html'),
+        'growth-plan': resolve(__dirname, 'growth-plan.html'),
       },
     },
   },
