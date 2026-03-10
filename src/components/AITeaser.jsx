@@ -39,7 +39,7 @@ export default function AITeaser() {
   }
 
   return (
-    <section id="digital" className="py-16 md:py-24 bg-aom-mid-dark relative overflow-hidden">
+    <section id="digital" className="py-16 md:py-24 bg-aom-mid-dark relative overflow-hidden" aria-label="Digital systems and AI">
       {/* Cross hatch pattern */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{
         background: `repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 8px)`
@@ -48,7 +48,7 @@ export default function AITeaser() {
       <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section header */}
         <div className="mb-12">
-          <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-sage mb-4">
+          <p className="text-xs font-body font-medium uppercase tracking-[0.2em] text-aom-sage mb-4">
             The Engine
           </p>
           <div className="w-12 h-[2px] bg-aom-sage mb-4" />
@@ -115,7 +115,7 @@ export default function AITeaser() {
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-aom-sage shrink-0" />
-                    <span className="text-aom-text-muted text-sm leading-relaxed font-body">{item}</span>
+                    <span className="text-aom-text-muted text-base leading-relaxed font-body">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -143,11 +143,11 @@ export default function AITeaser() {
                 WE BUILT THIS FOR OURSELVES FIRST
               </h3>
 
-              <p className="text-aom-text-muted text-sm leading-relaxed mb-2 font-body">
+              <p className="text-aom-text-muted text-base leading-relaxed mb-2 font-body">
                 The same system that runs AOM's content pipeline, client reporting, and internal operations. We're opening it up to a small group of businesses who want the same infrastructure without building it from scratch.
               </p>
 
-              <p className="font-body text-sm text-aom-sage font-medium mb-8">
+              <p className="font-body text-base text-aom-sage font-medium mb-8">
                 No pricing on the site. No chatbot demos. Just real systems that replace real work.
               </p>
 
@@ -172,13 +172,16 @@ export default function AITeaser() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+                    <label htmlFor="waitlist-email" className="sr-only">Email address</label>
                     <input
+                      id="waitlist-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="your@email.com"
                       required
-                      className="flex-1 px-4 py-3 border border-white/10 bg-white/5 text-aom-text-light font-body text-sm placeholder:text-white/20 focus:outline-none focus:border-aom-sage transition-colors"
+                      aria-label="Email address for waitlist"
+                      className="flex-1 px-4 py-3 border border-white/10 bg-white/5 text-aom-text-light font-body text-base placeholder:text-white/20 focus:outline-none focus:border-aom-sage transition-colors"
                     />
                     <button
                       type="submit"

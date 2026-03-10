@@ -59,7 +59,7 @@ function ServiceCard({ service, index, scrollToSection }) {
       </div>
 
       {/* Micro-label */}
-      <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-2">
+      <p className="text-xs font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-2">
         {service.label}
       </p>
 
@@ -83,11 +83,11 @@ function ServiceCard({ service, index, scrollToSection }) {
 
 export default function ServicesGrid({ scrollToSection }) {
   return (
-    <section className="py-20 md:py-32 bg-aom-cream">
+    <section className="py-20 md:py-32 bg-aom-cream" aria-label="Services">
       <div className="max-w-6xl mx-auto px-6 md:px-12">
         {/* Section header */}
         <div className="mb-12">
-          <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-4">
+          <p className="text-xs font-body font-medium uppercase tracking-[0.2em] text-aom-warm-gray mb-4">
             What We Build
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />

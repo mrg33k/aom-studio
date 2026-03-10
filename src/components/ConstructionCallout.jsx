@@ -22,7 +22,7 @@ const proofPoints = [
 
 export default function ConstructionCallout({ openBrief }) {
   return (
-    <section id="construction" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
+    <section id="construction" className="py-16 md:py-24 bg-aom-night relative overflow-hidden" aria-label="Construction companies">
       {/* Orange accent bar at top */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-aom-orange/40 to-transparent" />
 
@@ -37,7 +37,7 @@ export default function ConstructionCallout({ openBrief }) {
       <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section header */}
         <div className="mb-12">
-          <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-4">
+          <p className="text-xs font-body font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-4">
             Construction Companies
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />
@@ -68,7 +68,7 @@ export default function ConstructionCallout({ openBrief }) {
                       <p className="font-headline text-lg font-bold text-aom-text-light mb-1">
                         {point.stat}
                       </p>
-                      <p className="text-white/50 text-base leading-relaxed font-body">
+                      <p className="text-aom-text-muted text-base leading-relaxed font-body">
                         {point.description}
                       </p>
                     </div>
@@ -108,11 +108,11 @@ export default function ConstructionCallout({ openBrief }) {
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="p-4 border border-white/10 bg-white/5">
                   <p className="font-headline text-3xl font-extrabold text-aom-orange">30+</p>
-                  <p className="font-body text-[10px] uppercase tracking-[0.15em] text-white/40 mt-1">Posts / Month</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Posts / Month</p>
                 </div>
                 <div className="p-4 border border-white/10 bg-white/5">
                   <p className="font-headline text-3xl font-bold text-aom-orange">Monthly</p>
-                  <p className="font-body text-[10px] uppercase tracking-[0.15em] text-white/40 mt-1">Filming + Posting</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Filming + Posting</p>
                 </div>
               </div>
 

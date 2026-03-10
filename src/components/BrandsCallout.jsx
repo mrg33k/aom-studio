@@ -22,7 +22,7 @@ const proofPoints = [
 
 export default function BrandsCallout({ openBrief }) {
   return (
-    <section id="brands" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
+    <section id="brands" className="py-16 md:py-24 bg-aom-night relative overflow-hidden" aria-label="Brands and corporate">
       {/* Dotted texture accent */}
       <div className="absolute top-20 right-16 pointer-events-none opacity-[0.06]">
         <svg width="100" height="100">
@@ -37,7 +37,7 @@ export default function BrandsCallout({ openBrief }) {
       <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section header */}
         <div className="mb-12">
-          <p className="text-[11px] font-body font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-4">
+          <p className="text-xs font-body font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-4">
             Brands + Corporate
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />
@@ -68,7 +68,7 @@ export default function BrandsCallout({ openBrief }) {
                       <p className="font-headline text-lg font-bold text-aom-text-light mb-1">
                         {point.stat}
                       </p>
-                      <p className="text-white/50 text-base leading-relaxed font-body">
+                      <p className="text-aom-text-muted text-base leading-relaxed font-body">
                         {point.description}
                       </p>
                     </div>
@@ -107,11 +107,11 @@ export default function BrandsCallout({ openBrief }) {
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="p-4 border border-white/10 bg-white/5">
                   <p className="font-headline text-3xl font-extrabold text-aom-orange">3</p>
-                  <p className="font-body text-[10px] uppercase tracking-[0.15em] text-white/40 mt-1">Venue Launches</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Venue Launches</p>
                 </div>
                 <div className="p-4 border border-white/10 bg-white/5">
                   <p className="font-headline text-3xl font-extrabold text-aom-orange">$9k+</p>
-                  <p className="font-body text-[10px] uppercase tracking-[0.15em] text-white/40 mt-1">Projects</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Projects</p>
                 </div>
               </div>
 
