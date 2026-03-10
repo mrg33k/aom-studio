@@ -26,6 +26,7 @@ export default {
           'night-border-hover': 'rgba(255,255,255,0.18)',
           charcoal: '#141412',
           surface: '#1A1A17',
+          'mid-dark': '#1A1A1A',
           'text-light': '#F0ECE6',
           'text-muted': '#8A847C',
 

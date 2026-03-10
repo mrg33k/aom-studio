@@ -22,7 +22,7 @@ const proofPoints = [
 
 export default function BrandsCallout({ openBrief }) {
   return (
-    <section id="brands" className="py-16 md:py-24 bg-aom-night-card relative overflow-hidden">
+    <section id="brands" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
       {/* Dotted texture accent */}
       <div className="absolute top-20 right-16 pointer-events-none opacity-[0.06]">
         <svg width="100" height="100">

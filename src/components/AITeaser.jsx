@@ -39,7 +39,7 @@ export default function AITeaser() {
   }
 
   return (
-    <section id="digital" className="py-16 md:py-24 bg-aom-night relative overflow-hidden">
+    <section id="digital" className="py-16 md:py-24 bg-aom-mid-dark relative overflow-hidden">
       {/* Cross hatch pattern */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{
         background: `repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 8px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 8px)`

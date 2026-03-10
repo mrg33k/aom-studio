@@ -164,7 +164,7 @@ export default function HeroSection({ openBrief }) {
           transition={{ duration: 0.7, delay: 0.8, ease: 'easeOut' }}
           className="text-aom-text-muted text-lg md:text-xl mt-8 max-w-xl leading-relaxed font-body"
         >
-          Video, social media, and websites for construction companies and brands that need to be taken seriously.
+          Video, web, and brand systems for construction companies ready to stand out.
         </motion.p>
 
         {/* CTA */}
@@ -172,7 +172,7 @@ export default function HeroSection({ openBrief }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.0, ease: 'easeOut' }}
-          className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start gap-4"
+          className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start gap-4 p-6 bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] rounded-sm"
         >
           <button
             onClick={() => openBrief()}

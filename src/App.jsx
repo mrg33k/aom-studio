@@ -326,14 +326,14 @@ const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) =
       </div>
       <div>
         <div className="text-5xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] leading-[0.85] text-aom-text-light">{valueNode}</div>
-        <p className="text-aom-text-muted text-xs mt-6 leading-relaxed max-w-xs font-body">{sub}</p>
+        <p className="text-aom-text-muted text-sm mt-6 leading-relaxed max-w-xs font-body">{sub}</p>
       </div>
     </div>
   </div>
 ));
 
 const IdeaCard = memo(({ idea, isSelected, onSelect }) => (
-  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-12 border shadow-sm overflow-hidden flex flex-col h-full text-left transition-all duration-300 group ${isSelected ? "border-2 border-aom-orange bg-aom-orange/10" : "border border-white/10 bg-white/[0.03] hover:border-white/20"}`}>
+  <button onClick={() => onSelect(idea)} className={`relative p-8 md:p-12 border shadow-sm overflow-hidden flex flex-col h-full text-left transition-all duration-300 group backdrop-blur-sm ${isSelected ? "border-2 border-aom-orange bg-aom-orange/10" : "border border-white/10 bg-white/[0.05] hover:border-white/20"}`}>
     <div className="flex items-center justify-between mb-8">
       <div className={`w-12 h-12 border flex items-center justify-center transition-colors ${isSelected ? "border-aom-orange bg-aom-orange text-white" : "border-white/10 bg-white/5 text-aom-text-muted group-hover:text-aom-text-light"}`}>
         <idea.icon size={20} />
@@ -373,7 +373,7 @@ const FAQItem = memo(({ item, open, onToggle }) => (
     <AnimatePresence initial={false}>
       {open && (
         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-          <div className="px-6 pb-8 text-aom-text-muted text-sm leading-relaxed font-body">{item.a}</div>
+          <div className="px-6 pb-8 text-aom-text-muted text-base leading-relaxed font-body">{item.a}</div>
         </motion.div>
       )}
     </AnimatePresence>
@@ -713,7 +713,7 @@ export default function App() {
           <PatternStrip variant="dots" />
 
           {/* 3. STATS + TESTIMONIALS (dark, social proof) */}
-          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-night relative">
+          <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-mid-dark relative">
             {/* Film grain */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay z-0">
               <svg width="100%" height="100%">
@@ -812,7 +812,7 @@ export default function App() {
           <PatternStrip variant="crosshatch" />
 
           {/* 7. ENGAGEMENT IDEAS / "Pick What Fits" (dark) */}
-          <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-night text-aom-text-light">
+          <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-mid-dark text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <FadeIn className="flex flex-col md:flex-row items-end justify-between gap-12 mb-16 border-b border-white/10 pb-16">
                 <div><span className="text-aom-orange text-[11px] font-body font-medium uppercase tracking-[0.2em] mb-6 block">How We Work</span><h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Pick What<br /><span className="text-outline">Fits</span><span className="text-aom-orange">.</span></h2></div>
@@ -825,7 +825,7 @@ export default function App() {
           <PatternStrip variant="diagonal" />
 
           {/* 8. TRUST METRICS / "Why It Works" (dark card bg) */}
-          <section className="px-6 md:px-12 py-16 md:py-24 overflow-hidden bg-aom-night-card text-aom-text-light">
+          <section className="px-6 md:px-12 py-16 md:py-24 overflow-hidden bg-aom-night text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="mb-20">
                 <div className="max-w-xl">
@@ -833,7 +833,7 @@ export default function App() {
                   <h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-xs mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-sm mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
@@ -866,7 +866,7 @@ export default function App() {
           <PatternStrip variant="diagonal" />
 
           {/* 11. FAQ (dark) */}
-          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-night-card text-aom-text-light">
+          <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-night text-aom-text-light">
             <div className="max-w-screen-2xl mx-auto w-full">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
                 <FadeIn className="lg:col-span-4">
