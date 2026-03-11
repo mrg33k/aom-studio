@@ -729,11 +729,12 @@ export default function App() {
 
           {/* --- NAV: Transparent on hero, solid dark on scroll --- */}
           <header className={`fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center pointer-events-none transition-all duration-300 ${navSolid ? 'bg-aom-night/95 backdrop-blur-md border-b border-white/5' : 'bg-gradient-to-b from-black/40 to-transparent'}`}>
-            <a href="/" className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto">AOM<span className="text-aom-orange">.</span></a>
+            <a href="/" className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto inline-flex items-center min-h-[44px] min-w-[44px]">AOM<span className="text-aom-orange">.</span></a>
             {/* Desktop nav */}
             <nav className="hidden md:flex gap-4 items-center pointer-events-auto">
               <button onClick={() => scrollToSection('work')} className="text-xs font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Work</button>
               <button onClick={() => scrollToSection('packages')} className="text-xs font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Services</button>
+              <a href="/system" className="text-xs font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">The System</a>
               <button onClick={openPhone} className="flex items-center px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-xs uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
               <button onClick={() => openBrief()} className="px-8 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-xs uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all flex items-center">Start a Brief</button>
             </nav>
@@ -758,11 +759,18 @@ export default function App() {
                     { label: 'Construction', target: 'construction' },
                     { label: 'Brands', target: 'brands' },
                     { label: 'Services', target: 'packages' },
+                    { label: 'The System', target: 'system', href: '/system' },
                     { label: 'Digital', target: 'digital' },
                   ].map(item => (
-                    <button key={item.target} onClick={() => scrollToSection(item.target)} className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors">
-                      {item.label}
-                    </button>
+                    item.href ? (
+                      <a key={item.target} href={item.href} className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors">
+                        {item.label}
+                      </a>
+                    ) : (
+                      <button key={item.target} onClick={() => scrollToSection(item.target)} className="text-3xl font-headline font-extrabold uppercase tracking-tight text-aom-text-light hover:text-aom-orange transition-colors">
+                        {item.label}
+                      </button>
+                    )
                   ))}
                   <div className="w-12 h-[1px] bg-white/10 my-4" />
                   <button onClick={() => { setMobileMenuOpen(false); openPhone(); }} className="text-lg font-headline font-bold uppercase tracking-widest text-aom-text-muted hover:text-aom-text-light transition-colors">Talk to Us</button>

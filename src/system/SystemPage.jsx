@@ -457,7 +457,7 @@ function WhatWeBuiltSection() {
                 <h3 className="font-body font-bold uppercase" style={{
                   fontSize: 18, color: TEXT, letterSpacing: '0.05em', marginBottom: 8,
                 }}>{cap.title}</h3>
-                <p className="font-body" style={{ fontSize: 15, color: MUTED, lineHeight: 1.6 }}>{cap.desc}</p>
+                <p className="font-body" style={{ fontSize: 16, color: MUTED, lineHeight: 1.6 }}>{cap.desc}</p>
               </div>
             </FadeUp>
           ))}
@@ -484,7 +484,7 @@ function WhatWeBuiltSection() {
               <h3 className="font-body font-bold uppercase" style={{
                 fontSize: 18, color: TEXT, letterSpacing: '0.05em', marginBottom: 8,
               }}>MULTI-AGENT PIPELINE</h3>
-              <p className="font-body" style={{ fontSize: 15, color: MUTED, lineHeight: 1.6, marginBottom: 32 }}>
+              <p className="font-body" style={{ fontSize: 16, color: MUTED, lineHeight: 1.6, marginBottom: 32 }}>
                 Instead of one AI doing everything badly, we have specialists. Each one does its job. They hand work to each other automatically. The founder only steps in to approve or redirect.
               </p>
 
@@ -547,7 +547,7 @@ function PipelineDiagram({ nodes, isMobile }) {
                     fontSize: 13, letterSpacing: '0.1em', color: TEXT,
                   }}>{node.name}</div>
                   <div className="font-body" style={{
-                    fontSize: 11, color: MUTED,
+                    fontSize: 12, color: MUTED,
                   }}>{node.role}</div>
                 </div>
               </div>
@@ -599,11 +599,11 @@ function PipelineDiagram({ nodes, isMobile }) {
               fontSize: 13, letterSpacing: '0.1em', color: ORANGE,
             }}>PATRIK</div>
             <div className="font-body" style={{
-              fontSize: 11, color: MUTED,
+              fontSize: 12, color: MUTED,
             }}>Approve / Redirect</div>
           </div>
           <div style={{
-            fontSize: 11, color: `${ORANGE}66`,
+            fontSize: 12, color: `${ORANGE}66`,
             fontStyle: 'italic',
           }}>&#x21BB; loop</div>
         </div>
@@ -670,7 +670,7 @@ function ResultCard({ result, visible, isMobile }) {
       <div className="font-body font-bold uppercase" style={{
         fontSize: 14, color: TEXT, letterSpacing: '0.05em', marginBottom: 8,
       }}>{result.label}</div>
-      <p className="font-body" style={{ fontSize: 15, color: MUTED, lineHeight: 1.6 }}>{result.detail}</p>
+      <p className="font-body" style={{ fontSize: 16, color: MUTED, lineHeight: 1.6 }}>{result.detail}</p>
     </div>
   )
 }
@@ -936,7 +936,7 @@ function OfferSection({ onTalkToUs }) {
                   }}>{item.num}</div>
                   <div>
                     <h4 className="font-body font-bold" style={{ fontSize: 18, color: TEXT, marginBottom: 4 }}>{item.title}</h4>
-                    <p className="font-body" style={{ fontSize: 15, color: MUTED, lineHeight: 1.6 }}>{item.desc}</p>
+                    <p className="font-body" style={{ fontSize: 16, color: MUTED, lineHeight: 1.6 }}>{item.desc}</p>
                   </div>
                 </div>
               ))}
