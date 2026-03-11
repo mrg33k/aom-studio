@@ -249,7 +249,7 @@ function AgentDot({ name, size = 28 }) {
       width: size, height: size, borderRadius: '50%',
       background: `${color}18`, border: `1.5px solid ${color}40`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: Math.max(size * 0.38, 11), fontWeight: 800, color, flexShrink: 0,
+      fontSize: Math.max(size * 0.38, 12), fontWeight: 800, color, flexShrink: 0,
       fontFamily: '"Space Grotesk", system-ui, sans-serif',
     }}>
       {name[0]}
@@ -354,7 +354,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
       padding: isMobile ? 16 : 32, marginBottom: isMobile ? 16 : 24,
-      boxSizing: 'border-box', width: '100%', minWidth: 0,
+      boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden',
     }}>
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 20 : 28 }}>
@@ -515,7 +515,7 @@ function TaskDashboard({ priorities, isMobile }) {
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
       padding: isMobile ? 16 : 32, marginBottom: isMobile ? 16 : 24,
-      boxSizing: 'border-box', width: '100%', minWidth: 0,
+      boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden',
     }}>
       <div style={{
         fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
@@ -612,7 +612,7 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
       padding: isMobile ? 16 : 32, marginBottom: isMobile ? 16 : 24,
-      boxSizing: 'border-box', width: '100%', minWidth: 0,
+      boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0, overflow: 'hidden',
     }}>
       <div style={{
         fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
@@ -794,7 +794,7 @@ function ChatPanel({ isMobile, onRefresh }) {
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
       marginBottom: isMobile ? 16 : 24, overflow: 'hidden',
-      boxSizing: 'border-box', width: '100%', minWidth: 0,
+      boxSizing: 'border-box', width: '100%', maxWidth: '100%', minWidth: 0,
     }}>
       {/* Header */}
       <div
@@ -1124,7 +1124,7 @@ export default function Dashboard() {
         maxWidth: isMobile ? '100%' : 960, margin: '0 auto',
         padding: isMobile ? '16px 16px 80px' : '28px 32px 60px',
         position: 'relative', zIndex: 1,
-        boxSizing: 'border-box', width: '100%',
+        boxSizing: 'border-box', width: '100%', overflow: 'hidden',
       }}>
         {/* No token state */}
         {!GITHUB_TOKEN && (
