@@ -311,6 +311,12 @@ export default async function handler(req, res) {
         'projects/mom',
         'projects/paige',
         'projects/tony',
+        'projects/steve',
+        'projects/council',
+        'projects/jacob',
+        'projects/bobby',
+        'projects/steffen',
+        'projects/outreach-jacob',
       ]
 
       const reportPatterns = [
@@ -318,6 +324,8 @@ export default async function handler(req, res) {
         /^reference-analysis/i, /^design-brief/i, /^stats-research/i,
         /^bobby-session/i, /^seo-keyword/i, /^super-admin-plan/i,
         /^dashboard-control-panel/i,
+        /^research-/i, /^plan-/i, /^session-/i,
+        /^council-/i, /^forecast-/i, /^strategy-/i, /^market-/i, /^explainer-/i,
       ]
 
       const allFiles = await Promise.all(reportDirs.map(dir => listGitHubDir(dir)))
@@ -332,7 +340,7 @@ export default async function handler(req, res) {
           // Match known report patterns or any non-AGENT md file in strategy dirs
           const isReport = reportPatterns.some(p => p.test(file.name)) ||
             dir === 'projects/aom-strategy' ||
-            /audit|brief|research|analysis|plan|session/i.test(file.name)
+            /audit|brief|research|analysis|plan|session|council|forecast|strategy|market|explainer/i.test(file.name)
           if (isReport) {
             reportFiles.push({ path: `${dir}/${file.name}`, name: file.name, dir })
           }
@@ -363,6 +371,12 @@ export default async function handler(req, res) {
           'projects/mom': 'Mom',
           'projects/paige': 'Paige',
           'projects/tony': 'Tony',
+          'projects/steve': 'Steve',
+          'projects/council': 'Council',
+          'projects/jacob': 'Jacob',
+          'projects/bobby': 'Bobby',
+          'projects/steffen': 'Steffen',
+          'projects/outreach-jacob': 'Jacob',
         }
         const inferredAgent = agentMap[f.dir] || 'System'
 
@@ -374,9 +388,12 @@ export default async function handler(req, res) {
         let type = 'report'
         if (/audit/i.test(f.name)) type = 'audit'
         else if (/brief/i.test(f.name)) type = 'brief'
-        else if (/research|analysis/i.test(f.name)) type = 'research'
-        else if (/plan|arch/i.test(f.name)) type = 'plan'
+        else if (/research|analysis|market/i.test(f.name)) type = 'research'
+        else if (/plan|arch|strategy/i.test(f.name)) type = 'plan'
         else if (/session/i.test(f.name)) type = 'session'
+        else if (/council/i.test(f.name)) type = 'brief'
+        else if (/forecast/i.test(f.name)) type = 'research'
+        else if (/explainer/i.test(f.name)) type = 'report'
 
         reports.push({
           path: f.path,
