@@ -20,8 +20,8 @@ const PHONE_NUM = '(602) 373-2164'
 const PHONE_HREF = 'tel:6023732164'
 const EMAIL_ADDR = 'hello@aom-inhouse.com'
 
-// Gumlet video for hero background (AOM reel)
-const HERO_VIDEO_ID = '698a6296fc23d3d76fa8d992'
+// Gumlet video for hero background (AZ Cleantech - tech/energy thematic match)
+const HERO_VIDEO_ID = '698a57da873071aec5c93fa0'
 
 // ─── INTERSECTION OBSERVER HOOK ─────────────────────────────────────────────
 function useIntersect(options = {}) {
