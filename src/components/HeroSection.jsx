@@ -32,20 +32,20 @@ function shufflePick(arr, n) {
 
 const pathways = [
   {
-    icon: Building2,
-    title: 'Construction Companies',
-    hook: 'Social content from the work you actually do.',
-    cta: 'See the construction work',
-    accent: 'orange',
-    href: '#construction',
-  },
-  {
     icon: Clapperboard,
     title: 'Brands + Corporate',
     hook: 'Video and content that tells your story and closes deals.',
     cta: 'See the production work',
     accent: 'orange',
     href: '#brands',
+  },
+  {
+    icon: Building2,
+    title: 'Construction Companies',
+    hook: 'Social content from the work you actually do.',
+    cta: 'See the construction work',
+    accent: 'orange',
+    href: '#construction',
   },
   {
     icon: Cpu,
