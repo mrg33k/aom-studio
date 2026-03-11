@@ -135,7 +135,7 @@ function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
         >
-          Brand Video<br />Proposal
+          ISA<br />Brand Video
         </motion.h1>
 
         <motion.p
@@ -521,10 +521,7 @@ function InvestmentSection() {
   const lineItems = [
     { item: 'Pre-Production', detail: 'Script, pre-vis, shot list, planning', cost: '$1,200' },
     { item: 'Production', detail: 'Crew, equipment, Sedona shoot day', cost: '$3,500' },
-    { item: 'Editing and Assembly', detail: 'Full edit from rough cut to final', cost: '$1,800' },
-    { item: 'Color Grading', detail: 'Cinematic grade, consistent look', cost: '$600' },
-    { item: 'Motion Graphics', detail: 'Data visualizations, energy diagrams, text overlays', cost: '$800' },
-    { item: 'Sound Design and Music', detail: 'Licensed music, full sound design, final mix', cost: '$700' },
+    { item: 'Editing', detail: 'Full edit, color grading, motion graphics, music, sound design, final mix', cost: '$3,900' },
     { item: 'Social Cuts', detail: '2-3 shorter edits for LinkedIn, IG, web', cost: '$400' },
   ]
 
