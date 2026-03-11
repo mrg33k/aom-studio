@@ -48,7 +48,7 @@ const C = {
 const AGENT_COLORS = {
   Bobby: C.orange, Jacob: C.blue, Alex: C.purple, Cleo: '#f472b6',
   Steffen: '#34d399', Mom: C.red, Paige: '#06b6d4', Tony: '#a3e635',
-  Elon: '#8b8b8b', Patrik: '#fff',
+  Elon: '#8b8b8b', Steve: '#facc15', Patrik: '#fff',
 }
 
 // ─── GITHUB API ───────────────────────────────────────────────────────────────
@@ -139,10 +139,19 @@ function parsePrioritiesV2(md) {
       continue
     }
 
-    // Parse simple list items for today
-    if (section === 'today' && line.startsWith('- ')) {
+    // Parse simple list items for today and this week
+    if ((section === 'today' || section === 'thisweek') && line.startsWith('- ')) {
       const text = line.replace(/^-\s+/, '').trim()
-      if (text) today.push({ label: text, desc: '' })
+      if (text) {
+        const target = section === 'today' ? today : thisWeek
+        // Try to split on first colon or double-dash for label/desc
+        const split = text.match(/^(.+?)(?:\s*[-:]+\s*)(.+)$/)
+        if (split) {
+          target.push({ label: split[1].trim(), desc: split[2].trim() })
+        } else {
+          target.push({ label: text, desc: '' })
+        }
+      }
     }
 
     // Parse agent status table
@@ -218,7 +227,7 @@ function getTimeAz() {
 // ─── AGENTS CONFIG ────────────────────────────────────────────────────────────
 const AGENTS_CONFIG = [
   { name: 'Bobby', role: 'Web Dev', agentFile: 'projects/bobby/AGENT.md' },
-  { name: 'Jacob', role: 'Outreach & Pipeline', agentFile: 'outreach/AGENT.md' },
+  { name: 'Jacob', role: 'Outreach & Pipeline', agentFile: 'projects/jacob/AGENT.md' },
   { name: 'Alex', role: 'Deal Architect', agentFile: 'projects/aom-strategy/AGENT.md' },
   { name: 'Cleo', role: 'Content & Video', agentFile: 'projects/content-agent/AGENT.md' },
   { name: 'Mom', role: 'Operations', agentFile: 'projects/mom/AGENT.md' },
@@ -226,6 +235,7 @@ const AGENTS_CONFIG = [
   { name: 'Paige', role: 'Client Success', agentFile: 'projects/paige/AGENT.md' },
   { name: 'Tony', role: 'Social Media', agentFile: 'projects/tony/AGENT.md' },
   { name: 'Elon', role: 'Systems', agentFile: 'projects/sys/AGENT.md' },
+  { name: 'Steve', role: 'AI Advisory Lead', agentFile: 'projects/steve/AGENT.md' },
 ]
 
 const REFRESH_INTERVAL = 30000
@@ -261,7 +271,7 @@ function StatusBadge({ status }) {
   const c = map[status] || map.Idle
   return (
     <span style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+      fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
       color: c.color, background: c.bg,
       borderRadius: 4, padding: '3px 8px', textTransform: 'uppercase',
       fontFamily: '"Space Grotesk", system-ui, sans-serif',
@@ -348,7 +358,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 20 : 28 }}>
         <div style={{
-          fontSize: 10, letterSpacing: '0.25em', color: C.orange,
+          fontSize: 12, letterSpacing: '0.25em', color: C.orange,
           textTransform: 'uppercase', fontWeight: 700, marginBottom: 8,
           fontFamily: 'Syne, system-ui, sans-serif',
         }}>
@@ -379,7 +389,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
         {/* Top Priorities */}
         <div>
           <div style={{
-            fontSize: 10, letterSpacing: '0.2em', color: C.textMuted,
+            fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
             textTransform: 'uppercase', fontWeight: 700, marginBottom: 12,
             fontFamily: '"Space Grotesk", system-ui, sans-serif',
           }}>
@@ -407,7 +417,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
                   }}>{p.label}</div>
                   {p.desc && (
                     <div style={{
-                      fontSize: 13, color: C.textMuted, marginTop: 4, lineHeight: 1.4,
+                      fontSize: 14, color: C.textMuted, marginTop: 4, lineHeight: 1.4,
                       fontFamily: '"Space Grotesk", system-ui, sans-serif',
                       overflow: 'hidden', textOverflow: 'ellipsis',
                       display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
@@ -431,7 +441,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
             marginBottom: 12,
           }}>
             <div style={{
-              fontSize: 10, letterSpacing: '0.2em', color: C.textMuted,
+              fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
               textTransform: 'uppercase', fontWeight: 700,
               fontFamily: '"Space Grotesk", system-ui, sans-serif',
             }}>
@@ -439,7 +449,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
             </div>
             {emails.unreadCount > 0 && (
               <span style={{
-                fontSize: 11, fontWeight: 700, color: C.orange,
+                fontSize: 12, fontWeight: 700, color: C.orange,
                 background: C.orangeMuted, borderRadius: 10, padding: '2px 8px',
                 fontFamily: '"Space Grotesk", system-ui, sans-serif',
               }}>
@@ -469,13 +479,13 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>{e.sender}</div>
                   <div style={{
-                    fontSize: 13, color: C.textMuted, marginTop: 2,
+                    fontSize: 14, color: C.textMuted, marginTop: 2,
                     fontFamily: '"Space Grotesk", system-ui, sans-serif',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>{e.subject}</div>
                 </div>
                 <span style={{
-                  fontSize: 11, color: C.textDim, flexShrink: 0,
+                  fontSize: 12, color: C.textDim, flexShrink: 0,
                   fontFamily: '"Space Grotesk", system-ui, sans-serif',
                 }}>{e.time}</span>
               </div>
@@ -505,7 +515,7 @@ function TaskDashboard({ priorities, isMobile }) {
       padding: isMobile ? 20 : 32, marginBottom: isMobile ? 16 : 24,
     }}>
       <div style={{
-        fontSize: 10, letterSpacing: '0.2em', color: C.textMuted,
+        fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
         textTransform: 'uppercase', fontWeight: 700, marginBottom: 16,
         fontFamily: '"Space Grotesk", system-ui, sans-serif',
       }}>
@@ -597,7 +607,7 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
       padding: isMobile ? 20 : 32, marginBottom: isMobile ? 16 : 24,
     }}>
       <div style={{
-        fontSize: 10, letterSpacing: '0.2em', color: C.textMuted,
+        fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
         textTransform: 'uppercase', fontWeight: 700, marginBottom: 16,
         fontFamily: '"Space Grotesk", system-ui, sans-serif',
       }}>
@@ -626,7 +636,7 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
                 <StatusBadge status={agent.status} />
               </div>
               <div style={{
-                fontSize: 13, color: C.textMuted, marginTop: 3, lineHeight: 1.3,
+                fontSize: 14, color: C.textMuted, marginTop: 3, lineHeight: 1.3,
                 fontFamily: '"Space Grotesk", system-ui, sans-serif',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>{agent.next}</div>
@@ -643,15 +653,15 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
           border: `1px solid ${C.border}`, borderRadius: 2,
         }}>
           <span style={{
-            fontSize: 10, color: C.textDim, fontWeight: 600, letterSpacing: '0.1em',
+            fontSize: 12, color: C.textDim, fontWeight: 600, letterSpacing: '0.1em',
             textTransform: 'uppercase', alignSelf: 'center', marginRight: 4,
             fontFamily: '"Space Grotesk", system-ui, sans-serif',
           }}>Idle:</span>
           {agentStatus.filter(a => a.status === 'Idle' || a.status === 'Available').map((agent, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <AgentDot name={agent.name} size={20} />
+              <AgentDot name={agent.name} size={26} />
               <span style={{
-                fontSize: 13, color: C.textDim,
+                fontSize: 14, color: C.textDim,
                 fontFamily: '"Space Grotesk", system-ui, sans-serif',
               }}>{agent.name}</span>
             </div>
@@ -663,7 +673,7 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
       {actions.length > 0 && (
         <div>
           <div style={{
-            fontSize: 10, letterSpacing: '0.15em', color: C.textDim,
+            fontSize: 12, letterSpacing: '0.15em', color: C.textDim,
             textTransform: 'uppercase', fontWeight: 700, marginBottom: 10,
             fontFamily: '"Space Grotesk", system-ui, sans-serif',
           }}>
@@ -786,7 +796,7 @@ function ChatPanel({ isMobile, onRefresh }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            fontSize: 10, letterSpacing: '0.2em', color: C.textMuted,
+            fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
             textTransform: 'uppercase', fontWeight: 700,
             fontFamily: '"Space Grotesk", system-ui, sans-serif',
           }}>
