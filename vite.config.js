@@ -12,6 +12,7 @@ export default defineConfig({
         'outreach-plan': resolve(__dirname, 'outreach-plan.html'),
         'growth-plan': resolve(__dirname, 'growth-plan.html'),
         'system': resolve(__dirname, 'system.html'),
+        'v2': resolve(__dirname, 'v2.html'),
       },
     },
   },
