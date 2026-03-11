@@ -122,7 +122,7 @@ function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0 }}
         >
-          <span className="inline-block font-mono text-xs font-bold uppercase tracking-[0.2em] mb-4"
+          <span className="inline-block font-mono text-sm font-bold uppercase tracking-[0.2em] mb-4"
             style={{ color: ORANGE }}>
             Prepared for ISA Energy
           </span>
@@ -195,7 +195,7 @@ function OverviewSection() {
           {/* Left: Text */}
           <div>
             <FadeIn>
-              <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+              <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
                 The Vision
               </span>
             </FadeIn>
@@ -282,7 +282,7 @@ function ScopeSection() {
     <section className="relative py-24 md:py-32" style={{ background: BG }}>
       <div className="max-w-[1200px] mx-auto px-6 md:px-12">
         <FadeIn>
-          <span className="font-mono text-xs font-bold uppercase tracking-[0.2em] block text-center" style={{ color: ORANGE }}>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em] block text-center" style={{ color: ORANGE }}>
             Scope of Work
           </span>
         </FadeIn>
@@ -321,7 +321,7 @@ function ScopeSection() {
                     {phase.items.map((item, j) => (
                       <li key={j} className="flex items-start gap-3">
                         <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: ORANGE, opacity: 0.5 }} />
-                        <span className="font-body text-[15px]" style={{ color: MUTED, lineHeight: 1.5 }}>
+                        <span className="font-body text-base" style={{ color: MUTED, lineHeight: 1.5 }}>
                           {item}
                         </span>
                       </li>
@@ -370,7 +370,7 @@ function DeliverablesSection() {
     <section className="relative py-24 md:py-32" style={{ background: WARM_BG }}>
       <div className="max-w-[1200px] mx-auto px-6 md:px-12">
         <FadeIn>
-          <span className="font-mono text-xs font-bold uppercase tracking-[0.2em] block text-center" style={{ color: ORANGE }}>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em] block text-center" style={{ color: ORANGE }}>
             Deliverables
           </span>
         </FadeIn>
@@ -413,7 +413,7 @@ function DeliverablesSection() {
                         {d.title}
                       </h3>
                     </div>
-                    <p className="font-body text-[15px]" style={{ color: MUTED, lineHeight: 1.5 }}>
+                    <p className="font-body text-base" style={{ color: MUTED, lineHeight: 1.5 }}>
                       {d.desc}
                     </p>
                   </div>
@@ -466,7 +466,7 @@ function TimelineSection() {
     <section className="relative py-24 md:py-32" style={{ background: CARD_BG }}>
       <div className="max-w-[1000px] mx-auto px-6 md:px-12">
         <FadeIn>
-          <span className="font-mono text-xs font-bold uppercase tracking-[0.2em] block text-center" style={{ color: ORANGE }}>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em] block text-center" style={{ color: ORANGE }}>
             Timeline
           </span>
         </FadeIn>
@@ -495,13 +495,13 @@ function TimelineSection() {
 
                     {/* Content */}
                     <div className="pt-1">
-                      <div className="font-mono text-xs font-bold uppercase tracking-[0.15em]" style={{ color: ORANGE }}>
+                      <div className="font-mono text-sm font-bold uppercase tracking-[0.15em]" style={{ color: ORANGE }}>
                         {phase.dates}
                       </div>
                       <h3 className="font-body font-semibold text-lg mt-1" style={{ color: TEXT }}>
                         {phase.title}
                       </h3>
-                      <p className="font-body text-[15px] mt-1" style={{ color: MUTED, lineHeight: 1.5 }}>
+                      <p className="font-body text-base mt-1" style={{ color: MUTED, lineHeight: 1.5 }}>
                         {phase.desc}
                       </p>
                     </div>
@@ -530,7 +530,7 @@ function InvestmentSection() {
       <FilmGrain />
       <div className="relative z-10 max-w-[900px] mx-auto px-6 md:px-12">
         <FadeIn>
-          <span className="font-mono text-xs font-bold uppercase tracking-[0.2em] block text-center" style={{ color: ORANGE }}>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em] block text-center" style={{ color: ORANGE }}>
             Investment
           </span>
         </FadeIn>
@@ -571,17 +571,17 @@ function InvestmentSection() {
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <div className="col-span-5 md:col-span-4">
-                  <div className="font-body font-semibold text-[15px]" style={{ color: TEXT }}>
+                  <div className="font-body font-semibold text-base" style={{ color: TEXT }}>
                     {row.item}
                   </div>
                   <div className="font-body text-sm mt-1 md:hidden" style={{ color: MUTED }}>
                     {row.detail}
                   </div>
                 </div>
-                <div className="col-span-5 font-body text-[15px] hidden md:block" style={{ color: MUTED }}>
+                <div className="col-span-5 font-body text-base hidden md:block" style={{ color: MUTED }}>
                   {row.detail}
                 </div>
-                <div className="col-span-7 md:col-span-3 font-body font-semibold text-[15px] text-right" style={{ color: TEXT }}>
+                <div className="col-span-7 md:col-span-3 font-body font-semibold text-base text-right" style={{ color: TEXT }}>
                   {row.cost}
                 </div>
               </div>
@@ -656,7 +656,7 @@ function WhyAOMSection() {
           {/* Left */}
           <div>
             <FadeIn>
-              <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+              <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
                 Why AOM
               </span>
             </FadeIn>
@@ -699,7 +699,7 @@ function WhyAOMSection() {
                       <h3 className="font-body font-semibold text-[17px]" style={{ color: TEXT }}>
                         {r.title}
                       </h3>
-                      <p className="font-body text-[15px] mt-1.5" style={{ color: MUTED, lineHeight: 1.5 }}>
+                      <p className="font-body text-base mt-1.5" style={{ color: MUTED, lineHeight: 1.5 }}>
                         {r.desc}
                       </p>
                     </div>
@@ -728,7 +728,7 @@ function CTASection() {
       <FilmGrain />
       <div className="relative z-10 max-w-[900px] mx-auto px-6 md:px-12 text-center">
         <FadeIn>
-          <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
             Next Steps
           </span>
         </FadeIn>
