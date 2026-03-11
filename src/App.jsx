@@ -571,13 +571,15 @@ export default function App() {
 
   // SESSION-BASED RANDOMIZATION
   const shuffledData = useMemo(() => {
-    const brandsCampaigns = [...PORTFOLIO_DATA.marketing.campaigns, ...PORTFOLIO_DATA.founders.campaigns];
-    const brandsSocial = [...PORTFOLIO_DATA.marketing.social, ...PORTFOLIO_DATA.founders.social];
+    const brandsCampaigns = PORTFOLIO_DATA.marketing.campaigns;
+    const brandsSocial = PORTFOLIO_DATA.marketing.social;
+    const foundersCampaigns = PORTFOLIO_DATA.founders.campaigns;
+    const foundersSocial = PORTFOLIO_DATA.founders.social;
     const constructionCampaigns = PORTFOLIO_DATA.builders.campaigns;
     const constructionSocial = PORTFOLIO_DATA.builders.social;
 
-    const allCampaigns = [...brandsCampaigns, ...constructionCampaigns];
-    const allSocial = [...brandsSocial, ...constructionSocial];
+    const allCampaigns = [...brandsCampaigns, ...foundersCampaigns, ...constructionCampaigns];
+    const allSocial = [...brandsSocial, ...foundersSocial, ...constructionSocial];
 
     const feed = shuffleArray(allSocial);
 
@@ -585,6 +587,10 @@ export default function App() {
       brands: {
         campaigns: shuffleArray(brandsCampaigns),
         social: shuffleArray(brandsSocial),
+      },
+      founders: {
+        campaigns: shuffleArray(foundersCampaigns),
+        social: shuffleArray(foundersSocial),
       },
       construction: {
         campaigns: shuffleArray(constructionCampaigns),
@@ -821,7 +827,7 @@ export default function App() {
                 <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.8]">The<br /><span className="text-outline-white">Portfolio</span><span className="text-aom-orange">.</span></h2>
                 <p className="text-white/60 text-base md:text-xl mt-4 max-w-2xl leading-relaxed font-body">Real projects. Real clients. All of it shipped.</p>
               </div>
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-12 py-3 md:py-5 text-xs md:text-xs font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 min-h-[44px] ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/60 hover:text-white/60'}`}>{tab}</button>)}</div>
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'founders', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-12 py-3 md:py-5 text-xs md:text-xs font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 min-h-[44px] ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/60 hover:text-white/60'}`}>{tab}</button>)}</div>
             </div>
 
             {/* Featured project */}
@@ -953,7 +959,7 @@ export default function App() {
           <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
           <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-night text-center pb-24 text-white">
             <div className="max-w-screen-2xl mx-auto w-full">
-              <h2 className="text-6xl md:text-[10rem] font-headline font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Build?</span></h2>
+              <h2 className="text-6xl md:text-[10rem] font-headline font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Start?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <button onClick={() => openBrief()} className="px-16 py-6 bg-aom-orange text-white font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:bg-aom-orange-hover transition-all clip-path-slant shadow-2xl shadow-aom-orange/30">Start a Brief</button>
                 <button onClick={openPhone} className="px-16 py-6 bg-white/5 text-white/60 font-headline font-extrabold uppercase tracking-[0.3em] text-xs hover:text-white transition-all clip-path-slant border border-white/10 hover:border-white/20">Talk to Us</button>
