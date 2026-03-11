@@ -13,6 +13,8 @@
     { "source": "/brands/:path*", "destination": "/index.html" },
     { "source": "/social", "destination": "/index.html" },
     { "source": "/construction", "destination": "/index.html" },
-    { "source": "/research/:path*", "destination": "/index.html" }
+    { "source": "/research/:path*", "destination": "/index.html" },
+    { "source": "/briefs", "destination": "/index.html" },
+    { "source": "/briefs/:path*", "destination": "/index.html" }
   ]
 }

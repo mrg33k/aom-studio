@@ -9,6 +9,10 @@ import AmbitionBrandGuidelinesV2 from './pages/AmbitionBrandGuidelinesV2.jsx'
 import Social from './pages/Social.jsx'
 import ResearchHVAC from './pages/ResearchHVAC.jsx'
 import BrandGuidelinesV4 from './pages/BrandGuidelinesV4.jsx'
+import BriefsHub from './pages/BriefsHub.jsx'
+import BriefAIAdvisory from './pages/BriefAIAdvisory.jsx'
+import BriefPartnerships from './pages/BriefPartnerships.jsx'
+import BriefMasterplan from './pages/BriefMasterplan.jsx'
 import './index.css'
 
 const Dashboard = lazy(() => import('./dashboard/Dashboard.jsx'))
@@ -40,6 +44,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/brands/ambition/v1" element={<AmbitionBrandGuidelines />} />
           <Route path="/social" element={<Social />} />
           <Route path="/research/hvac-ads-arizona" element={<ResearchHVAC />} />
+          <Route path="/briefs" element={<BriefsHub />} />
+          <Route path="/briefs/ai-advisory" element={<BriefAIAdvisory />} />
+          <Route path="/briefs/partnerships" element={<BriefPartnerships />} />
+          <Route path="/briefs/masterplan" element={<BriefMasterplan />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>
