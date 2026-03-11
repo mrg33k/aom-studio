@@ -17,6 +17,7 @@ import BriefSecurity from './pages/BriefSecurity.jsx'
 import BriefCompetitors from './pages/BriefCompetitors.jsx'
 import BriefVelocity from './pages/BriefVelocity.jsx'
 import BriefSprintPlan from './pages/BriefSprintPlan.jsx'
+import AuditTest from './pages/AuditTest.jsx'
 import './index.css'
 
 const Dashboard = lazy(() => import('./dashboard/Dashboard.jsx'))
@@ -56,6 +57,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/briefs/competitors" element={<BriefCompetitors />} />
           <Route path="/briefs/velocity" element={<BriefVelocity />} />
           <Route path="/briefs/sprint-plan" element={<BriefSprintPlan />} />
+          <Route path="/audit/test" element={<AuditTest />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>
