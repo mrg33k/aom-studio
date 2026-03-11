@@ -13,6 +13,10 @@ import BriefsHub from './pages/BriefsHub.jsx'
 import BriefAIAdvisory from './pages/BriefAIAdvisory.jsx'
 import BriefPartnerships from './pages/BriefPartnerships.jsx'
 import BriefMasterplan from './pages/BriefMasterplan.jsx'
+import BriefSecurity from './pages/BriefSecurity.jsx'
+import BriefCompetitors from './pages/BriefCompetitors.jsx'
+import BriefVelocity from './pages/BriefVelocity.jsx'
+import BriefSprintPlan from './pages/BriefSprintPlan.jsx'
 import './index.css'
 
 const Dashboard = lazy(() => import('./dashboard/Dashboard.jsx'))
@@ -48,6 +52,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/briefs/ai-advisory" element={<BriefAIAdvisory />} />
           <Route path="/briefs/partnerships" element={<BriefPartnerships />} />
           <Route path="/briefs/masterplan" element={<BriefMasterplan />} />
+          <Route path="/briefs/security" element={<BriefSecurity />} />
+          <Route path="/briefs/competitors" element={<BriefCompetitors />} />
+          <Route path="/briefs/velocity" element={<BriefVelocity />} />
+          <Route path="/briefs/sprint-plan" element={<BriefSprintPlan />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>

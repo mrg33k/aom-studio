@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, FileText, Cpu, Handshake, Wrench, BarChart3, Search, TrendingUp } from 'lucide-react';
+import { ArrowRight, FileText, Cpu, Handshake, Wrench, BarChart3, Search, TrendingUp, Shield, Target, Zap, Calendar } from 'lucide-react';
 
 function useSEO() {
   useEffect(() => {
@@ -67,6 +67,50 @@ const briefs = [
     type: 'SYSTEM AUDIT',
     icon: Wrench,
     summary: 'Full system audit. 13 agents, 29 skills, every context file assessed. Overall score: 5.5/10. Strong foundation, weak automation.',
+  },
+  {
+    title: 'Security Architecture',
+    path: '/briefs/security',
+    agent: 'Elon',
+    agentRole: 'System/Infrastructure',
+    agentColor: '#22d3ee',
+    date: 'March 10, 2026',
+    type: 'ARCHITECTURE BRIEF',
+    icon: Shield,
+    summary: 'Multi-tenant security for CPA data. GLBA, SOC 2, encryption, tenant isolation, AI agent boundaries, and the real costs to get there.',
+  },
+  {
+    title: 'Competitive Deep Dive',
+    path: '/briefs/competitors',
+    agent: 'Elon',
+    agentRole: 'System/Infrastructure',
+    agentColor: '#22d3ee',
+    date: 'March 10, 2026',
+    type: 'MARKET INTELLIGENCE',
+    icon: Target,
+    summary: 'Who is selling AI systems to SMBs right now. Tiered competitor analysis, pricing data, market gaps, and where AOM\'s moat is widest.',
+  },
+  {
+    title: 'Build Velocity Audit',
+    path: '/briefs/velocity',
+    agent: 'Elon',
+    agentRole: 'System/Infrastructure',
+    agentColor: '#22d3ee',
+    date: 'March 10, 2026',
+    type: 'VELOCITY AUDIT',
+    icon: Zap,
+    summary: '461 commits, 12 agents in 114 hours. Manual vs agent velocity compared head-to-head with real git data. Is "7 days" realistic? Yes.',
+  },
+  {
+    title: 'AI Advisory Sprint Plan',
+    path: '/briefs/sprint-plan',
+    agent: 'Council',
+    agentRole: 'Multi-Agent',
+    agentColor: '#E85D26',
+    date: 'March 10, 2026',
+    type: 'SPRINT PLAN',
+    icon: Calendar,
+    summary: 'Sellable AI advisory product by Friday. Seven agents, daily milestones, every deliverable assigned. Tuesday lands Tuesday. No slippage.',
   },
 ];
 
