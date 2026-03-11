@@ -13,6 +13,7 @@ export default defineConfig({
         'growth-plan': resolve(__dirname, 'growth-plan.html'),
         'system': resolve(__dirname, 'system.html'),
         'v2': resolve(__dirname, 'v2.html'),
+        'proposals-isa': resolve(__dirname, 'proposals-isa.html'),
       },
     },
   },
