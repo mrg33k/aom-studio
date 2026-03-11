@@ -249,7 +249,7 @@ function AgentDot({ name, size = 28 }) {
       width: size, height: size, borderRadius: '50%',
       background: `${color}18`, border: `1.5px solid ${color}40`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.38, fontWeight: 800, color, flexShrink: 0,
+      fontSize: Math.max(size * 0.38, 11), fontWeight: 800, color, flexShrink: 0,
       fontFamily: '"Space Grotesk", system-ui, sans-serif',
     }}>
       {name[0]}
@@ -271,7 +271,7 @@ function StatusBadge({ status }) {
   const c = map[status] || map.Idle
   return (
     <span style={{
-      fontSize: 11, fontWeight: 700, letterSpacing: '0.06em',
+      fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
       color: c.color, background: c.bg,
       borderRadius: 4, padding: '3px 8px', textTransform: 'uppercase',
       fontFamily: '"Space Grotesk", system-ui, sans-serif',
@@ -299,7 +299,7 @@ function PasswordGate({ onAuth }) {
     }}>
       <div style={{ textAlign: 'center', marginBottom: 8 }}>
         <div style={{
-          fontSize: 11, letterSpacing: '0.3em', color: C.orange,
+          fontSize: 12, letterSpacing: '0.3em', color: C.orange,
           textTransform: 'uppercase', fontWeight: 700, marginBottom: 8,
           fontFamily: 'Syne, system-ui, sans-serif',
         }}>AOM</div>
@@ -353,7 +353,8 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
   return (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
-      padding: isMobile ? 20 : 32, marginBottom: isMobile ? 16 : 24,
+      padding: isMobile ? 16 : 32, marginBottom: isMobile ? 16 : 24,
+      boxSizing: 'border-box', width: '100%', minWidth: 0,
     }}>
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 20 : 28 }}>
@@ -401,7 +402,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
                 display: 'flex', gap: 12, alignItems: 'flex-start',
                 padding: '12px 14px', background: i === 0 ? 'rgba(232,93,38,0.06)' : 'rgba(255,255,255,0.02)',
                 border: `1px solid ${i === 0 ? 'rgba(232,93,38,0.15)' : C.border}`,
-                borderRadius: 2,
+                borderRadius: 2, minWidth: 0,
               }}>
                 <span style={{
                   width: 24, height: 24, borderRadius: 2, flexShrink: 0,
@@ -414,6 +415,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
                   <div style={{
                     fontSize: 15, fontWeight: 600, color: C.cream, lineHeight: 1.3,
                     fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    overflowWrap: 'break-word', wordBreak: 'break-word',
                   }}>{p.label}</div>
                   {p.desc && (
                     <div style={{
@@ -512,7 +514,8 @@ function TaskDashboard({ priorities, isMobile }) {
   return (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
-      padding: isMobile ? 20 : 32, marginBottom: isMobile ? 16 : 24,
+      padding: isMobile ? 16 : 32, marginBottom: isMobile ? 16 : 24,
+      boxSizing: 'border-box', width: '100%', minWidth: 0,
     }}>
       <div style={{
         fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
@@ -541,6 +544,7 @@ function TaskDashboard({ priorities, isMobile }) {
                   display: 'flex', gap: 10, alignItems: 'flex-start',
                   padding: '10px 12px', background: 'rgba(255,255,255,0.02)',
                   border: `1px solid ${C.border}`, borderRadius: 2,
+                  minWidth: 0,
                 }}>
                   <span style={{
                     width: 6, height: 6, borderRadius: '50%', background: C.orange,
@@ -549,6 +553,7 @@ function TaskDashboard({ priorities, isMobile }) {
                   <div style={{
                     fontSize: 14, color: C.textPrimary, lineHeight: 1.4,
                     fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    minWidth: 0, overflowWrap: 'break-word', wordBreak: 'break-word',
                   }}>
                     {item.label}
                     {item.desc && (
@@ -575,6 +580,7 @@ function TaskDashboard({ priorities, isMobile }) {
                   display: 'flex', gap: 10, alignItems: 'flex-start',
                   padding: '10px 12px', background: 'rgba(255,255,255,0.02)',
                   border: `1px solid ${C.border}`, borderRadius: 2,
+                  minWidth: 0,
                 }}>
                   <span style={{
                     width: 6, height: 6, borderRadius: '50%', background: C.textDim,
@@ -583,6 +589,7 @@ function TaskDashboard({ priorities, isMobile }) {
                   <div style={{
                     fontSize: 14, color: C.textPrimary, lineHeight: 1.4,
                     fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    minWidth: 0, overflowWrap: 'break-word', wordBreak: 'break-word',
                   }}>
                     {item.label}
                     {item.desc && (
@@ -604,7 +611,8 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
   return (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
-      padding: isMobile ? 20 : 32, marginBottom: isMobile ? 16 : 24,
+      padding: isMobile ? 16 : 32, marginBottom: isMobile ? 16 : 24,
+      boxSizing: 'border-box', width: '100%', minWidth: 0,
     }}>
       <div style={{
         fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
@@ -638,7 +646,9 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
               <div style={{
                 fontSize: 14, color: C.textMuted, marginTop: 3, lineHeight: 1.3,
                 fontFamily: '"Space Grotesk", system-ui, sans-serif',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                overflow: 'hidden', textOverflow: 'ellipsis',
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                overflowWrap: 'break-word', wordBreak: 'break-word',
               }}>{agent.next}</div>
             </div>
           </div>
@@ -689,10 +699,10 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
                   width: 5, height: 5, borderRadius: '50%',
                   flexShrink: 0, marginTop: 7, background: C.textDim,
                 }} />
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                   {item.date && (
                     <span style={{
-                      fontSize: 11, color: C.textDim, marginRight: 8,
+                      fontSize: 12, color: C.textDim, marginRight: 8,
                       fontFamily: '"Space Grotesk", system-ui, sans-serif',
                     }}>{item.date}</span>
                   )}
@@ -784,13 +794,14 @@ function ChatPanel({ isMobile, onRefresh }) {
     <div style={{
       background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
       marginBottom: isMobile ? 16 : 24, overflow: 'hidden',
+      boxSizing: 'border-box', width: '100%', minWidth: 0,
     }}>
       {/* Header */}
       <div
         onClick={() => setExpanded(!expanded)}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: isMobile ? '14px 20px' : '14px 32px', cursor: 'pointer',
+          padding: isMobile ? '14px 16px' : '14px 32px', cursor: 'pointer',
           borderBottom: expanded ? `1px solid ${C.border}` : 'none',
         }}
       >
@@ -804,7 +815,7 @@ function ChatPanel({ isMobile, onRefresh }) {
           </div>
           {messages.length > 0 && (
             <span style={{
-              fontSize: 10, color: C.orange, background: C.orangeMuted,
+              fontSize: 12, color: C.orange, background: C.orangeMuted,
               borderRadius: 10, padding: '1px 7px', fontWeight: 700,
               fontFamily: '"Space Grotesk", system-ui, sans-serif',
             }}>
@@ -822,7 +833,7 @@ function ChatPanel({ isMobile, onRefresh }) {
       {expanded && messages.length > 0 && (
         <div style={{
           maxHeight: 320, overflowY: 'auto',
-          padding: isMobile ? '12px 20px' : '12px 32px',
+          padding: isMobile ? '12px 16px' : '12px 32px',
           display: 'flex', flexDirection: 'column', gap: 10,
         }}>
           {messages.map((m, i) => (
@@ -848,7 +859,7 @@ function ChatPanel({ isMobile, onRefresh }) {
               }}>
                 {m.role === 'assistant' && (
                   <div style={{
-                    fontSize: 10, color: AGENT_COLORS[m.agent] || C.textMuted,
+                    fontSize: 12, color: AGENT_COLORS[m.agent] || C.textMuted,
                     fontWeight: 700, marginBottom: 4, letterSpacing: '0.06em',
                   }}>{m.agent}</div>
                 )}
@@ -876,9 +887,10 @@ function ChatPanel({ isMobile, onRefresh }) {
 
       {/* Input */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: isMobile ? '12px 20px' : '12px 32px',
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: isMobile ? '10px 12px' : '12px 32px',
         borderTop: expanded && messages.length > 0 ? `1px solid ${C.border}` : 'none',
+        boxSizing: 'border-box', width: '100%', minWidth: 0,
       }}>
         <input
           ref={inputRef}
@@ -890,11 +902,12 @@ function ChatPanel({ isMobile, onRefresh }) {
               send()
             }
           }}
-          placeholder="Ask a question or add a task..."
+          placeholder={isMobile ? "Message..." : "Ask a question or add a task..."}
           style={{
-            flex: 1, background: C.surface, border: `1px solid ${C.border}`,
-            borderRadius: 2, color: C.cream, fontSize: 16, padding: '12px 16px',
+            flex: 1, minWidth: 0, background: C.surface, border: `1px solid ${C.border}`,
+            borderRadius: 2, color: C.cream, fontSize: 15, padding: isMobile ? '10px 12px' : '12px 16px',
             outline: 'none', fontFamily: '"Space Grotesk", system-ui, sans-serif',
+            boxSizing: 'border-box',
           }}
         />
         <button
@@ -903,23 +916,23 @@ function ChatPanel({ isMobile, onRefresh }) {
           title="Add as task"
           style={{
             background: C.greenMuted, color: C.green, border: `1px solid rgba(34,197,94,0.2)`,
-            borderRadius: 2, padding: '12px 14px', fontSize: 12, fontWeight: 800,
-            letterSpacing: '0.08em', cursor: input.trim() ? 'pointer' : 'default',
+            borderRadius: 2, padding: isMobile ? '10px 10px' : '12px 14px', fontSize: 12, fontWeight: 800,
+            letterSpacing: '0.04em', cursor: input.trim() ? 'pointer' : 'default',
             opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase',
-            fontFamily: 'Syne, system-ui, sans-serif', whiteSpace: 'nowrap',
+            fontFamily: 'Syne, system-ui, sans-serif', whiteSpace: 'nowrap', flexShrink: 0,
           }}
         >
-          +TASK
+          +
         </button>
         <button
           onClick={send}
           disabled={!input.trim() || sending}
           style={{
             background: C.orange, color: '#fff', border: 'none',
-            borderRadius: 2, padding: '12px 18px', fontSize: 12, fontWeight: 800,
+            borderRadius: 2, padding: isMobile ? '10px 14px' : '12px 18px', fontSize: 12, fontWeight: 800,
             letterSpacing: '0.08em', cursor: input.trim() ? 'pointer' : 'default',
             opacity: input.trim() ? 1 : 0.3, textTransform: 'uppercase',
-            fontFamily: 'Syne, system-ui, sans-serif', whiteSpace: 'nowrap',
+            fontFamily: 'Syne, system-ui, sans-serif', whiteSpace: 'nowrap', flexShrink: 0,
           }}
         >
           {sending ? '...' : 'SEND'}
@@ -1001,6 +1014,7 @@ export default function Dashboard() {
     <div style={{
       minHeight: '100vh', background: C.bg,
       fontFamily: '"Space Grotesk", system-ui, sans-serif',
+      width: '100%', maxWidth: '100vw', overflowX: 'hidden',
     }}>
       {/* Noise texture overlay */}
       <div style={{
@@ -1034,12 +1048,12 @@ export default function Dashboard() {
           }}>AOM</span>
           {!isMobile && (
             <span style={{
-              fontSize: 11, letterSpacing: '0.15em', color: C.orange, fontWeight: 700,
+              fontSize: 12, letterSpacing: '0.15em', color: C.orange, fontWeight: 700,
               textTransform: 'uppercase', fontFamily: 'Syne, system-ui, sans-serif',
             }}>Command Center</span>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
           {loading && (
             <span style={{
               fontSize: 12, color: C.textDim, letterSpacing: '0.06em',
@@ -1062,7 +1076,7 @@ export default function Dashboard() {
                   fontFamily: 'Syne, system-ui, sans-serif',
                 }}>{data.openCount}</span>
                 <span style={{
-                  fontSize: 10, color: C.textDim, letterSpacing: '0.08em',
+                  fontSize: 12, color: C.textDim, letterSpacing: '0.08em',
                   textTransform: 'uppercase', fontFamily: '"Space Grotesk", system-ui, sans-serif',
                 }}>open</span>
               </div>
@@ -1072,7 +1086,7 @@ export default function Dashboard() {
                   fontFamily: 'Syne, system-ui, sans-serif',
                 }}>{data.doneCount}</span>
                 <span style={{
-                  fontSize: 10, color: C.textDim, letterSpacing: '0.08em',
+                  fontSize: 12, color: C.textDim, letterSpacing: '0.08em',
                   textTransform: 'uppercase', fontFamily: '"Space Grotesk", system-ui, sans-serif',
                 }}>done</span>
               </div>
@@ -1082,13 +1096,13 @@ export default function Dashboard() {
             onClick={load}
             style={{
               background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`,
-              borderRadius: 2, color: C.textMuted, fontSize: 11, padding: '8px 14px',
+              borderRadius: 2, color: C.textMuted, fontSize: 12, padding: isMobile ? '8px 10px' : '8px 14px',
               cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700,
               fontFamily: '"Space Grotesk", system-ui, sans-serif',
               textTransform: 'uppercase',
             }}
           >
-            Refresh
+            {isMobile ? '↻' : 'Refresh'}
           </button>
           <button
             onClick={() => { localStorage.removeItem('aom_ops_auth'); setAuthed(false) }}
@@ -1107,9 +1121,10 @@ export default function Dashboard() {
 
       {/* Main content */}
       <main style={{
-        maxWidth: 960, margin: '0 auto',
+        maxWidth: isMobile ? '100%' : 960, margin: '0 auto',
         padding: isMobile ? '16px 16px 80px' : '28px 32px 60px',
         position: 'relative', zIndex: 1,
+        boxSizing: 'border-box', width: '100%',
       }}>
         {/* No token state */}
         {!GITHUB_TOKEN && (
