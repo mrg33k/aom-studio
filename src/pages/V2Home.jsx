@@ -715,7 +715,7 @@ const SlideHook = () => {
                 <div className="border-l-2 border-[#E85D26]/20 pl-5">
                   <p
                     className="font-headline font-black text-[#E85D26] leading-[0.95] tracking-[-0.02em]"
-                    style={{ fontSize: 'clamp(24px, 3vw, 48px)' }}
+                    style={{ fontSize: 'clamp(18px, 3vw, 48px)' }}
                   >
                     {stat.value}
                   </p>
@@ -928,8 +928,9 @@ const SlideConstruction = ({ openDrawer }) => {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.3, ease: ENTER_EASE }}
+              className="w-full max-w-[400px]"
             >
-              <div className="relative w-full max-w-[400px] aspect-[4/5] border-2 border-[#292524] hover:border-[#E85D26]/30 transition-colors overflow-hidden bg-[#1A1A17]">
+              <div className="relative w-full aspect-[4/5] border-2 border-[#292524] hover:border-[#E85D26]/30 transition-colors overflow-hidden bg-[#1A1A17]">
                 <iframe
                   src="https://play.gumlet.io/embed/698a68b7fc23d3d76fa970ef?autoplay=true&muted=true&loop=true&preload=metadata&controls=false"
                   className="absolute inset-0 w-full h-full border-none"
@@ -959,7 +960,7 @@ const SlideAI = () => {
   ]
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#151515' }}>
+    <div className="relative w-full h-full flex items-start pt-[56px] md:items-center md:pt-0 justify-center overflow-hidden" style={{ backgroundColor: '#151515' }}>
       <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16">
           {/* Left: 40% */}
@@ -1024,7 +1025,7 @@ const SlideAI = () => {
 // ============================================================
 
 const SlideProof = () => (
-  <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A1A17' }}>
+  <div className="relative w-full h-full flex items-start pt-[56px] md:items-center md:pt-0 justify-center overflow-hidden" style={{ backgroundColor: '#1A1A17' }}>
     <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
       <motion.div {...stagger(0)} className="text-center">
         <p className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4">
