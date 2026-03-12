@@ -47,7 +47,7 @@ export default {
       fontFamily: {
         headline: ['Syne', 'system-ui', 'sans-serif'],
         body: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
-        mono: ['"Space Grotesk"', 'monospace'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       boxShadow: {
         'orange-glow': '0 0 30px rgba(232,93,38,0.15)',

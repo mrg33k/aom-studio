@@ -51,10 +51,10 @@ function ServiceCard({ service, index, scrollToSection }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
       transition={{ duration: 0.7, delay: index * 0.15, ease: 'easeOut' }}
-      className={`p-6 md:p-8 border border-aom-light-border bg-white shadow-md ${hoverBorder} hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col`}
+      className={`p-6 md:p-8 border border-aom-light-border bg-aom-cream-alt shadow-md ${hoverBorder} hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col`}
     >
       {/* Icon container */}
-      <div className="w-12 h-12 border border-aom-light-border bg-aom-cream flex items-center justify-center mb-4">
+      <div className="w-12 h-12 border border-aom-light-border bg-white flex items-center justify-center mb-4">
         <Icon size={20} className={iconColor} />
       </div>
 

@@ -824,8 +824,8 @@ export default function App() {
             </div>
           </section>
 
-          {/* Pattern strip */}
-          <PatternStrip variant="crosshatch" />
+          {/* Accent bar divider */}
+          <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
 
           {/* 4. PORTFOLIO (dark) */}
           <section id="work" className="py-24 md:py-36 bg-aom-night-card relative z-10 overflow-hidden">
@@ -885,8 +885,8 @@ export default function App() {
           {/* 5. BRANDS + CORPORATE (dark charcoal) */}
           <BrandsCallout openBrief={openBrief} />
 
-          {/* Pattern strip */}
-          <PatternStrip variant="dots" />
+          {/* Accent bar divider */}
+          <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
 
           {/* 6. SERVICES -- cream breathing section */}
           <ServicesGrid scrollToSection={scrollToSection} />
@@ -945,8 +945,8 @@ export default function App() {
             </div>
           </section>
 
-          {/* Pattern strip */}
-          <PatternStrip variant="diagonal" />
+          {/* Accent bar divider */}
+          <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
 
           {/* 11. FAQ (dark) */}
           <section className="px-6 md:px-12 py-16 md:py-24 bg-aom-night text-aom-text-light">

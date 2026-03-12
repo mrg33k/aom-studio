@@ -41,7 +41,7 @@ export default function ConstructionCallout({ openBrief }) {
             Construction Companies
           </p>
           <div className="w-12 h-[2px] bg-aom-orange mb-4" />
-          <h2 className="font-headline text-3xl md:text-5xl lg:text-5xl font-bold uppercase tracking-[-0.02em] text-aom-text-light max-w-[45ch] leading-[0.95]">
+          <h2 className="font-headline text-3xl md:text-5xl lg:text-5xl font-extrabold uppercase tracking-[-0.02em] text-aom-text-light max-w-[45ch] leading-[0.95]">
             YOUR COMPETITOR'S INSTAGRAM IS THEIR BEST RECRUITER. IS YOURS?
           </h2>
         </div>
