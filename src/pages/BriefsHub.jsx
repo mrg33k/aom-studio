@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, FileText, Cpu, Handshake, Wrench, BarChart3, Search, TrendingUp, Shield, Target, Zap, Calendar } from 'lucide-react';
+import { ArrowRight, FileText, Cpu, Handshake, Wrench, BarChart3, Search, TrendingUp, Shield, Target, Zap, Calendar, Monitor, Brain, ClipboardList } from 'lucide-react';
 
 function useSEO() {
   useEffect(() => {
@@ -111,6 +111,39 @@ const briefs = [
     type: 'SPRINT PLAN',
     icon: Calendar,
     summary: 'Sellable AI advisory product by Friday. Seven agents, daily milestones, every deliverable assigned. Tuesday lands Tuesday. No slippage.',
+  },
+  {
+    title: 'Full-Screen Site Redesign',
+    path: '/briefs/fullscreen-site',
+    agent: 'Steffen',
+    agentRole: 'Creative Director',
+    agentColor: '#a78bfa',
+    date: 'March 11, 2026',
+    type: 'DESIGN SPEC',
+    icon: Monitor,
+    summary: '8-slide scroll-snap pitch deck experience. CSS-native mandatory snap, staggered animations, cinematic transitions. Every slide has ONE job.',
+  },
+  {
+    title: 'Ideas Tracker (Brain Map)',
+    path: '/briefs/ideas-tracker',
+    agent: 'Steffen',
+    agentRole: 'Creative Director',
+    agentColor: '#a78bfa',
+    date: 'March 11, 2026',
+    type: 'DESIGN SPEC',
+    icon: Brain,
+    summary: 'Neural network brain map. Glowing nodes on a dark canvas connected by animated lines. Five category colors, five status states, detail panels.',
+  },
+  {
+    title: 'Audit Onboarding Tool',
+    path: '/briefs/audit-onboarding',
+    agent: 'Steffen',
+    agentRole: 'Creative Director',
+    agentColor: '#a78bfa',
+    date: 'March 11, 2026',
+    type: 'DESIGN SPEC',
+    icon: ClipboardList,
+    summary: '27-slide premium keynote-style intake form. Alternating Night/Cream rhythm, pill selectors, architectural progress bar. Apple product reveal meets consulting intake.',
   },
 ];
 

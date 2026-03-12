@@ -17,6 +17,9 @@ import BriefSecurity from './pages/BriefSecurity.jsx'
 import BriefCompetitors from './pages/BriefCompetitors.jsx'
 import BriefVelocity from './pages/BriefVelocity.jsx'
 import BriefSprintPlan from './pages/BriefSprintPlan.jsx'
+import BriefFullscreenSite from './pages/BriefFullscreenSite.jsx'
+import BriefIdeasTracker from './pages/BriefIdeasTracker.jsx'
+import BriefAuditOnboarding from './pages/BriefAuditOnboarding.jsx'
 import AuditTest from './pages/AuditTest.jsx'
 import './index.css'
 
@@ -57,6 +60,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/briefs/competitors" element={<BriefCompetitors />} />
           <Route path="/briefs/velocity" element={<BriefVelocity />} />
           <Route path="/briefs/sprint-plan" element={<BriefSprintPlan />} />
+          <Route path="/briefs/fullscreen-site" element={<BriefFullscreenSite />} />
+          <Route path="/briefs/ideas-tracker" element={<BriefIdeasTracker />} />
+          <Route path="/briefs/audit-onboarding" element={<BriefAuditOnboarding />} />
           <Route path="/audit/test" element={<AuditTest />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
