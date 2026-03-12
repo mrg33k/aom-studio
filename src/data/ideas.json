@@ -1,0 +1,312 @@
+[
+  {
+    "id": "multi-tenant-dashboard",
+    "title": "Multi-Tenant Dashboard",
+    "description": "Client-facing AI operations dashboard. Each client gets their own instance. AOM controls all from admin panel. Over-the-air updates. SOC 2 from Day 1.",
+    "status": "active",
+    "category": "product",
+    "progress": 45,
+    "owner": "Bobby",
+    "created": "2026-01-15",
+    "lastActivity": "2026-03-11",
+    "milestones": [
+      { "text": "Dashboard v1 shipped", "done": true },
+      { "text": "Dashboard v2 QA pass", "done": true },
+      { "text": "Supabase multi-tenant backend", "done": false },
+      { "text": "Admin panel for AOM", "done": false },
+      { "text": "Client onboarding flow", "done": false }
+    ],
+    "connections": [
+      { "targetId": "ai-advisory-product", "type": "feeds" },
+      { "targetId": "cpa-outreach", "type": "feeds" },
+      { "targetId": "audit-onboarding", "type": "related" }
+    ],
+    "notes": "The real product. Everything else leads here."
+  },
+  {
+    "id": "ai-advisory-product",
+    "title": "AI Advisory Service",
+    "description": "Productized AI audit and agent build service. $2,500 audit, $5-8k build, $1,500-3k/month platform fee. The next Geek Squad for AI.",
+    "status": "active",
+    "category": "revenue",
+    "progress": 35,
+    "owner": "Alex",
+    "created": "2026-02-01",
+    "lastActivity": "2026-03-11",
+    "milestones": [
+      { "text": "Market research complete", "done": true },
+      { "text": "/system page live", "done": true },
+      { "text": "Pricing locked", "done": true },
+      { "text": "First client landed", "done": false },
+      { "text": "Repeatable delivery process", "done": false }
+    ],
+    "connections": [
+      { "targetId": "multi-tenant-dashboard", "type": "depends" },
+      { "targetId": "cpa-outreach", "type": "feeds" },
+      { "targetId": "construction-retainers", "type": "related" }
+    ],
+    "notes": "CPA tax season is the first wedge market."
+  },
+  {
+    "id": "construction-retainers",
+    "title": "15 Construction Retainers",
+    "description": "15 construction companies on $3k/month social media retainers. $540k/year. The stable revenue engine that unlocks everything else.",
+    "status": "growing",
+    "category": "revenue",
+    "progress": 15,
+    "owner": "Jacob",
+    "created": "2026-01-01",
+    "lastActivity": "2026-03-11",
+    "milestones": [
+      { "text": "Ambition Mechanical signed", "done": true },
+      { "text": "KOHRS signed", "done": true },
+      { "text": "Outreach system built", "done": true },
+      { "text": "5 retainer clients", "done": false },
+      { "text": "10 retainer clients", "done": false },
+      { "text": "15 retainer clients", "done": false }
+    ],
+    "connections": [
+      { "targetId": "ai-advisory-product", "type": "related" },
+      { "targetId": "ambition-site", "type": "feeds" },
+      { "targetId": "fullscreen-site", "type": "related" }
+    ],
+    "notes": "Math: 15 x $3k = $45k/month = $540k/year."
+  },
+  {
+    "id": "fullscreen-site",
+    "title": "Full-Screen Site Redesign",
+    "description": "CSS scroll-snap guided experience at /v2. 8 slides. Bold, immersive, no scrolling fatigue. The new front door for AOM.",
+    "status": "active",
+    "category": "product",
+    "progress": 60,
+    "owner": "Bobby",
+    "created": "2026-03-05",
+    "lastActivity": "2026-03-11",
+    "milestones": [
+      { "text": "Design spec from Steffen", "done": true },
+      { "text": "8-slide structure built", "done": true },
+      { "text": "Hero + hook sections", "done": true },
+      { "text": "Portfolio integration", "done": false },
+      { "text": "Contact form", "done": false },
+      { "text": "QA pass from Elmo", "done": false }
+    ],
+    "connections": [
+      { "targetId": "construction-retainers", "type": "feeds" },
+      { "targetId": "ideas-tracker-page", "type": "related" }
+    ],
+    "notes": "Steffen spec delivered. Bobby building."
+  },
+  {
+    "id": "cpa-outreach",
+    "title": "CPA Tax Season Outreach",
+    "description": "AI advisory cold outreach targeting CPAs during tax season. Personalized emails, tax-season pain points, audit-first approach.",
+    "status": "growing",
+    "category": "revenue",
+    "progress": 25,
+    "owner": "Jacob",
+    "created": "2026-03-08",
+    "lastActivity": "2026-03-11",
+    "milestones": [
+      { "text": "CPA email list built", "done": true },
+      { "text": "6 emails drafted", "done": true },
+      { "text": "Patrik review + send", "done": false },
+      { "text": "First CPA meeting", "done": false }
+    ],
+    "connections": [
+      { "targetId": "ai-advisory-product", "type": "feeds" },
+      { "targetId": "multi-tenant-dashboard", "type": "related" }
+    ],
+    "notes": "Tax season angle. 6 personalized emails awaiting review."
+  },
+  {
+    "id": "audit-onboarding",
+    "title": "Audit Onboarding Tool",
+    "description": "Premium Typeform-style onboarding. 27 slides. First touchpoint for AI advisory clients. Lives at /audit/test.",
+    "status": "growing",
+    "category": "product",
+    "progress": 40,
+    "owner": "Bobby",
+    "created": "2026-03-01",
+    "lastActivity": "2026-03-10",
+    "milestones": [
+      { "text": "Slide framework built", "done": true },
+      { "text": "27 questions defined", "done": true },
+      { "text": "Scoring engine", "done": false },
+      { "text": "Results page design", "done": false }
+    ],
+    "connections": [
+      { "targetId": "ai-advisory-product", "type": "feeds" },
+      { "targetId": "multi-tenant-dashboard", "type": "depends" }
+    ],
+    "notes": "Test page at /audit/test."
+  },
+  {
+    "id": "ideas-tracker-page",
+    "title": "Ideas Tracker (Brain Map)",
+    "description": "Neural network visualization of all AOM ideas. Glowing nodes, connections, status filters. This page.",
+    "status": "active",
+    "category": "system",
+    "progress": 10,
+    "owner": "Bobby",
+    "created": "2026-03-11",
+    "lastActivity": "2026-03-11",
+    "milestones": [
+      { "text": "Design spec from Steffen", "done": true },
+      { "text": "Component built", "done": false },
+      { "text": "Data layer connected", "done": false },
+      { "text": "Elmo QA pass", "done": false }
+    ],
+    "connections": [
+      { "targetId": "fullscreen-site", "type": "related" },
+      { "targetId": "multi-tenant-dashboard", "type": "related" }
+    ],
+    "notes": "Neural network brain map. Steffen's spec is detailed."
+  },
+  {
+    "id": "thinksync",
+    "title": "ThinkSync",
+    "description": "Group communication through voice notes and text with AI as the mediator. Branch any message into its own thread. Side project, back burner.",
+    "status": "seed",
+    "category": "side-project",
+    "progress": 5,
+    "owner": "Patrik",
+    "created": "2025-11-01",
+    "lastActivity": "2026-02-15",
+    "milestones": [
+      { "text": "Concept defined", "done": true },
+      { "text": "Prototype", "done": false },
+      { "text": "Beta test", "done": false }
+    ],
+    "connections": [],
+    "notes": "Back burner while AOM is the focus. Patrik believes this is genuinely unexplored."
+  },
+  {
+    "id": "ambition-site",
+    "title": "Ambition Mechanical Website",
+    "description": "Full website build for Ambition Mechanical. Built, launch deferred until client confirms stats (250+ projects).",
+    "status": "shipped",
+    "category": "product",
+    "progress": 90,
+    "owner": "Bobby",
+    "created": "2026-01-10",
+    "lastActivity": "2026-03-08",
+    "milestones": [
+      { "text": "Design approved", "done": true },
+      { "text": "Site built", "done": true },
+      { "text": "Content populated", "done": true },
+      { "text": "Client confirms stats", "done": false },
+      { "text": "Official launch", "done": false }
+    ],
+    "connections": [
+      { "targetId": "construction-retainers", "type": "feeds" }
+    ],
+    "notes": "Waiting on client to confirm 250+ projects stat."
+  },
+  {
+    "id": "postiz-social",
+    "title": "Postiz Social System",
+    "description": "Self-hosted social media management. 7 containers running. LinkedIn ready. Needs Facebook Dev App for IG OAuth.",
+    "status": "growing",
+    "category": "system",
+    "progress": 50,
+    "owner": "Tony",
+    "created": "2026-02-20",
+    "lastActivity": "2026-03-09",
+    "milestones": [
+      { "text": "Postiz deployed", "done": true },
+      { "text": "LinkedIn connected", "done": true },
+      { "text": "Facebook Dev App setup", "done": false },
+      { "text": "IG OAuth working", "done": false },
+      { "text": "First automated post", "done": false }
+    ],
+    "connections": [
+      { "targetId": "construction-retainers", "type": "feeds" },
+      { "targetId": "ambition-site", "type": "related" }
+    ],
+    "notes": "Tony is unblocked. Needs FB Dev App for IG."
+  },
+  {
+    "id": "agent-pipeline",
+    "title": "Agent Production Pipeline",
+    "description": "Elon > Mom > Alex > Steffen > Bobby > Elmo > Patrik. Automated handoffs. Mom orchestrates. Every commit triggers the next agent.",
+    "status": "active",
+    "category": "system",
+    "progress": 70,
+    "owner": "Elon",
+    "created": "2026-02-01",
+    "lastActivity": "2026-03-11",
+    "milestones": [
+      { "text": "Pipeline defined", "done": true },
+      { "text": "Mom orchestrator built", "done": true },
+      { "text": "Elmo QA gate active", "done": true },
+      { "text": "Auto-trigger on commits", "done": true },
+      { "text": "Full autonomous loop", "done": false }
+    ],
+    "connections": [
+      { "targetId": "multi-tenant-dashboard", "type": "feeds" },
+      { "targetId": "ai-advisory-product", "type": "feeds" },
+      { "targetId": "ideas-tracker-page", "type": "related" }
+    ],
+    "notes": "The system that makes AOM scale without Patrik touching everything."
+  },
+  {
+    "id": "isa-brand-video",
+    "title": "ISA Energy Brand Video",
+    "description": "Brand video for ISA Industries. Hard deadline April 10, 2026. Proposal webpage with price breakdown needed.",
+    "status": "seed",
+    "category": "content",
+    "progress": 10,
+    "owner": "Patrik",
+    "created": "2026-01-20",
+    "lastActivity": "2026-03-05",
+    "milestones": [
+      { "text": "Proposal webpage live", "done": true },
+      { "text": "First edit session", "done": false },
+      { "text": "Client review", "done": false },
+      { "text": "Final delivery", "done": false }
+    ],
+    "connections": [],
+    "notes": "April 10 hard deadline. Zero edit sessions so far."
+  },
+  {
+    "id": "skylar-music-video",
+    "title": "Skylar Music Video",
+    "description": "Music video. Footage done, needs editing. Urgent.",
+    "status": "seed",
+    "category": "content",
+    "progress": 30,
+    "owner": "Patrik",
+    "created": "2026-02-01",
+    "lastActivity": "2026-02-28",
+    "milestones": [
+      { "text": "Footage shot", "done": true },
+      { "text": "Rough cut", "done": false },
+      { "text": "Client review", "done": false },
+      { "text": "Final delivery", "done": false }
+    ],
+    "connections": [],
+    "notes": "Footage done. Zero edit sessions."
+  },
+  {
+    "id": "credential-security",
+    "title": "Credential Rotation & Security",
+    "description": "Rotate exposed credentials. BFG scrub. 4-phase approach documented. Needed before first AI advisory client.",
+    "status": "active",
+    "category": "system",
+    "progress": 30,
+    "owner": "Elon",
+    "created": "2026-03-10",
+    "lastActivity": "2026-03-11",
+    "milestones": [
+      { "text": "Audit complete", "done": true },
+      { "text": "Phase 1: API keys rotated", "done": false },
+      { "text": "Phase 2: BFG scrub", "done": false },
+      { "text": "Phase 3: Secrets manager", "done": false }
+    ],
+    "connections": [
+      { "targetId": "ai-advisory-product", "type": "depends" },
+      { "targetId": "multi-tenant-dashboard", "type": "depends" }
+    ],
+    "notes": "Apollo key still in workflow.md. Must fix before any client demo."
+  }
+]
