@@ -522,8 +522,8 @@ export default function BrandGuidelinesV4() {
             {[
               { bg: C.nightCard, border: C.nightBorder, fill: '#F2EDE8', label: 'Dark' },
               { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', label: 'Light' },
-              { bg: '#0A0A0A', border: C.nightBorder, fill: '#0A0A0A', mono: true, label: 'Mono Dark' },
-              { bg: C.cream, border: C.lightBorder, fill: '#F2EDE8', mono: true, label: 'Mono Light' },
+              { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', mono: true, label: 'Mono Dark' },
+              { bg: '#0A0A0A', border: C.nightBorder, fill: '#F2EDE8', mono: true, label: 'Mono Light' },
             ].map((v, i) => (
               <div key={i} style={{
                 background: v.bg,
@@ -535,7 +535,7 @@ export default function BrandGuidelinesV4() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <svg viewBox="0 0 100 80" width={56} aria-label={`Icon mark ${v.label}`}>
+                <svg viewBox="0 0 120 80" width={56} aria-label={`Icon mark ${v.label}`}>
                   <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={v.fill} letterSpacing="-2">A<tspan fill={v.mono ? v.fill : '#E85D26'}>.</tspan></text>
                 </svg>
                 <div style={{ marginTop: 10, fontSize: 10, color: v.bg === C.cream ? C.warmGray : C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{v.label}</div>
