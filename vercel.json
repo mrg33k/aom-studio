@@ -18,6 +18,7 @@
     { "source": "/briefs", "destination": "/index.html" },
     { "source": "/briefs/:path*", "destination": "/index.html" },
     { "source": "/audit/:path*", "destination": "/index.html" },
-    { "source": "/proposals/isa-energy", "destination": "/proposals-isa.html" }
+    { "source": "/proposals/isa-energy", "destination": "/proposals-isa.html" },
+    { "source": "/ideas", "destination": "/index.html" }
   ]
 }

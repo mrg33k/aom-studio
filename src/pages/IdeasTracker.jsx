@@ -43,21 +43,27 @@ const CONNECTION_STYLES = {
 // ── Layout: Force-directed-ish initial placement ─────────────────────
 function computeNodePositions(ideas) {
   const positions = {}
-  const count = ideas.length
   const cx = 600
   const cy = 400
+  // Visible bounds within 1200x800 viewBox with padding
+  const PAD = 60
+  const MIN_X = PAD
+  const MAX_X = 1200 - PAD
+  const MIN_Y = PAD + 30 // extra top padding for filter bar
+  const MAX_Y = 800 - PAD
+
   // Place in concentric rings based on status priority
   const statusOrder = { active: 0, shipped: 1, growing: 2, seed: 3, parked: 4 }
   const sorted = [...ideas].sort((a, b) => (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4))
 
   sorted.forEach((idea, i) => {
     const ring = statusOrder[idea.status] || 3
-    const baseRadius = 100 + ring * 120
+    const baseRadius = 80 + ring * 95
     const angleOffset = (ring * 0.7) + (i * 0.3)
     const nodesInRing = sorted.filter(s => statusOrder[s.status] === ring).length
     const indexInRing = sorted.filter((s, j) => j < i && statusOrder[s.status] === ring).length
     const angle = (indexInRing / Math.max(nodesInRing, 1)) * Math.PI * 2 + angleOffset
-    const jitter = (Math.sin(i * 7.3) * 40)
+    const jitter = (Math.sin(i * 7.3) * 30)
 
     positions[idea.id] = {
       x: cx + Math.cos(angle) * (baseRadius + jitter),
@@ -75,7 +81,7 @@ function computeNodePositions(ideas) {
         const dx = b.x - a.x
         const dy = b.y - a.y
         const dist = Math.sqrt(dx * dx + dy * dy)
-        const minDist = 140
+        const minDist = 120
         if (dist < minDist && dist > 0) {
           const force = (minDist - dist) / dist * 0.3
           a.x -= dx * force
@@ -85,6 +91,13 @@ function computeNodePositions(ideas) {
         }
       }
     }
+  }
+
+  // Clamp all nodes to visible bounds
+  const ids = Object.keys(positions)
+  for (const id of ids) {
+    positions[id].x = Math.max(MIN_X, Math.min(MAX_X, positions[id].x))
+    positions[id].y = Math.max(MIN_Y, Math.min(MAX_Y, positions[id].y))
   }
 
   return positions
@@ -292,13 +305,13 @@ function IdeaNode({
       {/* Node title */}
       {showLabel && (
         <text
-          x={pos.x} y={pos.y + size / 2 + 16}
+          x={pos.x} y={pos.y + size / 2 + 18}
           textAnchor="middle"
           fill="#F5F0EB"
           style={{
             fontFamily: '"Syne", sans-serif',
             fontWeight: 700,
-            fontSize: '13px',
+            fontSize: '15px',
             transition: 'opacity 150ms ease',
             pointerEvents: 'none',
           }}
@@ -651,8 +664,9 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
       onClick={onClick}
       style={{
         fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-        fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase',
-        padding: '6px 14px', borderRadius: 2, cursor: 'pointer',
+        fontSize: 12, letterSpacing: '0.10em', textTransform: 'uppercase',
+        padding: '10px 16px', borderRadius: 2, cursor: 'pointer',
+        minHeight: 44,
         background: isActive ? `${color}33` : 'transparent',
         border: `1px solid ${isActive ? color : '#292524'}`,
         color: isActive ? color : '#78716C',
@@ -679,9 +693,9 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
     <>
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0,
-        height: 56, zIndex: 50,
+        minHeight: 56, zIndex: 50,
         display: 'flex', alignItems: 'center',
-        padding: '0 24px', gap: 8,
+        padding: '6px 24px', gap: 8,
         background: 'rgba(10,10,8,0.85)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
@@ -1044,6 +1058,7 @@ export default function IdeasTracker() {
   const [scale, setScale] = useState(1)
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  const didPanRef = useRef(false)
   const svgRef = useRef(null)
   const containerRef = useRef(null)
 
@@ -1119,13 +1134,14 @@ export default function IdeasTracker() {
 
   // Pan handlers
   const handleMouseDown = useCallback((e) => {
-    if (e.target.closest('circle') || e.target.closest('text')) return
     setIsPanning(true)
+    didPanRef.current = false
     setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
   }, [pan])
 
   const handleMouseMove = useCallback((e) => {
     if (!isPanning) return
+    didPanRef.current = true
     setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y })
   }, [isPanning, panStart])
 
@@ -1137,14 +1153,15 @@ export default function IdeasTracker() {
   const handleTouchStart = useCallback((e) => {
     if (e.touches.length === 1) {
       const touch = e.touches[0]
-      if (e.target.closest('circle') || e.target.closest('text')) return
       setIsPanning(true)
+      didPanRef.current = false
       setPanStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y })
     }
   }, [pan])
 
   const handleTouchMove = useCallback((e) => {
     if (!isPanning || e.touches.length !== 1) return
+    didPanRef.current = true
     const touch = e.touches[0]
     setPan({ x: touch.clientX - panStart.x, y: touch.clientY - panStart.y })
   }, [isPanning, panStart])
@@ -1247,6 +1264,14 @@ export default function IdeasTracker() {
       background: '#0C0C0C', display: 'flex', position: 'relative',
       fontFamily: '"Space Grotesk", sans-serif',
     }}>
+      {/* Accessible heading - visually hidden */}
+      <h1 style={{
+        position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
+        overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap',
+        borderWidth: 0, zIndex: 1,
+      }}>
+        AOM Ideas Tracker
+      </h1>
       {/* Canvas area */}
       <div
         ref={containerRef}
@@ -1305,7 +1330,7 @@ export default function IdeasTracker() {
             width: '100%', height: '100%',
             position: 'absolute', top: 0, left: 0,
           }}
-          viewBox="0 0 1200 800"
+          viewBox={isMobile ? "100 50 1000 700" : "0 0 1200 800"}
           preserveAspectRatio="xMidYMid meet"
         >
           <g transform={`translate(${pan.x / scale}, ${pan.y / scale}) scale(${scale})`}
@@ -1344,7 +1369,11 @@ export default function IdeasTracker() {
                 isConnected={connectedIds.has(idea.id)}
                 isDimmed={hoveredId && hoveredId !== idea.id && !connectedIds.has(idea.id)}
                 isFiltered={isIdeaFiltered(idea)}
-                onClick={(idea) => setSelectedIdea(idea)}
+                onClick={(idea) => {
+                  if (!didPanRef.current) {
+                    setSelectedIdea(idea)
+                  }
+                }}
                 onMouseEnter={(id) => setHoveredId(id)}
                 onMouseLeave={() => setHoveredId(null)}
                 canvasScale={scale}
