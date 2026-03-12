@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, FileText, Cpu, Handshake, Wrench, BarChart3, Search, TrendingUp, Shield, Target, Zap, Calendar, Monitor, Brain, ClipboardList } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 
 function useSEO() {
   useEffect(() => {
@@ -11,298 +11,310 @@ function useSEO() {
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    setMeta('description', 'Strategy briefs, research, and plans from AOM\'s agent system. AI advisory, partnerships, system audits, and more.');
+    setMeta('description', 'All agent reports, specs, audits, and briefs organized by topic. Strategy, design, outreach, technical, and more.');
     setMeta('og:title', 'AOM Briefs', true);
-    setMeta('og:description', 'Strategy briefs, research, and plans from AOM\'s agent system.', true);
+    setMeta('og:description', 'Agent reports and deliverables organized by category.', true);
     setMeta('og:type', 'website', true);
     setMeta('og:url', 'https://aheadofmarket.com/briefs', true);
   }, []);
 }
 
 const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 30 },
+  initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-50px' },
-  transition: { duration: 0.7, delay, ease: 'easeOut' },
+  viewport: { once: true, margin: '-30px' },
+  transition: { duration: 0.5, delay, ease: 'easeOut' },
 });
 
-function SectionKicker({ children }) {
-  return <p className="text-xs font-body font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-4">{children}</p>;
-}
-
-function OrangeBar() {
-  return <div className="w-12 h-[2px] bg-aom-orange mb-4" />;
-}
-
-const briefs = [
+// All briefs organized by category
+const categories = [
   {
-    title: 'AI Advisory Services Strategy',
-    path: '/briefs/ai-advisory',
-    agent: 'Steve',
-    agentRole: 'AI Advisory Lead',
-    agentColor: '#E85D26',
-    date: 'March 10, 2026',
-    type: 'COUNCIL BRIEF',
-    icon: Cpu,
-    summary: 'How AOM turns its internal AI system into a sellable product. Pricing, delivery process, and 5 recommended next moves.',
+    name: 'Strategy',
+    items: [
+      { title: 'Partnership Strategy', agent: 'Alex', date: 'Mar 10', path: '/briefs/partnerships' },
+      { title: 'AI Advisory Services Strategy', agent: 'Steve', date: 'Mar 10', path: '/briefs/ai-advisory' },
+      { title: 'AI Advisory Sprint Plan', agent: 'Council', date: 'Mar 10', path: '/briefs/sprint-plan' },
+      { title: 'Growth Plan', agent: 'Alex', date: 'Mar 2026', path: '/growth-plan' },
+      { title: 'Build Proposal Template', agent: 'Alex', date: 'Mar 2026', path: null },
+      { title: 'Case Study Brief', agent: 'Alex', date: 'Mar 2026', path: null },
+      { title: 'AI Advisory Offer Language', agent: 'Steve', date: 'Mar 2026', path: null },
+      { title: 'Biz Dev Brief', agent: 'Alex', date: 'Mar 2026', path: null },
+      { title: 'Dashboard Brief', agent: 'Alex', date: 'Mar 2026', path: null },
+      { title: 'Website V2 Direction', agent: 'Alex', date: 'Mar 2026', path: null },
+    ],
   },
   {
-    title: 'Partnership Strategy',
-    path: '/briefs/partnerships',
-    agent: 'Alex',
-    agentRole: 'Deal Architect',
-    agentColor: '#60a5fa',
-    date: 'March 10, 2026',
-    type: 'STRATEGY BRIEF',
-    icon: Handshake,
-    summary: 'Why partnerships beat cold email. 30+ specific targets across CPAs, bonding agents, supply houses, and trade associations.',
+    name: 'Design Specs',
+    items: [
+      { title: 'Full-Screen Site Redesign', agent: 'Steffen', date: 'Mar 11', path: '/briefs/fullscreen-site' },
+      { title: 'Ideas Tracker (Brain Map)', agent: 'Steffen', date: 'Mar 11', path: '/briefs/ideas-tracker' },
+      { title: 'Audit Onboarding Tool', agent: 'Steffen', date: 'Mar 11', path: '/briefs/audit-onboarding' },
+      { title: 'ROI Calculator Design Spec', agent: 'Steffen', date: 'Mar 12', path: null },
+      { title: 'Case Study Design Spec', agent: 'Steffen', date: 'Mar 2026', path: null },
+      { title: 'Audit Deliverable Design Spec', agent: 'Steffen', date: 'Mar 2026', path: null },
+      { title: 'Ambition Loader Spec', agent: 'Steffen', date: 'Mar 2026', path: null },
+      { title: 'Ambition Rebuild Spec', agent: 'Steffen', date: 'Mar 2026', path: null },
+      { title: 'OG Image Spec', agent: 'Steffen', date: 'Mar 2026', path: null },
+    ],
   },
   {
-    title: 'Masterplan System Audit',
-    path: '/briefs/masterplan',
-    agent: 'Elon',
-    agentRole: 'System/Infrastructure',
-    agentColor: '#22d3ee',
-    date: 'March 10, 2026',
-    type: 'SYSTEM AUDIT',
-    icon: Wrench,
-    summary: 'Full system audit. 13 agents, 29 skills, every context file assessed. Overall score: 5.5/10. Strong foundation, weak automation.',
+    name: 'Audits',
+    items: [
+      { title: 'Masterplan System Audit', agent: 'Elon', date: 'Mar 10', path: '/briefs/masterplan' },
+      { title: 'Build Velocity Audit', agent: 'Elon', date: 'Mar 10', path: '/briefs/velocity' },
+      { title: 'Security Architecture', agent: 'Elon', date: 'Mar 10', path: '/briefs/security' },
+      { title: 'Competitive Deep Dive', agent: 'Elon', date: 'Mar 10', path: '/briefs/competitors' },
+      { title: 'System Audit (Mar 9)', agent: 'Elon', date: 'Mar 9', path: null },
+      { title: 'Context Efficiency Audit', agent: 'Elon', date: 'Mar 2026', path: null },
+    ],
   },
   {
-    title: 'Security Architecture',
-    path: '/briefs/security',
-    agent: 'Elon',
-    agentRole: 'System/Infrastructure',
-    agentColor: '#22d3ee',
-    date: 'March 10, 2026',
-    type: 'ARCHITECTURE BRIEF',
-    icon: Shield,
-    summary: 'Multi-tenant security for CPA data. GLBA, SOC 2, encryption, tenant isolation, AI agent boundaries, and the real costs to get there.',
+    name: 'Client Reports',
+    items: [
+      { title: 'Client Health Dashboard', agent: 'Paige', date: 'Mar 12', path: null },
+      { title: 'Onboarding Sequence', agent: 'Alex', date: 'Mar 2026', path: null },
+      { title: 'ROI Calculator Spec', agent: 'Steve', date: 'Mar 12', path: '/roi-calculator' },
+      { title: 'Dashboard Teardown', agent: 'Elon', date: 'Mar 2026', path: null },
+    ],
   },
   {
-    title: 'Competitive Deep Dive',
-    path: '/briefs/competitors',
-    agent: 'Elon',
-    agentRole: 'System/Infrastructure',
-    agentColor: '#22d3ee',
-    date: 'March 10, 2026',
-    type: 'MARKET INTELLIGENCE',
-    icon: Target,
-    summary: 'Who is selling AI systems to SMBs right now. Tiered competitor analysis, pricing data, market gaps, and where AOM\'s moat is widest.',
+    name: 'Outreach',
+    items: [
+      { title: 'Outreach Plan', agent: 'Jacob', date: 'Mar 2026', path: '/outreach-plan' },
+      { title: 'HVAC Ads Research', agent: 'Alex', date: 'Mar 2026', path: '/research/hvac-ads-arizona' },
+      { title: 'Cold Email Analysis Brief', agent: 'Jacob', date: 'Mar 2026', path: null },
+      { title: 'Voice Template', agent: 'Jacob', date: 'Mar 2026', path: null },
+      { title: 'Next Batch Research', agent: 'Jacob', date: 'Mar 2026', path: null },
+      { title: 'Niche Database Research', agent: 'Jacob', date: 'Mar 2026', path: null },
+      { title: 'AZ ROC Leads', agent: 'Jacob', date: 'Mar 2026', path: null },
+    ],
   },
   {
-    title: 'Build Velocity Audit',
-    path: '/briefs/velocity',
-    agent: 'Elon',
-    agentRole: 'System/Infrastructure',
-    agentColor: '#22d3ee',
-    date: 'March 10, 2026',
-    type: 'VELOCITY AUDIT',
-    icon: Zap,
-    summary: '461 commits, 12 agents in 114 hours. Manual vs agent velocity compared head-to-head with real git data. Is "7 days" realistic? Yes.',
+    name: 'Technical',
+    items: [
+      { title: 'Relay Compaction Fix', agent: 'Elon', date: 'Mar 2026', path: null },
+      { title: 'Telegram Bridge Research', agent: 'Elon', date: 'Mar 2026', path: null },
+      { title: 'Credential Rotation Plan', agent: 'Elon', date: 'Mar 2026', path: null },
+      { title: 'Email Deliverability Report', agent: 'Elon', date: 'Mar 2026', path: null },
+      { title: 'Mom Infrastructure Audit', agent: 'Elon', date: 'Mar 2026', path: null },
+    ],
   },
   {
-    title: 'AI Advisory Sprint Plan',
-    path: '/briefs/sprint-plan',
-    agent: 'Council',
-    agentRole: 'Multi-Agent',
-    agentColor: '#E85D26',
-    date: 'March 10, 2026',
-    type: 'SPRINT PLAN',
-    icon: Calendar,
-    summary: 'Sellable AI advisory product by Friday. Seven agents, daily milestones, every deliverable assigned. Tuesday lands Tuesday. No slippage.',
+    name: 'Content',
+    items: [
+      { title: 'Crown V10 Plan', agent: 'Cleo', date: 'Mar 2026', path: null },
+      { title: 'Ambition Footage Scan', agent: 'Cleo', date: 'Mar 2026', path: null },
+      { title: 'Ambition Crown Editor Guide', agent: 'Cleo', date: 'Mar 2026', path: '/guides/ambition-crown' },
+      { title: 'Memorial Tower Editor Guide', agent: 'Cleo', date: 'Mar 2026', path: '/guides/ambition-memorial-tower' },
+      { title: 'Hook Library', agent: 'Tony', date: 'Mar 2026', path: null },
+      { title: 'Platform Best Practices', agent: 'Tony', date: 'Mar 2026', path: null },
+    ],
   },
   {
-    title: 'Full-Screen Site Redesign',
-    path: '/briefs/fullscreen-site',
-    agent: 'Steffen',
-    agentRole: 'Creative Director',
-    agentColor: '#a78bfa',
-    date: 'March 11, 2026',
-    type: 'DESIGN SPEC',
-    icon: Monitor,
-    summary: '8-slide scroll-snap pitch deck experience. CSS-native mandatory snap, staggered animations, cinematic transitions. Every slide has ONE job.',
-  },
-  {
-    title: 'Ideas Tracker (Brain Map)',
-    path: '/briefs/ideas-tracker',
-    agent: 'Steffen',
-    agentRole: 'Creative Director',
-    agentColor: '#a78bfa',
-    date: 'March 11, 2026',
-    type: 'DESIGN SPEC',
-    icon: Brain,
-    summary: 'Neural network brain map. Glowing nodes on a dark canvas connected by animated lines. Five category colors, five status states, detail panels.',
-  },
-  {
-    title: 'Audit Onboarding Tool',
-    path: '/briefs/audit-onboarding',
-    agent: 'Steffen',
-    agentRole: 'Creative Director',
-    agentColor: '#a78bfa',
-    date: 'March 11, 2026',
-    type: 'DESIGN SPEC',
-    icon: ClipboardList,
-    summary: '27-slide premium keynote-style intake form. Alternating Night/Cream rhythm, pill selectors, architectural progress bar. Apple product reveal meets consulting intake.',
+    name: 'Council',
+    items: [
+      { title: 'AI Advisory Sprint (Mar 10)', agent: 'Council', date: 'Mar 10', path: '/briefs/sprint-plan' },
+      { title: 'Business Growth Strategy (Mar 10)', agent: 'Council', date: 'Mar 10', path: null },
+      { title: 'AOM Website Redesign (Mar 9)', agent: 'Council', date: 'Mar 9', path: null },
+      { title: 'Briefs Reorg + Offer Strategy (Mar 12)', agent: 'Council', date: 'Mar 12', path: null },
+    ],
   },
 ];
 
-const existingPages = [
-  {
-    title: 'Growth Plan',
-    path: '/growth-plan',
-    agent: 'Alex',
-    agentRole: 'Deal Architect',
-    agentColor: '#60a5fa',
-    date: 'March 2026',
-    type: 'GROWTH PLAN',
-    icon: TrendingUp,
-    summary: 'Revenue targets, client pipeline, and the path to $540k/year through construction retainers.',
-  },
-  {
-    title: 'Outreach Plan',
-    path: '/outreach-plan',
-    agent: 'Jacob',
-    agentRole: 'Outreach',
-    agentColor: '#22c55e',
-    date: 'March 2026',
-    type: 'OUTREACH PLAN',
-    icon: BarChart3,
-    summary: 'Cold email strategy, target lists, and the outreach pipeline for landing construction retainer clients.',
-  },
-  {
-    title: 'HVAC Ads Research',
-    path: '/research/hvac-ads-arizona',
-    agent: 'Alex',
-    agentRole: 'Deal Architect',
-    agentColor: '#60a5fa',
-    date: 'March 2026',
-    type: 'MARKET RESEARCH',
-    icon: Search,
-    summary: 'Live data from Meta\'s Ad Library. 7 out of 10 major Arizona HVAC companies run paid ads. Who\'s advertising and what\'s working.',
-  },
-];
+function CategoryAccordion({ category, index, isOpen, onToggle }) {
+  const itemCount = category.items.length;
+  const liveCount = category.items.filter(i => i.path).length;
 
-function BriefCard({ brief, index }) {
-  const Icon = brief.icon;
   return (
-    <motion.a
-      href={brief.path}
-      className="block p-6 md:p-8 border border-white/10 bg-white/[0.02] hover:border-aom-orange/30 hover:-translate-y-1 transition-all duration-300 group"
-      {...fadeUp(index * 0.08)}
+    <motion.div
+      className="border-b border-white/[0.06]"
+      {...fadeUp(index * 0.05)}
     >
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted">
-          {brief.type}
-        </span>
-        <div className="w-10 h-10 flex items-center justify-center border border-white/10 text-aom-text-muted group-hover:text-aom-orange group-hover:border-aom-orange/30 transition-colors">
-          <Icon size={20} />
+      {/* Category Header */}
+      <button
+        onClick={onToggle}
+        className={`w-full flex items-center justify-between py-5 px-6 md:px-8 transition-all duration-300 group text-left ${
+          isOpen
+            ? 'bg-[#111110] border-l-[3px] border-l-aom-orange'
+            : 'bg-transparent border-l-[3px] border-l-transparent hover:bg-[#111110]/50'
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <h3 className={`font-headline text-[18px] font-bold tracking-[-0.01em] transition-colors duration-300 ${
+            isOpen ? 'text-[#F5F0EB]' : 'text-[#F5F0EB]/70 group-hover:text-[#F5F0EB]'
+          }`}>
+            {category.name}
+          </h3>
+          <span className="font-mono text-[13px] text-[#7C9A72]">
+            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+          </span>
         </div>
-      </div>
 
-      <h3 className="font-headline text-xl font-bold text-aom-text-light mb-3 group-hover:text-aom-orange transition-colors">
-        {brief.title}
-      </h3>
+        <ChevronDown
+          size={18}
+          className={`text-[#7C9A72] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
 
-      <p className="font-body text-base text-white/50 leading-relaxed mb-5">
-        {brief.summary}
-      </p>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: brief.agentColor }} />
-          <span className="font-body text-sm text-aom-text-muted">{brief.agent}</span>
-          <span className="font-body text-sm text-white/30">|</span>
-          <span className="font-body text-sm text-white/30">{brief.date}</span>
-        </div>
-        <ArrowRight size={16} className="text-aom-text-muted group-hover:text-aom-orange transition-colors" />
-      </div>
-    </motion.a>
+      {/* Expanded Items */}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden bg-[#111110]/60"
+          >
+            <div className="px-6 md:px-8 pb-4 pt-1">
+              {category.items.map((item, i) => (
+                <BriefItem key={item.title + i} item={item} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
+}
+
+function BriefItem({ item }) {
+  const hasPage = !!item.path;
+
+  const content = (
+    <div className={`flex items-baseline justify-between py-3 px-4 rounded-sm transition-all duration-200 ${
+      hasPage
+        ? 'hover:bg-white/[0.03] cursor-pointer group'
+        : 'opacity-60'
+    }`}>
+      <div className="flex items-baseline gap-3 min-w-0 flex-1">
+        <span className={`font-body text-[16px] leading-snug truncate ${
+          hasPage
+            ? 'text-[#F5F0EB] group-hover:text-aom-orange transition-colors'
+            : 'text-[#F5F0EB]/50'
+        }`}>
+          {item.title}
+        </span>
+        {!hasPage && (
+          <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/20 shrink-0">
+            Coming
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-baseline gap-3 ml-4 shrink-0">
+        <span className="font-mono text-[13px] text-[#7C9A72]">
+          {item.agent}
+        </span>
+        <span className="font-mono text-[13px] text-[#7C9A72]/50">
+          {item.date}
+        </span>
+      </div>
+    </div>
+  );
+
+  if (hasPage) {
+    return <a href={item.path} className="block">{content}</a>;
+  }
+  return content;
 }
 
 export default function BriefsHub() {
   useSEO();
+  const [openCategories, setOpenCategories] = useState(new Set([0])); // Strategy open by default
+
+  const toggleCategory = (index) => {
+    setOpenCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const totalItems = categories.reduce((sum, c) => sum + c.items.length, 0);
+  const liveItems = categories.reduce((sum, c) => sum + c.items.filter(i => i.path).length, 0);
 
   return (
-    <div className="bg-aom-night min-h-screen">
+    <div className="bg-[#0A0A08] min-h-screen">
       {/* Hero */}
-      <section className="bg-aom-night py-20 md:py-32 px-6 md:px-12">
-        <div className="max-w-5xl mx-auto">
+      <section className="py-20 md:py-28 px-6 md:px-12">
+        <div className="max-w-4xl mx-auto">
           <motion.a
             href="https://aheadofmarket.com"
-            className="font-headline text-sm font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors inline-block mb-12"
+            className="font-headline text-sm font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-[#F5F0EB] transition-colors inline-block mb-12"
             {...fadeUp()}
           >
             AOM
           </motion.a>
 
-          <motion.div {...fadeUp(0.05)}>
-            <SectionKicker>STRATEGY + RESEARCH</SectionKicker>
-          </motion.div>
+          <motion.p
+            className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#7C9A72] mb-4"
+            {...fadeUp(0.05)}
+          >
+            Reports + Deliverables
+          </motion.p>
 
-          <motion.div {...fadeUp(0.1)}>
-            <OrangeBar />
+          <motion.div {...fadeUp(0.08)}>
+            <div className="w-12 h-[2px] bg-aom-orange mb-6" />
           </motion.div>
 
           <motion.h1
-            className="font-headline text-4xl md:text-6xl font-bold uppercase tracking-[-0.02em] text-aom-text-light leading-[0.95] mb-6"
-            {...fadeUp(0.15)}
+            className="font-headline text-4xl md:text-5xl lg:text-6xl font-bold uppercase tracking-[-0.02em] text-[#F5F0EB] leading-[0.95] mb-6"
+            {...fadeUp(0.12)}
           >
             BRIEFS
           </motion.h1>
 
           <motion.p
-            className="font-body text-lg md:text-xl text-aom-text-muted leading-relaxed max-w-[55ch]"
+            className="font-body text-lg text-aom-text-muted leading-relaxed max-w-[55ch] mb-8"
+            {...fadeUp(0.16)}
+          >
+            Every agent report, design spec, audit, and strategy brief. Organized by topic, produced by specialized agents, reviewed before publishing.
+          </motion.p>
+
+          <motion.div
+            className="flex items-center gap-6"
             {...fadeUp(0.2)}
           >
-            Strategy briefs, market research, and system audits from AOM's agent system. Each deliverable is produced by a specialized agent, reviewed, and published.
-          </motion.p>
+            <span className="font-mono text-[13px] text-[#7C9A72]">
+              {totalItems} total
+            </span>
+            <span className="font-mono text-[13px] text-aom-text-muted">
+              {liveItems} live
+            </span>
+            <span className="font-mono text-[13px] text-aom-text-muted">
+              {categories.length} categories
+            </span>
+          </motion.div>
         </div>
       </section>
 
-      {/* New Briefs */}
-      <section className="bg-aom-night pb-12 px-6 md:pb-24 md:px-12">
-        <div className="max-w-5xl mx-auto">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>LATEST</SectionKicker>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {briefs.map((brief, i) => (
-              <BriefCard key={brief.path} brief={brief} index={i} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Existing Pages */}
-      <section className="bg-aom-night-card py-12 px-6 md:py-24 md:px-12 border-t border-white/10">
-        <div className="max-w-5xl mx-auto">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>ALSO AVAILABLE</SectionKicker>
-          </motion.div>
-
-          <motion.h2
-            className="font-headline text-2xl md:text-3xl font-bold uppercase tracking-[-0.02em] text-aom-text-light leading-[0.95] mb-8"
-            {...fadeUp(0.1)}
-          >
-            PLANS + RESEARCH
-          </motion.h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {existingPages.map((page, i) => (
-              <BriefCard key={page.path} brief={page} index={i} />
+      {/* Accordion Categories */}
+      <section className="px-6 md:px-12 pb-20 md:pb-28">
+        <div className="max-w-4xl mx-auto">
+          <div className="border-t border-white/[0.06]">
+            {categories.map((category, i) => (
+              <CategoryAccordion
+                key={category.name}
+                category={category}
+                index={i}
+                isOpen={openCategories.has(i)}
+                onToggle={() => toggleCategory(i)}
+              />
             ))}
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-aom-night py-8 px-6 text-center border-t border-white/10">
+      <footer className="py-8 px-6 text-center border-t border-white/[0.06]">
         <a
           href="https://aheadofmarket.com"
-          className="font-headline text-sm font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors inline-block mb-3"
+          className="font-headline text-sm font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-[#F5F0EB] transition-colors inline-block mb-3"
         >
           AOM
         </a>
