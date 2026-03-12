@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Plus, Pencil, Check, ArrowLeft, Lock } from 'lucide-react'
+import { X, Plus, Pencil, Check, ArrowLeft } from 'lucide-react'
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from 'd3-force'
 import ideasData from '../data/ideas.json'
 
@@ -9,9 +9,7 @@ import ideasData from '../data/ideas.json'
 /*  Route: /ideas                                                      */
 /* ================================================================== */
 
-const IDEAS_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
 const STORAGE_KEY = 'aom_ideas_data'
-const AUTH_KEY = 'aom_ops_auth'
 
 function loadIdeas() {
   try {
@@ -23,56 +21,6 @@ function loadIdeas() {
 
 function saveIdeas(ideas) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas)) } catch (e) { /* ignore */ }
-}
-
-// ---- Password Gate ----
-function PasswordGate({ onAuth }) {
-  const [input, setInput] = useState('')
-  const [shake, setShake] = useState(false)
-
-  const attempt = () => {
-    if (input === IDEAS_PASSWORD) { localStorage.setItem(AUTH_KEY, '1'); onAuth() }
-    else { setShake(true); setInput(''); setTimeout(() => setShake(false), 600) }
-  }
-
-  return (
-    <div style={{
-      width: '100vw', height: '100vh', background: '#0C0C0C',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: '"Space Grotesk", system-ui, sans-serif',
-    }}>
-      <div style={{
-        transform: shake ? 'translateX(8px)' : 'translateX(0)',
-        transition: shake ? 'transform 0.1s ease' : 'transform 0.3s ease',
-        display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', width: 280,
-      }}>
-        <Lock size={24} color="#78716C" style={{ marginBottom: 8 }} />
-        <input
-          autoFocus type="password" value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && attempt()}
-          placeholder="access code"
-          style={{
-            background: '#141412', border: `1px solid ${shake ? '#EF4444' : '#292524'}`,
-            borderRadius: 2, padding: '12px 16px', width: '100%',
-            color: '#F5F0EB', fontSize: 14, outline: 'none',
-            fontFamily: '"JetBrains Mono", monospace',
-            textAlign: 'center', letterSpacing: '0.1em',
-            boxSizing: 'border-box',
-          }}
-        />
-        <button onClick={attempt} style={{
-          background: '#E85D26', color: '#FDF6EC', border: 'none',
-          padding: '10px 0', width: '100%', borderRadius: 0,
-          fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700,
-          fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em',
-          cursor: 'pointer',
-        }}>
-          ENTER
-        </button>
-      </div>
-    </div>
-  )
 }
 
 // ── Color System ─────────────────────────────────────────────────────
@@ -1234,7 +1182,6 @@ function AddEditPanel({ idea, onSave, onDelete, onClose, isMobile, isTablet }) {
 
 // ── Main Ideas Tracker Page ──────────────────────────────────────────
 export default function IdeasTracker() {
-  const [authed, setAuthed] = useState(() => localStorage.getItem(AUTH_KEY) === '1')
   const [ideas, setIdeasRaw] = useState(loadIdeas)
   const [selectedIdea, setSelectedIdea] = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
@@ -1462,9 +1409,6 @@ export default function IdeasTracker() {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [showAddPanel, editIdea, selectedIdea])
-
-  // Password gate
-  if (!authed) return <PasswordGate onAuth={() => setAuthed(true)} />
 
   // Build connection data
   const allConnections = ideas.flatMap(idea =>
