@@ -138,7 +138,7 @@ export default function HeroSection({ openBrief, scrollToSection }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
-          className="text-xs font-body font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-6"
+          className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-6"
         >
           Creative Production + AI Systems
         </motion.p>
@@ -176,13 +176,13 @@ export default function HeroSection({ openBrief, scrollToSection }) {
         >
           <button
             onClick={() => openBrief()}
-            className="bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/30 flex items-center gap-2 text-sm md:text-base"
+            className="bg-aom-orange text-white font-headline font-extrabold uppercase tracking-tight px-8 py-4 hover:bg-aom-orange-hover transition-colors shadow-lg shadow-aom-orange/30 flex items-center gap-2 text-base"
           >
             Let's Talk <ArrowRight size={16} />
           </button>
           <button
             onClick={() => scrollToSection('work')}
-            className="border-2 border-white/20 text-white font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-white hover:text-aom-black transition-all text-sm md:text-base"
+            className="border-2 border-white/20 text-white font-headline font-bold uppercase tracking-tight px-8 py-4 hover:bg-white hover:text-aom-black transition-all text-base"
           >
             See the Work
           </button>
@@ -195,16 +195,16 @@ export default function HeroSection({ openBrief, scrollToSection }) {
           transition={{ duration: 1, delay: 1.4, ease: 'easeOut' }}
           className="mt-10 sm:mt-16 md:mt-24 flex flex-wrap items-center gap-6 text-aom-text-muted"
         >
-          <span className="inline-flex items-center gap-2 font-body text-xs font-medium uppercase tracking-[0.15em]">
+          <span className="inline-flex items-center gap-2 font-mono text-base font-medium uppercase tracking-[0.15em]">
             <span className="w-1.5 h-1.5 rounded-full bg-aom-orange" />
             Phoenix, AZ
           </span>
           <span className="hidden sm:block w-px h-3 bg-white/10" />
-          <span className="font-body text-xs font-medium uppercase tracking-[0.15em]">
+          <span className="font-mono text-base font-medium uppercase tracking-[0.15em]">
             Video / Web / Social / Systems
           </span>
           <span className="hidden sm:block w-px h-3 bg-white/10" />
-          <span className="font-body text-xs font-medium uppercase tracking-[0.15em]">
+          <span className="font-mono text-base font-medium uppercase tracking-[0.15em]">
             Est. 2020
           </span>
         </motion.div>

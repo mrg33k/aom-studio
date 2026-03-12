@@ -48,7 +48,7 @@ export default function AITeaser() {
       <div className="max-w-6xl mx-auto px-6 md:px-12 relative z-10">
         {/* Section header */}
         <div className="mb-12">
-          <p className="text-xs font-body font-medium uppercase tracking-[0.2em] text-aom-sage mb-4">
+          <p className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-sage mb-4">
             The Engine
           </p>
           <div className="w-12 h-[2px] bg-aom-sage mb-4" />
@@ -71,7 +71,7 @@ export default function AITeaser() {
               transition={{ duration: 0.7, ease: 'easeOut' }}
               className="p-6 md:p-8 border border-aom-sage/20 bg-white/[0.03] shadow-sm mb-6"
             >
-              <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-sage mb-6">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-aom-sage mb-6">
                 How It Works
               </p>
 
@@ -81,7 +81,7 @@ export default function AITeaser() {
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                       step.label === 'system' ? 'bg-aom-sage animate-pulse' : 'bg-aom-sage'
                     }`} />
-                    <span className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-text-muted w-16 shrink-0">
+                    <span className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-aom-text-muted w-16 shrink-0">
                       {step.label}
                     </span>
                     <div className="flex-1 border-t border-dashed border-aom-sage/20" />
@@ -103,7 +103,7 @@ export default function AITeaser() {
               transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
               className="p-6 md:p-8 border border-white/10 bg-white/[0.03]"
             >
-              <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-4">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-4">
                 What the system handles
               </p>
               <ul className="space-y-3">
@@ -133,7 +133,7 @@ export default function AITeaser() {
             <div className="p-6 md:p-8 border-2 border-white/10 bg-aom-night-card shadow-xl flex-1 flex flex-col">
               {/* Status badge */}
               <div className="flex items-center gap-2 mb-6">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-aom-sage/30 bg-aom-sage/10 font-body text-[11px] text-aom-sage uppercase tracking-[0.15em] font-medium">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-aom-sage/30 bg-aom-sage/10 font-mono text-[11px] text-aom-sage uppercase tracking-[0.3em] font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-aom-sage animate-pulse" />
                   Early Access
                 </span>
@@ -153,7 +153,7 @@ export default function AITeaser() {
 
               {/* Waitlist form */}
               <div className="mt-auto">
-                <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-aom-text-muted mb-4">
+                <p className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-4">
                   Join the Waitlist
                 </p>
 
