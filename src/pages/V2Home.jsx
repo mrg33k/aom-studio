@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown, MessageCircle, X, ArrowRight, ArrowUpRight,
@@ -16,11 +16,11 @@ const EMAIL = 'hello@aom-inhouse.com'
 
 const SLIDES = [
   { id: 'hero', label: 'HERO', bg: '#0C0C0C' },
-  { id: 'hook', label: 'HOOK', bg: '#151515' },
-  { id: 'work', label: 'WORK', bg: '#0C0C0C' },
+  { id: 'hook', label: 'THE HOOK', bg: '#151515' },
+  { id: 'work', label: 'THE WORK', bg: '#0C0C0C' },
   { id: 'services', label: 'SERVICES', bg: '#1A1A17' },
   { id: 'construction', label: 'CONSTRUCTION', bg: '#0C0C0C' },
-  { id: 'ai', label: 'AI', bg: '#151515' },
+  { id: 'ai', label: 'AI ADVISORY', bg: '#151515' },
   { id: 'proof', label: 'PROOF', bg: '#1A1A17' },
   { id: 'contact', label: 'CONTACT', bg: '#0C0C0C' },
 ]
@@ -78,28 +78,19 @@ const EXPLORE_CARDS = [
   { label: 'INSIGHTS', title: 'Competitor Deep Dive', desc: 'How AOM stacks up against 20+ agencies and AI consultancies.', href: '/briefs/competitors', color: 'orange' },
 ]
 
-// Premium easing curve
-const PREMIUM_EASE = [0.16, 1, 0.3, 1]
-
 // ============================================================
-// ANIMATION HELPERS
+// TRANSITION CONFIG (Steffen's spec)
 // ============================================================
 
-// Stagger children with configurable delay
-const stagger = (index, baseDelay = 0, interval = 0.1) => ({
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: {
-    duration: 0.5,
-    delay: baseDelay + index * interval,
-    ease: PREMIUM_EASE,
-  },
-})
+// Exit easing: accelerate out [0.4, 0, 1, 1]
+// Enter easing: decelerate in [0, 0, 0.2, 1]
+const EXIT_EASE = [0.4, 0, 1, 1]
+const ENTER_EASE = [0, 0, 0.2, 1]
 
-// Slide transition variants
+// Slide-level AnimatePresence variants
 const slideVariants = {
   enter: (direction) => ({
-    y: direction > 0 ? '100%' : '-100%',
+    y: direction > 0 ? 40 : -40,
     opacity: 0,
   }),
   center: {
@@ -107,10 +98,32 @@ const slideVariants = {
     opacity: 1,
   },
   exit: (direction) => ({
-    y: direction > 0 ? '-50%' : '50%',
+    y: direction > 0 ? -60 : 60,
     opacity: 0,
   }),
 }
+
+// Per-element stagger helper
+const stagger = (index, baseDelay = 0, interval = 0.08) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: {
+    duration: 0.4,
+    delay: baseDelay + index * interval,
+    ease: ENTER_EASE,
+  },
+})
+
+// Fade-only stagger (no translate)
+const fadeStagger = (index, baseDelay = 0, interval = 0.08) => ({
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  transition: {
+    duration: 0.4,
+    delay: baseDelay + index * interval,
+    ease: ENTER_EASE,
+  },
+})
 
 // ============================================================
 // FILM GRAIN
@@ -165,7 +178,7 @@ const PillSelector = ({ options, value, onChange }) => (
 )
 
 // ============================================================
-// CONTACT FORM (shared between slide 8 and drawer)
+// CONTACT FORM
 // ============================================================
 
 const ContactForm = ({ compact = false }) => {
@@ -206,7 +219,7 @@ const ContactForm = ({ compact = false }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <div>
-        <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-2">Name</label>
+        <label className="block font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-2">Name</label>
         <input
           type="text"
           required
@@ -217,7 +230,7 @@ const ContactForm = ({ compact = false }) => {
         />
       </div>
       <div>
-        <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-2">Email</label>
+        <label className="block font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-2">Email</label>
         <input
           type="email"
           required
@@ -228,15 +241,15 @@ const ContactForm = ({ compact = false }) => {
         />
       </div>
       <div>
-        <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">What do you need?</label>
+        <label className="block font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">What do you need?</label>
         <PillSelector options={SERVICE_NEEDS} value={form.need} onChange={(v) => setForm({ ...form, need: v })} />
       </div>
       <div>
-        <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">Budget range</label>
+        <label className="block font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">Budget range</label>
         <PillSelector options={BUDGET_OPTIONS} value={form.budget} onChange={(v) => setForm({ ...form, budget: v })} />
       </div>
       <div>
-        <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">Timeline</label>
+        <label className="block font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">Timeline</label>
         <PillSelector options={TIMING_OPTIONS} value={form.timing} onChange={(v) => setForm({ ...form, timing: v })} />
       </div>
       <button
@@ -254,7 +267,8 @@ const ContactForm = ({ compact = false }) => {
 }
 
 // ============================================================
-// TOP PROGRESS BAR (like the audit)
+// TOP PROGRESS BAR (Steffen spec: replaces side dots)
+// Hidden on Slide 1. Visible Slides 2-8.
 // ============================================================
 
 const ProgressBar = ({ activeSlide, totalSlides, goToSlide }) => {
@@ -267,41 +281,66 @@ const ProgressBar = ({ activeSlide, totalSlides, goToSlide }) => {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: PREMIUM_EASE }}
+      transition={{ duration: 0.3, ease: ENTER_EASE }}
       className="fixed top-0 left-0 right-0 z-[46]"
+      style={{ background: 'rgba(12,12,12,0.90)', backdropFilter: 'blur(12px)' }}
     >
-      {/* Section label bar */}
-      <div className="bg-[#0A0A0A]/90 backdrop-blur-sm px-6 py-2 flex items-center justify-between">
-        <span
-          className="text-xs tracking-[0.2em] uppercase text-[#8A847C]"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          {currentSlide?.label} / {activeSlide + 1} of {totalSlides}
-        </span>
-        <span className="text-xs text-[#5A5550]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          {Math.round(progress)}%
+      {/* Label row */}
+      <div className="h-[36px] flex items-center justify-between px-6 md:px-12 border-b border-white/[0.06]">
+        <div className="flex items-center gap-3">
+          <a href="/v2#hero" onClick={(e) => { e.preventDefault(); goToSlide(0) }} className="font-headline text-base font-extrabold text-[#F0ECE6] tracking-[-0.03em] hover:text-[#E85D26] transition-colors">
+            AOM<span className="text-[#E85D26]">.</span>
+          </a>
+          <span className="w-px h-3 bg-white/10" />
+          <motion.span
+            key={currentSlide?.label}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, delay: 0.05 }}
+            className="font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]"
+          >
+            {currentSlide?.label}
+          </motion.span>
+        </div>
+        <span className="font-mono text-[11px] text-[#5A5550]">
+          {activeSlide + 1} / {totalSlides}
         </span>
       </div>
-      {/* Orange progress fill */}
-      <div className="h-1 bg-[#1A1A1A]">
+
+      {/* Progress fill bar */}
+      <div className="h-[3px] bg-[#1A1A1A] relative">
         <motion.div
           className="h-full bg-[#E85D26]"
           initial={false}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
+          style={{ boxShadow: '0 0 8px rgba(232,93,38,0.3)' }}
         />
+        {/* Invisible click zones for slide navigation */}
+        <div className="absolute inset-0 flex cursor-pointer">
+          {SLIDES.map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 hover:bg-white/5 transition-colors"
+              onClick={() => goToSlide(i)}
+              title={SLIDES[i].label}
+            />
+          ))}
+        </div>
       </div>
     </motion.div>
   )
 }
 
 // ============================================================
-// NAV BAR
+// NAV BAR (only visible on Slide 1, hero)
 // ============================================================
 
 const NavBar = ({ activeSlide, goToSlide, openDrawer }) => {
   const [menuOpen, setMenuOpen] = useState(false)
-  const isHero = activeSlide === 0
+
+  // Only show on hero slide
+  if (activeSlide !== 0) return null
 
   const navLinks = [
     { label: 'Work', target: 2 },
@@ -312,20 +351,14 @@ const NavBar = ({ activeSlide, goToSlide, openDrawer }) => {
 
   return (
     <>
-      <nav
-        className={`fixed top-0 left-0 right-0 z-[45] h-16 flex items-center px-6 md:px-12 transition-all duration-300 ${
-          isHero
-            ? 'bg-[#0C0C0C]/40 backdrop-blur-[12px]'
-            : 'bg-transparent pointer-events-none'
-        }`}
-      >
-        <div className="pointer-events-auto">
+      <nav className="fixed top-0 left-0 right-0 z-[45] h-16 flex items-center px-6 md:px-12 bg-[#0C0C0C]/40 backdrop-blur-[12px]">
+        <div>
           <a href="/v2#hero" onClick={(e) => { e.preventDefault(); goToSlide(0) }} className="flex-shrink-0">
             <img src="/brand/aom-horizontal-white.svg" alt="AOM" className="h-7" />
           </a>
         </div>
 
-        <div className="hidden md:flex items-center gap-8 ml-auto pointer-events-auto">
+        <div className="hidden md:flex items-center gap-8 ml-auto">
           {navLinks.map((link) => (
             <button
               key={link.label}
@@ -334,11 +367,7 @@ const NavBar = ({ activeSlide, goToSlide, openDrawer }) => {
                 if (link.action) { link.action(); return }
                 goToSlide(link.target)
               }}
-              className={`font-body text-base font-medium uppercase tracking-[0.06em] transition-colors duration-150 ${
-                link.target !== undefined && activeSlide === link.target
-                  ? 'text-[#E85D26]'
-                  : 'text-[#8A847C] hover:text-[#F0ECE6]'
-              }`}
+              className="font-body text-base font-medium uppercase tracking-[0.06em] text-[#8A847C] hover:text-[#F0ECE6] transition-colors duration-150"
             >
               {link.label}
             </button>
@@ -347,7 +376,8 @@ const NavBar = ({ activeSlide, goToSlide, openDrawer }) => {
 
         <button
           onClick={() => setMenuOpen(true)}
-          className="md:hidden ml-auto text-[#8A847C] hover:text-[#F0ECE6] transition-colors pointer-events-auto"
+          className="md:hidden ml-auto text-[#8A847C] hover:text-[#F0ECE6] transition-colors"
+          aria-label="Open menu"
         >
           <Menu size={24} />
         </button>
@@ -364,6 +394,7 @@ const NavBar = ({ activeSlide, goToSlide, openDrawer }) => {
             <button
               onClick={() => setMenuOpen(false)}
               className="absolute top-4 right-4 text-[#8A847C] hover:text-[#F0ECE6] p-2"
+              aria-label="Close menu"
             >
               <X size={24} />
             </button>
@@ -411,7 +442,7 @@ const FloatingContact = ({ activeSlide, onClick }) => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
       onClick={onClick}
-      className={`fixed z-[50] bottom-6 right-6 bg-[#E85D26] text-white shadow-[0_4px_16px_rgba(232,93,38,0.3)] hover:shadow-[0_6px_24px_rgba(232,93,38,0.5)] hover:scale-[1.08] transition-all duration-200 flex items-center gap-0 ${
+      className={`fixed z-[50] bottom-20 right-6 bg-[#E85D26] text-white shadow-[0_4px_16px_rgba(232,93,38,0.3)] hover:shadow-[0_6px_24px_rgba(232,93,38,0.5)] hover:scale-[1.08] transition-all duration-200 flex items-center gap-0 ${
         showLabel ? 'rounded-full px-5 py-3' : 'rounded-full w-14 h-14 justify-center'
       }`}
       style={{ minWidth: showLabel ? undefined : 48 }}
@@ -505,6 +536,8 @@ const ContactDrawer = ({ open, onClose }) => (
 
 // ============================================================
 // SLIDE 1: HERO
+// Specific stagger per Steffen: micro-label 0s, headline 0.15s,
+// subhead 0.3s, status bar 0.6s (fade only), arrow 0.8s (fade only)
 // ============================================================
 
 const SlideHero = ({ goToSlide }) => {
@@ -537,12 +570,12 @@ const SlideHero = ({ goToSlide }) => {
   }, [playlist])
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
       {/* Video background */}
       <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
         <iframe
           key={playlist[activeIdx]}
-          src={`https://play.gumlet.io/embed/${playlist[activeIdx]}?autoplay=true&muted=true&loop=true&preload=true&controls=false`}
+          src={`https://play.gumlet.io/embed/${playlist[activeIdx]}?autoplay=true&muted=true&loop=true&preload=metadata&controls=false`}
           className="absolute inset-0 w-full h-full border-none"
           loading="eager"
           style={{
@@ -562,37 +595,47 @@ const SlideHero = ({ goToSlide }) => {
 
       <FilmGrain />
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+      {/* Content: centered with breathing room */}
+      <div className="relative z-10 flex flex-col items-center text-center px-8 md:px-24 max-w-[1200px] mx-auto w-full">
+        {/* Micro-label */}
         <motion.p
-          {...stagger(0, 0)}
-          className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0, ease: ENTER_EASE }}
+          className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4"
         >
           CREATIVE PRODUCTION + AI SYSTEMS
         </motion.p>
 
+        {/* Headline: 36px mobile (safe for 390px), 80px desktop */}
         <motion.h1
-          {...stagger(1, 0)}
-          className="font-headline text-[36px] md:text-[80px] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#FDF6EC] max-w-[900px]"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15, ease: ENTER_EASE }}
+          className="font-headline text-[clamp(32px,8vw,80px)] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#FDF6EC] max-w-[900px]"
         >
           WE MAKE COMPANIES IMPOSSIBLE TO IGNORE.
         </motion.h1>
 
+        {/* Subhead */}
         <motion.p
-          {...stagger(2, 0)}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3, ease: ENTER_EASE }}
           className="font-body text-base md:text-xl text-[#8A847C] mt-6 max-w-[600px] leading-relaxed"
         >
           Video, web, and brand systems for companies ready to stand out.
         </motion.p>
 
-        {/* Down arrow cue */}
+        {/* Down arrow cue (ONLY on hero per Steffen) */}
         <motion.button
-          {...stagger(4, 0.2)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.8, ease: ENTER_EASE }}
           onClick={() => goToSlide(1)}
           className="mt-16 text-[#8A847C] hover:text-[#E85D26] transition-colors cursor-pointer flex flex-col items-center"
         >
-          <span className="block font-body text-[13px] font-medium uppercase tracking-[0.08em] text-[#8A847C] mb-2">Scroll</span>
+          <span className="block font-mono text-[13px] font-medium uppercase tracking-[0.08em] text-[#8A847C] mb-2">Scroll</span>
           <motion.div
             animate={{ y: [0, 6, 0] }}
             transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}
@@ -602,24 +645,22 @@ const SlideHero = ({ goToSlide }) => {
         </motion.button>
       </div>
 
-      {/* Status bar */}
+      {/* Status bar: fade only, delay 0.6s */}
       <motion.div
-        {...stagger(3, 0.3)}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 opacity-70"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.7 }}
+        transition={{ duration: 0.4, delay: 0.6, ease: ENTER_EASE }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4"
       >
         {['PHOENIX, AZ', 'VIDEO', 'WEB', 'SOCIAL', 'SYSTEMS', 'EST. 2020'].map((item, i) => (
           <React.Fragment key={item}>
             {i > 0 && <span className="w-px h-3 bg-[#292524]" />}
-            <span
-              className="hidden md:inline text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
-            >
+            <span className="hidden md:inline font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]">
               {item}
             </span>
           </React.Fragment>
         ))}
-        {/* Simplified mobile status */}
-        <span className="md:hidden text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        <span className="md:hidden font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]">
           PHOENIX, AZ / EST. 2020
         </span>
       </motion.div>
@@ -629,6 +670,8 @@ const SlideHero = ({ goToSlide }) => {
 
 // ============================================================
 // SLIDE 2: HOOK
+// Stats use clamp sizing. Short stat values to prevent overflow.
+// Content vertically centered via parent flex.
 // ============================================================
 
 const SlideHook = () => {
@@ -641,20 +684,19 @@ const SlideHook = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#151515' }}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+      <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
           {/* Left: 55% */}
           <div className="w-full md:w-[55%]">
             <motion.p
               {...stagger(0)}
-              className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4"
             >
               WHY AOM
             </motion.p>
             <motion.h2
               {...stagger(1)}
-              className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+              className="font-headline text-[clamp(28px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
             >
               SMALL TEAM. CINEMA-GRADE. NO BS.
             </motion.h2>
@@ -666,12 +708,15 @@ const SlideHook = () => {
             </motion.p>
           </div>
 
-          {/* Right: 45% - stat grid */}
-          <div className="w-full md:w-[45%] grid grid-cols-2 gap-8">
+          {/* Right: 45% - stat grid with clamped sizes */}
+          <div className="w-full md:w-[45%] grid grid-cols-2 gap-6 md:gap-8">
             {stats.map((stat, i) => (
-              <motion.div key={stat.label} {...stagger(i, 0.3)}>
+              <motion.div key={stat.label} {...stagger(i, 0.3, 0.1)}>
                 <div className="border-l-2 border-[#E85D26]/20 pl-5">
-                  <p className="font-headline text-[32px] md:text-[clamp(32px,3.5vw,52px)] font-black text-[#E85D26] leading-[0.95] tracking-[-0.02em]">
+                  <p
+                    className="font-headline font-black text-[#E85D26] leading-[0.95] tracking-[-0.02em]"
+                    style={{ fontSize: 'clamp(24px, 3vw, 48px)' }}
+                  >
                     {stat.value}
                   </p>
                   <p className="font-body text-[13px] font-semibold uppercase tracking-[0.1em] text-[#8A847C] mt-2">
@@ -700,10 +745,10 @@ const SlideWork = () => {
       <div className="absolute inset-0 z-0">
         <iframe
           key={PORTFOLIO_PIECES[activeProject].id}
-          src={`https://play.gumlet.io/embed/${PORTFOLIO_PIECES[activeProject].id}?autoplay=true&muted=true&loop=true&preload=true&controls=false`}
+          src={`https://play.gumlet.io/embed/${PORTFOLIO_PIECES[activeProject].id}?autoplay=true&muted=true&loop=true&preload=metadata&controls=false`}
           className="absolute inset-0 w-full h-full border-none"
           loading="lazy"
-          style={{ opacity: 0.85, transition: 'opacity 300ms ease' }}
+          style={{ opacity: 0.85, transition: 'opacity 500ms ease' }}
           allow="autoplay"
           tabIndex={-1}
         />
@@ -712,9 +757,8 @@ const SlideWork = () => {
 
       {/* Top-left label */}
       <motion.p
-        {...stagger(0)}
-        className="absolute top-20 left-6 md:left-12 z-10 text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C]"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+        {...fadeStagger(0)}
+        className="absolute top-20 left-8 md:left-12 z-10 font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C]"
       >
         THE WORK
       </motion.p>
@@ -722,12 +766,12 @@ const SlideWork = () => {
       {/* Client name overlay */}
       <motion.div
         {...stagger(1, 0.3)}
-        className="absolute bottom-24 md:bottom-24 left-6 md:left-12 z-10"
+        className="absolute bottom-24 md:bottom-24 left-8 md:left-12 z-10"
       >
         <p className="font-body text-lg font-semibold text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
           {PORTFOLIO_PIECES[activeProject].name}
         </p>
-        <p className="text-[12px] uppercase tracking-[0.1em] text-[#8A847C] mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        <p className="font-mono text-[12px] uppercase tracking-[0.1em] text-[#8A847C] mt-1">
           {PORTFOLIO_PIECES[activeProject].industry}
         </p>
       </motion.div>
@@ -747,7 +791,7 @@ const SlideWork = () => {
             aria-label={`View ${piece.name}`}
           >
             <div className="w-full h-full bg-[#1A1A17] flex items-center justify-center">
-              <span className="text-[10px] font-body text-[#8A847C] uppercase tracking-wider text-center px-1 leading-tight">
+              <span className="font-mono text-[10px] text-[#8A847C] uppercase tracking-wider text-center px-1 leading-tight">
                 {piece.name.split(' ').slice(0, 2).join(' ')}
               </span>
             </div>
@@ -786,14 +830,14 @@ const SlideServices = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A1A17' }}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+      <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <motion.div {...stagger(0)} className="text-center">
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <p className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4">
             WHAT WE DO
           </p>
         </motion.div>
         <motion.div {...stagger(1)} className="text-center mb-12">
-          <h2 className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
+          <h2 className="font-headline text-[clamp(28px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
             PICK YOUR LANE.
           </h2>
         </motion.div>
@@ -822,6 +866,7 @@ const SlideServices = () => {
 
 // ============================================================
 // SLIDE 5: CONSTRUCTION
+// Video iframe with Gumlet embed confirmed present.
 // ============================================================
 
 const SlideConstruction = ({ openDrawer }) => {
@@ -833,20 +878,19 @@ const SlideConstruction = ({ openDrawer }) => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+      <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
           {/* Left: content */}
           <div className="w-full md:w-1/2">
             <motion.p
               {...stagger(0)}
-              className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#E85D26] mb-4"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#E85D26] mb-4"
             >
               CONSTRUCTION
             </motion.p>
             <motion.h2
               {...stagger(1)}
-              className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+              className="font-headline text-[clamp(26px,4.5vw,48px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
             >
               YOUR CREWS BUILD IT. WE MAKE SURE PEOPLE SEE IT.
             </motion.h2>
@@ -878,12 +922,16 @@ const SlideConstruction = ({ openDrawer }) => {
             </motion.div>
           </div>
 
-          {/* Right: media (4:5 portrait) */}
+          {/* Right: 4:5 portrait video */}
           <div className="w-full md:w-1/2 flex justify-center">
-            <motion.div {...stagger(2, 0.2)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.3, ease: ENTER_EASE }}
+            >
               <div className="relative w-full max-w-[400px] aspect-[4/5] border-2 border-[#292524] hover:border-[#E85D26]/30 transition-colors overflow-hidden bg-[#1A1A17]">
                 <iframe
-                  src="https://play.gumlet.io/embed/698a68b7fc23d3d76fa970ef?autoplay=true&muted=true&loop=true&preload=true&controls=false"
+                  src="https://play.gumlet.io/embed/698a68b7fc23d3d76fa970ef?autoplay=true&muted=true&loop=true&preload=metadata&controls=false"
                   className="absolute inset-0 w-full h-full border-none"
                   loading="lazy"
                   allow="autoplay"
@@ -912,20 +960,19 @@ const SlideAI = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#151515' }}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+      <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16">
           {/* Left: 40% */}
           <div className="w-full md:w-[40%]">
             <motion.p
               {...stagger(0)}
-              className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#7C9A72] mb-4"
-              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#7C9A72] mb-4"
             >
               AI OPERATIONS
             </motion.p>
             <motion.h2
               {...stagger(1)}
-              className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+              className="font-headline text-[clamp(28px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
             >
               THE NEXT GEEK SQUAD FOR AI.
             </motion.h2>
@@ -978,14 +1025,14 @@ const SlideAI = () => {
 
 const SlideProof = () => (
   <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A1A17' }}>
-    <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+    <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
       <motion.div {...stagger(0)} className="text-center">
-        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+        <p className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4">
           WHAT THEY SAY
         </p>
       </motion.div>
       <motion.div {...stagger(1)} className="text-center mb-12">
-        <h2 className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
+        <h2 className="font-headline text-[clamp(28px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
           DON'T TAKE OUR WORD FOR IT.
         </h2>
       </motion.div>
@@ -1018,13 +1065,13 @@ const SlideProof = () => (
 const SlideContact = () => (
   <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
     <FilmGrain />
-    <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+    <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
       <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16">
         {/* Left: 45% */}
         <div className="w-full md:w-[45%]">
           <motion.h2
             {...stagger(0)}
-            className="font-headline text-[40px] md:text-[64px] font-black uppercase leading-[0.95] tracking-[-0.03em] text-[#FDF6EC] max-w-[500px]"
+            className="font-headline text-[clamp(32px,6vw,64px)] font-black uppercase leading-[0.95] tracking-[-0.03em] text-[#FDF6EC] max-w-[500px]"
           >
             LET'S BUILD SOMETHING.
           </motion.h2>
@@ -1098,10 +1145,9 @@ const KeepExploring = () => {
               className="relative block bg-white/[0.03] border border-white/[0.06] hover:border-[#E85D26]/20 hover:bg-white/[0.05] transition-all duration-200 p-8 group"
             >
               <p
-                className={`text-[11px] font-bold uppercase tracking-[0.15em] mb-2 ${
+                className={`font-mono text-[11px] font-bold uppercase tracking-[0.15em] mb-2 ${
                   card.color === 'sage' ? 'text-[#7C9A72]' : 'text-[#E85D26]'
                 }`}
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
               >
                 {card.label}
               </p>
@@ -1118,57 +1164,11 @@ const KeepExploring = () => {
         {/* Footer */}
         <div className="mt-16 pt-12 border-t border-white/[0.06] text-center">
           <img src="/brand/aom-horizontal-white.svg" alt="AOM" className="h-6 mx-auto mb-4 opacity-60" />
-          <p className="font-body text-[13px] text-[#8A847C]">
+          <p className="font-mono text-xs text-[#8A847C]/60 uppercase tracking-[0.15em]">
             &copy; {new Date().getFullYear()} AOM (Ahead of Market). Phoenix, AZ.
           </p>
         </div>
       </div>
-    </div>
-  )
-}
-
-// ============================================================
-// NAVIGATION BUTTONS (bottom bar, audit-style)
-// ============================================================
-
-const SlideNavButtons = ({ activeSlide, totalSlides, goToSlide, isExploring }) => {
-  if (activeSlide === 0 || isExploring) return null
-
-  const showBack = activeSlide > 0
-  const showNext = activeSlide < totalSlides - 1
-
-  return (
-    <div
-      className="fixed bottom-0 left-0 right-0 z-[42] px-6 py-4 flex items-center justify-between"
-      style={{ background: 'rgba(12,12,12,0.95)', backdropFilter: 'blur(8px)' }}
-    >
-      {showBack ? (
-        <button
-          onClick={() => goToSlide(activeSlide - 1)}
-          className="inline-flex items-center gap-2 px-6 py-3 font-body text-base transition-all border border-white/20 text-white/60 hover:border-white/40 hover:text-white"
-        >
-          Back
-        </button>
-      ) : <div />}
-      {showNext ? (
-        <button
-          onClick={() => goToSlide(activeSlide + 1)}
-          className="inline-flex items-center gap-2 px-8 py-3 font-body text-base font-semibold text-white transition-all hover:scale-105 bg-[#E85D26] hover:bg-[#D14E1C]"
-        >
-          Next <ArrowRight size={18} />
-        </button>
-      ) : (
-        <button
-          onClick={() => {
-            // Scroll to keep exploring section
-            const el = document.getElementById('keep-exploring')
-            if (el) el.scrollIntoView({ behavior: 'smooth' })
-          }}
-          className="inline-flex items-center gap-2 px-8 py-3 font-body text-base font-semibold text-white transition-all hover:scale-105 bg-[#E85D26] hover:bg-[#D14E1C]"
-        >
-          Keep Exploring <ArrowRight size={18} />
-        </button>
-      )}
     </div>
   )
 }
@@ -1226,7 +1226,7 @@ export default function V2Home() {
     const hash = SLIDES[index]?.id
     if (hash) history.replaceState(null, '', `/v2#${hash}`)
 
-    // Allow transitions to complete
+    // Transition lock: 0.6s total (0.25 exit + 0.35 enter)
     setTimeout(() => setIsTransitioning(false), 700)
   }, [activeSlide, totalSlides, isTransitioning, isExploring])
 
@@ -1245,15 +1245,12 @@ export default function V2Home() {
       lastWheelTime.current = now
 
       if (e.deltaY > 0) {
-        // Scrolling down
         if (activeSlide < totalSlides - 1) {
           goToSlide(activeSlide + 1)
         } else {
-          // At the last slide, go to keep exploring
           setIsExploring(true)
         }
       } else {
-        // Scrolling up
         goToSlide(activeSlide - 1)
       }
     }
@@ -1262,7 +1259,7 @@ export default function V2Home() {
     return () => window.removeEventListener('wheel', handleWheel)
   }, [activeSlide, totalSlides, goToSlide, isExploring, drawerOpen])
 
-  // Touch navigation
+  // Touch navigation (swipe must travel >50px)
   useEffect(() => {
     if (isExploring || drawerOpen) return
 
@@ -1301,7 +1298,6 @@ export default function V2Home() {
         return
       }
 
-      // Don't navigate when exploring (traditional scroll handles it)
       if (isExploring) {
         if (e.key === 'Escape') {
           setIsExploring(false)
@@ -1310,11 +1306,13 @@ export default function V2Home() {
         return
       }
 
+      // Don't hijack keyboard in input/textarea/select
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
+
       switch (e.key) {
         case 'ArrowDown':
-        case 'ArrowRight':
+        case ' ':
         case 'PageDown':
-        case 'Enter':
           e.preventDefault()
           if (activeSlide < totalSlides - 1) {
             goToSlide(activeSlide + 1)
@@ -1323,7 +1321,6 @@ export default function V2Home() {
           }
           break
         case 'ArrowUp':
-        case 'ArrowLeft':
         case 'PageUp':
           e.preventDefault()
           goToSlide(activeSlide - 1)
@@ -1362,8 +1359,7 @@ export default function V2Home() {
     if (!isExploring) return
 
     const handleScroll = () => {
-      const scrollTop = window.scrollY
-      if (scrollTop <= 0) {
+      if (window.scrollY <= 0) {
         setIsExploring(false)
         setActiveSlide(totalSlides - 1)
       }
@@ -1373,20 +1369,19 @@ export default function V2Home() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [isExploring, totalSlides])
 
-  // When entering exploring mode, scroll to top of keep-exploring
+  // When entering exploring mode, scroll to top
   useEffect(() => {
     if (isExploring) {
       window.scrollTo({ top: 0, behavior: 'instant' })
     }
   }, [isExploring])
 
-  // Manage body overflow: hidden during slides, auto during exploring
+  // Manage body overflow
   useEffect(() => {
     document.body.style.overflow = isExploring ? 'auto' : 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [isExploring])
 
-  // Get the active slide component
   const ActiveSlideComponent = SLIDE_COMPONENTS[activeSlide]
 
   return (
@@ -1404,14 +1399,13 @@ export default function V2Home() {
           <NavBar activeSlide={activeSlide} goToSlide={goToSlide} openDrawer={openDrawer} />
           <ProgressBar activeSlide={activeSlide} totalSlides={totalSlides} goToSlide={goToSlide} />
           <FloatingContact activeSlide={activeSlide} onClick={openDrawer} />
-          <SlideNavButtons activeSlide={activeSlide} totalSlides={totalSlides} goToSlide={goToSlide} isExploring={isExploring} />
         </>
       )}
 
       <ContactDrawer open={drawerOpen} onClose={closeDrawer} />
 
       {!isExploring ? (
-        /* Slide container - full viewport, Framer Motion transitions */
+        /* Slide container: full viewport, Framer Motion AnimatePresence mode="wait" */
         <main className="fixed inset-0 w-full h-[100dvh]" style={{ backgroundColor: SLIDES[activeSlide]?.bg || '#0C0C0C' }}>
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
@@ -1422,8 +1416,10 @@ export default function V2Home() {
               animate="center"
               exit="exit"
               transition={{
-                duration: 0.6,
-                ease: PREMIUM_EASE,
+                enter: { duration: 0.35, ease: ENTER_EASE },
+                exit: { duration: 0.25, ease: EXIT_EASE },
+                duration: 0.35,
+                ease: ENTER_EASE,
               }}
               className="absolute inset-0 w-full h-full"
             >
@@ -1435,9 +1431,8 @@ export default function V2Home() {
           </AnimatePresence>
         </main>
       ) : (
-        /* Keep exploring - traditional scrollable section */
+        /* Keep exploring: traditional scrollable section */
         <div id="keep-exploring">
-          {/* Back to slides button */}
           <div className="bg-[#0C0C0C] py-4 px-6 flex items-center justify-center">
             <button
               onClick={() => {
@@ -1469,7 +1464,7 @@ export default function V2Home() {
         }
 
         .font-mono {
-          font-family: 'JetBrains Mono', 'Space Grotesk', monospace;
+          font-family: 'JetBrains Mono', monospace;
         }
       `}</style>
     </div>
