@@ -326,7 +326,7 @@ const VibeStat = memo(({ icon: Icon, kicker, valueNode, sub, accent = false }) =
       </div>
       <div>
         <div className="text-5xl md:text-6xl font-headline font-extrabold tracking-[-0.02em] leading-[0.85] text-aom-text-light">{valueNode}</div>
-        <p className="text-aom-text-muted text-sm mt-6 leading-relaxed max-w-xs font-body">{sub}</p>
+        <p className="text-aom-text-muted text-base mt-6 leading-relaxed max-w-xs font-body">{sub}</p>
       </div>
     </div>
   </div>
@@ -366,7 +366,7 @@ const TestimonialCard = memo(({ t }) => (
 
 const FAQItem = memo(({ item, open, onToggle }) => (
   <div className="border border-white/10 bg-white/[0.03]">
-    <button onClick={onToggle} className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left hover:bg-aom-orange/5 transition-colors">
+    <button onClick={onToggle} aria-expanded={open} className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left hover:bg-aom-orange/5 transition-colors">
       <span className="text-aom-text-light font-headline font-bold uppercase tracking-[-0.01em] text-base">{item.q}</span>
       <ChevronRight className={`text-aom-orange transition-transform shrink-0 ${open ? "rotate-90" : "rotate-0"}`} />
     </button>
@@ -468,10 +468,10 @@ const InteractiveGallery = ({ items, isVertical = false, onPlay }) => {
         <div className="w-4 shrink-0 md:hidden" />
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 left-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
-        <button onClick={() => scroll('left')} className={`w-12 h-12 bg-aom-night flex items-center justify-center text-white shadow-2xl transition-all border border-white/10 ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110 hover:border-aom-orange/40'}`}><ChevronLeft size={24} /></button>
+        <button onClick={() => scroll('left')} aria-label="Scroll gallery left" className={`w-12 h-12 bg-aom-night flex items-center justify-center text-white shadow-2xl transition-all border border-white/10 ${!canScrollLeft ? 'opacity-30 pointer-events-none' : 'hover:scale-110 hover:border-aom-orange/40'}`}><ChevronLeft size={24} /></button>
       </div>
       <div className="absolute top-1/2 -translate-y-1/2 right-4 z-30 opacity-0 group-hover/gallery:opacity-100 transition-opacity hidden md:block">
-        <button onClick={() => scroll('right')} className={`w-12 h-12 bg-aom-night flex items-center justify-center text-white shadow-2xl transition-all border border-white/10 ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'hover:scale-110 hover:border-aom-orange/40'}`}><ChevronRight size={24} /></button>
+        <button onClick={() => scroll('right')} aria-label="Scroll gallery right" className={`w-12 h-12 bg-aom-night flex items-center justify-center text-white shadow-2xl transition-all border border-white/10 ${!canScrollRight ? 'opacity-30 pointer-events-none' : 'hover:scale-110 hover:border-aom-orange/40'}`}><ChevronRight size={24} /></button>
       </div>
     </div>
   );
@@ -493,7 +493,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
   return (
       <motion.div key="phone-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="w-full max-w-lg p-10 border border-white/10 bg-aom-night relative shadow-2xl overflow-hidden">
-          <button onClick={onClose} className="absolute top-6 right-6 text-aom-text-muted hover:text-aom-text-light transition-colors z-20"><X size={20} /></button>
+          <button onClick={onClose} className="absolute top-6 right-6 text-aom-text-muted hover:text-aom-text-light transition-colors z-20" aria-label="Close phone modal"><X size={20} /></button>
           <AnimatePresence mode="wait">
             {view === 'list' ? (
               <motion.div key="list" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
@@ -706,6 +706,7 @@ export default function App() {
 
   return (
     <div className="bg-aom-night text-aom-text-light min-h-screen font-body selection:bg-aom-orange/30 antialiased overflow-hidden">
+      <a href="#work" className="skip-link">Skip to main content</a>
       <AnimatePresence>
         {!isInitialized && (
           <motion.div key="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }} className={`fixed inset-0 bg-aom-night flex flex-col items-center justify-center p-8 z-[1000] ${isLoaderExiting ? 'pointer-events-none' : ''}`}>
@@ -731,7 +732,7 @@ export default function App() {
           <header className={`fixed top-0 left-0 w-full z-[200] px-6 md:px-12 py-4 md:py-6 flex justify-between items-center pointer-events-none transition-all duration-300 ${navSolid ? 'bg-aom-night/95 backdrop-blur-md border-b border-white/5' : 'bg-gradient-to-b from-black/40 to-transparent'}`}>
             <a href="/" className="text-2xl md:text-3xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light pointer-events-auto inline-flex items-center min-h-[44px] min-w-[44px]">AOM<span className="text-aom-orange">.</span></a>
             {/* Desktop nav */}
-            <nav className="hidden md:flex gap-4 items-center pointer-events-auto">
+            <nav className="hidden md:flex gap-4 items-center pointer-events-auto" aria-label="Main navigation">
               <button onClick={() => scrollToSection('work')} className="text-xs font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Work</button>
               <button onClick={() => scrollToSection('packages')} className="text-xs font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Services</button>
               <a href="/system" className="text-xs font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">The System</a>
@@ -753,7 +754,7 @@ export default function App() {
                   <span className="text-2xl font-headline font-extrabold tracking-[-0.03em] text-aom-text-light">AOM<span className="text-aom-orange">.</span></span>
                   <button onClick={() => setMobileMenuOpen(false)} className="w-11 h-11 flex items-center justify-center text-aom-text-light" aria-label="Close menu"><X size={24} /></button>
                 </div>
-                <nav className="flex-1 flex flex-col items-center justify-center gap-8">
+                <nav className="flex-1 flex flex-col items-center justify-center gap-8" aria-label="Mobile navigation">
                   {[
                     { label: 'Work', target: 'work' },
                     { label: 'Construction', target: 'construction' },
@@ -797,7 +798,7 @@ export default function App() {
           {/* 3. STATS + TESTIMONIALS (dark, social proof) */}
           <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-mid-dark relative">
             {/* Film grain */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay z-0">
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay z-0" aria-hidden="true">
               <svg width="100%" height="100%">
                 <filter id="stats-grain">
                   <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" />
@@ -812,7 +813,7 @@ export default function App() {
                   <span className="text-aom-orange text-xs font-body font-medium uppercase tracking-[0.2em] mb-6 block"><ScrambleText text="The Work Speaks" /></span>
                   <h2 className="text-5xl md:text-7xl font-headline font-extrabold text-aom-text-light tracking-[-0.02em] uppercase leading-[0.85]">The Work<br /><span className="text-outline">Speaks</span><span className="text-aom-orange">.</span></h2>
                 </div>
-                <div className="w-full lg:max-w-md p-7 border border-white/10 bg-white/[0.03]"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-text-muted text-sm leading-relaxed font-body">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
+                <div className="w-full lg:max-w-md p-7 border border-white/10 bg-white/[0.03]"><ShieldCheck className="text-aom-orange mb-6" size={24} /><p className="text-aom-text-muted text-base leading-relaxed font-body">Real clients. Real results. Every number on this page is from a project we shipped.</p></div>
               </FadeIn>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FadeIn><VibeStat icon={Building2} kicker="Projects Shipped" valueNode={<span><CountUp to={63} /><span className="text-aom-orange">+</span></span>} sub="Across construction, hospitality, non-profit, tech, and events." /></FadeIn>
@@ -835,7 +836,7 @@ export default function App() {
                 <h2 className="text-[clamp(2.5rem,8vw,8rem)] font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.8]">The<br /><span className="text-outline-white">Portfolio</span><span className="text-aom-orange">.</span></h2>
                 <p className="text-white/60 text-base md:text-xl mt-4 max-w-2xl leading-relaxed font-body">Real projects. Real clients. All of it shipped.</p>
               </div>
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2">{['all', 'brands', 'founders', 'construction'].map(tab => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-12 py-3 md:py-5 text-xs md:text-xs font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 min-h-[44px] ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/60 hover:text-white/60'}`}>{tab}</button>)}</div>
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-2" role="tablist" aria-label="Portfolio filter">{['all', 'brands', 'founders', 'construction'].map(tab => <button key={tab} role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)} className={`px-4 md:px-12 py-3 md:py-5 text-xs md:text-xs font-headline font-extrabold uppercase tracking-[0.1em] md:tracking-[0.2em] transition-all border-b-2 shrink-0 min-h-[44px] ${activeTab === tab ? 'text-white border-b-aom-orange bg-transparent' : 'bg-transparent border-b-transparent text-white/60 hover:text-white/60'}`}>{tab}</button>)}</div>
             </div>
 
             {/* Featured project */}
@@ -850,7 +851,7 @@ export default function App() {
                     <div>
                       <p className="font-body text-xs uppercase tracking-[0.2em] text-aom-orange mb-2 font-medium">{shuffledData[activeTab].campaigns[0].tags?.[0] || 'Featured'}</p>
                       <h3 className="font-headline text-3xl md:text-5xl font-extrabold uppercase tracking-[-0.02em] text-white leading-[0.9]">{shuffledData[activeTab].campaigns[0].title}</h3>
-                      <p className="text-white/70 text-sm mt-3 max-w-md font-body">{shuffledData[activeTab].campaigns[0].sub}</p>
+                      <p className="text-white/70 text-base mt-3 max-w-md font-body">{shuffledData[activeTab].campaigns[0].sub}</p>
                     </div>
                   </div>
                 </article>
@@ -915,7 +916,7 @@ export default function App() {
                   <h2 className="text-5xl md:text-7xl font-headline font-extrabold tracking-[-0.02em] uppercase leading-[0.85]">Why It<br /><span className="text-outline">Works</span><span className="text-aom-orange">.</span></h2>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-xs font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-sm mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-xs font-body font-medium uppercase tracking-[0.15em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-base mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
             </div>
           </section>
 
@@ -965,7 +966,7 @@ export default function App() {
 
           {/* 12. FOOTER (dark, seamless) */}
           <div className="w-12 h-[2px] bg-aom-orange mx-6 md:mx-12" />
-          <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-night text-center pb-24 text-white">
+          <footer className="px-6 md:px-12 py-24 md:py-36 bg-aom-night text-center pb-24 text-white" aria-label="Site footer">
             <div className="max-w-screen-2xl mx-auto w-full">
               <h2 className="text-6xl md:text-[10rem] font-headline font-extrabold tracking-[-0.02em] mb-24 uppercase leading-[0.8]">Ready to <span className="text-aom-orange">Start?</span></h2>
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
@@ -983,7 +984,7 @@ export default function App() {
           <AnimatePresence>
             {selectedVideo && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[2000] bg-black/98 flex items-center justify-center p-4 md:p-10 backdrop-blur-3xl">
-                <button onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); setSelectedVideo(null); }} className="absolute top-6 right-6 md:top-10 md:right-10 text-aom-text-light p-3 md:p-4 bg-aom-night-card rounded-full z-50 hover:bg-aom-orange/20 transition-all"><X size={28} /></button>
+                <button onClick={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); setSelectedVideo(null); }} className="absolute top-6 right-6 md:top-10 md:right-10 text-aom-text-light p-3 md:p-4 bg-aom-night-card rounded-full z-50 hover:bg-aom-orange/20 transition-all" aria-label="Close video player"><X size={28} /></button>
                 <div className="w-[96vw] h-[90vh] md:w-[92vw] md:h-[88vh] bg-aom-night shadow-2xl relative border border-white/10">
                   <iframe
                     ref={playerFrameRef}
@@ -1010,13 +1011,13 @@ export default function App() {
                       className="h-full bg-orange-600 shadow-[0_0_15px_#FF4F00]"
                     />
                   </div>
-                  <button onClick={closeBrief} className="absolute top-8 right-8 text-white/30 hover:text-white transition-colors z-40" disabled={isSubmitting}><X size={24} /></button>
+                  <button onClick={closeBrief} className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors z-40" disabled={isSubmitting} aria-label="Close brief form"><X size={24} /></button>
                   {!isSuccess && !isError ? (
                     <div className="space-y-10 relative z-10">
                       <div>
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-3xl font-headline font-extrabold text-white uppercase tracking-tighter">Start Brief<span className="text-orange-600">.</span></h2>
-                            <span className="text-xs font-body text-white/30 font-bold tracking-widest uppercase">Step {step} of 3</span>
+                            <span className="text-xs font-body text-white/50 font-bold tracking-widest uppercase">Step {step} of 3</span>
                         </div>
                         {selectedIntent && step === 1 && ( <div className="inline-flex items-center gap-2 bg-orange-600/10 border border-orange-600/20 px-3 py-1.5"><span className="text-orange-600 text-xs font-extrabold uppercase tracking-widest">{selectedIntent.title}</span></div> )}
                       </div>
@@ -1025,30 +1026,30 @@ export default function App() {
                           <motion.div key="step1" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
                             <div className="space-y-6">
                                 <div>
-                                    <label className="text-xs font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-2 block">Your Name</label>
-                                    <input type="text" placeholder="FULL NAME" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-white/10 transition-colors" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                                    <label className="text-xs font-body font-bold text-white/50 uppercase tracking-[0.3em] mb-2 block">Your Name</label>
+                                    <input type="text" placeholder="FULL NAME" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-white/30 transition-colors" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-2 block">Direct Email</label>
-                                    <input type="email" placeholder="EMAIL@DOMAIN.COM" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-white/10 transition-colors" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                                    <label className="text-xs font-body font-bold text-white/50 uppercase tracking-[0.3em] mb-2 block">Direct Email</label>
+                                    <input type="email" placeholder="EMAIL@DOMAIN.COM" className="w-full bg-transparent border-b border-white/10 py-4 outline-none focus:border-orange-600 uppercase font-bold text-sm text-white placeholder:text-white/30 transition-colors" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                                 </div>
                             </div>
-                            <button onClick={() => setStep(2)} disabled={!isStep1Valid} className={`w-full py-5 font-extrabold uppercase shadow-xl transition-all text-sm tracking-widest ${isStep1Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}>Next Step</button>
-                            <p className="text-xs text-white/30 font-body text-center uppercase tracking-widest">A creative lead will reply within 24 hours.</p>
+                            <button onClick={() => setStep(2)} disabled={!isStep1Valid} className={`w-full py-5 font-extrabold uppercase shadow-xl transition-all text-sm tracking-widest ${isStep1Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-white/5 text-white/40 cursor-not-allowed'}`}>Next Step</button>
+                            <p className="text-xs text-white/50 font-body text-center uppercase tracking-widest">A creative lead will reply within 24 hours.</p>
                           </motion.div>
                         )}
                         {step === 2 && (
                           <motion.div key="step2" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
                              <div className="p-4 border border-orange-600/20 bg-orange-600/5">
-                                <p className="text-[8px] font-body text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles size={10}/> Logic Preview</p>
+                                <p className="text-[10px] font-body text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Sparkles size={10}/> Logic Preview</p>
                                 <div className="flex gap-4">
-                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Goal</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter">{formData.goal || 'PENDING'}</p></div>
-                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Platform</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter">{formData.placement || 'PENDING'}</p></div>
+                                  <div><p className="text-[10px] text-white/30 uppercase font-bold">Goal</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter">{formData.goal || 'PENDING'}</p></div>
+                                  <div><p className="text-[10px] text-white/30 uppercase font-bold">Platform</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter">{formData.placement || 'PENDING'}</p></div>
                                 </div>
                              </div>
                              <div className="space-y-6">
                                 <div>
-                                    <label className="text-xs font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">Primary Objective</label>
+                                    <label className="text-xs font-body font-bold text-white/50 uppercase tracking-[0.3em] mb-4 block">Primary Objective</label>
                                     <div className="flex flex-wrap gap-2">
                                         {GOAL_OPTIONS.map(g => (
                                             <button key={g} onClick={() => setFormData({...formData, goal: g})} className={`px-4 py-2 border text-xs font-extrabold uppercase transition-all tracking-widest ${formData.goal === g ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.3)]' : 'border-white/5 bg-white/5 text-white/60 hover:border-white/20'}`}>{g}</button>
@@ -1056,15 +1057,15 @@ export default function App() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">What's the challenge?</label>
-                                    <textarea maxLength={180} placeholder="We're growing but nobody knows it. We need content that shows the work we do." className="w-full bg-white/5 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-white/10 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
+                                    <label className="text-xs font-body font-bold text-white/50 uppercase tracking-[0.3em] mb-4 block">What's the challenge?</label>
+                                    <textarea maxLength={180} placeholder="We're growing but nobody knows it. We need content that shows the work we do." className="w-full bg-white/5 border border-white/5 p-4 outline-none focus:border-orange-600 uppercase font-bold text-xs text-white h-24 resize-none placeholder:text-white/30 transition-colors" value={formData.problem} onChange={(e) => setFormData({...formData, problem: e.target.value})} />
                                     <div className="flex justify-between mt-2">
                                         {formData.problem.length < 15 && <span className="text-xs font-body text-orange-500/60 uppercase animate-pulse">Min. 15 characters required</span>}
                                         <span className="text-xs font-body text-white/20 ml-auto">{formData.problem.length}/180</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">Asset Placement</label>
+                                    <label className="text-xs font-body font-bold text-white/50 uppercase tracking-[0.3em] mb-4 block">Asset Placement</label>
                                     <div className="flex flex-wrap gap-2">
                                         {PLACEMENT_OPTIONS.map(p => (
                                             <button key={p} onClick={() => setFormData({...formData, placement: p})} className={`px-4 py-2 border text-xs font-extrabold uppercase transition-all tracking-widest ${formData.placement === p ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'border-white/5 bg-white/5 text-white/60 hover:border-white/20'}`}>{p}</button>
@@ -1074,23 +1075,23 @@ export default function App() {
                              </div>
                              <div className="flex gap-4">
                                 <button onClick={() => setStep(1)} className="px-8 py-5 border border-white/5 bg-white/5 text-white/60 font-extrabold uppercase text-xs tracking-widest hover:text-white transition-all">Back</button>
-                                <button onClick={() => setStep(3)} disabled={!isStep2Valid} className={`flex-grow py-5 font-extrabold uppercase shadow-xl transition-all text-sm tracking-widest ${isStep2Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}>Set Logistics</button>
+                                <button onClick={() => setStep(3)} disabled={!isStep2Valid} className={`flex-grow py-5 font-extrabold uppercase shadow-xl transition-all text-sm tracking-widest ${isStep2Valid ? 'bg-orange-600 text-white hover:bg-orange-500' : 'bg-white/5 text-white/40 cursor-not-allowed'}`}>Set Logistics</button>
                              </div>
                           </motion.div>
                         )}
                         {step === 3 && (
                           <motion.div key="step3" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
                              <div className="p-4 border border-orange-600/20 bg-orange-600/5">
-                                <p className="text-[8px] font-body text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Clock3 size={10}/> Strategy Summary</p>
+                                <p className="text-[10px] font-body text-orange-600/60 uppercase tracking-widest mb-3 flex items-center gap-2"><Clock3 size={10}/> Strategy Summary</p>
                                 <div className="grid grid-cols-3 gap-4">
-                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Goal</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter truncate">{formData.goal}</p></div>
-                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Timing</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter">{formData.timing || 'PENDING'}</p></div>
-                                  <div><p className="text-[8px] text-white/30 uppercase font-bold">Tier</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter">{formData.budget || 'PENDING'}</p></div>
+                                  <div><p className="text-[10px] text-white/30 uppercase font-bold">Goal</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter truncate">{formData.goal}</p></div>
+                                  <div><p className="text-[10px] text-white/30 uppercase font-bold">Timing</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter">{formData.timing || 'PENDING'}</p></div>
+                                  <div><p className="text-[10px] text-white/30 uppercase font-bold">Tier</p><p className="text-xs text-white uppercase font-extrabold tracking-tighter">{formData.budget || 'PENDING'}</p></div>
                                 </div>
                              </div>
                              <div className="space-y-8">
                                 <div>
-                                    <label className="text-xs font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block">Preferred Timeline</label>
+                                    <label className="text-xs font-body font-bold text-white/50 uppercase tracking-[0.3em] mb-4 block">Preferred Timeline</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         {TIMING_OPTIONS.map(t => (
                                             <button key={t} onClick={() => setFormData({...formData, timing: t})} className={`px-4 py-3 border text-xs font-extrabold uppercase transition-all tracking-widest text-left ${formData.timing === t ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_15px_rgba(255,79,0,0.3)]' : 'border-white/5 bg-white/5 text-white/60 hover:border-white/20'}`}>{t}</button>
@@ -1099,7 +1100,7 @@ export default function App() {
                                     {!formData.timing && <p className="text-xs font-body text-orange-500/60 uppercase mt-3 text-left">Select timing to enable budget tiers</p>}
                                 </div>
                                 <div>
-                                    <label className="text-xs font-body font-bold text-white/30 uppercase tracking-[0.3em] mb-4 block text-left">What's your budget? <span className="text-white/20 font-normal tracking-normal lowercase">(This submits your brief)</span></label>
+                                    <label className="text-xs font-body font-bold text-white/50 uppercase tracking-[0.3em] mb-4 block text-left">What's your budget? <span className="text-white/20 font-normal tracking-normal lowercase">(This submits your brief)</span></label>
                                     <div className="space-y-2">
                                         {BUDGET_OPTIONS.map(o => {
                                           const isActive = pendingBudget === o && isSubmitting;
@@ -1149,10 +1150,10 @@ export default function App() {
                         <div className="mt-8 p-6 border border-white/5 bg-white/5 text-left space-y-4">
                             <p className="text-xs font-body text-white/60 uppercase tracking-[0.2em] mb-2 flex items-center gap-2"><Target size={10} className="text-orange-600"/> Brief Summary:</p>
                             <div className="grid grid-cols-2 gap-4 border-l-2 border-orange-600 pl-4">
-                                <div><p className="text-[8px] text-white/30 uppercase font-bold">Goal</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.goal}</p></div>
-                                <div><p className="text-[8px] text-white/30 uppercase font-bold">Placement</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.placement}</p></div>
-                                <div><p className="text-[8px] text-white/30 uppercase font-bold">Timing</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.timing}</p></div>
-                                <div><p className="text-[8px] text-white/30 uppercase font-bold">Budget</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.budget}</p></div>
+                                <div><p className="text-[10px] text-white/30 uppercase font-bold">Goal</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.goal}</p></div>
+                                <div><p className="text-[10px] text-white/30 uppercase font-bold">Placement</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.placement}</p></div>
+                                <div><p className="text-[10px] text-white/30 uppercase font-bold">Timing</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.timing}</p></div>
+                                <div><p className="text-[10px] text-white/30 uppercase font-bold">Budget</p><p className="text-xs font-extrabold uppercase text-white leading-tight tracking-tighter">{formData.budget}</p></div>
                             </div>
                         </div>
                         <p className="text-white/60 text-xs mt-10 leading-relaxed font-body uppercase tracking-widest max-w-sm mx-auto">We've archived your brief. A creative lead will review and contact you via <span className="text-white">{formData.email}</span> shortly.</p>

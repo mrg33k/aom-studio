@@ -96,11 +96,11 @@ export default function ConstructionCallout({ openBrief }) {
                 AMBITION MECHANICAL
               </h3>
 
-              <p className="text-white/50 text-base leading-relaxed mb-2 font-body">
+              <p className="text-white/70 text-base leading-relaxed mb-2 font-body">
                 One HVAC company that decided their brand should match the quality of their work. Website, social media, and a content engine that runs every month.
               </p>
 
-              <p className="text-white/50 text-base leading-relaxed mb-6 font-body">
+              <p className="text-white/70 text-base leading-relaxed mb-6 font-body">
                 The result: a digital presence that recruits talent, wins contracts, and makes general contractors take notice.
               </p>
 
@@ -108,11 +108,11 @@ export default function ConstructionCallout({ openBrief }) {
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="p-4 border border-white/10 bg-white/5">
                   <p className="font-headline text-3xl font-extrabold text-aom-orange">30+</p>
-                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Posts / Month</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/60 mt-1">Posts / Month</p>
                 </div>
                 <div className="p-4 border border-white/10 bg-white/5">
                   <p className="font-headline text-3xl font-bold text-aom-orange">Monthly</p>
-                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Filming + Posting</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/60 mt-1">Filming + Posting</p>
                 </div>
               </div>
 

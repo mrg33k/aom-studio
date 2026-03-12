@@ -85,7 +85,7 @@ export default function AITeaser() {
                       {step.label}
                     </span>
                     <div className="flex-1 border-t border-dashed border-aom-sage/20" />
-                    <span className={`font-body text-sm ${
+                    <span className={`font-body text-base ${
                       step.label === 'system' ? 'text-aom-sage font-medium' : 'text-aom-text-light'
                     }`}>
                       {step.value}
@@ -160,13 +160,13 @@ export default function AITeaser() {
                 {status === 'success' ? (
                   <div className="flex items-center gap-3 p-4 border border-aom-sage/30 bg-aom-sage/10">
                     <Check size={18} className="text-aom-sage shrink-0" />
-                    <p className="font-body text-sm text-aom-sage">
+                    <p className="font-body text-base text-aom-sage">
                       You're on the list. We'll reach out when it's your turn.
                     </p>
                   </div>
                 ) : status === 'error' ? (
                   <div className="flex items-center gap-3 p-4 border border-red-600/30 bg-red-600/10">
-                    <p className="font-body text-sm text-red-400">
+                    <p className="font-body text-base text-red-400">
                       Something went wrong. Try again in a moment.
                     </p>
                   </div>

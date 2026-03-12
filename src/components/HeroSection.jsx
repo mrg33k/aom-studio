@@ -95,7 +95,7 @@ export default function HeroSection({ openBrief, scrollToSection }) {
           className="absolute inset-0 w-full h-full border-none transition-opacity duration-[1500ms] ease-in-out"
           loading="eager"
           style={{
-            opacity: visible ? 0.7 : 0,
+            opacity: visible ? 0.55 : 0,
             filter: 'grayscale(0.15) contrast(1.15)',
             transform: `scale(${1.15 + scrollY * 0.0001})`,
             transformOrigin: 'center center',
@@ -104,7 +104,7 @@ export default function HeroSection({ openBrief, scrollToSection }) {
           tabIndex={-1}
         />
         {/* Dark overlay for readability */}
-        <div className="absolute inset-0 bg-aom-night/[0.45]" />
+        <div className="absolute inset-0 bg-aom-night/[0.55]" />
         {/* Vignette */}
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #0C0C0C 100%)' }} />
         {/* Bottom gradient fade into next section */}

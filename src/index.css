@@ -9,6 +9,33 @@ html {
   scroll-padding-top: 72px;
 }
 
+/* A11y: Focus-visible outline for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #E85D26;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* A11y: Skip to content link (hidden until focused) */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: #E85D26;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 0;
+}
+
 /* FIX: Prevent mobile horizontal overflow / scroll jitter */
 *, *::before, *::after {
   box-sizing: border-box;

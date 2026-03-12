@@ -24,7 +24,7 @@ export default function BrandsCallout({ openBrief }) {
   return (
     <section id="brands" className="py-16 md:py-24 bg-aom-night relative overflow-hidden" aria-label="Brands and corporate">
       {/* Dotted texture accent */}
-      <div className="absolute top-20 right-16 pointer-events-none opacity-[0.06]">
+      <div className="absolute top-20 right-16 pointer-events-none opacity-[0.06]" aria-hidden="true">
         <svg width="100" height="100">
           {Array.from({ length: 7 }).map((_, x) =>
             Array.from({ length: 7 }).map((_, y) => (
@@ -95,11 +95,11 @@ export default function BrandsCallout({ openBrief }) {
                 VIRTU HOSPITALITY GROUP
               </h3>
 
-              <p className="text-white/50 text-base leading-relaxed mb-2 font-body">
+              <p className="text-white/70 text-base leading-relaxed mb-2 font-body">
                 "They didn't just shoot beautiful footage. They showed people the place I created had legacy."
               </p>
 
-              <p className="text-aom-orange text-sm leading-relaxed mb-6 font-body">
+              <p className="text-aom-orange text-base leading-relaxed mb-6 font-body">
                 Gio Osso, Virtu Hospitality Group
               </p>
 
@@ -107,11 +107,11 @@ export default function BrandsCallout({ openBrief }) {
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="p-4 border border-white/10 bg-white/5">
                   <p className="font-headline text-3xl font-extrabold text-aom-orange">3</p>
-                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Venue Launches</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/60 mt-1">Venue Launches</p>
                 </div>
                 <div className="p-4 border border-white/10 bg-white/5">
                   <p className="font-headline text-3xl font-extrabold text-aom-orange">50+</p>
-                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/40 mt-1">Projects Delivered</p>
+                  <p className="font-body text-xs uppercase tracking-[0.15em] text-white/60 mt-1">Projects Delivered</p>
                 </div>
               </div>
 
