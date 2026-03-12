@@ -46,3 +46,72 @@ html, body {
   margin: 0;
   padding: 0;
 }
+
+/* ROI Calculator: Custom range slider */
+.slider-orange {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #D9D3CB33;
+  outline: none;
+  cursor: pointer;
+}
+.slider-orange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #E85D26;
+  border: 2px solid #0C0C0C;
+  box-shadow: 0 0 12px rgba(232, 93, 38, 0.3);
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.slider-orange::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 16px rgba(232, 93, 38, 0.5);
+}
+.slider-orange::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #E85D26;
+  border: 2px solid #0C0C0C;
+  box-shadow: 0 0 12px rgba(232, 93, 38, 0.3);
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.slider-orange::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 16px rgba(232, 93, 38, 0.5);
+}
+.slider-orange::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #D9D3CB33;
+}
+/* Larger touch target on mobile */
+@media (max-width: 767px) {
+  .slider-orange::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  .slider-orange::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* ROI Calculator: CTA glow pulse */
+.cta-glow {
+  animation: ctaGlow 2s ease-in-out infinite;
+}
+@keyframes ctaGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(232, 93, 38, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(232, 93, 38, 0.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow { animation: none; }
+}

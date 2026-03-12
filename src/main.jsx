@@ -25,6 +25,7 @@ import IdeasTracker from './pages/IdeasTracker.jsx'
 import GuidesHub from './pages/GuidesHub.jsx'
 import GuideAmbitionCrown from './pages/GuideAmbitionCrown.jsx'
 import GuideAmbitionMemorialTower from './pages/GuideAmbitionMemorialTower.jsx'
+import ROICalculator from './pages/ROICalculator.jsx'
 import './index.css'
 
 const Dashboard = lazy(() => import('./dashboard/Dashboard.jsx'))
@@ -72,6 +73,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/guides" element={<GuidesHub />} />
           <Route path="/guides/ambition-crown" element={<GuideAmbitionCrown />} />
           <Route path="/guides/ambition-memorial-tower" element={<GuideAmbitionMemorialTower />} />
+          <Route path="/roi-calculator" element={<ROICalculator />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>
