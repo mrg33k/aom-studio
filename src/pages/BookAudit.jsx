@@ -217,7 +217,10 @@ export default function BookAudit() {
                   Request Your Session
                 </p>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} action={FORMSPREE_ENDPOINT} method="POST" className="space-y-5">
+                  <input type="hidden" name="_subject" value="[AOM] Audit Booking Request" />
+                  <input type="hidden" name="type" value="audit-booking" />
+                  <input type="hidden" name="teamSize" value={form.size} />
                   {/* Name */}
                   <div>
                     <label className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#9A9189] block mb-2">
@@ -225,6 +228,7 @@ export default function BookAudit() {
                     </label>
                     <input
                       type="text"
+                      name="name"
                       required
                       value={form.name}
                       onChange={(e) => handleChange('name', e.target.value)}
@@ -240,6 +244,7 @@ export default function BookAudit() {
                     </label>
                     <input
                       type="email"
+                      name="email"
                       required
                       value={form.email}
                       onChange={(e) => handleChange('email', e.target.value)}
@@ -255,6 +260,7 @@ export default function BookAudit() {
                     </label>
                     <input
                       type="tel"
+                      name="phone"
                       value={form.phone}
                       onChange={(e) => handleChange('phone', e.target.value)}
                       placeholder="(555) 123-4567"
@@ -269,6 +275,7 @@ export default function BookAudit() {
                     </label>
                     <input
                       type="text"
+                      name="company"
                       required
                       value={form.company}
                       onChange={(e) => handleChange('company', e.target.value)}
@@ -306,6 +313,7 @@ export default function BookAudit() {
                       Anything we should know?
                     </label>
                     <textarea
+                      name="message"
                       value={form.message}
                       onChange={(e) => handleChange('message', e.target.value)}
                       placeholder="Your biggest bottleneck, what prompted you to look into this, timeline, etc."

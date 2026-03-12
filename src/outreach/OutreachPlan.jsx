@@ -10,100 +10,89 @@ const PURPLE = '#a78bfa'
 const CYAN = '#22d3ee'
 const MUTED = '#8A847C'
 
-// ─── STATIC DATA (multi-touch + schedule stay hardcoded) ────────────────────
+// ─── CURRENT PIPELINE DATA (Updated Mar 12, 2026) ─────────────────────────────
+
+const PIPELINE_DATA = {
+  totalContactsReached: 320,
+  totalEmailsSent: 51,
+  batchesSent: 5,
+  replyRate: 0.7,
+  bounces: 2,
+  warmLeads: [
+    { name: 'Elijah Salazar', company: 'Sure Leverage Funding', status: 'Replied Feb 23-25. Needs response from Patrik. 14+ days waiting.', priority: 'RED' },
+    { name: 'Keep It Cut', company: 'Keep It Cut', status: 'Oct 2025 contact. AOM portfolio client. Check if relationship active.', priority: 'WARM' },
+  ],
+  cpasDraftsPending: 33,
+  partnershipDraftsReady: 5,
+  newProspectsResearched: 10,
+}
+
+const BATCH_HISTORY = [
+  { id: 1, date: 'Feb 18-19', name: 'Tech/SaaS + Agencies', count: '~90', status: 'sent', notes: 'First big batch. Defense, agencies, nonprofits, tech.' },
+  { id: 2, date: 'Feb 22-23', name: 'Tech/SaaS + Nonprofits', count: '~90', status: 'sent', notes: '2 replies (Elijah Salazar, Paige Soucie). Paige is DEAD/DNC.' },
+  { id: 3, date: 'Feb 28', name: 'Apollo Pipeline', count: '37', status: 'sent', notes: 'Apollo-enriched contacts. All credits used. Follow-ups sent Mar 11.' },
+  { id: 4, date: 'Mar 8-10', name: 'Check-ins + Hook Emails', count: '53', status: 'sent', notes: 'Follow-ups on Feb batches. 19 by Jacob, 16 by Patrik, 18 hooks.' },
+  { id: 5, date: 'Mar 12', name: 'Construction + Partnerships', count: '18', status: 'sent', notes: '15 construction cold (HVAC, roofing, restoration, landscaping) + 3 partnership emails. 1 bounced (Midstate Mechanical).' },
+]
+
+const STRATEGIC_SHIFTS = [
+  {
+    title: 'V2 Email Template',
+    status: 'IN PROGRESS',
+    color: YELLOW,
+    desc: 'Complete rewrite. Zero-risk offer framework, social proof from Ambition Mechanical + Included Health, new subject lines tested.',
+  },
+  {
+    title: 'Niche Database: AZ ROC',
+    status: 'GOLD MINE',
+    color: GREEN,
+    desc: 'Arizona Registrar of Contractors has 45k+ licensed contractors as free CSV download. Eliminates need for paid enrichment tools.',
+  },
+  {
+    title: 'Separate Outreach Domains',
+    status: 'RECOMMENDED',
+    color: ORANGE,
+    desc: 'Protect aom-inhouse.com deliverability. Dedicated domains for cold outreach prevent primary domain reputation damage.',
+  },
+  {
+    title: 'Cold Email Analysis',
+    status: 'COMPLETE',
+    color: GREEN,
+    desc: '10 actionable improvements identified. Shorter emails, curiosity-driven subjects, clear CTAs, less pitch, more value.',
+  },
+  {
+    title: 'Offer Framework',
+    status: 'IN PROGRESS',
+    color: YELLOW,
+    desc: 'Shifting from "hire us" to zero-risk entry: free 15-min video audit of their social presence. Lower barrier, higher conversion.',
+  },
+]
+
+const KEY_FINDINGS = [
+  { label: 'Zero-risk offer framework needed', desc: 'Current pitch asks too much too early. Free audit or teardown video drops the barrier.' },
+  { label: 'Separate outreach domains needed', desc: 'Sending cold from primary domain risks deliverability for all AOM email.' },
+  { label: 'AZ ROC database = gold mine', desc: '45k+ contractors with license numbers, categories, and addresses. Free CSV. No Apollo needed.' },
+  { label: 'Subject lines need work', desc: '"Quick question about your [X]" is overused. Curiosity-driven, observation-based subjects perform better.' },
+  { label: 'Construction vertical is right', desc: 'Highest retainer potential ($3k/month). Underserved by serious social. Budgets are there.' },
+  { label: 'CPA partnerships > cold CPA outreach', desc: 'CPAs refer. Partnering with 3 good CPAs = access to 50+ construction clients each.' },
+]
 
 const MULTI_TOUCH_FLOW = [
-  { step: 1, label: 'Cold Email', timing: 'Day 0', desc: 'Personalized first touch. Industry-specific angle. Not a template.', color: ORANGE },
-  { step: 2, label: 'Follow-Up', timing: 'Day 5', desc: 'Different angle. Not a bump. New observation about their business.', color: YELLOW },
-  { step: 3, label: 'Final Touch', timing: 'Day 12', desc: 'Shorter. Direct. Last chance before archive.', color: RED },
-  { step: 4, label: 'LinkedIn / IG', timing: 'Day 14+', desc: 'Social touch. Connect, engage with their content. No pitch.', color: PURPLE },
+  { step: 1, label: 'Cold Email', timing: 'Day 0', desc: 'Personalized first touch. Industry-specific angle. Not a template. Observation about their business.', color: ORANGE },
+  { step: 2, label: 'Follow-Up', timing: 'Day 5-7', desc: 'Different angle. Not a bump. New observation or a free value-add (teardown, comparison, tip).', color: YELLOW },
+  { step: 3, label: 'Final Touch', timing: 'Day 12-14', desc: 'Shorter. Direct. Last chance before archive. "Figured I\'d try one more time."', color: RED },
+  { step: 4, label: 'LinkedIn / IG', timing: 'Day 14+', desc: 'Social touch. Connect, engage with their content. No pitch. Build familiarity.', color: PURPLE },
 ]
 
-const THIRTY_DAY_SCHEDULE = [
-  { day: 1, date: 'Mar 8', count: 20, type: 'Check-ins + Priority Replies', industry: 'Construction, Hospitality, RE, Events', status: 'done' },
-  { day: 2, date: 'Mar 9', count: 18, type: 'Check-ins continued', industry: 'Feb 28 batch', status: 'done' },
-  { day: 3, date: 'Mar 10', count: 15, type: 'Hook emails', industry: 'Tech/SaaS, Nonprofit', status: 'done' },
-  { day: 4, date: 'Mar 11', count: 19, type: 'Tier 1 ICP Re-Engagement', industry: 'Healthcare, Real Estate', status: 'today' },
-  { day: 5, date: 'Mar 12', count: 17, type: 'Tier 2 ICP First-Touch', industry: 'Construction, Healthcare', status: 'drafted' },
-  { day: 6, date: 'Mar 13', count: 15, type: 'Tier 2 ICP Continued', industry: 'Construction, Healthcare', status: 'drafted' },
-  { day: 7, date: 'Mar 14', count: 0, type: 'Weekend', industry: '', status: 'rest' },
-  { day: 8, date: 'Mar 15', count: 15, type: 'Re-intro (Agency batch)', industry: 'Agencies', status: 'planned' },
-  { day: 9, date: 'Mar 16', count: 15, type: 'Hook emails', industry: 'Nonprofit', status: 'planned' },
-  { day: 10, date: 'Mar 17', count: 15, type: 'Tier 2 ICP First-Touch', industry: 'Real Estate', status: 'planned' },
-  { day: 11, date: 'Mar 18', count: 16, type: 'Tier 2 ICP First-Touch', industry: 'Real Estate', status: 'planned' },
-  { day: 12, date: 'Mar 19', count: 15, type: 'Tier 2 ICP First-Touch', industry: 'Nonprofit', status: 'planned' },
-  { day: 13, date: 'Mar 20', count: 15, type: 'Re-intro (Oct 2025)', industry: 'Construction, RE', status: 'planned' },
-  { day: 14, date: 'Mar 21', count: 0, type: 'Weekend', industry: '', status: 'rest' },
-  { day: 15, date: 'Mar 22', count: 15, type: 'Tier 1 Warm Re-Engage', industry: 'Healthcare', status: 'planned' },
-  { day: 16, date: 'Mar 23', count: 15, type: 'Tier 1 Warm Re-Engage', industry: 'Real Estate', status: 'planned' },
-  { day: 17, date: 'Mar 24', count: 15, type: 'Tier 3 Cold Ghost Re-intro', industry: 'Construction', status: 'planned' },
-  { day: 18, date: 'Mar 25', count: 15, type: 'Tier 2 ICP First-Touch', industry: 'Health/Fitness', status: 'planned' },
-  { day: 19, date: 'Mar 26', count: 15, type: 'Hook emails', industry: 'Nonprofit', status: 'planned' },
-  { day: 20, date: 'Mar 27', count: 15, type: 'Tier 3 Cold Ghost Re-intro', industry: 'Real Estate', status: 'planned' },
-  { day: 21, date: 'Mar 28', count: 0, type: 'Weekend', industry: '', status: 'rest' },
-  { day: 22, date: 'Mar 29', count: 15, type: 'Tier 3 Cold Ghost Re-intro', industry: 'Real Estate', status: 'planned' },
-  { day: 23, date: 'Mar 30', count: 15, type: 'Hook emails', industry: 'Events/Culture', status: 'planned' },
-  { day: 24, date: 'Mar 31', count: 15, type: 'Tier 2 ICP First-Touch', industry: 'Sports/Events', status: 'planned' },
-  { day: 25, date: 'Apr 1', count: 15, type: 'Hook emails', industry: 'Tech/SaaS', status: 'planned' },
-  { day: 26, date: 'Apr 2', count: 15, type: 'Hook emails', industry: 'Defense, Healthcare', status: 'planned' },
-  { day: 27, date: 'Apr 3', count: 15, type: 'Tier 3 Cold Ghost Re-intro', industry: 'Healthcare', status: 'planned' },
-  { day: 28, date: 'Apr 4', count: 0, type: 'Weekend', industry: '', status: 'rest' },
-  { day: 29, date: 'Apr 5', count: 15, type: 'Hook emails', industry: 'Tech/SaaS', status: 'planned' },
-  { day: 30, date: 'Apr 6', count: 15, type: 'Buffer / Review / Q2 Plan', industry: 'All', status: 'planned' },
+const ICP_INDUSTRIES = [
+  { name: 'Construction', count: 76, color: ORANGE, priority: 'TOP', why: 'Target vertical for $3k/month retainers. 15 new cold emails Mar 12. AZ ROC has 45k+ leads.' },
+  { name: 'Nonprofit', count: 87, color: GREEN, priority: 'MODERATE', why: 'Strong story potential, tighter budgets. Documentary-style projects, not retainers.' },
+  { name: 'Real Estate', count: 61, color: BLUE, priority: 'HIGH', why: 'Brokers want listings content and agent recruiting videos. Good for project-based.' },
+  { name: 'Healthcare', count: 46, color: CYAN, priority: 'NICHE', why: 'Some are national/government-adjacent. Included Health ($9k) proves the model.' },
+  { name: 'Hospitality', count: 18, color: YELLOW, priority: 'GOOD', why: 'Restaurants, resorts, event venues. Social content is a natural fit.' },
+  { name: 'CPA / Partnerships', count: 21, color: PURPLE, priority: 'STRATEGIC', why: '18 CPA cold emails + 5 partnership emails. CPAs refer construction clients. Force multiplier.' },
+  { name: 'Events', count: 8, color: '#f472b6', priority: 'NICHE', why: 'Event coverage, recap videos. Project-based with repeat potential.' },
 ]
-
-// ─── FALLBACK DATA (used if API is unreachable) ─────────────────────────────
-const FALLBACK_PIPELINE = {
-  icpContacts: 281,
-  offIcpContacts: 431,
-  totalContacts: 712,
-  statusCounts: { no_response: 706, replied: 4, meeting: 0, closed: 0, dead: 0 },
-  icpByIndustry: {
-    Construction: { total: 61, no_response: 61, replied: 0 },
-    'Real Estate': { total: 61, no_response: 61, replied: 0 },
-    Hospitality: { total: 18, no_response: 18, replied: 0 },
-    Nonprofit: { total: 87, no_response: 87, replied: 0 },
-    Healthcare: { total: 46, no_response: 46, replied: 0 },
-    Events: { total: 8, no_response: 8, replied: 0 },
-  },
-  offIcpByIndustry: {
-    'Tech/SaaS': { total: 280 },
-    Defense: { total: 8 },
-    'Media/Agency': { total: 25 },
-    'Research/Energy': { total: 12 },
-    Other: { total: 5 },
-  },
-  batches: {},
-  lastUpdated: null,
-}
-
-// Industry display config
-const INDUSTRY_COLORS = {
-  Construction: ORANGE,
-  'Real Estate': BLUE,
-  Hospitality: YELLOW,
-  Nonprofit: GREEN,
-  Healthcare: CYAN,
-  Events: PURPLE,
-}
-
-const INDUSTRY_PRIORITY = {
-  Construction: 'TOP',
-  'Real Estate': 'HIGH',
-  Hospitality: 'GOOD',
-  Nonprofit: 'MODERATE',
-  Healthcare: 'NICHE',
-  Events: 'NICHE',
-}
-
-const INDUSTRY_WHY = {
-  Construction: 'Target vertical for $3k/month retainers. Highest value in the pipeline.',
-  'Real Estate': 'Brokers want listings content and agent recruiting videos. Good for project-based.',
-  Hospitality: 'Restaurants, resorts, event venues. Social content is a natural fit. Retainer candidates.',
-  Nonprofit: 'Strong story potential, tighter budgets. Documentary-style projects, not retainers.',
-  Healthcare: 'Niche. Some are national/government-adjacent. Worth one touch for the right ones.',
-  Events: 'Event coverage, recap videos. Project-based with repeat potential.',
-}
 
 // ─── UTILITY COMPONENTS ───────────────────────────────────────────────────────
 
@@ -112,27 +101,28 @@ function StatCard({ label, value, sub, color = '#fff', large = false }) {
     <div style={{
       background: '#151515',
       border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 12,
       padding: large ? '28px 24px' : '20px 20px',
       flex: '1 1 200px',
       minWidth: 180,
     }}>
       <div style={{
         fontSize: large ? 40 : 32,
-        fontWeight: 700,
+        fontWeight: 900,
+        fontStyle: 'italic',
         color: color,
         letterSpacing: '-0.02em',
         lineHeight: 1.1,
+        fontFamily: "'Inter Tight', 'Inter', sans-serif",
       }}>{value}</div>
       <div style={{
-        fontSize: 15,
-        color: '#F0ECE6',
+        fontSize: 16,
+        color: '#F5F0EB',
         marginTop: 6,
         fontWeight: 500,
       }}>{label}</div>
       {sub && (
         <div style={{
-          fontSize: 13,
+          fontSize: 14,
           color: MUTED,
           marginTop: 4,
         }}>{sub}</div>
@@ -146,13 +136,16 @@ function SectionTitle({ children, sub }) {
     <div style={{ marginBottom: 24, marginTop: 48 }}>
       <h2 style={{
         fontSize: 28,
-        fontWeight: 700,
-        color: '#F0ECE6',
+        fontWeight: 900,
+        fontStyle: 'italic',
+        textTransform: 'uppercase',
         letterSpacing: '-0.02em',
+        color: '#F5F0EB',
         lineHeight: 1.2,
+        fontFamily: "'Inter Tight', 'Inter', sans-serif",
       }}>{children}</h2>
       {sub && (
-        <p style={{ fontSize: 15, color: MUTED, marginTop: 6 }}>{sub}</p>
+        <p style={{ fontSize: 16, color: MUTED, marginTop: 6 }}>{sub}</p>
       )}
     </div>
   )
@@ -163,19 +156,18 @@ function TierBar({ label, count, maxCount, color, sub }) {
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-        <span style={{ fontSize: 15, color: '#F0ECE6', fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 16, color: '#F5F0EB', fontWeight: 500 }}>{label}</span>
         <span style={{ fontSize: 20, fontWeight: 700, color }}>{count}</span>
       </div>
-      <div style={{ background: '#1A1A1A', borderRadius: 6, height: 10, overflow: 'hidden' }}>
+      <div style={{ background: '#1A1A17', height: 10, overflow: 'hidden' }}>
         <div style={{
           width: `${pct}%`,
           height: '100%',
           background: color,
-          borderRadius: 6,
           transition: 'width 0.6s ease',
         }} />
       </div>
-      {sub && <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>{sub}</div>}
     </div>
   )
 }
@@ -187,14 +179,13 @@ function FlowStep({ step, label, timing, desc, color, isLast }) {
         <div style={{
           width: 40,
           height: 40,
-          borderRadius: '50%',
           background: color,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 18,
           fontWeight: 700,
-          color: '#020202',
+          color: '#0A0A08',
           flexShrink: 0,
         }}>{step}</div>
         {!isLast && (
@@ -208,17 +199,16 @@ function FlowStep({ step, label, timing, desc, color, isLast }) {
       </div>
       <div style={{ paddingBottom: isLast ? 0 : 32, flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 18, fontWeight: 600, color: '#F0ECE6' }}>{label}</span>
+          <span style={{ fontSize: 18, fontWeight: 600, color: '#F5F0EB' }}>{label}</span>
           <span style={{
             fontSize: 13,
-            fontWeight: 500,
+            fontWeight: 600,
             color: color,
             background: `${color}18`,
             padding: '2px 10px',
-            borderRadius: 20,
           }}>{timing}</span>
         </div>
-        <p style={{ fontSize: 15, color: MUTED, marginTop: 6, lineHeight: 1.5 }}>{desc}</p>
+        <p style={{ fontSize: 16, color: MUTED, marginTop: 6, lineHeight: 1.6 }}>{desc}</p>
       </div>
     </div>
   )
@@ -226,52 +216,55 @@ function FlowStep({ step, label, timing, desc, color, isLast }) {
 
 function StatusBadge({ status }) {
   const configs = {
-    done: { bg: `${GREEN}20`, color: GREEN, label: 'SENT' },
+    sent: { bg: `${GREEN}20`, color: GREEN, label: 'SENT' },
     today: { bg: `${ORANGE}20`, color: ORANGE, label: 'TODAY' },
     drafted: { bg: `${YELLOW}20`, color: YELLOW, label: 'DRAFTED' },
-    planned: { bg: 'rgba(255,255,255,0.06)', color: MUTED, label: 'PLANNED' },
-    rest: { bg: 'transparent', color: '#333', label: 'REST' },
+    pending_review: { bg: `${PURPLE}20`, color: PURPLE, label: 'PENDING REVIEW' },
+    in_progress: { bg: `${CYAN}20`, color: CYAN, label: 'IN PROGRESS' },
+    complete: { bg: `${GREEN}20`, color: GREEN, label: 'COMPLETE' },
+    recommended: { bg: `${ORANGE}20`, color: ORANGE, label: 'RECOMMENDED' },
+    red: { bg: `${RED}20`, color: RED, label: 'RED' },
+    warm: { bg: `${YELLOW}20`, color: YELLOW, label: 'WARM' },
   }
-  const cfg = configs[status] || configs.planned
+  const cfg = configs[status?.toLowerCase()] || configs.sent
   return (
     <span style={{
       fontSize: 11,
-      fontWeight: 600,
-      letterSpacing: '0.05em',
+      fontWeight: 700,
+      letterSpacing: '0.1em',
       color: cfg.color,
       background: cfg.bg,
       padding: '3px 10px',
-      borderRadius: 20,
       whiteSpace: 'nowrap',
+      fontFamily: "'JetBrains Mono', monospace",
+      textTransform: 'uppercase',
     }}>{cfg.label}</span>
   )
 }
 
-function LiveBadge({ isLive }) {
-  if (!isLive) return null
+function PriorityBadge({ priority }) {
+  const colors = {
+    RED: RED,
+    WARM: YELLOW,
+    TOP: ORANGE,
+    HIGH: BLUE,
+    GOOD: YELLOW,
+    MODERATE: GREEN,
+    NICHE: CYAN,
+    STRATEGIC: PURPLE,
+  }
+  const c = colors[priority] || MUTED
   return (
     <span style={{
-      fontSize: 11,
-      fontWeight: 600,
-      letterSpacing: '0.05em',
-      color: GREEN,
-      background: `${GREEN}18`,
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: '0.15em',
+      color: c,
+      background: `${c}15`,
       padding: '3px 10px',
-      borderRadius: 20,
-      whiteSpace: 'nowrap',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6,
-    }}>
-      <span style={{
-        width: 6,
-        height: 6,
-        borderRadius: '50%',
-        background: GREEN,
-        display: 'inline-block',
-      }} />
-      LIVE DATA
-    </span>
+      fontFamily: "'JetBrains Mono', monospace",
+      textTransform: 'uppercase',
+    }}>{priority}</span>
   )
 }
 
@@ -289,88 +282,33 @@ function useIsMobile(breakpoint = 768) {
 
 export default function OutreachPlan() {
   const [activeTab, setActiveTab] = useState('overview')
-  const [pipeline, setPipeline] = useState(FALLBACK_PIPELINE)
-  const [isLive, setIsLive] = useState(false)
-  const [dataError, setDataError] = useState(null)
   const isMobile = useIsMobile()
-
-  // Fetch live data from API
-  useEffect(() => {
-    let cancelled = false
-    async function fetchData() {
-      try {
-        const res = await fetch('/api/outreach-data')
-        if (!res.ok) throw new Error(`API returned ${res.status}`)
-        const data = await res.json()
-        if (!cancelled && data.icpContacts != null) {
-          setPipeline(data)
-          setIsLive(true)
-        }
-      } catch (err) {
-        console.warn('Outreach API unavailable, using fallback data:', err.message)
-        setDataError(err.message)
-      }
-    }
-    fetchData()
-    return () => { cancelled = true }
-  }, [])
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
-    { id: 'schedule', label: '30-Day Schedule' },
-    { id: 'pipeline', label: 'Pipeline Tiers' },
+    { id: 'batches', label: 'Batch History' },
+    { id: 'strategy', label: 'Strategy Shifts' },
     { id: 'verticals', label: 'By Vertical' },
   ]
-
-  const emailsSent = useMemo(() => {
-    return THIRTY_DAY_SCHEDULE
-      .filter(d => d.status === 'done')
-      .reduce((sum, d) => sum + d.count, 0)
-  }, [])
-
-  const emailsRemaining = useMemo(() => {
-    return THIRTY_DAY_SCHEDULE
-      .filter(d => d.status !== 'done' && d.status !== 'rest')
-      .reduce((sum, d) => sum + d.count, 0)
-  }, [])
-
-  // Build industry list from live data
-  const icpIndustries = useMemo(() => {
-    if (!pipeline.icpByIndustry) return []
-    return Object.entries(pipeline.icpByIndustry)
-      .map(([name, data]) => ({
-        name,
-        total: data.total,
-        replied: data.replied || 0,
-        no_response: data.no_response || 0,
-        color: INDUSTRY_COLORS[name] || MUTED,
-        priority: INDUSTRY_PRIORITY[name] || 'OTHER',
-        why: INDUSTRY_WHY[name] || '',
-      }))
-      .sort((a, b) => b.total - a.total)
-  }, [pipeline])
-
-  const offIcpTotal = pipeline.offIcpContacts || 0
-  const icpTotal = pipeline.icpContacts || 0
-  const repliesCount = pipeline.statusCounts?.replied || 0
-  const replyRate = pipeline.totalContacts > 0
-    ? ((repliesCount / pipeline.totalContacts) * 100).toFixed(1) + '%'
-    : '0%'
-
-  // Format last updated
-  const lastUpdatedStr = useMemo(() => {
-    if (!pipeline.lastUpdated) return 'Static data'
-    const d = new Date(pipeline.lastUpdated)
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }, [pipeline.lastUpdated])
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#020202',
-      color: '#F0ECE6',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif',
+      background: '#0A0A08',
+      color: '#F5F0EB',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
     }}>
+      {/* Film grain overlay */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', opacity: 0.03, mixBlendMode: 'overlay', zIndex: 0 }}>
+        <svg width="100%" height="100%">
+          <filter id="outreach-grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" />
+            <feColorMatrix type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#outreach-grain)" />
+        </svg>
+      </div>
+
       {/* ─── HEADER ────────────────────────────────────────────────────── */}
       <header style={{
         borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -380,17 +318,33 @@ export default function OutreachPlan() {
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: 12,
+        position: 'relative',
+        zIndex: 10,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: ORANGE, letterSpacing: '0.1em' }}>AOM</span>
+          <a href="/" style={{ fontSize: 13, fontWeight: 900, color: ORANGE, letterSpacing: '0.15em', textDecoration: 'none', fontFamily: "'Inter Tight', sans-serif", textTransform: 'uppercase' }}>AOM</a>
           <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
-          <span style={{ fontSize: 18, fontWeight: 600 }}>Outreach Plan</span>
+          <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Inter Tight', sans-serif" }}>Outreach Pipeline</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: MUTED }}>
-          <LiveBadge isLive={isLive} />
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.15em',
+            color: GREEN,
+            background: `${GREEN}15`,
+            padding: '3px 10px',
+            fontFamily: "'JetBrains Mono', monospace",
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+          }}>
+            <span style={{ width: 6, height: 6, background: GREEN, display: 'inline-block' }} />
+            LIVE
+          </span>
           <span>Jacob's Pipeline</span>
           <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
-          <span>{isLive ? `Updated ${lastUpdatedStr}` : 'Static data'}</span>
+          <span>Updated Mar 12, 2026</span>
         </div>
       </header>
 
@@ -401,6 +355,8 @@ export default function OutreachPlan() {
         display: 'flex',
         gap: 0,
         overflowX: 'auto',
+        position: 'relative',
+        zIndex: 10,
       }}>
         {tabs.map(tab => (
           <button
@@ -410,13 +366,14 @@ export default function OutreachPlan() {
               background: 'none',
               border: 'none',
               borderBottom: activeTab === tab.id ? `2px solid ${ORANGE}` : '2px solid transparent',
-              color: activeTab === tab.id ? '#F0ECE6' : MUTED,
-              fontSize: 15,
+              color: activeTab === tab.id ? '#F5F0EB' : MUTED,
+              fontSize: 16,
               fontWeight: 500,
               padding: '14px 20px',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               transition: 'color 0.2s',
+              fontFamily: "'Inter', sans-serif",
             }}
           >
             {tab.label}
@@ -425,7 +382,7 @@ export default function OutreachPlan() {
       </nav>
 
       {/* ─── CONTENT ───────────────────────────────────────────────────── */}
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px' }}>
+      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px', position: 'relative', zIndex: 10 }}>
 
         {/* ═══ OVERVIEW TAB ═══ */}
         {activeTab === 'overview' && (
@@ -433,110 +390,96 @@ export default function OutreachPlan() {
             {/* Stats Row */}
             <div style={{ marginTop: 32 }}>
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <StatCard
-                  label="ICP Pipeline"
-                  value={icpTotal}
-                  color={ORANGE}
-                  large
-                  sub={`${offIcpTotal} off-ICP excluded`}
-                />
-                <StatCard label="Emails Sent" value={emailsSent} color={GREEN} large sub="Days 1-3 complete" />
-                <StatCard label="Remaining (30-day)" value={emailsRemaining} color={YELLOW} large sub={`${THIRTY_DAY_SCHEDULE.filter(d => d.status !== 'done' && d.status !== 'rest').length} send days left`} />
-                <StatCard label="Replies" value={repliesCount} color={BLUE} large sub={`${replyRate} reply rate`} />
+                <StatCard label="Emails Sent" value={PIPELINE_DATA.totalEmailsSent} color={GREEN} large sub="Across 5 batches" />
+                <StatCard label="Total Contacts" value={`${PIPELINE_DATA.totalContactsReached}+`} color={ORANGE} large sub="In pipeline database" />
+                <StatCard label="Reply Rate" value={`${PIPELINE_DATA.replyRate}%`} color={YELLOW} large sub="Industry avg: 1-3%" />
+                <StatCard label="Bounces" value={PIPELINE_DATA.bounces} color={RED} large sub="Midstate Mech + Whyte CPA" />
               </div>
             </div>
 
-            {/* ICP Breakdown Mini */}
-            <div style={{
-              marginTop: 16,
-              display: 'flex',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}>
-              {icpIndustries.map(ind => (
-                <div key={ind.name} style={{
+            {/* Action Items */}
+            <SectionTitle sub="What needs attention right now">Action Items</SectionTitle>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Warm leads */}
+              {PIPELINE_DATA.warmLeads.map((lead, i) => (
+                <div key={i} style={{
                   background: '#151515',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 8,
-                  padding: '10px 16px',
+                  border: `1px solid ${lead.priority === 'RED' ? RED : YELLOW}30`,
+                  padding: '20px 24px',
                   display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 8,
-                  borderLeft: `3px solid ${ind.color}`,
+                  justifyContent: 'space-between',
+                  alignItems: isMobile ? 'flex-start' : 'center',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  gap: 12,
                 }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: ind.color }}>{ind.total}</span>
-                  <span style={{ fontSize: 13, color: MUTED }}>{ind.name}</span>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: '#F5F0EB' }}>{lead.name}</span>
+                      <PriorityBadge priority={lead.priority} />
+                    </div>
+                    <div style={{ fontSize: 14, color: MUTED }}>{lead.company}</div>
+                    <div style={{ fontSize: 14, color: '#A8A29E', marginTop: 4 }}>{lead.status}</div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: lead.priority === 'RED' ? RED : YELLOW }}>
+                    {lead.priority === 'RED' ? 'RESPOND NOW' : 'FOLLOW UP'}
+                  </div>
                 </div>
               ))}
+
+              {/* Pending review items */}
               <div style={{
-                background: '#0e0e0e',
-                border: '1px solid rgba(255,255,255,0.04)',
-                borderRadius: 8,
-                padding: '10px 16px',
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: 8,
-                opacity: 0.6,
+                background: '#151515',
+                border: `1px solid ${PURPLE}30`,
+                padding: '20px 24px',
               }}>
-                <span style={{ fontSize: 20, fontWeight: 700, color: MUTED }}>{offIcpTotal}</span>
-                <span style={{ fontSize: 13, color: '#555' }}>Off-ICP</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: '#F5F0EB' }}>33 CPA Email Drafts</span>
+                  <StatusBadge status="pending_review" />
+                </div>
+                <div style={{ fontSize: 14, color: '#A8A29E', lineHeight: 1.6 }}>
+                  18 CPA cold emails + 5 partnership emails + 10 follow-ups. Tax season window closing. 15 min of review from Patrik unlocks 33 touchpoints.
+                </div>
+              </div>
+
+              <div style={{
+                background: '#151515',
+                border: `1px solid ${YELLOW}30`,
+                padding: '20px 24px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: '#F5F0EB' }}>5 Partnership Drafts Ready</span>
+                  <StatusBadge status="drafted" />
+                </div>
+                <div style={{ fontSize: 14, color: '#A8A29E', lineHeight: 1.6 }}>
+                  CPA firms and construction service providers. Strategic partnerships that multiply reach without more cold outreach.
+                </div>
               </div>
             </div>
 
-            {/* Today's Status */}
-            <SectionTitle sub="What's going out right now">Today: Mar 11 (Day 4)</SectionTitle>
+            {/* Latest batch */}
+            <SectionTitle sub="Most recent outreach activity">Latest: Batch 5 (Mar 12)</SectionTitle>
             <div style={{
               background: '#151515',
               border: `1px solid ${ORANGE}30`,
-              borderRadius: 12,
               padding: '24px',
             }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12 }}>
-                <span style={{ fontSize: 24, fontWeight: 700, color: ORANGE }}>19 emails</span>
-                <StatusBadge status="today" />
+                <span style={{ fontSize: 24, fontWeight: 900, fontStyle: 'italic', color: ORANGE, fontFamily: "'Inter Tight', sans-serif" }}>18 emails</span>
+                <StatusBadge status="sent" />
               </div>
-              <p style={{ fontSize: 16, color: '#F0ECE6', lineHeight: 1.5, marginBottom: 8 }}>
-                Tier 1 ICP Re-Engagement. Healthcare + Real Estate contacts who opened 330+ days ago but never replied.
-              </p>
-              <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
-                These are not bumps. They are re-intros with a new angle. Healthcare gets the Included Health reference. Real estate gets the Ambition Mechanical case study.
-              </p>
-              <div style={{ marginTop: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 14, color: CYAN }}>7 Healthcare</div>
-                <div style={{ fontSize: 14, color: BLUE }}>5 Real Estate / Construction</div>
-                <div style={{ fontSize: 14, color: YELLOW }}>7 Construction (Tier 2 new)</div>
+              <div style={{ fontSize: 16, color: '#F5F0EB', lineHeight: 1.6, marginBottom: 12 }}>
+                15 construction cold emails (HVAC, roofing, restoration, landscaping) + 3 partnership emails to CPA firms and surety providers.
               </div>
-            </div>
-
-            {/* Tomorrow + Day After */}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 16 }}>
-              <div style={{
-                flex: '1 1 300px',
-                background: '#151515',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 12,
-                padding: '20px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: YELLOW }}>17 emails</span>
-                  <StatusBadge status="drafted" />
-                </div>
-                <div style={{ fontSize: 15, color: '#F0ECE6', fontWeight: 500 }}>Mar 12: Tier 2 ICP First-Touch</div>
-                <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>Construction + Healthcare. New contacts, never emailed. Ambition + IH references.</div>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 14 }}>
+                <span style={{ color: ORANGE }}>5 HVAC/Mechanical</span>
+                <span style={{ color: BLUE }}>3 Roofing</span>
+                <span style={{ color: CYAN }}>3 Restoration</span>
+                <span style={{ color: GREEN }}>3 Landscaping</span>
+                <span style={{ color: PURPLE }}>3 Partnerships</span>
               </div>
-              <div style={{
-                flex: '1 1 300px',
-                background: '#151515',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 12,
-                padding: '20px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: YELLOW }}>15 emails</span>
-                  <StatusBadge status="drafted" />
-                </div>
-                <div style={{ fontSize: 15, color: '#F0ECE6', fontWeight: 500 }}>Mar 13: Tier 2 ICP Continued</div>
-                <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>More construction + healthcare. Same approach, fresh contacts.</div>
+              <div style={{ marginTop: 16, padding: '12px 16px', background: `${RED}10`, border: `1px solid ${RED}20` }}>
+                <span style={{ fontSize: 13, color: RED, fontWeight: 600 }}>1 Bounce:</span>
+                <span style={{ fontSize: 13, color: MUTED, marginLeft: 8 }}>Midstate Mechanical (info@midstatemechanical.com) -- "suspects spam." Removed.</span>
               </div>
             </div>
 
@@ -545,7 +488,6 @@ export default function OutreachPlan() {
             <div style={{
               background: '#151515',
               border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
               padding: '28px 24px',
             }}>
               {MULTI_TOUCH_FLOW.map((step, i) => (
@@ -557,210 +499,234 @@ export default function OutreachPlan() {
               ))}
             </div>
 
-            {/* Status Breakdown */}
-            <SectionTitle sub="Current status across all contacts">Contact Status</SectionTitle>
-            <div style={{
-              background: '#151515',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              padding: '28px 24px',
-            }}>
-              {[
-                { label: 'No Response', count: pipeline.statusCounts?.no_response || 0, color: MUTED },
-                { label: 'Replied', count: pipeline.statusCounts?.replied || 0, color: GREEN },
-                { label: 'Meeting Scheduled', count: pipeline.statusCounts?.meeting || 0, color: BLUE },
-                { label: 'Closed (Client)', count: pipeline.statusCounts?.closed || 0, color: ORANGE },
-                { label: 'Dead / DNC', count: pipeline.statusCounts?.dead || 0, color: RED },
-              ].filter(s => s.count > 0 || s.label === 'Replied' || s.label === 'Meeting Scheduled').map(s => (
-                <TierBar
-                  key={s.label}
-                  label={s.label}
-                  count={s.count}
-                  maxCount={pipeline.totalContacts || 1}
-                  color={s.color}
-                />
+            {/* Key Findings */}
+            <SectionTitle sub="What we've learned from 320+ contacts and 5 batches">Key Findings</SectionTitle>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
+              {KEY_FINDINGS.map((finding, i) => (
+                <div key={i} style={{
+                  background: '#151515',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  padding: '20px',
+                  borderLeft: `3px solid ${ORANGE}`,
+                }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#F5F0EB', marginBottom: 6 }}>{finding.label}</div>
+                  <div style={{ fontSize: 14, color: MUTED, lineHeight: 1.6 }}>{finding.desc}</div>
+                </div>
               ))}
             </div>
           </>
         )}
 
-        {/* ═══ 30-DAY SCHEDULE TAB ═══ */}
-        {activeTab === 'schedule' && (
+        {/* ═══ BATCH HISTORY TAB ═══ */}
+        {activeTab === 'batches' && (
           <>
-            <SectionTitle sub={`385 emails over 30 days. Weekends off. ~15 per send day.`}>
-              30-Day Outreach Calendar
+            <SectionTitle sub={`${PIPELINE_DATA.batchesSent} batches sent. ${PIPELINE_DATA.totalEmailsSent} emails delivered.`}>
+              Batch History
             </SectionTitle>
 
-            {/* Progress bar */}
+            {/* Summary bar */}
             <div style={{
               background: '#151515',
               border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
               padding: '20px 24px',
               marginBottom: 24,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 12,
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 14, color: '#F0ECE6' }}>Progress</span>
-                <span style={{ fontSize: 14, color: ORANGE, fontWeight: 600 }}>Day 4 of 30</span>
+              <div>
+                <span style={{ fontSize: 14, color: '#F5F0EB' }}>Total Progress</span>
+                <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>51 emails sent across 5 batches. 2 bounces. 0 meetings.</div>
               </div>
-              <div style={{ background: '#1A1A1A', borderRadius: 6, height: 8, overflow: 'hidden' }}>
-                <div style={{
-                  width: `${(4 / 30) * 100}%`,
-                  height: '100%',
-                  background: `linear-gradient(90deg, ${ORANGE}, ${YELLOW})`,
-                  borderRadius: 6,
-                }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 13, color: MUTED }}>
-                <span>{emailsSent} sent</span>
-                <span>{emailsRemaining} remaining</span>
-              </div>
+              <div style={{ fontSize: 14, color: ORANGE, fontWeight: 700 }}>{PIPELINE_DATA.replyRate}% reply rate</div>
             </div>
 
-            {/* Schedule grid */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {THIRTY_DAY_SCHEDULE.map((day) => (
-                <div key={day.day} style={{
-                  background: day.status === 'today' ? '#1a1510' : day.status === 'rest' ? '#0a0a0a' : '#151515',
-                  border: day.status === 'today' ? `1px solid ${ORANGE}40` : '1px solid rgba(255,255,255,0.04)',
-                  borderRadius: 8,
-                  padding: isMobile ? '14px 16px' : '14px 20px',
-                  display: isMobile ? 'flex' : 'grid',
-                  flexDirection: isMobile ? 'column' : undefined,
-                  gridTemplateColumns: isMobile ? undefined : '50px 70px 60px 1fr 200px 90px',
-                  alignItems: isMobile ? 'flex-start' : 'center',
-                  gap: isMobile ? 6 : 12,
-                  opacity: day.status === 'rest' ? 0.4 : 1,
-                  fontSize: 14,
+            {/* Batch cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {BATCH_HISTORY.slice().reverse().map((batch) => (
+                <div key={batch.id} style={{
+                  background: '#151515',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  padding: '20px 24px',
                 }}>
-                  {isMobile ? (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                          <span style={{ color: MUTED, fontWeight: 500 }}>D{day.day}</span>
-                          <span style={{ color: '#F0ECE6', fontWeight: 500 }}>{day.date}</span>
-                          <span style={{ fontWeight: 700, color: day.count > 0 ? ORANGE : '#333' }}>
-                            {day.count > 0 ? day.count : '--'}
-                          </span>
-                        </div>
-                        <StatusBadge status={day.status} />
-                      </div>
-                      <div style={{ color: '#F0ECE6', fontSize: 13 }}>{day.type}</div>
-                      {day.industry && <div style={{ color: MUTED, fontSize: 12 }}>{day.industry}</div>}
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ color: MUTED, fontWeight: 500 }}>D{day.day}</span>
-                      <span style={{ color: '#F0ECE6', fontWeight: 500 }}>{day.date}</span>
-                      <span style={{ fontWeight: 700, color: day.count > 0 ? ORANGE : '#333' }}>
-                        {day.count > 0 ? day.count : '--'}
-                      </span>
-                      <span style={{ color: '#F0ECE6' }}>{day.type}</span>
-                      <span style={{ color: MUTED, fontSize: 13 }}>{day.industry}</span>
-                      <div style={{ textAlign: 'right' }}><StatusBadge status={day.status} /></div>
-                    </>
-                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                      <span style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: MUTED,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        letterSpacing: '0.1em',
+                      }}>BATCH {batch.id}</span>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: '#F5F0EB' }}>{batch.name}</span>
+                    </div>
+                    <StatusBadge status={batch.status} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 14, marginBottom: 8 }}>
+                    <span style={{ color: MUTED }}>{batch.date}</span>
+                    <span style={{ color: ORANGE, fontWeight: 700 }}>{batch.count} emails</span>
+                  </div>
+                  <div style={{ fontSize: 14, color: '#A8A29E', lineHeight: 1.6 }}>{batch.notes}</div>
                 </div>
               ))}
             </div>
 
-            {/* Schedule legend */}
+            {/* Bounce log */}
+            <SectionTitle sub="Addresses confirmed undeliverable. Do not retry.">Bounce Log</SectionTitle>
             <div style={{
-              marginTop: 24,
-              display: 'flex',
-              gap: 20,
-              flexWrap: 'wrap',
-              fontSize: 13,
-              color: MUTED,
+              background: '#151515',
+              border: `1px solid ${RED}20`,
+              padding: '20px 24px',
             }}>
-              <span><span style={{ color: GREEN }}>SENT</span> = emails delivered</span>
-              <span><span style={{ color: ORANGE }}>TODAY</span> = going out now</span>
-              <span><span style={{ color: YELLOW }}>DRAFTED</span> = written, pending approval</span>
-              <span><span style={{ color: MUTED }}>PLANNED</span> = not yet drafted</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: 8 }}>
+                  <div>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: '#F5F0EB' }}>Midstate Mechanical</span>
+                    <span style={{ fontSize: 13, color: MUTED, marginLeft: 12 }}>info@midstatemechanical.com</span>
+                  </div>
+                  <span style={{ fontSize: 13, color: RED }}>"suspects your message is spam"</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: 8 }}>
+                  <div>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: '#F5F0EB' }}>Whyte CPA</span>
+                    <span style={{ fontSize: 13, color: MUTED, marginLeft: 12 }}>devin@whytecpapc.com</span>
+                  </div>
+                  <span style={{ fontSize: 13, color: RED }}>"devin wasn't found at whytecpapc.com"</span>
+                </div>
+              </div>
             </div>
           </>
         )}
 
-        {/* ═══ PIPELINE TIERS TAB ═══ */}
-        {activeTab === 'pipeline' && (
+        {/* ═══ STRATEGY SHIFTS TAB ═══ */}
+        {activeTab === 'strategy' && (
           <>
-            <SectionTitle sub="ICP contacts by industry with status breakdown">ICP Pipeline Breakdown</SectionTitle>
+            <SectionTitle sub="What's changing in the approach based on 5 batches of data">Strategic Shifts</SectionTitle>
 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {STRATEGIC_SHIFTS.map((shift, i) => (
+                <div key={i} style={{
+                  background: '#151515',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  padding: '24px',
+                  borderLeft: `3px solid ${shift.color}`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: '#F5F0EB' }}>{shift.title}</span>
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.15em',
+                      color: shift.color,
+                      background: `${shift.color}15`,
+                      padding: '3px 10px',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>{shift.status}</span>
+                  </div>
+                  <div style={{ fontSize: 16, color: '#A8A29E', lineHeight: 1.6 }}>{shift.desc}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* V2 Template Preview */}
+            <SectionTitle sub="What the next round of emails will look like">V2 Email Template Direction</SectionTitle>
             <div style={{
               background: '#151515',
               border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              padding: '28px 24px',
+              padding: '24px',
             }}>
-              {icpIndustries.map(ind => (
-                <TierBar
-                  key={ind.name}
-                  label={ind.name}
-                  count={ind.total}
-                  maxCount={Math.max(...icpIndustries.map(i => i.total), 1)}
-                  color={ind.color}
-                  sub={ind.replied > 0 ? `${ind.replied} replied` : `${ind.no_response} awaiting response`}
-                />
-              ))}
-
-              {/* Off-ICP summary */}
-              <div style={{
-                marginTop: 24,
-                paddingTop: 20,
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-                  <span style={{ fontSize: 15, color: MUTED, fontWeight: 500 }}>Off-ICP (excluded from pipeline count)</span>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: '#444' }}>{offIcpTotal}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 20 }}>
+                <div>
+                  <div style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.2em',
+                    color: RED,
+                    marginBottom: 12,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>OLD APPROACH</div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {[
+                      'Generic intro pitch',
+                      'Feature-focused',
+                      '"Let me know if you want to chat"',
+                      'Same template for all verticals',
+                      'No social proof',
+                    ].map((item, i) => (
+                      <li key={i} style={{ fontSize: 14, color: '#78716C', padding: '4px 0', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <span style={{ color: RED, flexShrink: 0 }}>-</span> {item}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 13, color: '#555' }}>
-                  {pipeline.offIcpByIndustry && Object.entries(pipeline.offIcpByIndustry).map(([name, data]) => (
-                    <span key={name}>{name}: {data.total}</span>
-                  ))}
+                <div>
+                  <div style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.2em',
+                    color: GREEN,
+                    marginBottom: 12,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>NEW APPROACH</div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {[
+                      'Observation about THEIR business first',
+                      'Zero-risk offer (free 15-min video audit)',
+                      'Social proof: Ambition Mechanical, Included Health',
+                      'Vertical-specific templates (construction, CPA, hospitality)',
+                      'Curiosity-driven subject lines',
+                    ].map((item, i) => (
+                      <li key={i} style={{ fontSize: 14, color: '#A8A29E', padding: '4px 0', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <span style={{ color: GREEN, flexShrink: 0 }}>+</span> {item}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
 
-            {/* ICP Priority */}
-            <SectionTitle sub="Where to focus for the $45k/month retainer goal">ICP Priority Stack</SectionTitle>
+            {/* 10 Improvements */}
+            <SectionTitle sub="From cold email strategy analysis">10 Actionable Improvements</SectionTitle>
             <div style={{
               background: '#151515',
               border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
               padding: '24px',
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {icpIndustries
-                  .filter(ind => INDUSTRY_WHY[ind.name])
-                  .map((ind, idx) => (
-                  <div key={ind.name} style={{
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
+                {[
+                  'Shorter emails (under 100 words)',
+                  'Observation-based openers, not intros',
+                  'One clear CTA per email',
+                  'Curiosity subjects, not pitch subjects',
+                  'Separate outreach domain',
+                  'Zero-risk offer (free audit/teardown)',
+                  'Social proof in every touch',
+                  'Vertical-specific templates',
+                  'Follow-up cadence: 5-7-12 days',
+                  'Track opens + adjust by engagement',
+                ].map((item, i) => (
+                  <div key={i} style={{
                     display: 'flex',
-                    gap: 16,
-                    alignItems: 'flex-start',
-                    padding: '12px 0',
-                    borderBottom: idx < icpIndustries.filter(i => INDUSTRY_WHY[i.name]).length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                    gap: 12,
+                    alignItems: 'center',
+                    padding: '10px 0',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
                   }}>
-                    <div style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: '50%',
-                      border: `2px solid ${ind.color}`,
+                    <span style={{
+                      width: 28,
+                      height: 28,
+                      background: ORANGE,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: 700,
-                      color: ind.color,
+                      color: '#0A0A08',
                       flexShrink: 0,
-                    }}>{idx + 1}</div>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                        <span style={{ fontSize: 16, fontWeight: 600, color: '#F0ECE6' }}>{ind.name}</span>
-                        <span style={{ fontSize: 20, fontWeight: 700, color: ind.color }}>{ind.total}</span>
-                        <span style={{ fontSize: 12, color: MUTED }}>contacts</span>
-                      </div>
-                      <div style={{ fontSize: 14, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>{ind.why}</div>
-                    </div>
+                    }}>{i + 1}</span>
+                    <span style={{ fontSize: 14, color: '#F5F0EB' }}>{item}</span>
                   </div>
                 ))}
               </div>
@@ -771,111 +737,67 @@ export default function OutreachPlan() {
         {/* ═══ BY VERTICAL TAB ═══ */}
         {activeTab === 'verticals' && (
           <>
-            <SectionTitle sub="ICP verticals with live contact counts">Industry Breakdown</SectionTitle>
+            <SectionTitle sub="ICP verticals with contact counts and priority ranking">Industry Breakdown</SectionTitle>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-              {icpIndustries.map((ind) => (
+              {ICP_INDUSTRIES.map((ind) => (
                 <div key={ind.name} style={{
                   background: '#151515',
                   border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 12,
                   padding: '24px',
                   borderLeft: `3px solid ${ind.color}`,
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
                     <div>
-                      <div style={{ fontSize: 18, fontWeight: 600, color: '#F0ECE6' }}>{ind.name}</div>
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: ind.color,
-                        background: `${ind.color}18`,
-                        padding: '2px 8px',
-                        borderRadius: 10,
-                        marginTop: 4,
-                        display: 'inline-block',
-                      }}>{ind.priority} PRIORITY</span>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: '#F5F0EB' }}>{ind.name}</div>
+                      <PriorityBadge priority={ind.priority} />
                     </div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: ind.color }}>{ind.total}</div>
+                    <div style={{ fontSize: 32, fontWeight: 900, fontStyle: 'italic', color: ind.color, fontFamily: "'Inter Tight', sans-serif" }}>{ind.count}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {ind.no_response > 0 && (
-                      <div style={{
-                        background: 'rgba(255,255,255,0.04)',
-                        borderRadius: 8,
-                        padding: '8px 14px',
-                        flex: '1 1 auto',
-                        textAlign: 'center',
-                      }}>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: MUTED }}>{ind.no_response}</div>
-                        <div style={{ fontSize: 11, color: MUTED }}>No Reply</div>
-                      </div>
-                    )}
-                    {ind.replied > 0 && (
-                      <div style={{
-                        background: 'rgba(255,255,255,0.04)',
-                        borderRadius: 8,
-                        padding: '8px 14px',
-                        flex: '1 1 auto',
-                        textAlign: 'center',
-                      }}>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: GREEN }}>{ind.replied}</div>
-                        <div style={{ fontSize: 11, color: MUTED }}>Replied</div>
-                      </div>
-                    )}
-                  </div>
+                  <div style={{ fontSize: 14, color: '#A8A29E', lineHeight: 1.6 }}>{ind.why}</div>
                 </div>
               ))}
-
-              {/* Off-ICP Card */}
-              <div style={{
-                background: '#0e0e0e',
-                border: '1px solid rgba(255,255,255,0.04)',
-                borderRadius: 12,
-                padding: '24px',
-                borderLeft: '3px solid #333',
-                opacity: 0.7,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 600, color: MUTED }}>Off-ICP</div>
-                    <span style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: '#555',
-                      background: 'rgba(255,255,255,0.03)',
-                      padding: '2px 8px',
-                      borderRadius: 10,
-                      marginTop: 4,
-                      display: 'inline-block',
-                    }}>LOW PRIORITY</span>
-                  </div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#444' }}>{offIcpTotal}</div>
-                </div>
-                <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}>
-                  {pipeline.offIcpByIndustry && Object.entries(pipeline.offIcpByIndustry).map(([name, data]) => (
-                    <span key={name} style={{ marginRight: 12 }}>{name} ({data.total})</span>
-                  ))}
-                </div>
-                <div style={{ fontSize: 12, color: '#444', marginTop: 8 }}>
-                  Not counted in ICP pipeline. Finance, Insurance, Auto, IT, Defense, etc.
-                </div>
-              </div>
             </div>
 
-            {/* Apollo Credits Note */}
+            {/* Pipeline bars */}
+            <SectionTitle sub="Visual comparison of pipeline by vertical">Pipeline Volume</SectionTitle>
             <div style={{
-              marginTop: 32,
               background: '#151515',
               border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              padding: '20px 24px',
+              padding: '28px 24px',
             }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#F0ECE6', marginBottom: 8 }}>Apollo Status</div>
-              <div style={{ fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
-                All 37 Apollo-enriched contacts have been emailed. Zero unused enrichments remaining.
-                The 675-contact CSV is a separate export used for pipeline planning. Next enrichment run
-                requires new credits. Budget: 100 credits/day.
+              {ICP_INDUSTRIES.map(ind => (
+                <TierBar
+                  key={ind.name}
+                  label={ind.name}
+                  count={ind.count}
+                  maxCount={Math.max(...ICP_INDUSTRIES.map(i => i.count), 1)}
+                  color={ind.color}
+                  sub={`${ind.priority} priority`}
+                />
+              ))}
+            </div>
+
+            {/* AZ ROC callout */}
+            <SectionTitle sub="Next-level lead source identified">AZ ROC Database</SectionTitle>
+            <div style={{
+              background: '#151515',
+              border: `2px solid ${GREEN}30`,
+              padding: '24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <span style={{ fontSize: 22, fontWeight: 900, fontStyle: 'italic', color: GREEN, fontFamily: "'Inter Tight', sans-serif" }}>45,000+</span>
+                <span style={{ fontSize: 16, color: '#F5F0EB' }}>licensed Arizona contractors</span>
+              </div>
+              <div style={{ fontSize: 16, color: '#A8A29E', lineHeight: 1.6, marginBottom: 16 }}>
+                Arizona Registrar of Contractors provides a free CSV download of all licensed contractors. Includes license numbers, categories (HVAC, plumbing, roofing, electrical, general), and addresses. Eliminates the need for paid enrichment tools like Apollo for construction vertical targeting.
+              </div>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 14 }}>
+                <span style={{ color: GREEN }}>Free CSV download</span>
+                <span style={{ color: MUTED }}>|</span>
+                <span style={{ color: '#A8A29E' }}>License categories included</span>
+                <span style={{ color: MUTED }}>|</span>
+                <span style={{ color: '#A8A29E' }}>No API credits needed</span>
               </div>
             </div>
           </>
@@ -888,10 +810,13 @@ export default function OutreachPlan() {
         borderTop: '1px solid rgba(255,255,255,0.06)',
         padding: '16px 24px',
         textAlign: 'center',
-        fontSize: 12,
-        color: '#333',
+        fontSize: 13,
+        color: '#44403C',
+        position: 'relative',
+        zIndex: 10,
+        fontFamily: "'JetBrains Mono', monospace",
       }}>
-        AOM Internal. Not public.
+        AOM Internal / Jacob's Pipeline / Updated Mar 12, 2026
       </footer>
     </div>
   )
