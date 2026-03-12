@@ -425,6 +425,7 @@ export default function ROICalculator() {
                 value={teamSize}
                 onChange={(e) => { setTeamSize(parseInt(e.target.value)); markTouched('teamSize'); }}
                 className="w-full slider-orange mt-2"
+                style={{ background: `linear-gradient(to right, #E85D26 ${((teamSize - 1) / 49) * 100}%, rgba(217,211,203,0.2) ${((teamSize - 1) / 49) * 100}%)` }}
                 aria-label="Team size"
                 aria-valuenow={teamSize}
                 aria-valuemin={1}
@@ -453,6 +454,7 @@ export default function ROICalculator() {
                 value={adminHours}
                 onChange={(e) => { setAdminHours(parseInt(e.target.value)); markTouched('adminHours'); }}
                 className="w-full slider-orange mt-2"
+                style={{ background: `linear-gradient(to right, #E85D26 ${((adminHours - 2) / 23) * 100}%, rgba(217,211,203,0.2) ${((adminHours - 2) / 23) * 100}%)` }}
                 aria-label="Admin hours per person per week"
                 aria-valuenow={adminHours}
                 aria-valuemin={2}
