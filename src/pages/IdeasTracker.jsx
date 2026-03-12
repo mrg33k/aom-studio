@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, Plus, Pencil, Check, ArrowLeft, Lock } from 'lucide-react'
+import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from 'd3-force'
 import ideasData from '../data/ideas.json'
 
 /* ================================================================== */
 /*  IDEAS TRACKER / BRAIN MAP                                          */
-/*  Steffen's Design Spec: Neural network visualization                */
+/*  D3.js force simulation + neural network visualization              */
 /*  Route: /ideas                                                      */
 /* ================================================================== */
 
@@ -24,7 +25,7 @@ function saveIdeas(ideas) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas)) } catch (e) { /* ignore */ }
 }
 
-// ---- Password Gate (matches dashboard) ----
+// ---- Password Gate ----
 function PasswordGate({ onAuth }) {
   const [input, setInput] = useState('')
   const [shake, setShake] = useState(false)
@@ -106,84 +107,8 @@ const CONNECTION_STYLES = {
   competes: { dash: '2 3', width: 1, arrow: false },
 }
 
-// ── Layout: Force-directed-ish initial placement ─────────────────────
-function computeNodePositions(ideas) {
-  const positions = {}
-  const cx = 600
-  const cy = 420
-  // Visible bounds within 1200x900 viewBox with padding
-  const PAD = 60
-  const MIN_X = PAD
-  const MAX_X = 1200 - PAD
-  const MIN_Y = PAD + 60 // extra top padding for filter bar
-  const MAX_Y = 900 - PAD
-
-  // Place in concentric rings based on status priority
-  const statusOrder = { active: 0, shipped: 1, growing: 2, seed: 3, parked: 4 }
-  const sorted = [...ideas].sort((a, b) => (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4))
-
-  sorted.forEach((idea, i) => {
-    const ring = statusOrder[idea.status] || 3
-    const baseRadius = 70 + ring * 80
-    const angleOffset = (ring * 0.7) + (i * 0.3)
-    const nodesInRing = sorted.filter(s => statusOrder[s.status] === ring).length
-    const indexInRing = sorted.filter((s, j) => j < i && statusOrder[s.status] === ring).length
-    const angle = (indexInRing / Math.max(nodesInRing, 1)) * Math.PI * 2 + angleOffset
-    const jitter = (Math.sin(i * 7.3) * 30)
-
-    positions[idea.id] = {
-      x: cx + Math.cos(angle) * (baseRadius + jitter),
-      y: cy + Math.sin(angle) * (baseRadius + jitter),
-    }
-  })
-
-  // Simple force repulsion pass
-  for (let iter = 0; iter < 50; iter++) {
-    const ids = Object.keys(positions)
-    for (let i = 0; i < ids.length; i++) {
-      for (let j = i + 1; j < ids.length; j++) {
-        const a = positions[ids[i]]
-        const b = positions[ids[j]]
-        const dx = b.x - a.x
-        const dy = b.y - a.y
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        const minDist = 120
-        if (dist < minDist && dist > 0) {
-          const force = (minDist - dist) / dist * 0.3
-          a.x -= dx * force
-          a.y -= dy * force
-          b.x += dx * force
-          b.y += dy * force
-        }
-      }
-    }
-  }
-
-  // Clamp all nodes to visible bounds
-  const ids = Object.keys(positions)
-  for (const id of ids) {
-    positions[id].x = Math.max(MIN_X, Math.min(MAX_X, positions[id].x))
-    positions[id].y = Math.max(MIN_Y, Math.min(MAX_Y, positions[id].y))
-  }
-
-  return positions
-}
-
 function getNodeSize(progress) {
   return Math.round(36 + (progress * 0.28))
-}
-
-function getGlowStyle(category, status, intensity) {
-  const cat = CATEGORY_COLORS[category] || CATEGORY_COLORS.product
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.seed
-  const i = intensity !== undefined ? intensity : cfg.intensity
-  const r = cat.glowRgb
-
-  const inner = status === 'parked' ? 4 : i >= 0.8 ? 8 : i >= 0.4 ? 6 : 4
-  const mid = status === 'parked' ? 12 : i >= 0.8 ? 24 : i >= 0.4 ? 18 : 12
-  const outer = status === 'parked' ? 24 : i >= 0.8 ? 48 : i >= 0.4 ? 36 : 24
-
-  return `0 0 ${inner}px rgba(${r}, ${(0.30 * i).toFixed(2)}), 0 0 ${mid}px rgba(${r}, ${(0.15 * i).toFixed(2)}), 0 0 ${outer}px rgba(${r}, ${(0.06 * i).toFixed(2)})`
 }
 
 function isStagnant(idea) {
@@ -229,23 +154,189 @@ function injectKeyframes() {
       to { stroke-dashoffset: -16; }
     }
 
-    @keyframes particleMove {
-      0% { offset-distance: 0%; }
-      100% { offset-distance: 100%; }
-    }
-
     .ideas-tracker-scrollbar::-webkit-scrollbar { width: 4px; }
     .ideas-tracker-scrollbar::-webkit-scrollbar-track { background: #141412; }
     .ideas-tracker-scrollbar::-webkit-scrollbar-thumb { background: #292524; border-radius: 2px; }
     .ideas-tracker-scrollbar::-webkit-scrollbar-thumb:hover { background: #44403C; }
+
+    @keyframes slideInRight {
+      from { transform: translateX(400px); }
+      to { transform: translateX(0); }
+    }
+    @keyframes slideInBottom {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    @media (max-width: 767px) {
+      .ideas-filter-desktop { display: none !important; }
+      .ideas-filter-mobile { display: block !important; }
+      .ideas-add-label { display: none !important; }
+      .ideas-add-btn { width: 44px !important; height: 44px !important; border-radius: 50% !important; padding: 0 !important; justify-content: center !important; }
+    }
+    @media (min-width: 768px) {
+      .ideas-filter-mobile { display: none !important; }
+    }
   `
   document.head.appendChild(style)
+}
+
+// ── D3 Force Simulation Hook ─────────────────────────────────────────
+function useForceSimulation(ideas, width, height) {
+  const [positions, setPositions] = useState({})
+  const simRef = useRef(null)
+  const nodesRef = useRef([])
+
+  useEffect(() => {
+    if (!ideas.length || !width || !height) return
+
+    // Build node data. Preserve existing positions if available.
+    const prevPositions = {}
+    nodesRef.current.forEach(n => { prevPositions[n.id] = { x: n.x, y: n.y } })
+
+    const statusOrder = { active: 0, shipped: 1, growing: 2, seed: 3, parked: 4 }
+    const cx = width / 2
+    const cy = height / 2
+
+    const nodes = ideas.map((idea, i) => {
+      const prev = prevPositions[idea.id]
+      if (prev) return { ...idea, x: prev.x, y: prev.y, _idx: i }
+      // Initial placement in rings by status
+      const ring = statusOrder[idea.status] ?? 3
+      const baseRadius = 80 + ring * 70
+      const nodesInRing = ideas.filter(s => (statusOrder[s.status] ?? 3) === ring).length
+      const indexInRing = ideas.filter((s, j) => j < i && (statusOrder[s.status] ?? 3) === ring).length
+      const angle = (indexInRing / Math.max(nodesInRing, 1)) * Math.PI * 2 + ring * 0.7
+      return {
+        ...idea,
+        x: cx + Math.cos(angle) * baseRadius + (Math.random() - 0.5) * 40,
+        y: cy + Math.sin(angle) * baseRadius + (Math.random() - 0.5) * 40,
+        _idx: i,
+      }
+    })
+    nodesRef.current = nodes
+
+    // Build link data from connections
+    const nodeMap = {}
+    nodes.forEach(n => { nodeMap[n.id] = n })
+    const links = []
+    ideas.forEach(idea => {
+      (idea.connections || []).forEach(conn => {
+        if (nodeMap[conn.targetId]) {
+          links.push({
+            source: idea.id,
+            target: conn.targetId,
+            type: conn.type,
+          })
+        }
+      })
+    })
+
+    // Kill previous sim
+    if (simRef.current) simRef.current.stop()
+
+    const sim = forceSimulation(nodes)
+      .force('link', forceLink(links).id(d => d.id).distance(160).strength(0.4))
+      .force('charge', forceManyBody().strength(-300).distanceMax(500))
+      .force('center', forceCenter(cx, cy).strength(0.05))
+      .force('collide', forceCollide().radius(d => getNodeSize(d.progress) / 2 + 30).strength(0.7))
+      .force('x', forceX(cx).strength(0.02))
+      .force('y', forceY(cy).strength(0.02))
+      .alphaDecay(0.02)
+      .velocityDecay(0.3)
+
+    sim.on('tick', () => {
+      const pos = {}
+      nodes.forEach(n => {
+        // Clamp to visible bounds
+        const pad = 60
+        n.x = Math.max(pad, Math.min(width - pad, n.x))
+        n.y = Math.max(pad + 56, Math.min(height - pad, n.y))
+        pos[n.id] = { x: n.x, y: n.y }
+      })
+      setPositions({ ...pos })
+    })
+
+    simRef.current = sim
+
+    return () => { sim.stop() }
+  }, [ideas, width, height])
+
+  // Expose reheat for drag
+  const reheat = useCallback(() => {
+    if (simRef.current) {
+      simRef.current.alphaTarget(0.3).restart()
+    }
+  }, [])
+
+  const cool = useCallback(() => {
+    if (simRef.current) {
+      simRef.current.alphaTarget(0)
+    }
+  }, [])
+
+  const updateNodePosition = useCallback((id, x, y) => {
+    const node = nodesRef.current.find(n => n.id === id)
+    if (node) {
+      node.fx = x
+      node.fy = y
+    }
+  }, [])
+
+  const releaseNode = useCallback((id) => {
+    const node = nodesRef.current.find(n => n.id === id)
+    if (node) {
+      node.fx = null
+      node.fy = null
+    }
+  }, [])
+
+  return { positions, reheat, cool, updateNodePosition, releaseNode }
+}
+
+// ── SVG Glow Filters ─────────────────────────────────────────────────
+function GlowFilters() {
+  return (
+    <defs>
+      {Object.entries(CATEGORY_COLORS).map(([key, { glow }]) => (
+        <filter key={key} id={`glow-${key}`} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur1" />
+          <feFlood floodColor={glow} floodOpacity="0.3" result="color1" />
+          <feComposite in="color1" in2="blur1" operator="in" result="glow1" />
+          <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur2" />
+          <feFlood floodColor={glow} floodOpacity="0.12" result="color2" />
+          <feComposite in="color2" in2="blur2" operator="in" result="glow2" />
+          <feMerge>
+            <feMergeNode in="glow2" />
+            <feMergeNode in="glow1" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      ))}
+      {/* Arrowhead markers */}
+      {Object.entries(CATEGORY_COLORS).map(([key, { glow }]) => (
+        <React.Fragment key={`arrows-${key}`}>
+          <marker id={`arrow-default-${key}`} viewBox="0 0 10 10" refX="10" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#292524" />
+          </marker>
+          <marker id={`arrow-highlight-${key}`} viewBox="0 0 10 10" refX="10" refY="5"
+            markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill={glow} />
+          </marker>
+        </React.Fragment>
+      ))}
+      <marker id="arrow-default" viewBox="0 0 10 10" refX="10" refY="5"
+        markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#292524" />
+      </marker>
+    </defs>
+  )
 }
 
 // ── Node Component ───────────────────────────────────────────────────
 function IdeaNode({
   idea, pos, isHovered, isConnected, isDimmed, isFiltered,
-  onClick, onMouseEnter, onMouseLeave, canvasScale
+  onClick, onMouseEnter, onMouseLeave, onDragStart
 }) {
   const size = getNodeSize(idea.progress)
   const cat = CATEGORY_COLORS[idea.category] || CATEGORY_COLORS.product
@@ -272,6 +363,8 @@ function IdeaNode({
     }
   }, [idea.status])
 
+  if (!pos) return null
+
   let nodeOpacity = cfg.opacity
   if (stagnant) nodeOpacity = 0.65
   if (isDimmed) nodeOpacity = 0.30
@@ -285,15 +378,18 @@ function IdeaNode({
     '--pulse-max': cfg.pulseRange[1],
   } : {}
 
+  const glowIntensity = stagnant ? cfg.intensity * 0.6 : cfg.intensity
+
   return (
     <g
       style={{ cursor: 'pointer', transition: 'opacity 300ms ease' }}
       opacity={nodeOpacity}
-      onClick={() => onClick(idea)}
+      onClick={(e) => { e.stopPropagation(); onClick(idea) }}
       onMouseEnter={() => onMouseEnter(idea.id)}
       onMouseLeave={onMouseLeave}
+      onMouseDown={(e) => { e.stopPropagation(); onDragStart(e, idea.id) }}
     >
-      {/* Touch target */}
+      {/* Invisible touch target (min 44px) */}
       <circle
         cx={pos.x} cy={pos.y} r={Math.max(size / 2, 22)}
         fill="transparent" stroke="none"
@@ -305,7 +401,7 @@ function IdeaNode({
           cx={pos.x} cy={pos.y} r={size / 2}
           fill="none"
           stroke={cat.glow}
-          strokeWidth={1}
+          strokeWidth={2}
           opacity={0.4}
           style={{
             animation: 'firingBurst 800ms ease-out forwards',
@@ -313,6 +409,15 @@ function IdeaNode({
           }}
         />
       )}
+
+      {/* Outer glow (SVG blur) */}
+      <circle
+        cx={pos.x} cy={pos.y} r={size / 2 + 4}
+        fill={cat.glow}
+        opacity={glowIntensity * 0.15}
+        filter={`url(#glow-${idea.category})`}
+        style={pulseStyle}
+      />
 
       {/* Shipped ring */}
       {idea.status === 'shipped' && (
@@ -326,33 +431,33 @@ function IdeaNode({
       <circle
         cx={pos.x} cy={pos.y} r={size / 2}
         fill={cat.fill}
+        stroke={cat.glow}
+        strokeWidth={0.5}
+        strokeOpacity={glowIntensity * 0.5}
         style={{
           filter: stagnant ? 'saturate(0.6)' : 'none',
           ...pulseStyle,
         }}
       />
 
-      {/* Glow overlay (separate for box-shadow equivalent in SVG) */}
+      {/* Inner bright center */}
       <circle
-        cx={pos.x} cy={pos.y} r={size / 2}
+        cx={pos.x} cy={pos.y} r={size / 4}
         fill={cat.glow}
-        opacity={cfg.intensity * 0.3}
-        style={{
-          filter: `blur(${cfg.intensity >= 0.8 ? 12 : cfg.intensity >= 0.4 ? 8 : 4}px)`,
-          ...pulseStyle,
-        }}
+        opacity={glowIntensity * 0.2}
+        style={pulseStyle}
       />
 
       {/* Status badge */}
       {showLabel && (
         <g style={{ transition: 'opacity 150ms ease' }}>
           <rect
-            x={pos.x - 24} y={pos.y - size / 2 - 18}
-            width={48} height={14}
-            rx={2} fill="rgba(0,0,0,0.6)"
+            x={pos.x - 28} y={pos.y - size / 2 - 20}
+            width={56} height={16}
+            rx={2} fill="rgba(0,0,0,0.7)"
           />
           <text
-            x={pos.x} y={pos.y - size / 2 - 8}
+            x={pos.x} y={pos.y - size / 2 - 9}
             textAnchor="middle"
             fill={STATUS_COLORS[idea.status]}
             style={{
@@ -377,12 +482,12 @@ function IdeaNode({
           style={{
             fontFamily: '"Syne", sans-serif',
             fontWeight: 700,
-            fontSize: '15px',
+            fontSize: '13px',
             transition: 'opacity 150ms ease',
             pointerEvents: 'none',
           }}
         >
-          {idea.title.length > 16 ? idea.title.slice(0, 14) + '...' : idea.title}
+          {idea.title.length > 20 ? idea.title.slice(0, 18) + '...' : idea.title}
         </text>
       )}
     </g>
@@ -405,14 +510,17 @@ function ConnectionLine({ source, target, type, sourceIdea, isHighlighted, isDim
   const dx = target.x - source.x
   const dy = target.y - source.y
   const len = Math.sqrt(dx * dx + dy * dy)
+  if (len === 0) return null
   const ux = dx / len
   const uy = dy / len
 
-  // Shorten line ends to not overlap nodes
-  const s = { x: source.x + ux * 24, y: source.y + uy * 24 }
-  const t = { x: target.x - ux * 24, y: target.y - uy * 24 }
+  const sourceSize = getNodeSize(sourceIdea?.progress || 0)
+  const s = { x: source.x + ux * (sourceSize / 2 + 4), y: source.y + uy * (sourceSize / 2 + 4) }
+  const t = { x: target.x - ux * 28, y: target.y - uy * 28 }
 
-  const id = `line-${sourceIdea?.id}-${type}-${Math.random().toString(36).slice(2, 6)}`
+  const markerId = style.arrow
+    ? (isHighlighted ? `arrow-highlight-${sourceIdea?.category || 'product'}` : 'arrow-default')
+    : undefined
 
   return (
     <g style={{ transition: 'opacity 300ms ease' }} opacity={strokeOpacity}>
@@ -421,20 +529,15 @@ function ConnectionLine({ source, target, type, sourceIdea, isHighlighted, isDim
         stroke={strokeColor}
         strokeWidth={style.width}
         strokeDasharray={style.dash === 'none' ? undefined : style.dash}
+        markerEnd={markerId ? `url(#${markerId})` : undefined}
         style={type === 'depends' ? { animation: 'dashScroll 4000ms linear infinite' } : {}}
       />
-      {style.arrow && (
-        <polygon
-          points={`${t.x},${t.y} ${t.x - ux * 8 - uy * 4},${t.y - uy * 8 + ux * 4} ${t.x - ux * 8 + uy * 4},${t.y - uy * 8 - ux * 4}`}
-          fill={strokeColor}
-        />
-      )}
     </g>
   )
 }
 
 // ── Detail Panel ─────────────────────────────────────────────────────
-function DetailPanel({ idea, ideas, positions, onClose, onNavigate, onEdit, isMobile, isTablet }) {
+function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTablet }) {
   if (!idea) return null
   const cat = CATEGORY_COLORS[idea.category] || CATEGORY_COLORS.product
   const [showMore, setShowMore] = useState(false)
@@ -475,28 +578,25 @@ function DetailPanel({ idea, ideas, positions, onClose, onNavigate, onEdit, isMo
         }} />
       )}
 
+      {/* Tablet handle */}
+      {isTablet && (
+        <div style={{
+          width: 40, height: 4, background: '#292524', borderRadius: 2,
+          margin: '12px auto 0',
+        }} />
+      )}
+
       <div style={{ padding: isMobile ? 24 : 32 }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             {isMobile && (
-              <>
-                <button onClick={onClose} style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: '#78716C', marginRight: 8, padding: 4,
-                }}>
-                  <ArrowLeft size={20} />
-                </button>
-                <button onClick={() => onEdit(idea)} style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: '#78716C', padding: 4, marginLeft: 'auto',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#F5F0EB'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#78716C'}
-                >
-                  <Pencil size={16} />
-                </button>
-              </>
+              <button onClick={onClose} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#78716C', marginRight: 8, padding: 4,
+              }}>
+                <ArrowLeft size={20} />
+              </button>
             )}
             <span style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
@@ -515,17 +615,17 @@ function DetailPanel({ idea, ideas, positions, onClose, onNavigate, onEdit, isMo
               {idea.category}
             </span>
           </div>
-          {!isMobile && (
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button onClick={() => onEdit(idea)} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#78716C', padding: 8, transition: 'color 150ms',
-              }}
-                onMouseEnter={e => e.currentTarget.style.color = '#F5F0EB'}
-                onMouseLeave={e => e.currentTarget.style.color = '#78716C'}
-              >
-                <Pencil size={16} />
-              </button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button onClick={() => onEdit(idea)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#78716C', padding: 8, transition: 'color 150ms',
+            }}
+              onMouseEnter={e => e.currentTarget.style.color = '#F5F0EB'}
+              onMouseLeave={e => e.currentTarget.style.color = '#78716C'}
+            >
+              <Pencil size={16} />
+            </button>
+            {!isMobile && (
               <button onClick={onClose} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: '#78716C', padding: 8, transition: 'color 150ms',
@@ -535,8 +635,8 @@ function DetailPanel({ idea, ideas, positions, onClose, onNavigate, onEdit, isMo
               >
                 <X size={24} />
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Title */}
@@ -560,7 +660,7 @@ function DetailPanel({ idea, ideas, positions, onClose, onNavigate, onEdit, isMo
         }}>
           {idea.description}
         </p>
-        {idea.description.length > 120 && (
+        {idea.description && idea.description.length > 120 && (
           <button onClick={() => setShowMore(!showMore)} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             fontFamily: '"Space Grotesk", sans-serif', fontSize: 13,
@@ -762,14 +862,14 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
       }}
       onMouseEnter={e => {
         if (!isActive) {
-          e.target.style.borderColor = '#44403C'
-          e.target.style.color = '#A8A29E'
+          e.currentTarget.style.borderColor = '#44403C'
+          e.currentTarget.style.color = '#A8A29E'
         }
       }}
       onMouseLeave={e => {
         if (!isActive) {
-          e.target.style.borderColor = '#292524'
-          e.target.style.color = '#78716C'
+          e.currentTarget.style.borderColor = '#292524'
+          e.currentTarget.style.color = '#78716C'
         }
       }}
     >
@@ -1094,14 +1194,14 @@ function AddEditPanel({ idea, onSave, onDelete, onClose, isMobile, isTablet }) {
           }}
           onMouseEnter={e => {
             if (form.title.trim()) {
-              e.target.style.background = '#D14E1C'
-              e.target.style.boxShadow = '0 0 16px rgba(232,93,38,0.15)'
+              e.currentTarget.style.background = '#D14E1C'
+              e.currentTarget.style.boxShadow = '0 0 16px rgba(232,93,38,0.15)'
             }
           }}
           onMouseLeave={e => {
             if (form.title.trim()) {
-              e.target.style.background = '#E85D26'
-              e.target.style.boxShadow = 'none'
+              e.currentTarget.style.background = '#E85D26'
+              e.currentTarget.style.boxShadow = 'none'
             }
           }}
         >
@@ -1121,8 +1221,8 @@ function AddEditPanel({ idea, onSave, onDelete, onClose, isMobile, isTablet }) {
               fontSize: 12, textTransform: 'uppercase', color: '#78716C',
               transition: 'color 150ms',
             }}
-            onMouseEnter={e => e.target.style.color = '#EF4444'}
-            onMouseLeave={e => e.target.style.color = '#78716C'}
+            onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+            onMouseLeave={e => e.currentTarget.style.color = '#78716C'}
           >
             DELETE IDEA
           </button>
@@ -1160,6 +1260,11 @@ export default function IdeasTracker() {
   const didPanRef = useRef(false)
   const svgRef = useRef(null)
   const containerRef = useRef(null)
+  const [canvasSize, setCanvasSize] = useState({ w: 1200, h: 800 })
+
+  // Node dragging
+  const [draggingNodeId, setDraggingNodeId] = useState(null)
+  const dragStartRef = useRef({ x: 0, y: 0 })
 
   // Responsive
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
@@ -1175,36 +1280,22 @@ export default function IdeasTracker() {
   // Inject keyframes
   useEffect(() => { injectKeyframes() }, [])
 
-  // Inject responsive CSS
+  // Measure canvas size
   useEffect(() => {
-    const id = 'ideas-tracker-responsive'
-    if (document.getElementById(id)) return
-    const style = document.createElement('style')
-    style.id = id
-    style.textContent = `
-      @keyframes slideInRight {
-        from { transform: translateX(400px); }
-        to { transform: translateX(0); }
+    const measure = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        setCanvasSize({ w: rect.width, h: rect.height })
       }
-      @keyframes slideInBottom {
-        from { transform: translateY(100%); }
-        to { transform: translateY(0); }
-      }
-      @media (max-width: 767px) {
-        .ideas-filter-desktop { display: none !important; }
-        .ideas-filter-mobile { display: block !important; }
-        .ideas-add-label { display: none !important; }
-        .ideas-add-btn { width: 36px !important; height: 36px !important; border-radius: 50% !important; padding: 0 !important; justify-content: center !important; }
-      }
-      @media (min-width: 768px) {
-        .ideas-filter-mobile { display: none !important; }
-      }
-    `
-    document.head.appendChild(style)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
   }, [])
 
-  // Compute positions
-  const positions = useMemo(() => computeNodePositions(ideas), [ideas])
+  // D3 Force Simulation
+  const { positions, reheat, cool, updateNodePosition, releaseNode } =
+    useForceSimulation(ideas, canvasSize.w, canvasSize.h)
 
   // Connected ids for hovered node
   const connectedIds = useMemo(() => {
@@ -1212,9 +1303,7 @@ export default function IdeasTracker() {
     const idea = ideas.find(i => i.id === hoveredId)
     if (!idea) return new Set()
     const ids = new Set()
-    // Outgoing connections
     idea.connections?.forEach(c => ids.add(c.targetId))
-    // Incoming connections
     ideas.forEach(i => {
       i.connections?.forEach(c => {
         if (c.targetId === hoveredId) ids.add(i.id)
@@ -1231,46 +1320,87 @@ export default function IdeasTracker() {
     return statusMatch && categoryMatch
   }, [statusFilters, categoryFilters])
 
+  // Node drag handlers
+  const handleNodeDragStart = useCallback((e, nodeId) => {
+    e.preventDefault()
+    setDraggingNodeId(nodeId)
+    didPanRef.current = false
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY
+    dragStartRef.current = { x: clientX, y: clientY }
+    reheat()
+  }, [reheat])
+
+  const handleMouseMove = useCallback((e) => {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY
+
+    if (draggingNodeId) {
+      didPanRef.current = true
+      // Convert screen coordinates to SVG coordinates
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (rect) {
+        const svgX = (clientX - rect.left - pan.x) / scale
+        const svgY = (clientY - rect.top - pan.y) / scale
+        updateNodePosition(draggingNodeId, svgX, svgY)
+      }
+      return
+    }
+
+    if (isPanning) {
+      didPanRef.current = true
+      setPan({ x: clientX - panStart.x, y: clientY - panStart.y })
+    }
+  }, [draggingNodeId, isPanning, panStart, pan, scale, updateNodePosition])
+
+  const handleMouseUp = useCallback(() => {
+    if (draggingNodeId) {
+      releaseNode(draggingNodeId)
+      cool()
+      setDraggingNodeId(null)
+      return
+    }
+    setIsPanning(false)
+  }, [draggingNodeId, releaseNode, cool])
+
   // Pan handlers
-  const handleMouseDown = useCallback((e) => {
+  const handleCanvasMouseDown = useCallback((e) => {
+    if (draggingNodeId) return
     setIsPanning(true)
     didPanRef.current = false
     setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
-  }, [pan])
-
-  const handleMouseMove = useCallback((e) => {
-    if (!isPanning) return
-    didPanRef.current = true
-    setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y })
-  }, [isPanning, panStart])
-
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false)
-  }, [])
+  }, [pan, draggingNodeId])
 
   // Touch pan
   const handleTouchStart = useCallback((e) => {
+    if (draggingNodeId) return
     if (e.touches.length === 1) {
       const touch = e.touches[0]
       setIsPanning(true)
       didPanRef.current = false
       setPanStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y })
     }
-  }, [pan])
-
-  const handleTouchMove = useCallback((e) => {
-    if (!isPanning || e.touches.length !== 1) return
-    didPanRef.current = true
-    const touch = e.touches[0]
-    setPan({ x: touch.clientX - panStart.x, y: touch.clientY - panStart.y })
-  }, [isPanning, panStart])
+  }, [pan, draggingNodeId])
 
   // Zoom
   const handleWheel = useCallback((e) => {
     e.preventDefault()
-    const delta = e.deltaY > 0 ? 0.9 : 1.1
-    setScale(s => Math.min(3, Math.max(0.3, s * delta)))
-  }, [])
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+
+    const mouseX = e.clientX - rect.left
+    const mouseY = e.clientY - rect.top
+    const delta = e.deltaY > 0 ? 0.92 : 1.08
+    const newScale = Math.min(3, Math.max(0.3, scale * delta))
+
+    // Zoom towards cursor position
+    const scaleDiff = newScale / scale
+    setPan(prev => ({
+      x: mouseX - (mouseX - prev.x) * scaleDiff,
+      y: mouseY - (mouseY - prev.y) * scaleDiff,
+    }))
+    setScale(newScale)
+  }, [scale])
 
   // Double-click reset
   const handleDoubleClick = useCallback((e) => {
@@ -1283,14 +1413,12 @@ export default function IdeasTracker() {
   const handleNavigate = useCallback((idea) => {
     setSelectedIdea(idea)
     const pos = positions[idea.id]
-    if (pos) {
-      const rect = containerRef.current?.getBoundingClientRect()
-      if (rect) {
-        setPan({
-          x: rect.width / 2 - pos.x * scale,
-          y: rect.height / 2 - pos.y * scale,
-        })
-      }
+    if (pos && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setPan({
+        x: rect.width / 2 - pos.x * scale,
+        y: rect.height / 2 - pos.y * scale,
+      })
     }
   }, [positions, scale])
 
@@ -1314,13 +1442,13 @@ export default function IdeasTracker() {
       setIdeas(prev => [...prev, newIdea])
       setShowAddPanel(false)
     }
-  }, [editIdea])
+  }, [editIdea, setIdeas])
 
   const handleDelete = useCallback((id) => {
     setIdeas(prev => prev.filter(i => i.id !== id))
     setSelectedIdea(null)
     setEditIdea(null)
-  }, [])
+  }, [setIdeas])
 
   // Escape key
   useEffect(() => {
@@ -1335,30 +1463,20 @@ export default function IdeasTracker() {
     return () => window.removeEventListener('keydown', handler)
   }, [showAddPanel, editIdea, selectedIdea])
 
-  // Compute canvas width
-  const canvasWidth = (selectedIdea || showAddPanel || editIdea) && isDesktop
-    ? 'calc(100vw - 400px)' : '100vw'
-
   // Password gate
   if (!authed) return <PasswordGate onAuth={() => setAuthed(true)} />
 
   // Build connection data
-  const allConnections = useMemo(() => {
-    const conns = []
-    ideas.forEach(idea => {
-      idea.connections?.forEach(conn => {
-        if (positions[idea.id] && positions[conn.targetId]) {
-          conns.push({
-            sourceId: idea.id,
-            targetId: conn.targetId,
-            type: conn.type,
-            sourceIdea: idea,
-          })
-        }
-      })
-    })
-    return conns
-  }, [ideas, positions])
+  const allConnections = ideas.flatMap(idea =>
+    (idea.connections || []).filter(conn => positions[idea.id] && positions[conn.targetId]).map(conn => ({
+      sourceId: idea.id,
+      targetId: conn.targetId,
+      type: conn.type,
+      sourceIdea: idea,
+    }))
+  )
+
+  const panelOpen = selectedIdea || showAddPanel || editIdea
 
   return (
     <div style={{
@@ -1366,7 +1484,7 @@ export default function IdeasTracker() {
       background: '#0C0C0C', display: 'flex', position: 'relative',
       fontFamily: '"Space Grotesk", sans-serif',
     }}>
-      {/* Accessible heading - visually hidden */}
+      {/* Accessible heading */}
       <h1 style={{
         position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
         overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap',
@@ -1374,23 +1492,24 @@ export default function IdeasTracker() {
       }}>
         AOM Ideas Tracker
       </h1>
+
       {/* Canvas area */}
       <div
         ref={containerRef}
         style={{
-          flex: 1, width: canvasWidth, height: '100vh',
+          flex: 1, height: '100vh',
           position: 'relative', overflow: 'hidden',
-          cursor: isPanning ? 'grabbing' : 'grab',
-          transition: 'width 250ms ease-out',
+          cursor: draggingNodeId ? 'grabbing' : isPanning ? 'grabbing' : 'grab',
+          transition: panelOpen && isDesktop ? 'flex 250ms ease-out' : undefined,
         }}
-        onMouseDown={handleMouseDown}
+        onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
         onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
+        onTouchMove={handleMouseMove}
         onTouchEnd={handleMouseUp}
       >
         {/* Dot grid background */}
@@ -1405,10 +1524,10 @@ export default function IdeasTracker() {
           position: 'absolute', inset: 0, width: '100%', height: '100%',
           pointerEvents: 'none', opacity: 0.03, mixBlendMode: 'overlay',
         }}>
-          <filter id="noise">
+          <filter id="noise-bg">
             <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
           </filter>
-          <rect width="100%" height="100%" filter="url(#noise)" />
+          <rect width="100%" height="100%" filter="url(#noise-bg)" />
         </svg>
 
         {/* Filter bar */}
@@ -1425,21 +1544,20 @@ export default function IdeasTracker() {
           onAddClick={() => setShowAddPanel(true)}
         />
 
-        {/* SVG Canvas */}
+        {/* SVG Canvas with D3 force positions */}
         <svg
           ref={svgRef}
           style={{
             width: '100%', height: '100%',
             position: 'absolute', top: 0, left: 0,
           }}
-          viewBox={isMobile ? "0 0 1200 900" : "0 0 1200 900"}
-          preserveAspectRatio="xMidYMid meet"
         >
-          <g transform={`translate(${pan.x / scale}, ${pan.y / scale}) scale(${scale})`}
-             style={{ transformOrigin: '600px 420px' }}>
+          <GlowFilters />
+
+          <g transform={`translate(${pan.x}, ${pan.y}) scale(${scale})`}>
 
             {/* Connections */}
-            {allConnections.map((conn, i) => {
+            {allConnections.map((conn) => {
               const isHighlighted = hoveredId === conn.sourceId || hoveredId === conn.targetId
               const isDimmed = hoveredId && !isHighlighted
               const sourceFiltered = isIdeaFiltered(conn.sourceIdea)
@@ -1478,7 +1596,7 @@ export default function IdeasTracker() {
                 }}
                 onMouseEnter={(id) => setHoveredId(id)}
                 onMouseLeave={() => setHoveredId(null)}
-                canvasScale={scale}
+                onDragStart={handleNodeDragStart}
               />
             ))}
           </g>
@@ -1490,7 +1608,6 @@ export default function IdeasTracker() {
         <DetailPanel
           idea={selectedIdea}
           ideas={ideas}
-          positions={positions}
           onClose={() => setSelectedIdea(null)}
           onNavigate={handleNavigate}
           onEdit={(idea) => { setEditIdea(idea); setSelectedIdea(null) }}
