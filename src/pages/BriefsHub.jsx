@@ -145,7 +145,7 @@ function CategoryAccordion({ category, index, isOpen, onToggle }) {
           }`}>
             {category.name}
           </h3>
-          <span className="font-mono text-[13px] text-[#7C9A72]">
+          <span className="font-mono text-sm text-[#7C9A72]">
             {itemCount} {itemCount === 1 ? 'item' : 'items'}
           </span>
         </div>
@@ -203,10 +203,10 @@ function BriefItem({ item }) {
       </div>
 
       <div className="flex items-baseline gap-3 ml-4 shrink-0">
-        <span className="font-mono text-[13px] text-[#7C9A72]">
+        <span className="font-mono text-sm text-[#7C9A72]">
           {item.agent}
         </span>
-        <span className="font-mono text-[13px] text-[#7C9A72]/50">
+        <span className="font-mono text-sm text-[#7C9A72]/50">
           {item.date}
         </span>
       </div>
@@ -245,7 +245,7 @@ export default function BriefsHub() {
         <div className="max-w-4xl mx-auto">
           <motion.a
             href="https://aheadofmarket.com"
-            className="font-headline text-sm font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-[#F5F0EB] transition-colors inline-block mb-12"
+            className="font-headline text-base font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-[#F5F0EB] transition-colors inline-block mb-12"
             {...fadeUp()}
           >
             AOM
@@ -280,13 +280,13 @@ export default function BriefsHub() {
             className="flex items-center gap-6"
             {...fadeUp(0.2)}
           >
-            <span className="font-mono text-[13px] text-[#7C9A72]">
+            <span className="font-mono text-sm text-[#7C9A72]">
               {totalItems} total
             </span>
-            <span className="font-mono text-[13px] text-aom-text-muted">
+            <span className="font-mono text-sm text-aom-text-muted">
               {liveItems} live
             </span>
-            <span className="font-mono text-[13px] text-aom-text-muted">
+            <span className="font-mono text-sm text-aom-text-muted">
               {categories.length} categories
             </span>
           </motion.div>
@@ -314,11 +314,11 @@ export default function BriefsHub() {
       <footer className="py-8 px-6 text-center border-t border-white/[0.06]">
         <a
           href="https://aheadofmarket.com"
-          className="font-headline text-sm font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-[#F5F0EB] transition-colors inline-block mb-3"
+          className="font-headline text-base font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-[#F5F0EB] transition-colors inline-block mb-3"
         >
           AOM
         </a>
-        <p className="font-body text-xs text-aom-text-muted">
+        <p className="font-mono text-sm text-aom-text-muted">
           aheadofmarket.com
         </p>
       </footer>

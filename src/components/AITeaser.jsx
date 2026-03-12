@@ -175,6 +175,7 @@ export default function AITeaser() {
                     <label htmlFor="waitlist-email" className="sr-only">Email address</label>
                     <input
                       id="waitlist-email"
+                      name="email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
