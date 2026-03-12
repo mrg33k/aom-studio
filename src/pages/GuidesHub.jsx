@@ -47,6 +47,8 @@ const guides = [
       clips: 354,
       duration: '8 dates',
       size: '5 cameras',
+      durationLabel: 'Shoot Dates',
+      sizeLabel: 'Cameras',
     },
   },
   {
@@ -98,11 +100,11 @@ function GuideCard({ guide, index }) {
           </div>
           <div>
             <p className="font-headline text-lg font-bold text-aom-text-light">{guide.stats.duration}</p>
-            <p className="font-body text-xs text-aom-text-muted uppercase tracking-wider">Duration</p>
+            <p className="font-body text-xs text-aom-text-muted uppercase tracking-wider">{guide.stats.durationLabel || 'Duration'}</p>
           </div>
           <div>
             <p className="font-headline text-lg font-bold text-aom-text-light">{guide.stats.size}</p>
-            <p className="font-body text-xs text-aom-text-muted uppercase tracking-wider">Size</p>
+            <p className="font-body text-xs text-aom-text-muted uppercase tracking-wider">{guide.stats.sizeLabel || 'Size'}</p>
           </div>
         </div>
       )}
