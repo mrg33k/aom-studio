@@ -447,9 +447,8 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 200,
             }}>
-              <svg viewBox="0 0 300 80" width={200} aria-label="AOM Primary on dark">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                <circle cx="258" cy="58" r="8" fill="#E85D26" />
+              <svg viewBox="0 0 320 80" width={200} aria-label="AOM Primary on dark">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Light on Dark</div>
             </div>
@@ -466,9 +465,8 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 200,
             }}>
-              <svg viewBox="0 0 300 80" width={200} aria-label="AOM Primary on light">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM</text>
-                <circle cx="258" cy="58" r="8" fill="#E85D26" />
+              <svg viewBox="0 0 320 80" width={200} aria-label="AOM Primary on light">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Dark on Light</div>
             </div>
@@ -485,9 +483,8 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 200,
             }}>
-              <svg viewBox="0 0 300 80" width={200} aria-label="AOM Monochrome black">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM</text>
-                <circle cx="258" cy="58" r="8" fill="#0A0A0A" />
+              <svg viewBox="0 0 320 80" width={200} aria-label="AOM Monochrome black">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#0A0A0A">.</tspan></text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / Black</div>
             </div>
@@ -504,9 +501,8 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 200,
             }}>
-              <svg viewBox="0 0 300 80" width={200} aria-label="AOM Monochrome white">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                <circle cx="258" cy="58" r="8" fill="#F2EDE8" />
+              <svg viewBox="0 0 320 80" width={200} aria-label="AOM Monochrome white">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#F2EDE8">.</tspan></text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / White</div>
             </div>
@@ -539,9 +535,8 @@ export default function BrandGuidelinesV4() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <svg viewBox="0 0 80 80" width={56} aria-label={`Icon mark ${v.label}`}>
-                  <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={v.fill} letterSpacing="-2">A</text>
-                  <circle cx="62" cy="58" r="7" fill={v.mono ? v.fill : '#E85D26'} />
+                <svg viewBox="0 0 100 80" width={56} aria-label={`Icon mark ${v.label}`}>
+                  <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={v.fill} letterSpacing="-2">A<tspan fill={v.mono ? v.fill : '#E85D26'}>.</tspan></text>
                 </svg>
                 <div style={{ marginTop: 10, fontSize: 10, color: v.bg === C.cream ? C.warmGray : C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{v.label}</div>
               </div>
@@ -568,11 +563,10 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 160,
             }}>
-              <svg viewBox="0 0 500 80" width="100%" style={{ maxWidth: 420 }} aria-label="AOM Horizontal lockup">
-                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                <circle cx="208" cy="52" r="7" fill="#E85D26" />
-                <line x1="224" y1="20" x2="224" y2="60" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                <text x="240" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
+              <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440 }} aria-label="AOM Horizontal lockup">
+                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                <line x1="280" y1="20" x2="280" y2="60" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+                <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
             </div>
@@ -589,9 +583,8 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 160,
             }}>
-              <svg viewBox="0 0 300 110" width={220} aria-label="AOM Stacked lockup">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                <circle cx="258" cy="58" r="8" fill="#E85D26" />
+              <svg viewBox="0 0 320 110" width={220} aria-label="AOM Stacked lockup">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked Lockup</div>
@@ -609,11 +602,10 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 160,
             }}>
-              <svg viewBox="0 0 500 80" width="100%" style={{ maxWidth: 420 }} aria-label="AOM Horizontal lockup light">
-                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM</text>
-                <circle cx="208" cy="52" r="7" fill="#E85D26" />
-                <line x1="224" y1="20" x2="224" y2="60" stroke="#D9D3CB" strokeWidth="1" />
-                <text x="240" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
+              <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440 }} aria-label="AOM Horizontal lockup light">
+                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                <line x1="280" y1="20" x2="280" y2="60" stroke="#D9D3CB" strokeWidth="1" />
+                <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
             </div>
@@ -630,9 +622,8 @@ export default function BrandGuidelinesV4() {
               justifyContent: 'center',
               minHeight: 160,
             }}>
-              <svg viewBox="0 0 300 110" width={220} aria-label="AOM Stacked lockup light">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM</text>
-                <circle cx="258" cy="58" r="8" fill="#E85D26" />
+              <svg viewBox="0 0 320 110" width={220} aria-label="AOM Stacked lockup light">
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#7A7267" letterSpacing="3">AHEAD OF MARKET</text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked / Light</div>
@@ -667,9 +658,8 @@ export default function BrandGuidelinesV4() {
                 border: `1px dashed rgba(255,92,26,0.25)`,
                 position: 'relative',
               }}>
-                <svg viewBox="0 0 300 80" width={140}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                  <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                <svg viewBox="0 0 320 80" width={140}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
                 <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
                 <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
@@ -706,30 +696,26 @@ export default function BrandGuidelinesV4() {
               {/* Actual size demo */}
               <div style={{ marginTop: 20, display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <svg viewBox="0 0 300 80" width={200}>
-                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                    <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                  <svg viewBox="0 0 320 80" width={200}>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                   </svg>
                   <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>200px</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <svg viewBox="0 0 300 80" width={120}>
-                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                    <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                  <svg viewBox="0 0 320 80" width={120}>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                   </svg>
                   <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>120px</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <svg viewBox="0 0 300 80" width={80}>
-                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                    <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                  <svg viewBox="0 0 320 80" width={80}>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                   </svg>
                   <div style={{ fontSize: 10, color: '#E85D26', marginTop: 4 }}>80px min</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <svg viewBox="0 0 80 80" width={32}>
-                    <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-2">A</text>
-                    <circle cx="62" cy="58" r="7" fill="#E85D26" />
+                  <svg viewBox="0 0 100 80" width={32}>
+                    <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-2">A<tspan fill="#E85D26">.</tspan></text>
                   </svg>
                   <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>32px icon</div>
                 </div>
@@ -765,9 +751,8 @@ export default function BrandGuidelinesV4() {
                   justifyContent: 'center',
                   minHeight: 100,
                 }}>
-                  <svg viewBox="0 0 300 80" width={120}>
-                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                    <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                  <svg viewBox="0 0 320 80" width={120}>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                   </svg>
                 </div>
                 <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -793,9 +778,8 @@ export default function BrandGuidelinesV4() {
                 minHeight: 100,
               }}>
                 {/* Stretched */}
-                <svg viewBox="0 0 300 80" width={160} height={40} preserveAspectRatio="none" style={{ opacity: 0.5 }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                  <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                <svg viewBox="0 0 320 80" width={160} height={40} preserveAspectRatio="none" style={{ opacity: 0.5 }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -819,9 +803,8 @@ export default function BrandGuidelinesV4() {
                 minHeight: 100,
               }}>
                 {/* Wrong color dot */}
-                <svg viewBox="0 0 300 80" width={120} style={{ opacity: 0.5 }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                  <circle cx="258" cy="58" r="8" fill="#4488FF" />
+                <svg viewBox="0 0 320 80" width={120} style={{ opacity: 0.5 }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#4488FF">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -845,9 +828,8 @@ export default function BrandGuidelinesV4() {
                 minHeight: 100,
               }}>
                 {/* Rotated */}
-                <svg viewBox="0 0 300 80" width={120} style={{ opacity: 0.5, transform: 'rotate(-15deg)' }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                  <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                <svg viewBox="0 0 320 80" width={120} style={{ opacity: 0.5, transform: 'rotate(-15deg)' }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -871,9 +853,8 @@ export default function BrandGuidelinesV4() {
                 minHeight: 100,
               }}>
                 {/* Drop shadow */}
-                <svg viewBox="0 0 300 80" width={120} style={{ opacity: 0.5, filter: 'drop-shadow(4px 4px 8px rgba(255,92,26,0.6))' }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                  <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                <svg viewBox="0 0 320 80" width={120} style={{ opacity: 0.5, filter: 'drop-shadow(4px 4px 8px rgba(255,92,26,0.6))' }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -921,9 +902,8 @@ export default function BrandGuidelinesV4() {
                 justifyContent: 'center',
                 minHeight: 100,
               }}>
-                <svg viewBox="0 0 300 80" width={120} style={{ opacity: 0.5 }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
-                  <circle cx="258" cy="58" r="8" fill="#E85D26" />
+                <svg viewBox="0 0 320 80" width={120} style={{ opacity: 0.5 }}>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -978,9 +958,8 @@ export default function BrandGuidelinesV4() {
                     <td style={{ padding: '12px 12px', color: C.textLightMuted }}>{row.variation}</td>
                     <td style={{ padding: '8px 12px' }}>
                       <div style={{ background: row.hex, borderRadius: 6, padding: '8px 16px', display: 'inline-flex', border: `1px solid ${C.nightBorder}` }}>
-                        <svg viewBox="0 0 300 80" width={60}>
-                          <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={row.textFill} letterSpacing="-3">AOM</text>
-                          <circle cx="258" cy="58" r="8" fill={row.dotFill} />
+                        <svg viewBox="0 0 320 80" width={60}>
+                          <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={row.textFill} letterSpacing="-3">AOM<tspan fill={row.dotFill}>.</tspan></text>
                         </svg>
                       </div>
                     </td>
