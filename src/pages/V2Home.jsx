@@ -15,14 +15,14 @@ const PHONE_HREF = 'tel:6023732164'
 const EMAIL = 'hello@aom-inhouse.com'
 
 const SLIDES = [
-  { id: 'hero', label: 'HERO' },
-  { id: 'hook', label: 'HOOK' },
-  { id: 'work', label: 'WORK' },
-  { id: 'services', label: 'SERVICES' },
-  { id: 'construction', label: 'CONSTRUCTION' },
-  { id: 'ai', label: 'AI' },
-  { id: 'proof', label: 'PROOF' },
-  { id: 'contact', label: 'CONTACT' },
+  { id: 'hero', label: 'HERO', bg: '#0C0C0C' },
+  { id: 'hook', label: 'HOOK', bg: '#151515' },
+  { id: 'work', label: 'WORK', bg: '#0C0C0C' },
+  { id: 'services', label: 'SERVICES', bg: '#1A1A17' },
+  { id: 'construction', label: 'CONSTRUCTION', bg: '#0C0C0C' },
+  { id: 'ai', label: 'AI', bg: '#151515' },
+  { id: 'proof', label: 'PROOF', bg: '#1A1A17' },
+  { id: 'contact', label: 'CONTACT', bg: '#0C0C0C' },
 ]
 
 const GUMLET_IDS = [
@@ -78,85 +78,39 @@ const EXPLORE_CARDS = [
   { label: 'INSIGHTS', title: 'Competitor Deep Dive', desc: 'How AOM stacks up against 20+ agencies and AI consultancies.', href: '/briefs/competitors', color: 'orange' },
 ]
 
-// ============================================================
-// HOOKS
-// ============================================================
-
-function useActiveSlide(containerRef) {
-  const [active, setActive] = useState(0)
-
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    const sections = container.querySelectorAll('[data-slide]')
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const idx = Number(entry.target.dataset.slide)
-            setActive(idx)
-            const hash = SLIDES[idx]?.id
-            if (hash) {
-              history.replaceState(null, '', `#${hash}`)
-            }
-          }
-        })
-      },
-      { root: container, threshold: 0.5 }
-    )
-
-    sections.forEach((s) => observer.observe(s))
-    return () => observer.disconnect()
-  }, [containerRef])
-
-  return active
-}
-
-function useSlideInView(containerRef, slideIndex) {
-  const [inView, setInView] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    const container = containerRef.current
-    const el = ref.current
-    if (!container || !el) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setInView(true)
-        else setInView(false)
-      },
-      { root: container, threshold: 0.3 }
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [containerRef, slideIndex])
-
-  return [ref, inView]
-}
+// Premium easing curve
+const PREMIUM_EASE = [0.16, 1, 0.3, 1]
 
 // ============================================================
 // ANIMATION HELPERS
 // ============================================================
 
-const fadeUp = (delay = 0, y = 15) => ({
-  initial: { opacity: 0, y },
+// Stagger children with configurable delay
+const stagger = (index, baseDelay = 0, interval = 0.1) => ({
+  initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, delay, ease: 'easeOut' },
+  transition: {
+    duration: 0.5,
+    delay: baseDelay + index * interval,
+    ease: PREMIUM_EASE,
+  },
 })
 
-const AnimateOnView = ({ children, delay = 0, y = 15, inView, className = '' }) => (
-  <motion.div
-    initial={{ opacity: 0, y }}
-    animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
-    transition={{ duration: 0.4, delay, ease: 'easeOut' }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-)
+// Slide transition variants
+const slideVariants = {
+  enter: (direction) => ({
+    y: direction > 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+  center: {
+    y: 0,
+    opacity: 1,
+  },
+  exit: (direction) => ({
+    y: direction > 0 ? '-50%' : '50%',
+    opacity: 0,
+  }),
+}
 
 // ============================================================
 // FILM GRAIN
@@ -198,7 +152,7 @@ const PillSelector = ({ options, value, onChange }) => (
         key={opt}
         type="button"
         onClick={() => onChange(opt)}
-        className={`px-5 py-[10px] text-sm font-body transition-all duration-200 ${
+        className={`px-5 py-[10px] text-base font-body transition-all duration-200 ${
           value === opt
             ? 'bg-[#E85D26] border border-[#E85D26] text-[#FDF6EC]'
             : 'border border-white/[0.15] text-[#8A847C] hover:border-white/30'
@@ -216,7 +170,7 @@ const PillSelector = ({ options, value, onChange }) => (
 
 const ContactForm = ({ compact = false }) => {
   const [form, setForm] = useState({ name: '', email: '', need: '', budget: '', timing: '' })
-  const [status, setStatus] = useState('idle') // idle | sending | sent | error
+  const [status, setStatus] = useState('idle')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -251,7 +205,6 @@ const ContactForm = ({ compact = false }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Name */}
       <div>
         <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-2">Name</label>
         <input
@@ -263,8 +216,6 @@ const ContactForm = ({ compact = false }) => {
           className="w-full bg-transparent border-b-2 border-white/[0.15] focus:border-[#E85D26] outline-none h-12 font-body text-lg text-[#FDF6EC] placeholder:text-white/25 transition-colors"
         />
       </div>
-
-      {/* Email */}
       <div>
         <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-2">Email</label>
         <input
@@ -276,26 +227,18 @@ const ContactForm = ({ compact = false }) => {
           className="w-full bg-transparent border-b-2 border-white/[0.15] focus:border-[#E85D26] outline-none h-12 font-body text-lg text-[#FDF6EC] placeholder:text-white/25 transition-colors"
         />
       </div>
-
-      {/* What do you need? */}
       <div>
         <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">What do you need?</label>
         <PillSelector options={SERVICE_NEEDS} value={form.need} onChange={(v) => setForm({ ...form, need: v })} />
       </div>
-
-      {/* Budget */}
       <div>
         <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">Budget range</label>
         <PillSelector options={BUDGET_OPTIONS} value={form.budget} onChange={(v) => setForm({ ...form, budget: v })} />
       </div>
-
-      {/* Timeline */}
       <div>
         <label className="block font-body text-xs font-semibold uppercase tracking-[0.12em] text-[#8A847C] mb-3">Timeline</label>
         <PillSelector options={TIMING_OPTIONS} value={form.timing} onChange={(v) => setForm({ ...form, timing: v })} />
       </div>
-
-      {/* Submit */}
       <button
         type="submit"
         disabled={status === 'sending'}
@@ -303,11 +246,52 @@ const ContactForm = ({ compact = false }) => {
       >
         {status === 'sending' ? 'SENDING...' : 'START BRIEF'}
       </button>
-
       {status === 'error' && (
-        <p className="text-red-400 text-sm font-body mt-2">Something went wrong. Try again or email us directly.</p>
+        <p className="text-red-400 text-base font-body mt-2">Something went wrong. Try again or email us directly.</p>
       )}
     </form>
+  )
+}
+
+// ============================================================
+// TOP PROGRESS BAR (like the audit)
+// ============================================================
+
+const ProgressBar = ({ activeSlide, totalSlides, goToSlide }) => {
+  if (activeSlide === 0) return null
+
+  const progress = (activeSlide / (totalSlides - 1)) * 100
+  const currentSlide = SLIDES[activeSlide]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: PREMIUM_EASE }}
+      className="fixed top-0 left-0 right-0 z-[46]"
+    >
+      {/* Section label bar */}
+      <div className="bg-[#0A0A0A]/90 backdrop-blur-sm px-6 py-2 flex items-center justify-between">
+        <span
+          className="text-xs tracking-[0.2em] uppercase text-[#8A847C]"
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+        >
+          {currentSlide?.label} / {activeSlide + 1} of {totalSlides}
+        </span>
+        <span className="text-xs text-[#5A5550]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          {Math.round(progress)}%
+        </span>
+      </div>
+      {/* Orange progress fill */}
+      <div className="h-1 bg-[#1A1A1A]">
+        <motion.div
+          className="h-full bg-[#E85D26]"
+          initial={false}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+        />
+      </div>
+    </motion.div>
   )
 }
 
@@ -315,7 +299,7 @@ const ContactForm = ({ compact = false }) => {
 // NAV BAR
 // ============================================================
 
-const NavBar = ({ activeSlide, scrollTo, openDrawer }) => {
+const NavBar = ({ activeSlide, goToSlide, openDrawer }) => {
   const [menuOpen, setMenuOpen] = useState(false)
   const isHero = activeSlide === 0
 
@@ -329,28 +313,28 @@ const NavBar = ({ activeSlide, scrollTo, openDrawer }) => {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-[45] h-16 md:h-16 flex items-center px-6 md:px-12 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-[45] h-16 flex items-center px-6 md:px-12 transition-all duration-300 ${
           isHero
             ? 'bg-[#0C0C0C]/40 backdrop-blur-[12px]'
-            : 'bg-[#0C0C0C] border-b border-white/[0.06]'
+            : 'bg-transparent pointer-events-none'
         }`}
       >
-        {/* Logo */}
-        <a href="/v2#hero" onClick={(e) => { e.preventDefault(); scrollTo(0) }} className="flex-shrink-0">
-          <img src="/brand/aom-horizontal-white.svg" alt="AOM" className="h-7" />
-        </a>
+        <div className="pointer-events-auto">
+          <a href="/v2#hero" onClick={(e) => { e.preventDefault(); goToSlide(0) }} className="flex-shrink-0">
+            <img src="/brand/aom-horizontal-white.svg" alt="AOM" className="h-7" />
+          </a>
+        </div>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8 ml-auto">
+        <div className="hidden md:flex items-center gap-8 ml-auto pointer-events-auto">
           {navLinks.map((link) => (
             <button
               key={link.label}
               onClick={() => {
                 if (link.href) { window.location.href = link.href; return }
                 if (link.action) { link.action(); return }
-                scrollTo(link.target)
+                goToSlide(link.target)
               }}
-              className={`font-body text-sm font-medium uppercase tracking-[0.06em] transition-colors duration-150 ${
+              className={`font-body text-base font-medium uppercase tracking-[0.06em] transition-colors duration-150 ${
                 link.target !== undefined && activeSlide === link.target
                   ? 'text-[#E85D26]'
                   : 'text-[#8A847C] hover:text-[#F0ECE6]'
@@ -361,16 +345,14 @@ const NavBar = ({ activeSlide, scrollTo, openDrawer }) => {
           ))}
         </div>
 
-        {/* Mobile hamburger */}
         <button
           onClick={() => setMenuOpen(true)}
-          className="md:hidden ml-auto text-[#8A847C] hover:text-[#F0ECE6] transition-colors"
+          className="md:hidden ml-auto text-[#8A847C] hover:text-[#F0ECE6] transition-colors pointer-events-auto"
         >
           <Menu size={24} />
         </button>
       </nav>
 
-      {/* Mobile menu overlay */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
@@ -392,7 +374,7 @@ const NavBar = ({ activeSlide, scrollTo, openDrawer }) => {
                   setMenuOpen(false)
                   if (link.href) { window.location.href = link.href; return }
                   if (link.action) { link.action(); return }
-                  scrollTo(link.target)
+                  goToSlide(link.target)
                 }}
                 className="font-headline text-[28px] font-bold text-[#F0ECE6] hover:text-[#E85D26] transition-colors"
               >
@@ -402,96 +384,6 @@ const NavBar = ({ activeSlide, scrollTo, openDrawer }) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
-  )
-}
-
-// ============================================================
-// PROGRESS DOTS
-// ============================================================
-
-const ProgressDots = ({ active, scrollTo }) => {
-  const [hoveredDot, setHoveredDot] = useState(null)
-
-  if (active === 0) return null
-
-  return (
-    <>
-      {/* Desktop: vertical right rail */}
-      <div className="hidden md:flex fixed right-7 top-1/2 -translate-y-1/2 z-[40] flex-col items-center">
-        {/* Connecting line background */}
-        <div className="absolute top-0 bottom-0 w-px bg-[#292524]" />
-        {/* Progress fill */}
-        <div
-          className="absolute top-0 w-px bg-[#E85D26] transition-all duration-300 ease-out"
-          style={{ height: `${(active / (SLIDES.length - 1)) * 100}%` }}
-        />
-
-        <div className="relative flex flex-col gap-5">
-          {SLIDES.map((slide, i) => {
-            const isActive = i === active
-            return (
-              <div key={slide.id} className="relative flex items-center">
-                {/* Tooltip */}
-                <AnimatePresence>
-                  {hoveredDot === i && (
-                    <motion.span
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 8 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-6 bg-[#0C0C0C]/90 backdrop-blur-[8px] text-[#F0ECE6] font-body text-xs font-medium uppercase tracking-[0.08em] px-3 py-1.5 whitespace-nowrap"
-                    >
-                      {slide.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-                <button
-                  onClick={() => scrollTo(i)}
-                  onMouseEnter={() => setHoveredDot(i)}
-                  onMouseLeave={() => setHoveredDot(null)}
-                  className="cursor-pointer relative z-10"
-                  aria-label={`Navigate to ${slide.label}`}
-                >
-                  <div
-                    className={`rounded-full transition-all duration-200 ${
-                      isActive
-                        ? 'w-[10px] h-[10px] bg-[#E85D26] shadow-[0_0_8px_rgba(232,93,38,0.4)]'
-                        : 'w-[6px] h-[6px] bg-[#292524] opacity-60'
-                    }`}
-                  />
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Mobile: horizontal bottom rail */}
-      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-[40]">
-        <div className="bg-[#0C0C0C]/70 backdrop-blur-[12px] rounded-full px-5 h-8 flex items-center gap-3">
-          {SLIDES.map((slide, i) => {
-            const isActive = i === active
-            return (
-              <button
-                key={slide.id}
-                onClick={() => scrollTo(i)}
-                className="relative flex items-center justify-center"
-                style={{ minWidth: 44, minHeight: 44 }}
-                aria-label={`Navigate to ${slide.label}`}
-              >
-                <div
-                  className={`rounded-full transition-all duration-200 ${
-                    isActive
-                      ? 'w-[10px] h-[10px] bg-[#E85D26] shadow-[0_0_8px_rgba(232,93,38,0.4)]'
-                      : 'w-[6px] h-[6px] bg-[#292524] opacity-60'
-                  }`}
-                />
-              </button>
-            )
-          })}
-        </div>
-      </div>
     </>
   )
 }
@@ -510,7 +402,6 @@ const FloatingContact = ({ activeSlide, onClick }) => {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [])
 
-  // Hidden on slide 8 (contact) and in keep-exploring
   if (activeSlide >= 7 || !visible) return null
 
   return (
@@ -520,8 +411,8 @@ const FloatingContact = ({ activeSlide, onClick }) => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
       onClick={onClick}
-      className={`fixed z-[50] bottom-6 right-6 md:bottom-6 md:right-6 bg-[#E85D26] text-white shadow-[0_4px_16px_rgba(232,93,38,0.3)] hover:shadow-[0_6px_24px_rgba(232,93,38,0.5)] hover:scale-[1.08] transition-all duration-200 flex items-center gap-0 ${
-        showLabel ? 'rounded-full px-5 py-3' : 'rounded-full w-14 h-14 md:w-14 md:h-14 justify-center'
+      className={`fixed z-[50] bottom-6 right-6 bg-[#E85D26] text-white shadow-[0_4px_16px_rgba(232,93,38,0.3)] hover:shadow-[0_6px_24px_rgba(232,93,38,0.5)] hover:scale-[1.08] transition-all duration-200 flex items-center gap-0 ${
+        showLabel ? 'rounded-full px-5 py-3' : 'rounded-full w-14 h-14 justify-center'
       }`}
       style={{ minWidth: showLabel ? undefined : 48 }}
     >
@@ -530,7 +421,7 @@ const FloatingContact = ({ activeSlide, onClick }) => {
         <motion.span
           initial={{ opacity: 1, width: 'auto' }}
           animate={{ opacity: showLabel ? 1 : 0, width: showLabel ? 'auto' : 0 }}
-          className="ml-2.5 font-body text-sm font-semibold whitespace-nowrap overflow-hidden"
+          className="ml-2.5 font-body text-base font-semibold whitespace-nowrap overflow-hidden"
         >
           Let's Talk
         </motion.span>
@@ -547,7 +438,6 @@ const ContactDrawer = ({ open, onClose }) => (
   <AnimatePresence>
     {open && (
       <>
-        {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -556,8 +446,6 @@ const ContactDrawer = ({ open, onClose }) => (
           className="fixed inset-0 z-[59] bg-black/60"
           onClick={onClose}
         />
-
-        {/* Desktop drawer */}
         <motion.div
           initial={{ x: '100%' }}
           animate={{ x: 0 }}
@@ -567,15 +455,11 @@ const ContactDrawer = ({ open, onClose }) => (
         >
           <PatternStrip height={4} />
           <div className="p-12 pt-12">
-            <button
-              onClick={onClose}
-              className="absolute top-6 right-6 text-[#8A847C] hover:text-[#F0ECE6] transition-colors"
-            >
+            <button onClick={onClose} className="absolute top-6 right-6 text-[#8A847C] hover:text-[#F0ECE6] transition-colors">
               <X size={24} />
             </button>
             <h2 className="font-headline text-3xl font-extrabold uppercase text-[#FDF6EC] mb-8">LET'S TALK</h2>
             <ContactForm compact />
-            {/* Fallback contact */}
             <div className="mt-10 pt-8 border-t border-white/[0.08]">
               <div className="flex items-center gap-3 mb-3">
                 <Phone size={16} className="text-[#E85D26]" />
@@ -588,8 +472,6 @@ const ContactDrawer = ({ open, onClose }) => (
             </div>
           </div>
         </motion.div>
-
-        {/* Mobile full-screen modal */}
         <motion.div
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
@@ -599,10 +481,7 @@ const ContactDrawer = ({ open, onClose }) => (
         >
           <PatternStrip height={4} />
           <div className="p-6 pt-16">
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-[#8A847C] hover:text-[#F0ECE6] transition-colors"
-            >
+            <button onClick={onClose} className="absolute top-4 right-4 text-[#8A847C] hover:text-[#F0ECE6] transition-colors">
               <X size={24} />
             </button>
             <h2 className="font-headline text-2xl font-extrabold uppercase text-[#FDF6EC] mb-6">LET'S TALK</h2>
@@ -625,55 +504,10 @@ const ContactDrawer = ({ open, onClose }) => (
 )
 
 // ============================================================
-// SLIDE WRAPPER
-// ============================================================
-
-const Slide = React.forwardRef(({ children, bg, id, index, className = '' }, ref) => (
-  <section
-    ref={ref}
-    id={id}
-    data-slide={index}
-    className={`relative min-h-[100dvh] w-full flex items-center justify-center snap-start overflow-hidden ${className}`}
-    style={{ backgroundColor: bg }}
-    aria-label={SLIDES[index]?.label}
-  >
-    {/* Top-edge gradient from previous slide (except hero) */}
-    {index > 0 && (
-      <div className="absolute top-0 left-0 right-0 h-[10px] pointer-events-none z-[2]" style={{
-        background: `linear-gradient(to bottom, ${
-          index === 1 ? '#0C0C0C' : index === 2 ? '#151515' : index === 3 ? '#0C0C0C' : index === 4 ? '#1A1A17' : index === 5 ? '#0C0C0C' : index === 6 ? '#151515' : '#1A1A17'
-        }, transparent)`
-      }} />
-    )}
-    {children}
-  </section>
-))
-
-// ============================================================
-// DOWN ARROW CUE
-// ============================================================
-
-const DownArrow = ({ onClick }) => (
-  <button
-    onClick={onClick}
-    className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 text-[#8A847C] opacity-50 hover:opacity-100 hover:text-[#E85D26] transition-all cursor-pointer"
-    aria-label="Next slide"
-  >
-    <motion.div
-      animate={{ y: [0, 6, 0] }}
-      transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}
-    >
-      <ChevronDown size={20} />
-    </motion.div>
-  </button>
-)
-
-// ============================================================
 // SLIDE 1: HERO
 // ============================================================
 
-const SlideHero = React.forwardRef(({ scrollTo, containerRef }, ref) => {
-  const [slideRef, inView] = useSlideInView(containerRef, 0)
+const SlideHero = ({ goToSlide }) => {
   const [playlist] = useState(() => {
     const shuffled = [...GUMLET_IDS]
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -683,31 +517,37 @@ const SlideHero = React.forwardRef(({ scrollTo, containerRef }, ref) => {
     return shuffled.slice(0, 3)
   })
   const [activeIdx, setActiveIdx] = useState(0)
-  const [videoVisible, setVideoVisible] = useState(true)
+  const [videoLoaded, setVideoLoaded] = useState(false)
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setVideoLoaded(true), 600)
+    return () => clearTimeout(fadeTimer)
+  }, [])
 
   useEffect(() => {
     if (playlist.length <= 1) return
     const interval = setInterval(() => {
-      setVideoVisible(false)
+      setVideoLoaded(false)
       setTimeout(() => {
         setActiveIdx((prev) => (prev + 1) % playlist.length)
-        setVideoVisible(true)
-      }, 1500)
+        setTimeout(() => setVideoLoaded(true), 100)
+      }, 600)
     }, 10000)
     return () => clearInterval(interval)
   }, [playlist])
 
   return (
-    <Slide ref={(el) => { slideRef.current = el; if (ref) ref.current = el }} bg="#0C0C0C" id="hero" index={0}>
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
       {/* Video background */}
       <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
         <iframe
           key={playlist[activeIdx]}
           src={`https://play.gumlet.io/embed/${playlist[activeIdx]}?autoplay=true&muted=true&loop=true&preload=true&controls=false`}
-          className="absolute inset-0 w-full h-full border-none transition-opacity duration-[1500ms] ease-in-out"
+          className="absolute inset-0 w-full h-full border-none"
           loading="eager"
           style={{
-            opacity: videoVisible ? 0.7 : 0,
+            opacity: videoLoaded ? 0.7 : 0,
+            transition: 'opacity 600ms ease',
             filter: 'grayscale(0.15) contrast(1.15)',
             transform: 'scale(1.15)',
             transformOrigin: 'center center',
@@ -715,11 +555,8 @@ const SlideHero = React.forwardRef(({ scrollTo, containerRef }, ref) => {
           allow="autoplay"
           tabIndex={-1}
         />
-        {/* Overlay */}
         <div className="absolute inset-0" style={{ background: 'rgba(12,12,12,0.50)' }} />
-        {/* Vignette */}
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #0C0C0C 100%)' }} />
-        {/* Bottom fade */}
         <div className="absolute inset-x-0 bottom-0 h-40" style={{ background: 'linear-gradient(to bottom, transparent 85%, #0C0C0C 100%)' }} />
       </div>
 
@@ -727,135 +564,146 @@ const SlideHero = React.forwardRef(({ scrollTo, containerRef }, ref) => {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 md:px-24 max-w-[1200px] mx-auto w-full">
-        <AnimateOnView inView={inView} delay={0} y={20}>
-          <p className="font-mono text-[12px] md:text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            CREATIVE PRODUCTION + AI SYSTEMS
-          </p>
-        </AnimateOnView>
+        <motion.p
+          {...stagger(0, 0)}
+          className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4"
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+        >
+          CREATIVE PRODUCTION + AI SYSTEMS
+        </motion.p>
 
-        <AnimateOnView inView={inView} delay={0.15} y={20}>
-          <h1 className="font-headline text-[44px] md:text-[80px] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#FDF6EC] max-w-[900px]">
-            WE MAKE COMPANIES IMPOSSIBLE TO IGNORE.
-          </h1>
-        </AnimateOnView>
+        <motion.h1
+          {...stagger(1, 0)}
+          className="font-headline text-[36px] md:text-[80px] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#FDF6EC] max-w-[900px]"
+        >
+          WE MAKE COMPANIES IMPOSSIBLE TO IGNORE.
+        </motion.h1>
 
-        <AnimateOnView inView={inView} delay={0.3} y={20}>
-          <p className="font-body text-base md:text-xl text-[#8A847C] mt-6 max-w-[600px] leading-relaxed">
-            Video, web, and brand systems for companies ready to stand out.
-          </p>
-        </AnimateOnView>
+        <motion.p
+          {...stagger(2, 0)}
+          className="font-body text-base md:text-xl text-[#8A847C] mt-6 max-w-[600px] leading-relaxed"
+        >
+          Video, web, and brand systems for companies ready to stand out.
+        </motion.p>
 
-        {/* Status bar */}
-        <AnimateOnView inView={inView} delay={0.6} y={0} className="mt-auto">
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 opacity-70">
-            {['PHOENIX, AZ', 'VIDEO', 'WEB', 'SOCIAL', 'SYSTEMS', 'EST. 2020'].map((item, i) => (
-              <React.Fragment key={item}>
-                {i > 0 && <span className="w-px h-3 bg-[#292524]" />}
-                <span className="font-body text-[11px] md:text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                  {item}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
-        </AnimateOnView>
-
-        {/* Down arrow */}
-        <AnimateOnView inView={inView} delay={0.8} y={0}>
-          <button
-            onClick={() => scrollTo(1)}
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 text-[#8A847C] hover:text-[#E85D26] transition-colors cursor-pointer"
+        {/* Down arrow cue */}
+        <motion.button
+          {...stagger(4, 0.2)}
+          onClick={() => goToSlide(1)}
+          className="mt-16 text-[#8A847C] hover:text-[#E85D26] transition-colors cursor-pointer flex flex-col items-center"
+        >
+          <span className="block font-body text-[13px] font-medium uppercase tracking-[0.08em] text-[#8A847C] mb-2">Scroll</span>
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}
           >
-            <motion.div
-              animate={{ y: [0, 6, 0] }}
-              transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}
-            >
-              <ChevronDown size={24} />
-            </motion.div>
-            <span className="block font-body text-[13px] font-medium uppercase tracking-[0.08em] text-[#8A847C] mt-1">Scroll</span>
-          </button>
-        </AnimateOnView>
+            <ChevronDown size={24} />
+          </motion.div>
+        </motion.button>
       </div>
-    </Slide>
+
+      {/* Status bar */}
+      <motion.div
+        {...stagger(3, 0.3)}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4 opacity-70"
+      >
+        {['PHOENIX, AZ', 'VIDEO', 'WEB', 'SOCIAL', 'SYSTEMS', 'EST. 2020'].map((item, i) => (
+          <React.Fragment key={item}>
+            {i > 0 && <span className="w-px h-3 bg-[#292524]" />}
+            <span
+              className="hidden md:inline text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {item}
+            </span>
+          </React.Fragment>
+        ))}
+        {/* Simplified mobile status */}
+        <span className="md:hidden text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          PHOENIX, AZ / EST. 2020
+        </span>
+      </motion.div>
+    </div>
   )
-})
+}
 
 // ============================================================
 // SLIDE 2: HOOK
 // ============================================================
 
-const SlideHook = React.forwardRef(({ scrollTo, containerRef }, ref) => {
-  const [slideRef, inView] = useSlideInView(containerRef, 1)
-
+const SlideHook = () => {
   const stats = [
     { value: '24-72HR', label: 'Fast Turnarounds' },
     { value: 'CINEMA', label: 'Production Quality' },
-    { value: 'PREDICTABLE', label: 'Delivery Timeline' },
-    { value: 'REPEATABLE', label: 'Brand Consistency' },
+    { value: 'ON TIME', label: 'Delivery Timeline' },
+    { value: 'EVERY TIME', label: 'Brand Consistency' },
   ]
 
   return (
-    <Slide ref={(el) => { slideRef.current = el; if (ref) ref.current = el }} bg="#151515" id="hook" index={1}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full py-20">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#151515' }}>
+      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
           {/* Left: 55% */}
           <div className="w-full md:w-[55%]">
-            <AnimateOnView inView={inView} delay={0} y={15}>
-              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                WHY AOM
-              </p>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.1} y={15}>
-              <h2 className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
-                SMALL TEAM. CINEMA-GRADE. NO BS.
-              </h2>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.2} y={15}>
-              <p className="font-body text-base md:text-lg text-[#8A847C] mt-6 max-w-[45ch] leading-relaxed">
-                No layers of account managers. No scope creep. You talk to the people doing the work.
-              </p>
-            </AnimateOnView>
+            <motion.p
+              {...stagger(0)}
+              className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              WHY AOM
+            </motion.p>
+            <motion.h2
+              {...stagger(1)}
+              className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+            >
+              SMALL TEAM. CINEMA-GRADE. NO BS.
+            </motion.h2>
+            <motion.p
+              {...stagger(2)}
+              className="font-body text-base md:text-lg text-[#8A847C] mt-6 max-w-[45ch] leading-relaxed"
+            >
+              No layers of account managers. No scope creep. You talk to the people doing the work.
+            </motion.p>
           </div>
 
           {/* Right: 45% - stat grid */}
           <div className="w-full md:w-[45%] grid grid-cols-2 gap-8">
             {stats.map((stat, i) => (
-              <AnimateOnView key={stat.label} inView={inView} delay={0.3 + i * 0.1} y={20}>
+              <motion.div key={stat.label} {...stagger(i, 0.3)}>
                 <div className="border-l-2 border-[#E85D26]/20 pl-5">
-                  <p className="font-headline text-[40px] md:text-[56px] font-black text-[#E85D26] leading-[0.95] tracking-[-0.02em]">
+                  <p className="font-headline text-[32px] md:text-[clamp(32px,3.5vw,52px)] font-black text-[#E85D26] leading-[0.95] tracking-[-0.02em]">
                     {stat.value}
                   </p>
-                  <p className="font-body text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.1em] text-[#8A847C] mt-2">
+                  <p className="font-body text-[13px] font-semibold uppercase tracking-[0.1em] text-[#8A847C] mt-2">
                     {stat.label}
                   </p>
                 </div>
-              </AnimateOnView>
+              </motion.div>
             ))}
           </div>
         </div>
       </div>
-      <DownArrow onClick={() => scrollTo(2)} />
-    </Slide>
+    </div>
   )
-})
+}
 
 // ============================================================
 // SLIDE 3: PORTFOLIO / THE WORK
 // ============================================================
 
-const SlideWork = React.forwardRef(({ scrollTo, containerRef }, ref) => {
-  const [slideRef, inView] = useSlideInView(containerRef, 2)
+const SlideWork = () => {
   const [activeProject, setActiveProject] = useState(0)
 
   return (
-    <Slide ref={(el) => { slideRef.current = el; if (ref) ref.current = el }} bg="#0C0C0C" id="work" index={2}>
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
       {/* Full-bleed video reel */}
       <div className="absolute inset-0 z-0">
         <iframe
           key={PORTFOLIO_PIECES[activeProject].id}
           src={`https://play.gumlet.io/embed/${PORTFOLIO_PIECES[activeProject].id}?autoplay=true&muted=true&loop=true&preload=true&controls=false`}
-          className="absolute inset-0 w-full h-full border-none transition-opacity duration-300"
+          className="absolute inset-0 w-full h-full border-none"
           loading="lazy"
-          style={{ opacity: 0.85 }}
+          style={{ opacity: 0.85, transition: 'opacity 300ms ease' }}
           allow="autoplay"
           tabIndex={-1}
         />
@@ -863,57 +711,58 @@ const SlideWork = React.forwardRef(({ scrollTo, containerRef }, ref) => {
       </div>
 
       {/* Top-left label */}
-      <AnimateOnView inView={inView} delay={0} y={0} className="absolute top-20 left-6 md:left-12 z-10">
-        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          THE WORK
-        </p>
-      </AnimateOnView>
+      <motion.p
+        {...stagger(0)}
+        className="absolute top-20 left-6 md:left-12 z-10 text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C]"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+      >
+        THE WORK
+      </motion.p>
 
       {/* Client name overlay */}
-      <AnimateOnView inView={inView} delay={0.4} y={10} className="absolute bottom-24 md:bottom-24 left-6 md:left-12 z-10">
+      <motion.div
+        {...stagger(1, 0.3)}
+        className="absolute bottom-24 md:bottom-24 left-6 md:left-12 z-10"
+      >
         <p className="font-body text-lg font-semibold text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
           {PORTFOLIO_PIECES[activeProject].name}
         </p>
         <p className="text-[12px] uppercase tracking-[0.1em] text-[#8A847C] mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
           {PORTFOLIO_PIECES[activeProject].industry}
         </p>
-      </AnimateOnView>
+      </motion.div>
 
       {/* Thumbnail selectors */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-3">
         {PORTFOLIO_PIECES.map((piece, i) => (
-          <AnimateOnView key={piece.id} inView={inView} delay={0.5 + i * 0.08} y={10}>
-            <button
-              onClick={() => setActiveProject(i)}
-              className={`w-[80px] h-[56px] md:w-[80px] md:h-[56px] overflow-hidden transition-all duration-200 ${
-                i === activeProject
-                  ? 'border-2 border-[#E85D26]'
-                  : 'border-2 border-white/10 hover:border-white/25'
-              }`}
-              aria-label={`View ${piece.name}`}
-            >
-              <div className="w-full h-full bg-[#1A1A17] flex items-center justify-center">
-                <span className="text-[10px] font-body text-[#8A847C] uppercase tracking-wider text-center px-1 leading-tight">
-                  {piece.name.split(' ').slice(0, 2).join(' ')}
-                </span>
-              </div>
-            </button>
-          </AnimateOnView>
+          <motion.button
+            key={piece.id}
+            {...stagger(i, 0.4, 0.08)}
+            onClick={() => setActiveProject(i)}
+            className={`w-[56px] h-[40px] md:w-[80px] md:h-[56px] overflow-hidden transition-all duration-200 ${
+              i === activeProject
+                ? 'border-2 border-[#E85D26]'
+                : 'border-2 border-white/10 hover:border-white/25'
+            }`}
+            aria-label={`View ${piece.name}`}
+          >
+            <div className="w-full h-full bg-[#1A1A17] flex items-center justify-center">
+              <span className="text-[10px] font-body text-[#8A847C] uppercase tracking-wider text-center px-1 leading-tight">
+                {piece.name.split(' ').slice(0, 2).join(' ')}
+              </span>
+            </div>
+          </motion.button>
         ))}
       </div>
-
-      <DownArrow onClick={() => scrollTo(3)} />
-    </Slide>
+    </div>
   )
-})
+}
 
 // ============================================================
 // SLIDE 4: SERVICES
 // ============================================================
 
-const SlideServices = React.forwardRef(({ scrollTo, containerRef }, ref) => {
-  const [slideRef, inView] = useSlideInView(containerRef, 3)
-
+const SlideServices = () => {
   const cards = [
     {
       icon: HardHat,
@@ -936,49 +785,46 @@ const SlideServices = React.forwardRef(({ scrollTo, containerRef }, ref) => {
   ]
 
   return (
-    <Slide ref={(el) => { slideRef.current = el; if (ref) ref.current = el }} bg="#1A1A17" id="services" index={3}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full py-20">
-        <AnimateOnView inView={inView} delay={0} y={15} className="text-center">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A1A17' }}>
+      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+        <motion.div {...stagger(0)} className="text-center">
           <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
             WHAT WE DO
           </p>
-        </AnimateOnView>
-        <AnimateOnView inView={inView} delay={0.1} y={15} className="text-center mb-12">
+        </motion.div>
+        <motion.div {...stagger(1)} className="text-center mb-12">
           <h2 className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
             PICK YOUR LANE.
           </h2>
-        </AnimateOnView>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {cards.map((card, i) => {
             const Icon = card.icon
             return (
-              <AnimateOnView key={card.title} inView={inView} delay={0.25 + i * 0.12} y={25}>
+              <motion.div key={card.title} {...stagger(i, 0.25, 0.12)}>
                 <div className="bg-white/[0.03] border border-white/[0.08] hover:border-[#E85D26]/30 hover:bg-white/[0.05] transition-all duration-200 p-8 md:p-10 h-full flex flex-col group">
                   <Icon size={32} strokeWidth={2} className="text-[#E85D26] mb-6" />
                   <h3 className="font-body text-xl font-semibold text-[#F0ECE6] mb-3">{card.title}</h3>
                   <p className="font-body text-base text-[#8A847C] leading-relaxed mb-6 flex-1">{card.body}</p>
-                  <span className="font-body text-sm font-semibold uppercase tracking-[0.05em] text-[#E85D26] flex items-center gap-2 group-hover:gap-3 transition-all">
+                  <span className="font-body text-base font-semibold uppercase tracking-[0.05em] text-[#E85D26] flex items-center gap-2 group-hover:gap-3 transition-all">
                     {card.cta} <ArrowRight size={16} />
                   </span>
                 </div>
-              </AnimateOnView>
+              </motion.div>
             )
           })}
         </div>
       </div>
-      <DownArrow onClick={() => scrollTo(4)} />
-    </Slide>
+    </div>
   )
-})
+}
 
 // ============================================================
 // SLIDE 5: CONSTRUCTION
 // ============================================================
 
-const SlideConstruction = React.forwardRef(({ scrollTo, containerRef, openDrawer }, ref) => {
-  const [slideRef, inView] = useSlideInView(containerRef, 4)
-
+const SlideConstruction = ({ openDrawer }) => {
   const proofPoints = [
     'Monthly content that shows your crews in action',
     'Pipeline growth through consistent social presence',
@@ -986,52 +832,55 @@ const SlideConstruction = React.forwardRef(({ scrollTo, containerRef, openDrawer
   ]
 
   return (
-    <Slide ref={(el) => { slideRef.current = el; if (ref) ref.current = el }} bg="#0C0C0C" id="construction" index={4}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full py-20">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
+      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
           {/* Left: content */}
           <div className="w-full md:w-1/2">
-            <AnimateOnView inView={inView} delay={0} y={15}>
-              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#E85D26] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                CONSTRUCTION
-              </p>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.1} y={15}>
-              <h2 className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
-                YOUR CREWS BUILD IT. WE MAKE SURE PEOPLE SEE IT.
-              </h2>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.2} y={15}>
-              <p className="font-body text-base md:text-lg text-[#8A847C] mt-6 max-w-[40ch] leading-relaxed">
-                Construction companies are sitting on the best content in business. We turn jobsite footage into a social media engine.
-              </p>
-            </AnimateOnView>
+            <motion.p
+              {...stagger(0)}
+              className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#E85D26] mb-4"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              CONSTRUCTION
+            </motion.p>
+            <motion.h2
+              {...stagger(1)}
+              className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+            >
+              YOUR CREWS BUILD IT. WE MAKE SURE PEOPLE SEE IT.
+            </motion.h2>
+            <motion.p
+              {...stagger(2)}
+              className="font-body text-base md:text-lg text-[#8A847C] mt-6 max-w-[40ch] leading-relaxed"
+            >
+              Construction companies are sitting on the best content in business. We turn jobsite footage into a social media engine.
+            </motion.p>
 
-            {/* Proof points */}
             <div className="mt-8 space-y-4">
               {proofPoints.map((point, i) => (
-                <AnimateOnView key={i} inView={inView} delay={0.3 + i * 0.1} y={15}>
+                <motion.div key={i} {...stagger(i, 0.3)}>
                   <div className="flex items-start gap-3">
                     <div className="w-[6px] h-[6px] rounded-full bg-[#E85D26] mt-2 flex-shrink-0" />
                     <p className="font-body text-base text-[#8A847C]">{point}</p>
                   </div>
-                </AnimateOnView>
+                </motion.div>
               ))}
             </div>
 
-            <AnimateOnView inView={inView} delay={0.6} y={15}>
+            <motion.div {...stagger(6, 0.3)}>
               <button
                 onClick={openDrawer}
-                className="mt-10 bg-[#E85D26] hover:bg-[#D14E1C] text-[#FDF6EC] font-headline font-extrabold text-sm uppercase tracking-[0.06em] px-8 py-4 transition-all hover:shadow-[0_0_20px_rgba(232,93,38,0.15)]"
+                className="mt-10 bg-[#E85D26] hover:bg-[#D14E1C] text-[#FDF6EC] font-headline font-extrabold text-base uppercase tracking-[0.06em] px-8 py-4 transition-all hover:shadow-[0_0_20px_rgba(232,93,38,0.15)]"
               >
                 START A PROJECT
               </button>
-            </AnimateOnView>
+            </motion.div>
           </div>
 
-          {/* Right: media placeholder (4:5 portrait) */}
+          {/* Right: media (4:5 portrait) */}
           <div className="w-full md:w-1/2 flex justify-center">
-            <AnimateOnView inView={inView} delay={0.3} y={0}>
+            <motion.div {...stagger(2, 0.2)}>
               <div className="relative w-full max-w-[400px] aspect-[4/5] border-2 border-[#292524] hover:border-[#E85D26]/30 transition-colors overflow-hidden bg-[#1A1A17]">
                 <iframe
                   src="https://play.gumlet.io/embed/698a68b7fc23d3d76fa970ef?autoplay=true&muted=true&loop=true&preload=true&controls=false"
@@ -1042,22 +891,19 @@ const SlideConstruction = React.forwardRef(({ scrollTo, containerRef, openDrawer
                   style={{ transform: 'scale(1.3)', transformOrigin: 'center center' }}
                 />
               </div>
-            </AnimateOnView>
+            </motion.div>
           </div>
         </div>
       </div>
-      <DownArrow onClick={() => scrollTo(5)} />
-    </Slide>
+    </div>
   )
-})
+}
 
 // ============================================================
 // SLIDE 6: AI ADVISORY
 // ============================================================
 
-const SlideAI = React.forwardRef(({ scrollTo, containerRef }, ref) => {
-  const [slideRef, inView] = useSlideInView(containerRef, 5)
-
+const SlideAI = () => {
   const steps = [
     { num: '1', title: 'AUDIT', body: 'We map your workflows, find the gaps, build the blueprint.' },
     { num: '2', title: 'SETUP', body: 'Custom AI agents, dashboards, and automations. Built for your business.' },
@@ -1065,167 +911,158 @@ const SlideAI = React.forwardRef(({ scrollTo, containerRef }, ref) => {
   ]
 
   return (
-    <Slide ref={(el) => { slideRef.current = el; if (ref) ref.current = el }} bg="#151515" id="ai" index={5}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full py-20">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#151515' }}>
+      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16">
           {/* Left: 40% */}
           <div className="w-full md:w-[40%]">
-            <AnimateOnView inView={inView} delay={0} y={15}>
-              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#7C9A72] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                AI OPERATIONS
-              </p>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.1} y={15}>
-              <h2 className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
-                THE NEXT GEEK SQUAD FOR AI.
-              </h2>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.2} y={15}>
-              <p className="font-body text-base md:text-lg text-[#8A847C] mt-6 max-w-[35ch] leading-relaxed">
-                Most small businesses know AI matters. They just don't know where to start. We do.
-              </p>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.3} y={15}>
-              <p className="font-headline text-[22px] md:text-[28px] font-extrabold text-[#7C9A72] mt-8 tracking-[-0.01em]">
-                Starting at $2,500
-              </p>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.4} y={15}>
-              <a
-                href="/system"
-                className="inline-flex items-center gap-2 mt-6 font-body text-sm font-semibold uppercase tracking-[0.05em] text-[#7C9A72] hover:text-[#9BB593] transition-colors"
-              >
-                EXPLORE THE SYSTEM <ArrowRight size={16} />
-              </a>
-            </AnimateOnView>
+            <motion.p
+              {...stagger(0)}
+              className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#7C9A72] mb-4"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              AI OPERATIONS
+            </motion.p>
+            <motion.h2
+              {...stagger(1)}
+              className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+            >
+              THE NEXT GEEK SQUAD FOR AI.
+            </motion.h2>
+            <motion.p
+              {...stagger(2)}
+              className="font-body text-base md:text-lg text-[#8A847C] mt-6 max-w-[35ch] leading-relaxed"
+            >
+              Most small businesses know AI matters. They just don't know where to start. We do.
+            </motion.p>
+            <motion.p
+              {...stagger(3)}
+              className="font-headline text-[22px] md:text-[28px] font-extrabold text-[#7C9A72] mt-8 tracking-[-0.01em]"
+            >
+              Starting at $2,500
+            </motion.p>
+            <motion.a
+              {...stagger(4)}
+              href="/system"
+              className="inline-flex items-center gap-2 mt-6 font-body text-base font-semibold uppercase tracking-[0.05em] text-[#7C9A72] hover:text-[#9BB593] transition-colors"
+            >
+              EXPLORE THE SYSTEM <ArrowRight size={16} />
+            </motion.a>
           </div>
 
           {/* Right: 60% - step cards */}
           <div className="w-full md:w-[60%] flex flex-col gap-5">
             {steps.map((step, i) => (
-              <AnimateOnView key={step.num} inView={inView} delay={0.3 + i * 0.12} y={20}>
+              <motion.div key={step.num} {...stagger(i, 0.3, 0.12)}>
                 <div className="bg-[#7C9A72]/5 border border-[#7C9A72]/[0.12] hover:border-[#7C9A72]/25 hover:bg-[#7C9A72]/[0.08] transition-all duration-200 px-8 py-7 flex items-start gap-6">
                   <span className="font-headline text-[32px] md:text-[40px] font-extrabold text-[#7C9A72] leading-none flex-shrink-0">
                     {step.num}
                   </span>
                   <div>
                     <h3 className="font-body text-lg md:text-xl font-semibold text-[#F0ECE6]">{step.title}</h3>
-                    <p className="font-body text-[15px] text-[#8A847C] mt-2 leading-relaxed">{step.body}</p>
+                    <p className="font-body text-base text-[#8A847C] mt-2 leading-relaxed">{step.body}</p>
                   </div>
                 </div>
-              </AnimateOnView>
+              </motion.div>
             ))}
           </div>
         </div>
       </div>
-      <DownArrow onClick={() => scrollTo(6)} />
-    </Slide>
+    </div>
   )
-})
+}
 
 // ============================================================
 // SLIDE 7: SOCIAL PROOF
 // ============================================================
 
-const SlideProof = React.forwardRef(({ scrollTo, containerRef }, ref) => {
-  const [slideRef, inView] = useSlideInView(containerRef, 6)
+const SlideProof = () => (
+  <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A1A17' }}>
+    <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+      <motion.div {...stagger(0)} className="text-center">
+        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          WHAT THEY SAY
+        </p>
+      </motion.div>
+      <motion.div {...stagger(1)} className="text-center mb-12">
+        <h2 className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
+          DON'T TAKE OUR WORD FOR IT.
+        </h2>
+      </motion.div>
 
-  return (
-    <Slide ref={(el) => { slideRef.current = el; if (ref) ref.current = el }} bg="#1A1A17" id="proof" index={6}>
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full py-20">
-        <AnimateOnView inView={inView} delay={0} y={15} className="text-center">
-          <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            WHAT THEY SAY
-          </p>
-        </AnimateOnView>
-        <AnimateOnView inView={inView} delay={0.1} y={15} className="text-center mb-12">
-          <h2 className="font-headline text-[34px] md:text-[52px] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
-            DON'T TAKE OUR WORD FOR IT.
-          </h2>
-        </AnimateOnView>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((t, i) => (
-            <AnimateOnView key={t.name} inView={inView} delay={0.25 + i * 0.15} y={25}>
-              <div className="bg-white/[0.03] border border-white/[0.08] hover:border-[#E85D26]/20 transition-all duration-200 p-8 md:p-10 h-full flex flex-col">
-                {/* Quote mark */}
-                <span className="font-headline text-5xl font-extrabold text-[#E85D26] opacity-40 leading-none mb-4">"</span>
-                {/* Quote text */}
-                <p className="font-body text-base md:text-lg text-[#F0ECE6] italic leading-relaxed mb-6 flex-1">
-                  {t.quote}
-                </p>
-                {/* Metric */}
-                <p className="font-headline text-[28px] md:text-[32px] font-extrabold text-[#E85D26] leading-tight">{t.metric}</p>
-                <p className="font-body text-[13px] font-medium uppercase tracking-[0.1em] text-[#8A847C] mt-1 mb-5">{t.metricLabel}</p>
-                {/* Divider */}
-                <div className="w-full h-px bg-white/[0.06] mb-5" />
-                {/* Attribution */}
-                <p className="font-body text-base font-semibold text-[#F0ECE6]">{t.name}</p>
-                <p className="font-body text-sm text-[#8A847C] mt-1">{t.company} / {t.industry}</p>
-              </div>
-            </AnimateOnView>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        {TESTIMONIALS.map((t, i) => (
+          <motion.div key={t.name} {...stagger(i, 0.25, 0.15)}>
+            <div className="bg-white/[0.03] border border-white/[0.08] hover:border-[#E85D26]/20 transition-all duration-200 p-8 md:p-10 h-full flex flex-col">
+              <span className="font-headline text-5xl font-extrabold text-[#E85D26] opacity-40 leading-none mb-4">&ldquo;</span>
+              <p className="font-body text-base md:text-lg text-[#F0ECE6] italic leading-relaxed mb-6 flex-1">
+                {t.quote}
+              </p>
+              <p className="font-headline text-[28px] md:text-[32px] font-extrabold text-[#E85D26] leading-tight">{t.metric}</p>
+              <p className="font-body text-[13px] font-medium uppercase tracking-[0.1em] text-[#8A847C] mt-1 mb-5">{t.metricLabel}</p>
+              <div className="w-full h-px bg-white/[0.06] mb-5" />
+              <p className="font-body text-base font-semibold text-[#F0ECE6]">{t.name}</p>
+              <p className="font-body text-base text-[#8A847C] mt-1">{t.company} / {t.industry}</p>
+            </div>
+          </motion.div>
+        ))}
       </div>
-      <DownArrow onClick={() => scrollTo(7)} />
-    </Slide>
-  )
-})
+    </div>
+  </div>
+)
 
 // ============================================================
 // SLIDE 8: CONTACT
 // ============================================================
 
-const SlideContact = React.forwardRef(({ containerRef }, ref) => {
-  const [slideRef, inView] = useSlideInView(containerRef, 7)
-
-  return (
-    <Slide ref={(el) => { slideRef.current = el; if (ref) ref.current = el }} bg="#0C0C0C" id="contact" index={7}>
-      <FilmGrain />
-      <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full py-20">
-        <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16">
-          {/* Left: 45% */}
-          <div className="w-full md:w-[45%]">
-            <AnimateOnView inView={inView} delay={0} y={15}>
-              <h2 className="font-headline text-[40px] md:text-[64px] font-black uppercase leading-[0.95] tracking-[-0.03em] text-[#FDF6EC] max-w-[500px]">
-                LET'S BUILD SOMETHING.
-              </h2>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.1} y={15}>
-              <p className="font-body text-base md:text-lg text-[#8A847C] mt-6 max-w-[35ch] leading-relaxed">
-                Tell us what you need. We'll tell you exactly how we'd do it.
-              </p>
-            </AnimateOnView>
-            <AnimateOnView inView={inView} delay={0.2} y={15}>
-              <div className="mt-8">
-                <div className="w-20 h-px bg-white/[0.08] mb-8" />
-                <div className="flex items-center gap-3 mb-3">
-                  <Phone size={16} className="text-[#E85D26]" />
-                  <a href={PHONE_HREF} className="font-body text-lg font-semibold text-[#F0ECE6] hover:text-[#E85D26] transition-colors">{PHONE}</a>
-                </div>
-                <div className="flex items-center gap-3 mb-3">
-                  <Mail size={16} className="text-[#E85D26]" />
-                  <a href={`mailto:${EMAIL}`} className="font-body text-lg font-semibold text-[#F0ECE6] hover:text-[#E85D26] transition-colors">{EMAIL}</a>
-                </div>
-                <p className="font-body text-base text-[#8A847C] mt-3">Phoenix, AZ</p>
+const SlideContact = () => (
+  <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
+    <FilmGrain />
+    <div className="relative z-10 px-6 md:px-24 max-w-[1200px] mx-auto w-full">
+      <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16">
+        {/* Left: 45% */}
+        <div className="w-full md:w-[45%]">
+          <motion.h2
+            {...stagger(0)}
+            className="font-headline text-[40px] md:text-[64px] font-black uppercase leading-[0.95] tracking-[-0.03em] text-[#FDF6EC] max-w-[500px]"
+          >
+            LET'S BUILD SOMETHING.
+          </motion.h2>
+          <motion.p
+            {...stagger(1)}
+            className="font-body text-base md:text-lg text-[#8A847C] mt-6 max-w-[35ch] leading-relaxed"
+          >
+            Tell us what you need. We'll tell you exactly how we'd do it.
+          </motion.p>
+          <motion.div {...stagger(2)}>
+            <div className="mt-8">
+              <div className="w-20 h-px bg-white/[0.08] mb-8" />
+              <div className="flex items-center gap-3 mb-3">
+                <Phone size={16} className="text-[#E85D26]" />
+                <a href={PHONE_HREF} className="font-body text-lg font-semibold text-[#F0ECE6] hover:text-[#E85D26] transition-colors">{PHONE}</a>
               </div>
-            </AnimateOnView>
-          </div>
+              <div className="flex items-center gap-3 mb-3">
+                <Mail size={16} className="text-[#E85D26]" />
+                <a href={`mailto:${EMAIL}`} className="font-body text-lg font-semibold text-[#F0ECE6] hover:text-[#E85D26] transition-colors">{EMAIL}</a>
+              </div>
+              <p className="font-body text-base text-[#8A847C] mt-3">Phoenix, AZ</p>
+            </div>
+          </motion.div>
+        </div>
 
-          {/* Right: 55% - form */}
-          <div className="w-full md:w-[55%] max-w-[480px]">
-            <AnimateOnView inView={inView} delay={0.3} y={15}>
-              <ContactForm />
-            </AnimateOnView>
-          </div>
+        {/* Right: 55% - form */}
+        <div className="w-full md:w-[55%] max-w-[480px]">
+          <motion.div {...stagger(3, 0.2)}>
+            <ContactForm />
+          </motion.div>
         </div>
       </div>
-    </Slide>
-  )
-})
+    </div>
+  </div>
+)
 
 // ============================================================
-// KEEP EXPLORING SECTION
+// KEEP EXPLORING SECTION (scrollable, below slides)
 // ============================================================
 
 const KeepExploring = () => {
@@ -1244,14 +1081,12 @@ const KeepExploring = () => {
   }, [])
 
   return (
-    <div ref={sectionRef} className="bg-[#141412] snap-start">
+    <div ref={sectionRef} className="bg-[#141412]">
       <PatternStrip height={6} />
-
       <div className="max-w-[960px] mx-auto px-6 md:px-12 pt-20 pb-16">
         <h2 className="font-headline text-[32px] font-bold text-[#8A847C] text-center mb-12">
           KEEP EXPLORING
         </h2>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {EXPLORE_CARDS.map((card, i) => (
             <motion.a
@@ -1271,7 +1106,7 @@ const KeepExploring = () => {
                 {card.label}
               </p>
               <h3 className="font-body text-xl font-semibold text-[#F0ECE6] mb-2">{card.title}</h3>
-              <p className="font-body text-[15px] text-[#8A847C] leading-relaxed">{card.desc}</p>
+              <p className="font-body text-base text-[#8A847C] leading-relaxed">{card.desc}</p>
               <ArrowUpRight
                 size={16}
                 className="absolute top-8 right-8 text-[#8A847C] group-hover:text-[#E85D26] transition-colors"
@@ -1293,23 +1128,170 @@ const KeepExploring = () => {
 }
 
 // ============================================================
+// NAVIGATION BUTTONS (bottom bar, audit-style)
+// ============================================================
+
+const SlideNavButtons = ({ activeSlide, totalSlides, goToSlide, isExploring }) => {
+  if (activeSlide === 0 || isExploring) return null
+
+  const showBack = activeSlide > 0
+  const showNext = activeSlide < totalSlides - 1
+
+  return (
+    <div
+      className="fixed bottom-0 left-0 right-0 z-[42] px-6 py-4 flex items-center justify-between"
+      style={{ background: 'rgba(12,12,12,0.95)', backdropFilter: 'blur(8px)' }}
+    >
+      {showBack ? (
+        <button
+          onClick={() => goToSlide(activeSlide - 1)}
+          className="inline-flex items-center gap-2 px-6 py-3 font-body text-base transition-all border border-white/20 text-white/60 hover:border-white/40 hover:text-white"
+        >
+          Back
+        </button>
+      ) : <div />}
+      {showNext ? (
+        <button
+          onClick={() => goToSlide(activeSlide + 1)}
+          className="inline-flex items-center gap-2 px-8 py-3 font-body text-base font-semibold text-white transition-all hover:scale-105 bg-[#E85D26] hover:bg-[#D14E1C]"
+        >
+          Next <ArrowRight size={18} />
+        </button>
+      ) : (
+        <button
+          onClick={() => {
+            // Scroll to keep exploring section
+            const el = document.getElementById('keep-exploring')
+            if (el) el.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="inline-flex items-center gap-2 px-8 py-3 font-body text-base font-semibold text-white transition-all hover:scale-105 bg-[#E85D26] hover:bg-[#D14E1C]"
+        >
+          Keep Exploring <ArrowRight size={18} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ============================================================
+// SLIDE COMPONENTS ARRAY
+// ============================================================
+
+const SLIDE_COMPONENTS = [
+  SlideHero,
+  SlideHook,
+  SlideWork,
+  SlideServices,
+  SlideConstruction,
+  SlideAI,
+  SlideProof,
+  SlideContact,
+]
+
+// ============================================================
 // MAIN V2 HOME
 // ============================================================
 
 export default function V2Home() {
-  const containerRef = useRef(null)
-  const activeSlide = useActiveSlide(containerRef)
+  const [activeSlide, setActiveSlide] = useState(0)
+  const [direction, setDirection] = useState(1)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [isExploring, setIsExploring] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const lastWheelTime = useRef(0)
+  const touchStartY = useRef(0)
 
-  const scrollTo = useCallback((index) => {
-    const container = containerRef.current
-    if (!container) return
-    const target = container.querySelector(`[data-slide="${index}"]`)
-    if (target) target.scrollIntoView({ behavior: 'smooth' })
-  }, [])
+  const totalSlides = SLIDES.length
+
+  const goToSlide = useCallback((index) => {
+    if (index < 0 || index > totalSlides) return
+    if (isTransitioning) return
+
+    // If going past the last slide, show keep exploring
+    if (index >= totalSlides) {
+      setIsExploring(true)
+      return
+    }
+
+    // If coming back from keep exploring
+    if (isExploring && index < totalSlides) {
+      setIsExploring(false)
+    }
+
+    setIsTransitioning(true)
+    setDirection(index > activeSlide ? 1 : -1)
+    setActiveSlide(index)
+
+    // Update hash
+    const hash = SLIDES[index]?.id
+    if (hash) history.replaceState(null, '', `/v2#${hash}`)
+
+    // Allow transitions to complete
+    setTimeout(() => setIsTransitioning(false), 700)
+  }, [activeSlide, totalSlides, isTransitioning, isExploring])
 
   const openDrawer = useCallback(() => setDrawerOpen(true), [])
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+
+  // Wheel navigation (debounced, one slide at a time)
+  useEffect(() => {
+    if (isExploring || drawerOpen) return
+
+    const handleWheel = (e) => {
+      const now = Date.now()
+      if (now - lastWheelTime.current < 800) return
+      if (Math.abs(e.deltaY) < 30) return
+
+      lastWheelTime.current = now
+
+      if (e.deltaY > 0) {
+        // Scrolling down
+        if (activeSlide < totalSlides - 1) {
+          goToSlide(activeSlide + 1)
+        } else {
+          // At the last slide, go to keep exploring
+          setIsExploring(true)
+        }
+      } else {
+        // Scrolling up
+        goToSlide(activeSlide - 1)
+      }
+    }
+
+    window.addEventListener('wheel', handleWheel, { passive: true })
+    return () => window.removeEventListener('wheel', handleWheel)
+  }, [activeSlide, totalSlides, goToSlide, isExploring, drawerOpen])
+
+  // Touch navigation
+  useEffect(() => {
+    if (isExploring || drawerOpen) return
+
+    const handleTouchStart = (e) => {
+      touchStartY.current = e.touches[0].clientY
+    }
+
+    const handleTouchEnd = (e) => {
+      const delta = touchStartY.current - e.changedTouches[0].clientY
+      if (Math.abs(delta) < 50) return
+
+      if (delta > 0) {
+        if (activeSlide < totalSlides - 1) {
+          goToSlide(activeSlide + 1)
+        } else {
+          setIsExploring(true)
+        }
+      } else {
+        goToSlide(activeSlide - 1)
+      }
+    }
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    window.addEventListener('touchend', handleTouchEnd, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [activeSlide, totalSlides, goToSlide, isExploring, drawerOpen])
 
   // Keyboard navigation
   useEffect(() => {
@@ -1318,24 +1300,41 @@ export default function V2Home() {
         if (e.key === 'Escape') closeDrawer()
         return
       }
+
+      // Don't navigate when exploring (traditional scroll handles it)
+      if (isExploring) {
+        if (e.key === 'Escape') {
+          setIsExploring(false)
+          setActiveSlide(totalSlides - 1)
+        }
+        return
+      }
+
       switch (e.key) {
         case 'ArrowDown':
+        case 'ArrowRight':
         case 'PageDown':
+        case 'Enter':
           e.preventDefault()
-          if (activeSlide < SLIDES.length - 1) scrollTo(activeSlide + 1)
+          if (activeSlide < totalSlides - 1) {
+            goToSlide(activeSlide + 1)
+          } else {
+            setIsExploring(true)
+          }
           break
         case 'ArrowUp':
+        case 'ArrowLeft':
         case 'PageUp':
           e.preventDefault()
-          if (activeSlide > 0) scrollTo(activeSlide - 1)
+          goToSlide(activeSlide - 1)
           break
         case 'Home':
           e.preventDefault()
-          scrollTo(0)
+          goToSlide(0)
           break
         case 'End':
           e.preventDefault()
-          scrollTo(SLIDES.length - 1)
+          goToSlide(totalSlides - 1)
           break
         case 'Escape':
           closeDrawer()
@@ -1344,7 +1343,7 @@ export default function V2Home() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeSlide, drawerOpen, scrollTo, closeDrawer])
+  }, [activeSlide, drawerOpen, goToSlide, closeDrawer, isExploring, totalSlides])
 
   // On load: scroll to hash
   useEffect(() => {
@@ -1352,44 +1351,109 @@ export default function V2Home() {
     if (hash) {
       const idx = SLIDES.findIndex((s) => s.id === hash)
       if (idx >= 0) {
-        setTimeout(() => scrollTo(idx), 100)
+        setActiveSlide(idx)
+        setDirection(1)
       }
     }
-  }, [scrollTo])
+  }, [])
+
+  // Handle scroll from keep exploring back to slides
+  useEffect(() => {
+    if (!isExploring) return
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY
+      if (scrollTop <= 0) {
+        setIsExploring(false)
+        setActiveSlide(totalSlides - 1)
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [isExploring, totalSlides])
+
+  // When entering exploring mode, scroll to top of keep-exploring
+  useEffect(() => {
+    if (isExploring) {
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+  }, [isExploring])
+
+  // Manage body overflow: hidden during slides, auto during exploring
+  useEffect(() => {
+    document.body.style.overflow = isExploring ? 'auto' : 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [isExploring])
+
+  // Get the active slide component
+  const ActiveSlideComponent = SLIDE_COMPONENTS[activeSlide]
 
   return (
-    <div className="h-[100dvh] w-full overflow-hidden">
+    <div className="w-full">
       {/* Skip link */}
       <a
         href="#hook"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-[#E85D26] focus:text-white focus:px-4 focus:py-2 focus:outline-2 focus:outline-[#E85D26] focus:outline-offset-2 font-body text-sm"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-[#E85D26] focus:text-white focus:px-4 focus:py-2 focus:outline-2 focus:outline-[#E85D26] focus:outline-offset-2 font-body text-base"
       >
         Skip to content
       </a>
 
-      <NavBar activeSlide={activeSlide} scrollTo={scrollTo} openDrawer={openDrawer} />
-      <ProgressDots active={activeSlide} scrollTo={scrollTo} />
-      <FloatingContact activeSlide={activeSlide} onClick={openDrawer} />
+      {!isExploring && (
+        <>
+          <NavBar activeSlide={activeSlide} goToSlide={goToSlide} openDrawer={openDrawer} />
+          <ProgressBar activeSlide={activeSlide} totalSlides={totalSlides} goToSlide={goToSlide} />
+          <FloatingContact activeSlide={activeSlide} onClick={openDrawer} />
+          <SlideNavButtons activeSlide={activeSlide} totalSlides={totalSlides} goToSlide={goToSlide} isExploring={isExploring} />
+        </>
+      )}
+
       <ContactDrawer open={drawerOpen} onClose={closeDrawer} />
 
-      {/* Scroll snap container */}
-      <main
-        ref={containerRef}
-        className="h-[100dvh] overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar"
-        style={{ scrollBehavior: 'smooth' }}
-      >
-        <SlideHero scrollTo={scrollTo} containerRef={containerRef} />
-        <SlideHook scrollTo={scrollTo} containerRef={containerRef} />
-        <SlideWork scrollTo={scrollTo} containerRef={containerRef} />
-        <SlideServices scrollTo={scrollTo} containerRef={containerRef} />
-        <SlideConstruction scrollTo={scrollTo} containerRef={containerRef} openDrawer={openDrawer} />
-        <SlideAI scrollTo={scrollTo} containerRef={containerRef} />
-        <SlideProof scrollTo={scrollTo} containerRef={containerRef} />
-        <SlideContact containerRef={containerRef} />
-        <KeepExploring />
-      </main>
+      {!isExploring ? (
+        /* Slide container - full viewport, Framer Motion transitions */
+        <main className="fixed inset-0 w-full h-[100dvh]" style={{ backgroundColor: SLIDES[activeSlide]?.bg || '#0C0C0C' }}>
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={activeSlide}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                duration: 0.6,
+                ease: PREMIUM_EASE,
+              }}
+              className="absolute inset-0 w-full h-full"
+            >
+              <ActiveSlideComponent
+                goToSlide={goToSlide}
+                openDrawer={openDrawer}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      ) : (
+        /* Keep exploring - traditional scrollable section */
+        <div id="keep-exploring">
+          {/* Back to slides button */}
+          <div className="bg-[#0C0C0C] py-4 px-6 flex items-center justify-center">
+            <button
+              onClick={() => {
+                setIsExploring(false)
+                setActiveSlide(totalSlides - 1)
+              }}
+              className="font-body text-base text-[#8A847C] hover:text-[#F0ECE6] transition-colors flex items-center gap-2"
+            >
+              Back to slides
+            </button>
+          </div>
+          <KeepExploring />
+        </div>
+      )}
 
-      {/* Global reduced-motion styles */}
+      {/* Global styles */}
       <style>{`
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after {
@@ -1399,13 +1463,11 @@ export default function V2Home() {
           }
         }
 
-        /* Focus ring */
         :focus-visible {
           outline: 2px solid #E85D26;
           outline-offset: 2px;
         }
 
-        /* JetBrains Mono font fallback */
         .font-mono {
           font-family: 'JetBrains Mono', 'Space Grotesk', monospace;
         }
