@@ -26,6 +26,7 @@ import GuidesHub from './pages/GuidesHub.jsx'
 import GuideAmbitionCrown from './pages/GuideAmbitionCrown.jsx'
 import GuideAmbitionMemorialTower from './pages/GuideAmbitionMemorialTower.jsx'
 import ROICalculator from './pages/ROICalculator.jsx'
+const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 import './index.css'
 
 const Dashboard = lazy(() => import('./dashboard/Dashboard.jsx'))
@@ -74,6 +75,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/guides/ambition-crown" element={<GuideAmbitionCrown />} />
           <Route path="/guides/ambition-memorial-tower" element={<GuideAmbitionMemorialTower />} />
           <Route path="/roi-calculator" element={<ROICalculator />} />
+          <Route path="/book" element={<BookAudit />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>

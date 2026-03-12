@@ -556,7 +556,7 @@ export default function ROICalculator() {
                   <Users size={16} className="text-[#7C9A72] flex-shrink-0 mt-0.5" />
                   <span className="text-[#A89F96] text-sm font-body">
                     For larger teams, we recommend a custom scoping call for more precise numbers.{' '}
-                    <a href="/audit/test" className="text-[#E85D26] hover:underline">Schedule a call</a>
+                    <a href="/book?from=roi-calculator" className="text-[#E85D26] hover:underline">Schedule a call</a>
                   </span>
                 </div>
               )}
@@ -826,7 +826,7 @@ export default function ROICalculator() {
                 The $2,500 AI Operations Audit uses your actual workflows, not industry averages.
               </p>
               <a
-                href="/audit/test"
+                href="/book?from=roi-calculator"
                 className="inline-block bg-[#E85D26] text-white font-headline font-black uppercase tracking-tight text-base md:text-lg px-12 py-5 mt-8 shadow-lg hover:bg-[#D14E1C] transition-colors duration-300 cta-glow"
                 style={{ boxShadow: '0 4px 24px rgba(232, 93, 38, 0.2)' }}
               >

@@ -536,22 +536,32 @@ export default function AuditTest() {
         return (
           <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="max-w-2xl">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8" style={{ background: ORANGE }}>
+              <div className="w-20 h-20 flex items-center justify-center mx-auto mb-8" style={{ background: ORANGE }}>
                 <Check size={40} className="text-white" />
               </div>
               <h1 className="font-headline text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">You're In.</h1>
-              <p className="font-body text-xl text-[#8A847C] mb-8 max-w-lg mx-auto">We'll review everything and build your custom AI operations report within 48 hours.</p>
-              <div className="bg-[#151515] rounded-2xl p-8 max-w-md mx-auto text-left border border-white/10">
+              <p className="font-body text-xl text-[#8A847C] mb-4 max-w-lg mx-auto">Your answers are saved. Now let's get you on the calendar.</p>
+              <a
+                href="/book?from=audit-test"
+                className="inline-flex items-center gap-2 px-10 py-5 font-headline text-xl font-bold text-white transition-all hover:scale-[1.02]"
+                style={{ background: ORANGE, boxShadow: '0 4px 24px rgba(232, 93, 38, 0.2)' }}
+              >
+                Book Your Audit Session <ArrowRight size={22} />
+              </a>
+              <div className="bg-[#151515] p-8 max-w-md mx-auto text-left border border-white/10 mt-10">
                 <h3 className="font-headline text-lg font-bold text-white mb-4">What happens next:</h3>
                 <div className="space-y-4">
-                  {['We analyze your answers and map your operations', 'You receive a custom AI readiness report', 'We walk through it together on a 30-min call', 'You decide if you want us to build it'].map((step, i) => (
+                  {['Book your 2-3 hour discovery session', 'We review your questionnaire answers beforehand', 'Deep dive into your operations during the session', 'Receive your custom AI Operations Roadmap within 1 week'].map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
-                      <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5" style={{ background: ORANGE, color: 'white' }}>{i + 1}</span>
+                      <span className="w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5" style={{ background: ORANGE, color: 'white' }}>{i + 1}</span>
                       <span className="font-body text-base text-[#C4BDB4]">{step}</span>
                     </div>
                   ))}
                 </div>
               </div>
+              <p className="font-body text-base text-[#5A5550] mt-6">
+                Prefer to talk first? <a href="tel:6023732164" className="text-white hover:underline">(602) 373-2164</a>
+              </p>
             </motion.div>
           </div>
         );

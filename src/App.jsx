@@ -500,7 +500,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
                 <div className="text-center mb-8">
                   <div className="w-16 h-16 bg-aom-orange/5 border border-aom-orange/20 flex items-center justify-center mx-auto mb-4"><Phone size={24} className="text-aom-orange" /></div>
                   <h2 className="text-3xl font-headline font-extrabold text-aom-text-light uppercase tracking-tighter">Connect<span className="text-aom-orange">.</span></h2>
-                  <p className="text-aom-text-muted text-base font-body font-bold uppercase tracking-[0.3em] mt-3">Select Department</p>
+                  <p className="text-aom-text-muted text-base font-mono font-bold uppercase tracking-[0.3em] mt-3">Select Department</p>
                 </div>
                 <div className="space-y-2">
                   {departments.map(item => (
@@ -521,7 +521,7 @@ const PhoneModal = ({ isOpen, onClose }) => {
                     <selectedDept.icon size={24} className="text-aom-orange" />
                   </div>
                   <h2 className="text-2xl font-headline font-extrabold text-aom-text-light uppercase tracking-tighter">{selectedDept.label}</h2>
-                  <p className="text-aom-text-muted text-base font-body font-bold uppercase tracking-[0.3em] mt-2">{selectedDept.sub}</p>
+                  <p className="text-aom-text-muted text-base font-mono font-bold uppercase tracking-[0.3em] mt-2">{selectedDept.sub}</p>
                 </div>
                 <div className="space-y-4">
                   {selectedDept.hasEmail && (
@@ -792,9 +792,6 @@ export default function App() {
           {/* 2. CONSTRUCTION CALLOUT (dark, #1 target audience) */}
           <ConstructionCallout openBrief={openBrief} />
 
-          {/* Pattern strip */}
-          <PatternStrip variant="dots" />
-
           {/* 3. STATS + TESTIMONIALS (dark, social proof) */}
           <section className="px-6 md:px-12 py-24 md:py-36 bg-aom-mid-dark relative">
             {/* Film grain */}
@@ -849,7 +846,7 @@ export default function App() {
                   <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />
                   <div className="absolute inset-0 flex items-end p-8 md:p-12">
                     <div>
-                      <p className="font-body text-base uppercase tracking-[0.2em] text-aom-orange mb-2 font-medium">{shuffledData[activeTab].campaigns[0].tags?.[0] || 'Featured'}</p>
+                      <p className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-aom-orange mb-2">{shuffledData[activeTab].campaigns[0].tags?.[0] || 'Featured'}</p>
                       <h3 className="font-headline text-3xl md:text-5xl font-extrabold uppercase tracking-[-0.02em] text-white leading-[0.9]">{shuffledData[activeTab].campaigns[0].title}</h3>
                       <p className="text-white/70 text-base mt-3 max-w-md font-body">{shuffledData[activeTab].campaigns[0].sub}</p>
                     </div>
@@ -873,7 +870,7 @@ export default function App() {
             <div className="mt-16 md:mt-24">
               <div className="px-6 md:px-12 mb-6 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-aom-sage" />
-                <span className="font-body text-base uppercase tracking-[0.2em] text-white/60 font-medium">Social Clips</span>
+                <span className="font-mono text-[11px] font-bold uppercase tracking-[0.3em] text-white/60">Social Clips</span>
               </div>
               <InteractiveGallery items={shuffledData.feed} onPlay={setSelectedVideo} isVertical={true} />
             </div>
@@ -890,9 +887,6 @@ export default function App() {
 
           {/* 6. SERVICES -- cream breathing section */}
           <ServicesGrid scrollToSection={scrollToSection} />
-
-          {/* Pattern strip */}
-          <PatternStrip variant="crosshatch" />
 
           {/* 7. ENGAGEMENT IDEAS / "Pick What Fits" (dark) */}
           <section id="packages" className="px-6 md:px-12 py-20 md:py-28 bg-aom-mid-dark text-aom-text-light">
@@ -919,9 +913,6 @@ export default function App() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{TRUST_METRICS.map(m => <div key={m.label} className="p-8 border border-white/10 bg-white/[0.03] shadow-sm hover:border-aom-orange/40 hover:-translate-y-1 transition-all duration-300"><m.icon className="text-aom-orange mb-8" size={24} /><p className="text-[11px] font-mono font-bold uppercase tracking-[0.3em] text-aom-text-muted mb-3">{m.label}</p><h4 className="text-xl font-headline font-extrabold text-aom-text-light uppercase">{m.value}</h4><p className="text-aom-text-muted text-base mt-4 leading-relaxed font-body">{m.sub}</p></div>)}</div>
             </div>
           </section>
-
-          {/* Pattern strip */}
-          <PatternStrip variant="crosshatch" />
 
           {/* 9. AI / DIGITAL (dark) */}
           <AITeaser />
