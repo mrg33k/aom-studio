@@ -36,6 +36,20 @@ function OrangeBar() {
 
 const guides = [
   {
+    title: 'Ambition Mechanical: Memorial Tower Insulation',
+    path: '/guides/ambition-memorial-tower',
+    project: 'Ambition Mechanical',
+    date: 'Aug 2025 - Jan 2026',
+    type: "EDITOR'S GUIDE",
+    icon: Video,
+    summary: '354 video clips across 8 shoot dates over 6 months. 5 cameras, 9 DJI MIC recordings, 356 photos. Multi-camera insulation project with massive progression and interview potential. The most documented Ambition job site.',
+    stats: {
+      clips: 354,
+      duration: '8 dates',
+      size: '5 cameras',
+    },
+  },
+  {
     title: 'Ambition Mechanical: Crown HVAC Service',
     path: '/guides/ambition-crown',
     project: 'Ambition Mechanical',
