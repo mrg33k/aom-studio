@@ -7,56 +7,62 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: 1200px; height: 630px; overflow: hidden; background: #FDF6EC; position: relative; font-family: 'Space Grotesk', sans-serif; }
+  body { width: 1200px; height: 630px; overflow: hidden; background: #0C0C0C; position: relative; font-family: 'Space Grotesk', sans-serif; }
+
+  /* Subtle grid overlay */
+  .grid-overlay {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
 
   /* Geometric accents */
   .geo-br {
     position: absolute; bottom: 0; right: 0;
     width: 0; height: 0;
-    border-left: 450px solid transparent;
-    border-bottom: 350px solid rgba(232, 93, 38, 0.10);
+    border-left: 400px solid transparent;
+    border-bottom: 310px solid rgba(232, 93, 38, 0.06);
   }
   .geo-tl {
     position: absolute; top: 0; left: 0;
     width: 0; height: 0;
-    border-right: 500px solid transparent;
-    border-top: 350px solid rgba(10, 10, 10, 0.05);
+    border-right: 400px solid transparent;
+    border-top: 280px solid rgba(255, 255, 255, 0.015);
   }
 
-  /* Gold rule */
-  .gold-rule {
+  /* Orange accent bar */
+  .orange-rule {
     position: absolute; top: 310px; left: 80px;
-    width: 120px; height: 4px;
-    background: #C9A84C; border-radius: 2px;
+    width: 120px; height: 3px;
+    background: #E85D26; border-radius: 1.5px;
   }
 
-  /* Sage circles */
-  .sage-1 { position: absolute; top: 60px; right: 80px; width: 80px; height: 80px; border-radius: 50%; background: rgba(124, 154, 114, 0.18); }
-  .sage-2 { position: absolute; top: 100px; right: 40px; width: 48px; height: 48px; border-radius: 50%; background: rgba(124, 154, 114, 0.12); }
-
-  /* Orange dot */
-  .orange-dot { position: absolute; bottom: 84px; left: 80px; width: 32px; height: 32px; border-radius: 50%; background: rgba(232, 93, 38, 0.25); }
+  /* Top stripe */
+  .top-stripe { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #E85D26; }
 
   /* Bottom stripe */
-  .bottom-stripe { position: absolute; bottom: 0; left: 0; width: 100%; height: 12px; background: #E85D26; }
+  .bottom-stripe { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: #E85D26; }
 
   /* Typography */
   .wordmark {
     position: absolute; top: 140px; left: 80px;
     font-family: 'Syne', sans-serif; font-weight: 800;
-    font-size: 140px; color: #0A0A0A; letter-spacing: -4px;
+    font-size: 140px; color: #F0ECE6; letter-spacing: -4px;
     line-height: 1;
   }
+  .wordmark .dot { color: #E85D26; }
 
   .tagline {
     position: absolute; top: 330px; left: 82px;
-    font-weight: 500; font-size: 34px; color: #0A0A0A;
+    font-weight: 500; font-size: 34px; color: #F0ECE6;
     letter-spacing: 0.5px; line-height: 1.35;
   }
 
   .subline {
     position: absolute; top: 455px; left: 82px;
-    font-weight: 400; font-size: 20px; color: rgba(10, 10, 10, 0.55);
+    font-weight: 400; font-size: 20px; color: #8A847C;
     letter-spacing: 0.3px;
   }
 
@@ -69,7 +75,7 @@
   .vertical-text {
     position: absolute; right: 30px; bottom: 40px;
     font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 14px; color: rgba(10, 10, 10, 0.12);
+    font-size: 14px; color: rgba(255, 255, 255, 0.06);
     letter-spacing: 4px;
     writing-mode: vertical-rl; text-orientation: mixed;
     transform: rotate(180deg);
@@ -77,15 +83,14 @@
 </style>
 </head>
 <body>
+  <div class="grid-overlay"></div>
   <div class="geo-tl"></div>
   <div class="geo-br"></div>
-  <div class="sage-1"></div>
-  <div class="sage-2"></div>
-  <div class="gold-rule"></div>
-  <div class="orange-dot"></div>
+  <div class="orange-rule"></div>
+  <div class="top-stripe"></div>
 
-  <div class="wordmark">AOM</div>
-  <div class="tagline">Brand Infrastructure for<br>Companies That Build</div>
+  <div class="wordmark">AOM<span class="dot">.</span></div>
+  <div class="tagline">We Make Companies<br>Impossible to Ignore</div>
   <div class="subline">Video &nbsp;/ &nbsp;Social &nbsp;/ &nbsp;Web &nbsp;/ &nbsp;AI Systems</div>
   <div class="url">AHEADOFMARKET.COM</div>
   <div class="vertical-text">AHEAD OF MARKET</div>

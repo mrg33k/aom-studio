@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { ArrowLeft, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import React, { useState, useCallback } from 'react'
+import { ArrowLeft, Copy, Check, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 /* ------------------------------------------------------------------ */
@@ -288,6 +288,87 @@ function PatternOrangeBar({ size = 200 }) {
         }} />
       ))}
     </div>
+  )
+}
+
+/* ================================================================== */
+/*  DOWNLOAD PNG BUTTON                                                */
+/* ================================================================== */
+
+function DownloadPngButton({ svgConfig, size, label }) {
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = useCallback(() => {
+    setDownloading(true)
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+
+    let svgString
+    if (svgConfig.type === 'icon') {
+      const padding = Math.round(size * 0.15)
+      const innerSize = size - padding * 2
+      svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <rect width="${size}" height="${size}" fill="${svgConfig.bg}" rx="${Math.round(size * 0.08)}"/>
+        <text x="${padding + innerSize * 0.05}" y="${padding + innerSize * 0.82}" font-family="Syne, Arial, sans-serif" font-size="${innerSize * 0.8}" font-weight="800" fill="${svgConfig.fill}" letter-spacing="-${Math.round(innerSize * 0.02)}">A</text>
+        <circle cx="${padding + innerSize * 0.77}" cy="${padding + innerSize * 0.68}" r="${innerSize * 0.075}" fill="${svgConfig.dotFill}"/>
+      </svg>`
+    } else if (svgConfig.type === 'wordmark') {
+      canvas.width = size
+      canvas.height = Math.round(size * 0.25)
+      const w = canvas.width
+      const h = canvas.height
+      svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 320 80">
+        ${svgConfig.transparent ? '' : `<rect width="320" height="80" fill="${svgConfig.bg || 'transparent'}"/>`}
+        <text x="0" y="66" font-family="Syne, Arial, sans-serif" font-size="76" font-weight="800" fill="${svgConfig.fill}" letter-spacing="-3">AOM<tspan fill="${svgConfig.dotFill}">.</tspan></text>
+      </svg>`
+    }
+
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const img = new Image()
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(url)
+      canvas.toBlob((pngBlob) => {
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(pngBlob)
+        a.download = `${svgConfig.filename || 'aom-asset'}-${size}px.png`
+        a.click()
+        URL.revokeObjectURL(a.href)
+        setDownloading(false)
+      }, 'image/png')
+    }
+    img.onerror = () => {
+      setDownloading(false)
+    }
+    img.src = url
+  }, [svgConfig, size])
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={downloading}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '4px 10px',
+        borderRadius: 6,
+        fontSize: 11,
+        fontWeight: 600,
+        color: '#E85D26',
+        background: 'rgba(232,93,38,0.1)',
+        border: `1px solid rgba(232,93,38,0.2)`,
+        cursor: downloading ? 'wait' : 'pointer',
+        opacity: downloading ? 0.6 : 1,
+        fontFamily: '"Space Grotesk", sans-serif',
+      }}
+    >
+      <Download size={10} />
+      {label}
+    </button>
   )
 }
 
@@ -969,51 +1050,198 @@ export default function BrandGuidelinesV4() {
             </table>
           </div>
 
-          {/* ---- DOWNLOADS ---- */}
-          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Downloads</h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: 12,
-          }}>
-            {[
-              { file: 'aom-primary-dark.svg', label: 'Primary (dark bg)' },
-              { file: 'aom-primary-light.svg', label: 'Primary (light bg)' },
-              { file: 'aom-mono-black.svg', label: 'Mono Black' },
-              { file: 'aom-mono-white.svg', label: 'Mono White' },
-              { file: 'aom-icon-mark.svg', label: 'Icon Mark' },
-              { file: 'aom-icon-mark-white.svg', label: 'Icon Mark (white)' },
-              { file: 'aom-stacked.svg', label: 'Stacked Lockup' },
-              { file: 'aom-stacked-white.svg', label: 'Stacked (white)' },
-              { file: 'aom-horizontal.svg', label: 'Horizontal Lockup' },
-              { file: 'aom-horizontal-white.svg', label: 'Horizontal (white)' },
-              { file: 'aom-wordmark-full.svg', label: 'Full Wordmark' },
-            ].map(d => (
-              <a
-                key={d.file}
-                href={`/brand/${d.file}`}
-                download={d.file}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '10px 14px',
-                  background: C.night,
-                  borderRadius: 8,
-                  border: `1px solid ${C.nightBorder}`,
-                  color: C.textLight,
-                  textDecoration: 'none',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  transition: 'border-color 0.2s',
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 1v10M4 8l4 4 4-4M2 14h12" stroke="#E85D26" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                {d.label}
-              </a>
-            ))}
+          {/* ---- BRAND TOOLKIT / DOWNLOADS ---- */}
+          <div style={{ marginTop: 64, paddingTop: 48, borderTop: `1px solid ${C.nightBorder}` }}>
+            <SectionHeader num="DL" title="Brand Toolkit" subtitle="Download production-ready assets for social profiles, documents, presentations, and print. PNG exports at multiple sizes, plus original SVG vectors." dark />
+
+            {/* Use case sections */}
+
+            {/* Social Profile Pictures */}
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              padding: 32,
+              border: `1px solid ${C.nightBorder}`,
+              marginBottom: 24,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <Badge color={C.orange} style={{ borderColor: C.orange }}>Social</Badge>
+                <h4 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, margin: 0 }}>Profile Pictures</h4>
+              </div>
+              <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 20 }}>
+                Square icon marks optimized for social media avatars. Available in all four background/color combinations at 512px and 1024px.
+              </p>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                gap: 16,
+              }}>
+                {[
+                  { label: 'Orange on Dark', bg: '#0C0C0C', fill: '#E85D26', dotFill: '#E85D26', filename: 'aom-icon-orange-dark' },
+                  { label: 'White on Dark', bg: '#0C0C0C', fill: '#F2EDE8', dotFill: '#F2EDE8', filename: 'aom-icon-white-dark' },
+                  { label: 'Dark on Light', bg: '#FDF6EC', fill: '#0A0A0A', dotFill: '#E85D26', filename: 'aom-icon-dark-light' },
+                  { label: 'Orange on Light', bg: '#FDF6EC', fill: '#E85D26', dotFill: '#E85D26', filename: 'aom-icon-orange-light' },
+                ].map((variant, i) => (
+                  <div key={i} style={{
+                    background: C.night,
+                    borderRadius: 12,
+                    border: `1px solid ${C.nightBorder}`,
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      background: variant.bg,
+                      padding: 24,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      aspectRatio: '1',
+                      border: variant.bg === '#FDF6EC' ? `1px solid ${C.lightBorder}` : 'none',
+                      borderRadius: '11px 11px 0 0',
+                    }}>
+                      <svg viewBox="0 0 120 120" width={64}>
+                        <rect width="120" height="120" fill={variant.bg} />
+                        <text x="16" y="90" fontFamily="Syne, sans-serif" fontSize="96" fontWeight="800" fill={variant.fill} letterSpacing="-2">A</text>
+                        <circle cx="92" cy="78" r="9" fill={variant.dotFill} />
+                      </svg>
+                    </div>
+                    <div style={{ padding: '12px 16px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.textLight, marginBottom: 8 }}>{variant.label}</div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <DownloadPngButton svgConfig={{ type: 'icon', ...variant }} size={512} label="512px" />
+                        <DownloadPngButton svgConfig={{ type: 'icon', ...variant }} size={1024} label="1024px" />
+                        <a href={`/brand/aom-icon-mark${variant.fill === '#F2EDE8' || variant.fill === '#E85D26' && variant.bg === '#0C0C0C' ? '-white' : ''}.svg`} download style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                          color: C.textLightMuted, background: 'transparent',
+                          border: `1px solid ${C.nightBorder}`, textDecoration: 'none',
+                          cursor: 'pointer',
+                        }}>SVG</a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Transparent for Documents */}
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              padding: 32,
+              border: `1px solid ${C.nightBorder}`,
+              marginBottom: 24,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <Badge color={C.sage} style={{ borderColor: C.sage }}>Docs</Badge>
+                <h4 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, margin: 0 }}>Transparent Wordmarks</h4>
+              </div>
+              <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 20 }}>
+                PNG wordmarks with transparent backgrounds for documents, presentations, and overlays. Both dark and light versions for any background.
+              </p>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 16,
+              }}>
+                {[
+                  { label: 'Light Wordmark (for dark bg)', fill: '#F2EDE8', dotFill: '#E85D26', previewBg: C.night, filename: 'aom-wordmark-light-transparent' },
+                  { label: 'Dark Wordmark (for light bg)', fill: '#0A0A0A', dotFill: '#E85D26', previewBg: '#E0DAD2', filename: 'aom-wordmark-dark-transparent' },
+                  { label: 'Mono White (for overlays)', fill: '#FFFFFF', dotFill: '#FFFFFF', previewBg: '#333', filename: 'aom-wordmark-mono-white-transparent' },
+                  { label: 'Mono Black (for print)', fill: '#0A0A0A', dotFill: '#0A0A0A', previewBg: '#E8E4DE', filename: 'aom-wordmark-mono-black-transparent' },
+                ].map((variant, i) => (
+                  <div key={i} style={{
+                    background: C.night,
+                    borderRadius: 12,
+                    border: `1px solid ${C.nightBorder}`,
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      background: `${variant.previewBg} repeating-conic-gradient(rgba(128,128,128,0.08) 0% 25%, transparent 0% 50%) 50% / 16px 16px`,
+                      padding: '32px 24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minHeight: 100,
+                    }}>
+                      <svg viewBox="0 0 320 80" width={180}>
+                        <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={variant.fill} letterSpacing="-3">AOM<tspan fill={variant.dotFill}>.</tspan></text>
+                      </svg>
+                    </div>
+                    <div style={{ padding: '12px 16px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.textLight, marginBottom: 8 }}>{variant.label}</div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <DownloadPngButton svgConfig={{ type: 'wordmark', fill: variant.fill, dotFill: variant.dotFill, transparent: true }} size={800} label="PNG" />
+                        <a href={`/brand/aom-primary-${variant.fill === '#F2EDE8' || variant.fill === '#FFFFFF' ? 'dark' : 'light'}.svg`} download style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                          color: C.textLightMuted, background: 'transparent',
+                          border: `1px solid ${C.nightBorder}`, textDecoration: 'none',
+                          cursor: 'pointer',
+                        }}>SVG</a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* All SVG Variations */}
+            <div style={{
+              background: C.nightCard,
+              borderRadius: 16,
+              padding: 32,
+              border: `1px solid ${C.nightBorder}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <Badge color={C.textLightMuted}>Vector</Badge>
+                <h4 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, margin: 0 }}>All SVG Source Files</h4>
+              </div>
+              <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 20 }}>
+                Original vector files. Scale to any size without quality loss. Use these for print production, large format, and custom exports.
+              </p>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: 12,
+              }}>
+                {[
+                  { file: 'aom-primary-dark.svg', label: 'Primary (dark bg)' },
+                  { file: 'aom-primary-light.svg', label: 'Primary (light bg)' },
+                  { file: 'aom-mono-black.svg', label: 'Mono Black' },
+                  { file: 'aom-mono-white.svg', label: 'Mono White' },
+                  { file: 'aom-icon-mark.svg', label: 'Icon Mark' },
+                  { file: 'aom-icon-mark-white.svg', label: 'Icon Mark (white)' },
+                  { file: 'aom-stacked.svg', label: 'Stacked Lockup' },
+                  { file: 'aom-stacked-white.svg', label: 'Stacked (white)' },
+                  { file: 'aom-horizontal.svg', label: 'Horizontal Lockup' },
+                  { file: 'aom-horizontal-white.svg', label: 'Horizontal (white)' },
+                  { file: 'aom-wordmark-full.svg', label: 'Full Wordmark' },
+                ].map(d => (
+                  <a
+                    key={d.file}
+                    href={`/brand/${d.file}`}
+                    download={d.file}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 14px',
+                      background: C.night,
+                      borderRadius: 8,
+                      border: `1px solid ${C.nightBorder}`,
+                      color: C.textLight,
+                      textDecoration: 'none',
+                      fontSize: 13,
+                      fontWeight: 500,
+                      transition: 'border-color 0.2s',
+                    }}
+                  >
+                    <Download size={14} color={C.orange} />
+                    {d.label}
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         </MaxWidth>
       </DarkSection>
