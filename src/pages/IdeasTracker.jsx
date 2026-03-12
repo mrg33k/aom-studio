@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Plus, Pencil, Check, ArrowLeft } from 'lucide-react'
+import { X, Plus, Pencil, Check, ArrowLeft, Phone } from 'lucide-react'
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from 'd3-force'
 import ideasData from '../data/ideas.json'
 
@@ -400,18 +400,18 @@ function IdeaNode({
       {showLabel && (
         <g style={{ transition: 'opacity 150ms ease' }}>
           <rect
-            x={pos.x - 28} y={pos.y - size / 2 - 20}
-            width={56} height={16}
+            x={pos.x - 32} y={pos.y - size / 2 - 22}
+            width={64} height={18}
             rx={2} fill="rgba(0,0,0,0.7)"
           />
           <text
-            x={pos.x} y={pos.y - size / 2 - 9}
+            x={pos.x} y={pos.y - size / 2 - 10}
             textAnchor="middle"
             fill={STATUS_COLORS[idea.status]}
             style={{
               fontFamily: '"JetBrains Mono", monospace',
               fontWeight: 700,
-              fontSize: '8px',
+              fontSize: '10px',
               letterSpacing: '0.20em',
               textTransform: 'uppercase',
             }}
@@ -430,7 +430,7 @@ function IdeaNode({
           style={{
             fontFamily: '"Syne", sans-serif',
             fontWeight: 700,
-            fontSize: '13px',
+            fontSize: '14px',
             transition: 'opacity 150ms ease',
             pointerEvents: 'none',
           }}
@@ -557,7 +557,7 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
             </span>
             <span style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 400,
-              fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase',
+              fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
               color: '#78716C',
             }}>
               {idea.category}
@@ -599,7 +599,7 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
         {/* Description */}
         <p style={{
           fontFamily: '"Space Grotesk", sans-serif', fontWeight: 400,
-          fontSize: 15, lineHeight: 1.5, color: '#A8A29E',
+          fontSize: 16, lineHeight: 1.5, color: '#A8A29E',
           marginTop: 8, marginBottom: 0,
           ...(showMore ? {} : {
             display: '-webkit-box', WebkitLineClamp: 3,
@@ -611,7 +611,7 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
         {idea.description && idea.description.length > 120 && (
           <button onClick={() => setShowMore(!showMore)} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontFamily: '"Space Grotesk", sans-serif', fontSize: 13,
+            fontFamily: '"Space Grotesk", sans-serif', fontSize: 14,
             color: '#E85D26', padding: 0, marginTop: 4,
           }}>
             {showMore ? 'show less' : 'show more'}
@@ -643,7 +643,7 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
           <div style={{ marginBottom: 24 }}>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase',
+              fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
               color: '#78716C', marginBottom: 12,
             }}>
               MILESTONES
@@ -665,7 +665,7 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
                 </div>
                 <span style={{
                   fontFamily: '"Space Grotesk", sans-serif', fontWeight: 400,
-                  fontSize: 14, lineHeight: 1.4,
+                  fontSize: 16, lineHeight: 1.4,
                   color: m.done ? '#78716C' : '#F5F0EB',
                   textDecoration: m.done ? 'line-through' : 'none',
                 }}>
@@ -682,7 +682,7 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
           <div style={{ marginBottom: 24 }}>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase',
+              fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
               color: '#78716C', marginBottom: 12, marginTop: 24,
             }}>
               CONNECTED TO
@@ -702,7 +702,7 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
                   }} />
                   <span style={{
                     fontFamily: '"Space Grotesk", sans-serif', fontWeight: 500,
-                    fontSize: 13, color: '#F5F0EB', flex: 1,
+                    fontSize: 14, color: '#F5F0EB', flex: 1,
                   }}
                     onMouseEnter={e => e.target.style.textDecoration = 'underline'}
                     onMouseLeave={e => e.target.style.textDecoration = 'none'}
@@ -711,7 +711,7 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
                   </span>
                   <span style={{
                     fontFamily: '"JetBrains Mono", monospace', fontWeight: 400,
-                    fontSize: 8, letterSpacing: '0.12em', textTransform: 'uppercase',
+                    fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
                     color: '#78716C',
                   }}>
                     {conn.type}
@@ -731,34 +731,34 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
           <div>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase',
+              fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
               color: '#78716C',
             }}>OWNER</div>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 400,
-              fontSize: 11, color: '#A8A29E', marginTop: 4,
+              fontSize: 12, color: '#A8A29E', marginTop: 4,
             }}>{idea.owner}</div>
           </div>
           <div>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase',
+              fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
               color: '#78716C',
             }}>CREATED</div>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 400,
-              fontSize: 11, color: '#A8A29E', marginTop: 4,
+              fontSize: 12, color: '#A8A29E', marginTop: 4,
             }}>{idea.created}</div>
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase',
+              fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
               color: '#78716C',
             }}>LAST ACTIVITY</div>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 400,
-              fontSize: 11, color: '#A8A29E', marginTop: 4,
+              fontSize: 12, color: '#A8A29E', marginTop: 4,
             }}>{idea.lastActivity} ({timeAgo(idea.lastActivity)})</div>
           </div>
         </div>
@@ -769,13 +769,13 @@ function DetailPanel({ idea, ideas, onClose, onNavigate, onEdit, isMobile, isTab
           <div style={{ marginTop: 24 }}>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase',
+              fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
               color: '#78716C', marginBottom: 12,
             }}>NOTES</div>
             <div style={{
               background: '#1A1A17', border: '1px solid #292524', borderRadius: 2,
               padding: 12, fontFamily: '"Space Grotesk", sans-serif',
-              fontSize: 14, lineHeight: 1.5, color: '#A8A29E', minHeight: 80,
+              fontSize: 16, lineHeight: 1.5, color: '#A8A29E', minHeight: 80,
             }}>
               {idea.notes}
             </div>
@@ -828,7 +828,7 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
   return (
     <>
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0,
+        position: 'absolute', top: 130, left: 0, right: 0,
         minHeight: 56, zIndex: 50,
         display: 'flex', alignItems: 'center',
         padding: '6px 24px', gap: 8,
@@ -855,7 +855,7 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
           {hasFilters && (
             <button onClick={onClear} style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 400,
-              fontSize: 8, color: '#78716C', background: 'none',
+              fontSize: 11, color: '#78716C', background: 'none',
               border: 'none', cursor: 'pointer', marginLeft: 8,
               textTransform: 'uppercase', letterSpacing: '0.12em',
             }}>
@@ -870,7 +870,7 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
             onClick={() => setMobileOpen(!mobileOpen)}
             style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase',
+              fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
               color: hasFilters ? '#E85D26' : '#78716C',
               background: 'none', border: `1px solid ${hasFilters ? '#E85D26' : '#292524'}`,
               padding: '6px 14px', borderRadius: 2, cursor: 'pointer',
@@ -933,7 +933,7 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
             }} />
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, color: '#78716C', letterSpacing: '0.15em',
+              fontSize: 11, color: '#78716C', letterSpacing: '0.15em',
               marginBottom: 12,
             }}>STATUS</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
@@ -943,7 +943,7 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
             </div>
             <div style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-              fontSize: 9, color: '#78716C', letterSpacing: '0.15em',
+              fontSize: 11, color: '#78716C', letterSpacing: '0.15em',
               marginBottom: 12,
             }}>CATEGORY</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -957,7 +957,7 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
             {hasFilters && (
               <button onClick={() => { onClear(); setMobileOpen(false) }} style={{
                 fontFamily: '"JetBrains Mono", monospace', fontWeight: 400,
-                fontSize: 9, color: '#78716C', background: 'none',
+                fontSize: 11, color: '#78716C', background: 'none',
                 border: 'none', cursor: 'pointer', marginTop: 16,
                 textTransform: 'uppercase',
               }}>
@@ -1009,7 +1009,7 @@ function AddEditPanel({ idea, onSave, onDelete, onClose, isMobile, isTablet }) {
 
   const labelStyle = {
     fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-    fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase',
+    fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase',
     color: '#78716C', display: 'block', marginBottom: 8,
   }
 
@@ -1067,7 +1067,7 @@ function AddEditPanel({ idea, onSave, onDelete, onClose, isMobile, isTablet }) {
             {statusChips.map(s => (
               <button key={s} onClick={() => setForm({ ...form, status: s })} style={{
                 fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-                fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase',
+                fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
                 padding: '6px 14px', borderRadius: 2, cursor: 'pointer',
                 background: form.status === s ? `${STATUS_COLORS[s]}26` : 'transparent',
                 border: `1px solid ${form.status === s ? STATUS_COLORS[s] : '#292524'}`,
@@ -1088,7 +1088,7 @@ function AddEditPanel({ idea, onSave, onDelete, onClose, isMobile, isTablet }) {
               return (
                 <button key={c} onClick={() => setForm({ ...form, category: c })} style={{
                   fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-                  fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase',
+                  fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase',
                   padding: '6px 14px', borderRadius: 2, cursor: 'pointer',
                   background: form.category === c ? `${color}33` : 'transparent',
                   border: `1px solid ${form.category === c ? color : '#292524'}`,
@@ -1425,17 +1425,70 @@ export default function IdeasTracker() {
   return (
     <div style={{
       width: '100vw', height: '100vh', overflow: 'hidden',
-      background: '#0C0C0C', display: 'flex', position: 'relative',
+      background: '#0C0C0C', display: 'flex', flexDirection: 'column',
+      position: 'relative',
       fontFamily: '"Space Grotesk", sans-serif',
     }}>
-      {/* Accessible heading */}
-      <h1 style={{
-        position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
-        overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap',
-        borderWidth: 0, zIndex: 1,
+      {/* Nav bar */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 60,
+        background: 'rgba(12,12,12,0.90)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
       }}>
-        AOM Ideas Tracker
+        <div style={{
+          maxWidth: 1152, margin: '0 auto', padding: '16px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <a href="/" style={{
+            fontFamily: '"Syne", sans-serif', fontSize: 18, fontWeight: 900,
+            textTransform: 'uppercase', letterSpacing: '-0.02em',
+            color: '#F5F0EB', textDecoration: 'none',
+          }}>
+            AOM
+          </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <a href="/briefs" style={{
+              fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
+              color: '#A89F96', textDecoration: 'none',
+            }}>Briefs</a>
+            <a href="/book" style={{
+              fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
+              color: '#A89F96', textDecoration: 'none',
+            }}>Book</a>
+            <a href="tel:6023732164" style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
+              color: '#A89F96', textDecoration: 'none',
+            }}>
+              <Phone size={14} /> (602) 373-2164
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      {/* Pattern strip (brand consistency) */}
+      <div style={{
+        position: 'fixed', top: 56, left: 0, right: 0, zIndex: 55,
+        height: 2, background: '#E85D26', opacity: 0.6,
+      }} />
+
+      {/* Page heading */}
+      <h1 style={{
+        position: 'fixed', top: 60, left: 0, right: 0, zIndex: 55,
+        fontFamily: '"Syne", sans-serif', fontWeight: 800,
+        fontSize: isMobile ? 36 : 52, textTransform: 'uppercase',
+        letterSpacing: '-0.02em', color: '#F0ECE6',
+        textAlign: 'center', margin: 0, padding: '16px 24px 12px',
+        background: 'linear-gradient(to bottom, rgba(12,12,12,0.95) 0%, rgba(12,12,12,0.7) 80%, transparent 100%)',
+        pointerEvents: 'none',
+      }}>
+        IDEAS TRACKER
       </h1>
+
+      {/* Main content area */}
+      <div style={{ display: 'flex', flex: 1 }}>
 
       {/* Canvas area */}
       <div
@@ -1580,6 +1633,41 @@ export default function IdeasTracker() {
           isTablet={isTablet}
         />
       )}
+
+      </div>{/* close main content flex wrapper */}
+
+      {/* Footer */}
+      <footer style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 55,
+        padding: '12px 24px',
+        background: 'rgba(12,12,12,0.90)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 8,
+      }}>
+        <span style={{
+          fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
+          color: '#9A9189',
+        }}>
+          Ahead of Market (AOM) / Phoenix, AZ
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <a href="/" style={{
+            fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
+            color: '#9A9189', textDecoration: 'none',
+          }}>Home</a>
+          <a href="/system" style={{
+            fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
+            color: '#9A9189', textDecoration: 'none',
+          }}>The System</a>
+          <a href="/briefs" style={{
+            fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
+            color: '#9A9189', textDecoration: 'none',
+          }}>Briefs</a>
+        </div>
+      </footer>
     </div>
   )
 }
