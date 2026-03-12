@@ -146,14 +146,14 @@
     "description": "Neural network visualization of all AOM ideas. Glowing nodes, connections, status filters. This page.",
     "status": "active",
     "category": "system",
-    "progress": 10,
+    "progress": 80,
     "owner": "Bobby",
     "created": "2026-03-11",
-    "lastActivity": "2026-03-11",
+    "lastActivity": "2026-03-12",
     "milestones": [
       { "text": "Design spec from Steffen", "done": true },
-      { "text": "Component built", "done": false },
-      { "text": "Data layer connected", "done": false },
+      { "text": "Component built", "done": true },
+      { "text": "Data layer connected", "done": true },
       { "text": "Elmo QA pass", "done": false }
     ],
     "connections": [

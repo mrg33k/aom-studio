@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Plus, Pencil, Check, ArrowLeft } from 'lucide-react'
+import { X, Plus, Pencil, Check, ArrowLeft, Lock } from 'lucide-react'
 import ideasData from '../data/ideas.json'
 
 /* ================================================================== */
@@ -7,6 +7,72 @@ import ideasData from '../data/ideas.json'
 /*  Steffen's Design Spec: Neural network visualization                */
 /*  Route: /ideas                                                      */
 /* ================================================================== */
+
+const IDEAS_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
+const STORAGE_KEY = 'aom_ideas_data'
+const AUTH_KEY = 'aom_ops_auth'
+
+function loadIdeas() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) return JSON.parse(stored)
+  } catch (e) { /* ignore */ }
+  return ideasData
+}
+
+function saveIdeas(ideas) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ideas)) } catch (e) { /* ignore */ }
+}
+
+// ---- Password Gate (matches dashboard) ----
+function PasswordGate({ onAuth }) {
+  const [input, setInput] = useState('')
+  const [shake, setShake] = useState(false)
+
+  const attempt = () => {
+    if (input === IDEAS_PASSWORD) { localStorage.setItem(AUTH_KEY, '1'); onAuth() }
+    else { setShake(true); setInput(''); setTimeout(() => setShake(false), 600) }
+  }
+
+  return (
+    <div style={{
+      width: '100vw', height: '100vh', background: '#0C0C0C',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+    }}>
+      <div style={{
+        transform: shake ? 'translateX(8px)' : 'translateX(0)',
+        transition: shake ? 'transform 0.1s ease' : 'transform 0.3s ease',
+        display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', width: 280,
+      }}>
+        <Lock size={24} color="#78716C" style={{ marginBottom: 8 }} />
+        <input
+          autoFocus type="password" value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && attempt()}
+          placeholder="access code"
+          style={{
+            background: '#141412', border: `1px solid ${shake ? '#EF4444' : '#292524'}`,
+            borderRadius: 2, padding: '12px 16px', width: '100%',
+            color: '#F5F0EB', fontSize: 14, outline: 'none',
+            fontFamily: '"JetBrains Mono", monospace',
+            textAlign: 'center', letterSpacing: '0.1em',
+            boxSizing: 'border-box',
+          }}
+        />
+        <button onClick={attempt} style={{
+          background: '#E85D26', color: '#FDF6EC', border: 'none',
+          padding: '10px 0', width: '100%', borderRadius: 0,
+          fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700,
+          fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.06em',
+          cursor: 'pointer',
+        }}>
+          ENTER
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // ── Color System ─────────────────────────────────────────────────────
 const CATEGORY_COLORS = {
@@ -368,7 +434,7 @@ function ConnectionLine({ source, target, type, sourceIdea, isHighlighted, isDim
 }
 
 // ── Detail Panel ─────────────────────────────────────────────────────
-function DetailPanel({ idea, ideas, positions, onClose, onNavigate, isMobile, isTablet }) {
+function DetailPanel({ idea, ideas, positions, onClose, onNavigate, onEdit, isMobile, isTablet }) {
   if (!idea) return null
   const cat = CATEGORY_COLORS[idea.category] || CATEGORY_COLORS.product
   const [showMore, setShowMore] = useState(false)
@@ -414,12 +480,23 @@ function DetailPanel({ idea, ideas, positions, onClose, onNavigate, isMobile, is
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             {isMobile && (
-              <button onClick={onClose} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#78716C', marginRight: 8, padding: 4,
-              }}>
-                <ArrowLeft size={20} />
-              </button>
+              <>
+                <button onClick={onClose} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#78716C', marginRight: 8, padding: 4,
+                }}>
+                  <ArrowLeft size={20} />
+                </button>
+                <button onClick={() => onEdit(idea)} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#78716C', padding: 4, marginLeft: 'auto',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#F5F0EB'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#78716C'}
+                >
+                  <Pencil size={16} />
+                </button>
+              </>
             )}
             <span style={{
               fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
@@ -439,15 +516,26 @@ function DetailPanel({ idea, ideas, positions, onClose, onNavigate, isMobile, is
             </span>
           </div>
           {!isMobile && (
-            <button onClick={onClose} style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#78716C', padding: 8, transition: 'color 150ms',
-            }}
-              onMouseEnter={e => e.target.style.color = '#F5F0EB'}
-              onMouseLeave={e => e.target.style.color = '#78716C'}
-            >
-              <X size={24} />
-            </button>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button onClick={() => onEdit(idea)} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#78716C', padding: 8, transition: 'color 150ms',
+              }}
+                onMouseEnter={e => e.currentTarget.style.color = '#F5F0EB'}
+                onMouseLeave={e => e.currentTarget.style.color = '#78716C'}
+              >
+                <Pencil size={16} />
+              </button>
+              <button onClick={onClose} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#78716C', padding: 8, transition: 'color 150ms',
+              }}
+                onMouseEnter={e => e.currentTarget.style.color = '#F5F0EB'}
+                onMouseLeave={e => e.currentTarget.style.color = '#78716C'}
+              >
+                <X size={24} />
+              </button>
+            </div>
           )}
         </div>
 
@@ -1046,13 +1134,23 @@ function AddEditPanel({ idea, onSave, onDelete, onClose, isMobile, isTablet }) {
 
 // ── Main Ideas Tracker Page ──────────────────────────────────────────
 export default function IdeasTracker() {
-  const [ideas, setIdeas] = useState(ideasData)
+  const [authed, setAuthed] = useState(() => localStorage.getItem(AUTH_KEY) === '1')
+  const [ideas, setIdeasRaw] = useState(loadIdeas)
   const [selectedIdea, setSelectedIdea] = useState(null)
   const [hoveredId, setHoveredId] = useState(null)
   const [statusFilters, setStatusFilters] = useState([])
   const [categoryFilters, setCategoryFilters] = useState([])
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [editIdea, setEditIdea] = useState(null)
+
+  // Persist ideas to localStorage on every change
+  const setIdeas = useCallback((updater) => {
+    setIdeasRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      saveIdeas(next)
+      return next
+    })
+  }, [])
 
   // Canvas state
   const [pan, setPan] = useState({ x: 0, y: 0 })
@@ -1241,6 +1339,9 @@ export default function IdeasTracker() {
   const canvasWidth = (selectedIdea || showAddPanel || editIdea) && isDesktop
     ? 'calc(100vw - 400px)' : '100vw'
 
+  // Password gate
+  if (!authed) return <PasswordGate onAuth={() => setAuthed(true)} />
+
   // Build connection data
   const allConnections = useMemo(() => {
     const conns = []
@@ -1392,6 +1493,7 @@ export default function IdeasTracker() {
           positions={positions}
           onClose={() => setSelectedIdea(null)}
           onNavigate={handleNavigate}
+          onEdit={(idea) => { setEditIdea(idea); setSelectedIdea(null) }}
           isMobile={isMobile}
           isTablet={isTablet}
         />
