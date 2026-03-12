@@ -378,7 +378,7 @@ export default function ROICalculator() {
               AI OPERATIONS
             </span>
             <div className="w-12 h-[2px] bg-[#E85D26] mb-6" />
-            <h1 className="font-headline text-3xl md:text-5xl lg:text-6xl font-black italic uppercase tracking-tighter text-[#F5F0EB] max-w-3xl">
+            <h1 className="font-headline text-3xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-[-0.02em] text-[#F5F0EB] max-w-3xl">
               WHAT WOULD AI SAVE YOUR BUSINESS?
             </h1>
             <p className="text-[#A89F96] text-base md:text-lg mt-6 max-w-xl font-body">
@@ -413,7 +413,7 @@ export default function ROICalculator() {
             <FieldContainer>
               <div className="flex items-baseline justify-between mb-1">
                 <FieldLabel noMargin>Team size</FieldLabel>
-                <span className="font-headline text-2xl font-black italic tabular-nums text-[#F5F0EB]">
+                <span className="font-headline text-2xl font-extrabold tabular-nums text-[#F5F0EB]">
                   {teamSize}
                 </span>
               </div>
@@ -442,7 +442,7 @@ export default function ROICalculator() {
               <div className="flex items-baseline justify-between mb-1">
                 <FieldLabel noMargin>Non-billable hours per person</FieldLabel>
                 <span>
-                  <span className="font-headline text-2xl font-black italic tabular-nums text-[#F5F0EB]">{adminHours}</span>
+                  <span className="font-headline text-2xl font-extrabold tabular-nums text-[#F5F0EB]">{adminHours}</span>
                   <span className="text-sm text-[#A89F96] ml-1">hrs</span>
                 </span>
               </div>
@@ -508,7 +508,7 @@ export default function ROICalculator() {
             <button
               onClick={hasCalculated && inputsChanged ? handleRecalculate : handleCalculate}
               disabled={!industry || isCalculating}
-              className={`w-full bg-[#E85D26] text-white font-headline font-black uppercase tracking-tight text-base md:text-lg px-8 py-5 shadow-lg transition-colors duration-300 cursor-pointer ${
+              className={`w-full bg-[#E85D26] text-white font-headline font-extrabold uppercase tracking-tight text-base md:text-lg px-8 py-5 shadow-lg transition-colors duration-300 cursor-pointer ${
                 !industry || isCalculating ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#D14E1C]'
               }`}
               style={{ boxShadow: '0 4px 24px rgba(232, 93, 38, 0.2)' }}
@@ -567,7 +567,7 @@ export default function ROICalculator() {
                 <ResultCard delay={0} accentColor={SAGE}>
                   <CardIcon Icon={Clock} color={SAGE} borderColor="rgba(124, 154, 114, 0.3)" />
                   <div className="mt-4">
-                    <span className="font-headline text-4xl md:text-5xl lg:text-6xl font-black italic text-[#F5F0EB] leading-none tabular-nums">
+                    <span className="font-headline text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#F5F0EB] leading-none tabular-nums">
                       <AnimatedNumber value={results.automatableHoursPerWeek} />
                     </span>
                     <span className="text-xl md:text-2xl text-[#A89F96] ml-1 font-bold font-headline">hrs</span>
@@ -580,7 +580,7 @@ export default function ROICalculator() {
                 <ResultCard delay={0.12} accentColor={ORANGE}>
                   <CardIcon Icon={DollarSign} color={ORANGE} borderColor="rgba(217, 211, 203, 0.2)" />
                   <div className="mt-4">
-                    <span className="font-headline text-4xl md:text-5xl lg:text-6xl font-black italic text-[#F5F0EB] leading-none tabular-nums">
+                    <span className="font-headline text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#F5F0EB] leading-none tabular-nums">
                       <AnimatedNumber value={results.monthlySavingsValue} format="currency" />
                     </span>
                   </div>
@@ -592,7 +592,7 @@ export default function ROICalculator() {
                 <ResultCard delay={0.24} accentColor={ORANGE}>
                   <CardIcon Icon={TrendingUp} color={ORANGE} borderColor="rgba(217, 211, 203, 0.2)" />
                   <div className="mt-4">
-                    <span className={`font-headline ${results.totalMonthlyValue >= 100000 ? 'text-3xl md:text-4xl lg:text-5xl' : 'text-4xl md:text-5xl lg:text-6xl'} font-black italic text-[#F5F0EB] leading-none tabular-nums`}>
+                    <span className={`font-headline ${results.totalMonthlyValue >= 100000 ? 'text-3xl md:text-4xl lg:text-5xl' : 'text-4xl md:text-5xl lg:text-6xl'} font-extrabold text-[#F5F0EB] leading-none tabular-nums`}>
                       <AnimatedNumber value={results.totalMonthlyValue} format="currency" />
                     </span>
                   </div>
@@ -610,7 +610,7 @@ export default function ROICalculator() {
                     borderColor={`${getBreakevenColor(results.breakevenStatus)}40`}
                   />
                   <div className="mt-4">
-                    <span className="font-headline text-4xl md:text-5xl lg:text-6xl font-black italic text-[#F5F0EB] leading-none tabular-nums">
+                    <span className="font-headline text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#F5F0EB] leading-none tabular-nums">
                       <AnimatedNumber value={Math.min(results.breakevenMonths, 24)} format="decimal" />
                     </span>
                     <span className="text-lg md:text-xl text-[#A89F96] ml-1 font-bold font-headline">months</span>
@@ -632,7 +632,7 @@ export default function ROICalculator() {
                   <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#9A9189] mb-4 block">
                     BREAKDOWN
                   </span>
-                  <h2 className="font-headline text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-[#F5F0EB] mb-8">
+                  <h2 className="font-headline text-2xl md:text-3xl font-extrabold uppercase tracking-[-0.02em] text-[#F5F0EB] mb-8">
                     WHERE THE VALUE COMES FROM
                   </h2>
 
@@ -722,7 +722,7 @@ export default function ROICalculator() {
                   <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#9A9189] mb-4 block">
                     PROJECTION
                   </span>
-                  <h2 className="font-headline text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-[#F5F0EB] mb-8">
+                  <h2 className="font-headline text-2xl md:text-3xl font-extrabold uppercase tracking-[-0.02em] text-[#F5F0EB] mb-8">
                     INVESTMENT VS. RETURN
                   </h2>
 
@@ -764,13 +764,13 @@ export default function ROICalculator() {
                         <tr className="bg-[#0C0C0C] border-t-2 border-[#E85D26]/30">
                           <td className="text-[#F5F0EB] font-headline font-bold text-base px-6 py-4">Cumulative ROI</td>
                           <td className="text-right px-6 py-4">
-                            <span className="font-headline font-black italic text-lg text-[#E85D26]">{formatPercent(results.year1.roi)}</span>
+                            <span className="font-headline font-extrabold text-lg text-[#E85D26]">{formatPercent(results.year1.roi)}</span>
                           </td>
                           <td className="text-right px-6 py-4">
-                            <span className="font-headline font-black italic text-lg text-[#E85D26]">{formatPercent(results.year2.roi)}</span>
+                            <span className="font-headline font-extrabold text-lg text-[#E85D26]">{formatPercent(results.year2.roi)}</span>
                           </td>
                           <td className="text-right px-6 py-4">
-                            <span className="font-headline font-black italic text-lg text-[#E85D26]">{formatPercent(results.year3.roi)}</span>
+                            <span className="font-headline font-extrabold text-lg text-[#E85D26]">{formatPercent(results.year3.roi)}</span>
                           </td>
                         </tr>
                       </tbody>
@@ -783,7 +783,7 @@ export default function ROICalculator() {
                   <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#9A9189] mb-4 block">
                     AUTOMATION
                   </span>
-                  <h2 className="font-headline text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-[#F5F0EB] mb-8">
+                  <h2 className="font-headline text-2xl md:text-3xl font-extrabold uppercase tracking-[-0.02em] text-[#F5F0EB] mb-8">
                     WHAT GETS AUTOMATED IN {INDUSTRIES.find(i => i.value === industry)?.label?.toUpperCase() || 'YOUR INDUSTRY'}
                   </h2>
 
@@ -819,7 +819,7 @@ export default function ROICalculator() {
               <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#9A9189] mb-4 block">
                 NEXT STEP
               </span>
-              <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-[#F5F0EB] mt-4">
+              <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-[-0.02em] text-[#F5F0EB] mt-4">
                 THESE ARE ESTIMATES. GET YOUR EXACT NUMBERS.
               </h2>
               <p className="text-[#A89F96] text-base font-body mt-4 max-w-xl mx-auto">
@@ -827,7 +827,7 @@ export default function ROICalculator() {
               </p>
               <a
                 href="/book?from=roi-calculator"
-                className="inline-block bg-[#E85D26] text-white font-headline font-black uppercase tracking-tight text-base md:text-lg px-12 py-5 mt-8 shadow-lg hover:bg-[#D14E1C] transition-colors duration-300 cta-glow"
+                className="inline-block bg-[#E85D26] text-white font-headline font-extrabold uppercase tracking-tight text-base md:text-lg px-12 py-5 mt-8 shadow-lg hover:bg-[#D14E1C] transition-colors duration-300 cta-glow"
                 style={{ boxShadow: '0 4px 24px rgba(232, 93, 38, 0.2)' }}
               >
                 BOOK YOUR AUDIT

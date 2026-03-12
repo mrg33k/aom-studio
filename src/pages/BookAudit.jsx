@@ -105,7 +105,7 @@ export default function BookAudit() {
           <div className="w-20 h-20 bg-[#E85D26] flex items-center justify-center mx-auto mb-8">
             <Check size={40} className="text-white" />
           </div>
-          <h1 className="font-headline text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-[#F5F0EB] mb-6">
+          <h1 className="font-headline text-4xl md:text-6xl font-extrabold uppercase tracking-[-0.02em] text-[#F5F0EB] mb-6">
             YOU'RE BOOKED.
           </h1>
           <p className="font-body text-lg text-[#A89F96] mb-8 max-w-lg mx-auto">
@@ -184,7 +184,7 @@ export default function BookAudit() {
                 AI Operations Audit
               </p>
               <div className="w-12 h-[2px] bg-[#E85D26] mb-6" />
-              <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl font-black italic uppercase tracking-tighter text-[#F5F0EB] leading-[0.92] max-w-[20ch]">
+              <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase tracking-[-0.02em] text-[#F5F0EB] leading-[0.92] max-w-[20ch]">
                 BOOK YOUR AUDIT.
               </h1>
               <p className="font-body text-lg md:text-xl text-[#A89F96] mt-6 max-w-2xl leading-relaxed">
@@ -319,7 +319,7 @@ export default function BookAudit() {
                   <button
                     type="submit"
                     disabled={status === 'loading'}
-                    className="w-full bg-[#E85D26] text-white font-headline font-black uppercase tracking-tight text-base md:text-lg px-8 py-5 hover:bg-[#D14E1C] transition-colors shadow-lg disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="w-full bg-[#E85D26] text-white font-headline font-extrabold uppercase tracking-tight text-base md:text-lg px-8 py-5 hover:bg-[#D14E1C] transition-colors shadow-lg disabled:opacity-60 flex items-center justify-center gap-2"
                     style={{ boxShadow: '0 4px 24px rgba(232, 93, 38, 0.2)' }}
                   >
                     {status === 'loading' ? (
@@ -381,7 +381,7 @@ export default function BookAudit() {
                 <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-[#E85D26] mb-3">
                   Investment
                 </p>
-                <p className="font-headline text-4xl font-black italic text-[#F5F0EB]">$2,500</p>
+                <p className="font-headline text-4xl font-extrabold text-[#F5F0EB]">$2,500</p>
                 <p className="font-body text-base text-[#A89F96] mt-2 leading-relaxed">
                   One-time fee. Includes the full discovery session, custom roadmap, and strategy walkthrough. No hidden fees. No recurring charges unless you choose to move forward with a build.
                 </p>

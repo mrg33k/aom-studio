@@ -74,7 +74,7 @@ function NavBar() {
     <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-16 px-6 md:px-12"
       style={{ background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <a href="https://aheadofmarket.com" className="flex items-center gap-2">
-        <span className="font-headline font-black text-xl tracking-tight" style={{ color: CREAM }}>AOM</span>
+        <span className="font-headline font-extrabold text-xl tracking-tight" style={{ color: CREAM }}>AOM</span>
       </a>
       <div className="flex items-center gap-4">
         <a href={`mailto:${EMAIL_ADDR}`}
@@ -129,7 +129,7 @@ function HeroSection() {
         </motion.div>
 
         <motion.h1
-          className="font-headline font-black uppercase leading-[0.92] tracking-tight mb-6"
+          className="font-headline font-extrabold uppercase leading-[0.92] tracking-tight mb-6"
           style={{ color: CREAM, fontSize: 'clamp(40px, 8vw, 80px)', letterSpacing: '-0.03em' }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -222,7 +222,7 @@ function OverviewSection() {
             {stats.map((stat, i) => (
               <FadeIn key={stat.label} delay={0.3 + i * 0.1}>
                 <div className="pl-5" style={{ borderLeft: `2px solid ${ORANGE}33` }}>
-                  <div className="font-headline font-black text-3xl md:text-4xl" style={{ color: ORANGE, lineHeight: 0.95, letterSpacing: '-0.02em' }}>
+                  <div className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: ORANGE, lineHeight: 0.95, letterSpacing: '-0.02em' }}>
                     {stat.value}
                   </div>
                   <div className="font-body font-semibold text-xs uppercase tracking-[0.1em] mt-2" style={{ color: MUTED }}>
@@ -593,7 +593,7 @@ function InvestmentSection() {
               <div className="col-span-5 md:col-span-9 font-headline font-extrabold text-lg uppercase tracking-tight" style={{ color: CREAM }}>
                 Total
               </div>
-              <div className="col-span-7 md:col-span-3 font-headline font-black text-2xl text-right" style={{ color: ORANGE }}>
+              <div className="col-span-7 md:col-span-3 font-headline font-extrabold text-2xl text-right" style={{ color: ORANGE }}>
                 $9,000
               </div>
             </div>
@@ -733,7 +733,7 @@ function CTASection() {
           </span>
         </FadeIn>
         <FadeIn delay={0.1}>
-          <h2 className="font-headline font-black uppercase text-4xl md:text-[56px] leading-[0.95] tracking-tight mt-4"
+          <h2 className="font-headline font-extrabold uppercase text-4xl md:text-[56px] leading-[0.95] tracking-tight mt-4"
             style={{ color: CREAM, letterSpacing: '-0.03em' }}>
             Let's Build<br />Something.
           </h2>
@@ -808,7 +808,7 @@ function CTASection() {
 function Footer() {
   return (
     <footer className="py-10 text-center" style={{ background: BG, borderTop: `1px solid ${BORDER}` }}>
-      <div className="font-headline font-black text-lg tracking-tight" style={{ color: CREAM, opacity: 0.4 }}>AOM</div>
+      <div className="font-headline font-extrabold text-lg tracking-tight" style={{ color: CREAM, opacity: 0.4 }}>AOM</div>
       <p className="font-body text-xs mt-3" style={{ color: MUTED }}>
         We Make Companies Impossible to Ignore.
       </p>
