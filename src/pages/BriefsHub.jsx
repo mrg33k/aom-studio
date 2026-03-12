@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Search } from 'lucide-react';
+import SiteNav from '../components/SiteNav';
+import SiteFooter from '../components/SiteFooter';
 
 function useSEO() {
   useEffect(() => {
@@ -362,16 +364,12 @@ export default function BriefsHub() {
 
   return (
     <div className="bg-[#0A0A08] min-h-screen">
+      {/* Shared nav */}
+      <SiteNav />
+
       {/* Hero */}
-      <section className="py-20 md:py-28 px-6 md:px-12">
+      <section className="pt-28 md:pt-36 pb-20 md:pb-28 px-6 md:px-12">
         <div className="max-w-4xl mx-auto">
-          <motion.a
-            href="https://aheadofmarket.com"
-            className="font-headline text-base font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-[#F5F0EB] transition-colors inline-block mb-12"
-            {...fadeUp()}
-          >
-            AOM
-          </motion.a>
 
           <motion.p
             className="font-mono text-[11px] uppercase tracking-[0.3em] text-[#7C9A72] mb-4"
@@ -497,18 +495,8 @@ export default function BriefsHub() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-6 text-center border-t border-white/[0.06]">
-        <a
-          href="https://aheadofmarket.com"
-          className="font-headline text-base font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-[#F5F0EB] transition-colors inline-block mb-3"
-        >
-          AOM
-        </a>
-        <p className="font-mono text-sm text-aom-text-muted">
-          aheadofmarket.com
-        </p>
-      </footer>
+      {/* Shared footer */}
+      <SiteFooter />
     </div>
   );
 }

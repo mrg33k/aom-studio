@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { X, Plus, Pencil, Check, ArrowLeft, Phone } from 'lucide-react'
+import { X, Plus, Pencil, Check, ArrowLeft } from 'lucide-react'
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, forceX, forceY } from 'd3-force'
 import ideasData from '../data/ideas.json'
+import SiteNav from '../components/SiteNav'
+import SiteFooter from '../components/SiteFooter'
 
 /* ================================================================== */
 /*  IDEAS TRACKER / BRAIN MAP                                          */
@@ -1429,44 +1431,8 @@ export default function IdeasTracker() {
       position: 'relative',
       fontFamily: '"Space Grotesk", sans-serif',
     }}>
-      {/* Nav bar */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 60,
-        background: 'rgba(12,12,12,0.90)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-      }}>
-        <div style={{
-          maxWidth: 1152, margin: '0 auto', padding: '16px 24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <a href="/" style={{
-            fontFamily: '"Syne", sans-serif', fontSize: 18, fontWeight: 900,
-            textTransform: 'uppercase', letterSpacing: '-0.02em',
-            color: '#F5F0EB', textDecoration: 'none',
-          }}>
-            AOM
-          </a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <a href="/briefs" style={{
-              fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
-              color: '#A89F96', textDecoration: 'none',
-            }}>Briefs</a>
-            <a href="/book" style={{
-              fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
-              color: '#A89F96', textDecoration: 'none',
-            }}>Book</a>
-            <a href="tel:6023732164" style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
-              color: '#A89F96', textDecoration: 'none',
-            }}>
-              <Phone size={14} /> (602) 373-2164
-            </a>
-          </div>
-        </div>
-      </nav>
+      {/* Shared nav */}
+      <SiteNav />
 
       {/* Pattern strip (brand consistency) */}
       <div style={{
@@ -1637,37 +1603,8 @@ export default function IdeasTracker() {
       </div>{/* close main content flex wrapper */}
 
       {/* Footer */}
-      <footer style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 55,
-        padding: '12px 24px',
-        background: 'rgba(12,12,12,0.90)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderTop: '1px solid rgba(255,255,255,0.05)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 8,
-      }}>
-        <span style={{
-          fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
-          color: '#9A9189',
-        }}>
-          Ahead of Market (AOM) / Phoenix, AZ
-        </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <a href="/" style={{
-            fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
-            color: '#9A9189', textDecoration: 'none',
-          }}>Home</a>
-          <a href="/system" style={{
-            fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
-            color: '#9A9189', textDecoration: 'none',
-          }}>The System</a>
-          <a href="/briefs" style={{
-            fontFamily: '"Space Grotesk", sans-serif', fontSize: 16,
-            color: '#9A9189', textDecoration: 'none',
-          }}>Briefs</a>
-        </div>
-      </footer>
+      {/* Shared footer */}
+      <SiteFooter variant="fixed" />
     </div>
   )
 }

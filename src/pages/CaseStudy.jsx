@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { ChevronDown, ChevronRight, Calculator, ClipboardCheck, MessageCircle, Check } from 'lucide-react';
+import SiteNav from '../components/SiteNav';
+import SiteFooter from '../components/SiteFooter';
 
 /* ── SEO ────────────────────────────────────────────────────────── */
 function useSEO() {
@@ -878,22 +880,7 @@ function FooterCTA() {
   );
 }
 
-/* ── Site Footer ────────────────────────────────────────────────── */
-function SiteFooter() {
-  return (
-    <footer className="bg-[#0C0C0C] py-8 px-6 text-center border-t border-white/[0.06]">
-      <a
-        href="https://aheadofmarket.com"
-        className="font-headline text-base font-bold uppercase tracking-[0.15em] text-[#8A847C] hover:text-[#F5F0EB] transition-colors inline-block mb-3"
-      >
-        AOM
-      </a>
-      <p className="font-mono text-sm text-[#8A847C]">
-        aheadofmarket.com
-      </p>
-    </footer>
-  );
-}
+/* ── Site Footer: using shared component ────────────────────────── */
 
 /* ════════════════════════════════════════════════════════════════
    MAIN PAGE EXPORT
@@ -903,6 +890,7 @@ export default function CaseStudy() {
 
   return (
     <div className="bg-[#0C0C0C] min-h-screen">
+      <SiteNav transparent />
       <HeroSection />
       <ProblemSection />
       <DecisionSection />

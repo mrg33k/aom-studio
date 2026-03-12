@@ -4,6 +4,8 @@ import {
   ArrowRight, Check, Loader2, Calendar, Clock, Users,
   FileText, Phone, Mail, Building2, ChevronLeft
 } from 'lucide-react';
+import SiteNav from '../components/SiteNav';
+import SiteFooter from '../components/SiteFooter';
 
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xbdalqvg';
 
@@ -163,17 +165,8 @@ export default function BookAudit() {
         </svg>
       </div>
 
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0C0C0C]/90 backdrop-blur-sm border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="font-headline text-lg font-black uppercase tracking-tighter text-[#F5F0EB]">
-            AOM
-          </a>
-          <a href="tel:6023732164" className="inline-flex items-center gap-2 text-[#A89F96] font-body text-base hover:text-[#F5F0EB] transition-colors">
-            <Phone size={14} /> (602) 373-2164
-          </a>
-        </div>
-      </nav>
+      {/* Shared nav */}
+      <SiteNav />
 
       <div className="relative z-10 pt-20">
         {/* Hero */}
@@ -440,19 +433,8 @@ export default function BookAudit() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="py-8 border-t border-white/5 px-6">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="font-body text-sm text-[#9A9189]">
-              Ahead of Market (AOM) / Phoenix, AZ
-            </p>
-            <div className="flex items-center gap-6">
-              <a href="/" className="font-body text-sm text-[#9A9189] hover:text-[#F5F0EB] transition-colors">Home</a>
-              <a href="/system" className="font-body text-sm text-[#9A9189] hover:text-[#F5F0EB] transition-colors">The System</a>
-              <a href="/roi-calculator" className="font-body text-sm text-[#9A9189] hover:text-[#F5F0EB] transition-colors">ROI Calculator</a>
-            </div>
-          </div>
-        </footer>
+        {/* Shared footer */}
+        <SiteFooter />
       </div>
     </div>
   );
