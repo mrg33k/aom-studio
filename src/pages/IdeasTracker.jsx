@@ -44,13 +44,13 @@ const CONNECTION_STYLES = {
 function computeNodePositions(ideas) {
   const positions = {}
   const cx = 600
-  const cy = 400
-  // Visible bounds within 1200x800 viewBox with padding
+  const cy = 420
+  // Visible bounds within 1200x900 viewBox with padding
   const PAD = 60
   const MIN_X = PAD
   const MAX_X = 1200 - PAD
-  const MIN_Y = PAD + 30 // extra top padding for filter bar
-  const MAX_Y = 800 - PAD
+  const MIN_Y = PAD + 60 // extra top padding for filter bar
+  const MAX_Y = 900 - PAD
 
   // Place in concentric rings based on status priority
   const statusOrder = { active: 0, shipped: 1, growing: 2, seed: 3, parked: 4 }
@@ -58,7 +58,7 @@ function computeNodePositions(ideas) {
 
   sorted.forEach((idea, i) => {
     const ring = statusOrder[idea.status] || 3
-    const baseRadius = 80 + ring * 95
+    const baseRadius = 70 + ring * 80
     const angleOffset = (ring * 0.7) + (i * 0.3)
     const nodesInRing = sorted.filter(s => statusOrder[s.status] === ring).length
     const indexInRing = sorted.filter((s, j) => j < i && statusOrder[s.status] === ring).length
@@ -750,11 +750,12 @@ function FilterBar({ statusFilters, categoryFilters, onToggleStatus, onToggleCat
           className="ideas-add-btn"
           style={{
             fontFamily: '"JetBrains Mono", monospace', fontWeight: 700,
-            fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase',
+            fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase',
             color: '#78716C', background: 'none',
             border: '1px solid #292524',
-            padding: '6px 14px', borderRadius: 2, cursor: 'pointer',
+            padding: '10px 16px', borderRadius: 2, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
+            minHeight: 44,
             transition: 'all 150ms ease', flexShrink: 0,
           }}
           onMouseEnter={e => {
@@ -1330,11 +1331,11 @@ export default function IdeasTracker() {
             width: '100%', height: '100%',
             position: 'absolute', top: 0, left: 0,
           }}
-          viewBox={isMobile ? "100 50 1000 700" : "0 0 1200 800"}
+          viewBox={isMobile ? "0 0 1200 900" : "0 0 1200 900"}
           preserveAspectRatio="xMidYMid meet"
         >
           <g transform={`translate(${pan.x / scale}, ${pan.y / scale}) scale(${scale})`}
-             style={{ transformOrigin: '600px 400px' }}>
+             style={{ transformOrigin: '600px 420px' }}>
 
             {/* Connections */}
             {allConnections.map((conn, i) => {

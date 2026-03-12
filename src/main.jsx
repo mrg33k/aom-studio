@@ -22,6 +22,8 @@ import BriefIdeasTracker from './pages/BriefIdeasTracker.jsx'
 import BriefAuditOnboarding from './pages/BriefAuditOnboarding.jsx'
 import AuditTest from './pages/AuditTest.jsx'
 import IdeasTracker from './pages/IdeasTracker.jsx'
+import GuidesHub from './pages/GuidesHub.jsx'
+import GuideAmbitionCrown from './pages/GuideAmbitionCrown.jsx'
 import './index.css'
 
 const Dashboard = lazy(() => import('./dashboard/Dashboard.jsx'))
@@ -66,6 +68,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/briefs/audit-onboarding" element={<BriefAuditOnboarding />} />
           <Route path="/audit/test" element={<AuditTest />} />
           <Route path="/ideas" element={<IdeasTracker />} />
+          <Route path="/guides" element={<GuidesHub />} />
+          <Route path="/guides/ambition-crown" element={<GuideAmbitionCrown />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>
