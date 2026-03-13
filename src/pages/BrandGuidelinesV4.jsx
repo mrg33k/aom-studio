@@ -53,7 +53,7 @@ function Badge({ children, color = C.black, bg = 'transparent', style = {} }) {
     <span style={{
       display: 'inline-block',
       fontFamily: '"Space Grotesk", sans-serif',
-      fontSize: 10,
+      fontSize: 12,
       fontWeight: 700,
       letterSpacing: '0.15em',
       textTransform: 'uppercase',
@@ -356,7 +356,7 @@ function DownloadPngButton({ svgConfig, size, label }) {
         gap: 4,
         padding: '4px 10px',
         borderRadius: 6,
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 600,
         color: '#E85D26',
         background: 'rgba(232,93,38,0.1)',
@@ -434,16 +434,17 @@ export default function BrandGuidelinesV4() {
         <MaxWidth>
           {/* Nav */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 80 }}>
-            <button
-              onClick={() => navigate('/')}
+            <a
+              href="/"
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: 'none', border: 'none', color: C.textLightMuted,
-                cursor: 'pointer', fontFamily: '"Space Grotesk", sans-serif', fontSize: 14,
+                textDecoration: 'none', color: C.textLight,
+                fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 800,
+                letterSpacing: '-0.03em',
               }}
             >
-              <ArrowLeft size={16} /> Back to site
-            </button>
+              AOM<span style={{ color: C.orange }}>.</span>
+            </a>
             <Badge color={C.orange} style={{ borderColor: C.orange }}>v4.0</Badge>
           </div>
 
@@ -473,19 +474,19 @@ export default function BrandGuidelinesV4() {
               borderTop: `1px solid ${C.nightBorder}`, paddingTop: 32,
             }}>
               <div>
-                <div style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Full Name</div>
+                <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Full Name</div>
                 <div style={{ fontSize: 18, fontWeight: 600, color: C.textLight }}>Ahead of Market</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Founded</div>
+                <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Founded</div>
                 <div style={{ fontSize: 18, fontWeight: 600, color: C.textLight }}>2020</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Direction</div>
+                <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Direction</div>
                 <div style={{ fontSize: 18, fontWeight: 600, color: C.textLight }}>Bold Graphic</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Version</div>
+                <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Version</div>
                 <div style={{ fontSize: 18, fontWeight: 600, color: C.orange }}>4.0</div>
               </div>
             </div>
@@ -494,7 +495,7 @@ export default function BrandGuidelinesV4() {
           {/* Scroll indicator */}
           <div style={{ marginTop: 80, display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 40, height: 1, background: C.orange }} />
-            <span style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.15em', textTransform: 'uppercase' }}>Scroll to explore</span>
+            <span style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.15em', textTransform: 'uppercase' }}>Scroll to explore</span>
           </div>
         </MaxWidth>
       </section>
@@ -529,9 +530,9 @@ export default function BrandGuidelinesV4() {
               minHeight: 200,
             }}>
               <svg viewBox="0 0 320 80" width={200} aria-label="AOM Primary on dark">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Light on Dark</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Light on Dark</div>
             </div>
 
             {/* 2. Primary on light */}
@@ -549,7 +550,7 @@ export default function BrandGuidelinesV4() {
               <svg viewBox="0 0 320 80" width={200} aria-label="AOM Primary on light">
                 <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Dark on Light</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Dark on Light</div>
             </div>
 
             {/* 3. Monochrome black */}
@@ -567,7 +568,7 @@ export default function BrandGuidelinesV4() {
               <svg viewBox="0 0 320 80" width={200} aria-label="AOM Monochrome black">
                 <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#0A0A0A">.</tspan></text>
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / Black</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / Black</div>
             </div>
 
             {/* 4. Monochrome white */}
@@ -583,9 +584,9 @@ export default function BrandGuidelinesV4() {
               minHeight: 200,
             }}>
               <svg viewBox="0 0 320 80" width={200} aria-label="AOM Monochrome white">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#F2EDE8">.</tspan></text>
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#F0ECE6">.</tspan></text>
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / White</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / White</div>
             </div>
           </div>
 
@@ -601,10 +602,10 @@ export default function BrandGuidelinesV4() {
             marginBottom: 48,
           }}>
             {[
-              { bg: C.nightCard, border: C.nightBorder, fill: '#F2EDE8', label: 'Dark' },
+              { bg: C.nightCard, border: C.nightBorder, fill: '#F0ECE6', label: 'Dark' },
               { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', label: 'Light' },
               { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', mono: true, label: 'Mono Dark' },
-              { bg: '#0A0A0A', border: C.nightBorder, fill: '#F2EDE8', mono: true, label: 'Mono Light' },
+              { bg: '#0A0A0A', border: C.nightBorder, fill: '#F0ECE6', mono: true, label: 'Mono Light' },
             ].map((v, i) => (
               <div key={i} style={{
                 background: v.bg,
@@ -619,7 +620,7 @@ export default function BrandGuidelinesV4() {
                 <svg viewBox="0 0 120 80" width={56} aria-label={`Icon mark ${v.label}`}>
                   <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={v.fill} letterSpacing="-2">A<tspan fill={v.mono ? v.fill : '#E85D26'}>.</tspan></text>
                 </svg>
-                <div style={{ marginTop: 10, fontSize: 10, color: v.bg === C.cream ? C.warmGray : C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{v.label}</div>
+                <div style={{ marginTop: 10, fontSize: 12, color: v.bg === C.cream ? C.warmGray : C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{v.label}</div>
               </div>
             ))}
           </div>
@@ -645,11 +646,11 @@ export default function BrandGuidelinesV4() {
               minHeight: 160,
             }}>
               <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440 }} aria-label="AOM Horizontal lockup">
-                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 <line x1="280" y1="20" x2="280" y2="60" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
                 <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
             </div>
 
             {/* Stacked */}
@@ -665,10 +666,10 @@ export default function BrandGuidelinesV4() {
               minHeight: 160,
             }}>
               <svg viewBox="0 0 320 110" width={220} aria-label="AOM Stacked lockup">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked Lockup</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked Lockup</div>
             </div>
 
             {/* Full wordmark on light */}
@@ -688,7 +689,7 @@ export default function BrandGuidelinesV4() {
                 <line x1="280" y1="20" x2="280" y2="60" stroke="#D9D3CB" strokeWidth="1" />
                 <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
             </div>
 
             {/* Stacked on light */}
@@ -707,7 +708,7 @@ export default function BrandGuidelinesV4() {
                 <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#7A7267" letterSpacing="3">AHEAD OF MARKET</text>
               </svg>
-              <div style={{ marginTop: 16, fontSize: 11, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked / Light</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked / Light</div>
             </div>
           </div>
 
@@ -740,7 +741,7 @@ export default function BrandGuidelinesV4() {
                 position: 'relative',
               }}>
                 <svg viewBox="0 0 320 80" width={140}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
                 <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
                 <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
@@ -778,27 +779,27 @@ export default function BrandGuidelinesV4() {
               <div style={{ marginTop: 20, display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
                 <div style={{ textAlign: 'center' }}>
                   <svg viewBox="0 0 320 80" width={200}>
-                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                   </svg>
-                  <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>200px</div>
+                  <div style={{ fontSize: 12, color: C.textLightMuted, marginTop: 4 }}>200px</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <svg viewBox="0 0 320 80" width={120}>
-                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                   </svg>
-                  <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>120px</div>
+                  <div style={{ fontSize: 12, color: C.textLightMuted, marginTop: 4 }}>120px</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <svg viewBox="0 0 320 80" width={80}>
-                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                   </svg>
-                  <div style={{ fontSize: 10, color: '#E85D26', marginTop: 4 }}>80px min</div>
+                  <div style={{ fontSize: 12, color: '#E85D26', marginTop: 4 }}>80px min</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <svg viewBox="0 0 100 80" width={32}>
-                    <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-2">A<tspan fill="#E85D26">.</tspan></text>
+                    <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-2">A<tspan fill="#E85D26">.</tspan></text>
                   </svg>
-                  <div style={{ fontSize: 10, color: C.textLightMuted, marginTop: 4 }}>32px icon</div>
+                  <div style={{ fontSize: 12, color: C.textLightMuted, marginTop: 4 }}>32px icon</div>
                 </div>
               </div>
             </div>
@@ -833,7 +834,7 @@ export default function BrandGuidelinesV4() {
                   minHeight: 100,
                 }}>
                   <svg viewBox="0 0 320 80" width={120}>
-                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                    <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                   </svg>
                 </div>
                 <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -860,7 +861,7 @@ export default function BrandGuidelinesV4() {
               }}>
                 {/* Stretched */}
                 <svg viewBox="0 0 320 80" width={160} height={40} preserveAspectRatio="none" style={{ opacity: 0.5 }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -885,7 +886,7 @@ export default function BrandGuidelinesV4() {
               }}>
                 {/* Wrong color dot */}
                 <svg viewBox="0 0 320 80" width={120} style={{ opacity: 0.5 }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#4488FF">.</tspan></text>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#4488FF">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -910,7 +911,7 @@ export default function BrandGuidelinesV4() {
               }}>
                 {/* Rotated */}
                 <svg viewBox="0 0 320 80" width={120} style={{ opacity: 0.5, transform: 'rotate(-15deg)' }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -935,7 +936,7 @@ export default function BrandGuidelinesV4() {
               }}>
                 {/* Drop shadow */}
                 <svg viewBox="0 0 320 80" width={120} style={{ opacity: 0.5, filter: 'drop-shadow(4px 4px 8px rgba(255,92,26,0.6))' }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -960,7 +961,7 @@ export default function BrandGuidelinesV4() {
               }}>
                 {/* No dot */}
                 <svg viewBox="0 0 240 80" width={110} style={{ opacity: 0.5 }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM</text>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM</text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -984,7 +985,7 @@ export default function BrandGuidelinesV4() {
                 minHeight: 100,
               }}>
                 <svg viewBox="0 0 320 80" width={120} style={{ opacity: 0.5 }}>
-                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F2EDE8" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+                  <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
               </div>
               <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1013,7 +1014,7 @@ export default function BrandGuidelinesV4() {
                   {['Background', 'Color', 'Use This Variation', 'Preview'].map(h => (
                     <th key={h} style={{
                       textAlign: 'left', padding: '10px 12px',
-                      color: C.textLightMuted, fontWeight: 500, fontSize: 11,
+                      color: C.textLightMuted, fontWeight: 500, fontSize: 12,
                       letterSpacing: '0.1em', textTransform: 'uppercase',
                     }}>{h}</th>
                   ))}
@@ -1021,10 +1022,10 @@ export default function BrandGuidelinesV4() {
               </thead>
               <tbody>
                 {[
-                  { name: 'Night / Black', hex: '#0C0C0C', variation: 'Primary (light on dark)', textFill: '#F2EDE8', dotFill: '#E85D26' },
+                  { name: 'Night / Black', hex: '#0C0C0C', variation: 'Primary (light on dark)', textFill: '#F0ECE6', dotFill: '#E85D26' },
                   { name: 'Cream / White', hex: '#FDF6EC', variation: 'Primary (dark on light)', textFill: '#0A0A0A', dotFill: '#E85D26' },
                   { name: 'Orange', hex: '#E85D26', variation: 'Monochrome white', textFill: '#FFFFFF', dotFill: '#FFFFFF' },
-                  { name: 'Photography (dark)', hex: '#1A1A1A', variation: 'Monochrome white', textFill: '#F2EDE8', dotFill: '#F2EDE8' },
+                  { name: 'Photography (dark)', hex: '#1A1A1A', variation: 'Monochrome white', textFill: '#F0ECE6', dotFill: '#F0ECE6' },
                   { name: 'Photography (light)', hex: '#E8E0D8', variation: 'Monochrome black', textFill: '#0A0A0A', dotFill: '#0A0A0A' },
                   { name: 'Sage', hex: '#7C9A72', variation: 'Monochrome white', textFill: '#FFFFFF', dotFill: '#FFFFFF' },
                 ].map((row, i) => (
@@ -1078,7 +1079,7 @@ export default function BrandGuidelinesV4() {
               }}>
                 {[
                   { label: 'Orange on Dark', bg: '#0C0C0C', fill: '#E85D26', dotFill: '#E85D26', filename: 'aom-icon-orange-dark' },
-                  { label: 'White on Dark', bg: '#0C0C0C', fill: '#F2EDE8', dotFill: '#F2EDE8', filename: 'aom-icon-white-dark' },
+                  { label: 'White on Dark', bg: '#0C0C0C', fill: '#F0ECE6', dotFill: '#F0ECE6', filename: 'aom-icon-white-dark' },
                   { label: 'Dark on Light', bg: '#FDF6EC', fill: '#0A0A0A', dotFill: '#E85D26', filename: 'aom-icon-dark-light' },
                   { label: 'Orange on Light', bg: '#FDF6EC', fill: '#E85D26', dotFill: '#E85D26', filename: 'aom-icon-orange-light' },
                 ].map((variant, i) => (
@@ -1109,9 +1110,9 @@ export default function BrandGuidelinesV4() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <DownloadPngButton svgConfig={{ type: 'icon', ...variant }} size={512} label="512px" />
                         <DownloadPngButton svgConfig={{ type: 'icon', ...variant }} size={1024} label="1024px" />
-                        <a href={`/brand/aom-icon-mark${variant.fill === '#F2EDE8' || variant.fill === '#E85D26' && variant.bg === '#0C0C0C' ? '-white' : ''}.svg`} download style={{
+                        <a href={`/brand/aom-icon-mark${variant.fill === '#F0ECE6' || variant.fill === '#E85D26' && variant.bg === '#0C0C0C' ? '-white' : ''}.svg`} download style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
-                          padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                          padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
                           color: C.textLightMuted, background: 'transparent',
                           border: `1px solid ${C.nightBorder}`, textDecoration: 'none',
                           cursor: 'pointer',
@@ -1144,7 +1145,7 @@ export default function BrandGuidelinesV4() {
                 gap: 16,
               }}>
                 {[
-                  { label: 'Light Wordmark (for dark bg)', fill: '#F2EDE8', dotFill: '#E85D26', previewBg: C.night, filename: 'aom-wordmark-light-transparent' },
+                  { label: 'Light Wordmark (for dark bg)', fill: '#F0ECE6', dotFill: '#E85D26', previewBg: C.night, filename: 'aom-wordmark-light-transparent' },
                   { label: 'Dark Wordmark (for light bg)', fill: '#0A0A0A', dotFill: '#E85D26', previewBg: '#E0DAD2', filename: 'aom-wordmark-dark-transparent' },
                   { label: 'Mono White (for overlays)', fill: '#FFFFFF', dotFill: '#FFFFFF', previewBg: '#333', filename: 'aom-wordmark-mono-white-transparent' },
                   { label: 'Mono Black (for print)', fill: '#0A0A0A', dotFill: '#0A0A0A', previewBg: '#E8E4DE', filename: 'aom-wordmark-mono-black-transparent' },
@@ -1171,9 +1172,9 @@ export default function BrandGuidelinesV4() {
                       <div style={{ fontSize: 13, fontWeight: 600, color: C.textLight, marginBottom: 8 }}>{variant.label}</div>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <DownloadPngButton svgConfig={{ type: 'wordmark', fill: variant.fill, dotFill: variant.dotFill, transparent: true }} size={800} label="PNG" />
-                        <a href={`/brand/aom-primary-${variant.fill === '#F2EDE8' || variant.fill === '#FFFFFF' ? 'dark' : 'light'}.svg`} download style={{
+                        <a href={`/brand/aom-primary-${variant.fill === '#F0ECE6' || variant.fill === '#FFFFFF' ? 'dark' : 'light'}.svg`} download style={{
                           display: 'inline-flex', alignItems: 'center', gap: 4,
-                          padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+                          padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
                           color: C.textLightMuted, background: 'transparent',
                           border: `1px solid ${C.nightBorder}`, textDecoration: 'none',
                           cursor: 'pointer',
@@ -1305,11 +1306,15 @@ export default function BrandGuidelinesV4() {
               { name: 'Night Card', hex: '#151515', text: C.textLight },
               { name: 'Charcoal', hex: '#141412', text: C.textLight },
               { name: 'Surface', hex: '#1A1A17', text: C.textLight },
+              { name: 'Page BG', hex: '#0A0A08', text: C.textLight },
               { name: 'Orange Hover', hex: '#D14E1C', text: C.white },
               { name: 'Gold', hex: '#C9A84C', text: C.black },
+              { name: 'Warm White', hex: '#F5F0EB', text: C.black },
               { name: 'Warm Gray', hex: '#7A7267', text: C.white },
+              { name: 'Dim Text', hex: '#A89F96', text: C.black },
               { name: 'Text Light', hex: '#F0ECE6', text: C.black },
               { name: 'Text Muted', hex: '#8A847C', text: C.white },
+              { name: 'Night Border', hex: '#292524', text: C.textLight },
             ].map(c => (
               <div key={c.hex} style={{
                 borderRadius: 8,
@@ -1323,7 +1328,7 @@ export default function BrandGuidelinesV4() {
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <span style={{ color: c.text, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em' }}>{c.name}</span>
+                  <span style={{ color: c.text, fontSize: 12, fontWeight: 600, letterSpacing: '0.08em' }}>{c.name}</span>
                 </div>
                 <div style={{ padding: '8px 10px', background: C.white, textAlign: 'center' }}>
                   <div style={{ color: C.black, fontSize: 12 }}><CopyHex hex={c.hex} /></div>
@@ -1431,7 +1436,7 @@ export default function BrandGuidelinesV4() {
                     paddingBottom: 12,
                   }}>
                     <span style={{
-                      fontSize: 10, color: C.orange, fontWeight: 700, letterSpacing: '0.15em',
+                      fontSize: 12, color: C.orange, fontWeight: 700, letterSpacing: '0.15em',
                       width: 32, flexShrink: 0,
                     }}>{h.label}</span>
                     <span style={{
@@ -1483,7 +1488,7 @@ export default function BrandGuidelinesV4() {
                     borderBottom: `1px solid ${C.nightBorder}`,
                   }}>
                     <span style={{
-                      fontSize: 10, color: C.sage, fontWeight: 700, letterSpacing: '0.15em',
+                      fontSize: 12, color: C.sage, fontWeight: 700, letterSpacing: '0.15em',
                       display: 'block', marginBottom: 6,
                     }}>{t.label} / {t.size}px / {t.weight}</span>
                     <span style={{
@@ -1503,6 +1508,85 @@ export default function BrandGuidelinesV4() {
             </div>
           </div>
 
+          {/* JetBrains Mono specimen */}
+          <div style={{
+            background: C.nightCard,
+            borderRadius: 16,
+            padding: 40,
+            border: `1px solid ${C.nightBorder}`,
+            marginTop: 24,
+          }}>
+            <Badge color={C.orange} style={{ borderColor: C.orange, marginBottom: 24 }}>Mono</Badge>
+            <div style={{
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 48,
+              fontWeight: 700,
+              color: C.textLight,
+              lineHeight: 1,
+              marginBottom: 24,
+              letterSpacing: '-0.02em',
+            }}>
+              JetBrains<br/>Mono
+            </div>
+            <div style={{ fontSize: 13, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 20 }}>
+              Used for labels, badges, metadata, code snippets, system identifiers, status text, and navigation micro-labels. Always uppercase for labels and badges. Normal case for code and data.
+            </div>
+            <div style={{
+              background: C.night,
+              borderRadius: 8,
+              padding: 24,
+              marginBottom: 20,
+              border: `1px solid ${C.nightBorder}`,
+            }}>
+              <p style={{
+                fontFamily: '"JetBrains Mono", monospace',
+                fontSize: 14,
+                fontWeight: 400,
+                color: C.textLight,
+                lineHeight: 1.6,
+                margin: 0,
+              }}>
+                SYSTEM READY. ALL AGENTS ACTIVE. STATUS: NOMINAL.
+              </p>
+            </div>
+            <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 20 }}>
+              {[
+                { label: 'Label', size: 12, weight: 700, tracking: '0.2em', sample: 'CREATIVE PRODUCTION + AI SYSTEMS', transform: 'uppercase', color: C.orange },
+                { label: 'Badge', size: 12, weight: 500, tracking: '0.15em', sample: 'SECTION 01 / STATUS: ACTIVE', transform: 'uppercase', color: C.textLightMuted },
+                { label: 'Micro', size: 12, weight: 500, tracking: '0.15em', sample: 'PHOENIX, AZ / VIDEO / WEB / SOCIAL', transform: 'uppercase', color: C.textLightMuted, note: 'Minimum badge size. Never use below 10px.' },
+                { label: 'Code', size: 14, weight: 400, tracking: '0', sample: 'const ORANGE = "#E85D26"', transform: 'none', color: C.textLight },
+              ].map(t => (
+                <div key={t.label} style={{
+                  marginBottom: 16,
+                  paddingBottom: 16,
+                  borderBottom: `1px solid ${C.nightBorder}`,
+                }}>
+                  <span style={{
+                    fontSize: 12, color: C.orange, fontWeight: 700, letterSpacing: '0.15em',
+                    display: 'block', marginBottom: 6,
+                  }}>{t.label} / {t.size}px / {t.weight}</span>
+                  <span style={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: t.size,
+                    fontWeight: t.weight,
+                    color: t.color,
+                    lineHeight: 1.5,
+                    letterSpacing: t.tracking,
+                    textTransform: t.transform,
+                  }}>
+                    {t.sample}
+                  </span>
+                  {t.note && (
+                    <span style={{
+                      display: 'block', marginTop: 4,
+                      fontSize: 12, color: C.textLightMuted, fontStyle: 'italic',
+                    }}>{t.note}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Type scale table */}
           <div style={{
             background: C.nightCard,
@@ -1518,7 +1602,7 @@ export default function BrandGuidelinesV4() {
                   {['Element', 'Font', 'Size', 'Weight', 'Line Height', 'Tracking'].map(h => (
                     <th key={h} style={{
                       textAlign: 'left', padding: '10px 12px',
-                      color: C.textLightMuted, fontWeight: 500, fontSize: 11,
+                      color: C.textLightMuted, fontWeight: 500, fontSize: 12,
                       letterSpacing: '0.1em', textTransform: 'uppercase',
                     }}>{h}</th>
                   ))}
@@ -1640,7 +1724,7 @@ export default function BrandGuidelinesV4() {
                   </svg>
                 </div>
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                  <div style={{ fontSize: 11, color: C.orange, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8 }}>Featured</div>
+                  <div style={{ fontSize: 12, color: C.orange, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8 }}>Featured</div>
                   <div style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 800, color: C.textLight, marginBottom: 8 }}>Card Title</div>
                   <div style={{ fontSize: 14, color: C.textLightMuted }}>Dot grid pattern at low opacity creates subtle texture depth.</div>
                 </div>
@@ -1936,7 +2020,7 @@ export default function BrandGuidelinesV4() {
             <span style={{
               display: 'inline-block',
               fontFamily: '"Space Grotesk", sans-serif',
-              fontSize: 10,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
@@ -2023,22 +2107,22 @@ export default function BrandGuidelinesV4() {
           }}>
             {/* Orange bar */}
             <div>
-              <div style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Orange Bar (12px)</div>
+              <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Orange Bar (12px)</div>
               <div style={{ width: 48, height: 2, background: C.orange, borderRadius: 1 }} />
             </div>
             {/* Subtle border */}
             <div>
-              <div style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Subtle Border</div>
+              <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Subtle Border</div>
               <div style={{ width: '100%', height: 1, background: C.nightBorder }} />
             </div>
             {/* Pattern strip */}
             <div>
-              <div style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Pattern Strip</div>
+              <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Pattern Strip</div>
               <PatternStrip pattern="diagonal" height={4} />
             </div>
             {/* Orange glow line */}
             <div>
-              <div style={{ fontSize: 11, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Orange Glow Line</div>
+              <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>Orange Glow Line</div>
               <div style={{ width: '40%', height: 1, background: `linear-gradient(90deg, ${C.orange}, transparent)` }} />
             </div>
           </div>
@@ -2152,11 +2236,11 @@ export default function BrandGuidelinesV4() {
                 <p style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 20 }}>{v.desc}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.sage, marginBottom: 4 }}>Do</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.sage, marginBottom: 4 }}>Do</div>
                     <div style={{ fontSize: 15, color: C.textLight, fontStyle: 'italic' }}>"{v.do}"</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#8A4A3A', marginBottom: 4 }}>Don't</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#8A4A3A', marginBottom: 4 }}>Don't</div>
                     <div style={{ fontSize: 15, color: C.textLightMuted, fontStyle: 'italic', textDecoration: 'line-through', textDecorationColor: 'rgba(232,93,38,0.3)' }}>"{v.dont}"</div>
                   </div>
                 </div>

@@ -367,7 +367,7 @@ const NavBar = ({ activeSlide, goToSlide, openDrawer }) => {
                 if (link.action) { link.action(); return }
                 goToSlide(link.target)
               }}
-              className="font-body text-base font-medium uppercase tracking-[0.06em] text-[#8A847C] hover:text-[#F0ECE6] transition-colors duration-150"
+              className="font-body text-base font-medium uppercase tracking-[0.06em] text-[#8A847C] hover:text-[#F0ECE6] transition-colors duration-150 min-w-[44px] min-h-[44px] flex items-center"
             >
               {link.label}
             </button>
@@ -541,57 +541,9 @@ const ContactDrawer = ({ open, onClose }) => (
 // ============================================================
 
 const SlideHero = ({ goToSlide }) => {
-  const [playlist] = useState(() => {
-    const shuffled = [...GUMLET_IDS]
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-    }
-    return shuffled.slice(0, 3)
-  })
-  const [activeIdx, setActiveIdx] = useState(0)
-  const [videoLoaded, setVideoLoaded] = useState(false)
-
-  useEffect(() => {
-    const fadeTimer = setTimeout(() => setVideoLoaded(true), 600)
-    return () => clearTimeout(fadeTimer)
-  }, [])
-
-  useEffect(() => {
-    if (playlist.length <= 1) return
-    const interval = setInterval(() => {
-      setVideoLoaded(false)
-      setTimeout(() => {
-        setActiveIdx((prev) => (prev + 1) % playlist.length)
-        setTimeout(() => setVideoLoaded(true), 100)
-      }, 600)
-    }, 10000)
-    return () => clearInterval(interval)
-  }, [playlist])
-
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
-      {/* Video background */}
-      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
-        <iframe
-          key={playlist[activeIdx]}
-          src={`https://play.gumlet.io/embed/${playlist[activeIdx]}?autoplay=true&muted=true&loop=true&preload=metadata&controls=false`}
-          className="absolute inset-0 w-full h-full border-none"
-          loading="eager"
-          style={{
-            opacity: videoLoaded ? 0.7 : 0,
-            transition: 'opacity 600ms ease',
-            filter: 'grayscale(0.15) contrast(1.15)',
-            transform: 'scale(1.15)',
-            transformOrigin: 'center center',
-          }}
-          allow="autoplay"
-          tabIndex={-1}
-        />
-        <div className="absolute inset-0" style={{ background: 'rgba(12,12,12,0.50)' }} />
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #0C0C0C 100%)' }} />
-        <div className="absolute inset-x-0 bottom-0 h-40" style={{ background: 'linear-gradient(to bottom, transparent 85%, #0C0C0C 100%)' }} />
-      </div>
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: 'transparent' }}>
+      {/* Video handled by PersistentHeroVideo layer (no re-mount on nav) */}
 
       <FilmGrain />
 
@@ -612,7 +564,7 @@ const SlideHero = ({ goToSlide }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15, ease: ENTER_EASE }}
-          className="font-headline text-[clamp(32px,8vw,80px)] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#FDF6EC] max-w-[900px]"
+          className="font-headline text-[clamp(28px,7vw,80px)] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#FDF6EC] max-w-[900px] px-2"
         >
           WE MAKE COMPANIES IMPOSSIBLE TO IGNORE.
         </motion.h1>
@@ -627,15 +579,38 @@ const SlideHero = ({ goToSlide }) => {
           Video, web, and brand systems for companies ready to stand out.
         </motion.p>
 
+      </div>
+
+      {/* Bottom area: status bar + scroll cue, stacked with clear spacing */}
+      <div className="absolute bottom-6 md:bottom-8 left-0 right-0 z-10 flex flex-col items-center gap-3">
+        {/* Status bar: fade only, delay 0.6s */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.7 }}
+          transition={{ duration: 0.4, delay: 0.6, ease: ENTER_EASE }}
+          className="flex items-center gap-4"
+        >
+          {['PHOENIX, AZ', 'VIDEO', 'WEB', 'SOCIAL', 'SYSTEMS', 'EST. 2020'].map((item, i) => (
+            <React.Fragment key={item}>
+              {i > 0 && <span className="w-px h-3 bg-[#292524]" />}
+              <span className="hidden md:inline font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]">
+                {item}
+              </span>
+            </React.Fragment>
+          ))}
+          <span className="md:hidden font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]">
+            PHOENIX, AZ / EST. 2020
+          </span>
+        </motion.div>
+
         {/* Down arrow cue (ONLY on hero per Steffen) */}
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.8, ease: ENTER_EASE }}
           onClick={() => goToSlide(1)}
-          className="mt-16 text-[#8A847C] hover:text-[#E85D26] transition-colors cursor-pointer flex flex-col items-center"
+          className="text-[#8A847C] hover:text-[#E85D26] transition-colors cursor-pointer"
         >
-          <span className="block font-mono text-[13px] font-medium uppercase tracking-[0.08em] text-[#8A847C] mb-2">Scroll</span>
           <motion.div
             animate={{ y: [0, 6, 0] }}
             transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}
@@ -644,29 +619,23 @@ const SlideHero = ({ goToSlide }) => {
           </motion.div>
         </motion.button>
       </div>
-
-      {/* Status bar: fade only, delay 0.6s */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.7 }}
-        transition={{ duration: 0.4, delay: 0.6, ease: ENTER_EASE }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex items-center gap-4"
-      >
-        {['PHOENIX, AZ', 'VIDEO', 'WEB', 'SOCIAL', 'SYSTEMS', 'EST. 2020'].map((item, i) => (
-          <React.Fragment key={item}>
-            {i > 0 && <span className="w-px h-3 bg-[#292524]" />}
-            <span className="hidden md:inline font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]">
-              {item}
-            </span>
-          </React.Fragment>
-        ))}
-        <span className="md:hidden font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-[#8A847C]">
-          PHOENIX, AZ / EST. 2020
-        </span>
-      </motion.div>
     </div>
   )
 }
+
+// ============================================================
+// TOP EDGE GRADIENT (subtle transition between slides)
+// ============================================================
+
+const TopEdge = ({ prevBg }) => (
+  <div
+    className="absolute top-0 left-0 right-0 z-[2] pointer-events-none"
+    style={{
+      height: 10,
+      background: `linear-gradient(to bottom, ${prevBg}, transparent)`,
+    }}
+  />
+)
 
 // ============================================================
 // SLIDE 2: HOOK
@@ -679,11 +648,12 @@ const SlideHook = () => {
     { value: '24-72HR', label: 'Fast Turnarounds' },
     { value: 'CINEMA', label: 'Production Quality' },
     { value: 'ON TIME', label: 'Delivery Timeline' },
-    { value: 'EVERY TIME', label: 'Brand Consistency' },
+    { value: 'ALWAYS', label: 'Brand Consistency' },
   ]
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#151515' }}>
+      <TopEdge prevBg="#0C0C0C" />
       <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
           {/* Left: 55% */}
@@ -715,7 +685,7 @@ const SlideHook = () => {
                 <div className="border-l-2 border-[#E85D26]/20 pl-5">
                   <p
                     className="font-headline font-black text-[#E85D26] leading-[0.95] tracking-[-0.02em]"
-                    style={{ fontSize: 'clamp(18px, 3vw, 48px)' }}
+                    style={{ fontSize: 'clamp(24px, 3.5vw, 48px)' }}
                   >
                     {stat.value}
                   </p>
@@ -741,6 +711,7 @@ const SlideWork = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
+      <TopEdge prevBg="#151515" />
       {/* Full-bleed video reel */}
       <div className="absolute inset-0 z-0">
         <iframe
@@ -830,6 +801,7 @@ const SlideServices = () => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#1A1A17' }}>
+      <TopEdge prevBg="#0C0C0C" />
       <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <motion.div {...stagger(0)} className="text-center">
           <p className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4">
@@ -878,6 +850,7 @@ const SlideConstruction = ({ openDrawer }) => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
+      <TopEdge prevBg="#1A1A17" />
       <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
           {/* Left: content */}
@@ -961,6 +934,7 @@ const SlideAI = () => {
 
   return (
     <div className="relative w-full h-full flex items-start pt-[56px] md:items-center md:pt-0 justify-center overflow-hidden" style={{ backgroundColor: '#151515' }}>
+      <TopEdge prevBg="#0C0C0C" />
       <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
         <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16">
           {/* Left: 40% */}
@@ -1026,6 +1000,7 @@ const SlideAI = () => {
 
 const SlideProof = () => (
   <div className="relative w-full h-full flex items-start pt-[56px] md:items-center md:pt-0 justify-center overflow-hidden" style={{ backgroundColor: '#1A1A17' }}>
+    <TopEdge prevBg="#151515" />
     <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
       <motion.div {...stagger(0)} className="text-center">
         <p className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#8A847C] mb-4">
@@ -1065,6 +1040,7 @@ const SlideProof = () => (
 
 const SlideContact = () => (
   <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ backgroundColor: '#0C0C0C' }}>
+    <TopEdge prevBg="#1A1A17" />
     <FilmGrain />
     <div className="relative z-10 px-8 md:px-24 max-w-[1200px] mx-auto w-full">
       <div className="flex flex-col md:flex-row items-start gap-10 md:gap-16">
@@ -1170,6 +1146,47 @@ const KeepExploring = () => {
           </p>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ============================================================
+// PERSISTENT VIDEO LAYER (Steffen spec: video stays mounted,
+// no re-mount on nav. Only content overlay animates.)
+// ============================================================
+
+const PersistentHeroVideo = ({ activeSlide }) => {
+  const [videoId] = useState(() => {
+    const shuffled = [...GUMLET_IDS]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return shuffled[0]
+  })
+
+  return (
+    <div
+      className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-500"
+      style={{ opacity: activeSlide === 0 ? 1 : 0 }}
+      aria-hidden="true"
+    >
+      <iframe
+        src={`https://play.gumlet.io/embed/${videoId}?autoplay=true&muted=true&loop=true&preload=metadata&controls=false`}
+        className="absolute inset-0 w-full h-full border-none"
+        loading="eager"
+        style={{
+          opacity: 0.7,
+          filter: 'grayscale(0.15) contrast(1.15)',
+          transform: 'scale(1.15)',
+          transformOrigin: 'center center',
+        }}
+        allow="autoplay"
+        tabIndex={-1}
+      />
+      <div className="absolute inset-0" style={{ background: 'rgba(12,12,12,0.50)' }} />
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 30%, #0C0C0C 100%)' }} />
+      <div className="absolute inset-x-0 bottom-0 h-40" style={{ background: 'linear-gradient(to bottom, transparent 85%, #0C0C0C 100%)' }} />
     </div>
   )
 }
@@ -1408,6 +1425,9 @@ export default function V2Home() {
       {!isExploring ? (
         /* Slide container: full viewport, Framer Motion AnimatePresence mode="wait" */
         <main className="fixed inset-0 w-full h-[100dvh]" style={{ backgroundColor: SLIDES[activeSlide]?.bg || '#0C0C0C' }}>
+          {/* Persistent video layer for hero (Steffen spec: video must not re-mount) */}
+          <PersistentHeroVideo activeSlide={activeSlide} />
+
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={activeSlide}
@@ -1453,9 +1473,13 @@ export default function V2Home() {
       <style>{`
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after {
-            animation-duration: 0.01ms !important;
+            animation-duration: 0.2ms !important;
             animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
+            transition-duration: 200ms !important;
+          }
+          /* Keep opacity transitions for reduced motion (Steffen spec) */
+          [data-framer-motion] {
+            transform: none !important;
           }
         }
 
