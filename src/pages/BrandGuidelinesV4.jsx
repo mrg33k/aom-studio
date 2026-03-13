@@ -1,6 +1,17 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { ArrowLeft, Copy, Check, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import {
+  TemplateSocialIGPost,
+  TemplateSocialIGStory,
+  TemplateSocialLinkedIn,
+  TemplateSocialBeforeAfter,
+  TemplateSocialTestimonial,
+  TemplateSocialQuickTip,
+  TemplatePresentationTitle,
+  TemplatePresentationContent,
+  TemplatePresentationStats,
+} from '../components/templates'
 
 /* ------------------------------------------------------------------ */
 /*  AOM Brand Guidelines v4: "Bold Graphic System"                     */
@@ -400,11 +411,322 @@ function PatternStrip({ pattern = 'diagonal', height = 4 }) {
 /*  MAIN COMPONENT                                                     */
 /* ================================================================== */
 
+/* ================================================================== */
+/*  TABLE OF CONTENTS SECTIONS                                         */
+/* ================================================================== */
+
+const TOC_SECTIONS = [
+  { id: 'brand-mark', num: '01', label: 'Brand Mark' },
+  { id: 'color-system', num: '02', label: 'Color' },
+  { id: 'typography', num: '03', label: 'Typography' },
+  { id: 'patterns', num: '04', label: 'Patterns' },
+  { id: 'spacing', num: '05', label: 'Spacing' },
+  { id: 'components', num: '06', label: 'Components' },
+  { id: 'photography', num: '07', label: 'Photography' },
+  { id: 'voice-tone', num: '08', label: 'Voice & Tone' },
+  { id: 'template-kit', num: '09', label: 'Template Kit' },
+]
+
+/* ================================================================== */
+/*  TEMPLATE CARD WRAPPER                                              */
+/* ================================================================== */
+
+function TemplateCard({ children, name, dimensions, usage }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: C.nightCard,
+        border: `1px solid ${hovered ? 'rgba(232,93,38,0.2)' : C.nightBorder}`,
+        padding: 32,
+        transition: 'border-color 0.25s, transform 0.25s',
+        transform: hovered ? 'translateY(-2px)' : 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+      }}
+    >
+      <div style={{
+        width: '100%',
+        maxWidth: 320,
+        margin: '0 auto',
+        overflow: 'hidden',
+        border: `1px solid ${C.nightBorder}`,
+      }}>
+        {children}
+      </div>
+      <div>
+        <div style={{
+          fontFamily: '"Space Grotesk", sans-serif',
+          fontSize: 16,
+          fontWeight: 600,
+          color: C.textLight,
+          marginBottom: 4,
+        }}>{name}</div>
+        <div style={{
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: 11,
+          fontWeight: 500,
+          color: C.textLightMuted,
+          marginBottom: 4,
+        }}>{dimensions}</div>
+        <div style={{
+          fontFamily: '"Space Grotesk", sans-serif',
+          fontSize: 14,
+          color: C.textLightMuted,
+          lineHeight: 1.5,
+        }}>{usage}</div>
+      </div>
+    </div>
+  )
+}
+
+/* ================================================================== */
+/*  STICKY TABLE OF CONTENTS                                           */
+/* ================================================================== */
+
+function TableOfContents({ activeSection }) {
+  return (
+    <nav style={{
+      position: 'fixed',
+      left: 24,
+      top: '50%',
+      transform: 'translateY(-50%)',
+      width: 140,
+      zIndex: 100,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 0,
+    }}>
+      {TOC_SECTIONS.map((section, i) => {
+        const isActive = activeSection === section.id
+        return (
+          <a
+            key={section.id}
+            href={`#${section.id}`}
+            onClick={(e) => {
+              e.preventDefault()
+              document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' })
+            }}
+            style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: 13,
+              fontWeight: isActive ? 600 : 500,
+              color: isActive ? C.orange : C.textLightMuted,
+              textDecoration: 'none',
+              padding: '8px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              position: 'relative',
+              transition: 'color 0.2s',
+            }}
+          >
+            {/* Connecting line */}
+            {i < TOC_SECTIONS.length - 1 && (
+              <div style={{
+                position: 'absolute',
+                left: 8,
+                top: 24,
+                width: 1,
+                height: '100%',
+                background: 'rgba(255,255,255,0.06)',
+              }} />
+            )}
+            <span style={{
+              width: 16,
+              height: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 8,
+              fontWeight: 700,
+              flexShrink: 0,
+              position: 'relative',
+              zIndex: 1,
+            }}>{section.num}</span>
+            <span>{section.label}</span>
+          </a>
+        )
+      })}
+    </nav>
+  )
+}
+
+/* ================================================================== */
+/*  PRINT PREVIEW CARD                                                 */
+/* ================================================================== */
+
+function PrintPreviewCard({ type = 'business-card' }) {
+  const isBizCard = type === 'business-card'
+
+  return (
+    <TemplateCard
+      name={isBizCard ? 'Business Card' : 'Letterhead'}
+      dimensions={isBizCard ? '3.5" x 2"' : '8.5" x 11"'}
+      usage={isBizCard
+        ? 'Standard business card. Front: logo centered on Night. Back: contact info on Cream.'
+        : 'Standard letterhead. AOM stacked lockup top-left, pattern strip at top edge, footer with contact info.'
+      }
+    >
+      {isBizCard ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Front */}
+          <div style={{
+            aspectRatio: '3.5 / 2',
+            background: C.night,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <span style={{
+              fontFamily: '"Syne", sans-serif',
+              fontSize: 20,
+              fontWeight: 800,
+              color: C.textLight,
+            }}>AOM<span style={{ color: C.orange }}>.</span></span>
+          </div>
+          {/* Back */}
+          <div style={{
+            aspectRatio: '3.5 / 2',
+            background: C.cream,
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}>
+            <div style={{
+              fontFamily: '"Syne", sans-serif',
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#0A0A0A',
+              marginBottom: 2,
+            }}>Patrik Matheson</div>
+            <div style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: 8,
+              fontWeight: 400,
+              color: C.warmGray,
+              marginBottom: 6,
+            }}>Creative Director</div>
+            <div style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: 7,
+              color: C.warmGray,
+              lineHeight: 1.6,
+            }}>
+              hello@aom-inhouse.com<br/>
+              aheadofmarket.com<br/>
+              Phoenix, AZ
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          aspectRatio: '8.5 / 11',
+          background: C.cream,
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {/* Pattern strip */}
+          <div style={{
+            height: 3,
+            background: `repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(232,93,38,0.25) 4px, rgba(232,93,38,0.25) 5px)`,
+          }} />
+
+          {/* Logo */}
+          <div style={{ padding: '12px 16px' }}>
+            <span style={{
+              fontFamily: '"Syne", sans-serif',
+              fontSize: 12,
+              fontWeight: 800,
+              color: '#0A0A0A',
+            }}>AOM<span style={{ color: C.orange }}>.</span></span>
+            <div style={{
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: 6,
+              color: C.warmGray,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}>AHEAD OF MARKET</div>
+          </div>
+
+          {/* Body zone placeholder */}
+          <div style={{ flex: 1, padding: '8px 16px' }}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} style={{
+                height: 3,
+                background: i < 4 ? 'rgba(0,0,0,0.06)' : 'transparent',
+                marginBottom: 5,
+                width: i === 3 ? '60%' : '100%',
+              }} />
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            padding: '6px 16px',
+            borderTop: '1px solid rgba(0,0,0,0.06)',
+          }}>
+            <div style={{
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 5,
+              color: C.textLightMuted,
+            }}>hello@aom-inhouse.com | aheadofmarket.com | Phoenix, AZ</div>
+          </div>
+        </div>
+      )}
+    </TemplateCard>
+  )
+}
+
+/* ================================================================== */
+/*  MAIN COMPONENT                                                     */
+/* ================================================================== */
+
 export default function BrandGuidelinesV4() {
   const navigate = useNavigate()
+  const [activeSection, setActiveSection] = useState('')
+  const sectionRefs = useRef({})
+
+  // IntersectionObserver for sticky TOC active state
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id)
+          }
+        })
+      },
+      { rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+    )
+
+    TOC_SECTIONS.forEach((section) => {
+      const el = document.getElementById(section.id)
+      if (el) observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <div style={{ background: C.night, minHeight: '100vh', fontFamily: '"Space Grotesk", sans-serif' }}>
+
+      {/* Sticky TOC sidebar (hidden below 1280px) */}
+      <style>{`
+        @media (max-width: 1279px) {
+          .brand-toc-sidebar { display: none !important; }
+        }
+      `}</style>
+      <div className="brand-toc-sidebar" style={{ display: 'block' }}>
+        <TableOfContents activeSection={activeSection} />
+      </div>
 
       {/* ============================================================ */}
       {/*  HERO / COVER                                                 */}
@@ -505,7 +827,8 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       {/*  01. BRAND MARK                                               */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection style={{ position: 'relative' }}>
+        <div id="brand-mark" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
           <SectionHeader num={1} title="Brand Mark" subtitle="The locked AOM. wordmark. Syne ExtraBold, orange dot (#E85D26). All variations, clear space, minimum sizes, and usage rules." dark />
 
@@ -1252,7 +1575,8 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       {/*  02. COLOR SYSTEM                                             */}
       {/* ============================================================ */}
-      <LightSection>
+      <LightSection style={{ position: 'relative' }}>
+        <div id="color-system" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
           <SectionHeader num={2} title="Color System" subtitle="Primary, secondary, and accent colors with contrast ratios. Dark and light mode palettes." />
 
@@ -1388,7 +1712,8 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       {/*  03. TYPOGRAPHY                                               */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection style={{ position: 'relative' }}>
+        <div id="typography" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
           <SectionHeader num={3} title="Typography" subtitle="Syne for display. Space Grotesk for everything else. Two fonts, one system." dark />
 
@@ -1641,7 +1966,8 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       {/*  04. PATTERNS                                                 */}
       {/* ============================================================ */}
-      <DarkSection style={{ background: C.nightCard }}>
+      <DarkSection style={{ background: C.nightCard, position: 'relative' }}>
+        <div id="patterns" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
           <SectionHeader num={4} title="Pattern Library" subtitle="Geometric and textural patterns that extend the Bold Graphic identity. Use as section backgrounds, card textures, dividers, and overlay elements." dark />
 
@@ -1804,7 +2130,8 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       {/*  05. SPACING & GRID                                           */}
       {/* ============================================================ */}
-      <LightSection>
+      <LightSection style={{ position: 'relative' }}>
+        <div id="spacing" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
           <SectionHeader num={5} title="Spacing & Grid" subtitle="The 12-column system, section spacing rules, and the spacing scale that keeps everything aligned." />
 
@@ -1914,7 +2241,8 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       {/*  06. COMPONENT LIBRARY                                        */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection style={{ position: 'relative' }}>
+        <div id="components" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
           <SectionHeader num={6} title="Component Library" subtitle="Buttons, badges, cards, dividers, and section headers. Every building block of the AOM visual system." dark />
 
@@ -2134,7 +2462,8 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       {/*  07. PHOTOGRAPHY STYLE                                        */}
       {/* ============================================================ */}
-      <LightSection>
+      <LightSection style={{ position: 'relative' }}>
+        <div id="photography" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
           <SectionHeader num={7} title="Photography Style" subtitle="How we treat, crop, and present photography across all brand touchpoints." />
 
@@ -2205,7 +2534,8 @@ export default function BrandGuidelinesV4() {
       {/* ============================================================ */}
       {/*  08. VOICE & TONE                                             */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection style={{ position: 'relative' }}>
+        <div id="voice-tone" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
           <SectionHeader num={8} title="Voice & Tone" subtitle="How AOM sounds. The energy behind every word." dark />
 
@@ -2277,6 +2607,148 @@ export default function BrandGuidelinesV4() {
                 }}>
                   <span style={{ color: C.orange, fontWeight: 700, flexShrink: 0 }}>{String(i + 1).padStart(2, '0')}</span>
                   {rule}
+                </div>
+              ))}
+            </div>
+          </div>
+        </MaxWidth>
+      </DarkSection>
+
+      <PatternStrip pattern="diagonal" height={3} />
+
+      {/* ============================================================ */}
+      {/*  09. TEMPLATE KIT                                             */}
+      {/* ============================================================ */}
+      <DarkSection style={{ position: 'relative' }}>
+        <div id="template-kit" style={{ position: 'absolute', top: -80 }} />
+        <MaxWidth>
+          <SectionHeader num={9} title="Template Kit" subtitle="Production-ready layouts for social, print, and digital. Drag content in, brand stays consistent." dark />
+
+          {/* ---- SOCIAL MEDIA TEMPLATES ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Social Media</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 24,
+            marginBottom: 48,
+          }}>
+            <TemplateCard
+              name="Instagram Post"
+              dimensions="1080 x 1080 (1:1)"
+              usage="Full-bleed image top, text zone below with orange accent bar. For announcements, case studies, and proof content."
+            >
+              <TemplateSocialIGPost />
+            </TemplateCard>
+
+            <TemplateCard
+              name="Instagram Story / Reel Cover"
+              dimensions="1080 x 1920 (9:16)"
+              usage="Vertical format. Full-bleed image with gradient overlay. Category label above headline. Logo bottom-right."
+            >
+              <TemplateSocialIGStory />
+            </TemplateCard>
+
+            <TemplateCard
+              name="LinkedIn Post"
+              dimensions="1200 x 628 (~1.91:1)"
+              usage="Split layout. Image left, content right. CTA strip at bottom in brand orange. For professional content and thought leadership."
+            >
+              <TemplateSocialLinkedIn />
+            </TemplateCard>
+
+            <TemplateCard
+              name="Before / After Split"
+              dimensions="1080 x 1080 (1:1)"
+              usage="Two images side by side with orange divider. Labels over images. Works for construction site work and brand redesigns."
+            >
+              <TemplateSocialBeforeAfter />
+            </TemplateCard>
+
+            <TemplateCard
+              name="Testimonial Card"
+              dimensions="1080 x 1080 (1:1)"
+              usage="Centered quote with attribution. Large open-quote mark, orange accent line. For client proof and social proof."
+            >
+              <TemplateSocialTestimonial />
+            </TemplateCard>
+
+            <TemplateCard
+              name="Quick Tip / Educational"
+              dimensions="1080 x 1080 (1:1)"
+              usage="Full dark background with category label, watermark number, headline, and body. For tips, educational content, and authority posts."
+            >
+              <TemplateSocialQuickTip />
+            </TemplateCard>
+          </div>
+
+          {/* ---- PRESENTATION TEMPLATES ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Presentation Slides</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+            gap: 24,
+            marginBottom: 48,
+          }}>
+            <TemplateCard
+              name="Title Slide"
+              dimensions="1920 x 1080 (16:9)"
+              usage="Opening slide. AOM logo top-left, title centered, subtitle below, presenter and date bottom-left with pattern strip."
+            >
+              <TemplatePresentationTitle />
+            </TemplateCard>
+
+            <TemplateCard
+              name="Content Slide"
+              dimensions="1920 x 1080 (16:9)"
+              usage="Standard content layout. Section label top-left in orange, headline, body text, page number bottom-right."
+            >
+              <TemplatePresentationContent />
+            </TemplateCard>
+
+            <TemplateCard
+              name="Data / Stats Slide"
+              dimensions="1920 x 1080 (16:9)"
+              usage="Three stat blocks in a row with left orange border. For KPIs, results, and proof numbers."
+            >
+              <TemplatePresentationStats />
+            </TemplateCard>
+          </div>
+
+          {/* ---- PRINT TEMPLATES ---- */}
+          <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Print</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 24,
+            marginBottom: 48,
+          }}>
+            <PrintPreviewCard type="business-card" />
+            <PrintPreviewCard type="letterhead" />
+          </div>
+
+          {/* Template usage notes */}
+          <div style={{
+            background: C.nightCard,
+            padding: 32,
+            border: `1px solid ${C.nightBorder}`,
+          }}>
+            <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 20, fontWeight: 700, color: C.textLight, marginBottom: 16 }}>Template Usage</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+              {[
+                { label: 'Prop-Driven', desc: 'Every template accepts props (headline, body, stat, image, category). Swap content in, brand stays consistent.' },
+                { label: 'Agent-Ready', desc: 'Structured for eventual API integration. Agents will populate these templates with JSON data to generate brand-consistent social posts.' },
+                { label: 'Aspect-Correct', desc: 'Each template renders at the exact aspect ratio of its target platform. What you see is what gets published.' },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                }}>
+                  <span style={{ color: C.orange, fontWeight: 700, flexShrink: 0, fontFamily: '"JetBrains Mono", monospace', fontSize: 12 }}>{String(i + 1).padStart(2, '0')}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.textLight, marginBottom: 4 }}>{item.label}</div>
+                    <div style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.5 }}>{item.desc}</div>
+                  </div>
                 </div>
               ))}
             </div>
