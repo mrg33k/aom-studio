@@ -14,6 +14,7 @@ export default defineConfig({
         'system': resolve(__dirname, 'system.html'),
         'v2': resolve(__dirname, 'v2.html'),
         'proposals-isa': resolve(__dirname, 'proposals-isa.html'),
+        'proposals-quentin': resolve(__dirname, 'proposals-quentin.html'),
       },
     },
   },
