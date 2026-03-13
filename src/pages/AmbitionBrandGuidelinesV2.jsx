@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { ArrowLeft, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { ArrowLeft, Copy, Check, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { toPng } from 'html-to-image'
 
 /* ------------------------------------------------------------------ */
 /*  Ambition Mechanical Brand Guidelines v2                            */
@@ -150,36 +151,36 @@ function SectionHeader({ num, title, subtitle, dark = false }) {
   )
 }
 
-function DarkSection({ children, style: s = {} }) {
+function DarkSection({ children, style: s = {}, ...rest }) {
   return (
     <section style={{
       background: C.navy900,
       padding: 'clamp(48px, 8vw, 96px) clamp(24px, 5vw, 80px)',
       color: C.white,
       ...s,
-    }}>{children}</section>
+    }} {...rest}>{children}</section>
   )
 }
 
-function LightSection({ children, style: s = {} }) {
+function LightSection({ children, style: s = {}, ...rest }) {
   return (
     <section style={{
       background: C.white,
       padding: 'clamp(48px, 8vw, 96px) clamp(24px, 5vw, 80px)',
       color: C.gray700,
       ...s,
-    }}>{children}</section>
+    }} {...rest}>{children}</section>
   )
 }
 
-function OffWhiteSection({ children, style: s = {} }) {
+function OffWhiteSection({ children, style: s = {}, ...rest }) {
   return (
     <section style={{
       background: C.offWhite,
       padding: 'clamp(48px, 8vw, 96px) clamp(24px, 5vw, 80px)',
       color: C.gray700,
       ...s,
-    }}>{children}</section>
+    }} {...rest}>{children}</section>
   )
 }
 
@@ -212,6 +213,231 @@ function CodeBlock({ code, label, dark = false }) {
       <div style={{ padding: 16, overflowX: 'auto', backgroundColor: dark ? C.navy900 : C.white }}>
         <pre style={{ fontFamily: 'monospace', fontSize: 12, lineHeight: 1.6, whiteSpace: 'pre-wrap', color: dark ? C.gray300 : C.gray700, margin: 0 }}>{code}</pre>
       </div>
+    </div>
+  )
+}
+
+/* ================================================================== */
+/*  NAV SECTIONS                                                       */
+/* ================================================================== */
+
+const NAV_SECTIONS = [
+  { id: 'section-logo', num: '01', label: 'Logo' },
+  { id: 'section-colors', num: '02', label: 'Colors' },
+  { id: 'section-type', num: '03', label: 'Type' },
+  { id: 'section-spacing', num: '04', label: 'Spacing' },
+  { id: 'section-patterns', num: '05', label: 'Patterns' },
+  { id: 'section-components', num: '06', label: 'Components' },
+  { id: 'section-layout', num: '07', label: 'Layout' },
+  { id: 'section-photo', num: '08', label: 'Photo' },
+  { id: 'section-voice', num: '09', label: 'Voice' },
+  { id: 'section-tailwind', num: '10', label: 'Tailwind' },
+  { id: 'section-social', num: '11', label: 'Social' },
+]
+
+/* ================================================================== */
+/*  DOWNLOAD BUTTON                                                    */
+/* ================================================================== */
+
+function DownloadButton({ targetRef, filename, label = 'Download PNG', small = false, style: s = {} }) {
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = useCallback(async () => {
+    if (!targetRef.current || downloading) return
+    setDownloading(true)
+    try {
+      // Wait for fonts to be ready
+      await document.fonts.ready
+      const dataUrl = await toPng(targetRef.current, { pixelRatio: 2, cacheBust: true })
+      const link = document.createElement('a')
+      link.download = filename
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      console.error('Download failed:', err)
+    } finally {
+      setDownloading(false)
+    }
+  }, [targetRef, filename, downloading])
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={downloading}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: small ? 4 : 8,
+        fontFamily: F.display,
+        fontWeight: 600,
+        fontSize: small ? 10 : 12,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        background: downloading ? C.gray500 : C.red500,
+        color: C.white,
+        border: 'none',
+        padding: small ? '6px 12px' : '10px 20px',
+        borderRadius: 8,
+        cursor: downloading ? 'not-allowed' : 'pointer',
+        transition: 'background 200ms ease',
+        ...s,
+      }}
+      onMouseEnter={e => { if (!downloading) e.currentTarget.style.background = C.red400 }}
+      onMouseLeave={e => { if (!downloading) e.currentTarget.style.background = C.red500 }}
+    >
+      <Download size={small ? 10 : 14} />
+      {downloading ? 'EXPORTING...' : label}
+    </button>
+  )
+}
+
+function DownloadOverlay({ targetRef, filename }) {
+  const [downloading, setDownloading] = useState(false)
+  const [hovered, setHovered] = useState(false)
+
+  const handleDownload = useCallback(async (e) => {
+    e.stopPropagation()
+    if (!targetRef.current || downloading) return
+    setDownloading(true)
+    try {
+      await document.fonts.ready
+      const dataUrl = await toPng(targetRef.current, { pixelRatio: 2, cacheBust: true })
+      const link = document.createElement('a')
+      link.download = filename
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      console.error('Download failed:', err)
+    } finally {
+      setDownloading(false)
+    }
+  }, [targetRef, filename, downloading])
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ position: 'absolute', top: 8, right: 8, zIndex: 5, opacity: hovered ? 1 : 0, transition: 'opacity 200ms ease' }}
+    >
+      <button
+        onClick={handleDownload}
+        disabled={downloading}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 28,
+          height: 28,
+          borderRadius: 6,
+          background: downloading ? C.gray500 : C.red500,
+          color: C.white,
+          border: 'none',
+          cursor: downloading ? 'not-allowed' : 'pointer',
+          padding: 0,
+          transition: 'background 200ms ease',
+        }}
+        title={`Download ${filename}`}
+      >
+        <Download size={12} />
+      </button>
+    </div>
+  )
+}
+
+/* ================================================================== */
+/*  QUICK NAV BAR                                                      */
+/* ================================================================== */
+
+function QuickNav({ activeSection }) {
+  const navRef = useRef(null)
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id)
+    if (el) {
+      const navHeight = 52
+      const y = el.getBoundingClientRect().top + window.scrollY - navHeight
+      window.scrollTo({ top: y, behavior: 'smooth' })
+    }
+  }
+
+  // Auto-scroll the nav bar to keep active item visible
+  useEffect(() => {
+    if (!navRef.current || !activeSection) return
+    const activeBtn = navRef.current.querySelector(`[data-section="${activeSection}"]`)
+    if (activeBtn) {
+      const nav = navRef.current
+      const btnLeft = activeBtn.offsetLeft
+      const btnWidth = activeBtn.offsetWidth
+      const navWidth = nav.offsetWidth
+      const scrollLeft = nav.scrollLeft
+      if (btnLeft < scrollLeft || btnLeft + btnWidth > scrollLeft + navWidth) {
+        nav.scrollTo({ left: btnLeft - navWidth / 2 + btnWidth / 2, behavior: 'smooth' })
+      }
+    }
+  }, [activeSection])
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 50,
+      background: C.navy900,
+      borderBottom: `1px solid ${C.navyBorder}`,
+      backdropFilter: 'blur(12px)',
+    }}>
+      <div
+        ref={navRef}
+        style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0,
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+          padding: '0 16px',
+        }}
+      >
+        {NAV_SECTIONS.map((sec) => {
+          const isActive = activeSection === sec.id
+          return (
+            <button
+              key={sec.id}
+              data-section={sec.id}
+              onClick={() => scrollToSection(sec.id)}
+              style={{
+                fontFamily: F.display,
+                fontWeight: isActive ? 700 : 500,
+                fontSize: 11,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: isActive ? C.white : C.gray500,
+                background: 'none',
+                border: 'none',
+                borderBottom: isActive ? `2px solid ${C.red500}` : '2px solid transparent',
+                padding: '14px 14px 12px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'color 200ms ease, border-color 200ms ease',
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = C.gray300 }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = C.gray500 }}
+            >
+              <span style={{ color: isActive ? C.red500 : C.gray600, marginRight: 4, fontSize: 10 }}>{sec.num}</span>
+              {sec.label}
+            </button>
+          )
+        })}
+      </div>
+      {/* Hide scrollbar */}
+      <style>{`
+        [data-quicknav]::-webkit-scrollbar { display: none; }
+      `}</style>
     </div>
   )
 }
@@ -480,14 +706,76 @@ const siteLayout = [
 
 export default function AmbitionBrandGuidelinesV2() {
   const navigate = useNavigate()
+  const [activeSection, setActiveSection] = useState(null)
+  const [showNav, setShowNav] = useState(false)
+
+  // Refs for downloadable elements
+  const patternRefs = useRef({})
+  const componentRefs = useRef({})
+  const colorPaletteRef = useRef(null)
+  const templateRefs = useRef({})
+
+  // IntersectionObserver for quick nav active state + visibility
+  useEffect(() => {
+    const heroEl = document.getElementById('hero-section')
+    const sectionIds = NAV_SECTIONS.map(s => s.id)
+
+    // Show/hide nav based on hero visibility
+    const heroObserver = new IntersectionObserver(
+      ([entry]) => setShowNav(!entry.isIntersecting),
+      { threshold: 0.1 }
+    )
+    if (heroEl) heroObserver.observe(heroEl)
+
+    // Track active section
+    const sectionObserver = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter(e => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible.length > 0) {
+          setActiveSection(visible[0].target.id)
+        }
+      },
+      { rootMargin: '-60px 0px -60% 0px', threshold: 0.1 }
+    )
+    sectionIds.forEach(id => {
+      const el = document.getElementById(id)
+      if (el) sectionObserver.observe(el)
+    })
+
+    return () => {
+      heroObserver.disconnect()
+      sectionObserver.disconnect()
+    }
+  }, [])
+
+  // Download helper for template full-size renders
+  const downloadTemplate = useCallback(async (refKey, filename) => {
+    const el = templateRefs.current[refKey]
+    if (!el) return
+    try {
+      await document.fonts.ready
+      const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true })
+      const link = document.createElement('a')
+      link.download = filename
+      link.href = dataUrl
+      link.click()
+    } catch (err) {
+      console.error('Template download failed:', err)
+    }
+  }, [])
 
   return (
     <div style={{ background: C.navy900, minHeight: '100vh', fontFamily: F.body }}>
 
+      {/* Quick Navigation Bar */}
+      {showNav && <QuickNav activeSection={activeSection} />}
+
       {/* ============================================================ */}
       {/*  HERO / COVER                                                 */}
       {/* ============================================================ */}
-      <section style={{
+      <section id="hero-section" style={{
         background: `linear-gradient(160deg, ${C.navy950} 0%, ${C.navy800} 40%, ${C.navy900} 100%)`,
         minHeight: '100vh',
         display: 'flex',
@@ -592,7 +880,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  01. BRAND MARK                                               */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection style={{ scrollMarginTop: 52 }} id="section-logo">
         <MaxWidth>
           <SectionHeader num={1} title="The Logo" subtitle="The Ambition Mechanical logo is locked. It does not change. Everything in this system is designed around it and expands it into a full visual language." dark />
 
@@ -728,11 +1016,12 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  02. COLOR SYSTEM                                             */}
       {/* ============================================================ */}
-      <LightSection>
+      <LightSection id="section-colors" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={2} title="Color System" subtitle="Extracted from the OG logo and expanded into a full web-ready system. Navy anchors. Red energizes. White breathes. Colors are spot on. Do not change them." />
 
           {/* Primary Navy */}
+          <div ref={colorPaletteRef} style={{ background: C.white, padding: 0 }}>
           <div style={{ marginBottom: 48 }}>
             <h3 style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase', marginBottom: 16 }}>Primary / Navy Blue</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
@@ -819,6 +1108,12 @@ export default function AmbitionBrandGuidelinesV2() {
               </div>
             </div>
           </div>
+          </div>{/* close colorPaletteRef */}
+
+          {/* Download color palette button */}
+          <div style={{ marginTop: 16, marginBottom: 0 }}>
+            <DownloadButton targetRef={colorPaletteRef} filename="amb-color-palette-v1.png" label="Download Color Palette" small />
+          </div>
 
           {/* Color rules */}
           <div style={{ marginTop: 48 }}>
@@ -850,7 +1145,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  03. TYPOGRAPHY                                               */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection id="section-type" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={3} title="Typography" subtitle='Barlow Condensed owns all headlines and display moments. Inter handles body text, navigation, and forms. Two fonts. Clear hierarchy. "Old people can read em, young people love em."' dark />
 
@@ -976,7 +1271,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  04. SPACING SYSTEM                                           */}
       {/* ============================================================ */}
-      <OffWhiteSection>
+      <OffWhiteSection id="section-spacing" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={4} title="Spacing System" subtitle="Systematic, not random. Every spacing value maps to a token. Generous vertical padding creates the breathing room that separates good sites from cramped ones." />
 
@@ -1079,7 +1374,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  05. PATTERNS                                                 */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection id="section-patterns" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={5} title="Industrial Patterns" subtitle="Construction-grade textures. Blueprint grids, ductwork motifs, pipe runs, hex bolts. Used as subtle background overlays on dark sections (3-8% opacity). Built for the trades." dark />
 
@@ -1090,15 +1385,45 @@ export default function AmbitionBrandGuidelinesV2() {
             marginBottom: 48,
           }}>
             {[
-              { name: 'Blueprint Grid', desc: 'Engineering drawing grid. Dark sections, hero backgrounds. 3-5% opacity.', component: <PatternBlueprintGrid size={180} /> },
-              { name: 'Ductwork', desc: 'HVAC duct cross-sections. CTA bands, stats sections. 3-5% opacity.', component: <PatternDuctwork size={180} /> },
-              { name: 'Cross Hatch', desc: 'Industrial cross-hatch. Subtle texture for any dark surface. 3-5%.', component: <PatternCrossHatch size={180} /> },
-              { name: 'Diagonal Lines', desc: 'Caution-stripe feel. Red accent for dividers. 5-8% opacity.', component: <PatternDiagonalLines size={180} /> },
-              { name: 'Hex Bolts', desc: 'Hardware-inspired hexagons. Equipment sections. 3-5% opacity.', component: <PatternHexBolts size={180} /> },
-              { name: 'Pipe Run', desc: 'Connected piping layout. About section, process flow. 3-5% opacity.', component: <PatternPipeRun size={180} /> },
+              { name: 'Blueprint Grid', slug: 'blueprint-grid', desc: 'Engineering drawing grid. Dark sections, hero backgrounds. 3-5% opacity.', component: <PatternBlueprintGrid size={180} /> },
+              { name: 'Ductwork', slug: 'ductwork', desc: 'HVAC duct cross-sections. CTA bands, stats sections. 3-5% opacity.', component: <PatternDuctwork size={180} /> },
+              { name: 'Cross Hatch', slug: 'crosshatch', desc: 'Industrial cross-hatch. Subtle texture for any dark surface. 3-5%.', component: <PatternCrossHatch size={180} /> },
+              { name: 'Diagonal Lines', slug: 'diagonal-lines', desc: 'Caution-stripe feel. Red accent for dividers. 5-8% opacity.', component: <PatternDiagonalLines size={180} /> },
+              { name: 'Hex Bolts', slug: 'hex-bolts', desc: 'Hardware-inspired hexagons. Equipment sections. 3-5% opacity.', component: <PatternHexBolts size={180} /> },
+              { name: 'Pipe Run', slug: 'pipe-run', desc: 'Connected piping layout. About section, process flow. 3-5% opacity.', component: <PatternPipeRun size={180} /> },
             ].map((p, i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                {p.component}
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}
+                onMouseEnter={e => { const btn = e.currentTarget.querySelector('[data-dl-btn]'); if (btn) btn.style.opacity = '1' }}
+                onMouseLeave={e => { const btn = e.currentTarget.querySelector('[data-dl-btn]'); if (btn) btn.style.opacity = '0' }}
+              >
+                <div ref={el => { patternRefs.current[p.slug] = el }} style={{ position: 'relative' }}>
+                  {p.component}
+                  <div data-dl-btn style={{ position: 'absolute', top: 8, right: 8, opacity: 0, transition: 'opacity 200ms ease', zIndex: 5 }}>
+                    <button
+                      onClick={async () => {
+                        const el = patternRefs.current[p.slug]
+                        if (!el) return
+                        try {
+                          await document.fonts.ready
+                          const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true })
+                          const link = document.createElement('a')
+                          link.download = `amb-pattern-${p.slug}-v1.png`
+                          link.href = dataUrl
+                          link.click()
+                        } catch (err) { console.error(err) }
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 28, height: 28, borderRadius: 6,
+                        background: C.red500, color: C.white, border: 'none',
+                        cursor: 'pointer', padding: 0,
+                      }}
+                      title={`Download ${p.name}`}
+                    >
+                      <Download size={12} />
+                    </button>
+                  </div>
+                </div>
                 <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 11, letterSpacing: '0.15em', color: C.gray400, textTransform: 'uppercase', marginTop: 12 }}>{p.name}</span>
                 <p style={{ fontSize: 11, color: C.gray500, textAlign: 'center', marginTop: 4, lineHeight: 1.5, maxWidth: 200 }}>{p.desc}</p>
               </div>
@@ -1131,7 +1456,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  06. COMPONENT LIBRARY                                        */}
       {/* ============================================================ */}
-      <LightSection>
+      <LightSection id="section-components" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={6} title="Component Library" subtitle="Buttons, cards, badges, service pills, section headers. All styled consistently. Bobby: follow these specs exactly." />
 
@@ -1183,7 +1508,15 @@ export default function AmbitionBrandGuidelinesV2() {
           <h3 style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase', marginBottom: 16 }}>Service Cards</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24, marginBottom: 48 }}>
             {/* Light card */}
-            <div style={{ padding: 32, borderRadius: 12, background: C.white, border: `1px solid ${C.gray200}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div
+              ref={el => { componentRefs.current['card-light'] = el }}
+              style={{ padding: 32, borderRadius: 12, background: C.white, border: `1px solid ${C.gray200}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', position: 'relative' }}
+              onMouseEnter={e => { const btn = e.currentTarget.querySelector('[data-dl-btn]'); if (btn) btn.style.opacity = '1' }}
+              onMouseLeave={e => { const btn = e.currentTarget.querySelector('[data-dl-btn]'); if (btn) btn.style.opacity = '0' }}
+            >
+              <div data-dl-btn style={{ position: 'absolute', top: 8, right: 8, opacity: 0, transition: 'opacity 200ms ease', zIndex: 5 }}>
+                <button onClick={async () => { const el = componentRefs.current['card-light']; if (!el) return; try { await document.fonts.ready; const d = await toPng(el, { pixelRatio: 2, cacheBust: true }); const a = document.createElement('a'); a.download = 'amb-component-service-card-light-v1.png'; a.href = d; a.click() } catch(e) { console.error(e) } }} style={{ display:'flex',alignItems:'center',justifyContent:'center',width:28,height:28,borderRadius:6,background:C.red500,color:C.white,border:'none',cursor:'pointer',padding:0 }} title="Download"><Download size={12}/></button>
+              </div>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: C.navy600, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                 <span style={{ color: C.white, fontSize: 20 }}>*</span>
               </div>
@@ -1192,7 +1525,15 @@ export default function AmbitionBrandGuidelinesV2() {
               <p style={{ fontSize: 10, color: C.gray400, marginTop: 12, fontFamily: F.display, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Light variant / p-8 / rounded-xl / border-neutral-200</p>
             </div>
             {/* Dark card */}
-            <div style={{ padding: 32, borderRadius: 12, background: C.navy800, border: `1px solid ${C.navyBorder}` }}>
+            <div
+              ref={el => { componentRefs.current['card-dark'] = el }}
+              style={{ padding: 32, borderRadius: 12, background: C.navy800, border: `1px solid ${C.navyBorder}`, position: 'relative' }}
+              onMouseEnter={e => { const btn = e.currentTarget.querySelector('[data-dl-btn]'); if (btn) btn.style.opacity = '1' }}
+              onMouseLeave={e => { const btn = e.currentTarget.querySelector('[data-dl-btn]'); if (btn) btn.style.opacity = '0' }}
+            >
+              <div data-dl-btn style={{ position: 'absolute', top: 8, right: 8, opacity: 0, transition: 'opacity 200ms ease', zIndex: 5 }}>
+                <button onClick={async () => { const el = componentRefs.current['card-dark']; if (!el) return; try { await document.fonts.ready; const d = await toPng(el, { pixelRatio: 2, cacheBust: true }); const a = document.createElement('a'); a.download = 'amb-component-service-card-dark-v1.png'; a.href = d; a.click() } catch(e) { console.error(e) } }} style={{ display:'flex',alignItems:'center',justifyContent:'center',width:28,height:28,borderRadius:6,background:C.red500,color:C.white,border:'none',cursor:'pointer',padding:0 }} title="Download"><Download size={12}/></button>
+              </div>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(220,38,38,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                 <span style={{ color: C.red500, fontSize: 20 }}>*</span>
               </div>
@@ -1247,7 +1588,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  07. WEBSITE LAYOUT                                           */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection id="section-layout" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={7} title="Website Layout" subtitle="Section-by-section layout. Bobby: build top to bottom following this. Each section specifies background, content pattern, and visual direction." dark />
 
@@ -1293,7 +1634,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  08. PHOTOGRAPHY                                              */}
       {/* ============================================================ */}
-      <OffWhiteSection>
+      <OffWhiteSection id="section-photo" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={8} title="Photography Style" subtitle="Construction photography that builds credibility. Real work, real scale, real people. No stock. No poses. The camera captures what the crew actually does." />
 
@@ -1336,7 +1677,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  09. VOICE & TONE                                             */}
       {/* ============================================================ */}
-      <LightSection>
+      <LightSection id="section-voice" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={9} title="Voice and Tone" subtitle="Like a crew lead who knows the job inside out and doesn't need to oversell it. Confident, direct, grounded. Technical when it matters. Human always." />
 
@@ -1424,7 +1765,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       {/*  10. TAILWIND CONFIG                                          */}
       {/* ============================================================ */}
-      <DarkSection>
+      <DarkSection id="section-tailwind" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={10} title="Tailwind Config" subtitle="Drop-in values for tailwind.config.js. Single source of truth for Bobby." dark />
 
@@ -1477,7 +1818,7 @@ borderRadius: {
       {/* ============================================================ */}
       {/*  11. SOCIAL MEDIA TEMPLATES                                    */}
       {/* ============================================================ */}
-      <LightSection>
+      <LightSection id="section-social" style={{ scrollMarginTop: 52 }}>
         <MaxWidth>
           <SectionHeader num={11} title="Social Media Templates" subtitle="Steffen's template system for video overlays, reels, static posts, and story covers. Every template uses the Ambition v3 brand system. Navy + Red + White. Barlow Condensed + Inter. Zero deviations." />
 
@@ -1489,16 +1830,16 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Lower Third', specs: '480x~80px', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.' },
-                { name: 'Location Bar', specs: 'Full width x 56px', desc: 'Establishing shot overlay. Pin icon + location name left, project name right.' },
-                { name: 'Before/After Labels', specs: '120x40px per label', desc: 'Split-screen labels. Gray accent for BEFORE, red accent for AFTER.' },
-                { name: 'Progress Indicator', specs: 'Auto x 44px', desc: 'Top-right corner badge showing DAY/WEEK stage with red underline.' },
-                { name: 'Equipment Callout', specs: 'Auto x 36px', desc: 'Connected label pointing at equipment. Red dot anchor, navy panel.' },
-                { name: 'ROC Watermark', specs: 'Text only', desc: 'Subtle ROC #320923 text. 35% white opacity. Bottom-right on all project footage.' },
+                { name: 'Lower Third', slug: 'lower-third', specs: '480x~80px', exportDims: '1080x1920', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.' },
+                { name: 'Location Bar', slug: 'location-bar', specs: 'Full width x 56px', exportDims: '1080x1920', desc: 'Establishing shot overlay. Pin icon + location name left, project name right.' },
+                { name: 'Before/After Labels', slug: 'before-after', specs: '120x40px per label', exportDims: '1080x1920', desc: 'Split-screen labels. Gray accent for BEFORE, red accent for AFTER.' },
+                { name: 'Progress Indicator', slug: 'progress', specs: 'Auto x 44px', exportDims: '1080x1920', desc: 'Top-right corner badge showing DAY/WEEK stage with red underline.' },
+                { name: 'Equipment Callout', slug: 'equipment-callout', specs: 'Auto x 36px', exportDims: '1080x1920', desc: 'Connected label pointing at equipment. Red dot anchor, navy panel.' },
+                { name: 'ROC Watermark', slug: 'roc-watermark', specs: 'Text only', exportDims: '1080x1920', desc: 'Subtle ROC #320923 text. 35% white opacity. Bottom-right on all project footage.' },
               ].map((tpl, i) => (
                 <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
                   {/* Mini visual mock */}
-                  <div style={{
+                  <div ref={el => { templateRefs.current[`overlay-${tpl.slug}`] = el }} style={{
                     background: C.navy900,
                     padding: 24,
                     minHeight: 140,
@@ -1576,9 +1917,23 @@ borderRadius: {
                   <div style={{ padding: '16px 20px', background: C.white }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: C.navy600, textTransform: 'uppercase' }}>{tpl.name}</span>
-                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: C.gray400 }}>{tpl.specs}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.navy600, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                    <button
+                      onClick={() => downloadTemplate(`overlay-${tpl.slug}`, `amb-overlay-${tpl.slug}-v1.png`)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
+                        fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.08em',
+                        textTransform: 'uppercase', background: C.red500, color: C.white,
+                        border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                        transition: 'background 200ms ease',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.red400}
+                      onMouseLeave={e => e.currentTarget.style.background = C.red500}
+                    >
+                      <Download size={10} /> Download PNG
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1593,15 +1948,15 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Hook Text', specs: '1080x1920 (9:16)', desc: 'First 1-3 seconds. Large Barlow Condensed text centered. Stops the scroll.' },
-                { name: 'Fact/Stat Callout', specs: '1080x1920 (9:16)', desc: 'Big number with kicker above and supporting line below. Odometer animation.' },
-                { name: 'Step Counter', specs: '1080x1920 (9:16)', desc: 'Progress dots + step label + headline. For how-to and process content.' },
-                { name: 'Quote/Testimonial', specs: '1080x1920 (9:16)', desc: 'Glass panel with red left accent. Quote text with attribution below.' },
-                { name: 'CTA End Card', specs: '1080x1920 (9:16)', desc: 'Final frame. Logo, tagline, red CTA button, phone number, website, ROC.' },
+                { name: 'Hook Text', slug: 'hook-text', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'First 1-3 seconds. Large Barlow Condensed text centered. Stops the scroll.' },
+                { name: 'Fact/Stat Callout', slug: 'stat-callout', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Big number with kicker above and supporting line below. Odometer animation.' },
+                { name: 'Step Counter', slug: 'step-counter', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Progress dots + step label + headline. For how-to and process content.' },
+                { name: 'Quote/Testimonial', slug: 'quote', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Glass panel with red left accent. Quote text with attribution below.' },
+                { name: 'CTA End Card', slug: 'cta-end', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Final frame. Logo, tagline, red CTA button, phone number, website, ROC.' },
               ].map((tpl, i) => (
                 <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
                   {/* Mini visual mock - vertical aspect hint */}
-                  <div style={{
+                  <div ref={el => { templateRefs.current[`reel-${tpl.slug}`] = el }} style={{
                     background: C.navy900,
                     padding: 24,
                     minHeight: 160,
@@ -1662,9 +2017,23 @@ borderRadius: {
                   <div style={{ padding: '16px 20px', background: C.white }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: C.navy600, textTransform: 'uppercase' }}>{tpl.name}</span>
-                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: C.gray400 }}>{tpl.specs}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.red500, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                    <button
+                      onClick={() => downloadTemplate(`reel-${tpl.slug}`, `amb-reel-${tpl.slug}-v1.png`)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
+                        fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.08em',
+                        textTransform: 'uppercase', background: C.red500, color: C.white,
+                        border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                        transition: 'background 200ms ease',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.red400}
+                      onMouseLeave={e => e.currentTarget.style.background = C.red500}
+                    >
+                      <Download size={10} /> Download PNG
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1679,16 +2048,16 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Project Showcase', specs: '1080x1080 (1:1)', desc: 'Hero photo top 60%, navy bar bottom 40%. Red top border, kicker + project name + location.' },
-                { name: 'Before/After Split', specs: '1080x1080 (1:1)', desc: 'Side-by-side photos with 3px red divider. Navy bottom bar with project name and logo.' },
-                { name: 'Stat Highlight', specs: '1080x1080 (1:1)', desc: 'Big number centered on navy. Kicker, stat, supporting text, red accent line, website.' },
-                { name: 'Tip/Educational', specs: '1080x1080 (1:1)', desc: 'Navy background. Red kicker, headline, numbered list. Educational content format.' },
-                { name: 'Crew Spotlight', specs: '1080x1080 (1:1)', desc: 'Full bleed crew photo with gradient overlay. Kicker + headline at bottom.' },
-                { name: 'Service Highlight', specs: '1080x1080 (1:1)', desc: 'Photo/icon top, navy bottom. Service name, description, red CTA button.' },
+                { name: 'Project Showcase', slug: 'project-showcase', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Hero photo top 60%, navy bar bottom 40%. Red top border, kicker + project name + location.' },
+                { name: 'Before/After Split', slug: 'before-after', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Side-by-side photos with 3px red divider. Navy bottom bar with project name and logo.' },
+                { name: 'Stat Highlight', slug: 'stat-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Big number centered on navy. Kicker, stat, supporting text, red accent line, website.' },
+                { name: 'Tip/Educational', slug: 'tip-educational', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Navy background. Red kicker, headline, numbered list. Educational content format.' },
+                { name: 'Crew Spotlight', slug: 'crew-spotlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Full bleed crew photo with gradient overlay. Kicker + headline at bottom.' },
+                { name: 'Service Highlight', slug: 'service-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Photo/icon top, navy bottom. Service name, description, red CTA button.' },
               ].map((tpl, i) => (
                 <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
                   {/* Mini visual mock - square aspect hint */}
-                  <div style={{
+                  <div ref={el => { templateRefs.current[`post-${tpl.slug}`] = el }} style={{
                     background: C.navy900,
                     minHeight: 160,
                     display: 'flex',
@@ -1793,9 +2162,23 @@ borderRadius: {
                   <div style={{ padding: '16px 20px', background: C.white }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: C.navy600, textTransform: 'uppercase' }}>{tpl.name}</span>
-                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: C.gray400 }}>{tpl.specs}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.navy600, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} {tpl.ratio}</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                    <button
+                      onClick={() => downloadTemplate(`post-${tpl.slug}`, `amb-post-${tpl.slug}-v1.png`)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
+                        fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.08em',
+                        textTransform: 'uppercase', background: C.red500, color: C.white,
+                        border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                        transition: 'background 200ms ease',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.red400}
+                      onMouseLeave={e => e.currentTarget.style.background = C.red500}
+                    >
+                      <Download size={10} /> Download PNG
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1810,14 +2193,14 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Project Walkthrough', specs: '1080x1920 (9:16)', desc: 'Full bleed photo with gradient. Kicker, project name, stage, optional progress bar.' },
-                { name: 'Day in the Life', specs: '1080x1920 (9:16)', desc: 'Crew/site photo. "A DAY WITH AMBITION MECHANICAL" stacked headline. Date below.' },
-                { name: 'Service Explainer', specs: '1080x1920 (9:16)', desc: 'Equipment close-up. Question headline ("WHAT IS A VRV SYSTEM?") + description.' },
-                { name: 'Emergency Callout', specs: '1080x1920 (9:16)', desc: 'Navy bg with red radial glow. "EMERGENCY RESPONSE" headline, time, location, CTA.' },
+                { name: 'Project Walkthrough', slug: 'walkthrough', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Full bleed photo with gradient. Kicker, project name, stage, optional progress bar.' },
+                { name: 'Day in the Life', slug: 'day-life', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Crew/site photo. "A DAY WITH AMBITION MECHANICAL" stacked headline. Date below.' },
+                { name: 'Service Explainer', slug: 'explainer', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Equipment close-up. Question headline ("WHAT IS A VRV SYSTEM?") + description.' },
+                { name: 'Emergency Callout', slug: 'emergency', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Navy bg with red radial glow. "EMERGENCY RESPONSE" headline, time, location, CTA.' },
               ].map((tpl, i) => (
                 <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
                   {/* Mini visual mock */}
-                  <div style={{
+                  <div ref={el => { templateRefs.current[`cover-${tpl.slug}`] = el }} style={{
                     background: C.navy900,
                     padding: 24,
                     minHeight: 180,
@@ -1882,9 +2265,23 @@ borderRadius: {
                   <div style={{ padding: '16px 20px', background: C.white }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: C.navy600, textTransform: 'uppercase' }}>{tpl.name}</span>
-                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: C.gray400 }}>{tpl.specs}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.red500, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                    <button
+                      onClick={() => downloadTemplate(`cover-${tpl.slug}`, `amb-cover-${tpl.slug}-v1.png`)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
+                        fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.08em',
+                        textTransform: 'uppercase', background: C.red500, color: C.white,
+                        border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                        transition: 'background 200ms ease',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.red400}
+                      onMouseLeave={e => e.currentTarget.style.background = C.red500}
+                    >
+                      <Download size={10} /> Download PNG
+                    </button>
                   </div>
                 </div>
               ))}
