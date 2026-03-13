@@ -20,6 +20,10 @@ import BriefSprintPlan from './pages/BriefSprintPlan.jsx'
 import BriefFullscreenSite from './pages/BriefFullscreenSite.jsx'
 import BriefIdeasTracker from './pages/BriefIdeasTracker.jsx'
 import BriefAuditOnboarding from './pages/BriefAuditOnboarding.jsx'
+import BriefROICalculator from './pages/BriefROICalculator.jsx'
+import BriefWebDesignUpgrade from './pages/BriefWebDesignUpgrade.jsx'
+import BriefAmbitionSections from './pages/BriefAmbitionSections.jsx'
+import BriefAmbitionLinkedIn from './pages/BriefAmbitionLinkedIn.jsx'
 import AuditTest from './pages/AuditTest.jsx'
 import IdeasTracker from './pages/IdeasTracker.jsx'
 import GuidesHub from './pages/GuidesHub.jsx'
@@ -70,6 +74,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/briefs/fullscreen-site" element={<BriefFullscreenSite />} />
           <Route path="/briefs/ideas-tracker" element={<BriefIdeasTracker />} />
           <Route path="/briefs/audit-onboarding" element={<BriefAuditOnboarding />} />
+          <Route path="/briefs/roi-calculator" element={<BriefROICalculator />} />
+          <Route path="/briefs/web-design-upgrade" element={<BriefWebDesignUpgrade />} />
+          <Route path="/briefs/ambition-sections" element={<BriefAmbitionSections />} />
+          <Route path="/briefs/ambition-linkedin" element={<BriefAmbitionLinkedIn />} />
           <Route path="/audit/test" element={<AuditTest />} />
           <Route path="/ideas" element={<IdeasTracker />} />
           <Route path="/guides" element={<GuidesHub />} />
