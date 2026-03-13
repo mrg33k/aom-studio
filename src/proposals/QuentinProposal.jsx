@@ -110,7 +110,7 @@ function HeroSection() {
         >
           <span className="inline-block font-mono text-sm font-bold uppercase tracking-[0.2em] mb-4"
             style={{ color: ORANGE }}>
-            Prepared for Quentin
+            Prepared for Q
           </span>
         </motion.div>
 
@@ -708,7 +708,7 @@ function FooterCTA() {
         </FadeIn>
         <FadeIn delay={0.3}>
           <p className="font-body text-xs mt-12" style={{ color: MUTED, opacity: 0.4 }}>
-            &copy; {new Date().getFullYear()} AOM (Ahead of Market). Prepared for Quentin Thanh.
+            &copy; {new Date().getFullYear()} AOM (Ahead of Market). Prepared for Q.
           </p>
         </FadeIn>
       </div>
