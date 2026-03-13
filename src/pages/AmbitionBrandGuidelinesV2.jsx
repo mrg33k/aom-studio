@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 /* ------------------------------------------------------------------ */
 /*  Ambition Mechanical Brand Guidelines v2                            */
-/*  Same framework as AOM brand/v4: scrolling, dark-light rhythm       */
+/*  Scrolling dark-light rhythm layout, industrial patterns             */
 /*  Industrial patterns, comprehensive type + spacing systems          */
 /*  Fonts: Barlow Condensed (display) + Inter (body)                   */
 /*  Logo: untouched. Expanding the visual language around it.          */
@@ -674,6 +674,52 @@ export default function AmbitionBrandGuidelinesV2() {
               </div>
             ))}
           </div>
+
+          {/* Logo download */}
+          <div style={{ marginTop: 48 }}>
+            <h3 style={{ fontFamily: F.display, fontSize: 24, fontWeight: 700, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 20 }}>Download Logo Assets</h3>
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 16,
+              padding: 32,
+              borderRadius: 12,
+              background: C.navy800,
+              border: `1px solid ${C.navyBorder}`,
+              alignItems: 'center',
+            }}>
+              <a
+                href="/ambition-logo.png"
+                download="ambition-mechanical-logo.png"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  fontFamily: F.display,
+                  fontWeight: 600,
+                  fontSize: 14,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  background: C.red500,
+                  color: C.white,
+                  border: 'none',
+                  padding: '14px 32px',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  transition: 'background 200ms ease',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = C.red400}
+                onMouseLeave={e => e.currentTarget.style.background = C.red500}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download PNG
+              </a>
+              <span style={{ fontFamily: F.body, fontSize: 13, color: C.gray400 }}>
+                Primary logo file. Use on dark, light, or navy backgrounds.
+              </span>
+            </div>
+          </div>
         </MaxWidth>
       </DarkSection>
 
@@ -1035,7 +1081,7 @@ export default function AmbitionBrandGuidelinesV2() {
       {/* ============================================================ */}
       <DarkSection>
         <MaxWidth>
-          <SectionHeader num={5} title="Industrial Patterns" subtitle="Construction-grade textures. Blueprint grids, ductwork motifs, pipe runs, hex bolts. Used as subtle background overlays on dark sections (3-8% opacity). Different from AOM's patterns. Built for the trades." dark />
+          <SectionHeader num={5} title="Industrial Patterns" subtitle="Construction-grade textures. Blueprint grids, ductwork motifs, pipe runs, hex bolts. Used as subtle background overlays on dark sections (3-8% opacity). Built for the trades." dark />
 
           <div style={{
             display: 'grid',
@@ -1426,6 +1472,457 @@ borderRadius: {
         </MaxWidth>
       </DarkSection>
 
+      <PatternStrip variant="navy" height={3} />
+
+      {/* ============================================================ */}
+      {/*  11. SOCIAL MEDIA TEMPLATES                                    */}
+      {/* ============================================================ */}
+      <LightSection>
+        <MaxWidth>
+          <SectionHeader num={11} title="Social Media Templates" subtitle="Steffen's template system for video overlays, reels, static posts, and story covers. Every template uses the Ambition v3 brand system. Navy + Red + White. Barlow Condensed + Inter. Zero deviations." />
+
+          {/* Category 1: Video Walkthrough Overlays */}
+          <div style={{ marginBottom: 56 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase' }}>Video Walkthrough Overlays</span>
+              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.white, background: C.navy600, padding: '4px 12px', borderRadius: 4 }}>6 Templates</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+              {[
+                { name: 'Lower Third', specs: '480x~80px', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.' },
+                { name: 'Location Bar', specs: 'Full width x 56px', desc: 'Establishing shot overlay. Pin icon + location name left, project name right.' },
+                { name: 'Before/After Labels', specs: '120x40px per label', desc: 'Split-screen labels. Gray accent for BEFORE, red accent for AFTER.' },
+                { name: 'Progress Indicator', specs: 'Auto x 44px', desc: 'Top-right corner badge showing DAY/WEEK stage with red underline.' },
+                { name: 'Equipment Callout', specs: 'Auto x 36px', desc: 'Connected label pointing at equipment. Red dot anchor, navy panel.' },
+                { name: 'ROC Watermark', specs: 'Text only', desc: 'Subtle ROC #320923 text. 35% white opacity. Bottom-right on all project footage.' },
+              ].map((tpl, i) => (
+                <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
+                  {/* Mini visual mock */}
+                  <div style={{
+                    background: C.navy900,
+                    padding: 24,
+                    minHeight: 140,
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'flex-start',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Background pattern */}
+                    <div style={{ position: 'absolute', inset: 0, opacity: 0.04 }}>
+                      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <pattern id={`overlay-grid-${i}`} patternUnits="userSpaceOnUse" width="40" height="40">
+                            <rect width="40" height="40" fill="none" stroke={C.navy400} strokeWidth="0.5" />
+                          </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill={`url(#overlay-grid-${i})`} />
+                      </svg>
+                    </div>
+                    {/* Mock overlay element */}
+                    {i === 0 && (
+                      <div style={{ display: 'flex', position: 'relative', zIndex: 1 }}>
+                        <div style={{ width: 4, background: C.red500, borderRadius: '2px 0 0 2px' }} />
+                        <div style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '12px 16px', borderRadius: '0 4px 4px 0' }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 700, fontSize: 14, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em' }}>MIKE JOHNSON</div>
+                          <div style={{ fontFamily: F.body, fontSize: 11, color: C.gray300 }}>Lead Technician</div>
+                        </div>
+                      </div>
+                    )}
+                    {i === 1 && (
+                      <div style={{ width: '100%', background: 'rgba(10, 14, 42, 0.70)', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1, borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill={C.red500} stroke="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+                          <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 11, color: C.white, textTransform: 'uppercase', letterSpacing: '0.08em' }}>SCOTTSDALE</span>
+                        </div>
+                        <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 12, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em' }}>DIN TAI FUNG</span>
+                      </div>
+                    )}
+                    {i === 2 && (
+                      <div style={{ display: 'flex', gap: 12, position: 'relative', zIndex: 1 }}>
+                        <div style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 16px', borderBottom: `2px solid ${C.gray400}` }}>
+                          <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 12, color: C.white, textTransform: 'uppercase', letterSpacing: '0.04em' }}>BEFORE</span>
+                        </div>
+                        <div style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 16px', borderBottom: `2px solid ${C.red500}` }}>
+                          <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 12, color: C.white, textTransform: 'uppercase', letterSpacing: '0.04em' }}>AFTER</span>
+                        </div>
+                      </div>
+                    )}
+                    {i === 3 && (
+                      <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 1 }}>
+                        <div style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '8px 14px', borderRadius: 8, textAlign: 'center' }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 700, fontSize: 14, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em' }}>DAY 1</div>
+                          <div style={{ width: '60%', height: 2, background: C.red500, margin: '4px auto 0' }} />
+                        </div>
+                      </div>
+                    )}
+                    {i === 4 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 0, position: 'relative', zIndex: 1 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.red500 }} />
+                        <div style={{ width: 40, height: 1, background: 'rgba(255,255,255,0.40)' }} />
+                        <div style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 12px', borderRadius: 4 }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 11, color: C.white, textTransform: 'uppercase', letterSpacing: '0.08em' }}>VRV SYSTEM</div>
+                          <div style={{ fontFamily: F.body, fontSize: 9, color: C.gray300 }}>Daikin 3-pipe, 200k BTU</div>
+                        </div>
+                      </div>
+                    )}
+                    {i === 5 && (
+                      <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 1 }}>
+                        <span style={{ fontFamily: F.body, fontWeight: 500, fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>ROC #320923</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Card info */}
+                  <div style={{ padding: '16px 20px', background: C.white }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: C.navy600, textTransform: 'uppercase' }}>{tpl.name}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: C.gray400 }}>{tpl.specs}</span>
+                    </div>
+                    <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Category 2: Text Overlays for Reels */}
+          <div style={{ marginBottom: 56 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase' }}>Text Overlays for Reels</span>
+              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.white, background: C.red500, padding: '4px 12px', borderRadius: 4 }}>5 Templates</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+              {[
+                { name: 'Hook Text', specs: '1080x1920 (9:16)', desc: 'First 1-3 seconds. Large Barlow Condensed text centered. Stops the scroll.' },
+                { name: 'Fact/Stat Callout', specs: '1080x1920 (9:16)', desc: 'Big number with kicker above and supporting line below. Odometer animation.' },
+                { name: 'Step Counter', specs: '1080x1920 (9:16)', desc: 'Progress dots + step label + headline. For how-to and process content.' },
+                { name: 'Quote/Testimonial', specs: '1080x1920 (9:16)', desc: 'Glass panel with red left accent. Quote text with attribution below.' },
+                { name: 'CTA End Card', specs: '1080x1920 (9:16)', desc: 'Final frame. Logo, tagline, red CTA button, phone number, website, ROC.' },
+              ].map((tpl, i) => (
+                <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
+                  {/* Mini visual mock - vertical aspect hint */}
+                  <div style={{
+                    background: C.navy900,
+                    padding: 24,
+                    minHeight: 160,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {i === 0 && (
+                      <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(10, 14, 42, 0.40)' }} />
+                        <p style={{ fontFamily: F.display, fontWeight: 800, fontSize: 28, color: C.white, textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.0, margin: 0, position: 'relative', zIndex: 1, textShadow: '0 2px 12px rgba(0,0,0,0.6)' }}>
+                          THIS CHILLER<br />SERVES <span style={{ color: C.red500 }}>200,000</span><br />SQ FT
+                        </p>
+                      </div>
+                    )}
+                    {i === 1 && (
+                      <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.red500, textTransform: 'uppercase' }}>COMPLETED PROJECTS</div>
+                        <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 48, color: C.white, letterSpacing: '0.02em', lineHeight: 1.1 }}>500+</div>
+                        <div style={{ fontFamily: F.body, fontSize: 12, color: C.gray300 }}>Since 2002 in the Valley</div>
+                      </div>
+                    )}
+                    {i === 2 && (
+                      <div style={{ alignSelf: 'flex-start', position: 'relative', zIndex: 1 }}>
+                        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', color: C.red500, textTransform: 'uppercase' }}>STEP 1 OF 5</div>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                          {[0,1,2,3,4].map(d => (
+                            <div key={d} style={{ width: 8, height: 8, borderRadius: '50%', background: d === 0 ? C.red500 : 'transparent', border: d === 0 ? 'none' : '1px solid rgba(255,255,255,0.25)', boxShadow: d === 0 ? '0 0 8px rgba(220,38,38,0.5)' : 'none' }} />
+                          ))}
+                        </div>
+                        <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 22, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em', marginTop: 10 }}>DIAGNOSE THE<br />COMPRESSOR</div>
+                      </div>
+                    )}
+                    {i === 3 && (
+                      <div style={{ background: 'rgba(10, 14, 42, 0.60)', backdropFilter: 'blur(12px)', padding: '16px 20px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', borderLeft: `3px solid ${C.red500}`, position: 'relative', zIndex: 1, maxWidth: '90%' }}>
+                        <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 28, color: 'rgba(220,38,38,0.30)', position: 'absolute', top: -4, left: 12 }}>"</span>
+                        <p style={{ fontFamily: F.body, fontWeight: 500, fontSize: 12, color: C.white, fontStyle: 'italic', lineHeight: 1.5, margin: '8px 0 8px 0' }}>They were on-site before sunrise.</p>
+                        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, color: C.white, textTransform: 'uppercase', letterSpacing: '0.08em' }}>FACILITY MANAGER</div>
+                        <div style={{ fontFamily: F.body, fontSize: 9, color: C.gray300 }}>Abraza Senior Living</div>
+                      </div>
+                    )}
+                    {i === 4 && (
+                      <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                        <img src="/ambition-logo.png" alt="Logo" style={{ width: 60, height: 'auto', marginBottom: 8, opacity: 0.9 }} />
+                        <div style={{ fontFamily: F.display, fontWeight: 700, fontSize: 14, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 10 }}>COMMERCIAL HVAC<br />YOU CAN COUNT ON</div>
+                        <div style={{ background: C.red500, padding: '8px 24px', borderRadius: 8, display: 'inline-block', boxShadow: '0 4px 20px rgba(220,38,38,0.35)' }}>
+                          <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 11, color: C.white, textTransform: 'uppercase', letterSpacing: '0.06em' }}>CALL (480) 600-2942</span>
+                        </div>
+                        <div style={{ fontFamily: F.body, fontSize: 10, color: C.gray300, marginTop: 8 }}>ambitionac.com</div>
+                        <div style={{ fontFamily: F.body, fontSize: 9, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>ROC #320923</div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Card info */}
+                  <div style={{ padding: '16px 20px', background: C.white }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: C.navy600, textTransform: 'uppercase' }}>{tpl.name}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: C.gray400 }}>{tpl.specs}</span>
+                    </div>
+                    <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Category 3: Static Social Posts */}
+          <div style={{ marginBottom: 56 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase' }}>Static Social Posts</span>
+              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.white, background: C.navy600, padding: '4px 12px', borderRadius: 4 }}>6 Templates</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+              {[
+                { name: 'Project Showcase', specs: '1080x1080 (1:1)', desc: 'Hero photo top 60%, navy bar bottom 40%. Red top border, kicker + project name + location.' },
+                { name: 'Before/After Split', specs: '1080x1080 (1:1)', desc: 'Side-by-side photos with 3px red divider. Navy bottom bar with project name and logo.' },
+                { name: 'Stat Highlight', specs: '1080x1080 (1:1)', desc: 'Big number centered on navy. Kicker, stat, supporting text, red accent line, website.' },
+                { name: 'Tip/Educational', specs: '1080x1080 (1:1)', desc: 'Navy background. Red kicker, headline, numbered list. Educational content format.' },
+                { name: 'Crew Spotlight', specs: '1080x1080 (1:1)', desc: 'Full bleed crew photo with gradient overlay. Kicker + headline at bottom.' },
+                { name: 'Service Highlight', specs: '1080x1080 (1:1)', desc: 'Photo/icon top, navy bottom. Service name, description, red CTA button.' },
+              ].map((tpl, i) => (
+                <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
+                  {/* Mini visual mock - square aspect hint */}
+                  <div style={{
+                    background: C.navy900,
+                    minHeight: 160,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {i === 0 && (
+                      <>
+                        <div style={{ flex: 1, background: C.navy700, minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, color: C.gray500, textTransform: 'uppercase', letterSpacing: '0.1em' }}>PROJECT PHOTO</span>
+                        </div>
+                        <div style={{ borderTop: `3px solid ${C.red500}`, padding: '14px 16px', background: C.navy900 }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, letterSpacing: '0.2em', color: C.red500, textTransform: 'uppercase' }}>COMMERCIAL HVAC</div>
+                          <div style={{ fontFamily: F.display, fontWeight: 700, fontSize: 16, color: C.white, textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: 2 }}>DIN TAI FUNG</div>
+                          <div style={{ fontFamily: F.body, fontSize: 10, color: C.gray300, marginTop: 2 }}>Scottsdale Fashion Square</div>
+                        </div>
+                      </>
+                    )}
+                    {i === 1 && (
+                      <>
+                        <div style={{ flex: 1, display: 'flex', minHeight: 100 }}>
+                          <div style={{ flex: 1, background: C.navy800, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 8, position: 'relative' }}>
+                            <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(10,14,42,0.80)', padding: '4px 10px', borderRadius: '0 4px 4px 0' }}>
+                              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, color: C.gray400, textTransform: 'uppercase', letterSpacing: '0.1em' }}>BEFORE</span>
+                            </div>
+                          </div>
+                          <div style={{ width: 3, background: C.red500 }} />
+                          <div style={{ flex: 1, background: C.navy700, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 8, position: 'relative' }}>
+                            <div style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(10,14,42,0.80)', padding: '4px 10px', borderRadius: '0 4px 4px 0', borderBottom: `2px solid ${C.red500}` }}>
+                              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, color: C.white, textTransform: 'uppercase', letterSpacing: '0.1em' }}>AFTER</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ padding: '10px 16px', background: C.navy900, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 12, color: C.white, textTransform: 'uppercase' }}>CHILLER REPLACEMENT</span>
+                          <img src="/ambition-logo.png" alt="" style={{ height: 18, opacity: 0.7 }} />
+                        </div>
+                      </>
+                    )}
+                    {i === 2 && (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative' }}>
+                        <div style={{ position: 'absolute', inset: 0, opacity: 0.03 }}>
+                          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                              <pattern id="stat-crosshatch" patternUnits="userSpaceOnUse" width="16" height="16">
+                                <line x1="0" y1="0" x2="16" y2="16" stroke={C.gray300} strokeWidth="0.75" />
+                                <line x1="16" y1="0" x2="0" y2="16" stroke={C.gray300} strokeWidth="0.75" />
+                              </pattern>
+                            </defs>
+                            <rect width="100%" height="100%" fill="url(#stat-crosshatch)" />
+                          </svg>
+                        </div>
+                        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.red500, textTransform: 'uppercase', position: 'relative', zIndex: 1 }}>COMPLETED PROJECTS</div>
+                        <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 56, color: C.white, letterSpacing: '0.02em', lineHeight: 1.0, position: 'relative', zIndex: 1 }}>500+</div>
+                        <div style={{ fontFamily: F.body, fontSize: 11, color: C.gray300, position: 'relative', zIndex: 1, marginTop: 4 }}>Since 2002. Every phase of commercial mechanical.</div>
+                        <div style={{ width: 48, height: 2, background: C.red500, marginTop: 12, position: 'relative', zIndex: 1 }} />
+                        <div style={{ fontFamily: F.body, fontSize: 10, color: C.gray400, marginTop: 8, position: 'relative', zIndex: 1 }}>ambitionac.com</div>
+                      </div>
+                    )}
+                    {i === 3 && (
+                      <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, letterSpacing: '0.2em', color: C.red500, textTransform: 'uppercase' }}>HVAC TIP</div>
+                        <div style={{ width: 24, height: 2, background: C.red500, marginTop: 6 }} />
+                        <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 20, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em', lineHeight: 1.05, marginTop: 10 }}>3 SIGNS YOUR<br />COMMERCIAL HVAC<br />NEEDS SERVICE</div>
+                        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {['Inconsistent temperatures', 'Unusual rooftop noise', 'Rising energy bills'].map((tip, ti) => (
+                            <div key={ti} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                              <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 12, color: C.red500 }}>{ti + 1}.</span>
+                              <span style={{ fontFamily: F.body, fontSize: 11, color: C.gray300 }}>{tip}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {i === 4 && (
+                      <div style={{ flex: 1, background: `linear-gradient(to bottom, ${C.navy700} 40%, rgba(10,14,42,0.95) 75%)`, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 20, minHeight: 160 }}>
+                        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, letterSpacing: '0.2em', color: C.red500, textTransform: 'uppercase' }}>MEET THE CREW</div>
+                        <div style={{ fontFamily: F.display, fontWeight: 700, fontSize: 18, color: C.white, textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: 4 }}>MEMORIAL TOWER</div>
+                        <div style={{ fontFamily: F.body, fontSize: 10, color: C.gray300, marginTop: 2 }}>Project Team</div>
+                      </div>
+                    )}
+                    {i === 5 && (
+                      <>
+                        <div style={{ flex: 1, background: C.navy800, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 60 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(220,38,38,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ color: C.red500, fontSize: 16 }}>*</span>
+                          </div>
+                        </div>
+                        <div style={{ height: 3, background: C.red500 }} />
+                        <div style={{ padding: '14px 16px', background: C.navy900, flex: 1 }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 700, fontSize: 16, color: C.white, textTransform: 'uppercase', letterSpacing: '0.02em' }}>HVAC/R INSTALLATION</div>
+                          <div style={{ fontFamily: F.body, fontSize: 10, color: C.gray300, lineHeight: 1.5, marginTop: 4 }}>Full commercial mechanical from preconstruction to commissioning.</div>
+                          <div style={{ background: C.red500, padding: '6px 16px', borderRadius: 6, display: 'inline-block', marginTop: 8 }}>
+                            <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, color: C.white, textTransform: 'uppercase', letterSpacing: '0.08em' }}>SCHEDULE A CONSULTATION</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {/* Card info */}
+                  <div style={{ padding: '16px 20px', background: C.white }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: C.navy600, textTransform: 'uppercase' }}>{tpl.name}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: C.gray400 }}>{tpl.specs}</span>
+                    </div>
+                    <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Category 4: Story/Reel Covers */}
+          <div style={{ marginBottom: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase' }}>Story / Reel Covers</span>
+              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.white, background: C.red500, padding: '4px 12px', borderRadius: 4 }}>4 Templates</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+              {[
+                { name: 'Project Walkthrough', specs: '1080x1920 (9:16)', desc: 'Full bleed photo with gradient. Kicker, project name, stage, optional progress bar.' },
+                { name: 'Day in the Life', specs: '1080x1920 (9:16)', desc: 'Crew/site photo. "A DAY WITH AMBITION MECHANICAL" stacked headline. Date below.' },
+                { name: 'Service Explainer', specs: '1080x1920 (9:16)', desc: 'Equipment close-up. Question headline ("WHAT IS A VRV SYSTEM?") + description.' },
+                { name: 'Emergency Callout', specs: '1080x1920 (9:16)', desc: 'Navy bg with red radial glow. "EMERGENCY RESPONSE" headline, time, location, CTA.' },
+              ].map((tpl, i) => (
+                <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
+                  {/* Mini visual mock */}
+                  <div style={{
+                    background: C.navy900,
+                    padding: 24,
+                    minHeight: 180,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-end',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}>
+                    {i === 0 && (
+                      <>
+                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, ${C.navy700} 0%, transparent 50%, rgba(10,14,42,0.95) 80%)` }} />
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.red500, textTransform: 'uppercase' }}>PROJECT UPDATE</div>
+                          <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 22, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em', marginTop: 4 }}>DIN TAI FUNG</div>
+                          <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 14, color: C.gray300, textTransform: 'uppercase', marginTop: 2 }}>WEEK 3</div>
+                          <div style={{ marginTop: 10, width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', position: 'relative' }}>
+                            <div style={{ width: '40%', height: '100%', borderRadius: 2, background: C.red500 }} />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    {i === 1 && (
+                      <>
+                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, ${C.navy700} 0%, transparent 45%, rgba(10,14,42,0.92) 75%)` }} />
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.red500, textTransform: 'uppercase' }}>A DAY WITH</div>
+                          <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 26, color: C.white, textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.0, marginTop: 4 }}>AMBITION<br />MECHANICAL</div>
+                          <div style={{ fontFamily: F.body, fontSize: 11, color: C.gray400, marginTop: 10 }}>March 12, 2026</div>
+                        </div>
+                      </>
+                    )}
+                    {i === 2 && (
+                      <>
+                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, ${C.navy800} 0%, transparent 50%, rgba(10,14,42,0.95) 80%)` }} />
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 20, color: C.white, textTransform: 'uppercase', letterSpacing: '0.03em' }}>WHAT IS A<br />VRV SYSTEM?</div>
+                          <div style={{ fontFamily: F.body, fontSize: 11, color: C.gray300, lineHeight: 1.5, marginTop: 6, maxWidth: '90%' }}>Everything you need to know about variable refrigerant volume systems.</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 10 }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.red500} strokeWidth="2"><polyline points="18 15 12 9 6 15" /></svg>
+                            <span style={{ fontFamily: F.body, fontWeight: 500, fontSize: 9, color: C.red500, textTransform: 'uppercase', letterSpacing: '0.1em' }}>WATCH NOW</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    {i === 3 && (
+                      <>
+                        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, rgba(220,38,38,0.12) 0%, transparent 70%)` }} />
+                        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', alignSelf: 'center' }}>
+                          <div style={{ fontFamily: F.display, fontWeight: 800, fontSize: 24, color: C.white, textTransform: 'uppercase', letterSpacing: '0.04em' }}>EMERGENCY<br />RESPONSE</div>
+                          <div style={{ fontFamily: F.display, fontWeight: 700, fontSize: 16, color: C.red500, marginTop: 8 }}>3:00 AM</div>
+                          <div style={{ fontFamily: F.body, fontWeight: 500, fontSize: 11, color: C.gray300, marginTop: 4 }}>ABRAZA SENIOR LIVING</div>
+                          <div style={{ fontFamily: F.body, fontSize: 10, color: C.gray400, marginTop: 4 }}>AC failure. Critical systems at risk.</div>
+                          <div style={{ background: C.red500, padding: '8px 20px', borderRadius: 8, display: 'inline-block', marginTop: 10, boxShadow: '0 4px 20px rgba(220,38,38,0.4)' }}>
+                            <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 11, color: C.white, textTransform: 'uppercase' }}>(480) 600-2942</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {/* Card info */}
+                  <div style={{ padding: '16px 20px', background: C.white }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: C.navy600, textTransform: 'uppercase' }}>{tpl.name}</span>
+                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: C.gray400 }}>{tpl.specs}</span>
+                    </div>
+                    <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Template naming + guardrails */}
+          <div style={{ marginTop: 48, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+            <div style={{ padding: 24, borderRadius: 12, background: C.offWhite, border: `1px solid ${C.gray200}` }}>
+              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.gray400, textTransform: 'uppercase' }}>Template Naming Convention</span>
+              <code style={{ display: 'block', fontFamily: 'monospace', fontSize: 11, color: C.gray700, marginTop: 12, background: C.white, padding: '12px 16px', borderRadius: 8, border: `1px solid ${C.gray200}`, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{'amb-[type]-[name]-[version].[ext]\n\namb-overlay-lower-third-v1.png\namb-post-stat-highlight-v1.png\namb-reel-hook-emergency-v1.mp4\namb-cover-walkthrough-v1.png'}</code>
+              <p style={{ fontSize: 11, color: C.gray400, marginTop: 8 }}>Types: overlay, post, reel, story, cover, carousel</p>
+            </div>
+            <div style={{ padding: 24, borderRadius: 12, background: C.offWhite, border: `1px solid ${C.gray200}` }}>
+              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.gray400, textTransform: 'uppercase' }}>Brand Guardrails</span>
+              <ul style={{ listStyle: 'none', padding: 0, marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  'Navy, not black. Dark backgrounds are #0a0e2a.',
+                  'Red for action only. CTAs, accents, urgency.',
+                  'Barlow Condensed headlines. Inter body. No exceptions.',
+                  'ALL CAPS for every headline and label.',
+                  'Minimum 16px body text.',
+                  '24fps video. Always.',
+                  'No stock photography.',
+                ].map((rule, ri) => (
+                  <li key={ri} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.red500, marginTop: 5, flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: C.gray500, lineHeight: 1.5 }}>{rule}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </MaxWidth>
+      </LightSection>
+
+      <PatternStrip variant="red" height={3} />
+
       {/* ============================================================ */}
       {/*  FOOTER                                                       */}
       {/* ============================================================ */}
@@ -1443,7 +1940,7 @@ borderRadius: {
               </span>
             </div>
             <span style={{ fontFamily: F.body, fontSize: 10, color: C.gray600 }}>
-              Created by Steffen for AOM / Bobby. March 2026.
+              Ambition Mechanical Services. Brand Guidelines v2.0
             </span>
           </div>
         </MaxWidth>
