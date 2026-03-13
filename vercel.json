@@ -19,7 +19,7 @@
     { "source": "/briefs/:path*", "destination": "/index.html" },
     { "source": "/audit/:path*", "destination": "/index.html" },
     { "source": "/proposals/isa-energy", "destination": "/proposals-isa.html" },
-    { "source": "/proposals/quentin", "destination": "/proposals-quentin.html" },
+    { "source": "/proposals/q", "destination": "/proposals-quentin.html" },
     { "source": "/ideas", "destination": "/index.html" },
     { "source": "/guides", "destination": "/index.html" },
     { "source": "/guides/:path*", "destination": "/index.html" },
