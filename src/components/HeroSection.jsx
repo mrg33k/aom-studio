@@ -122,10 +122,24 @@ export default function HeroSection({ openBrief, scrollToSection }) {
         </svg>
       </div>
 
-      {/* Mobile: show first video only (no rotation), reduced quality for performance */}
+      {/* Mobile: cover viewport with 16:9 iframe, no black gaps */}
       <style>{`
         @media (max-width: 639px) {
-          .hero-video-bg iframe { pointer-events: none; }
+          .hero-video-bg iframe {
+            pointer-events: none;
+            /* Reset inset-0 positioning */
+            top: 50% !important;
+            left: 50% !important;
+            right: auto !important;
+            bottom: auto !important;
+            /* Size to guarantee 16:9 coverage on tall portrait screens */
+            width: 177.78vh !important;
+            height: 56.25vw !important;
+            min-width: 100% !important;
+            min-height: 100% !important;
+            /* Center in container, replaces the inline scale transform */
+            transform: translate(-50%, -50%) !important;
+          }
         }
       `}</style>
 
