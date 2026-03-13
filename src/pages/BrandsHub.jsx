@@ -1,6 +1,14 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
+
+/* Load Barlow Condensed for Ambition card */
+if (!document.querySelector('link[href*="Barlow+Condensed"]')) {
+  const link = document.createElement('link')
+  link.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap'
+  link.rel = 'stylesheet'
+  document.head.appendChild(link)
+}
 
 const brands = [
   {
@@ -9,6 +17,7 @@ const brands = [
     description: 'Creative production and AI systems company. Video, web, brand, social, and AI-powered workflows.',
     accentColor: '#E85D26',
     link: '/brand',
+    fontClass: 'font-headline',
   },
   {
     name: 'Ambition Mechanical',
@@ -16,6 +25,7 @@ const brands = [
     description: 'Premium commercial/industrial mechanical contractor. HVAC/R installation, service, repair, and energy management.',
     accentColor: '#1a237e',
     link: '/brands/ambition',
+    fontOverride: "'Barlow Condensed', sans-serif",
   },
 ]
 
@@ -68,7 +78,10 @@ export default function BrandsHub() {
                 <p className="font-body text-[11px] font-medium uppercase tracking-[0.2em] text-[#7A7267] mb-3">
                   {brand.full}
                 </p>
-                <h2 className="font-headline text-2xl md:text-4xl font-extrabold uppercase tracking-tight text-[#0A0A0A] mb-4">
+                <h2
+                  className={`${brand.fontClass || ''} text-2xl md:text-4xl font-extrabold uppercase tracking-tight text-[#0A0A0A] mb-4`}
+                  style={brand.fontOverride ? { fontFamily: brand.fontOverride } : undefined}
+                >
                   {brand.name}
                 </h2>
                 <p className="text-[#7A7267] text-sm leading-relaxed mb-6 font-body">
