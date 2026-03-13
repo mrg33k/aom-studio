@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { ArrowLeft, Copy, Check, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { toPng } from 'html-to-image'
 import {
   TemplateSocialIGPost,
   TemplateSocialIGStory,
@@ -383,6 +384,158 @@ function DownloadPngButton({ svgConfig, size, label }) {
   )
 }
 
+/* Download button that captures a DOM element as PNG via html-to-image */
+function DownloadElementPngButton({ targetRef, filename, width, height, label = 'PNG', small = false }) {
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = useCallback(async () => {
+    if (!targetRef.current) return
+    setDownloading(true)
+    try {
+      const dataUrl = await toPng(targetRef.current, {
+        width: width || targetRef.current.offsetWidth,
+        height: height || targetRef.current.offsetHeight,
+        pixelRatio: width ? width / targetRef.current.offsetWidth : 2,
+        cacheBust: true,
+        style: { transform: 'none', margin: 0 },
+      })
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `${filename || 'aom-asset'}.png`
+      a.click()
+    } catch (err) {
+      console.error('PNG export failed:', err)
+    }
+    setDownloading(false)
+  }, [targetRef, filename, width, height])
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={downloading}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: small ? '3px 8px' : '4px 10px',
+        borderRadius: 6,
+        fontSize: small ? 11 : 12,
+        fontWeight: 600,
+        color: '#E85D26',
+        background: 'rgba(232,93,38,0.1)',
+        border: '1px solid rgba(232,93,38,0.2)',
+        cursor: downloading ? 'wait' : 'pointer',
+        opacity: downloading ? 0.6 : 1,
+        fontFamily: '"Space Grotesk", sans-serif',
+      }}
+    >
+      <Download size={small ? 9 : 10} />
+      {label}
+    </button>
+  )
+}
+
+/* Collapsible recreation specs for template cards */
+function TemplateSpecs({ specs }) {
+  const [open, setOpen] = useState(false)
+  if (!specs) return null
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '3px 8px',
+          borderRadius: 4,
+          fontSize: 11,
+          fontWeight: 600,
+          color: C.textLightMuted,
+          background: 'rgba(255,255,255,0.04)',
+          border: `1px solid ${C.nightBorder}`,
+          cursor: 'pointer',
+          fontFamily: '"JetBrains Mono", monospace',
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+        }}
+      >
+        Specs
+        {open ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 8,
+          padding: '10px 12px',
+          background: 'rgba(0,0,0,0.3)',
+          borderRadius: 6,
+          border: `1px solid ${C.nightBorder}`,
+          fontSize: 11,
+          fontFamily: '"JetBrains Mono", monospace',
+          color: C.textLightMuted,
+          lineHeight: 1.7,
+        }}>
+          {specs.fonts && (
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: C.orange, fontWeight: 700, fontSize: 10, letterSpacing: '0.1em' }}>FONTS</span>
+              <div>{specs.fonts.join(' / ')}</div>
+            </div>
+          )}
+          {specs.colors && (
+            <div style={{ marginBottom: 6 }}>
+              <span style={{ color: C.orange, fontWeight: 700, fontSize: 10, letterSpacing: '0.1em' }}>COLORS</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 2 }}>
+                {specs.colors.map((c, i) => (
+                  <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: c.hex,
+                      border: c.hex === '#0C0C0C' || c.hex === '#0A0A0A' ? '1px solid rgba(255,255,255,0.2)' : 'none',
+                      flexShrink: 0,
+                    }} />
+                    <span>{c.hex}</span>
+                    {c.label && <span style={{ color: 'rgba(255,255,255,0.3)' }}>({c.label})</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {specs.layout && (
+            <div>
+              <span style={{ color: C.orange, fontWeight: 700, fontSize: 10, letterSpacing: '0.1em' }}>LAYOUT</span>
+              <div>{specs.layout}</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* Wrapper for inline logo SVGs that adds a transparent PNG download button */
+function LogoWithDownload({ children, filename, label, svgConfig, size = 800 }) {
+  const ref = useRef(null)
+  // If svgConfig is provided, use the existing SVG-to-canvas approach for higher quality
+  // Otherwise, use html-to-image on the DOM element
+  if (svgConfig) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+        {children}
+        <DownloadPngButton svgConfig={svgConfig} size={size} label={label || 'PNG'} />
+      </div>
+    )
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <div ref={ref}>
+        {children}
+      </div>
+      <DownloadElementPngButton targetRef={ref} filename={filename} label={label || 'PNG'} small />
+    </div>
+  )
+}
+
 /* Full-width pattern strip for section dividers */
 function PatternStrip({ pattern = 'diagonal', height = 4 }) {
   const patternDefs = {
@@ -431,8 +584,9 @@ const TOC_SECTIONS = [
 /*  TEMPLATE CARD WRAPPER                                              */
 /* ================================================================== */
 
-function TemplateCard({ children, name, dimensions, usage }) {
+function TemplateCard({ children, name, dimensions, usage, specs, exportWidth, exportHeight, exportFilename }) {
   const [hovered, setHovered] = useState(false)
+  const previewRef = useRef(null)
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -448,23 +602,35 @@ function TemplateCard({ children, name, dimensions, usage }) {
         gap: 16,
       }}
     >
-      <div style={{
-        width: '100%',
-        maxWidth: 320,
-        margin: '0 auto',
-        overflow: 'hidden',
-        border: `1px solid ${C.nightBorder}`,
-      }}>
+      <div
+        ref={previewRef}
+        style={{
+          width: '100%',
+          maxWidth: 320,
+          margin: '0 auto',
+          overflow: 'hidden',
+          border: `1px solid ${C.nightBorder}`,
+        }}
+      >
         {children}
       </div>
       <div>
-        <div style={{
-          fontFamily: '"Space Grotesk", sans-serif',
-          fontSize: 16,
-          fontWeight: 600,
-          color: C.textLight,
-          marginBottom: 4,
-        }}>{name}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{
+            fontFamily: '"Space Grotesk", sans-serif',
+            fontSize: 16,
+            fontWeight: 600,
+            color: C.textLight,
+          }}>{name}</div>
+          <DownloadElementPngButton
+            targetRef={previewRef}
+            filename={exportFilename || `aom-${name.toLowerCase().replace(/[\s/]+/g, '-')}`}
+            width={exportWidth}
+            height={exportHeight}
+            label="PNG"
+            small
+          />
+        </div>
         <div style={{
           fontFamily: '"JetBrains Mono", monospace',
           fontSize: 11,
@@ -478,6 +644,7 @@ function TemplateCard({ children, name, dimensions, usage }) {
           color: C.textLightMuted,
           lineHeight: 1.5,
         }}>{usage}</div>
+        <TemplateSpecs specs={specs} />
       </div>
     </div>
   )
@@ -686,6 +853,124 @@ function PrintPreviewCard({ type = 'business-card' }) {
 }
 
 /* ================================================================== */
+/*  LOCKUP GRID (uses refs for html-to-image downloads)                */
+/* ================================================================== */
+
+function LockupGrid() {
+  const hzDarkRef = useRef(null)
+  const stackDarkRef = useRef(null)
+  const hzLightRef = useRef(null)
+  const stackLightRef = useRef(null)
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+      gap: 24,
+      marginBottom: 48,
+    }}>
+      {/* Full wordmark / Horizontal */}
+      <div style={{
+        background: C.nightCard,
+        borderRadius: 16,
+        padding: '40px 32px',
+        border: `1px solid ${C.nightBorder}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 160,
+      }}>
+        <div ref={hzDarkRef}>
+          <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440, display: 'block' }} aria-label="AOM Horizontal lockup">
+            <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+            <line x1="280" y1="20" x2="280" y2="60" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+            <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
+          </svg>
+        </div>
+        <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
+        <div style={{ marginTop: 6 }}>
+          <DownloadElementPngButton targetRef={hzDarkRef} filename="aom-horizontal-lockup-dark" label="PNG" small />
+        </div>
+      </div>
+
+      {/* Stacked */}
+      <div style={{
+        background: C.nightCard,
+        borderRadius: 16,
+        padding: '40px 32px',
+        border: `1px solid ${C.nightBorder}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 160,
+      }}>
+        <div ref={stackDarkRef}>
+          <svg viewBox="0 0 320 110" width={220} style={{ display: 'block' }} aria-label="AOM Stacked lockup">
+            <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+            <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
+          </svg>
+        </div>
+        <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked Lockup</div>
+        <div style={{ marginTop: 6 }}>
+          <DownloadElementPngButton targetRef={stackDarkRef} filename="aom-stacked-lockup-dark" label="PNG" small />
+        </div>
+      </div>
+
+      {/* Full wordmark on light */}
+      <div style={{
+        background: C.cream,
+        borderRadius: 16,
+        padding: '40px 32px',
+        border: `1px solid ${C.lightBorder}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 160,
+      }}>
+        <div ref={hzLightRef}>
+          <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440, display: 'block' }} aria-label="AOM Horizontal lockup light">
+            <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+            <line x1="280" y1="20" x2="280" y2="60" stroke="#D9D3CB" strokeWidth="1" />
+            <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
+          </svg>
+        </div>
+        <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
+        <div style={{ marginTop: 6 }}>
+          <DownloadElementPngButton targetRef={hzLightRef} filename="aom-horizontal-lockup-light" label="PNG" small />
+        </div>
+      </div>
+
+      {/* Stacked on light */}
+      <div style={{
+        background: C.cream,
+        borderRadius: 16,
+        padding: '40px 32px',
+        border: `1px solid ${C.lightBorder}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 160,
+      }}>
+        <div ref={stackLightRef}>
+          <svg viewBox="0 0 320 110" width={220} style={{ display: 'block' }} aria-label="AOM Stacked lockup light">
+            <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
+            <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#7A7267" letterSpacing="3">AHEAD OF MARKET</text>
+          </svg>
+        </div>
+        <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked / Light</div>
+        <div style={{ marginTop: 6 }}>
+          <DownloadElementPngButton targetRef={stackLightRef} filename="aom-stacked-lockup-light" label="PNG" small />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ================================================================== */
 /*  MAIN COMPONENT                                                     */
 /* ================================================================== */
 
@@ -856,6 +1141,9 @@ export default function BrandGuidelinesV4() {
                 <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Light on Dark</div>
+              <div style={{ marginTop: 8 }}>
+                <DownloadPngButton svgConfig={{ type: 'wordmark', fill: '#F0ECE6', dotFill: '#E85D26', transparent: true, filename: 'aom-primary-light-on-dark' }} size={800} label="PNG" />
+              </div>
             </div>
 
             {/* 2. Primary on light */}
@@ -874,6 +1162,9 @@ export default function BrandGuidelinesV4() {
                 <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Primary / Dark on Light</div>
+              <div style={{ marginTop: 8 }}>
+                <DownloadPngButton svgConfig={{ type: 'wordmark', fill: '#0A0A0A', dotFill: '#E85D26', transparent: true, filename: 'aom-primary-dark-on-light' }} size={800} label="PNG" />
+              </div>
             </div>
 
             {/* 3. Monochrome black */}
@@ -892,6 +1183,9 @@ export default function BrandGuidelinesV4() {
                 <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#0A0A0A">.</tspan></text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / Black</div>
+              <div style={{ marginTop: 8 }}>
+                <DownloadPngButton svgConfig={{ type: 'wordmark', fill: '#0A0A0A', dotFill: '#0A0A0A', transparent: true, filename: 'aom-mono-black' }} size={800} label="PNG" />
+              </div>
             </div>
 
             {/* 4. Monochrome white */}
@@ -910,6 +1204,9 @@ export default function BrandGuidelinesV4() {
                 <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#F0ECE6">.</tspan></text>
               </svg>
               <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Monochrome / White</div>
+              <div style={{ marginTop: 8 }}>
+                <DownloadPngButton svgConfig={{ type: 'wordmark', fill: '#F0ECE6', dotFill: '#F0ECE6', transparent: true, filename: 'aom-mono-white' }} size={800} label="PNG" />
+              </div>
             </div>
           </div>
 
@@ -925,10 +1222,10 @@ export default function BrandGuidelinesV4() {
             marginBottom: 48,
           }}>
             {[
-              { bg: C.nightCard, border: C.nightBorder, fill: '#F0ECE6', label: 'Dark' },
-              { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', label: 'Light' },
-              { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', mono: true, label: 'Mono Dark' },
-              { bg: '#0A0A0A', border: C.nightBorder, fill: '#F0ECE6', mono: true, label: 'Mono Light' },
+              { bg: C.nightCard, border: C.nightBorder, fill: '#F0ECE6', label: 'Dark', dotFill: '#E85D26', filename: 'aom-icon-dark' },
+              { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', label: 'Light', dotFill: '#E85D26', filename: 'aom-icon-light' },
+              { bg: C.cream, border: C.lightBorder, fill: '#0A0A0A', mono: true, label: 'Mono Dark', dotFill: '#0A0A0A', filename: 'aom-icon-mono-dark' },
+              { bg: '#0A0A0A', border: C.nightBorder, fill: '#F0ECE6', mono: true, label: 'Mono Light', dotFill: '#F0ECE6', filename: 'aom-icon-mono-light' },
             ].map((v, i) => (
               <div key={i} style={{
                 background: v.bg,
@@ -944,96 +1241,16 @@ export default function BrandGuidelinesV4() {
                   <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={v.fill} letterSpacing="-2">A<tspan fill={v.mono ? v.fill : '#E85D26'}>.</tspan></text>
                 </svg>
                 <div style={{ marginTop: 10, fontSize: 12, color: v.bg === C.cream ? C.warmGray : C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{v.label}</div>
+                <div style={{ marginTop: 6 }}>
+                  <DownloadPngButton svgConfig={{ type: 'icon', bg: v.bg === C.nightCard ? '#0C0C0C' : v.bg, fill: v.fill, dotFill: v.dotFill, filename: v.filename }} size={512} label="PNG" />
+                </div>
               </div>
             ))}
           </div>
 
           {/* ---- LOCKUPS ---- */}
           <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Lockups</h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-            gap: 24,
-            marginBottom: 48,
-          }}>
-            {/* Full wordmark / Horizontal */}
-            <div style={{
-              background: C.nightCard,
-              borderRadius: 16,
-              padding: '40px 32px',
-              border: `1px solid ${C.nightBorder}`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 160,
-            }}>
-              <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440 }} aria-label="AOM Horizontal lockup">
-                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-                <line x1="280" y1="20" x2="280" y2="60" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
-              </svg>
-              <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
-            </div>
-
-            {/* Stacked */}
-            <div style={{
-              background: C.nightCard,
-              borderRadius: 16,
-              padding: '40px 32px',
-              border: `1px solid ${C.nightBorder}`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 160,
-            }}>
-              <svg viewBox="0 0 320 110" width={220} aria-label="AOM Stacked lockup">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-                <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
-              </svg>
-              <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked Lockup</div>
-            </div>
-
-            {/* Full wordmark on light */}
-            <div style={{
-              background: C.cream,
-              borderRadius: 16,
-              padding: '40px 32px',
-              border: `1px solid ${C.lightBorder}`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 160,
-            }}>
-              <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440 }} aria-label="AOM Horizontal lockup light">
-                <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-                <line x1="280" y1="20" x2="280" y2="60" stroke="#D9D3CB" strokeWidth="1" />
-                <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
-              </svg>
-              <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
-            </div>
-
-            {/* Stacked on light */}
-            <div style={{
-              background: C.cream,
-              borderRadius: 16,
-              padding: '40px 32px',
-              border: `1px solid ${C.lightBorder}`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 160,
-            }}>
-              <svg viewBox="0 0 320 110" width={220} aria-label="AOM Stacked lockup light">
-                <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-                <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#7A7267" letterSpacing="3">AHEAD OF MARKET</text>
-              </svg>
-              <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked / Light</div>
-            </div>
-          </div>
+          <LockupGrid />
 
           {/* ---- CLEAR SPACE & MIN SIZES ---- */}
           <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: 24, fontWeight: 700, color: C.textLight, marginBottom: 20 }}>Clear Space & Minimum Sizes</h3>
@@ -2636,6 +2853,19 @@ export default function BrandGuidelinesV4() {
               name="Instagram Post"
               dimensions="1080 x 1080 (1:1)"
               usage="Full-bleed image top, text zone below with orange accent bar. For announcements, case studies, and proof content."
+              exportWidth={1080}
+              exportHeight={1080}
+              exportFilename="aom-ig-post"
+              specs={{
+                fonts: ['Syne 800 (headline)', 'Space Grotesk 400 (body)', 'JetBrains Mono 700 (labels)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'accent' },
+                  { hex: '#FDF6EC', label: 'headline' },
+                  { hex: '#8A847C', label: 'body' },
+                ],
+                layout: '60% image / 40% text, 3px orange left accent bar',
+              }}
             >
               <TemplateSocialIGPost />
             </TemplateCard>
@@ -2644,6 +2874,18 @@ export default function BrandGuidelinesV4() {
               name="Instagram Story / Reel Cover"
               dimensions="1080 x 1920 (9:16)"
               usage="Vertical format. Full-bleed image with gradient overlay. Category label above headline. Logo bottom-right."
+              exportWidth={1080}
+              exportHeight={1920}
+              exportFilename="aom-ig-story"
+              specs={{
+                fonts: ['Syne 800 (headline)', 'JetBrains Mono 700 (category)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'label' },
+                  { hex: '#FDF6EC', label: 'headline' },
+                ],
+                layout: 'Full-bleed image, gradient overlay bottom 60%, logo bottom-right',
+              }}
             >
               <TemplateSocialIGStory />
             </TemplateCard>
@@ -2652,6 +2894,18 @@ export default function BrandGuidelinesV4() {
               name="LinkedIn Post"
               dimensions="1200 x 628 (~1.91:1)"
               usage="Split layout. Image left, content right. CTA strip at bottom in brand orange. For professional content and thought leadership."
+              exportWidth={1200}
+              exportHeight={628}
+              exportFilename="aom-linkedin-post"
+              specs={{
+                fonts: ['Syne 800 (headline)', 'Space Grotesk 400 (body)', 'Space Grotesk 600 (CTA)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'CTA strip' },
+                  { hex: '#FDF6EC', label: 'headline' },
+                ],
+                layout: '50/50 split, image left, content right, CTA strip bottom',
+              }}
             >
               <TemplateSocialLinkedIn />
             </TemplateCard>
@@ -2660,6 +2914,18 @@ export default function BrandGuidelinesV4() {
               name="Before / After Split"
               dimensions="1080 x 1080 (1:1)"
               usage="Two images side by side with orange divider. Labels over images. Works for construction site work and brand redesigns."
+              exportWidth={1080}
+              exportHeight={1080}
+              exportFilename="aom-before-after"
+              specs={{
+                fonts: ['JetBrains Mono 700 (labels)', 'Space Grotesk 600 (project name)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'divider' },
+                  { hex: '#F0ECE6', label: 'text' },
+                ],
+                layout: 'Two images 50/50, 3px red divider, 80px bottom bar',
+              }}
             >
               <TemplateSocialBeforeAfter />
             </TemplateCard>
@@ -2668,6 +2934,18 @@ export default function BrandGuidelinesV4() {
               name="Testimonial Card"
               dimensions="1080 x 1080 (1:1)"
               usage="Centered quote with attribution. Large open-quote mark, orange accent line. For client proof and social proof."
+              exportWidth={1080}
+              exportHeight={1080}
+              exportFilename="aom-testimonial"
+              specs={{
+                fonts: ['Syne 800 (quote mark)', 'Space Grotesk 400 italic (quote)', 'Space Grotesk 600 (name)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'accent line + quote mark' },
+                  { hex: '#F0ECE6', label: 'text' },
+                ],
+                layout: 'Centered, 2px orange accent line, 48px quote mark overlay',
+              }}
             >
               <TemplateSocialTestimonial />
             </TemplateCard>
@@ -2676,6 +2954,18 @@ export default function BrandGuidelinesV4() {
               name="Quick Tip / Educational"
               dimensions="1080 x 1080 (1:1)"
               usage="Full dark background with category label, watermark number, headline, and body. For tips, educational content, and authority posts."
+              exportWidth={1080}
+              exportHeight={1080}
+              exportFilename="aom-quick-tip"
+              specs={{
+                fonts: ['Syne 900 (watermark number)', 'Syne 800 (headline)', 'Space Grotesk 400 (body)', 'JetBrains Mono 700 (category)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'category + number watermark' },
+                  { hex: '#FDF6EC', label: 'headline' },
+                ],
+                layout: 'Category top-left, watermark number background, content centered',
+              }}
             >
               <TemplateSocialQuickTip />
             </TemplateCard>
@@ -2693,6 +2983,19 @@ export default function BrandGuidelinesV4() {
               name="Title Slide"
               dimensions="1920 x 1080 (16:9)"
               usage="Opening slide. AOM logo top-left, title centered, subtitle below, presenter and date bottom-left with pattern strip."
+              exportWidth={1920}
+              exportHeight={1080}
+              exportFilename="aom-presentation-title"
+              specs={{
+                fonts: ['Syne 800 (title)', 'Space Grotesk 400 (subtitle)', 'JetBrains Mono 500 (date)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'pattern strip' },
+                  { hex: '#F0ECE6', label: 'title' },
+                  { hex: '#8A847C', label: 'subtitle' },
+                ],
+                layout: 'Logo top-left, title centered, pattern strip bottom',
+              }}
             >
               <TemplatePresentationTitle />
             </TemplateCard>
@@ -2701,6 +3004,19 @@ export default function BrandGuidelinesV4() {
               name="Content Slide"
               dimensions="1920 x 1080 (16:9)"
               usage="Standard content layout. Section label top-left in orange, headline, body text, page number bottom-right."
+              exportWidth={1920}
+              exportHeight={1080}
+              exportFilename="aom-presentation-content"
+              specs={{
+                fonts: ['Syne 800 (headline)', 'Space Grotesk 400 (body)', 'JetBrains Mono 700 (section label)', 'JetBrains Mono 400 (page number)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'section label' },
+                  { hex: '#F0ECE6', label: 'headline' },
+                  { hex: '#8A847C', label: 'body' },
+                ],
+                layout: 'Section label top-left, headline + body centered, page number bottom-right',
+              }}
             >
               <TemplatePresentationContent />
             </TemplateCard>
@@ -2709,6 +3025,18 @@ export default function BrandGuidelinesV4() {
               name="Data / Stats Slide"
               dimensions="1920 x 1080 (16:9)"
               usage="Three stat blocks in a row with left orange border. For KPIs, results, and proof numbers."
+              exportWidth={1920}
+              exportHeight={1080}
+              exportFilename="aom-presentation-stats"
+              specs={{
+                fonts: ['Syne 900 (stat numbers)', 'Space Grotesk 600 (labels)', 'JetBrains Mono 700 (section label)'],
+                colors: [
+                  { hex: '#0C0C0C', label: 'bg' },
+                  { hex: '#E85D26', label: 'numbers + section label' },
+                  { hex: '#8A847C', label: 'stat labels' },
+                ],
+                layout: '3 stat blocks, 2px orange left border each',
+              }}
             >
               <TemplatePresentationStats />
             </TemplateCard>
