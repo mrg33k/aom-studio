@@ -2119,7 +2119,7 @@ borderRadius: {
               <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase' }}>Video Walkthrough Overlays</span>
               <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.white, background: C.navy600, padding: '4px 12px', borderRadius: 4 }}>6 Templates</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 260px))', gap: 20 }}>
               {[
                 { name: 'Lower Third', slug: 'lower-third', specs: '480x~80px', exportDims: '1080x1920', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.', pieces: [
                   { refKey: 'overlay-lower-third-accent-bar', filename: 'amb-overlay-lower-third-accent-bar-v1.png', label: 'Accent Bar' },
@@ -2156,7 +2156,7 @@ borderRadius: {
                   <div ref={el => { templateRefs.current[`overlay-${tpl.slug}`] = el }} style={{
                     background: C.navy900,
                     padding: 24,
-                    minHeight: 140,
+                    aspectRatio: '9/16',
                     display: 'flex',
                     alignItems: 'flex-end',
                     justifyContent: 'flex-start',
@@ -2247,7 +2247,7 @@ borderRadius: {
               <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase' }}>Text Overlays for Reels</span>
               <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.white, background: C.red500, padding: '4px 12px', borderRadius: 4 }}>5 Templates</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 260px))', gap: 20 }}>
               {[
                 { name: 'Hook Text', slug: 'hook-text', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'First 1-3 seconds. Large Barlow Condensed text centered. Stops the scroll.', pieces: [
                   { refKey: 'reel-hook-text-gradient', filename: 'amb-reel-hook-text-gradient-v1.png', label: 'Overlay Gradient' },
@@ -2280,7 +2280,7 @@ borderRadius: {
                   <div ref={el => { templateRefs.current[`reel-${tpl.slug}`] = el }} style={{
                     background: C.navy900,
                     padding: 24,
-                    minHeight: 160,
+                    aspectRatio: '9/16',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -2354,7 +2354,7 @@ borderRadius: {
               <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase' }}>Static Social Posts</span>
               <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.white, background: C.navy600, padding: '4px 12px', borderRadius: 4 }}>6 Templates</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
               {[
                 { name: 'Project Showcase', slug: 'project-showcase', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Hero photo top 60%, navy bar bottom 40%. Red top border, kicker + project name + location.', pieces: [
                   { refKey: 'post-project-showcase-navy-bar', filename: 'amb-post-project-showcase-navy-bar-v1.png', label: 'Navy Bar' },
@@ -2391,7 +2391,7 @@ borderRadius: {
                   {/* Mini visual mock - square aspect hint */}
                   <div ref={el => { templateRefs.current[`post-${tpl.slug}`] = el }} style={{
                     background: C.navy900,
-                    minHeight: 160,
+                    aspectRatio: '1/1',
                     display: 'flex',
                     flexDirection: 'column',
                     position: 'relative',
@@ -2510,7 +2510,7 @@ borderRadius: {
               <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 20, letterSpacing: '0.03em', color: C.navy600, textTransform: 'uppercase' }}>Story / Reel Covers</span>
               <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.white, background: C.red500, padding: '4px 12px', borderRadius: 4 }}>4 Templates</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 260px))', gap: 20 }}>
               {[
                 { name: 'Project Walkthrough', slug: 'walkthrough', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Full bleed photo with gradient. Kicker, project name, stage, optional progress bar.', pieces: [
                   { refKey: 'cover-walkthrough-gradient', filename: 'amb-cover-walkthrough-gradient-v1.png', label: 'Gradient Overlay' },
@@ -2538,7 +2538,7 @@ borderRadius: {
                   <div ref={el => { templateRefs.current[`cover-${tpl.slug}`] = el }} style={{
                     background: C.navy900,
                     padding: 24,
-                    minHeight: 180,
+                    aspectRatio: '9/16',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'flex-end',
