@@ -750,13 +750,16 @@ export default function AmbitionBrandGuidelinesV2() {
     }
   }, [])
 
-  // Download helper for template full-size renders
+  // Refs for individual downloadable asset pieces (hidden off-screen)
+  const pieceRefs = useRef({})
+
+  // Download helper for template full-size renders (transparent background)
   const downloadTemplate = useCallback(async (refKey, filename) => {
-    const el = templateRefs.current[refKey]
+    const el = templateRefs.current[refKey] || pieceRefs.current[refKey]
     if (!el) return
     try {
       await document.fonts.ready
-      const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true })
+      const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true, backgroundColor: null })
       const link = document.createElement('a')
       link.download = filename
       link.href = dataUrl
@@ -766,8 +769,296 @@ export default function AmbitionBrandGuidelinesV2() {
     }
   }, [])
 
+  /* ---- Asset download pill button ---- */
+  const AssetPill = ({ refKey, filename, label }) => {
+    const [dl, setDl] = useState(false)
+    const [hov, setHov] = useState(false)
+    return (
+      <button
+        onClick={async () => {
+          setDl(true)
+          await downloadTemplate(refKey, filename)
+          setDl(false)
+        }}
+        disabled={dl}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          background: C.navy800, color: C.gray300, fontSize: 11, fontFamily: F.body,
+          padding: '4px 10px', borderRadius: 100,
+          border: `1px solid ${hov ? C.red500 : C.navyBorder}`,
+          cursor: dl ? 'not-allowed' : 'pointer', transition: 'border-color 200ms ease',
+          opacity: dl ? 0.6 : 1, whiteSpace: 'nowrap',
+        }}
+      >
+        <Download size={9} />
+        {dl ? '...' : label}
+      </button>
+    )
+  }
+
+  /* ---- "Download Assets" label + pills row ---- */
+  const AssetRow = ({ pieces }) => (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ fontSize: 10, color: C.gray500, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: F.display, fontWeight: 600, marginBottom: 6 }}>Download Assets</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {pieces.map((p, idx) => (
+          <AssetPill key={idx} refKey={p.refKey} filename={p.filename} label={p.label} />
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <div style={{ background: C.navy900, minHeight: '100vh', fontFamily: F.body }}>
+
+      {/* ============================================================ */}
+      {/*  HIDDEN OFF-SCREEN PIECE ELEMENTS (for individual downloads) */}
+      {/* ============================================================ */}
+      <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none', opacity: 0 }}>
+
+        {/* === OVERLAY PIECES === */}
+
+        {/* Lower Third pieces */}
+        <div ref={el => { pieceRefs.current['overlay-lower-third-accent-bar'] = el }} style={{ width: 4, height: 60, background: C.red500, borderRadius: '2px 0 0 2px' }} />
+        <div ref={el => { pieceRefs.current['overlay-lower-third-panel'] = el }} style={{ width: 200, height: 60, background: 'rgba(10, 14, 42, 0.85)', borderRadius: '0 4px 4px 0' }} />
+        <div ref={el => { pieceRefs.current['overlay-lower-third-full'] = el }} style={{ display: 'flex' }}>
+          <div style={{ width: 4, height: 60, background: C.red500, borderRadius: '2px 0 0 2px' }} />
+          <div style={{ width: 200, height: 60, background: 'rgba(10, 14, 42, 0.85)', borderRadius: '0 4px 4px 0' }} />
+        </div>
+
+        {/* Location Bar pieces */}
+        <div ref={el => { pieceRefs.current['overlay-location-bar-bar'] = el }} style={{ width: 400, height: 48, background: 'rgba(10, 14, 42, 0.70)', borderTop: '1px solid rgba(255,255,255,0.10)' }} />
+        <div ref={el => { pieceRefs.current['overlay-location-bar-pin'] = el }} style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill={C.red500} stroke="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+        </div>
+        <div ref={el => { pieceRefs.current['overlay-location-bar-full'] = el }} style={{ width: 400, height: 48, background: 'rgba(10, 14, 42, 0.70)', borderTop: '1px solid rgba(255,255,255,0.10)', display: 'flex', alignItems: 'center', padding: '0 16px' }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill={C.red500} stroke="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+        </div>
+
+        {/* Before/After Labels pieces */}
+        <div ref={el => { pieceRefs.current['overlay-before-after-before'] = el }} style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 16px', borderBottom: `2px solid ${C.gray400}`, display: 'inline-block' }} />
+        <div ref={el => { pieceRefs.current['overlay-before-after-after'] = el }} style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 16px', borderBottom: `2px solid ${C.red500}`, display: 'inline-block' }} />
+        <div ref={el => { pieceRefs.current['overlay-before-after-divider'] = el }} style={{ width: 3, height: 120, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['overlay-before-after-full'] = el }} style={{ display: 'flex', gap: 12 }}>
+          <div style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 16px', borderBottom: `2px solid ${C.gray400}` }} />
+          <div style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 16px', borderBottom: `2px solid ${C.red500}` }} />
+        </div>
+
+        {/* Progress Indicator pieces */}
+        <div ref={el => { pieceRefs.current['overlay-progress-panel'] = el }} style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '8px 14px', borderRadius: 8, width: 80, height: 40 }} />
+        <div ref={el => { pieceRefs.current['overlay-progress-underline'] = el }} style={{ width: 48, height: 2, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['overlay-progress-full'] = el }} style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '8px 14px', borderRadius: 8, textAlign: 'center' }}>
+          <div style={{ width: '60%', height: 2, background: C.red500, margin: '30px auto 0' }} />
+        </div>
+
+        {/* Equipment Callout pieces */}
+        <div ref={el => { pieceRefs.current['overlay-equipment-callout-panel'] = el }} style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 12px', borderRadius: 4, width: 120, height: 36 }} />
+        <div ref={el => { pieceRefs.current['overlay-equipment-callout-connector'] = el }} style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.red500 }} />
+          <div style={{ width: 40, height: 1, background: 'rgba(255,255,255,0.40)' }} />
+        </div>
+        <div ref={el => { pieceRefs.current['overlay-equipment-callout-full'] = el }} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.red500 }} />
+          <div style={{ width: 40, height: 1, background: 'rgba(255,255,255,0.40)' }} />
+          <div style={{ background: 'rgba(10, 14, 42, 0.85)', padding: '6px 12px', borderRadius: 4 }} />
+        </div>
+
+        {/* ROC Watermark piece (single) */}
+        <div ref={el => { pieceRefs.current['overlay-roc-watermark-backdrop'] = el }} style={{ padding: '4px 8px', background: 'rgba(0,0,0,0.25)', borderRadius: 4 }} />
+
+        {/* === REEL PIECES === */}
+
+        {/* Hook Text pieces */}
+        <div ref={el => { pieceRefs.current['reel-hook-text-gradient'] = el }} style={{ width: 400, height: 200, background: 'rgba(10, 14, 42, 0.40)' }} />
+        <div ref={el => { pieceRefs.current['reel-hook-text-full'] = el }} style={{ width: 400, height: 200, background: 'rgba(10, 14, 42, 0.40)' }} />
+
+        {/* Stat Callout pieces */}
+        <div ref={el => { pieceRefs.current['reel-stat-callout-accent-line'] = el }} style={{ width: 48, height: 2, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['reel-stat-callout-kicker-bar'] = el }} style={{ display: 'inline-block', padding: '2px 0' }}>
+          <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.red500, textTransform: 'uppercase' }}>&nbsp;</div>
+        </div>
+        <div ref={el => { pieceRefs.current['reel-stat-callout-full'] = el }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: 16 }}>
+          <div style={{ width: 48, height: 2, background: C.red500, marginTop: 8 }} />
+        </div>
+
+        {/* Step Counter pieces */}
+        <div ref={el => { pieceRefs.current['reel-step-counter-dots'] = el }} style={{ display: 'flex', gap: 6 }}>
+          {[0,1,2,3,4].map(d => (
+            <div key={d} style={{ width: 8, height: 8, borderRadius: '50%', background: d === 0 ? C.red500 : 'transparent', border: d === 0 ? 'none' : '1px solid rgba(255,255,255,0.25)', boxShadow: d === 0 ? '0 0 8px rgba(220,38,38,0.5)' : 'none' }} />
+          ))}
+        </div>
+        <div ref={el => { pieceRefs.current['reel-step-counter-gradient'] = el }} style={{ width: 400, height: 200, background: 'linear-gradient(to bottom, transparent, rgba(10,14,42,0.6))' }} />
+        <div ref={el => { pieceRefs.current['reel-step-counter-full'] = el }} style={{ padding: 16 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[0,1,2,3,4].map(d => (
+              <div key={d} style={{ width: 8, height: 8, borderRadius: '50%', background: d === 0 ? C.red500 : 'transparent', border: d === 0 ? 'none' : '1px solid rgba(255,255,255,0.25)', boxShadow: d === 0 ? '0 0 8px rgba(220,38,38,0.5)' : 'none' }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Quote/Testimonial pieces */}
+        <div ref={el => { pieceRefs.current['reel-quote-glass-panel'] = el }} style={{ width: 300, height: 100, background: 'rgba(10, 14, 42, 0.60)', backdropFilter: 'blur(12px)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }} />
+        <div ref={el => { pieceRefs.current['reel-quote-accent-bar'] = el }} style={{ width: 3, height: 80, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['reel-quote-quote-mark'] = el }} style={{ padding: 8 }}>
+          <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 28, color: 'rgba(220,38,38,0.30)' }}>&ldquo;</span>
+        </div>
+        <div ref={el => { pieceRefs.current['reel-quote-full'] = el }} style={{ background: 'rgba(10, 14, 42, 0.60)', backdropFilter: 'blur(12px)', padding: '16px 20px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', borderLeft: `3px solid ${C.red500}`, maxWidth: 300, position: 'relative' }}>
+          <span style={{ fontFamily: F.display, fontWeight: 800, fontSize: 28, color: 'rgba(220,38,38,0.30)', position: 'absolute', top: -4, left: 12 }}>&ldquo;</span>
+        </div>
+
+        {/* CTA End Card pieces */}
+        <div ref={el => { pieceRefs.current['reel-cta-end-button'] = el }} style={{ background: C.red500, padding: '8px 24px', borderRadius: 8, display: 'inline-block', boxShadow: '0 4px 20px rgba(220,38,38,0.35)', height: 36 }} />
+        <div ref={el => { pieceRefs.current['reel-cta-end-pattern'] = el }} style={{ width: 300, height: 200, position: 'relative' }}>
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="cta-pattern-dl" patternUnits="userSpaceOnUse" width="40" height="40">
+                <rect width="40" height="40" fill="none" stroke={C.navy400} strokeWidth="0.5" opacity="0.06" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#cta-pattern-dl)" />
+          </svg>
+        </div>
+        <div ref={el => { pieceRefs.current['reel-cta-end-full'] = el }} style={{ width: 300, height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <div style={{ background: C.red500, padding: '8px 24px', borderRadius: 8, display: 'inline-block', boxShadow: '0 4px 20px rgba(220,38,38,0.35)', height: 36 }} />
+        </div>
+
+        {/* === POST PIECES === */}
+
+        {/* Project Showcase pieces */}
+        <div ref={el => { pieceRefs.current['post-project-showcase-navy-bar'] = el }} style={{ width: 300, height: 80, background: C.navy900, borderTop: `3px solid ${C.red500}` }} />
+        <div ref={el => { pieceRefs.current['post-project-showcase-red-border'] = el }} style={{ width: 300, height: 3, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['post-project-showcase-full'] = el }} style={{ width: 300, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ height: 120, background: C.navy700 }} />
+          <div style={{ borderTop: `3px solid ${C.red500}`, padding: '14px 16px', background: C.navy900 }} />
+        </div>
+
+        {/* Before/After Split pieces */}
+        <div ref={el => { pieceRefs.current['post-before-after-divider'] = el }} style={{ width: 3, height: 200, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['post-before-after-labels'] = el }} style={{ display: 'flex', gap: 12 }}>
+          <div style={{ background: 'rgba(10,14,42,0.80)', padding: '4px 10px', borderRadius: '0 4px 4px 0' }} />
+          <div style={{ background: 'rgba(10,14,42,0.80)', padding: '4px 10px', borderRadius: '0 4px 4px 0', borderBottom: `2px solid ${C.red500}` }} />
+        </div>
+        <div ref={el => { pieceRefs.current['post-before-after-bottom-bar'] = el }} style={{ width: 300, padding: '10px 16px', background: C.navy900 }} />
+        <div ref={el => { pieceRefs.current['post-before-after-full'] = el }} style={{ width: 300, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, display: 'flex', minHeight: 100 }}>
+            <div style={{ flex: 1, background: C.navy800 }} />
+            <div style={{ width: 3, background: C.red500 }} />
+            <div style={{ flex: 1, background: C.navy700 }} />
+          </div>
+          <div style={{ padding: '10px 16px', background: C.navy900 }} />
+        </div>
+
+        {/* Stat Highlight pieces */}
+        <div ref={el => { pieceRefs.current['post-stat-highlight-accent-line'] = el }} style={{ width: 48, height: 2, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['post-stat-highlight-pattern'] = el }} style={{ width: 300, height: 200, position: 'relative' }}>
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="stat-crosshatch-dl" patternUnits="userSpaceOnUse" width="16" height="16">
+                <line x1="0" y1="0" x2="16" y2="16" stroke={C.gray300} strokeWidth="0.75" opacity="0.12" />
+                <line x1="16" y1="0" x2="0" y2="16" stroke={C.gray300} strokeWidth="0.75" opacity="0.12" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#stat-crosshatch-dl)" />
+          </svg>
+        </div>
+        <div ref={el => { pieceRefs.current['post-stat-highlight-full'] = el }} style={{ width: 300, height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div style={{ position: 'absolute', inset: 0, opacity: 0.03 }}>
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="stat-xh-dl-full" patternUnits="userSpaceOnUse" width="16" height="16">
+                  <line x1="0" y1="0" x2="16" y2="16" stroke={C.gray300} strokeWidth="0.75" />
+                  <line x1="16" y1="0" x2="0" y2="16" stroke={C.gray300} strokeWidth="0.75" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#stat-xh-dl-full)" />
+            </svg>
+          </div>
+          <div style={{ width: 48, height: 2, background: C.red500, position: 'relative', zIndex: 1 }} />
+        </div>
+
+        {/* Tip/Educational pieces */}
+        <div ref={el => { pieceRefs.current['post-tip-educational-red-divider'] = el }} style={{ width: 24, height: 2, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['post-tip-educational-number-watermarks'] = el }} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {[1,2,3].map(n => (
+            <div key={n} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+              <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 12, color: C.red500 }}>{n}.</span>
+            </div>
+          ))}
+        </div>
+        <div ref={el => { pieceRefs.current['post-tip-educational-full'] = el }} style={{ width: 280, padding: 20, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ width: 24, height: 2, background: C.red500, marginTop: 6 }} />
+          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {[1,2,3].map(n => (
+              <div key={n} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                <span style={{ fontFamily: F.display, fontWeight: 700, fontSize: 12, color: C.red500 }}>{n}.</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Crew Spotlight pieces */}
+        <div ref={el => { pieceRefs.current['post-crew-spotlight-gradient'] = el }} style={{ width: 300, height: 200, background: `linear-gradient(to bottom, ${C.navy700} 40%, rgba(10,14,42,0.95) 75%)` }} />
+        <div ref={el => { pieceRefs.current['post-crew-spotlight-full'] = el }} style={{ width: 300, height: 200, background: `linear-gradient(to bottom, ${C.navy700} 40%, rgba(10,14,42,0.95) 75%)` }} />
+
+        {/* Service Highlight pieces */}
+        <div ref={el => { pieceRefs.current['post-service-highlight-accent-line'] = el }} style={{ height: 3, width: 300, background: C.red500 }} />
+        <div ref={el => { pieceRefs.current['post-service-highlight-button'] = el }} style={{ background: C.red500, padding: '6px 16px', borderRadius: 6, display: 'inline-block', width: 140, height: 28 }} />
+        <div ref={el => { pieceRefs.current['post-service-highlight-full'] = el }} style={{ width: 300, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, background: C.navy800, minHeight: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(220,38,38,0.1)' }} />
+          </div>
+          <div style={{ height: 3, background: C.red500 }} />
+          <div style={{ padding: '14px 16px', background: C.navy900, minHeight: 60 }}>
+            <div style={{ background: C.red500, padding: '6px 16px', borderRadius: 6, display: 'inline-block', marginTop: 8, width: 140, height: 28 }} />
+          </div>
+        </div>
+
+        {/* === COVER PIECES === */}
+
+        {/* Project Walkthrough pieces */}
+        <div ref={el => { pieceRefs.current['cover-walkthrough-gradient'] = el }} style={{ width: 300, height: 300, background: `linear-gradient(to bottom, ${C.navy700} 0%, transparent 50%, rgba(10,14,42,0.95) 80%)` }} />
+        <div ref={el => { pieceRefs.current['cover-walkthrough-progress-bar'] = el }} style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', position: 'relative' }}>
+          <div style={{ width: '40%', height: '100%', borderRadius: 2, background: C.red500 }} />
+        </div>
+        <div ref={el => { pieceRefs.current['cover-walkthrough-full'] = el }} style={{ width: 300, height: 300, position: 'relative' }}>
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, ${C.navy700} 0%, transparent 50%, rgba(10,14,42,0.95) 80%)` }} />
+          <div style={{ position: 'absolute', bottom: 24, left: 24 }}>
+            <div style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', position: 'relative' }}>
+              <div style={{ width: '40%', height: '100%', borderRadius: 2, background: C.red500 }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Day in the Life pieces */}
+        <div ref={el => { pieceRefs.current['cover-day-life-gradient'] = el }} style={{ width: 300, height: 300, background: `linear-gradient(to bottom, ${C.navy700} 0%, transparent 45%, rgba(10,14,42,0.92) 75%)` }} />
+        <div ref={el => { pieceRefs.current['cover-day-life-full'] = el }} style={{ width: 300, height: 300, background: `linear-gradient(to bottom, ${C.navy700} 0%, transparent 45%, rgba(10,14,42,0.92) 75%)` }} />
+
+        {/* Service Explainer pieces */}
+        <div ref={el => { pieceRefs.current['cover-explainer-gradient'] = el }} style={{ width: 300, height: 300, background: `linear-gradient(to bottom, ${C.navy800} 0%, transparent 50%, rgba(10,14,42,0.95) 80%)` }} />
+        <div ref={el => { pieceRefs.current['cover-explainer-watch'] = el }} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.red500} strokeWidth="2"><polyline points="18 15 12 9 6 15" /></svg>
+        </div>
+        <div ref={el => { pieceRefs.current['cover-explainer-full'] = el }} style={{ width: 300, height: 300, position: 'relative' }}>
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, ${C.navy800} 0%, transparent 50%, rgba(10,14,42,0.95) 80%)` }} />
+          <div style={{ position: 'absolute', bottom: 24, left: 24, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.red500} strokeWidth="2"><polyline points="18 15 12 9 6 15" /></svg>
+          </div>
+        </div>
+
+        {/* Emergency Callout pieces */}
+        <div ref={el => { pieceRefs.current['cover-emergency-red-flash'] = el }} style={{ width: 300, height: 300, background: 'radial-gradient(ellipse at center, rgba(220,38,38,0.12) 0%, transparent 70%)' }} />
+        <div ref={el => { pieceRefs.current['cover-emergency-button'] = el }} style={{ background: C.red500, padding: '8px 20px', borderRadius: 8, display: 'inline-block', boxShadow: '0 4px 20px rgba(220,38,38,0.4)', height: 36 }} />
+        <div ref={el => { pieceRefs.current['cover-emergency-pulse-ring'] = el }} style={{ width: 60, height: 60, borderRadius: '50%', border: `2px solid rgba(220,38,38,0.3)`, boxShadow: '0 0 20px rgba(220,38,38,0.15)' }} />
+        <div ref={el => { pieceRefs.current['cover-emergency-full'] = el }} style={{ width: 300, height: 300, position: 'relative' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, rgba(220,38,38,0.12) 0%, transparent 70%)' }} />
+          <div style={{ position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)' }}>
+            <div style={{ background: C.red500, padding: '8px 20px', borderRadius: 8, display: 'inline-block', boxShadow: '0 4px 20px rgba(220,38,38,0.4)', height: 36 }} />
+          </div>
+        </div>
+
+      </div>
 
       {/* Quick Navigation Bar */}
       {showNav && <QuickNav activeSection={activeSection} />}
@@ -1830,12 +2121,35 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Lower Third', slug: 'lower-third', specs: '480x~80px', exportDims: '1080x1920', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.' },
-                { name: 'Location Bar', slug: 'location-bar', specs: 'Full width x 56px', exportDims: '1080x1920', desc: 'Establishing shot overlay. Pin icon + location name left, project name right.' },
-                { name: 'Before/After Labels', slug: 'before-after', specs: '120x40px per label', exportDims: '1080x1920', desc: 'Split-screen labels. Gray accent for BEFORE, red accent for AFTER.' },
-                { name: 'Progress Indicator', slug: 'progress', specs: 'Auto x 44px', exportDims: '1080x1920', desc: 'Top-right corner badge showing DAY/WEEK stage with red underline.' },
-                { name: 'Equipment Callout', slug: 'equipment-callout', specs: 'Auto x 36px', exportDims: '1080x1920', desc: 'Connected label pointing at equipment. Red dot anchor, navy panel.' },
-                { name: 'ROC Watermark', slug: 'roc-watermark', specs: 'Text only', exportDims: '1080x1920', desc: 'Subtle ROC #320923 text. 35% white opacity. Bottom-right on all project footage.' },
+                { name: 'Lower Third', slug: 'lower-third', specs: '480x~80px', exportDims: '1080x1920', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.', pieces: [
+                  { refKey: 'overlay-lower-third-accent-bar', filename: 'amb-overlay-lower-third-accent-bar-v1.png', label: 'Accent Bar' },
+                  { refKey: 'overlay-lower-third-panel', filename: 'amb-overlay-lower-third-panel-v1.png', label: 'Panel' },
+                  { refKey: 'overlay-lower-third-full', filename: 'amb-overlay-lower-third-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Location Bar', slug: 'location-bar', specs: 'Full width x 56px', exportDims: '1080x1920', desc: 'Establishing shot overlay. Pin icon + location name left, project name right.', pieces: [
+                  { refKey: 'overlay-location-bar-bar', filename: 'amb-overlay-location-bar-bar-v1.png', label: 'Bar Shape' },
+                  { refKey: 'overlay-location-bar-pin', filename: 'amb-overlay-location-bar-pin-v1.png', label: 'Pin Icon' },
+                  { refKey: 'overlay-location-bar-full', filename: 'amb-overlay-location-bar-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Before/After Labels', slug: 'before-after', specs: '120x40px per label', exportDims: '1080x1920', desc: 'Split-screen labels. Gray accent for BEFORE, red accent for AFTER.', pieces: [
+                  { refKey: 'overlay-before-after-before', filename: 'amb-overlay-before-after-before-panel-v1.png', label: 'Before Panel' },
+                  { refKey: 'overlay-before-after-after', filename: 'amb-overlay-before-after-after-panel-v1.png', label: 'After Panel' },
+                  { refKey: 'overlay-before-after-divider', filename: 'amb-overlay-before-after-divider-v1.png', label: 'Divider Line' },
+                  { refKey: 'overlay-before-after-full', filename: 'amb-overlay-before-after-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Progress Indicator', slug: 'progress', specs: 'Auto x 44px', exportDims: '1080x1920', desc: 'Top-right corner badge showing DAY/WEEK stage with red underline.', pieces: [
+                  { refKey: 'overlay-progress-panel', filename: 'amb-overlay-progress-panel-v1.png', label: 'Panel Shape' },
+                  { refKey: 'overlay-progress-underline', filename: 'amb-overlay-progress-underline-v1.png', label: 'Red Underline' },
+                  { refKey: 'overlay-progress-full', filename: 'amb-overlay-progress-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Equipment Callout', slug: 'equipment-callout', specs: 'Auto x 36px', exportDims: '1080x1920', desc: 'Connected label pointing at equipment. Red dot anchor, navy panel.', pieces: [
+                  { refKey: 'overlay-equipment-callout-panel', filename: 'amb-overlay-equipment-callout-panel-v1.png', label: 'Panel Shape' },
+                  { refKey: 'overlay-equipment-callout-connector', filename: 'amb-overlay-equipment-callout-connector-v1.png', label: 'Connector + Dot' },
+                  { refKey: 'overlay-equipment-callout-full', filename: 'amb-overlay-equipment-callout-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'ROC Watermark', slug: 'roc-watermark', specs: 'Text only', exportDims: '1080x1920', desc: 'Subtle ROC #320923 text. 35% white opacity. Bottom-right on all project footage.', pieces: [
+                  { refKey: 'overlay-roc-watermark-backdrop', filename: 'amb-overlay-roc-watermark-backdrop-v1.png', label: 'Shadow Backdrop' },
+                ] },
               ].map((tpl, i) => (
                 <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
                   {/* Mini visual mock */}
@@ -1920,20 +2234,7 @@ borderRadius: {
                       <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.navy600, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
-                    <button
-                      onClick={() => downloadTemplate(`overlay-${tpl.slug}`, `amb-overlay-${tpl.slug}-v1.png`)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
-                        fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.08em',
-                        textTransform: 'uppercase', background: C.red500, color: C.white,
-                        border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                        transition: 'background 200ms ease',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = C.red400}
-                      onMouseLeave={e => e.currentTarget.style.background = C.red500}
-                    >
-                      <Download size={10} /> Download PNG
-                    </button>
+                    <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
               ))}
@@ -1948,11 +2249,31 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Hook Text', slug: 'hook-text', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'First 1-3 seconds. Large Barlow Condensed text centered. Stops the scroll.' },
-                { name: 'Fact/Stat Callout', slug: 'stat-callout', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Big number with kicker above and supporting line below. Odometer animation.' },
-                { name: 'Step Counter', slug: 'step-counter', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Progress dots + step label + headline. For how-to and process content.' },
-                { name: 'Quote/Testimonial', slug: 'quote', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Glass panel with red left accent. Quote text with attribution below.' },
-                { name: 'CTA End Card', slug: 'cta-end', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Final frame. Logo, tagline, red CTA button, phone number, website, ROC.' },
+                { name: 'Hook Text', slug: 'hook-text', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'First 1-3 seconds. Large Barlow Condensed text centered. Stops the scroll.', pieces: [
+                  { refKey: 'reel-hook-text-gradient', filename: 'amb-reel-hook-text-gradient-v1.png', label: 'Overlay Gradient' },
+                  { refKey: 'reel-hook-text-full', filename: 'amb-reel-hook-text-full-v1.png', label: 'Full Frame' },
+                ] },
+                { name: 'Fact/Stat Callout', slug: 'stat-callout', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Big number with kicker above and supporting line below. Odometer animation.', pieces: [
+                  { refKey: 'reel-stat-callout-accent-line', filename: 'amb-reel-stat-callout-accent-line-v1.png', label: 'Accent Line' },
+                  { refKey: 'reel-stat-callout-kicker-bar', filename: 'amb-reel-stat-callout-kicker-bar-v1.png', label: 'Kicker Bar' },
+                  { refKey: 'reel-stat-callout-full', filename: 'amb-reel-stat-callout-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Step Counter', slug: 'step-counter', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Progress dots + step label + headline. For how-to and process content.', pieces: [
+                  { refKey: 'reel-step-counter-dots', filename: 'amb-reel-step-counter-dots-v1.png', label: 'Progress Dots' },
+                  { refKey: 'reel-step-counter-gradient', filename: 'amb-reel-step-counter-gradient-v1.png', label: 'Gradient Overlay' },
+                  { refKey: 'reel-step-counter-full', filename: 'amb-reel-step-counter-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Quote/Testimonial', slug: 'quote', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Glass panel with red left accent. Quote text with attribution below.', pieces: [
+                  { refKey: 'reel-quote-glass-panel', filename: 'amb-reel-quote-glass-panel-v1.png', label: 'Glass Panel' },
+                  { refKey: 'reel-quote-accent-bar', filename: 'amb-reel-quote-accent-bar-v1.png', label: 'Accent Bar' },
+                  { refKey: 'reel-quote-quote-mark', filename: 'amb-reel-quote-quote-mark-v1.png', label: 'Quote Mark' },
+                  { refKey: 'reel-quote-full', filename: 'amb-reel-quote-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'CTA End Card', slug: 'cta-end', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Final frame. Logo, tagline, red CTA button, phone number, website, ROC.', pieces: [
+                  { refKey: 'reel-cta-end-button', filename: 'amb-reel-cta-end-button-v1.png', label: 'Button Shape' },
+                  { refKey: 'reel-cta-end-pattern', filename: 'amb-reel-cta-end-pattern-v1.png', label: 'Pattern BG' },
+                  { refKey: 'reel-cta-end-full', filename: 'amb-reel-cta-end-full-v1.png', label: 'Full Layout' },
+                ] },
               ].map((tpl, i) => (
                 <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
                   {/* Mini visual mock - vertical aspect hint */}
@@ -2020,20 +2341,7 @@ borderRadius: {
                       <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.red500, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
-                    <button
-                      onClick={() => downloadTemplate(`reel-${tpl.slug}`, `amb-reel-${tpl.slug}-v1.png`)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
-                        fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.08em',
-                        textTransform: 'uppercase', background: C.red500, color: C.white,
-                        border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                        transition: 'background 200ms ease',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = C.red400}
-                      onMouseLeave={e => e.currentTarget.style.background = C.red500}
-                    >
-                      <Download size={10} /> Download PNG
-                    </button>
+                    <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
               ))}
@@ -2048,12 +2356,36 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Project Showcase', slug: 'project-showcase', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Hero photo top 60%, navy bar bottom 40%. Red top border, kicker + project name + location.' },
-                { name: 'Before/After Split', slug: 'before-after', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Side-by-side photos with 3px red divider. Navy bottom bar with project name and logo.' },
-                { name: 'Stat Highlight', slug: 'stat-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Big number centered on navy. Kicker, stat, supporting text, red accent line, website.' },
-                { name: 'Tip/Educational', slug: 'tip-educational', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Navy background. Red kicker, headline, numbered list. Educational content format.' },
-                { name: 'Crew Spotlight', slug: 'crew-spotlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Full bleed crew photo with gradient overlay. Kicker + headline at bottom.' },
-                { name: 'Service Highlight', slug: 'service-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Photo/icon top, navy bottom. Service name, description, red CTA button.' },
+                { name: 'Project Showcase', slug: 'project-showcase', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Hero photo top 60%, navy bar bottom 40%. Red top border, kicker + project name + location.', pieces: [
+                  { refKey: 'post-project-showcase-navy-bar', filename: 'amb-post-project-showcase-navy-bar-v1.png', label: 'Navy Bar' },
+                  { refKey: 'post-project-showcase-red-border', filename: 'amb-post-project-showcase-red-border-v1.png', label: 'Red Top Border' },
+                  { refKey: 'post-project-showcase-full', filename: 'amb-post-project-showcase-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Before/After Split', slug: 'before-after', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Side-by-side photos with 3px red divider. Navy bottom bar with project name and logo.', pieces: [
+                  { refKey: 'post-before-after-divider', filename: 'amb-post-before-after-divider-v1.png', label: 'Divider Line' },
+                  { refKey: 'post-before-after-labels', filename: 'amb-post-before-after-labels-v1.png', label: 'Label Panels' },
+                  { refKey: 'post-before-after-bottom-bar', filename: 'amb-post-before-after-bottom-bar-v1.png', label: 'Bottom Bar' },
+                  { refKey: 'post-before-after-full', filename: 'amb-post-before-after-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Stat Highlight', slug: 'stat-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Big number centered on navy. Kicker, stat, supporting text, red accent line, website.', pieces: [
+                  { refKey: 'post-stat-highlight-accent-line', filename: 'amb-post-stat-highlight-accent-line-v1.png', label: 'Accent Line' },
+                  { refKey: 'post-stat-highlight-pattern', filename: 'amb-post-stat-highlight-pattern-v1.png', label: 'Pattern BG' },
+                  { refKey: 'post-stat-highlight-full', filename: 'amb-post-stat-highlight-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Tip/Educational', slug: 'tip-educational', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Navy background. Red kicker, headline, numbered list. Educational content format.', pieces: [
+                  { refKey: 'post-tip-educational-red-divider', filename: 'amb-post-tip-educational-red-divider-v1.png', label: 'Red Divider' },
+                  { refKey: 'post-tip-educational-number-watermarks', filename: 'amb-post-tip-educational-numbers-v1.png', label: 'Number Watermarks' },
+                  { refKey: 'post-tip-educational-full', filename: 'amb-post-tip-educational-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Crew Spotlight', slug: 'crew-spotlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Full bleed crew photo with gradient overlay. Kicker + headline at bottom.', pieces: [
+                  { refKey: 'post-crew-spotlight-gradient', filename: 'amb-post-crew-spotlight-gradient-v1.png', label: 'Gradient Overlay' },
+                  { refKey: 'post-crew-spotlight-full', filename: 'amb-post-crew-spotlight-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Service Highlight', slug: 'service-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Photo/icon top, navy bottom. Service name, description, red CTA button.', pieces: [
+                  { refKey: 'post-service-highlight-accent-line', filename: 'amb-post-service-highlight-accent-line-v1.png', label: 'Red Accent Line' },
+                  { refKey: 'post-service-highlight-button', filename: 'amb-post-service-highlight-button-v1.png', label: 'Button Shape' },
+                  { refKey: 'post-service-highlight-full', filename: 'amb-post-service-highlight-full-v1.png', label: 'Full Layout' },
+                ] },
               ].map((tpl, i) => (
                 <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
                   {/* Mini visual mock - square aspect hint */}
@@ -2165,20 +2497,7 @@ borderRadius: {
                       <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.navy600, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} {tpl.ratio}</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
-                    <button
-                      onClick={() => downloadTemplate(`post-${tpl.slug}`, `amb-post-${tpl.slug}-v1.png`)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
-                        fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.08em',
-                        textTransform: 'uppercase', background: C.red500, color: C.white,
-                        border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                        transition: 'background 200ms ease',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = C.red400}
-                      onMouseLeave={e => e.currentTarget.style.background = C.red500}
-                    >
-                      <Download size={10} /> Download PNG
-                    </button>
+                    <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
               ))}
@@ -2193,10 +2512,26 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Project Walkthrough', slug: 'walkthrough', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Full bleed photo with gradient. Kicker, project name, stage, optional progress bar.' },
-                { name: 'Day in the Life', slug: 'day-life', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Crew/site photo. "A DAY WITH AMBITION MECHANICAL" stacked headline. Date below.' },
-                { name: 'Service Explainer', slug: 'explainer', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Equipment close-up. Question headline ("WHAT IS A VRV SYSTEM?") + description.' },
-                { name: 'Emergency Callout', slug: 'emergency', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Navy bg with red radial glow. "EMERGENCY RESPONSE" headline, time, location, CTA.' },
+                { name: 'Project Walkthrough', slug: 'walkthrough', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Full bleed photo with gradient. Kicker, project name, stage, optional progress bar.', pieces: [
+                  { refKey: 'cover-walkthrough-gradient', filename: 'amb-cover-walkthrough-gradient-v1.png', label: 'Gradient Overlay' },
+                  { refKey: 'cover-walkthrough-progress-bar', filename: 'amb-cover-walkthrough-progress-bar-v1.png', label: 'Progress Bar' },
+                  { refKey: 'cover-walkthrough-full', filename: 'amb-cover-walkthrough-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Day in the Life', slug: 'day-life', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Crew/site photo. "A DAY WITH AMBITION MECHANICAL" stacked headline. Date below.', pieces: [
+                  { refKey: 'cover-day-life-gradient', filename: 'amb-cover-day-life-gradient-v1.png', label: 'Gradient Overlay' },
+                  { refKey: 'cover-day-life-full', filename: 'amb-cover-day-life-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Service Explainer', slug: 'explainer', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Equipment close-up. Question headline ("WHAT IS A VRV SYSTEM?") + description.', pieces: [
+                  { refKey: 'cover-explainer-gradient', filename: 'amb-cover-explainer-gradient-v1.png', label: 'Gradient Overlay' },
+                  { refKey: 'cover-explainer-watch', filename: 'amb-cover-explainer-watch-v1.png', label: 'Watch Indicator' },
+                  { refKey: 'cover-explainer-full', filename: 'amb-cover-explainer-full-v1.png', label: 'Full Layout' },
+                ] },
+                { name: 'Emergency Callout', slug: 'emergency', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Navy bg with red radial glow. "EMERGENCY RESPONSE" headline, time, location, CTA.', pieces: [
+                  { refKey: 'cover-emergency-red-flash', filename: 'amb-cover-emergency-red-flash-v1.png', label: 'Red Flash Gradient' },
+                  { refKey: 'cover-emergency-button', filename: 'amb-cover-emergency-button-v1.png', label: 'Button Shape' },
+                  { refKey: 'cover-emergency-pulse-ring', filename: 'amb-cover-emergency-pulse-ring-v1.png', label: 'Pulse Ring' },
+                  { refKey: 'cover-emergency-full', filename: 'amb-cover-emergency-full-v1.png', label: 'Full Layout' },
+                ] },
               ].map((tpl, i) => (
                 <div key={i} style={{ borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.gray200}` }}>
                   {/* Mini visual mock */}
@@ -2268,20 +2603,7 @@ borderRadius: {
                       <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.red500, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
-                    <button
-                      onClick={() => downloadTemplate(`cover-${tpl.slug}`, `amb-cover-${tpl.slug}-v1.png`)}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
-                        fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.08em',
-                        textTransform: 'uppercase', background: C.red500, color: C.white,
-                        border: 'none', padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
-                        transition: 'background 200ms ease',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = C.red400}
-                      onMouseLeave={e => e.currentTarget.style.background = C.red500}
-                    >
-                      <Download size={10} /> Download PNG
-                    </button>
+                    <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
               ))}
@@ -2292,8 +2614,8 @@ borderRadius: {
           <div style={{ marginTop: 48, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
             <div style={{ padding: 24, borderRadius: 12, background: C.offWhite, border: `1px solid ${C.gray200}` }}>
               <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.gray400, textTransform: 'uppercase' }}>Template Naming Convention</span>
-              <code style={{ display: 'block', fontFamily: 'monospace', fontSize: 11, color: C.gray700, marginTop: 12, background: C.white, padding: '12px 16px', borderRadius: 8, border: `1px solid ${C.gray200}`, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{'amb-[type]-[name]-[version].[ext]\n\namb-overlay-lower-third-v1.png\namb-post-stat-highlight-v1.png\namb-reel-hook-emergency-v1.mp4\namb-cover-walkthrough-v1.png'}</code>
-              <p style={{ fontSize: 11, color: C.gray400, marginTop: 8 }}>Types: overlay, post, reel, story, cover, carousel</p>
+              <code style={{ display: 'block', fontFamily: 'monospace', fontSize: 11, color: C.gray700, marginTop: 12, background: C.white, padding: '12px 16px', borderRadius: 8, border: `1px solid ${C.gray200}`, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{'amb-[type]-[name]-[piece]-[version].[ext]\n\namb-overlay-lower-third-accent-bar-v1.png\namb-overlay-lower-third-full-v1.png\namb-post-stat-highlight-accent-line-v1.png\namb-cover-walkthrough-gradient-v1.png'}</code>
+              <p style={{ fontSize: 11, color: C.gray400, marginTop: 8 }}>Types: overlay, post, reel, cover. Pieces: individual assets with transparent backgrounds.</p>
             </div>
             <div style={{ padding: 24, borderRadius: 12, background: C.offWhite, border: `1px solid ${C.gray200}` }}>
               <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: '0.2em', color: C.gray400, textTransform: 'uppercase' }}>Brand Guardrails</span>
