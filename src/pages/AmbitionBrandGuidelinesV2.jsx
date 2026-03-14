@@ -799,6 +799,21 @@ export default function AmbitionBrandGuidelinesV2() {
   }
 
   /* ---- "Download Assets" label + pills row ---- */
+  const TypoBlock = ({ specs }) => {
+    if (!specs || specs.length === 0) return null
+    return (
+      <div style={{ marginTop: 10, padding: '10px 12px', background: C.offWhite, borderRadius: 8, border: `1px solid ${C.gray200}` }}>
+        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, letterSpacing: '0.15em', color: C.gray400, textTransform: 'uppercase', marginBottom: 6 }}>Typography</div>
+        {specs.map((spec, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '3px 0', borderBottom: i < specs.length - 1 ? `1px solid ${C.gray100}` : 'none' }}>
+            <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 600, color: C.navy600 }}>{spec.role}</span>
+            <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.gray500 }}>{spec.value}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   const AssetRow = ({ pieces }) => (
     <div style={{ marginTop: 10 }}>
       <div style={{ fontSize: 10, color: C.gray500, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: F.display, fontWeight: 600, marginBottom: 6 }}>Download Assets</div>
@@ -2121,33 +2136,48 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 260px))', gap: 20 }}>
               {[
-                { name: 'Lower Third', slug: 'lower-third', specs: '480x~80px', exportDims: '1080x1920', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.', pieces: [
+                { name: 'Lower Third', slug: 'lower-third', specs: '480x~80px', exportDims: '1080x1920', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.', typo: [
+                  { role: 'Name', value: 'Barlow Condensed 700 / 22px / uppercase' },
+                  { role: 'Title', value: 'Inter 400 / 14px / sentence' },
+                ], pieces: [
                   { refKey: 'overlay-lower-third-accent-bar', filename: 'amb-overlay-lower-third-accent-bar-v1.png', label: 'Accent Bar' },
                   { refKey: 'overlay-lower-third-panel', filename: 'amb-overlay-lower-third-panel-v1.png', label: 'Panel' },
                   { refKey: 'overlay-lower-third-full', filename: 'amb-overlay-lower-third-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Location Bar', slug: 'location-bar', specs: 'Full width x 56px', exportDims: '1080x1920', desc: 'Establishing shot overlay. Pin icon + location name left, project name right.', pieces: [
+                { name: 'Location Bar', slug: 'location-bar', specs: 'Full width x 56px', exportDims: '1080x1920', desc: 'Establishing shot overlay. Pin icon + location name left, project name right.', typo: [
+                  { role: 'Location', value: 'Barlow Condensed 600 / 14px / uppercase' },
+                  { role: 'Project', value: 'Barlow Condensed 700 / 16px / uppercase' },
+                ], pieces: [
                   { refKey: 'overlay-location-bar-bar', filename: 'amb-overlay-location-bar-bar-v1.png', label: 'Bar Shape' },
                   { refKey: 'overlay-location-bar-pin', filename: 'amb-overlay-location-bar-pin-v1.png', label: 'Pin Icon' },
                   { refKey: 'overlay-location-bar-full', filename: 'amb-overlay-location-bar-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Before/After Labels', slug: 'before-after', specs: '120x40px per label', exportDims: '1080x1920', desc: 'Split-screen labels. Gray accent for BEFORE, red accent for AFTER.', pieces: [
+                { name: 'Before/After Labels', slug: 'before-after', specs: '120x40px per label', exportDims: '1080x1920', desc: 'Split-screen labels. Gray accent for BEFORE, red accent for AFTER.', typo: [
+                  { role: 'Label', value: 'Barlow Condensed 700 / 16px / uppercase' },
+                ], pieces: [
                   { refKey: 'overlay-before-after-before', filename: 'amb-overlay-before-after-before-panel-v1.png', label: 'Before Panel' },
                   { refKey: 'overlay-before-after-after', filename: 'amb-overlay-before-after-after-panel-v1.png', label: 'After Panel' },
                   { refKey: 'overlay-before-after-divider', filename: 'amb-overlay-before-after-divider-v1.png', label: 'Divider Line' },
                   { refKey: 'overlay-before-after-full', filename: 'amb-overlay-before-after-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Progress Indicator', slug: 'progress', specs: 'Auto x 44px', exportDims: '1080x1920', desc: 'Top-right corner badge showing DAY/WEEK stage with red underline.', pieces: [
+                { name: 'Progress Indicator', slug: 'progress', specs: 'Auto x 44px', exportDims: '1080x1920', desc: 'Top-right corner badge showing DAY/WEEK stage with red underline.', typo: [
+                  { role: 'Stage', value: 'Barlow Condensed 700 / 18px / uppercase' },
+                ], pieces: [
                   { refKey: 'overlay-progress-panel', filename: 'amb-overlay-progress-panel-v1.png', label: 'Panel Shape' },
                   { refKey: 'overlay-progress-underline', filename: 'amb-overlay-progress-underline-v1.png', label: 'Red Underline' },
                   { refKey: 'overlay-progress-full', filename: 'amb-overlay-progress-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Equipment Callout', slug: 'equipment-callout', specs: 'Auto x 36px', exportDims: '1080x1920', desc: 'Connected label pointing at equipment. Red dot anchor, navy panel.', pieces: [
+                { name: 'Equipment Callout', slug: 'equipment-callout', specs: 'Auto x 36px', exportDims: '1080x1920', desc: 'Connected label pointing at equipment. Red dot anchor, navy panel.', typo: [
+                  { role: 'Label', value: 'Barlow Condensed 600 / 13px / uppercase' },
+                  { role: 'Detail', value: 'Inter 400 / 11px / sentence' },
+                ], pieces: [
                   { refKey: 'overlay-equipment-callout-panel', filename: 'amb-overlay-equipment-callout-panel-v1.png', label: 'Panel Shape' },
                   { refKey: 'overlay-equipment-callout-connector', filename: 'amb-overlay-equipment-callout-connector-v1.png', label: 'Connector + Dot' },
                   { refKey: 'overlay-equipment-callout-full', filename: 'amb-overlay-equipment-callout-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'ROC Watermark', slug: 'roc-watermark', specs: 'Text only', exportDims: '1080x1920', desc: 'Subtle ROC #320923 text. 35% white opacity. Bottom-right on all project footage.', pieces: [
+                { name: 'ROC Watermark', slug: 'roc-watermark', specs: 'Text only', exportDims: '1080x1920', desc: 'Subtle ROC #320923 text. 35% white opacity. Bottom-right on all project footage.', typo: [
+                  { role: 'Text', value: 'Inter 500 / 11px / tracking 0.06em' },
+                ], pieces: [
                   { refKey: 'overlay-roc-watermark-backdrop', filename: 'amb-overlay-roc-watermark-backdrop-v1.png', label: 'Shadow Backdrop' },
                 ] },
               ].map((tpl, i) => (
@@ -2234,6 +2264,7 @@ borderRadius: {
                       <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.navy600, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                    <TypoBlock specs={tpl.typo} />
                     <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
@@ -2249,27 +2280,47 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 260px))', gap: 20 }}>
               {[
-                { name: 'Hook Text', slug: 'hook-text', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'First 1-3 seconds. Large Barlow Condensed text centered. Stops the scroll.', pieces: [
+                { name: 'Hook Text', slug: 'hook-text', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'First 1-3 seconds. Large Barlow Condensed text centered. Stops the scroll.', typo: [
+                  { role: 'Hook (short)', value: 'Barlow Condensed 800 / 56px / uppercase' },
+                  { role: 'Hook (long)', value: 'Barlow Condensed 800 / 44px / uppercase' },
+                  { role: 'Highlight', value: '#dc2626 accent word' },
+                ], pieces: [
                   { refKey: 'reel-hook-text-gradient', filename: 'amb-reel-hook-text-gradient-v1.png', label: 'Overlay Gradient' },
                   { refKey: 'reel-hook-text-full', filename: 'amb-reel-hook-text-full-v1.png', label: 'Full Frame' },
                 ] },
-                { name: 'Fact/Stat Callout', slug: 'stat-callout', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Big number with kicker above and supporting line below. Odometer animation.', pieces: [
+                { name: 'Fact/Stat Callout', slug: 'stat-callout', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Big number with kicker above and supporting line below. Odometer animation.', typo: [
+                  { role: 'Kicker', value: 'Barlow Condensed 600 / 13px / uppercase' },
+                  { role: 'Number', value: 'Barlow Condensed 800 / 96px / tracking 0.02em' },
+                  { role: 'Support', value: 'Inter 400 / 16px / sentence' },
+                ], pieces: [
                   { refKey: 'reel-stat-callout-accent-line', filename: 'amb-reel-stat-callout-accent-line-v1.png', label: 'Accent Line' },
                   { refKey: 'reel-stat-callout-kicker-bar', filename: 'amb-reel-stat-callout-kicker-bar-v1.png', label: 'Kicker Bar' },
                   { refKey: 'reel-stat-callout-full', filename: 'amb-reel-stat-callout-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Step Counter', slug: 'step-counter', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Progress dots + step label + headline. For how-to and process content.', pieces: [
+                { name: 'Step Counter', slug: 'step-counter', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Progress dots + step label + headline. For how-to and process content.', typo: [
+                  { role: 'Step label', value: 'Barlow Condensed 600 / 13px / uppercase' },
+                  { role: 'Headline', value: 'Barlow Condensed 800 / 40px / uppercase' },
+                ], pieces: [
                   { refKey: 'reel-step-counter-dots', filename: 'amb-reel-step-counter-dots-v1.png', label: 'Progress Dots' },
                   { refKey: 'reel-step-counter-gradient', filename: 'amb-reel-step-counter-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'reel-step-counter-full', filename: 'amb-reel-step-counter-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Quote/Testimonial', slug: 'quote', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Glass panel with red left accent. Quote text with attribution below.', pieces: [
+                { name: 'Quote/Testimonial', slug: 'quote', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Glass panel with red left accent. Quote text with attribution below.', typo: [
+                  { role: 'Quote', value: 'Inter 500 / 18px / italic' },
+                  { role: 'Name', value: 'Barlow Condensed 600 / 13px / uppercase' },
+                  { role: 'Company', value: 'Inter 400 / 12px / sentence' },
+                ], pieces: [
                   { refKey: 'reel-quote-glass-panel', filename: 'amb-reel-quote-glass-panel-v1.png', label: 'Glass Panel' },
                   { refKey: 'reel-quote-accent-bar', filename: 'amb-reel-quote-accent-bar-v1.png', label: 'Accent Bar' },
                   { refKey: 'reel-quote-quote-mark', filename: 'amb-reel-quote-quote-mark-v1.png', label: 'Quote Mark' },
                   { refKey: 'reel-quote-full', filename: 'amb-reel-quote-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'CTA End Card', slug: 'cta-end', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Final frame. Logo, tagline, red CTA button, phone number, website, ROC.', pieces: [
+                { name: 'CTA End Card', slug: 'cta-end', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Final frame. Logo, tagline, red CTA button, phone number, website, ROC.', typo: [
+                  { role: 'Tagline', value: 'Barlow Condensed 700 / 28px / uppercase' },
+                  { role: 'Button', value: 'Barlow Condensed 700 / 18px / uppercase' },
+                  { role: 'Website', value: 'Inter 400 / 14px / sentence' },
+                  { role: 'ROC', value: 'Inter 400 / 11px / 35% opacity' },
+                ], pieces: [
                   { refKey: 'reel-cta-end-button', filename: 'amb-reel-cta-end-button-v1.png', label: 'Button Shape' },
                   { refKey: 'reel-cta-end-pattern', filename: 'amb-reel-cta-end-pattern-v1.png', label: 'Pattern BG' },
                   { refKey: 'reel-cta-end-full', filename: 'amb-reel-cta-end-full-v1.png', label: 'Full Layout' },
@@ -2341,6 +2392,7 @@ borderRadius: {
                       <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.red500, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                    <TypoBlock specs={tpl.typo} />
                     <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
@@ -2356,32 +2408,58 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
               {[
-                { name: 'Project Showcase', slug: 'project-showcase', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Hero photo top 60%, navy bar bottom 40%. Red top border, kicker + project name + location.', pieces: [
+                { name: 'Project Showcase', slug: 'project-showcase', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Hero photo top 60%, navy bar bottom 40%. Red top border, kicker + project name + location.', typo: [
+                  { role: 'Kicker', value: 'Barlow Condensed 600 / 12px / uppercase' },
+                  { role: 'Project name', value: 'Barlow Condensed 700 / 28px / uppercase' },
+                  { role: 'Location', value: 'Inter 400 / 14px / sentence' },
+                ], pieces: [
                   { refKey: 'post-project-showcase-navy-bar', filename: 'amb-post-project-showcase-navy-bar-v1.png', label: 'Navy Bar' },
                   { refKey: 'post-project-showcase-red-border', filename: 'amb-post-project-showcase-red-border-v1.png', label: 'Red Top Border' },
                   { refKey: 'post-project-showcase-full', filename: 'amb-post-project-showcase-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Before/After Split', slug: 'before-after', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Side-by-side photos with 3px red divider. Navy bottom bar with project name and logo.', pieces: [
+                { name: 'Before/After Split', slug: 'before-after', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Side-by-side photos with 3px red divider. Navy bottom bar with project name and logo.', typo: [
+                  { role: 'Labels', value: 'Barlow Condensed 600 / 13px / uppercase' },
+                  { role: 'Project name', value: 'Barlow Condensed 700 / 18px / uppercase' },
+                ], pieces: [
                   { refKey: 'post-before-after-divider', filename: 'amb-post-before-after-divider-v1.png', label: 'Divider Line' },
                   { refKey: 'post-before-after-labels', filename: 'amb-post-before-after-labels-v1.png', label: 'Label Panels' },
                   { refKey: 'post-before-after-bottom-bar', filename: 'amb-post-before-after-bottom-bar-v1.png', label: 'Bottom Bar' },
                   { refKey: 'post-before-after-full', filename: 'amb-post-before-after-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Stat Highlight', slug: 'stat-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Big number centered on navy. Kicker, stat, supporting text, red accent line, website.', pieces: [
+                { name: 'Stat Highlight', slug: 'stat-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Big number centered on navy. Kicker, stat, supporting text, red accent line, website.', typo: [
+                  { role: 'Kicker', value: 'Barlow Condensed 600 / 14px / uppercase' },
+                  { role: 'Number', value: 'Barlow Condensed 800 / 120px / tracking 0.02em' },
+                  { role: 'Support', value: 'Inter 400 / 16px / max 70% width' },
+                  { role: 'Website', value: 'Inter 400 / 13px / #9ca3af' },
+                ], pieces: [
                   { refKey: 'post-stat-highlight-accent-line', filename: 'amb-post-stat-highlight-accent-line-v1.png', label: 'Accent Line' },
                   { refKey: 'post-stat-highlight-pattern', filename: 'amb-post-stat-highlight-pattern-v1.png', label: 'Pattern BG' },
                   { refKey: 'post-stat-highlight-full', filename: 'amb-post-stat-highlight-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Tip/Educational', slug: 'tip-educational', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Navy background. Red kicker, headline, numbered list. Educational content format.', pieces: [
+                { name: 'Tip/Educational', slug: 'tip-educational', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Navy background. Red kicker, headline, numbered list. Educational content format.', typo: [
+                  { role: 'Kicker', value: 'Barlow Condensed 600 / 13px / uppercase' },
+                  { role: 'Headline', value: 'Barlow Condensed 800 / 44px / uppercase' },
+                  { role: 'List number', value: 'Barlow Condensed 700 / 18px / #dc2626' },
+                  { role: 'List text', value: 'Inter 400 / 16px / sentence' },
+                  { role: 'Footer', value: 'Inter 400-500 / 13px / sentence' },
+                ], pieces: [
                   { refKey: 'post-tip-educational-red-divider', filename: 'amb-post-tip-educational-red-divider-v1.png', label: 'Red Divider' },
                   { refKey: 'post-tip-educational-number-watermarks', filename: 'amb-post-tip-educational-numbers-v1.png', label: 'Number Watermarks' },
                   { refKey: 'post-tip-educational-full', filename: 'amb-post-tip-educational-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Crew Spotlight', slug: 'crew-spotlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Full bleed crew photo with gradient overlay. Kicker + headline at bottom.', pieces: [
+                { name: 'Crew Spotlight', slug: 'crew-spotlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Full bleed crew photo with gradient overlay. Kicker + headline at bottom.', typo: [
+                  { role: 'Kicker', value: 'Barlow Condensed 600 / 12px / uppercase' },
+                  { role: 'Headline', value: 'Barlow Condensed 700 / 32px / uppercase' },
+                  { role: 'Sub-line', value: 'Inter 400 / 14px / sentence' },
+                ], pieces: [
                   { refKey: 'post-crew-spotlight-gradient', filename: 'amb-post-crew-spotlight-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'post-crew-spotlight-full', filename: 'amb-post-crew-spotlight-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Service Highlight', slug: 'service-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Photo/icon top, navy bottom. Service name, description, red CTA button.', pieces: [
+                { name: 'Service Highlight', slug: 'service-highlight', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Photo/icon top, navy bottom. Service name, description, red CTA button.', typo: [
+                  { role: 'Service name', value: 'Barlow Condensed 700 / 28px / uppercase' },
+                  { role: 'Description', value: 'Inter 400 / 15px / sentence' },
+                  { role: 'CTA button', value: 'Barlow Condensed 600 / 14px / uppercase' },
+                ], pieces: [
                   { refKey: 'post-service-highlight-accent-line', filename: 'amb-post-service-highlight-accent-line-v1.png', label: 'Red Accent Line' },
                   { refKey: 'post-service-highlight-button', filename: 'amb-post-service-highlight-button-v1.png', label: 'Button Shape' },
                   { refKey: 'post-service-highlight-full', filename: 'amb-post-service-highlight-full-v1.png', label: 'Full Layout' },
@@ -2497,6 +2575,7 @@ borderRadius: {
                       <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.navy600, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} {tpl.ratio}</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                    <TypoBlock specs={tpl.typo} />
                     <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
@@ -2512,21 +2591,39 @@ borderRadius: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 260px))', gap: 20 }}>
               {[
-                { name: 'Project Walkthrough', slug: 'walkthrough', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Full bleed photo with gradient. Kicker, project name, stage, optional progress bar.', pieces: [
+                { name: 'Project Walkthrough', slug: 'walkthrough', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Full bleed photo with gradient. Kicker, project name, stage, optional progress bar.', typo: [
+                  { role: 'Kicker', value: 'Barlow Condensed 600 / 13px / uppercase' },
+                  { role: 'Project name', value: 'Barlow Condensed 800 / 40px / uppercase' },
+                  { role: 'Stage', value: 'Barlow Condensed 600 / 24px / uppercase' },
+                ], pieces: [
                   { refKey: 'cover-walkthrough-gradient', filename: 'amb-cover-walkthrough-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'cover-walkthrough-progress-bar', filename: 'amb-cover-walkthrough-progress-bar-v1.png', label: 'Progress Bar' },
                   { refKey: 'cover-walkthrough-full', filename: 'amb-cover-walkthrough-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Day in the Life', slug: 'day-life', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Crew/site photo. "A DAY WITH AMBITION MECHANICAL" stacked headline. Date below.', pieces: [
+                { name: 'Day in the Life', slug: 'day-life', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Crew/site photo. "A DAY WITH AMBITION MECHANICAL" stacked headline. Date below.', typo: [
+                  { role: 'Kicker', value: 'Barlow Condensed 600 / 13px / uppercase' },
+                  { role: 'Title', value: 'Barlow Condensed 800 / 48px / uppercase' },
+                  { role: 'Date', value: 'Inter 400 / 14px / #9ca3af' },
+                ], pieces: [
                   { refKey: 'cover-day-life-gradient', filename: 'amb-cover-day-life-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'cover-day-life-full', filename: 'amb-cover-day-life-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Service Explainer', slug: 'explainer', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Equipment close-up. Question headline ("WHAT IS A VRV SYSTEM?") + description.', pieces: [
+                { name: 'Service Explainer', slug: 'explainer', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Equipment close-up. Question headline ("WHAT IS A VRV SYSTEM?") + description.', typo: [
+                  { role: 'Question', value: 'Barlow Condensed 800 / 36px / uppercase' },
+                  { role: 'Description', value: 'Inter 400 / 15px / sentence' },
+                  { role: 'Watch indicator', value: 'Inter 500 / 12px / uppercase' },
+                ], pieces: [
                   { refKey: 'cover-explainer-gradient', filename: 'amb-cover-explainer-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'cover-explainer-watch', filename: 'amb-cover-explainer-watch-v1.png', label: 'Watch Indicator' },
                   { refKey: 'cover-explainer-full', filename: 'amb-cover-explainer-full-v1.png', label: 'Full Layout' },
                 ] },
-                { name: 'Emergency Callout', slug: 'emergency', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Navy bg with red radial glow. "EMERGENCY RESPONSE" headline, time, location, CTA.', pieces: [
+                { name: 'Emergency Callout', slug: 'emergency', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Navy bg with red radial glow. "EMERGENCY RESPONSE" headline, time, location, CTA.', typo: [
+                  { role: 'Headline', value: 'Barlow Condensed 800 / 52px / uppercase' },
+                  { role: 'Time', value: 'Barlow Condensed 700 / 28px / #dc2626' },
+                  { role: 'Location', value: 'Inter 500 / 16px / sentence' },
+                  { role: 'Situation', value: 'Inter 400 / 16px / #9ca3af' },
+                  { role: 'CTA button', value: 'Barlow Condensed 700 / 18px / uppercase' },
+                ], pieces: [
                   { refKey: 'cover-emergency-red-flash', filename: 'amb-cover-emergency-red-flash-v1.png', label: 'Red Flash Gradient' },
                   { refKey: 'cover-emergency-button', filename: 'amb-cover-emergency-button-v1.png', label: 'Button Shape' },
                   { refKey: 'cover-emergency-pulse-ring', filename: 'amb-cover-emergency-pulse-ring-v1.png', label: 'Pulse Ring' },
@@ -2603,6 +2700,7 @@ borderRadius: {
                       <span style={{ fontFamily: 'monospace', fontSize: 9, color: C.white, background: C.red500, padding: '2px 8px', borderRadius: 4 }}>{tpl.exportDims} 9:16</span>
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
+                    <TypoBlock specs={tpl.typo} />
                     <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
