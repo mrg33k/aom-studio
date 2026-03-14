@@ -814,6 +814,32 @@ export default function AmbitionBrandGuidelinesV2() {
     )
   }
 
+  const ColorBlock = ({ colors }) => {
+    if (!colors || colors.length === 0) return null
+    return (
+      <div style={{ marginTop: 8, padding: '10px 12px', background: C.offWhite, borderRadius: 8, border: `1px solid ${C.gray200}` }}>
+        <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 9, letterSpacing: '0.15em', color: C.gray400, textTransform: 'uppercase', marginBottom: 6 }}>
+          Colors
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {colors.map((c, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{
+                width: 12, height: 12, borderRadius: '50%',
+                background: c.hex,
+                border: '1px solid rgba(0,0,0,0.1)',
+                flexShrink: 0,
+              }} />
+              <span style={{ fontFamily: F.body, fontSize: 9, color: C.gray500 }}>
+                <span style={{ fontWeight: 600, color: C.navy600 }}>{c.role}</span> {c.hex}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   const AssetRow = ({ pieces }) => (
     <div style={{ marginTop: 10 }}>
       <div style={{ fontSize: 10, color: C.gray500, letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: F.display, fontWeight: 600, marginBottom: 6 }}>Download Assets</div>
@@ -2139,6 +2165,11 @@ borderRadius: {
                 { name: 'Lower Third', slug: 'lower-third', specs: '480x~80px', exportDims: '1080x1920', desc: 'Name + title card over talking-head footage. Navy panel with red left accent bar.', typo: [
                   { role: 'Name', value: 'Barlow Condensed 700 / 22px / uppercase' },
                   { role: 'Title', value: 'Inter 400 / 14px / sentence' },
+                ], colors: [
+                  { role: 'Panel', hex: 'Navy 85%' },
+                  { role: 'Accent', hex: '#dc2626' },
+                  { role: 'Text', hex: '#ffffff' },
+                  { role: 'Subtitle', hex: '#d1d5db' },
                 ], pieces: [
                   { refKey: 'overlay-lower-third-accent-bar', filename: 'amb-overlay-lower-third-accent-bar-v1.png', label: 'Accent Bar' },
                   { refKey: 'overlay-lower-third-panel', filename: 'amb-overlay-lower-third-panel-v1.png', label: 'Panel' },
@@ -2147,6 +2178,11 @@ borderRadius: {
                 { name: 'Location Bar', slug: 'location-bar', specs: 'Full width x 56px', exportDims: '1080x1920', desc: 'Establishing shot overlay. Pin icon + location name left, project name right.', typo: [
                   { role: 'Location', value: 'Barlow Condensed 600 / 14px / uppercase' },
                   { role: 'Project', value: 'Barlow Condensed 700 / 16px / uppercase' },
+                ], colors: [
+                  { role: 'Bar', hex: 'Navy 70%' },
+                  { role: 'Icon', hex: '#dc2626' },
+                  { role: 'Text', hex: '#ffffff' },
+                  { role: 'Border', hex: 'White 10%' },
                 ], pieces: [
                   { refKey: 'overlay-location-bar-bar', filename: 'amb-overlay-location-bar-bar-v1.png', label: 'Bar Shape' },
                   { refKey: 'overlay-location-bar-pin', filename: 'amb-overlay-location-bar-pin-v1.png', label: 'Pin Icon' },
@@ -2154,6 +2190,12 @@ borderRadius: {
                 ] },
                 { name: 'Before/After Labels', slug: 'before-after', specs: '120x40px per label', exportDims: '1080x1920', desc: 'Split-screen labels. Gray accent for BEFORE, red accent for AFTER.', typo: [
                   { role: 'Label', value: 'Barlow Condensed 700 / 16px / uppercase' },
+                ], colors: [
+                  { role: 'Panel', hex: 'Navy 85%' },
+                  { role: 'Before', hex: '#9ca3af' },
+                  { role: 'After', hex: '#dc2626' },
+                  { role: 'Text', hex: '#ffffff' },
+                  { role: 'Divider', hex: '#dc2626' },
                 ], pieces: [
                   { refKey: 'overlay-before-after-before', filename: 'amb-overlay-before-after-before-panel-v1.png', label: 'Before Panel' },
                   { refKey: 'overlay-before-after-after', filename: 'amb-overlay-before-after-after-panel-v1.png', label: 'After Panel' },
@@ -2162,6 +2204,10 @@ borderRadius: {
                 ] },
                 { name: 'Progress Indicator', slug: 'progress', specs: 'Auto x 44px', exportDims: '1080x1920', desc: 'Top-right corner badge showing DAY/WEEK stage with red underline.', typo: [
                   { role: 'Stage', value: 'Barlow Condensed 700 / 18px / uppercase' },
+                ], colors: [
+                  { role: 'Panel', hex: 'Navy 85%' },
+                  { role: 'Underline', hex: '#dc2626' },
+                  { role: 'Text', hex: '#ffffff' },
                 ], pieces: [
                   { refKey: 'overlay-progress-panel', filename: 'amb-overlay-progress-panel-v1.png', label: 'Panel Shape' },
                   { refKey: 'overlay-progress-underline', filename: 'amb-overlay-progress-underline-v1.png', label: 'Red Underline' },
@@ -2170,6 +2216,12 @@ borderRadius: {
                 { name: 'Equipment Callout', slug: 'equipment-callout', specs: 'Auto x 36px', exportDims: '1080x1920', desc: 'Connected label pointing at equipment. Red dot anchor, navy panel.', typo: [
                   { role: 'Label', value: 'Barlow Condensed 600 / 13px / uppercase' },
                   { role: 'Detail', value: 'Inter 400 / 11px / sentence' },
+                ], colors: [
+                  { role: 'Panel', hex: 'Navy 85%' },
+                  { role: 'Dot', hex: '#dc2626' },
+                  { role: 'Line', hex: 'White 40%' },
+                  { role: 'Text', hex: '#ffffff' },
+                  { role: 'Detail', hex: '#d1d5db' },
                 ], pieces: [
                   { refKey: 'overlay-equipment-callout-panel', filename: 'amb-overlay-equipment-callout-panel-v1.png', label: 'Panel Shape' },
                   { refKey: 'overlay-equipment-callout-connector', filename: 'amb-overlay-equipment-callout-connector-v1.png', label: 'Connector + Dot' },
@@ -2177,6 +2229,8 @@ borderRadius: {
                 ] },
                 { name: 'ROC Watermark', slug: 'roc-watermark', specs: 'Text only', exportDims: '1080x1920', desc: 'Subtle ROC #320923 text. 35% white opacity. Bottom-right on all project footage.', typo: [
                   { role: 'Text', value: 'Inter 500 / 11px / tracking 0.06em' },
+                ], colors: [
+                  { role: 'Text', hex: 'White 35%' },
                 ], pieces: [
                   { refKey: 'overlay-roc-watermark-backdrop', filename: 'amb-overlay-roc-watermark-backdrop-v1.png', label: 'Shadow Backdrop' },
                 ] },
@@ -2265,6 +2319,7 @@ borderRadius: {
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
                     <TypoBlock specs={tpl.typo} />
+                    <ColorBlock colors={tpl.colors} />
                     <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
@@ -2284,6 +2339,10 @@ borderRadius: {
                   { role: 'Hook (short)', value: 'Barlow Condensed 800 / 56px / uppercase' },
                   { role: 'Hook (long)', value: 'Barlow Condensed 800 / 44px / uppercase' },
                   { role: 'Highlight', value: '#dc2626 accent word' },
+                ], colors: [
+                  { role: 'Overlay', hex: 'Navy 40%' },
+                  { role: 'Text', hex: '#ffffff' },
+                  { role: 'Highlight', hex: '#dc2626' },
                 ], pieces: [
                   { refKey: 'reel-hook-text-gradient', filename: 'amb-reel-hook-text-gradient-v1.png', label: 'Overlay Gradient' },
                   { refKey: 'reel-hook-text-full', filename: 'amb-reel-hook-text-full-v1.png', label: 'Full Frame' },
@@ -2292,6 +2351,11 @@ borderRadius: {
                   { role: 'Kicker', value: 'Barlow Condensed 600 / 13px / uppercase' },
                   { role: 'Number', value: 'Barlow Condensed 800 / 96px / tracking 0.02em' },
                   { role: 'Support', value: 'Inter 400 / 16px / sentence' },
+                ], colors: [
+                  { role: 'Background', hex: '#0a0e2a' },
+                  { role: 'Kicker', hex: '#dc2626' },
+                  { role: 'Number', hex: '#ffffff' },
+                  { role: 'Support', hex: '#d1d5db' },
                 ], pieces: [
                   { refKey: 'reel-stat-callout-accent-line', filename: 'amb-reel-stat-callout-accent-line-v1.png', label: 'Accent Line' },
                   { refKey: 'reel-stat-callout-kicker-bar', filename: 'amb-reel-stat-callout-kicker-bar-v1.png', label: 'Kicker Bar' },
@@ -2300,6 +2364,12 @@ borderRadius: {
                 { name: 'Step Counter', slug: 'step-counter', specs: '1080x1920 (9:16)', exportDims: '1080x1920', desc: 'Progress dots + step label + headline. For how-to and process content.', typo: [
                   { role: 'Step label', value: 'Barlow Condensed 600 / 13px / uppercase' },
                   { role: 'Headline', value: 'Barlow Condensed 800 / 40px / uppercase' },
+                ], colors: [
+                  { role: 'Active dot', hex: '#dc2626' },
+                  { role: 'Inactive dot', hex: 'White 25%' },
+                  { role: 'Label', hex: '#dc2626' },
+                  { role: 'Text', hex: '#ffffff' },
+                  { role: 'Gradient', hex: 'Navy 50%' },
                 ], pieces: [
                   { refKey: 'reel-step-counter-dots', filename: 'amb-reel-step-counter-dots-v1.png', label: 'Progress Dots' },
                   { refKey: 'reel-step-counter-gradient', filename: 'amb-reel-step-counter-gradient-v1.png', label: 'Gradient Overlay' },
@@ -2309,6 +2379,13 @@ borderRadius: {
                   { role: 'Quote', value: 'Inter 500 / 18px / italic' },
                   { role: 'Name', value: 'Barlow Condensed 600 / 13px / uppercase' },
                   { role: 'Company', value: 'Inter 400 / 12px / sentence' },
+                ], colors: [
+                  { role: 'Glass', hex: 'Navy 60%' },
+                  { role: 'Accent', hex: '#dc2626' },
+                  { role: 'Quote mark', hex: 'Red 30%' },
+                  { role: 'Text', hex: '#ffffff' },
+                  { role: 'Attribution', hex: '#d1d5db' },
+                  { role: 'Border', hex: 'White 8%' },
                 ], pieces: [
                   { refKey: 'reel-quote-glass-panel', filename: 'amb-reel-quote-glass-panel-v1.png', label: 'Glass Panel' },
                   { refKey: 'reel-quote-accent-bar', filename: 'amb-reel-quote-accent-bar-v1.png', label: 'Accent Bar' },
@@ -2320,6 +2397,13 @@ borderRadius: {
                   { role: 'Button', value: 'Barlow Condensed 700 / 18px / uppercase' },
                   { role: 'Website', value: 'Inter 400 / 14px / sentence' },
                   { role: 'ROC', value: 'Inter 400 / 11px / 35% opacity' },
+                ], colors: [
+                  { role: 'Background', hex: '#0a0e2a' },
+                  { role: 'Button', hex: '#dc2626' },
+                  { role: 'Shadow', hex: 'Red 35%' },
+                  { role: 'Text', hex: '#ffffff' },
+                  { role: 'Website', hex: '#d1d5db' },
+                  { role: 'ROC', hex: 'White 35%' },
                 ], pieces: [
                   { refKey: 'reel-cta-end-button', filename: 'amb-reel-cta-end-button-v1.png', label: 'Button Shape' },
                   { refKey: 'reel-cta-end-pattern', filename: 'amb-reel-cta-end-pattern-v1.png', label: 'Pattern BG' },
@@ -2393,6 +2477,7 @@ borderRadius: {
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
                     <TypoBlock specs={tpl.typo} />
+                    <ColorBlock colors={tpl.colors} />
                     <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
@@ -2412,6 +2497,13 @@ borderRadius: {
                   { role: 'Kicker', value: 'Barlow Condensed 600 / 12px / uppercase' },
                   { role: 'Project name', value: 'Barlow Condensed 700 / 28px / uppercase' },
                   { role: 'Location', value: 'Inter 400 / 14px / sentence' },
+                ], colors: [
+                  { role: 'Navy bar', hex: '#0a0e2a' },
+                  { role: 'Border', hex: '#dc2626' },
+                  { role: 'Kicker', hex: '#dc2626' },
+                  { role: 'Title', hex: '#ffffff' },
+                  { role: 'Location', hex: '#d1d5db' },
+                  { role: 'ROC', hex: 'White 25%' },
                 ], pieces: [
                   { refKey: 'post-project-showcase-navy-bar', filename: 'amb-post-project-showcase-navy-bar-v1.png', label: 'Navy Bar' },
                   { refKey: 'post-project-showcase-red-border', filename: 'amb-post-project-showcase-red-border-v1.png', label: 'Red Top Border' },
@@ -2420,6 +2512,12 @@ borderRadius: {
                 { name: 'Before/After Split', slug: 'before-after', specs: '1080x1080 (1:1)', exportDims: '1080x1080', ratio: '1:1', desc: 'Side-by-side photos with 3px red divider. Navy bottom bar with project name and logo.', typo: [
                   { role: 'Labels', value: 'Barlow Condensed 600 / 13px / uppercase' },
                   { role: 'Project name', value: 'Barlow Condensed 700 / 18px / uppercase' },
+                ], colors: [
+                  { role: 'Divider', hex: '#dc2626' },
+                  { role: 'Panel', hex: 'Navy 80%' },
+                  { role: 'Before', hex: '#9ca3af' },
+                  { role: 'After', hex: '#ffffff' },
+                  { role: 'Bar', hex: '#0a0e2a' },
                 ], pieces: [
                   { refKey: 'post-before-after-divider', filename: 'amb-post-before-after-divider-v1.png', label: 'Divider Line' },
                   { refKey: 'post-before-after-labels', filename: 'amb-post-before-after-labels-v1.png', label: 'Label Panels' },
@@ -2431,6 +2529,13 @@ borderRadius: {
                   { role: 'Number', value: 'Barlow Condensed 800 / 120px / tracking 0.02em' },
                   { role: 'Support', value: 'Inter 400 / 16px / max 70% width' },
                   { role: 'Website', value: 'Inter 400 / 13px / #9ca3af' },
+                ], colors: [
+                  { role: 'Background', hex: '#0a0e2a' },
+                  { role: 'Kicker', hex: '#dc2626' },
+                  { role: 'Number', hex: '#ffffff' },
+                  { role: 'Support', hex: '#d1d5db' },
+                  { role: 'Accent line', hex: '#dc2626' },
+                  { role: 'Website', hex: '#9ca3af' },
                 ], pieces: [
                   { refKey: 'post-stat-highlight-accent-line', filename: 'amb-post-stat-highlight-accent-line-v1.png', label: 'Accent Line' },
                   { refKey: 'post-stat-highlight-pattern', filename: 'amb-post-stat-highlight-pattern-v1.png', label: 'Pattern BG' },
@@ -2442,6 +2547,13 @@ borderRadius: {
                   { role: 'List number', value: 'Barlow Condensed 700 / 18px / #dc2626' },
                   { role: 'List text', value: 'Inter 400 / 16px / sentence' },
                   { role: 'Footer', value: 'Inter 400-500 / 13px / sentence' },
+                ], colors: [
+                  { role: 'Background', hex: '#0a0e2a' },
+                  { role: 'Kicker', hex: '#dc2626' },
+                  { role: 'Headline', hex: '#ffffff' },
+                  { role: 'Numbers', hex: '#dc2626' },
+                  { role: 'Body', hex: '#d1d5db' },
+                  { role: 'Footer', hex: '#9ca3af' },
                 ], pieces: [
                   { refKey: 'post-tip-educational-red-divider', filename: 'amb-post-tip-educational-red-divider-v1.png', label: 'Red Divider' },
                   { refKey: 'post-tip-educational-number-watermarks', filename: 'amb-post-tip-educational-numbers-v1.png', label: 'Number Watermarks' },
@@ -2451,6 +2563,12 @@ borderRadius: {
                   { role: 'Kicker', value: 'Barlow Condensed 600 / 12px / uppercase' },
                   { role: 'Headline', value: 'Barlow Condensed 700 / 32px / uppercase' },
                   { role: 'Sub-line', value: 'Inter 400 / 14px / sentence' },
+                ], colors: [
+                  { role: 'Gradient', hex: 'Navy 95%' },
+                  { role: 'Kicker', hex: '#dc2626' },
+                  { role: 'Headline', hex: '#ffffff' },
+                  { role: 'Sub', hex: '#d1d5db' },
+                  { role: 'ROC', hex: 'White 25%' },
                 ], pieces: [
                   { refKey: 'post-crew-spotlight-gradient', filename: 'amb-post-crew-spotlight-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'post-crew-spotlight-full', filename: 'amb-post-crew-spotlight-full-v1.png', label: 'Full Layout' },
@@ -2459,6 +2577,13 @@ borderRadius: {
                   { role: 'Service name', value: 'Barlow Condensed 700 / 28px / uppercase' },
                   { role: 'Description', value: 'Inter 400 / 15px / sentence' },
                   { role: 'CTA button', value: 'Barlow Condensed 600 / 14px / uppercase' },
+                ], colors: [
+                  { role: 'Top bg', hex: '#111638' },
+                  { role: 'Bottom bg', hex: '#0a0e2a' },
+                  { role: 'Accent', hex: '#dc2626' },
+                  { role: 'Title', hex: '#ffffff' },
+                  { role: 'Body', hex: '#d1d5db' },
+                  { role: 'Button', hex: '#dc2626' },
                 ], pieces: [
                   { refKey: 'post-service-highlight-accent-line', filename: 'amb-post-service-highlight-accent-line-v1.png', label: 'Red Accent Line' },
                   { refKey: 'post-service-highlight-button', filename: 'amb-post-service-highlight-button-v1.png', label: 'Button Shape' },
@@ -2576,6 +2701,7 @@ borderRadius: {
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
                     <TypoBlock specs={tpl.typo} />
+                    <ColorBlock colors={tpl.colors} />
                     <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
@@ -2595,6 +2721,13 @@ borderRadius: {
                   { role: 'Kicker', value: 'Barlow Condensed 600 / 13px / uppercase' },
                   { role: 'Project name', value: 'Barlow Condensed 800 / 40px / uppercase' },
                   { role: 'Stage', value: 'Barlow Condensed 600 / 24px / uppercase' },
+                ], colors: [
+                  { role: 'Gradient', hex: 'Navy 95%' },
+                  { role: 'Kicker', hex: '#dc2626' },
+                  { role: 'Title', hex: '#ffffff' },
+                  { role: 'Stage', hex: '#d1d5db' },
+                  { role: 'Track', hex: 'White 15%' },
+                  { role: 'Fill', hex: '#dc2626' },
                 ], pieces: [
                   { refKey: 'cover-walkthrough-gradient', filename: 'amb-cover-walkthrough-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'cover-walkthrough-progress-bar', filename: 'amb-cover-walkthrough-progress-bar-v1.png', label: 'Progress Bar' },
@@ -2604,6 +2737,11 @@ borderRadius: {
                   { role: 'Kicker', value: 'Barlow Condensed 600 / 13px / uppercase' },
                   { role: 'Title', value: 'Barlow Condensed 800 / 48px / uppercase' },
                   { role: 'Date', value: 'Inter 400 / 14px / #9ca3af' },
+                ], colors: [
+                  { role: 'Gradient', hex: 'Navy 92%' },
+                  { role: 'Kicker', hex: '#dc2626' },
+                  { role: 'Title', hex: '#ffffff' },
+                  { role: 'Date', hex: '#9ca3af' },
                 ], pieces: [
                   { refKey: 'cover-day-life-gradient', filename: 'amb-cover-day-life-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'cover-day-life-full', filename: 'amb-cover-day-life-full-v1.png', label: 'Full Layout' },
@@ -2612,6 +2750,10 @@ borderRadius: {
                   { role: 'Question', value: 'Barlow Condensed 800 / 36px / uppercase' },
                   { role: 'Description', value: 'Inter 400 / 15px / sentence' },
                   { role: 'Watch indicator', value: 'Inter 500 / 12px / uppercase' },
+                ], colors: [
+                  { role: 'Question', hex: '#ffffff' },
+                  { role: 'Description', hex: '#d1d5db' },
+                  { role: 'Watch', hex: '#dc2626' },
                 ], pieces: [
                   { refKey: 'cover-explainer-gradient', filename: 'amb-cover-explainer-gradient-v1.png', label: 'Gradient Overlay' },
                   { refKey: 'cover-explainer-watch', filename: 'amb-cover-explainer-watch-v1.png', label: 'Watch Indicator' },
@@ -2623,6 +2765,15 @@ borderRadius: {
                   { role: 'Location', value: 'Inter 500 / 16px / sentence' },
                   { role: 'Situation', value: 'Inter 400 / 16px / #9ca3af' },
                   { role: 'CTA button', value: 'Barlow Condensed 700 / 18px / uppercase' },
+                ], colors: [
+                  { role: 'Background', hex: '#0a0e2a' },
+                  { role: 'Glow', hex: 'Red 12%' },
+                  { role: 'Headline', hex: '#ffffff' },
+                  { role: 'Time', hex: '#dc2626' },
+                  { role: 'Location', hex: '#d1d5db' },
+                  { role: 'Situation', hex: '#9ca3af' },
+                  { role: 'Button', hex: '#dc2626' },
+                  { role: 'Shadow', hex: 'Red 40%' },
                 ], pieces: [
                   { refKey: 'cover-emergency-red-flash', filename: 'amb-cover-emergency-red-flash-v1.png', label: 'Red Flash Gradient' },
                   { refKey: 'cover-emergency-button', filename: 'amb-cover-emergency-button-v1.png', label: 'Button Shape' },
@@ -2701,6 +2852,7 @@ borderRadius: {
                     </div>
                     <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, lineHeight: 1.5, marginTop: 6 }}>{tpl.desc}</p>
                     <TypoBlock specs={tpl.typo} />
+                    <ColorBlock colors={tpl.colors} />
                     <AssetRow pieces={tpl.pieces} />
                   </div>
                 </div>
