@@ -31,7 +31,7 @@ import GuideAmbitionCrown from './pages/GuideAmbitionCrown.jsx'
 import GuideAmbitionMemorialTower from './pages/GuideAmbitionMemorialTower.jsx'
 import ROICalculator from './pages/ROICalculator.jsx'
 import CaseStudy from './pages/CaseStudy.jsx'
-import Loft from './pages/Loft.jsx'
+import Corner from './pages/Corner.jsx'
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 import './index.css'
 
@@ -95,7 +95,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/roi-calculator" element={<ROICalculator />} />
           <Route path="/case-study" element={<CaseStudy />} />
           <Route path="/book" element={<BookAudit />} />
-          <Route path="/loft" element={<Loft />} />
+          <Route path="/corner" element={<Corner />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </Suspense>

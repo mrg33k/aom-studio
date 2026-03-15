@@ -26,6 +26,6 @@
     { "source": "/roi-calculator", "destination": "/index.html" },
     { "source": "/book", "destination": "/index.html" },
     { "source": "/case-study", "destination": "/index.html" },
-    { "source": "/loft", "destination": "/index.html" }
+    { "source": "/corner", "destination": "/index.html" }
   ]
 }

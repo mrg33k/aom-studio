@@ -4,11 +4,11 @@ import { ArrowRight, MessageSquare, BarChart3, Gamepad2, Zap, Users, Shield, Che
 
 // --- CONSTANTS ---
 const ROOMS = [
-  { name: 'Bobby', role: 'Web Developer', img: '/loft/bobby-room.png', status: 'Working' },
-  { name: 'Steffen', role: 'Creative Director', img: '/loft/steffen-room.png', status: 'Working' },
-  { name: 'Cleo', role: 'Content Creator', img: '/loft/cleo-room.png', status: 'Done' },
-  { name: 'Elon', role: 'Systems Engineer', img: '/loft/elon-room.png', status: 'Idle' },
-  { name: 'Steve', role: 'AI Advisory Lead', img: '/loft/steve-room.png', status: 'Working' },
+  { name: 'Bobby', role: 'Web Developer', img: '/corner/bobby-room.png', status: 'Working' },
+  { name: 'Steffen', role: 'Creative Director', img: '/corner/steffen-room.png', status: 'Working' },
+  { name: 'Cleo', role: 'Content Creator', img: '/corner/cleo-room.png', status: 'Done' },
+  { name: 'Elon', role: 'Systems Engineer', img: '/corner/elon-room.png', status: 'Idle' },
+  { name: 'Steve', role: 'AI Advisory Lead', img: '/corner/steve-room.png', status: 'Working' },
 ];
 
 const TIERS = [
@@ -139,28 +139,28 @@ function Hero() {
       {/* Floating room images */}
       <motion.div style={{ opacity }} className="absolute inset-0 pointer-events-none">
         <motion.img
-          src="/loft/bobby-room.png"
+          src="/corner/bobby-room.png"
           alt=""
           style={{ y: y1 }}
           className="absolute top-[12%] left-[5%] w-[180px] md:w-[260px] rounded-2xl shadow-2xl shadow-black/10 opacity-60 rotate-[-3deg]"
           loading="lazy"
         />
         <motion.img
-          src="/loft/steffen-room.png"
+          src="/corner/steffen-room.png"
           alt=""
           style={{ y: y2 }}
           className="absolute top-[8%] right-[5%] w-[160px] md:w-[240px] rounded-2xl shadow-2xl shadow-black/10 opacity-50 rotate-[4deg]"
           loading="lazy"
         />
         <motion.img
-          src="/loft/cleo-room.png"
+          src="/corner/cleo-room.png"
           alt=""
           style={{ y: y3 }}
           className="absolute bottom-[15%] right-[10%] w-[140px] md:w-[200px] rounded-2xl shadow-2xl shadow-black/10 opacity-40 rotate-[-2deg]"
           loading="lazy"
         />
         <motion.img
-          src="/loft/elon-room.png"
+          src="/corner/elon-room.png"
           alt=""
           style={{ y: y1 }}
           className="absolute bottom-[20%] left-[8%] w-[130px] md:w-[190px] rounded-2xl shadow-2xl shadow-black/10 opacity-35 rotate-[3deg]"
@@ -176,7 +176,7 @@ function Hero() {
           transition={{ delay: 0.2, duration: 0.6 }}
           className="text-[11px] font-mono font-bold tracking-[0.3em] uppercase text-[#FF4F00] mb-8"
         >
-          Introducing Loft
+          Introducing Corner
         </motion.p>
 
         <motion.h1
@@ -774,7 +774,7 @@ function FinalCTA() {
 
         <SectionHeadline>
           A million worlds.<br />
-          <span className="text-[#FF4F00]">One Loft.</span>
+          <span className="text-[#FF4F00]">One Corner.</span>
         </SectionHeadline>
         <SectionBody className="mx-auto mt-6 text-center">
           Your AI team is ready to move in. Start with an audit. See where AI fits your business. Then watch your command center come alive.
@@ -801,14 +801,14 @@ function FinalCTA() {
 }
 
 // --- MAIN PAGE ---
-export default function Loft() {
+export default function Corner() {
   return (
     <div className="bg-[#FAFAF8] min-h-screen">
       {/* Minimal nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#FAFAF8]/80 backdrop-blur-md border-b border-[#E8E3DC]/50">
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
-          <a href="/loft" className="font-headline font-black text-lg text-[#1A1A17] tracking-tight">
-            Loft
+          <a href="/corner" className="font-headline font-black text-lg text-[#1A1A17] tracking-tight">
+            Corner
           </a>
           <div className="flex items-center gap-6">
             <a href="#layers" className="text-sm text-[#6B6560] hover:text-[#1A1A17] transition-colors hidden sm:block">
