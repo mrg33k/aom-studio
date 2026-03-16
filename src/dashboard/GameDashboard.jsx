@@ -2823,11 +2823,11 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   )
 })
 
-// ---- UNIFIED RIGHT PANEL (Agent card + stats + chat + tasks) ----------------
-// Patrik UX overhaul: ONE cohesive panel. Right side. Shows by default.
-// Agent card + stats at TOP, chat below (always visible), tasks tabbed below.
-// The game is still visible. The panel doesn't murder the view.
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData }) {
+// ---- UNIFIED RIGHT PANEL (Agent card + stats + chat + tasks + modes) --------
+// Patrik UX overhaul v2: Game is ALWAYS the main viewport.
+// Sidebar contains: Chat, Tasks, Info, Checklist, Megaboard as tabs.
+// "Extend" button widens sidebar to 65% for detailed views.
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -2858,13 +2858,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       transition={{ type: 'spring', damping: 28, stiffness: 220 }}
       style={{
         position: 'absolute', top: 0, right: 0, bottom: 0,
-        width: 380, maxWidth: '85vw',
+        width: isExtended ? '65vw' : 380,
+        maxWidth: isExtended ? '85vw' : '85vw',
+        minWidth: 380,
         background: 'rgba(10, 15, 30, 0.97)',
         backdropFilter: 'blur(20px)',
         borderLeft: '2px solid rgba(100, 180, 255, 0.15)',
         display: 'flex', flexDirection: 'column',
         zIndex: 32,
         boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
+        transition: 'width 250ms ease',
       }}
     >
       {/* ---- AGENT CARD + STATS (top section) ---- */}
@@ -2900,16 +2903,30 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               </span>
             </div>
           </div>
-          <button onClick={onClose} style={{
-            background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
-            borderRadius: 6, cursor: 'pointer', color: '#6B7280', padding: 6,
-            transition: 'all 150ms ease',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
-          >
-            <X size={16} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {/* Extend/collapse toggle */}
+            <button onClick={onToggleExtend} title={isExtended ? 'Collapse panel' : 'Expand panel'}
+              style={{
+                background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
+                borderRadius: 6, cursor: 'pointer', color: isExtended ? '#E85D26' : '#6B7280', padding: 6,
+                transition: 'all 150ms ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
+              onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
+            >
+              {isExtended ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+            <button onClick={onClose} style={{
+              background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
+              borderRadius: 6, cursor: 'pointer', color: '#6B7280', padding: 6,
+              transition: 'all 150ms ease',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Current task */}
@@ -2950,29 +2967,39 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         </div>
       </div>
 
-      {/* ---- TAB SWITCHER (Chat / Tasks / Info) ---- */}
+      {/* ---- TAB SWITCHER (Chat / Tasks / Info / Checklist / Megaboard) ---- */}
       <div style={{
         display: 'flex', borderBottom: '1px solid rgba(100,180,255,0.08)',
-        flexShrink: 0,
+        flexShrink: 0, overflowX: 'auto',
       }}>
         {[
           { id: 'chat', label: 'Chat', icon: MessageSquare },
           { id: 'tasks', label: 'Tasks', icon: ListTodo },
           { id: 'info', label: 'Info', icon: Activity },
+          { id: 'checklist', label: 'Checklist', icon: ListTodo },
+          { id: 'megaboard', label: 'Board', icon: LayoutDashboard },
         ].map(tab => {
           const active = activeTab === tab.id
           const TabIcon = tab.icon
           return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            <button key={tab.id} onClick={() => {
+              setActiveTab(tab.id)
+              // Auto-extend for Checklist and Megaboard views
+              if ((tab.id === 'checklist' || tab.id === 'megaboard') && !isExtended) {
+                onToggleExtend?.()
+              }
+            }} style={{
+              flex: isExtended ? 'none' : 1,
+              padding: isExtended ? '0 16px' : 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               height: 40, background: 'none', border: 'none',
               borderBottom: active ? `2px solid ${agentColor}` : '2px solid transparent',
               cursor: 'pointer', color: active ? '#EDF2FA' : '#6B7280',
-              fontFamily: "'Inter Tight', sans-serif", fontSize: 13, fontWeight: active ? 700 : 500,
+              fontFamily: "'Inter Tight', sans-serif", fontSize: 12, fontWeight: active ? 700 : 500,
               textTransform: 'uppercase', letterSpacing: '0.04em',
-              transition: 'color 150ms ease',
+              transition: 'color 150ms ease', whiteSpace: 'nowrap',
             }}>
-              <TabIcon size={14} />
+              <TabIcon size={13} />
               {tab.label}
             </button>
           )
@@ -3176,6 +3203,24 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             </div>
           </div>
         )}
+
+        {/* CHECKLIST TAB (embedded in sidebar) */}
+        {activeTab === 'checklist' && (
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 13 }}>Loading Checklist...</div>}>
+              <ChecklistMode agentStatus={allAgentStatus} isMobile={isMobile} data={data} />
+            </Suspense>
+          </div>
+        )}
+
+        {/* MEGABOARD TAB (embedded in sidebar) */}
+        {activeTab === 'megaboard' && (
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 13 }}>Loading Megaboard...</div>}>
+              <MegaboardMode agentStatus={allAgentStatus} data={data} isMobile={isMobile} />
+            </Suspense>
+          </div>
+        )}
       </div>
     </motion.div>
   )
@@ -3273,6 +3318,7 @@ export default function GameDashboard() {
   const [notifications, setNotifications] = useState([])
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
+  const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
   const [panelMessages, setPanelMessages] = useState({}) // per-agent
@@ -3545,7 +3591,8 @@ export default function GameDashboard() {
   // Preload all idle sprites for instant display
   usePreloadSprites()
 
-  // Mode switching handler
+  // Mode switching handler: modes now live in sidebar tabs
+  // Game is always the main viewport. Checklist/Megaboard open in the sidebar.
   const handleModeSwitch = useCallback((mode) => {
     setCurrentMode(mode)
     localStorage.setItem('corner-mode', mode)
@@ -3556,6 +3603,11 @@ export default function GameDashboard() {
     }
     // Close HUD drawer when switching modes
     setHudOpen(false)
+    // Open sidebar and switch to corresponding tab for checklist/megaboard
+    if (mode === 'checklist' || mode === 'megaboard') {
+      setPanelVisible(true)
+      setPanelExtended(true)
+    }
   }, [])
 
   // URL-based agent selection
@@ -3750,20 +3802,11 @@ export default function GameDashboard() {
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} />
 
-      {/* Main content area with mode switching */}
+      {/* Main content area -- game is ALWAYS the viewport */}
       {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' && currentMode === 'game' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
-        <AnimatePresence mode="wait">
-          {/* GAME MODE */}
-          {currentMode === 'game' && (
-            <motion.div
-              key="game"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              style={{ width: '100%', height: '100%' }}
-            >
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
+          {/* GAME IS ALWAYS THE MAIN VIEWPORT */}
+            <div style={{ width: '100%', height: '100%' }}>
               <IsometricOffice
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}
@@ -3791,8 +3834,8 @@ export default function GameDashboard() {
                 panelVisible={panelVisible && selectedRoom && !isMobile}
               />
 
-              {/* Unified RIGHT panel (agent card + stats + chat + tasks) */}
-              {/* Patrik UX overhaul: ONE cohesive panel, RIGHT side, shown by default */}
+              {/* Unified RIGHT panel (agent card + stats + chat + checklist + megaboard) */}
+              {/* v2: Game is ALWAYS the viewport. Modes live in sidebar tabs. */}
               {!isMobile && (
                 <AnimatePresence>
                   {panelVisible && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
@@ -3809,6 +3852,10 @@ export default function GameDashboard() {
                       onChatInputChange={setPanelChatInput}
                       streaming={panelStreaming}
                       agentSlug={selectedRoom}
+                      isExtended={panelExtended}
+                      onToggleExtend={() => setPanelExtended(e => !e)}
+                      isMobile={isMobile}
+                      data={data}
                       onSendMessage={(e) => {
                         e?.preventDefault()
                         const text = panelChatInput?.trim()
@@ -3941,45 +3988,11 @@ export default function GameDashboard() {
                   }} />
                 ))}
               </div>
-            </motion.div>
-          )}
-
-          {/* CHECKLIST MODE */}
-          {currentMode === 'checklist' && (
-            <motion.div
-              key="checklist"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              style={{ width: '100%', height: '100%' }}
-            >
-              <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 13 }}>Loading Checklist...</div>}>
-                <ChecklistMode agentStatus={agentStatus} isMobile={isMobile} data={data} />
-              </Suspense>
-            </motion.div>
-          )}
-
-          {/* MEGABOARD MODE */}
-          {currentMode === 'megaboard' && (
-            <motion.div
-              key="megaboard"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              style={{ width: '100%', height: '100%' }}
-            >
-              <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 13 }}>Loading Megaboard...</div>}>
-                <MegaboardMode agentStatus={agentStatus} data={data} isMobile={isMobile} />
-              </Suspense>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
       </div>
 
-      {/* Mini-map - only in Game mode, ON by default */}
-      {showMinimap && currentMode === 'game' && !isMobile && (
+      {/* Mini-map - always visible (game is always the viewport) */}
+      {showMinimap && !isMobile && (
         <MiniMap
           rooms={GRID_SPEC.rooms}
           agentStatus={agentStatus}
@@ -3992,7 +4005,7 @@ export default function GameDashboard() {
       )}
 
       {/* Game HUD (Sims x Chaart) - bottom strip with project pills + agent status */}
-      {currentMode === 'game' && (
+      {(
         <Suspense fallback={null}>
           <GameHUD
             agentStatus={agentStatus}
@@ -4039,8 +4052,8 @@ export default function GameDashboard() {
         <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />
       )}
 
-      {/* Mobile bottom sheet (game mode only) */}
-      {isMobile && currentMode === 'game' && (
+      {/* Mobile bottom sheet */}
+      {isMobile && (
         <AnimatePresence>
           {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
             <MobileBottomSheet
@@ -4079,7 +4092,7 @@ export default function GameDashboard() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           style={{
-            position: 'fixed', bottom: currentMode === 'game' ? 140 : 80, right: 20, zIndex: 50,
+            position: 'fixed', bottom: 140, right: 20, zIndex: 50,
             minWidth: 44, height: 44, borderRadius: 22,
             background: '#E85D26',
             color: '#FFF', fontFamily: "'Inter Tight', sans-serif", fontWeight: 900, fontSize: 16,
@@ -4112,8 +4125,8 @@ export default function GameDashboard() {
         onSelectAgent={setChatAgent}
         agentStatus={agentStatus}
         isMobile={isMobile}
-        bottomOffset={currentMode === 'game' ? (isMobile ? 50 : 68) : 0}
-        hideCollapsed={currentMode === 'game'}
+        bottomOffset={isMobile ? 50 : 68}
+        hideCollapsed={true}
         onSpeaking={(slug, speaking) => {
           if (speaking) setStreamingAgent(slug)
           else if (streamingAgent === slug) setStreamingAgent(null)
@@ -4144,7 +4157,7 @@ export default function GameDashboard() {
       {/* Error / connection indicator */}
       {error && (
         <div style={{
-          position: 'fixed', bottom: isMobile ? 112 : 80, left: showMinimap && currentMode === 'game' ? 192 : 16,
+          position: 'fixed', bottom: isMobile ? 112 : 80, left: showMinimap ? 192 : 16,
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
           color: '#EF4444', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
           padding: '6px 12px', borderRadius: 4, zIndex: 50,
