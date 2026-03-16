@@ -33,6 +33,7 @@ import ROICalculator from './pages/ROICalculator.jsx'
 import CaseStudy from './pages/CaseStudy.jsx'
 import Corner from './pages/Corner.jsx'
 import BriefPage from './pages/BriefPage.jsx'
+import Skills from './pages/Skills.jsx'
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 import './index.css'
 
@@ -100,6 +101,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/case-study" element={<CaseStudy />} />
           <Route path="/book" element={<BookAudit />} />
           <Route path="/corner" element={<Corner />} />
+          <Route path="/skills" element={<Skills />} />
           <Route path="/dashboard" element={<GameDashboard />} />
           <Route path="/dashboard/agent/:slug" element={<GameDashboard />} />
           <Route path="/dashboard/chat" element={<ChatDashboard />} />

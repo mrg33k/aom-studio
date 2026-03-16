@@ -17,6 +17,7 @@ import { Menu, X, Phone } from 'lucide-react';
 
 const NAV_LINKS = [
   { label: 'The System', href: '/system' },
+  { label: 'Skills', href: '/skills' },
   { label: 'Briefs', href: '/briefs' },
   { label: 'Book', href: '/book' },
 ];
