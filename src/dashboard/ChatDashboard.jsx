@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare, Send, X, ArrowLeft, ChevronRight,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
-  Pause, Eye, Zap, BarChart3, GitCommit, Terminal,
+  Pause, Eye, Zap, BarChart3, GitCommit, Terminal, Radio,
 } from 'lucide-react'
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
+const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
 const AGENTS = [
   { slug: 'bobby',   name: 'Bobby',   role: 'Web Dev',           img: '/corner/bobby-room.png' },
@@ -50,10 +51,12 @@ function useDashboardData(interval = 30000) {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const lastRaw = useRef(null)
+  const endpoint = IS_LOCAL ? '/api/local/status' : '/api/dashboard/status'
+  const pollInterval = IS_LOCAL ? 5000 : interval
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/dashboard/status')
+      const res = await fetch(endpoint)
       if (!res.ok) throw new Error(`${res.status}`)
       const text = await res.text()
       if (text !== lastRaw.current) {
@@ -66,13 +69,13 @@ function useDashboardData(interval = 30000) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [endpoint])
 
   useEffect(() => {
     fetchData()
-    const timer = setInterval(fetchData, interval)
+    const timer = setInterval(fetchData, pollInterval)
     return () => clearInterval(timer)
-  }, [fetchData, interval])
+  }, [fetchData, pollInterval])
 
   return { data, error, loading }
 }
@@ -222,16 +225,120 @@ function AgentCard({ agent, statusData, onClick, isActive }) {
   )
 }
 
-// ─── CHAT PANEL ──────────────────────────────────────────────────────────────
+// ─── RELAY CHAT PANEL ────────────────────────────────────────────────────────
+// Connects to the REAL relay pipeline. Messages go to relay-inbox.jsonl,
+// responses come from relay-outbox.jsonl. Same system as Telegram.
 function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
+  const [relayConnected, setRelayConnected] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const relayPollRef = useRef(null)
+  const lastOutboxCheckRef = useRef(null)
+  const chatTimeoutRef = useRef(null)
+  const historyLoadedRef = useRef(false)
 
   const status = statusData?.status || 'IDLE'
   const task = statusData?.currentTask || 'Standing by'
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
+
+  // Format timestamp for display
+  const formatTime = (dateStr) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    if (isNaN(d)) return ''
+    const now = new Date()
+    const diffMs = now - d
+    const mins = Math.floor(diffMs / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h ago`
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  }
+
+  // Load recent relay history on mount (both inbox + outbox, last 30 messages)
+  useEffect(() => {
+    if (historyLoadedRef.current) return
+    historyLoadedRef.current = true
+
+    const loadHistory = async () => {
+      try {
+        if (IS_LOCAL) {
+          const [inboxRes, outboxRes] = await Promise.all([
+            fetch('/api/local/relay-inbox'),
+            fetch('/api/local/relay-outbox'),
+          ])
+          const inbox = inboxRes.ok ? await inboxRes.json() : { messages: [] }
+          const outbox = outboxRes.ok ? await outboxRes.json() : { messages: [] }
+
+          // Merge inbox (user messages) and outbox (agent responses) by timestamp
+          const all = []
+
+          // Inbox: messages from dashboard or telegram are "user" messages
+          for (const msg of inbox.messages) {
+            if (!msg.message?.trim()) continue
+            all.push({
+              role: 'user',
+              content: msg.message,
+              time: msg.timestamp,
+              source: msg.source || 'unknown',
+              id: msg.id,
+            })
+          }
+
+          // Outbox: agent responses
+          for (const msg of outbox.messages) {
+            if (!msg.message?.trim()) continue
+            all.push({
+              role: 'assistant',
+              content: msg.message,
+              time: msg.timestamp,
+              source: msg.agent || 'system',
+              id: msg.id,
+            })
+          }
+
+          // Sort by timestamp and take last 30
+          all.sort((a, b) => new Date(a.time) - new Date(b.time))
+          const recent = all.slice(-30)
+
+          if (recent.length > 0) {
+            setMessages(recent)
+            // Set last outbox check to the latest outbox timestamp
+            const lastOutbox = outbox.messages[outbox.messages.length - 1]
+            if (lastOutbox?.timestamp) {
+              lastOutboxCheckRef.current = lastOutbox.timestamp
+            }
+          }
+
+          setRelayConnected(true)
+        } else {
+          // Production: use the Vercel relay API
+          const res = await fetch('/api/relay')
+          if (res.ok) {
+            const data = await res.json()
+            const all = (data.messages || []).map(msg => ({
+              role: msg.type === 'response' ? 'assistant' : 'user',
+              content: msg.message,
+              time: msg.timestamp,
+              source: msg.source || msg.agent || 'unknown',
+              id: msg.id,
+            })).slice(-30)
+            setMessages(all)
+            setRelayConnected(true)
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load relay history:', err)
+        setRelayConnected(false)
+      }
+    }
+
+    loadHistory()
+  }, [])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -243,113 +350,159 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     setTimeout(() => inputRef.current?.focus(), 300)
   }, [])
 
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (relayPollRef.current) clearInterval(relayPollRef.current)
+      if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+    }
+  }, [])
+
+  // Poll relay-outbox for new responses after sending a message
+  const startRelayPoll = (sentTimestamp) => {
+    if (relayPollRef.current) clearInterval(relayPollRef.current)
+    lastOutboxCheckRef.current = sentTimestamp
+
+    relayPollRef.current = setInterval(async () => {
+      try {
+        const since = encodeURIComponent(lastOutboxCheckRef.current)
+        const endpoint = IS_LOCAL
+          ? `/api/local/relay-outbox?since=${since}`
+          : `/api/relay?since=${since}`
+        const res = await fetch(endpoint)
+        if (!res.ok) return
+        const data = await res.json()
+        const msgList = data.messages || []
+
+        if (msgList.length > 0) {
+          // Filter to actual responses (not our own sends)
+          const responses = msgList.filter(m =>
+            m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
+          )
+          if (responses.length > 0) {
+            const latest = responses[responses.length - 1]
+            setMessages(prev => {
+              const updated = [...prev]
+              const lastMsg = updated[updated.length - 1]
+              if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
+                // Replace the streaming placeholder with the real response
+                updated[updated.length - 1] = {
+                  ...lastMsg,
+                  content: latest.message,
+                  streaming: false,
+                  time: latest.timestamp || new Date().toISOString(),
+                  source: latest.agent || 'system',
+                }
+              } else {
+                // Append as new message
+                updated.push({
+                  role: 'assistant',
+                  content: latest.message,
+                  streaming: false,
+                  time: latest.timestamp || new Date().toISOString(),
+                  source: latest.agent || 'system',
+                })
+              }
+              return updated
+            })
+            setStreaming(false)
+            clearChatTimeout()
+            lastOutboxCheckRef.current = latest.timestamp
+            if (relayPollRef.current) {
+              clearInterval(relayPollRef.current)
+              relayPollRef.current = null
+            }
+          }
+        }
+      } catch {}
+    }, 2000) // Poll every 2 seconds
+  }
+
+  // 60-second timeout: if no response arrives, show offline message
+  const startChatTimeout = () => {
+    if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+    chatTimeoutRef.current = setTimeout(() => {
+      setMessages(prev => {
+        const updated = [...prev]
+        const last = updated[updated.length - 1]
+        if (last?.role === 'assistant' && last.streaming) {
+          updated[updated.length - 1] = {
+            ...last,
+            content: 'Agent is offline or processing. Message saved to relay.',
+            streaming: false,
+            time: new Date().toISOString(),
+          }
+        }
+        return updated
+      })
+      setStreaming(false)
+      if (relayPollRef.current) {
+        clearInterval(relayPollRef.current)
+        relayPollRef.current = null
+      }
+    }, 60000)
+  }
+
+  const clearChatTimeout = () => {
+    if (chatTimeoutRef.current) {
+      clearTimeout(chatTimeoutRef.current)
+      chatTimeoutRef.current = null
+    }
+  }
+
   const sendMessage = async (e) => {
     e?.preventDefault()
     const text = input.trim()
     if (!text || streaming) return
 
+    const sentTime = new Date().toISOString()
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: text }])
+    setMessages(prev => [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard' }])
     setStreaming(true)
-
-    // Add empty assistant message that we'll stream into
-    const assistantIndex = messages.length + 1
-    setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true }])
+    setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
+    startChatTimeout()
 
     try {
-      const res = await fetch('/api/dashboard/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slug: agent.slug,
-          message: text,
-          history: messages.map(m => ({ role: m.role, content: m.content })),
-        }),
-      })
-
-      // Check if it's SSE (streaming) or JSON (placeholder/error)
-      const contentType = res.headers.get('content-type') || ''
-
-      if (contentType.includes('text/event-stream')) {
-        // SSE streaming
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.type === 'text') {
-                setMessages(prev => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last && last.role === 'assistant') {
-                    updated[updated.length - 1] = { ...last, content: last.content + data.text }
-                  }
-                  return updated
-                })
-              } else if (data.type === 'done') {
-                setMessages(prev => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last) updated[updated.length - 1] = { ...last, streaming: false }
-                  return updated
-                })
-              } else if (data.type === 'error') {
-                setMessages(prev => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last) updated[updated.length - 1] = { ...last, content: `Error: ${data.error}`, streaming: false }
-                  return updated
-                })
-              }
-            } catch {}
-          }
-        }
-      } else {
-        // JSON response (placeholder or error)
-        const data = await res.json()
-        setMessages(prev => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last) {
-            updated[updated.length - 1] = {
-              ...last,
-              content: data.reply || data.error || 'No response',
-              streaming: false,
-            }
-          }
-          return updated
+      if (IS_LOCAL) {
+        // Local: write directly to relay-inbox.jsonl via the Vite dev server API
+        const res = await fetch('/api/local/relay-send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: agent.slug,
+            message: text,
+            source: 'corner-dashboard',
+          }),
         })
+        if (!res.ok) throw new Error('Failed to write to relay')
+        startRelayPoll(sentTime)
+      } else {
+        // Production: use the Vercel relay API
+        const res = await fetch('/api/relay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        })
+        if (!res.ok) throw new Error('Failed to send via relay API')
+        startRelayPoll(sentTime)
       }
     } catch (err) {
       setMessages(prev => {
         const updated = [...prev]
         const last = updated[updated.length - 1]
-        if (last) {
+        if (last?.role === 'assistant' && last.streaming) {
           updated[updated.length - 1] = {
             ...last,
-            content: `Connection error: ${err.message}`,
+            content: `Failed to send: ${err.message}`,
             streaming: false,
           }
         }
         return updated
       })
-    } finally {
       setStreaming(false)
+      clearChatTimeout()
     }
   }
-
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
 
   return (
     <motion.div
@@ -383,23 +536,35 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             <p className="text-[#78716C] text-[11px] font-mono truncate">{task}</p>
           </div>
         </div>
+        {/* Relay connection indicator */}
+        <div className="flex items-center gap-1.5 shrink-0" title={IS_LOCAL ? 'Local relay (direct file I/O)' : 'Remote relay (GitHub API)'}>
+          <Radio className={`w-3 h-3 ${relayConnected ? 'text-[#22C55E]' : 'text-[#78716C]'}`} />
+          <span className="text-[9px] font-mono uppercase tracking-wider text-[#78716C]">
+            {IS_LOCAL ? 'LOCAL' : 'RELAY'}
+          </span>
+        </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scroll-smooth">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             {agent.img && (
               <img src={agent.img} alt="" className="w-20 h-20 rounded-sm object-cover mb-4 opacity-60" />
             )}
-            <p className="text-[#78716C] text-sm mb-1">Start a conversation with <span className="text-[#F0ECE6] font-bold">{agent.name}</span></p>
-            <p className="text-[#78716C] text-xs font-mono">{agent.role}</p>
+            <p className="text-[#78716C] text-sm mb-1">
+              Real relay chat with <span className="text-[#F0ECE6] font-bold">{agent.name}</span>
+            </p>
+            <p className="text-[#78716C] text-xs font-mono mb-3">{agent.role}</p>
+            <p className="text-[#78716C]/60 text-[10px] font-mono">
+              Messages go through the same relay as Telegram
+            </p>
           </div>
         )}
 
         {messages.map((msg, i) => (
           <div
-            key={i}
+            key={msg.id || i}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
@@ -409,14 +574,37 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                   : 'bg-[#1A1A17] text-[#F0ECE6] border border-[#292524]'
               }`}
             >
+              {/* Source label */}
               {msg.role === 'assistant' && (
                 <div className="text-[10px] font-mono uppercase tracking-wider mb-1.5" style={{ color: cfg.color }}>
-                  {agent.name}
+                  {msg.source === 'system' ? 'System' : agent.name}
+                </div>
+              )}
+              {msg.role === 'user' && msg.source && msg.source !== 'dashboard' && msg.source !== 'corner-dashboard' && (
+                <div className="text-[10px] font-mono uppercase tracking-wider mb-1.5 text-[#E85D26]/60">
+                  via {msg.source}
                 </div>
               )}
               <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-              {msg.streaming && (
+              {msg.streaming && !msg.content && (
+                <div className="flex items-center gap-1 py-1">
+                  {[0, 1, 2].map(j => (
+                    <span
+                      key={j}
+                      className="inline-block w-1.5 h-1.5 rounded-full bg-[#E85D26]"
+                      style={{ animation: `pulse 1.2s ease-in-out ${j * 0.15}s infinite` }}
+                    />
+                  ))}
+                </div>
+              )}
+              {msg.streaming && msg.content && (
                 <span className="inline-block w-1.5 h-4 bg-[#E85D26] ml-0.5 animate-pulse" />
+              )}
+              {/* Timestamp */}
+              {msg.time && !msg.streaming && (
+                <div className="text-[9px] font-mono text-[#78716C]/50 mt-1.5 text-right">
+                  {formatTime(msg.time)}
+                </div>
               )}
             </div>
           </div>
@@ -432,7 +620,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={`Message ${agent.name}...`}
+            placeholder={streaming ? 'Waiting for response...' : `Message ${agent.name}...`}
             disabled={streaming}
             className="flex-1 bg-[#1A1A17] border border-[#292524] text-[#F0ECE6] px-3 py-2.5 text-sm rounded-sm focus:outline-none focus:border-[#E85D26]/50 placeholder:text-[#78716C] disabled:opacity-50"
           />
@@ -552,10 +740,10 @@ export default function ChatDashboard() {
   const { data, error, loading } = useDashboardData(30000)
   const isMobile = useIsMobile()
 
-  // Check URL for agent slug on mount
+  // Check URL for agent slug on mount (supports both /dashboard/agent/X and /dashboard/chat/agent/X)
   useEffect(() => {
     const path = window.location.pathname
-    const match = path.match(/\/dashboard\/agent\/(.+)/)
+    const match = path.match(/\/dashboard\/(?:chat\/)?agent\/(.+)/)
     if (match) {
       const slug = match[1]
       const found = AGENTS.find(a => a.slug === slug)
@@ -572,9 +760,9 @@ export default function ChatDashboard() {
   // Update URL when agent changes
   useEffect(() => {
     if (activeAgent) {
-      window.history.replaceState(null, '', `/dashboard/agent/${activeAgent.slug}`)
+      window.history.replaceState(null, '', `/dashboard/chat/agent/${activeAgent.slug}`)
     } else {
-      window.history.replaceState(null, '', '/dashboard')
+      window.history.replaceState(null, '', '/dashboard/chat')
     }
   }, [activeAgent])
 
@@ -607,10 +795,24 @@ export default function ChatDashboard() {
         <div className="flex items-center gap-3">
           <div className="text-[#E85D26] font-mono text-[10px] tracking-[0.3em] uppercase font-bold">Corner</div>
           <h1 className="text-[#F0ECE6] text-lg font-black italic uppercase tracking-tight" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
-            Mission Control
+            Relay Chat
           </h1>
+          <a
+            href="/dashboard"
+            className="text-[10px] font-mono text-[#78716C] hover:text-[#E85D26] transition-colors uppercase tracking-wider ml-2"
+          >
+            Game View
+          </a>
         </div>
-        <div className="text-[#78716C] text-xs font-mono">{clock}</div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <Radio className={`w-3 h-3 ${IS_LOCAL ? 'text-[#22C55E]' : 'text-[#78716C]'}`} />
+            <span className="text-[9px] font-mono text-[#78716C] uppercase tracking-wider">
+              {IS_LOCAL ? 'Local Relay' : 'Remote'}
+            </span>
+          </div>
+          <div className="text-[#78716C] text-xs font-mono">{clock}</div>
+        </div>
       </header>
 
       {/* Throughput Bar */}
