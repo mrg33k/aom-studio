@@ -4976,6 +4976,8 @@ export default function GameDashboard() {
     return <PasswordGate onAuth={() => setAuthed(true)} />
   }
 
+  // TODO(bobby): DREAM HUD TARGET -- Steffen designing ONE definitive HUD visual target from ALL Patrik feedback. When delivered, pixel-match it exactly. Key specs: (1) NO bottom bar (top bar + sidebar ONLY), (2) sidebar full height, seamless column, chat input at bottom, (3) 70/30 layout (game/sidebar), (4) project pills scrollable in top bar, category labels (CLIENT/PROJECT/OUTREACH), (5) stat pills compact, (6) Vegas energy sidebar (blue glass, glow tabs), (7) chat matching chat-view-full.png (chronological, avatars, source labels), (8) top bar: Corner. logo + stat pills + search + notifications, NO mode switcher, (9) SimCity + Trello DNA, (10) daytime bright palette, (11) nothing hiding, everything visible. This is THE north star. No interpretation. Build the picture. Ref: Patrik directive lines 170-182.
+  // DONE(bobby): RELAY CHAT SPLIT-BRAIN FIX -- sender attribution fixed. Dashboard now reads from App Support outbox (where relay-respond.py writes). Messages from relay-inbox = role "user" (right side, P avatar). Messages from relay-outbox = role "assistant" (left side, agent avatar). extractAgent() for proper source names. Commit b7be6a7.
   // DONE: Viewport overflow -- 100vw lock on outer + inner containers (commit 637b79c). 70/30 flex split verified.
   // DONE: Elon commit 637b79c verified clean, no conflicts with Bobby's 9ec8b81 chain.
   return (

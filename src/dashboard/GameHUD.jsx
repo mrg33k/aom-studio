@@ -7,7 +7,7 @@
 // TODO(patrik): Drag-to-reorder project pills in the HUD strip (Trello card energy)
 // TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
 // TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
-// TODO(patrik): Bottom bar cleanup -- remove chat input from bottom bar (chat only in sidebar). Replace Active/Blocked stat pills with scrollable/searchable PROJECT PILLS. Bottom bar = minimap + agent portrait + project pills + notification icons. Clean, no chat input.
+// TODO(patrik): KILL BOTTOM BAR ENTIRELY -- Dream HUD target says NO bottom bar. Layout = top bar + sidebar ONLY. Project pills move to top bar (scrollable). Minimap, agent portrait, notification icons all in top bar. Bottom bar is gone. Ref: Patrik directive lines 170-182.
 // DONE(bobby2): Project pill category labels -- pills now show category text (CLIENT / PROJECT / OUTREACH) not color-status text. Color communicates status visually, text label tells you WHAT it is.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
@@ -16,7 +16,7 @@ import {
   ChevronUp, ChevronDown, Check, Circle, AlertTriangle,
   Activity, Pause, Eye, Clock, Zap, Users, FolderKanban,
   LayoutGrid, X, Loader2, CheckCircle2, Timer, Flame,
-  Send, MessageSquare, Search,
+  Search,
 } from 'lucide-react'
 import { AGENTS, GRID_SPEC } from './gridSpec.js'
 import { HUDBellButton, HUDToasts, HUD_NOTIFICATION_STYLES } from './HUDNotifications.jsx'
