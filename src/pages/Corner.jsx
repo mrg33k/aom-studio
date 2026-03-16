@@ -1,14 +1,20 @@
 import React, { useState, useRef } from 'react';
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, MessageSquare, BarChart3, Gamepad2, Zap, Users, Shield, ChevronRight, Sparkles, Monitor, Phone } from 'lucide-react';
+import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { ArrowRight, MessageSquare, BarChart3, Gamepad2, Zap, Users, Shield, ChevronRight, Sparkles, Monitor, Phone, Clock, CheckCircle2, XCircle, AlertTriangle, Calendar, Mail, FileText, TrendingUp, Inbox, BrainCircuit } from 'lucide-react';
 
 // --- CONSTANTS ---
 const ROOMS = [
-  { name: 'Bobby', role: 'Web Developer', img: '/corner/bobby-room.png', status: 'Working' },
-  { name: 'Steffen', role: 'Creative Director', img: '/corner/steffen-room.png', status: 'Working' },
-  { name: 'Cleo', role: 'Content Creator', img: '/corner/cleo-room.png', status: 'Done' },
-  { name: 'Elon', role: 'Systems Engineer', img: '/corner/elon-room.png', status: 'Idle' },
-  { name: 'Steve', role: 'AI Advisory Lead', img: '/corner/steve-room.png', status: 'Working' },
+  { name: 'Bobby', role: 'Web Developer', img: '/corner/bobby-room.png', status: 'Working', task: 'Building product page...' },
+  { name: 'Steffen', role: 'Creative Director', img: '/corner/steffen-room.png', status: 'Working', task: 'Brand guidelines refresh...' },
+  { name: 'Cleo', role: 'Content Creator', img: '/corner/cleo-room.png', status: 'Done', task: 'Crown video shipped' },
+  { name: 'Elon', role: 'Systems Engineer', img: '/corner/elon-room.png', status: 'Idle', task: 'Awaiting next task' },
+  { name: 'Steve', role: 'AI Advisory Lead', img: '/corner/steve-room.png', status: 'Working', task: 'Dashboard spec writing...' },
+  { name: 'Alex', role: 'Strategist', img: '/corner/alex-room.png', status: 'Working', task: 'Offer ladder research...' },
+  { name: 'Mom', role: 'Orchestrator', img: '/corner/mom-room.png', status: 'Working', task: 'Wave 7 coordination...' },
+  { name: 'Jacob', role: 'Outreach', img: '/corner/jacob-room.png', status: 'Working', task: 'CPA email campaign...' },
+  { name: 'Paige', role: 'Client Success', img: '/corner/paige-room.png', status: 'Done', task: 'Health scan complete' },
+  { name: 'Tony', role: 'Social Media', img: '/corner/tony-room.png', status: 'Blocked', task: 'Waiting on Docker...' },
+  { name: 'Elmo', role: 'QA Gate', img: '/corner/elmo-room.png', status: 'Done', task: 'Site QA passed' },
 ];
 
 const TIERS = [
@@ -62,7 +68,7 @@ const fadeIn = {
 };
 
 const stagger = {
-  visible: { transition: { staggerChildren: 0.15 } },
+  visible: { transition: { staggerChildren: 0.12 } },
 };
 
 const scaleIn = {
@@ -93,7 +99,7 @@ function SectionLabel({ children, dark = false }) {
   return (
     <motion.p
       variants={fadeUp}
-      className={`text-[11px] font-mono font-bold tracking-[0.3em] uppercase mb-6 ${dark ? 'text-[#FF4F00]' : 'text-[#FF4F00]'}`}
+      className="text-[11px] font-mono font-bold tracking-[0.3em] uppercase mb-6 text-[#FF4F00]"
     >
       {children}
     </motion.p>
@@ -129,41 +135,55 @@ function Hero() {
   const y1 = useTransform(scrollYProgress, [0, 1], [0, -60]);
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -100]);
   const y3 = useTransform(scrollYProgress, [0, 1], [0, -40]);
+  const y4 = useTransform(scrollYProgress, [0, 1], [0, -80]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   return (
     <section ref={ref} className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#FAFAF8]">
-      {/* Subtle gradient backdrop */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#F5F0EB] via-[#FAFAF8] to-[#FAFAF8]" />
 
-      {/* Floating room images */}
+      {/* Floating room images - more of them now */}
       <motion.div style={{ opacity }} className="absolute inset-0 pointer-events-none">
         <motion.img
           src="/corner/bobby-room.png"
           alt=""
           style={{ y: y1 }}
-          className="absolute top-[12%] left-[5%] w-[180px] md:w-[260px] rounded-2xl shadow-2xl shadow-black/10 opacity-60 rotate-[-3deg]"
+          className="absolute top-[10%] left-[3%] w-[140px] md:w-[220px] rounded-2xl shadow-2xl shadow-black/10 opacity-60 rotate-[-3deg]"
           loading="lazy"
         />
         <motion.img
           src="/corner/steffen-room.png"
           alt=""
           style={{ y: y2 }}
-          className="absolute top-[8%] right-[5%] w-[160px] md:w-[240px] rounded-2xl shadow-2xl shadow-black/10 opacity-50 rotate-[4deg]"
+          className="absolute top-[6%] right-[3%] w-[130px] md:w-[200px] rounded-2xl shadow-2xl shadow-black/10 opacity-50 rotate-[4deg]"
           loading="lazy"
         />
         <motion.img
           src="/corner/cleo-room.png"
           alt=""
           style={{ y: y3 }}
-          className="absolute bottom-[15%] right-[10%] w-[140px] md:w-[200px] rounded-2xl shadow-2xl shadow-black/10 opacity-40 rotate-[-2deg]"
+          className="absolute bottom-[12%] right-[8%] w-[120px] md:w-[180px] rounded-2xl shadow-2xl shadow-black/10 opacity-40 rotate-[-2deg]"
           loading="lazy"
         />
         <motion.img
           src="/corner/elon-room.png"
           alt=""
           style={{ y: y1 }}
-          className="absolute bottom-[20%] left-[8%] w-[130px] md:w-[190px] rounded-2xl shadow-2xl shadow-black/10 opacity-35 rotate-[3deg]"
+          className="absolute bottom-[18%] left-[6%] w-[110px] md:w-[170px] rounded-2xl shadow-2xl shadow-black/10 opacity-35 rotate-[3deg]"
+          loading="lazy"
+        />
+        <motion.img
+          src="/corner/alex-room.png"
+          alt=""
+          style={{ y: y4 }}
+          className="absolute top-[25%] right-[20%] w-[100px] md:w-[150px] rounded-2xl shadow-2xl shadow-black/10 opacity-30 rotate-[-4deg] hidden lg:block"
+          loading="lazy"
+        />
+        <motion.img
+          src="/corner/mom-room.png"
+          alt=""
+          style={{ y: y3 }}
+          className="absolute bottom-[30%] left-[18%] w-[100px] md:w-[150px] rounded-2xl shadow-2xl shadow-black/10 opacity-25 rotate-[2deg] hidden lg:block"
           loading="lazy"
         />
       </motion.div>
@@ -235,6 +255,96 @@ function Hero() {
         </motion.div>
       </motion.div>
     </section>
+  );
+}
+
+// --- BEFORE / AFTER SECTION ---
+function BeforeAfterSection() {
+  const [showAfter, setShowAfter] = useState(false);
+
+  const beforeItems = [
+    { icon: Inbox, text: '147 unread emails', color: '#EF4444' },
+    { icon: AlertTriangle, text: 'Missed client follow-up', color: '#EAB308' },
+    { icon: Clock, text: '3 hours on manual tasks', color: '#78716C' },
+    { icon: XCircle, text: 'Forgot the proposal deadline', color: '#EF4444' },
+  ];
+
+  const afterItems = [
+    { icon: Mail, text: 'Inbox triaged automatically', color: '#22C55E' },
+    { icon: CheckCircle2, text: 'Follow-ups sent on schedule', color: '#22C55E' },
+    { icon: Zap, text: '15 minutes of oversight', color: '#3B82F6' },
+    { icon: FileText, text: 'Proposal drafted and reviewed', color: '#22C55E' },
+  ];
+
+  return (
+    <Section className="py-24 md:py-40 bg-[#F5F0EB]">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="text-center mb-16">
+          <SectionLabel>The Difference</SectionLabel>
+          <SectionHeadline>
+            Your business<br />
+            <span className="text-[#FF4F00]">before and after.</span>
+          </SectionHeadline>
+          <SectionBody className="mx-auto mt-6 text-center">
+            Corner doesn't add more to your plate. It takes things off.
+          </SectionBody>
+        </div>
+
+        {/* Full-width before/after visual */}
+        <motion.div variants={fadeUp} className="mb-12">
+          <img
+            src="/corner/before-after.png"
+            alt="Before: chaos and scattered tasks. After: organized AI command center."
+            className="w-full max-w-[900px] mx-auto rounded-xl shadow-2xl shadow-black/10"
+            loading="lazy"
+          />
+        </motion.div>
+
+        {/* Interactive toggle */}
+        <motion.div variants={fadeUp} className="max-w-[800px] mx-auto">
+          <div className="flex justify-center mb-8">
+            <button
+              onClick={() => setShowAfter(false)}
+              className={`px-6 py-3 text-sm font-headline font-bold uppercase tracking-wider transition-all duration-300 ${!showAfter ? 'bg-[#EF4444]/10 text-[#EF4444] border-b-2 border-[#EF4444]' : 'text-[#8A847C] hover:text-[#1A1A17]'}`}
+            >
+              Without Corner
+            </button>
+            <button
+              onClick={() => setShowAfter(true)}
+              className={`px-6 py-3 text-sm font-headline font-bold uppercase tracking-wider transition-all duration-300 ${showAfter ? 'bg-[#22C55E]/10 text-[#22C55E] border-b-2 border-[#22C55E]' : 'text-[#8A847C] hover:text-[#1A1A17]'}`}
+            >
+              With Corner
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={showAfter ? 'after' : 'before'}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="grid sm:grid-cols-2 gap-4"
+            >
+              {(showAfter ? afterItems : beforeItems).map((item, i) => (
+                <div
+                  key={item.text}
+                  className={`flex items-center gap-4 p-5 rounded-sm border transition-all ${showAfter ? 'bg-white/80 border-[#22C55E]/20' : 'bg-white/60 border-[#EF4444]/20'}`}
+                >
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${item.color}15` }}
+                  >
+                    <item.icon size={20} style={{ color: item.color }} />
+                  </div>
+                  <p className="text-[#1A1A17] font-medium">{item.text}</p>
+                </div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
+      </div>
+    </Section>
   );
 }
 
@@ -333,99 +443,118 @@ function LayersOverview() {
   );
 }
 
-// --- ISOMETRIC SHOWCASE ---
+// --- ISOMETRIC SHOWCASE with ALL ROOMS ---
 function IsometricShowcase() {
+  const [selectedRoom, setSelectedRoom] = useState(null);
+
   return (
     <Section className="py-24 md:py-40 overflow-hidden">
       <div className="max-w-[1200px] mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Text */}
-          <div>
-            <SectionLabel>Layer 1</SectionLabel>
-            <SectionHeadline>
-              Your command center.<br />
-              <span className="text-[#FF4F00]">Alive.</span>
-            </SectionHeadline>
-            <SectionBody className="mt-6">
-              Each agent has their own room. Room style reflects their function. Monitor glow shows status at a glance. Click any room to start talking.
-            </SectionBody>
+        <div className="text-center mb-16">
+          <SectionLabel>Layer 1</SectionLabel>
+          <SectionHeadline>
+            Your command center.<br />
+            <span className="text-[#FF4F00]">Alive.</span>
+          </SectionHeadline>
+          <SectionBody className="mx-auto mt-6 text-center">
+            Each agent has their own room. Room style reflects their function. Monitor glow shows status at a glance. Click any room to start talking.
+          </SectionBody>
+        </div>
 
-            <motion.div variants={stagger} className="mt-10 space-y-4">
-              {[
-                { label: 'Working', color: '#22C55E', desc: 'Agent is typing, monitor glows green' },
-                { label: 'Idle', color: '#78716C', desc: 'Monitor dimmed, lights slightly lower' },
-                { label: 'Blocked', color: '#EF4444', desc: 'Red flash on monitor, room pulses' },
-                { label: 'Done', color: '#3B82F6', desc: 'Agent stretches, green checkmark floats up' },
-              ].map((status) => (
-                <motion.div key={status.label} variants={fadeUp} className="flex items-center gap-4">
-                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: status.color }} />
-                  <div>
-                    <span className="font-semibold text-sm text-[#1A1A17]">{status.label}</span>
-                    <span className="text-sm text-[#8A847C] ml-2">{status.desc}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
+        {/* Status legend */}
+        <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-6 mb-12">
+          {[
+            { label: 'Working', color: '#22C55E' },
+            { label: 'Idle', color: '#78716C' },
+            { label: 'Blocked', color: '#EF4444' },
+            { label: 'Done', color: '#3B82F6' },
+          ].map((status) => (
+            <div key={status.label} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }} />
+              <span className="text-sm font-medium text-[#6B6560]">{status.label}</span>
+            </div>
+          ))}
+        </motion.div>
 
-          {/* Room images grid */}
-          <motion.div variants={stagger} className="relative">
-            <div className="grid grid-cols-2 gap-4">
-              {ROOMS.slice(0, 4).map((room, i) => (
-                <motion.div
-                  key={room.name}
-                  variants={scaleIn}
-                  className="relative group"
-                  style={{ marginTop: i % 2 === 1 ? '24px' : '0' }}
-                >
-                  <div className="relative overflow-hidden rounded-xl shadow-xl shadow-black/10 bg-[#1A1A17]">
-                    <img
-                      src={room.img}
-                      alt={`${room.name}'s room`}
-                      className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    {/* Status glow overlay */}
-                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                      room.status === 'Working' ? 'bg-green-500/10' :
-                      room.status === 'Done' ? 'bg-blue-500/10' : 'bg-gray-500/5'
-                    }`} />
-                  </div>
-                  {/* Label */}
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
-                      <p className="font-headline font-bold text-sm text-[#1A1A17]">{room.name}</p>
-                      <p className="text-[11px] text-[#8A847C]">{room.role}</p>
+        {/* Room Grid - All 11 rooms */}
+        <motion.div variants={stagger} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          {ROOMS.map((room, i) => {
+            const statusColor = room.status === 'Working' ? '#22C55E' : room.status === 'Done' ? '#3B82F6' : room.status === 'Blocked' ? '#EF4444' : '#78716C';
+            return (
+              <motion.div
+                key={room.name}
+                variants={scaleIn}
+                className="relative group cursor-pointer"
+                onClick={() => setSelectedRoom(selectedRoom === i ? null : i)}
+              >
+                <div className="relative overflow-hidden rounded-xl shadow-xl shadow-black/10 bg-[#1A1A17]">
+                  <img
+                    src={room.img}
+                    alt={`${room.name}'s room`}
+                    className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  {/* Status glow overlay */}
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ backgroundColor: `${statusColor}10` }}
+                  />
+                  {/* Status dot */}
+                  <div className="absolute top-3 right-3">
+                    <div className="w-3 h-3 rounded-full shadow-lg" style={{ backgroundColor: statusColor }}>
+                      {room.status === 'Working' && (
+                        <div className="absolute inset-0 rounded-full animate-ping" style={{ backgroundColor: statusColor, opacity: 0.4 }} />
+                      )}
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
-            {/* Fifth room offset */}
-            <motion.div variants={scaleIn} className="mt-4 w-[48%] mx-auto group">
-              <div className="relative overflow-hidden rounded-xl shadow-xl shadow-black/10 bg-[#1A1A17]">
-                <img
-                  src={ROOMS[4].img}
-                  alt={`${ROOMS[4].name}'s room`}
-                  className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-              </div>
-              <div className="absolute bottom-3 left-3 right-3">
-                <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
-                  <p className="font-headline font-bold text-sm text-[#1A1A17]">{ROOMS[4].name}</p>
-                  <p className="text-[11px] text-[#8A847C]">{ROOMS[4].role}</p>
                 </div>
-              </div>
-            </motion.div>
+                {/* Label */}
+                <div className="mt-3">
+                  <div className="flex items-center justify-between">
+                    <p className="font-headline font-bold text-sm text-[#1A1A17]">{room.name}</p>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm"
+                      style={{ color: statusColor, backgroundColor: `${statusColor}15` }}
+                    >
+                      {room.status}
+                    </span>
+                  </div>
+                  <p className="text-[12px] text-[#8A847C] mt-0.5">{room.role}</p>
+                </div>
+
+                {/* Expanded task info */}
+                <AnimatePresence>
+                  {selectedRoom === i && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-2 p-3 bg-[#F5F0EB] rounded-lg border border-[#E8E3DC]">
+                        <p className="text-xs text-[#6B6560] font-mono">{room.task}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+
+          {/* "Add Agent" placeholder */}
+          <motion.div
+            variants={scaleIn}
+            className="relative group cursor-pointer flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-[#D4CFC8] hover:border-[#FF4F00]/40 transition-colors"
+          >
+            <div className="text-3xl text-[#C4BFBA] group-hover:text-[#FF4F00] transition-colors mb-2">+</div>
+            <p className="text-xs text-[#C4BFBA] group-hover:text-[#8A847C] transition-colors font-mono">Add Agent</p>
           </motion.div>
-        </div>
+        </motion.div>
       </div>
     </Section>
   );
 }
 
-// --- DASHBOARD SHOWCASE (Dark section) ---
+// --- DASHBOARD SHOWCASE with REAL PREVIEW ---
 function DashboardShowcase() {
   return (
     <Section dark className="py-24 md:py-40">
@@ -441,17 +570,42 @@ function DashboardShowcase() {
           </SectionBody>
         </div>
 
-        {/* Dashboard mockup */}
+        {/* Dashboard preview image */}
+        <motion.div variants={fadeUp} className="relative mb-16">
+          <div className="bg-[#0A0A08] border border-[#292524] rounded-sm overflow-hidden shadow-2xl">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#292524] bg-[#0C0C0C]">
+              <div className="w-3 h-3 rounded-full bg-[#EF4444]/60" />
+              <div className="w-3 h-3 rounded-full bg-[#EAB308]/60" />
+              <div className="w-3 h-3 rounded-full bg-[#22C55E]/60" />
+              <span className="ml-3 text-[11px] font-mono text-[#44403C]">corner.app/dashboard</span>
+            </div>
+            <img
+              src="/corner/dashboard-preview.png"
+              alt="Corner dashboard showing agent grid, throughput metrics, and pipeline feed"
+              className="w-full"
+              loading="lazy"
+            />
+          </div>
+          <div className="absolute -inset-4 bg-gradient-to-b from-[#FF4F00]/5 via-transparent to-transparent rounded-lg -z-10 blur-xl" />
+        </motion.div>
+
+        {/* Interactive dashboard mockup with live data feel */}
         <motion.div variants={fadeUp} className="relative">
           <div className="bg-[#0C0C0C] border border-[#292524] rounded-sm p-6 md:p-10 shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-headline font-black uppercase text-[#F5F0EB] text-lg tracking-wider">Mission Control</h3>
+              <span className="text-[11px] font-mono text-[#44403C]">Live data</span>
+            </div>
+
             {/* Throughput bar */}
             <div className="flex flex-wrap gap-6 mb-8 pb-6 border-b border-[#292524]">
               {[
-                { label: 'Working', value: '4', color: '#22C55E' },
-                { label: 'Idle', value: '2', color: '#78716C' },
+                { label: 'Working', value: '5', color: '#22C55E' },
+                { label: 'Idle', value: '1', color: '#78716C' },
                 { label: 'Blocked', value: '1', color: '#EF4444' },
-                { label: 'Done Today', value: '7', color: '#3B82F6' },
-                { label: 'Commits', value: '12', color: '#EAB308' },
+                { label: 'Done Today', value: '3', color: '#3B82F6' },
+                { label: 'Commits', value: '14', color: '#EAB308' },
               ].map((stat) => (
                 <div key={stat.label} className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: stat.color }} />
@@ -465,102 +619,149 @@ function DashboardShowcase() {
               ))}
             </div>
 
-            {/* Agent grid mockup */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {ROOMS.map((room) => (
-                <div
-                  key={room.name}
-                  className="bg-[#141412] border border-[#292524] rounded-sm p-4 hover:border-[#FF4F00]/30 transition-colors duration-300"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      room.status === 'Working' ? 'bg-green-500' :
-                      room.status === 'Done' ? 'bg-blue-500' : 'bg-gray-500'
-                    }`} />
-                    <p className="font-headline font-bold text-[#F5F0EB] text-sm">{room.name}</p>
+            {/* Agent grid with real agent data */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {ROOMS.slice(0, 8).map((room) => {
+                const statusColor = room.status === 'Working' ? '#22C55E' : room.status === 'Done' ? '#3B82F6' : room.status === 'Blocked' ? '#EF4444' : '#78716C';
+                return (
+                  <div
+                    key={room.name}
+                    className="bg-[#141412] border border-[#292524] rounded-sm p-4 hover:border-[#FF4F00]/30 transition-colors duration-300"
+                    style={{ borderLeftColor: statusColor, borderLeftWidth: '3px' }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: statusColor }} />
+                      <p className="font-headline font-bold text-[#F5F0EB] text-sm">{room.name}</p>
+                    </div>
+                    <p className="text-[11px] text-[#78716C] font-mono">{room.role}</p>
+                    <p className="text-xs text-[#A8A29E] mt-2 truncate">{room.task}</p>
                   </div>
-                  <p className="text-[11px] text-[#78716C] font-mono">{room.role}</p>
-                  <p className="text-xs text-[#A8A29E] mt-2">
-                    {room.status === 'Working' ? 'Building product page...' :
-                     room.status === 'Done' ? 'Completed: brand research' : 'Awaiting next task'}
-                  </p>
-                </div>
-              ))}
-              {/* Extra card */}
-              <div className="bg-[#141412] border border-dashed border-[#292524] rounded-sm p-4 flex items-center justify-center">
-                <p className="text-xs text-[#44403C] font-mono">+ Add Agent</p>
-              </div>
+                );
+              })}
             </div>
           </div>
-
-          {/* Glow effect behind */}
-          <div className="absolute -inset-4 bg-gradient-to-b from-[#FF4F00]/5 via-transparent to-transparent rounded-lg -z-10 blur-xl" />
         </motion.div>
       </div>
     </Section>
   );
 }
 
-// --- CHAT SHOWCASE ---
+// --- CHAT SHOWCASE with RICHER UI ---
 function ChatShowcase() {
-  const messages = [
-    { from: 'user', text: "What's the status on the website?" },
-    { from: 'agent', text: "The Ambition site is live. Client approved yesterday. 9 commits shipped in the last session: mosaic gallery, Gumlet video integration, mobile stats fix. Social content is drafted (3 LinkedIn posts), waiting on your review." },
-    { from: 'user', text: 'Schedule a review session for Thursday.' },
-    { from: 'agent', text: "Done. Added 'Ambition Review' to your calendar, Thursday 2:00 PM AZ time. I'll prep the social drafts and site changelog before then.", action: true },
+  const [activeChat, setActiveChat] = useState(0);
+
+  const conversations = [
+    {
+      agent: 'Bobby',
+      role: 'Web Dev',
+      status: 'Working',
+      statusColor: '#22C55E',
+      messages: [
+        { from: 'user', text: "What's the status on the website?" },
+        { from: 'agent', text: "The Ambition site is live. Client approved yesterday. 9 commits shipped in the last session: mosaic gallery, Gumlet video integration, mobile stats fix. Social content is drafted (3 LinkedIn posts), waiting on your review." },
+        { from: 'user', text: 'Schedule a review session for Thursday.' },
+        { from: 'agent', text: "Done. Added 'Ambition Review' to your calendar, Thursday 2:00 PM AZ time. I'll prep the social drafts and site changelog before then.", action: { icon: Calendar, text: 'Calendar event created' } },
+      ],
+    },
+    {
+      agent: 'Alex',
+      role: 'Strategy',
+      status: 'Working',
+      statusColor: '#22C55E',
+      messages: [
+        { from: 'user', text: 'Draft a follow-up email for the ISA Energy proposal.' },
+        { from: 'agent', text: "I pulled up the ISA thread. Last contact was 4 days ago when they viewed the proposal. Here's a warm follow-up that references their April 10 deadline without being pushy." },
+        { from: 'agent', text: '"Hi Sarah, I noticed the April 10 brand video deadline is approaching. We\'d love to lock in pre-production this week so we have runway for revisions. Would Thursday work for a 15-min call?"', action: { icon: Mail, text: 'Draft ready for review' } },
+      ],
+    },
+    {
+      agent: 'Mom',
+      role: 'Orchestrator',
+      status: 'Working',
+      statusColor: '#22C55E',
+      messages: [
+        { from: 'user', text: "What's the priority right now?" },
+        { from: 'agent', text: "Top 3 right now:\n\n1. Confirm Included Health $9k payment (overdue)\n2. KOHRS: 10 videos owed to Leigh (Ash editing tonight)\n3. ISA Energy: shoot must schedule by Monday or April 10 is blown\n\nBobby is rebuilding the dashboard. Jacob has 51 emails sent, zero replies yet. Want me to launch anyone?" },
+        { from: 'user', text: 'Launch Bobby on the dashboard.' },
+        { from: 'agent', text: "Bobby launched. He's reading Steve's spec now. I'll route him the build checklist.", action: { icon: Zap, text: 'Agent launched' } },
+      ],
+    },
   ];
+
+  const chat = conversations[activeChat];
 
   return (
     <Section className="py-24 md:py-40 bg-[#F5F0EB]">
       <div className="max-w-[1100px] mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-16 items-start">
           {/* Chat mockup */}
           <motion.div variants={fadeUp} className="order-2 lg:order-1">
+            {/* Agent selector tabs */}
+            <div className="flex gap-2 mb-4 max-w-[440px] mx-auto">
+              {conversations.map((conv, i) => (
+                <button
+                  key={conv.agent}
+                  onClick={() => setActiveChat(i)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-headline font-bold transition-all ${activeChat === i ? 'bg-white border border-[#E8E3DC] shadow-sm text-[#1A1A17]' : 'text-[#8A847C] hover:text-[#1A1A17]'}`}
+                >
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: conv.statusColor }} />
+                  {conv.agent}
+                </button>
+              ))}
+            </div>
+
             <div className="bg-white border border-[#E8E3DC] rounded-xl shadow-xl shadow-black/5 overflow-hidden max-w-[440px] mx-auto">
               {/* Chat header */}
               <div className="bg-[#FAFAF8] border-b border-[#E8E3DC] px-5 py-4 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-[#FF4F00]/10 flex items-center justify-center">
                   <Monitor size={18} className="text-[#FF4F00]" />
                 </div>
-                <div>
-                  <p className="font-headline font-bold text-sm text-[#1A1A17]">Bobby</p>
+                <div className="flex-1">
+                  <p className="font-headline font-bold text-sm text-[#1A1A17]">{chat.agent}</p>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <p className="text-[10px] text-[#8A847C] font-mono">Working</p>
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: chat.statusColor }} />
+                    <p className="text-[10px] text-[#8A847C] font-mono">{chat.status} / {chat.role}</p>
                   </div>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="p-4 space-y-3 max-h-[400px]">
-                {messages.map((msg, i) => (
-                  <motion.div
-                    key={i}
-                    variants={fadeUp}
-                    className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-[85%] px-4 py-3 rounded-xl text-sm leading-relaxed ${
-                      msg.from === 'user'
-                        ? 'bg-[#FF4F00] text-white rounded-br-sm'
-                        : 'bg-[#F5F0EB] text-[#1A1A17] rounded-bl-sm'
-                    }`}>
-                      {msg.text}
-                      {msg.action && (
-                        <div className="mt-2 pt-2 border-t border-[#E8E3DC] flex items-center gap-2">
-                          <Sparkles size={12} className="text-[#FF4F00]" />
-                          <span className="text-[11px] text-[#8A847C] font-mono">Calendar event created</span>
-                        </div>
-                      )}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeChat}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="p-4 space-y-3 min-h-[320px]"
+                >
+                  {chat.messages.map((msg, i) => (
+                    <div
+                      key={i}
+                      className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`max-w-[85%] px-4 py-3 rounded-xl text-sm leading-relaxed ${
+                        msg.from === 'user'
+                          ? 'bg-[#FF4F00] text-white rounded-br-sm'
+                          : 'bg-[#F5F0EB] text-[#1A1A17] rounded-bl-sm'
+                      }`}>
+                        <span className="whitespace-pre-line">{msg.text}</span>
+                        {msg.action && (
+                          <div className="mt-2 pt-2 border-t border-[#E8E3DC] flex items-center gap-2">
+                            <msg.action.icon size={12} className="text-[#FF4F00]" />
+                            <span className="text-[11px] text-[#8A847C] font-mono">{msg.action.text}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </motion.div>
-                ))}
-              </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
 
               {/* Input */}
               <div className="border-t border-[#E8E3DC] px-4 py-3 flex items-center gap-3">
                 <input
                   type="text"
-                  placeholder="Message Bobby..."
+                  placeholder={`Message ${chat.agent}...`}
                   className="flex-1 bg-transparent text-sm text-[#1A1A17] placeholder-[#C4BFBA] outline-none"
                   readOnly
                 />
@@ -584,13 +785,14 @@ function ChatShowcase() {
 
             <motion.div variants={stagger} className="mt-10 space-y-5">
               {[
-                { icon: MessageSquare, text: 'Natural language. No commands to memorize.' },
-                { icon: Zap, text: 'Agents take real actions. Calendar, email, tasks.' },
-                { icon: Shield, text: 'Full conversation history. Nothing gets lost.' },
+                { icon: MessageSquare, text: 'Natural language. No commands to memorize.', color: '#3B82F6' },
+                { icon: Zap, text: 'Agents take real actions. Calendar, email, tasks.', color: '#3B82F6' },
+                { icon: Shield, text: 'Full conversation history. Nothing gets lost.', color: '#3B82F6' },
+                { icon: BrainCircuit, text: 'Agents learn your preferences over time.', color: '#3B82F6' },
               ].map((item, i) => (
                 <motion.div key={i} variants={fadeUp} className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-[#3B82F6]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <item.icon size={18} className="text-[#3B82F6]" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: `${item.color}15` }}>
+                    <item.icon size={18} style={{ color: item.color }} />
                   </div>
                   <p className="text-[#6B6560] leading-relaxed pt-2">{item.text}</p>
                 </motion.div>
@@ -603,7 +805,7 @@ function ChatShowcase() {
   );
 }
 
-// --- ONBOARDING / "DESIGN YOUR OFFICE" ---
+// --- ONBOARDING with VISUAL ---
 function OnboardingSection() {
   const steps = [
     { step: '01', title: 'Tell us about you', desc: 'Name, role, business. One question at a time. Feels like texting.' },
@@ -616,7 +818,7 @@ function OnboardingSection() {
   return (
     <Section className="py-24 md:py-40">
       <div className="max-w-[1100px] mx-auto px-6">
-        <div className="text-center mb-20">
+        <div className="text-center mb-16">
           <SectionLabel>Onboarding</SectionLabel>
           <SectionHeadline>
             Describe your dream office.<br />
@@ -627,8 +829,18 @@ function OnboardingSection() {
           </SectionBody>
         </div>
 
+        {/* Onboarding flow visual */}
+        <motion.div variants={fadeUp} className="mb-16">
+          <img
+            src="/corner/onboarding-flow.png"
+            alt="Onboarding flow: describe your office, watch it build, meet your AI team"
+            className="w-full max-w-[900px] mx-auto rounded-xl shadow-2xl shadow-black/10"
+            loading="lazy"
+          />
+        </motion.div>
+
         {/* Steps */}
-        <motion.div variants={stagger} className="relative">
+        <motion.div variants={stagger} className="relative max-w-[700px] mx-auto">
           {/* Connection line */}
           <div className="hidden md:block absolute left-[28px] top-0 bottom-0 w-px bg-gradient-to-b from-[#FF4F00]/20 via-[#FF4F00]/10 to-transparent" />
 
@@ -658,6 +870,55 @@ function OnboardingSection() {
         >
           "A million worlds, one platform."
         </motion.p>
+      </div>
+    </Section>
+  );
+}
+
+// --- ROOM GALLERY (scrollable showcase) ---
+function RoomGallery() {
+  const scrollRef = useRef(null);
+
+  return (
+    <Section dark className="py-24 md:py-32 overflow-hidden">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="text-center mb-12">
+          <SectionLabel dark>Every Agent, Their Own Space</SectionLabel>
+          <SectionHeadline dark>
+            11 rooms.<br />
+            <span className="text-[#FF4F00]">11 specialists.</span>
+          </SectionHeadline>
+          <SectionBody dark className="mx-auto mt-6 text-center">
+            Web dev, strategy, outreach, content, QA, orchestration. Each room is designed for how that agent works.
+          </SectionBody>
+        </div>
+
+        {/* Scrollable room strip */}
+        <motion.div variants={fadeUp}>
+          <div
+            ref={scrollRef}
+            className="flex gap-5 overflow-x-auto pb-6 snap-x snap-mandatory scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {ROOMS.map((room) => (
+              <div key={room.name} className="flex-shrink-0 w-[260px] snap-center">
+                <div className="relative overflow-hidden rounded-xl shadow-xl bg-[#141412]">
+                  <img
+                    src={room.img}
+                    alt={`${room.name}'s room`}
+                    className="w-full aspect-square object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="font-headline font-bold text-[#F5F0EB] text-sm">{room.name}</p>
+                  <p className="text-[11px] text-[#78716C] font-mono">{room.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-[11px] text-[#44403C] font-mono mt-4 md:hidden">Swipe to explore</p>
+        </motion.div>
       </div>
     </Section>
   );
@@ -757,15 +1018,15 @@ function FinalCTA() {
       <div className="max-w-[800px] mx-auto px-6 text-center">
         <motion.div variants={fadeUp} className="mb-12">
           {/* Room images in a row */}
-          <div className="flex justify-center gap-3 mb-12">
-            {ROOMS.slice(0, 5).map((room, i) => (
+          <div className="flex justify-center gap-2 md:gap-3 mb-12 flex-wrap">
+            {ROOMS.slice(0, 8).map((room, i) => (
               <motion.img
                 key={room.name}
                 src={room.img}
                 alt={room.name}
                 variants={scaleIn}
-                className="w-16 h-16 md:w-20 md:h-20 rounded-xl shadow-lg shadow-black/10 object-cover"
-                style={{ transform: `rotate(${(i - 2) * 3}deg)` }}
+                className="w-12 h-12 md:w-16 md:h-16 rounded-xl shadow-lg shadow-black/10 object-cover"
+                style={{ transform: `rotate(${(i - 3.5) * 2.5}deg)` }}
                 loading="lazy"
               />
             ))}
@@ -823,10 +1084,12 @@ export default function Corner() {
 
       <Hero />
       <ProblemSection />
+      <BeforeAfterSection />
       <LayersOverview />
       <IsometricShowcase />
       <DashboardShowcase />
       <ChatShowcase />
+      <RoomGallery />
       <OnboardingSection />
       <PricingSection />
       <FinalCTA />
