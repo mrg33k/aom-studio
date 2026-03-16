@@ -4376,6 +4376,9 @@ export default function GameDashboard() {
         </div>
       )}
 
+      {/* Bobby3: Character animation styles (dust burst, speech dot) */}
+      <CharacterAnimationStyles />
+
       {/* Global styles */}
       <style>{`
         @keyframes windowLight {
