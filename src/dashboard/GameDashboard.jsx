@@ -182,45 +182,178 @@ function PasswordGate({ onAuth }) {
   )
 }
 
-// ---- AGENT CHARACTER -------------------------------------------------------
-function AgentCharacter({ x, y, color, status }) {
+// ---- SPRITE STATE MAPPING --------------------------------------------------
+// Maps agent status to sprite file state name
+function getSpriteState(status) {
+  switch (status) {
+    case 'WORKING':  return 'thinking'
+    case 'WAITING':  return 'thinking'
+    case 'DONE':     return 'done'
+    case 'BLOCKED':  return 'idle'
+    case 'PAUSED':   return 'idle'
+    default:         return 'idle'
+  }
+}
+
+// All sprite PNGs are multi-frame spritesheets. We show just the top-left frame.
+// The images are 1024x1024 with frames in a 2x2 or 3x3 grid.
+// For the agent character in SVG, we use foreignObject to embed an <img> with
+// object-fit + object-position to crop to the first frame.
+const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
+
+// Preload idle sprites on mount
+function usePreloadSprites() {
+  useEffect(() => {
+    SPRITE_AGENTS.forEach(a => {
+      const img = new Image()
+      img.src = `/corner/sprites/${a}-idle.png`
+    })
+  }, [])
+}
+
+// ---- AGENT CHARACTER (Pixel Art Sprite) ------------------------------------
+function AgentCharacter({ x, y, color, status, agentSlug }) {
+  const spriteState = getSpriteState(status)
   const isWorking = status === 'WORKING'
   const isThinking = status === 'WAITING'
   const isDone = status === 'DONE'
 
+  // Sprite size in SVG space - fits within room
+  const spriteW = 28
+  const spriteH = 28
+  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+
+  if (!hasSpriteFile) {
+    // Fallback: colored circle for agents without sprites
+    return (
+      <g>
+        <ellipse cx={x} cy={y + 6} rx={5} ry={2} fill="#000" opacity={0.2} />
+        <circle cx={x} cy={y - 4} r={6} fill={color} opacity={0.9} />
+        <circle cx={x - 1.5} cy={y - 4.5} r={1} fill="#FFF" opacity={0.9} />
+        <circle cx={x + 1.5} cy={y - 4.5} r={1} fill="#FFF" opacity={0.9} />
+      </g>
+    )
+  }
+
+  const spriteSrc = `/corner/sprites/${agentSlug}-${spriteState}.png`
+
   return (
     <g>
-      <ellipse cx={x} cy={y + 6} rx={5} ry={2} fill="#000" opacity={0.2} />
-      <rect x={x - 4} y={y - 4} width={8} height={10} fill={color} rx={2} opacity={0.9}>
-        {isWorking && <animate attributeName="y" values={`${y - 4};${y - 5};${y - 4}`} dur="2s" repeatCount="indefinite" />}
-      </rect>
-      <circle cx={x} cy={y - 8} r={5} fill={color}>
-        {isWorking && <animate attributeName="cy" values={`${y - 8};${y - 9};${y - 8}`} dur="2s" repeatCount="indefinite" />}
-      </circle>
-      <circle cx={x - 1.5} cy={y - 8.5} r={1} fill="#FFF" opacity={0.9} />
-      <circle cx={x + 1.5} cy={y - 8.5} r={1} fill="#FFF" opacity={0.9} />
+      {/* Shadow beneath sprite */}
+      <ellipse cx={x} cy={y + 8} rx={10} ry={3} fill="#000" opacity={0.15} />
+
+      {/* Sprite image - foreignObject for HTML img inside SVG */}
+      <foreignObject
+        x={x - spriteW / 2} y={y - spriteH + 4}
+        width={spriteW} height={spriteH}
+        style={{ overflow: 'hidden', pointerEvents: 'none' }}
+      >
+        <img
+          src={spriteSrc}
+          alt=""
+          style={{
+            width: spriteW * 2,
+            height: spriteH * 2,
+            objectFit: 'cover',
+            objectPosition: '0 0',
+            imageRendering: 'pixelated',
+            display: 'block',
+          }}
+        />
+      </foreignObject>
+
+      {/* Working glow pulse */}
       {isWorking && (
-        <circle cx={x} cy={y - 4} r={12} fill={color} opacity={0.1}>
-          <animate attributeName="r" values="10;14;10" dur="1.5s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.1;0.05;0.1" dur="1.5s" repeatCount="indefinite" />
+        <circle cx={x} cy={y - spriteH / 2 + 4} r={16} fill={color} opacity={0.08}>
+          <animate attributeName="r" values="14;18;14" dur="1.5s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.08;0.03;0.08" dur="1.5s" repeatCount="indefinite" />
         </circle>
       )}
+
+      {/* Thinking dots above sprite */}
       {isThinking && (
         <g>{[0, 1, 2].map(i => (
-          <circle key={i} cx={x + 8 + i * 4} cy={y - 14} r={1.5} fill="#F59E0B" opacity={0.6}>
+          <circle key={i} cx={x + 10 + i * 4} cy={y - spriteH - 2} r={1.5} fill="#F59E0B" opacity={0.6}>
             <animate attributeName="opacity" values="0.2;0.8;0.2" dur="0.8s" repeatCount="indefinite" begin={`${i * 0.2}s`} />
           </circle>
         ))}</g>
       )}
+
+      {/* Done checkmark */}
       {isDone && (
         <g>
-          <circle cx={x + 7} cy={y - 12} r={4} fill="#10B981" opacity={0.8} />
-          <path d={`M${x + 5},${y - 12} L${x + 7},${y - 10} L${x + 10},${y - 14}`} fill="none" stroke="#FFF" strokeWidth={1.2} />
+          <circle cx={x + 12} cy={y - spriteH} r={4} fill="#10B981" opacity={0.8} />
+          <path d={`M${x + 10},${y - spriteH} L${x + 12},${y - spriteH + 2} L${x + 15},${y - spriteH - 2}`} fill="none" stroke="#FFF" strokeWidth={1.2} />
         </g>
       )}
     </g>
   )
 }
+
+// ---- SPRITE AVATAR (HTML, for chat + sidebar) ------------------------------
+function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) {
+  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+  const agent = AGENTS.find(a => a.slug === agentSlug)
+  const color = borderColor || agent?.color || '#6B7280'
+
+  if (hasSpriteFile) {
+    return (
+      <div style={{
+        width: size, height: size, borderRadius: '50%', border: `2px solid ${color}`,
+        overflow: 'hidden', flexShrink: 0, background: '#0A0F1E',
+        ...extraStyle,
+      }}>
+        <img
+          src={`/corner/sprites/${agentSlug}-idle.png`}
+          alt=""
+          style={{
+            width: size * 2,
+            height: size * 2,
+            objectFit: 'cover',
+            objectPosition: '15% 5%',
+            imageRendering: 'pixelated',
+            display: 'block',
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Fallback: colored initial circle
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', border: `2px solid ${color}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: Math.max(8, size * 0.35), fontWeight: 700, color, background: `${color}33`,
+      flexShrink: 0, ...extraStyle,
+    }}>
+      {agent?.name?.charAt(0) || '?'}
+    </div>
+  )
+}
+
+// ---- PER-ROOM LIGHTING OVERLAY COLORS (Steffen C2.2 spec 4B) ---------------
+const ROOM_LIGHT_OVERLAYS = {
+  patrik:    'rgba(255, 216, 122, 0.05)',
+  bobby:     'rgba(156, 39, 176, 0.08)',
+  elon:      'rgba(76, 175, 80, 0.05)',
+  cleo:      'rgba(255, 183, 77, 0.06)',
+  steffen:   'rgba(255, 216, 122, 0.07)',
+  'main-hall': 'rgba(255, 183, 77, 0.04)',
+  elmo:      'rgba(240, 240, 240, 0.06)',
+  mom:       'rgba(245, 158, 11, 0.04)',
+  alex:      'rgba(59, 130, 246, 0.04)',
+  steve:     'rgba(124, 154, 114, 0.04)',
+  colton:    'rgba(6, 182, 212, 0.04)',
+  tony:      'rgba(236, 72, 153, 0.05)',
+  jacob:     'rgba(239, 68, 68, 0.04)',
+}
+
+// Rooms that have pixel art room render PNGs
+const ROOMS_WITH_RENDERS = [
+  'patrik', 'mom', 'alex', 'steve', 'steffen', 'main-hall',
+  'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon',
+]
 
 // ---- ISOMETRIC ROOM --------------------------------------------------------
 function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClick, cellSize }) {
@@ -229,73 +362,94 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
   const status = agentStatus?.status || 'IDLE'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const isActive = status === 'WORKING'
-  const isHall = room.id === 'main-hall'
   const hasAgent = room.agent !== null
 
   const roomW = cellSize * room.size.cols
   const roomH = cellSize * room.size.rows
 
-  // Floor color from spec
-  const fc = room.floorColor || '#C4956A'
-  const isWood = room.floor?.startsWith('wood') || room.floor === 'carpet-commercial'
-  const isTile = room.floor?.startsWith('tile')
-
-  // Light from spec
-  const lightColor = isActive ? cfg.pulseColor : (room.lightColor || '#FFB74D')
-  const lightIntensity = isActive ? 0.25 : 0.12
-  const hasExteriorWall = room.walls && (
-    room.walls.north?.startsWith('exterior') || room.walls.west?.startsWith('exterior') ||
-    room.walls.east?.startsWith('exterior') || room.walls.south?.startsWith('exterior')
-  )
-
   // Agent color for glow on hover
   const agentColor = room.agentColor || '#FFD87A'
 
-  // Room dimming when inactive
-  const brightness = isActive ? 1.0 : (status === 'IDLE' ? 0.7 : 0.85)
+  // Room dimming: Steffen C2.2 spec 4D - 40% inactive, 100% active
+  const brightness = isActive ? 1.0 : (status === 'DONE' ? 1.0 : (status === 'IDLE' ? 0.4 : 0.6))
+
+  // Check if this room has a pixel art render
+  const hasRoomRender = ROOMS_WITH_RENDERS.includes(room.id)
+
+  // Per-room lighting overlay
+  const roomLightOverlay = ROOM_LIGHT_OVERLAYS[room.id]
 
   return (
     <g
       onClick={() => hasAgent && onClick?.(room.id)}
       style={{ cursor: hasAgent ? 'pointer' : 'default', filter: `brightness(${brightness})`, transition: 'filter 400ms ease' }}
     >
-      {/* Floor */}
-      <rect x={0} y={0} width={roomW} height={roomH} fill={fc} stroke={isTile ? '#6B7D8F' : '#7A5838'} strokeWidth={0.5} />
-
-      {/* Floor pattern */}
-      {isWood && Array.from({ length: Math.floor(roomW / 12) }).map((_, i) => (
-        <line key={`grain-${i}`} x1={i * 12 + 6} y1={0} x2={i * 12 + 6} y2={roomH} stroke="rgba(0,0,0,0.12)" strokeWidth={0.3} />
-      ))}
-      {isTile && (
+      {/* Room background: pixel art render or SVG fallback */}
+      {hasRoomRender ? (
         <>
-          {Array.from({ length: Math.floor(roomW / 16) + 1 }).map((_, i) => (
-            <line key={`vt-${i}`} x1={i * 16} y1={0} x2={i * 16} y2={roomH} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
-          ))}
-          {Array.from({ length: Math.floor(roomH / 16) + 1 }).map((_, j) => (
-            <line key={`ht-${j}`} x1={0} y1={j * 16} x2={roomW} y2={j * 16} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
-          ))}
+          {/* Pixel art room render as background (Option B per Steffen) */}
+          <foreignObject x={0} y={0} width={roomW} height={roomH} style={{ overflow: 'hidden' }}>
+            <img
+              src={`/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`}
+              alt=""
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+                imageRendering: 'auto',
+              }}
+            />
+          </foreignObject>
+
+          {/* Per-room lighting personality overlay */}
+          {roomLightOverlay && (
+            <rect x={0} y={0} width={roomW} height={roomH} fill={roomLightOverlay} style={{ pointerEvents: 'none' }} />
+          )}
+
+          {/* Bobby's purple LED underglow (C2.2 spec 4A) */}
+          {room.id === 'bobby' && (
+            <rect x={0} y={roomH - 8} width={roomW} height={8}
+              fill="url(#bobbyLedGlow)" opacity={isActive ? 0.6 : 0.35}
+              style={{ pointerEvents: 'none' }}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {/* SVG fallback for rooms without renders */}
+          <rect x={0} y={0} width={roomW} height={roomH}
+            fill={room.floorColor || '#C4956A'}
+            stroke={room.floor?.startsWith('tile') ? '#6B7D8F' : '#7A5838'}
+            strokeWidth={0.5}
+          />
+          {/* Config-driven SVG furniture (fallback) */}
+          {renderFurniture(room.id, roomW, roomH, isActive)}
+
+          {/* Per-room lighting overlay */}
+          {roomLightOverlay && (
+            <rect x={0} y={0} width={roomW} height={roomH} fill={roomLightOverlay} style={{ pointerEvents: 'none' }} />
+          )}
         </>
       )}
 
-      {/* Room ambient glow */}
-      <rect x={0} y={0} width={roomW} height={roomH} fill={lightColor} opacity={lightIntensity} />
-
-      {/* Window light spill */}
-      {hasExteriorWall && (
-        <rect x={2} y={2} width={roomW - 4} height={roomH * 0.3} fill="#FFD87A" opacity={0.08} rx={2} />
-      )}
-
-      {/* Config-driven furniture */}
-      {renderFurniture(room.id, roomW, roomH, isActive)}
-
-      {/* Agent character */}
+      {/* Agent sprite character */}
       {hasAgent && agent && (
-        <AgentCharacter x={roomW * 0.72} y={roomH * 0.65} color={agentColor} status={status} />
+        <AgentCharacter
+          x={roomW * 0.55}
+          y={roomH * 0.7}
+          color={agentColor}
+          status={status}
+          agentSlug={room.id}
+        />
       )}
 
       {/* Active indicator dot (top-right) - Steffen spec: pulsing-dot, 6px */}
       {hasAgent && (
-        <circle cx={roomW - 10} cy={10} r={3} fill={isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color)} opacity={isActive ? 1 : 0.6}>
+        <circle cx={roomW - 10} cy={10} r={3}
+          fill={isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color)}
+          opacity={isActive ? 1 : 0.6}
+        >
           {isActive && <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite" />}
         </circle>
       )}
@@ -303,7 +457,7 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
       {/* Hover/selected glow overlay */}
       {(isHovered || isSelected) && hasAgent && (
         <rect x={0} y={0} width={roomW} height={roomH}
-          fill={isSelected ? agentColor : agentColor}
+          fill={agentColor}
           opacity={isSelected ? 0.12 : 0.06}
           style={{ pointerEvents: 'none' }}
         />
@@ -326,7 +480,7 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
   )
 }
 
-// ---- NAMEPLATE (above room) ------------------------------------------------
+// ---- NAMEPLATE (above room) with sprite avatar (C2.2 spec 4C) -------------
 function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
   if (!room || room.agent === null) return null
   const status = agentStatus?.status || 'IDLE'
@@ -335,24 +489,45 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
     : (room.statusColors?.idle || '#6B7280')
   const pulse = status === 'WORKING' || status === 'WAITING'
   const task = agentStatus?.currentTask || ''
+  const hasSprite = SPRITE_AGENTS.includes(room.id)
 
   const roomW = cellSize * room.size.cols
   const x = roomW / 2
   const y = -10
+  const plateW = hasSprite ? 70 : 60
+  const plateX = x - plateW / 2
 
   return (
     <g>
       {/* Nameplate background */}
-      <rect x={x - 30} y={y - 8} width={60} height={isHovered ? 24 : 16} rx={4}
+      <rect x={plateX} y={y - 8} width={plateW} height={isHovered ? 24 : 16} rx={4}
         fill={PALETTE.nameplate.background} stroke={isHovered ? `${room.agentColor}4D` : PALETTE.nameplate.border} strokeWidth={1}
         style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))', transition: 'height 150ms ease' }}
       />
+      {/* Tiny sprite avatar (16px) */}
+      {hasSprite && (
+        <foreignObject x={plateX + 3} y={y - 7} width={14} height={14} style={{ overflow: 'hidden', borderRadius: '50%' }}>
+          <img
+            src={`/corner/sprites/${room.id}-idle.png`}
+            alt=""
+            style={{
+              width: 28,
+              height: 28,
+              objectFit: 'cover',
+              objectPosition: '0 0',
+              imageRendering: 'pixelated',
+              display: 'block',
+              borderRadius: '50%',
+            }}
+          />
+        </foreignObject>
+      )}
       {/* Status dot */}
-      <circle cx={x - 20} cy={y} r={3} fill={dotColor}>
+      <circle cx={hasSprite ? plateX + 21 : x - 20} cy={y} r={3} fill={dotColor}>
         {pulse && <animate attributeName="r" values="3;4;3" dur={status === 'WAITING' ? '0.8s' : '1.5s'} repeatCount="indefinite" />}
       </circle>
       {/* Name */}
-      <text x={x - 14} y={y + 3} fill={PALETTE.nameplate.text}
+      <text x={hasSprite ? plateX + 27 : x - 14} y={y + 3} fill={PALETTE.nameplate.text}
         fontSize={GRID_SPEC.rendering.nameplateFontSize} fontWeight={isHovered ? 700 : GRID_SPEC.rendering.nameplateFontWeight}
         fontFamily={`${GRID_SPEC.rendering.nameplateFont}, sans-serif`}
       >
@@ -360,10 +535,10 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
       </text>
       {/* Task on hover */}
       {isHovered && task && (
-        <text x={x - 20} y={y + 14} fill="#8A847C" fontSize={9}
+        <text x={plateX + 3} y={y + 14} fill="#8A847C" fontSize={9}
           fontFamily="Space Grotesk, sans-serif" fontWeight={400}
         >
-          {task.length > 20 ? task.slice(0, 20) + '...' : task}
+          {task.length > 22 ? task.slice(0, 22) + '...' : task}
         </text>
       )}
     </g>
@@ -422,6 +597,12 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                 <stop offset="0%" stopColor="#FFD87A" stopOpacity="0.1" />
                 <stop offset="100%" stopColor="#FFD87A" stopOpacity="0" />
               </radialGradient>
+              {/* Bobby's purple LED underglow gradient (C2.2 spec 4A) */}
+              <linearGradient id="bobbyLedGlow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#9C27B0" stopOpacity="0" />
+                <stop offset="40%" stopColor="#9C27B0" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="#9C27B0" stopOpacity="0.4" />
+              </linearGradient>
             </defs>
 
             {/* Ground plane shadow */}
@@ -588,9 +769,7 @@ function NotificationToast({ notifications, onDismiss, onClickNotification }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', background: n.agentColor || '#E85D26', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#FFF' }}>
-                {n.agentName?.charAt(0)}
-              </div>
+              <SpriteAvatar agentSlug={n.agentSlug} size={24} borderColor={n.agentColor || '#E85D26'} />
               <span style={{ color: n.agentColor || '#E85D26', fontSize: 12, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>{n.agentName}</span>
               <span style={{ marginLeft: 'auto', color: '#6B7280', fontSize: 10, fontFamily: 'Space Grotesk, sans-serif' }}>{n.time}</span>
             </div>
@@ -746,8 +925,17 @@ function TaskCard({ entry, agentColor }) {
       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-        {/* Agent dot */}
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: agentColor || '#6B7280', marginTop: 4, flexShrink: 0, boxShadow: `0 0 4px ${agentColor || '#6B7280'}4D` }} />
+        {/* Agent sprite avatar (tiny, 20px) */}
+        {entry.agent ? (
+          <SpriteAvatar
+            agentSlug={AGENTS.find(a => a.name?.toLowerCase() === entry.agent?.toLowerCase())?.slug}
+            size={20}
+            borderColor={agentColor}
+            style={{ marginTop: 2 }}
+          />
+        ) : (
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: agentColor || '#6B7280', marginTop: 4, flexShrink: 0, boxShadow: `0 0 4px ${agentColor || '#6B7280'}4D` }} />
+        )}
         {/* Task title */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 14, color: '#F0ECE6', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
@@ -855,7 +1043,7 @@ function AddTaskTab() {
                 cursor: 'pointer', transition: 'all 150ms ease',
               }}
             >
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: a.color }} />
+              <SpriteAvatar agentSlug={a.slug} size={16} borderColor={a.color} />
               {a.name}
             </button>
           )
@@ -1058,9 +1246,7 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
               {currentMessages.map((msg, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
                   {msg.role === 'assistant' && (
-                    <div style={{ width: fullscreen ? 28 : 20, height: fullscreen ? 28 : 20, borderRadius: '50%', border: `2px solid ${agentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: agentColor, marginRight: 8, flexShrink: 0, marginTop: 2 }}>
-                      {currentAgent?.name?.charAt(0)}
-                    </div>
+                    <SpriteAvatar agentSlug={agentSlug} size={fullscreen ? 28 : 20} borderColor={agentColor} style={{ marginRight: 8, marginTop: 2 }} />
                   )}
                   <div>
                     <div style={{
@@ -1112,9 +1298,7 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
               borderTop: '1px solid rgba(255, 255, 255, 0.06)',
               flexShrink: 0,
             }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${agentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: agentColor, flexShrink: 0 }}>
-                {currentAgent?.name?.charAt(0)}
-              </div>
+              <SpriteAvatar agentSlug={agentSlug} size={32} borderColor={agentColor} />
               <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
                 placeholder={`Message ${currentAgent?.name}...`} disabled={streaming}
                 style={{
@@ -1156,9 +1340,7 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
           boxShadow: '0 -2px 12px rgba(0, 0, 0, 0.3)',
         }}>
           {/* Agent avatar */}
-          <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${agentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#FFF', background: `${agentColor}33`, flexShrink: 0 }}>
-            {currentAgent?.name?.charAt(0)}
-          </div>
+          <SpriteAvatar agentSlug={agentSlug} size={32} borderColor={agentColor} />
           <span style={{ color: agentColor, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', flexShrink: 0 }}>
             {currentAgent?.name}
           </span>
@@ -1227,9 +1409,7 @@ function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: `${agentColor}33`, border: `2px solid ${agentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: agentColor }}>
-            {agent?.name?.charAt(0) || '?'}
-          </div>
+          <SpriteAvatar agentSlug={room?.id} size={36} borderColor={agentColor} />
           <div>
             <div style={{ color: PALETTE.signText, fontSize: 16, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>{agent?.name || room?.agent}</div>
             <div style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -1398,6 +1578,9 @@ export default function GameDashboard() {
 
   const { data, error, loading } = useDashboardData()
   const isMobile = useIsMobile()
+
+  // Preload all idle sprites for instant display
+  usePreloadSprites()
 
   // URL-based agent selection
   useEffect(() => {
