@@ -22,27 +22,30 @@ export const IMAGES = {
   night: '/corner/office-full-night.png',
 }
 
+// DONE(bobby): SWAP HITBOX COORDINATES -- Coordinates now from Steffen's room-hitbox-map.json (warm variant). Matches office-full.png daytime image.
+// TODO(bobby): PLAYWRIGHT HITBOX GROUND TRUTH -- Coordinates are Steffen's manual estimates. VERIFY by opening localhost in Playwright, clicking CENTER of each room at BOTH zoom levels (0.7 + 1.6), logging actual pixel coords, converting to percentages. If any room click opens the wrong agent panel, adjust coordinates. Real clicks = only truth. Ref: Patrik + Elon line 213.
+// TODO(bobby): NIGHT HITBOX VARIANT -- Current coordinates are for office-full.png (warm/daytime). Night image (office-full-night.png) has DIFFERENT building scale/position per Steffen's analysis. Need separate ROOM_TARGETS_NIGHT and switch based on isNightMode. See room-hitbox-map.json "night" section.
 // Room hit-target positions mapped to the Crossy Road voxel office image.
-// Recalibrated for Crossy Road building geometry: wider rooms, isometric perspective.
+// Coordinates from Steffen's room-hitbox-map.json (warm variant, matches office-full.png).
 // Diamond clip-paths match where rooms visually appear in isometric perspective.
 export const ROOM_TARGETS = {
   // Row 0: top row, 4 rooms (back wall of building, smaller due to perspective)
-  patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
-  mom:        { x: 37, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
-  alex:       { x: 51, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
-  steve:      { x: 63, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
+  patrik:     { x: 28, y: 17, w: 18, h: 10, labelY: 14, clipPath: DIAMOND_CLIP },
+  mom:        { x: 37, y: 18, w: 18, h: 10, labelY: 15, clipPath: DIAMOND_CLIP },
+  alex:       { x: 46, y: 19, w: 18, h: 10, labelY: 16, clipPath: DIAMOND_CLIP },
+  steve:      { x: 55, y: 20, w: 18, h: 10, labelY: 17, clipPath: DIAMOND_CLIP },
   // Row 1: steffen left, main-hall center (wide), jacob right
-  steffen:    { x: 14, y: 25, w: 16, h: 17, labelY: 22, clipPath: DIAMOND_CLIP },
-  'main-hall':{ x: 30, y: 25, w: 30, h: 17, labelY: 22, clipPath: DIAMOND_CLIP_WIDE },
-  jacob:      { x: 58, y: 25, w: 18, h: 17, labelY: 22, clipPath: DIAMOND_CLIP },
+  steffen:    { x: 14, y: 27, w: 20, h: 12, labelY: 24, clipPath: DIAMOND_CLIP },
+  'main-hall':{ x: 28, y: 29, w: 30, h: 15, labelY: 26, clipPath: DIAMOND_CLIP_WIDE },
+  jacob:      { x: 54, y: 31, w: 22, h: 12, labelY: 28, clipPath: DIAMOND_CLIP },
   // Row 2: 4 rooms across lower-front (bigger due to perspective, closer to camera)
-  bobby:      { x: 7,  y: 43, w: 17, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
-  colton:     { x: 23, y: 43, w: 16, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
-  cleo:       { x: 38, y: 43, w: 16, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
-  tony:       { x: 53, y: 43, w: 18, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
+  bobby:      { x: 4,  y: 42, w: 22, h: 16, labelY: 39, clipPath: DIAMOND_CLIP },
+  colton:     { x: 18, y: 44, w: 22, h: 16, labelY: 41, clipPath: DIAMOND_CLIP },
+  cleo:       { x: 32, y: 46, w: 22, h: 16, labelY: 43, clipPath: DIAMOND_CLIP },
+  tony:       { x: 46, y: 48, w: 24, h: 16, labelY: 45, clipPath: DIAMOND_CLIP },
   // Row 3: bottom 2 rooms (front of building, largest)
-  elmo:       { x: 22, y: 62, w: 17, h: 16, labelY: 59, clipPath: DIAMOND_CLIP },
-  elon:       { x: 38, y: 62, w: 17, h: 16, labelY: 59, clipPath: DIAMOND_CLIP },
+  elmo:       { x: 22, y: 58, w: 26, h: 16, labelY: 55, clipPath: DIAMOND_CLIP },
+  elon:       { x: 40, y: 60, w: 28, h: 16, labelY: 57, clipPath: DIAMOND_CLIP },
 }
 
 // Wave animation order: staggered delay per room for load-in ripple effect

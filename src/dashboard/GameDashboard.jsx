@@ -1110,6 +1110,9 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // DONE(bobby2): Daytime palette: white glass HUD, light sidebar, #E8F0FA background. Night-only window glows. Matches Steffen's layout-daytime.png target.
 
 
+// PATRIK DIRECTIVE (line 215): STOP ALL CATALOG/FURNITURE WORK. ALL agent energy goes to 3 things ONLY: (1) Game feel, (2) HUD clean, (3) Map interaction. No furniture, no new packs, no catalog growth until these 3 are SOLID.
+// DONE(bobby): SWAP HITBOX COORDINATES -- officeLayouts/default.js now uses Steffen's warm variant coordinates from room-hitbox-map.json. Ref: Patrik feedback line 212.
+// TODO(bobby): PLAYWRIGHT HITBOX VERIFICATION -- Coordinates swapped but are Steffen's manual estimates. Open localhost, click center of every room at both zoom levels (0.7 + 1.6), verify correct agent panel opens. Adjust any misses. See officeLayouts/default.js TODOs. MAP INTERACTION priority #1.
 // DONE(bobby): MODULAR OFFICE FRAMEWORK -- Extracted to officeLayouts/default.js. Room targets, clip paths, zoom presets, wave order, and image paths in standalone config. Swap image + config = new office skin.
 // DONE(bobby): INVISIBLE HOTSPOT MAPPING (OVO approach) -- All diamond SVG outlines REMOVED. Click regions are invisible rectangles matching wall boundaries. Hover = subtle radial glow inside room space. No borders, no outlines, no drawn shapes. Art defines rooms.
 // DONE(bobby): ROOM INTERACTION STATES -- Invisible hitboxes (OVO approach), subtle inner glow on hover only. No drawn outlines. Office walls define rooms.
