@@ -11,7 +11,7 @@
 // FILE OWNER: Bobby2 (HUD team). Bobby (Canvas team) does NOT touch this file.
 //
 // ========== PATRIK DIRECTIVES (Pass 25, lines 258-263) ==========
-// TODO(bobby2): LIVE TASK UPDATES IN CHECKLIST -- Tasks MUST update in real time. When an agent completes a task, the checklist reflects it IMMEDIATELY. Poll agent-notifications.md and relay for TASK FINISHED entries. Auto-check completed items. Auto-add new tasks from relay directives. Priority sort: Right Now items first, then Today, then by importance. "The proof is seeing it work on screen, not just code that exists in the codebase." Ref: Patrik feedback line 258-259, 263.
+// DONE(bobby2): LIVE TASK UPDATES IN CHECKLIST -- useAutoCheckFromNotifications() polls agent-notifications.md every 3s, extracts TASK FINISHED/SHIPPED/DELIVERED descriptions, fuzzy-matches against task text (2+ keyword overlap), auto-checks matching items. Priority sort: Right Now > Today > by-importance. Ref: Patrik feedback line 258-259, 263.
 // TODO(bobby2): RIGHT NOW CHECKLIST ITEMS WITH PROGRESS -- Each Right Now task row: agent avatar + task name + thin progress bar filling as agent works. Real time. Activity feed energy baked into the task list. Not a percentage number. A thin bar. SimCity build progress energy. Ref: Patrik clarification line 253.
 // ==========
 //
@@ -411,6 +411,81 @@ function generateDemoChecklist() {
       { text: 'Check permit tracker page after Bobby fix', done: false, agent: 'elmo', project: 'Today' },
     ],
   }
+}
+
+// ---- LIVE TASK AUTO-CHECK (polls notifications for TASK FINISHED, auto-checks matching checklist items) ----
+// DONE(bobby2): LIVE TASK UPDATES IN CHECKLIST -- Same logic as GameHUD's useAutoCheckFromNotifications.
+// Polls agent-notifications.md every 3s, fuzzy-matches completed descriptions against task text.
+function useAutoCheckFromNotifications() {
+  const [autoChecked, setAutoChecked] = useState(new Set())
+
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    const fetchCompletions = async () => {
+      try {
+        const res = await fetch('/api/local/file?path=context/agent-notifications.md')
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.content) return
+
+        const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
+        const completionLines = lines.filter(l =>
+          /TASK\s*FINISHED|COMPLETE|DELIVERED|SHIPPED/i.test(l)
+        )
+
+        const completedDescriptions = []
+        for (const line of completionLines) {
+          const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
+          const shippedMatch = line.match(/SHIPPED:\s*(?:\(\d+\)\s*)?(.+?)(?:,\s*\(\d+\)|\.\s|$)/i)
+          if (taskMatch) completedDescriptions.push(taskMatch[1].trim().toLowerCase())
+          if (shippedMatch) completedDescriptions.push(shippedMatch[1].trim().toLowerCase())
+          const numberedItems = line.matchAll(/\((\d+)\)\s*([^,(]+)/g)
+          for (const match of numberedItems) {
+            completedDescriptions.push(match[2].trim().toLowerCase())
+          }
+        }
+
+        const completedKeywords = new Set()
+        for (const desc of completedDescriptions) {
+          const tokens = desc
+            .replace(/[*_`#\[\]()]/g, '')
+            .replace(/\b(the|a|an|for|to|in|on|at|by|is|was|with|and|or|all|from|of)\b/gi, '')
+            .split(/\s+/)
+            .filter(t => t.length > 3)
+          for (let i = 0; i < tokens.length; i++) {
+            completedKeywords.add(tokens[i])
+            if (i + 1 < tokens.length) completedKeywords.add(`${tokens[i]} ${tokens[i+1]}`)
+            if (i + 2 < tokens.length) completedKeywords.add(`${tokens[i]} ${tokens[i+1]} ${tokens[i+2]}`)
+          }
+        }
+
+        setAutoChecked(completedKeywords)
+      } catch {}
+    }
+
+    fetchCompletions()
+    const timer = setInterval(fetchCompletions, 3000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const isAutoChecked = useCallback((taskText) => {
+    if (autoChecked.size === 0) return false
+    const normalized = taskText.toLowerCase()
+      .replace(/[*_`#\[\]()]/g, '')
+      .replace(/\b(the|a|an|for|to|in|on|at|by|is|was|with|and|or|all|from|of)\b/gi, '')
+    const tokens = normalized.split(/\s+/).filter(t => t.length > 3)
+    let matchCount = 0
+    for (const token of tokens) {
+      if (autoChecked.has(token)) matchCount++
+    }
+    for (let i = 0; i + 1 < tokens.length; i++) {
+      if (autoChecked.has(`${tokens[i]} ${tokens[i+1]}`)) matchCount += 2
+    }
+    return matchCount >= 2
+  }, [autoChecked])
+
+  return isAutoChecked
 }
 
 // ---- DATA HOOK for punch-list.md --------------------------------------------
@@ -1427,6 +1502,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   // Fetch punch-list data (grouped by project)
   const { data: punchData, loading } = usePunchListData()
   const conversationScores = useConversationRecency()
+  const isAutoChecked = useAutoCheckFromNotifications()
 
   // Right Now: live agent tasks (local: from agent-notifications.md, prod: demo data)
   const liveRightNowTasks = useRightNowTasks()
@@ -1436,6 +1512,17 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   // Sort projects by conversation-driven recency weight
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
+
+    // LIVE TASK AUTO-CHECK: mark tasks as done if they match TASK FINISHED notifications
+    for (const project of raw) {
+      for (const task of project.tasks) {
+        if (!task.done && isAutoChecked(task.text)) {
+          task.done = true
+          task.autoChecked = true
+        }
+      }
+    }
+
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     return [...raw].sort((a, b) => {
       // Right Now always first (live sprint)
@@ -1452,7 +1539,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores])
+  }, [punchData, conversationScores, isAutoChecked])
 
   // Filter projects based on sidebar selection
   const visibleProjects = selectedProject

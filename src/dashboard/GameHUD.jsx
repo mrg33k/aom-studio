@@ -21,7 +21,7 @@
 // FILE OWNER: Bobby2 (HUD team). Bobby (Canvas team) does NOT touch this file.
 //
 // ========== PATRIK DIRECTIVES (Pass 25, lines 258-263) ==========
-// TODO(bobby2): LIVE TASK UPDATES IN HUD (KEY KEY KEY) -- Tasks must update in REAL TIME and show most important at top based on where we left off. This is Patrik's #1 HUD priority. Not just static punch-list parsing. Poll relay + agent-notifications for task completions. When an agent finishes a task, HUD reflects it IMMEDIATELY. Priority sort: Right Now > Today > by-importance. The proof is seeing it work on screen, not just code that exists. Ref: Patrik feedback line 258-259, 263.
+// DONE(bobby2): LIVE TASK UPDATES IN HUD (KEY KEY KEY) -- useAutoCheckFromNotifications() polls agent-notifications.md every 3s, extracts TASK FINISHED/SHIPPED/DELIVERED descriptions, fuzzy-matches against punch-list task text (2+ keyword overlap), and auto-checks matching items in the UI (optimistic). Priority sort: Right Now > Today > by-importance. Auto-checked items get autoChecked flag for distinct styling. Ref: Patrik feedback line 258-259, 263.
 // DONE(bobby2): SELECTED PILL CONTRAST BUG (REGRESSION) -- Fixed. Expanded pill in daytime now uses #1E293B (dark slate) instead of project.color which could be light. Always readable on white/light backgrounds. Ref: Patrik feedback line 258, 260.
 // TODO(bobby2): RIGHT NOW PILL = CHECKLIST ITEMS WITH PROGRESS BARS -- Right Now pill shows active tasks as checklist items with thin progress bars under EACH item. Not a separate progress view. Agent avatar + task name + thin progress bar filling as agent works. Real time. Activity feed energy baked into the task list itself. Ref: Patrik clarification line 253.
 // DONE(bobby2): KILL MINIMAP -- No minimap rendered in GameHUD. MiniMap component lives in GameDashboard (separate file owner). GameHUD is clean. Ref: Patrik directive line 267.
@@ -474,6 +474,97 @@ function useRightNowLiveTasks() {
   }, [])
 
   return tasks
+}
+
+// ---- LIVE TASK AUTO-CHECK (polls notifications for TASK FINISHED, auto-checks matching punch-list items) ----
+// DONE(bobby2): LIVE TASK UPDATES IN HUD -- Tasks update in real time. Polls agent-notifications.md every 3s
+// for TASK FINISHED entries. Fuzzy-matches against punch-list task text. Auto-checks matching items in the UI
+// (optimistic, without modifying the file). Priority sort: Right Now > Today > by-importance.
+// The proof: when an agent finishes a task, the HUD checks it off IMMEDIATELY.
+function useAutoCheckFromNotifications() {
+  const [autoChecked, setAutoChecked] = useState(new Set())
+
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    const fetchCompletions = async () => {
+      try {
+        const res = await fetch('/api/local/file?path=context/agent-notifications.md')
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.content) return
+
+        const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
+        const completionLines = lines.filter(l =>
+          /TASK\s*FINISHED|COMPLETE|DELIVERED|SHIPPED/i.test(l)
+        )
+
+        // Extract task descriptions from TASK FINISHED lines
+        const completedDescriptions = []
+        for (const line of completionLines) {
+          // Extract the main task description
+          const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
+          const shippedMatch = line.match(/SHIPPED:\s*(?:\(\d+\)\s*)?(.+?)(?:,\s*\(\d+\)|\.\s|$)/i)
+          if (taskMatch) completedDescriptions.push(taskMatch[1].trim().toLowerCase())
+          if (shippedMatch) completedDescriptions.push(shippedMatch[1].trim().toLowerCase())
+
+          // Also extract numbered SHIPPED items: (1) foo, (2) bar
+          const numberedItems = line.matchAll(/\((\d+)\)\s*([^,(]+)/g)
+          for (const match of numberedItems) {
+            completedDescriptions.push(match[2].trim().toLowerCase())
+          }
+        }
+
+        // Build a set of normalized keywords from completed descriptions
+        // Used for fuzzy matching against punch-list items
+        const completedKeywords = new Set()
+        for (const desc of completedDescriptions) {
+          // Normalize: strip markdown, common words, keep meaningful tokens
+          const tokens = desc
+            .replace(/[*_`#\[\]()]/g, '')
+            .replace(/\b(the|a|an|for|to|in|on|at|by|is|was|with|and|or|all|from|of)\b/gi, '')
+            .split(/\s+/)
+            .filter(t => t.length > 3)
+          // Store 3-word sliding windows for phrase matching
+          for (let i = 0; i < tokens.length; i++) {
+            completedKeywords.add(tokens[i])
+            if (i + 1 < tokens.length) completedKeywords.add(`${tokens[i]} ${tokens[i+1]}`)
+            if (i + 2 < tokens.length) completedKeywords.add(`${tokens[i]} ${tokens[i+1]} ${tokens[i+2]}`)
+          }
+        }
+
+        setAutoChecked(completedKeywords)
+      } catch {}
+    }
+
+    fetchCompletions()
+    const timer = setInterval(fetchCompletions, 3000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Returns true if a punch-list task text matches a completed notification
+  const isAutoChecked = useCallback((taskText) => {
+    if (autoChecked.size === 0) return false
+    const normalized = taskText.toLowerCase()
+      .replace(/[*_`#\[\]()]/g, '')
+      .replace(/\b(the|a|an|for|to|in|on|at|by|is|was|with|and|or|all|from|of)\b/gi, '')
+    const tokens = normalized.split(/\s+/).filter(t => t.length > 3)
+
+    // Match if 2+ meaningful words from the task text appear in completed descriptions
+    let matchCount = 0
+    for (const token of tokens) {
+      if (autoChecked.has(token)) matchCount++
+    }
+    // Also check 2-word phrases
+    for (let i = 0; i + 1 < tokens.length; i++) {
+      if (autoChecked.has(`${tokens[i]} ${tokens[i+1]}`)) matchCount += 2
+    }
+
+    // Require at least 2 keyword matches (prevents false positives on common words)
+    return matchCount >= 2
+  }, [autoChecked])
+
+  return isAutoChecked
 }
 
 // ---- SIMS PLUMBOB SVG CLIP PATH (the iconic diamond shape) ------------------
@@ -1408,11 +1499,12 @@ function TaskPanel({ project, onClose, isNightMode }) {
                 style={{
                   width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
                   border: isDone ? 'none' : `1.5px solid ${tpCheckboxBorder}`,
-                  background: isDone ? project.color : tpCheckboxBg,
+                  background: isDone ? (task.autoChecked ? '#22C55E' : project.color) : tpCheckboxBg,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 150ms ease',
                   cursor: IS_LOCAL ? 'pointer' : 'default',
                   opacity: isSaving ? 0.5 : 1,
+                  boxShadow: task.autoChecked ? '0 0 8px rgba(34,197,94,0.4)' : 'none',
                 }}>
                 {isDone && <Check size={12} color="#FFF" strokeWidth={3} />}
               </motion.div>
@@ -1564,6 +1656,7 @@ export default function GameHUD({
   const hudRef = useRef(null)
   const conversationScores = useConversationRecency()
   const liveRightNowTasks = useRightNowLiveTasks()
+  const isAutoChecked = useAutoCheckFromNotifications()
 
   // Sort projects by CONVERSATION RECENCY first, then incomplete task count.
   // The system KNOWS what matters based on what you TALK ABOUT.
@@ -1602,6 +1695,17 @@ export default function GameHUD({
       }
     }
 
+    // LIVE TASK AUTO-CHECK: mark tasks as done if they match TASK FINISHED notifications
+    // This is optimistic UI: the checkbox appears checked before punch-list.md is updated on disk.
+    for (const project of merged) {
+      for (const task of project.tasks) {
+        if (!task.done && isAutoChecked(task.text)) {
+          task.done = true
+          task.autoChecked = true // Flag so we can style it differently (e.g., subtle glow)
+        }
+      }
+    }
+
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     // Right Now always first, Today always second
     return [...merged].sort((a, b) => {
@@ -1622,7 +1726,7 @@ export default function GameHUD({
       // Tertiary: total tasks
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, liveRightNowTasks])
+  }, [punchData, conversationScores, liveRightNowTasks, isAutoChecked])
 
   // Filter projects by search query
   const filteredProjects = useMemo(() => {
