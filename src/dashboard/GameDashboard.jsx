@@ -101,23 +101,34 @@ function sanitizeRelayMessage(text) {
   cleaned = cleaned.replace(/<task-notification>[\s\S]*?<\/task-notification>/g, '')
   cleaned = cleaned.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
   cleaned = cleaned.replace(/<available-deferred-tools>[\s\S]*?<\/available-deferred-tools>/g, '')
+  cleaned = cleaned.replace(/<[a-z_-]+>[\s\S]*?<\/[a-z_-]+>/g, '')
 
-  // 2. Strip watchdog preamble patterns
+  // 2. Strip watchdog preamble patterns (all known variations)
   cleaned = cleaned.replace(/^Patrik sent this via Telegram:\s*/i, '')
-  cleaned = cleaned.replace(/^Patrik sent these messages via Telegram:\s*/i, '')
+  cleaned = cleaned.replace(/^Patrik sent these? messages? via Telegram:\s*/i, '')
   cleaned = cleaned.replace(/You have full project context from CLAUDE\.md\.\s*/g, '')
   cleaned = cleaned.replace(/Respond naturally with the same detail you would on the desktop\.\s*/g, '')
   cleaned = cleaned.replace(/Do not artificially shorten or condense your response\.\s*/g, '')
-  cleaned = cleaned.replace(/If the request needs calendar, email, file changes, or tool access,\s*do what you can and note any limitations\.\s*/g, '')
-  cleaned = cleaned.replace(/If any request needs calendar, email, file changes, or tool access,\s*do what you can and note any limitations\.\s*/g, '')
+  cleaned = cleaned.replace(/If (?:the |any )?request(?:s)? needs? calendar,?\s*email,?\s*file changes,?\s*or tool access,?\s*do what you can and note any limitations\.\s*/gi, '')
   cleaned = cleaned.replace(/Do not use em dashes\.\s*Use bullet points over paragraphs\.\s*/g, '')
   cleaned = cleaned.replace(/Address all messages in one response\.\s*/g, '')
+  cleaned = cleaned.replace(/IMPORTANT:?\s*these instructions OVERRIDE[\s\S]*?exactly as written\.?\s*/gi, '')
+  cleaned = cleaned.replace(/As you answer the user's questions[\s\S]*?following context:\s*/gi, '')
+  cleaned = cleaned.replace(/Contents of \/Users\/[\s\S]*?(?=\n\n|\z)/g, '')
+  cleaned = cleaned.replace(/# claudeMd[\s\S]*?(?=\n#|\z)/g, '')
 
   // 3. Strip "Full transcript available at: /private/tmp/..." lines
   cleaned = cleaned.replace(/Full transcript available at:\s*\/\S+/g, '')
 
   // 4. Strip timestamped message list prefixes from watchdog batches
   cleaned = cleaned.replace(/^-\s*\[\d{4}-\d{2}-\d{2}T[^\]]*\]\s*/gm, '')
+
+  // 5. Strip telegram/relay headers
+  cleaned = cleaned.replace(/^=+\s*TELEGRAM MESSAGES?\s*(?:FROM PATRIK)?\s*=+\s*/gim, '')
+  cleaned = cleaned.replace(/^=+\s*PENDING MESSAGES?\s*=+\s*/gim, '')
+
+  // 6. Strip Claude Code system prefixes
+  cleaned = cleaned.replace(/^(?:Human|Assistant|System):\s*/gm, '')
 
   cleaned = cleaned.trim()
   if (!cleaned || cleaned.length < 2) return null

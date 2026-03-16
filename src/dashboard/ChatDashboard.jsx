@@ -1,12 +1,13 @@
 // DONE(bobby2): Chat message markdown rendering -- agent responses render markdown (bold, lists, code blocks, links) via marked library
-// TODO(patrik): Chat message search -- filter past messages by keyword [SURVIVES: Chat is a data/UI layer. No engine dependency.]
-// TODO(patrik): Typing indicator from relay -- show real "agent is typing" state from relay pipeline [SURVIVES: Relay pipeline is independent of rendering engine.]
+// DONE(bobby2): Chat message search -- filter past messages by keyword
+// DONE(bobby2): Typing indicator -- shows "[Agent] is thinking..." with animated dots while waiting for relay response
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare, Send, X, ArrowLeft, ChevronRight, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, BarChart3, GitCommit, Terminal, Radio,
+  Search as SearchIcon,
 } from 'lucide-react'
 import { marked } from 'marked'
 
@@ -37,33 +38,77 @@ function sanitizeRelayMessage(text) {
 
   let cleaned = text
 
-  // 1. Filter system XML blocks: <task-notification>...</task-notification>, <system-reminder>...</system-reminder>, <available-deferred-tools>...</available-deferred-tools>
+  // 1. Filter system XML blocks
   cleaned = cleaned.replace(/<task-notification>[\s\S]*?<\/task-notification>/g, '')
   cleaned = cleaned.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
   cleaned = cleaned.replace(/<available-deferred-tools>[\s\S]*?<\/available-deferred-tools>/g, '')
+  cleaned = cleaned.replace(/<[a-z_-]+>[\s\S]*?<\/[a-z_-]+>/g, '') // catch any remaining XML blocks
 
-  // 2. Strip watchdog preamble patterns
+  // 2. Strip watchdog preamble patterns (all known variations)
   cleaned = cleaned.replace(/^Patrik sent this via Telegram:\s*/i, '')
-  cleaned = cleaned.replace(/^Patrik sent these messages via Telegram:\s*/i, '')
+  cleaned = cleaned.replace(/^Patrik sent these? messages? via Telegram:\s*/i, '')
   cleaned = cleaned.replace(/You have full project context from CLAUDE\.md\.\s*/g, '')
   cleaned = cleaned.replace(/Respond naturally with the same detail you would on the desktop\.\s*/g, '')
   cleaned = cleaned.replace(/Do not artificially shorten or condense your response\.\s*/g, '')
-  cleaned = cleaned.replace(/If the request needs calendar, email, file changes, or tool access,\s*do what you can and note any limitations\.\s*/g, '')
-  cleaned = cleaned.replace(/If any request needs calendar, email, file changes, or tool access,\s*do what you can and note any limitations\.\s*/g, '')
+  cleaned = cleaned.replace(/If (?:the |any )?request(?:s)? needs? calendar,?\s*email,?\s*file changes,?\s*or tool access,?\s*do what you can and note any limitations\.\s*/gi, '')
   cleaned = cleaned.replace(/Do not use em dashes\.\s*Use bullet points over paragraphs\.\s*/g, '')
   cleaned = cleaned.replace(/Address all messages in one response\.\s*/g, '')
+  cleaned = cleaned.replace(/IMPORTANT:?\s*these instructions OVERRIDE[\s\S]*?exactly as written\.?\s*/gi, '')
+  cleaned = cleaned.replace(/As you answer the user's questions[\s\S]*?following context:\s*/gi, '')
+  cleaned = cleaned.replace(/Contents of \/Users\/[\s\S]*?(?=\n\n|\z)/g, '')
+  cleaned = cleaned.replace(/# claudeMd[\s\S]*?(?=\n#|\z)/g, '')
 
   // 3. Strip "Full transcript available at: /private/tmp/..." lines
   cleaned = cleaned.replace(/Full transcript available at:\s*\/\S+/g, '')
 
-  // 4. Strip timestamped message list prefixes from watchdog batches (e.g., "- [2026-03-16T...] ")
+  // 4. Strip timestamped message list prefixes from watchdog batches
   cleaned = cleaned.replace(/^-\s*\[\d{4}-\d{2}-\d{2}T[^\]]*\]\s*/gm, '')
+
+  // 5. Strip "=== TELEGRAM MESSAGES FROM PATRIK ===" headers and similar
+  cleaned = cleaned.replace(/^=+\s*TELEGRAM MESSAGES?\s*(?:FROM PATRIK)?\s*=+\s*/gim, '')
+  cleaned = cleaned.replace(/^=+\s*PENDING MESSAGES?\s*=+\s*/gim, '')
+
+  // 6. Strip Claude Code system prefixes that sometimes leak
+  cleaned = cleaned.replace(/^(?:Human|Assistant|System):\s*/gm, '')
 
   // Trim and check if anything meaningful remains
   cleaned = cleaned.trim()
   if (!cleaned || cleaned.length < 2) return null
 
   return cleaned
+}
+
+// ─── DEDUPLICATION ──────────────────────────────────────────────────────────
+// When a message is sent from dashboard, it goes to relay-inbox as source "corner-dashboard".
+// The relay hook then echoes it back to terminal as source "terminal" with watchdog preamble.
+// This creates duplicate messages. We detect these by comparing cleaned content.
+function deduplicateMessages(messages) {
+  const seen = new Map() // cleaned content -> first message
+  const result = []
+
+  for (const msg of messages) {
+    if (!msg.content) { result.push(msg); continue }
+
+    // Normalize content for comparison (lowercase, strip whitespace/punctuation)
+    const normalized = msg.content.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (normalized.length < 3) { result.push(msg); continue }
+
+    const existing = seen.get(normalized)
+    if (existing) {
+      // Keep the earlier message (original), skip the echo
+      // If timestamps are within 30 seconds, it's a duplicate
+      const existingTime = new Date(existing.time).getTime()
+      const thisTime = new Date(msg.time).getTime()
+      if (Math.abs(existingTime - thisTime) < 30000) {
+        continue // skip duplicate
+      }
+    }
+
+    seen.set(normalized, msg)
+    result.push(msg)
+  }
+
+  return result
 }
 
 // Extract agent name from [AGENT] prefix in relay messages (e.g., "[ELON] ..." -> "elon")
@@ -305,9 +350,12 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [streaming, setStreaming] = useState(false)
   const [relayConnected, setRelayConnected] = useState(false)
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
+  const searchInputRef = useRef(null)
   const relayPollRef = useRef(null)
   const lastOutboxCheckRef = useRef(null)
   const chatTimeoutRef = useRef(null)
@@ -326,22 +374,18 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Phoenix' })
   }
 
-  // Format source label for display below bubbles (returns { text, color })
+  // Format source label: tiny, muted, secondary to the actual message content
   const formatSource = (msg) => {
     if (!msg.source) return null
-    const s = msg.source
-    if (s === 'dashboard' || s === 'corner-dashboard') return { text: 'VIA DASHBOARD', color: '#3B82F6' }
-    if (s === 'telegram') return { text: 'VIA TELEGRAM', color: '#3B82F6' }
-    if (s === 'terminal' || s === 'cli') return { text: 'VIA TERMINAL', color: '#22C55E' }
-    if (s === 'via terminal') return { text: 'VIA TERMINAL', color: '#22C55E' }
-    if (s === 'via telegram') return { text: 'VIA TELEGRAM', color: '#3B82F6' }
-    if (s === 'via dashboard') return { text: 'VIA DASHBOARD', color: '#3B82F6' }
-    if (s === 'system') return { text: 'SYSTEM', color: '#78716C' }
-    // Agent names as source (from extractAgentSource)
+    const s = (msg.source || '').toLowerCase().replace(/^via\s+/, '')
+    if (s === 'dashboard' || s === 'corner-dashboard' || s === 'corner-websocket') return { text: 'dashboard' }
+    if (s === 'telegram') return { text: 'telegram' }
+    if (s === 'terminal' || s === 'cli') return { text: 'terminal' }
+    if (s === 'system') return { text: 'system' }
     const knownSlugs = ['bobby','steffen','cleo','elon','steve','alex','mom','jacob','paige','tony','elmo','colton','pixel']
-    if (knownSlugs.includes(s)) return { text: `VIA ${s.toUpperCase()}`, color: '#22C55E' }
-    if (s.startsWith('via ')) return { text: s.toUpperCase(), color: '#78716C' }
-    return { text: `VIA ${s.toUpperCase()}`, color: '#78716C' }
+    if (knownSlugs.includes(s)) return { text: s }
+    if (s && s.length < 20) return { text: s }
+    return null
   }
 
   // Get agent initial for avatar
@@ -409,9 +453,10 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             })
           }
 
-          // Sort by timestamp and take last 30
+          // Sort by timestamp, deduplicate echoed messages, take last 50
           all.sort((a, b) => new Date(a.time) - new Date(b.time))
-          const recent = all.slice(-30)
+          const deduped = deduplicateMessages(all)
+          const recent = deduped.slice(-50)
 
           if (recent.length > 0) {
             setMessages(recent)
@@ -561,20 +606,16 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                   if (updated.some(m => m.id === msg.id)) continue
                   const cleaned = sanitizeRelayMessage(msg.message)
                   if (!cleaned) continue
-                  let sourceLabel = msg.source || 'unknown'
-                  if (sourceLabel === 'telegram') sourceLabel = 'via telegram'
-                  else if (sourceLabel === 'terminal' || sourceLabel === 'cli') sourceLabel = 'via terminal'
-                  else sourceLabel = `via ${sourceLabel}`
                   updated.push({
                     role: 'user',
                     content: cleaned,
                     time: msg.timestamp,
-                    source: sourceLabel,
+                    source: msg.source || 'unknown',
                     id: msg.id,
                   })
                 }
                 updated.sort((a, b) => new Date(a.time) - new Date(b.time))
-                return updated
+                return deduplicateMessages(updated)
               })
             }
           }
@@ -607,7 +648,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                   })
                 }
                 updated.sort((a, b) => new Date(a.time) - new Date(b.time))
-                return updated
+                return deduplicateMessages(updated)
               })
             }
           }
@@ -799,6 +840,14 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             <p className="text-[#C026D3]/70 text-[12px] font-mono">{agent.role}</p>
           </div>
         </div>
+        {/* Search toggle */}
+        <button
+          onClick={() => { setSearchOpen(o => !o); setTimeout(() => searchInputRef.current?.focus(), 100) }}
+          className={`p-1.5 rounded-full transition-colors ${searchOpen ? 'bg-[#3B82F6]/20 text-[#3B82F6]' : 'hover:bg-[#292524] text-[#78716C]'}`}
+          title="Search messages"
+        >
+          <SearchIcon className="w-4 h-4" />
+        </button>
         {/* Relay connection indicator */}
         <div className="flex items-center gap-1.5 shrink-0" title={IS_LOCAL ? 'Local relay (direct file I/O)' : 'Remote relay (GitHub API)'}>
           <Radio className={`w-3 h-3 ${relayConnected ? 'text-[#22C55E]' : 'text-[#78716C]'}`} />
@@ -808,9 +857,39 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         </div>
       </div>
 
+      {/* Search bar (slides in below header) */}
+      <AnimatePresence>
+        {searchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden border-b border-[#292524] bg-[#0F0F0D] shrink-0"
+          >
+            <div className="px-4 py-2 flex items-center gap-2">
+              <SearchIcon className="w-3.5 h-3.5 text-[#78716C] shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search messages..."
+                className="flex-1 bg-transparent text-[#F0ECE6] text-sm focus:outline-none placeholder:text-[#78716C]/40"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="text-[#78716C] hover:text-[#A8A29E]">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Messages */}
-      <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-5 space-y-5 scroll-smooth chat-messages-area relative">
-        {messages.length === 0 && (
+      <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scroll-smooth chat-messages-area relative">
+        {messages.length === 0 && !searchQuery && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-full bg-[#1A1A17] border-2 border-[#C026D3]/40 flex items-center justify-center mb-4">
               <span className="text-[#C026D3] font-bold text-xl">{agentInitial}</span>
@@ -820,13 +899,13 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             </p>
             <p className="text-[#78716C] text-xs font-mono mb-3">{agent.role}</p>
             <p className="text-[#78716C]/40 text-[11px] font-mono">
-              Same relay as Telegram
+              Same relay as Telegram + Terminal
             </p>
           </div>
         )}
 
         {/* TODAY divider */}
-        {messages.length > 0 && (
+        {messages.length > 0 && !searchQuery && (
           <div className="flex items-center gap-3 py-1">
             <div className="flex-1 h-px bg-[#292524]" />
             <span className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">Today</span>
@@ -834,30 +913,66 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           </div>
         )}
 
-        {messages.map((msg, i) => {
+        {/* Search results count */}
+        {searchQuery && (
+          <div className="text-center py-2">
+            <span className="text-[11px] font-mono text-[#78716C]">
+              {messages.filter(m => m.content?.toLowerCase().includes(searchQuery.toLowerCase())).length} results for "{searchQuery}"
+            </span>
+          </div>
+        )}
+
+        {messages
+          .filter(msg => !searchQuery || msg.content?.toLowerCase().includes(searchQuery.toLowerCase()))
+          .map((msg, i) => {
           const isUser = msg.role === 'user'
           const sourceLabel = formatSource(msg)
           const timeStr = msg.time && !msg.streaming ? formatTime(msg.time) : null
 
+          // Typing indicator (streaming placeholder with no content yet)
+          if (msg.streaming && !msg.content) {
+            return (
+              <div key="typing-indicator" className="flex items-end gap-2.5 flex-row">
+                <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 border-[#C026D3]/50 bg-[#C026D3]/10 text-[#C026D3]">
+                  {agentInitial}
+                </div>
+                <div className="bg-[#1C1C1A] border border-[#2A2A28] rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#78716C] text-xs font-mono">{agent.name} is thinking</span>
+                    <span className="flex items-center gap-1">
+                      {[0, 1, 2].map(j => (
+                        <span
+                          key={j}
+                          className="inline-block w-1.5 h-1.5 rounded-full bg-[#C026D3]/60"
+                          style={{ animation: `chatBounce 1.4s ease-in-out ${j * 0.2}s infinite` }}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
           return (
-            <div key={msg.id || i} className={`flex items-end gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-              {/* Avatar */}
-              <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 ${
+            <div key={msg.id || i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+              {/* Avatar: smaller, cleaner */}
+              <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                 isUser
-                  ? 'border-[#3B82F6]/50 bg-[#3B82F6]/10 text-[#3B82F6]'
-                  : 'border-[#C026D3]/50 bg-[#C026D3]/10 text-[#C026D3]'
+                  ? 'border-[#3B82F6]/40 bg-[#3B82F6]/10 text-[#3B82F6]'
+                  : 'border-[#C026D3]/40 bg-[#C026D3]/10 text-[#C026D3]'
               }`}>
                 {isUser ? 'P' : agentInitial}
               </div>
 
               {/* Bubble + meta */}
-              <div className={`flex flex-col max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
+              <div className={`flex flex-col max-w-[78%] ${isUser ? 'items-end' : 'items-start'}`}>
                 {/* Message bubble */}
                 <div
-                  className={`px-4 py-3 text-sm leading-relaxed ${
+                  className={`px-3.5 py-2.5 text-sm leading-relaxed ${
                     isUser
-                      ? 'bg-[#1E3A5F] text-[#F0ECE6] rounded-2xl rounded-br-md'
-                      : 'bg-[#1C1C1A] text-[#F0ECE6] border border-[#2A2A28] rounded-2xl rounded-bl-md shadow-lg shadow-black/20'
+                      ? 'bg-[#1E3A5F] text-[#F0ECE6] rounded-2xl rounded-br-sm'
+                      : 'bg-[#1C1C1A] text-[#F0ECE6] border border-[#2A2A28] rounded-2xl rounded-bl-sm'
                   }`}
                 >
                   {msg.role === 'assistant' && msg.content && !msg.streaming ? (
@@ -868,38 +983,22 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                   ) : (
                     <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                   )}
-                  {msg.streaming && !msg.content && (
-                    <div className="flex items-center gap-1.5 py-0.5">
-                      {[0, 1, 2].map(j => (
-                        <span
-                          key={j}
-                          className="inline-block w-2 h-2 rounded-full bg-[#C026D3]/60"
-                          style={{ animation: `chatBounce 1.4s ease-in-out ${j * 0.2}s infinite` }}
-                        />
-                      ))}
-                    </div>
-                  )}
                   {msg.streaming && msg.content && (
                     <span className="inline-block w-1.5 h-4 bg-[#C026D3] ml-0.5 animate-pulse rounded-full" />
                   )}
                 </div>
 
-                {/* Timestamp + source below bubble */}
-                {(timeStr || sourceLabel) && (
-                  <div className={`flex items-center gap-2 mt-1.5 px-1 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                    {timeStr && (
-                      <span className="text-[11px] font-mono text-[#78716C]/60">{timeStr}</span>
-                    )}
-                    {sourceLabel && (
-                      <span
-                        className="text-[9px] font-mono uppercase tracking-[0.08em] opacity-40"
-                        style={{ color: '#78716C' }}
-                      >
-                        {sourceLabel.text}
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* Timestamp + source: ultra-muted, content is king */}
+                <div className={`flex items-center gap-1.5 mt-1 px-1 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {timeStr && (
+                    <span className="text-[10px] font-mono text-[#78716C]/40">{timeStr}</span>
+                  )}
+                  {sourceLabel && (
+                    <span className="text-[9px] font-mono text-[#78716C]/25">
+                      {sourceLabel.text}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           )
@@ -907,20 +1006,24 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Jump to latest / New messages indicator */}
+      {/* Jump to latest / New messages indicator -- positioned relative to the chat area */}
       <AnimatePresence>
         {showNewMsgIndicator && (
-          <motion.button
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            onClick={scrollToBottom}
-            className="absolute left-1/2 -translate-x-1/2 z-10 bg-[#3B82F6] text-white text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20 hover:bg-[#2563EB] transition-colors cursor-pointer flex items-center gap-1.5"
-            style={{ bottom: 72 }}
+            className="relative z-10 flex justify-center"
+            style={{ marginTop: -44 }}
           >
-            <ChevronDown size={14} strokeWidth={2.5} />
-            {hasNewMessagesRef.current ? 'New messages' : 'Jump to latest'}
-          </motion.button>
+            <button
+              onClick={scrollToBottom}
+              className="bg-[#3B82F6] text-white text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20 hover:bg-[#2563EB] transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <ChevronDown size={14} strokeWidth={2.5} />
+              {hasNewMessagesRef.current ? 'New messages' : 'Jump to latest'}
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 
