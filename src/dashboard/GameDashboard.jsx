@@ -1,15 +1,27 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare, Send, X, ChevronUp, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, GitCommit, Terminal, Maximize2, Minimize2,
   ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map,
-  ZoomIn, ZoomOut, Home,
+  ZoomIn, ZoomOut, Home, LayoutDashboard, Gamepad2, Command,
+  ArrowRight,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
-import { createChatConnection } from './chatConnection.js'
+import { createChatConnection, CONNECTION_TYPE } from './chatConnection.js'
 import { renderFurniture } from './FurnitureRenderer.jsx'
+import { useWebSocket, WS_STATE } from './useWebSocket.js'
+
+const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
+const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
+
+// ---- MODE CONFIG -----------------------------------------------------------
+const MODES = {
+  game: { id: 'game', label: 'GAME', icon: Map, key: '1', path: '/dashboard' },
+  checklist: { id: 'checklist', label: 'CHECKLIST', icon: ListTodo, key: '2', path: '/dashboard/checklist' },
+  megaboard: { id: 'megaboard', label: 'MEGABOARD', icon: LayoutDashboard, key: '3', path: '/dashboard/megaboard' },
+}
 
 // ---- CONFIG ----------------------------------------------------------------
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
@@ -89,7 +101,7 @@ function useDashboardData(interval) {
   return { data, error, loading }
 }
 
-function useKeyboardShortcuts({ onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations, onZoomIn, onZoomOut, onOverview }) {
+function useKeyboardShortcuts({ onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations, onZoomIn, onZoomOut, onOverview, onModeSwitch, onCommandPalette, onShowShortcuts }) {
   useEffect(() => {
     const handler = (e) => {
       // Skip if user is typing in an input
@@ -97,27 +109,39 @@ function useKeyboardShortcuts({ onToggleHud, onToggleChat, onToggleMinimap, onEs
         if (e.key === 'Escape') { e.target.blur(); onEscape?.() }
         return
       }
+
+      // Cmd+K / Ctrl+K: command palette
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        onCommandPalette?.()
+        return
+      }
+
+      switch (e.key) {
+        // Mode switching: 1, 2, 3
+        case '1': onModeSwitch?.('game'); break
+        case '2': onModeSwitch?.('checklist'); break
+        case '3': onModeSwitch?.('megaboard'); break
+
+        case '?': onShowShortcuts?.(); break
+        default: break
+      }
+
       switch (e.key.toLowerCase()) {
         case 't': onToggleHud?.(); break
-        case 'enter': onToggleChat?.(); break
         case 'escape': onEscape?.(); break
         case 'm': onToggleMinimap?.(); break
         case ' ': e.preventDefault(); onToggleAnimations?.(); break
-        case '/': onToggleChat?.(); break
+        case '/': e.preventDefault(); onToggleChat?.(); break
         case '=': case '+': onZoomIn?.(); break
         case '-': onZoomOut?.(); break
         case 'o': onOverview?.(); break
-        default:
-          if (e.key >= '1' && e.key <= '9') {
-            const idx = parseInt(e.key) - 1
-            onAgentSelect?.(idx)
-          }
-          break
+        default: break
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations, onZoomIn, onZoomOut, onOverview])
+  }, [onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations, onZoomIn, onZoomOut, onOverview, onModeSwitch, onCommandPalette, onShowShortcuts])
 }
 
 // ---- UTILITIES -------------------------------------------------------------
@@ -747,46 +771,308 @@ function MiniMap({ rooms, agentStatus, selectedRoom, cameraTarget, cameraZoom, i
   )
 }
 
-// ---- NOTIFICATION TOAST (top-right) ----------------------------------------
-function NotificationToast({ notifications, onDismiss, onClickNotification }) {
+// ---- NOTIFICATION TOAST (top-right) - Steffen C3 toast spec ----------------
+// 4 types: task_complete (green), handoff (blue), error_recovery (yellow), system (gray)
+const TOAST_TYPES = {
+  task_complete: { accent: '#22C55E', icon: CheckCircle2, autoDismiss: 5000 },
+  handoff: { accent: '#3B82F6', icon: ArrowRight, autoDismiss: 5000 },
+  error_recovery: { accent: '#F59E0B', icon: AlertTriangle, autoDismiss: 8000 },
+  system: { accent: '#6B7280', icon: Terminal, autoDismiss: 4000 },
+}
+
+function NotificationToast({ notifications, onDismiss, onClickNotification, queuedCount }) {
+  const [hoveredId, setHoveredId] = useState(null)
+
   return (
-    <div style={{ position: 'fixed', top: 64, right: 16, zIndex: 45, display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{
+      position: 'fixed', top: 64, right: 16, zIndex: 45,
+      display: 'flex', flexDirection: 'column', gap: 8,
+    }}
+      role="status" aria-live="polite"
+    >
       <AnimatePresence>
-        {notifications.slice(0, 3).map(n => (
-          <motion.div
-            key={n.id}
-            initial={{ x: 340, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 340, opacity: 0 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-            onClick={() => onClickNotification?.(n)}
-            style={{
-              width: 320, cursor: 'pointer',
-              background: 'rgba(10, 15, 30, 0.95)',
-              border: `1px solid ${n.agentColor || '#E85D26'}33`,
-              borderLeft: `3px solid ${n.agentColor || '#E85D26'}`,
-              borderRadius: 8,
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
-              padding: '14px 16px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <SpriteAvatar agentSlug={n.agentSlug} size={24} borderColor={n.agentColor || '#E85D26'} />
-              <span style={{ color: n.agentColor || '#E85D26', fontSize: 12, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>{n.agentName}</span>
-              <span style={{ marginLeft: 'auto', color: '#6B7280', fontSize: 10, fontFamily: 'Space Grotesk, sans-serif' }}>{n.time}</span>
-            </div>
-            <div style={{ color: '#F0ECE6', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-              {n.message}
-            </div>
-          </motion.div>
-        ))}
+        {notifications.slice(0, 3).map(n => {
+          const toastType = TOAST_TYPES[n.type] || TOAST_TYPES.system
+          const accentColor = toastType.accent
+          const EventIcon = toastType.icon
+          const isHovered = hoveredId === n.id
+
+          return (
+            <motion.div
+              key={n.id}
+              role="alert"
+              initial={{ x: 340, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 340, opacity: 0 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+              onClick={() => onClickNotification?.(n)}
+              onMouseEnter={() => setHoveredId(n.id)}
+              onMouseLeave={() => setHoveredId(null)}
+              style={{
+                width: 320, cursor: n.type !== 'system' ? 'pointer' : 'default',
+                background: 'rgba(10, 15, 30, 0.95)',
+                backdropFilter: 'blur(12px)',
+                border: `1px solid ${accentColor}33`,
+                borderLeft: `3px solid ${accentColor}`,
+                borderRadius: 8,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.2)',
+                padding: '12px 14px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Top row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <SpriteAvatar agentSlug={n.agentSlug} size={24} borderColor={n.agentColor || accentColor} />
+                <EventIcon size={14} color={accentColor} />
+                <span style={{ color: n.agentColor || accentColor, fontSize: 12, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>
+                  {n.agentName || 'System'}
+                </span>
+                <span style={{ marginLeft: 'auto', color: '#6B7280', fontSize: 10, fontFamily: 'Space Grotesk, sans-serif' }}>
+                  {n.time}
+                </span>
+                {/* Dismiss button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDismiss?.(n.id) }}
+                  aria-label="Dismiss notification"
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: isHovered ? '#F0ECE6' : '#4A5060',
+                    padding: 2, transition: 'color 150ms',
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              {/* Message */}
+              <div style={{
+                color: '#F0ECE6', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif',
+                lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis',
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+              }}>
+                {n.message}
+              </div>
+
+              {/* Dismiss timer progress bar */}
+              {!isHovered && (
+                <motion.div
+                  initial={{ width: '100%' }}
+                  animate={{ width: '0%' }}
+                  transition={{ duration: (toastType.autoDismiss || 5000) / 1000, ease: 'linear' }}
+                  onAnimationComplete={() => onDismiss?.(n.id)}
+                  style={{
+                    position: 'absolute', bottom: 0, left: 0,
+                    height: 2, background: `${accentColor}4D`,
+                    borderRadius: '0 0 8px 8px',
+                  }}
+                />
+              )}
+            </motion.div>
+          )
+        })}
       </AnimatePresence>
+
+      {/* Queued toast indicator */}
+      {queuedCount > 0 && (
+        <div style={{
+          fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 9,
+          color: '#6B7280', textAlign: 'center', marginTop: 4,
+        }}>
+          +{queuedCount} more
+        </div>
+      )}
     </div>
   )
 }
 
+// ---- MODE SWITCHER (center of HUD bar) - Steffen c3-mode-switcher-spec -----
+function ModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
+  const [hoveredMode, setHoveredMode] = useState(null)
+  const modeList = [MODES.game, MODES.checklist, MODES.megaboard]
+
+  if (isMobile) {
+    // Mobile: bottom tab bar (rendered separately, not here)
+    return null
+  }
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 0, position: 'relative', height: 48,
+    }}>
+      {modeList.map(mode => {
+        const active = currentMode === mode.id
+        const Icon = mode.icon
+        const isHovered = hoveredMode === mode.id
+        return (
+          <button
+            key={mode.id}
+            onClick={() => onModeSwitch(mode.id)}
+            onMouseEnter={() => setHoveredMode(mode.id)}
+            onMouseLeave={() => setHoveredMode(null)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '0 14px', height: 48,
+              background: 'none', border: 'none',
+              borderBottom: active ? '2px solid #E85D26' : '2px solid transparent',
+              cursor: 'pointer',
+              color: active ? '#FDF6EC' : isHovered ? '#A0A0A0' : '#6B7280',
+              fontFamily: 'Space Grotesk, sans-serif', fontSize: 12,
+              fontWeight: active ? 600 : 500,
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              transition: 'color 150ms ease',
+              position: 'relative',
+            }}
+          >
+            <Icon size={16} style={{ color: active ? '#E85D26' : 'inherit' }} />
+            {mode.label}
+
+            {/* Keyboard shortcut hint on hover */}
+            {isHovered && !active && (
+              <span style={{
+                position: 'absolute', top: 6, right: 4,
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 3, padding: '1px 4px',
+                fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 8,
+                color: '#6B7280',
+              }}>
+                {mode.key}
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---- MOBILE MODE TAB BAR ---------------------------------------------------
+function MobileModeBar({ currentMode, onModeSwitch }) {
+  const modeList = [MODES.game, MODES.checklist, MODES.megaboard]
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 56, left: 0, right: 0, zIndex: 29,
+      height: 44,
+      background: 'rgba(10, 15, 30, 0.95)',
+      backdropFilter: 'blur(16px)',
+      borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+      display: 'flex', alignItems: 'center',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+    }}>
+      {modeList.map(mode => {
+        const active = currentMode === mode.id
+        const Icon = mode.icon
+        return (
+          <button
+            key={mode.id}
+            onClick={() => onModeSwitch(mode.id)}
+            style={{
+              flex: 1, height: 44,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: active ? '#E85D26' : '#6B7280',
+            }}
+          >
+            <Icon size={20} />
+            {/* Active dot indicator */}
+            {active && (
+              <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#E85D26' }} />
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---- KEYBOARD SHORTCUTS OVERLAY -------------------------------------------
+function ShortcutsOverlay({ onClose }) {
+  const shortcuts = [
+    { key: '1', action: 'Game mode' },
+    { key: '2', action: 'Checklist mode' },
+    { key: '3', action: 'Megaboard mode' },
+    { key: '/', action: 'Focus chat input' },
+    { key: 'T', action: 'Toggle Task HUD' },
+    { key: 'M', action: 'Toggle mini-map' },
+    { key: 'O', action: 'Overview / zoom out' },
+    { key: '+/-', action: 'Zoom in / out' },
+    { key: 'Esc', action: 'Close / go back' },
+    { key: '?', action: 'Show this overlay' },
+    { key: 'Cmd+K', action: 'Command palette' },
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backdropFilter: 'blur(4px)',
+      }}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: '#0C1120', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12, padding: 24, width: 360,
+          boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div style={{
+          fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 14,
+          color: '#FDF6EC', textTransform: 'uppercase', letterSpacing: '0.05em',
+          marginBottom: 16,
+        }}>
+          Keyboard Shortcuts
+        </div>
+        {shortcuts.map(s => (
+          <div key={s.key} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 0',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+          }}>
+            <span style={{
+              fontFamily: 'Space Grotesk, sans-serif', fontSize: 13, color: '#A8A29E',
+            }}>
+              {s.action}
+            </span>
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 11,
+              color: '#6B7280', background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 4, padding: '2px 8px',
+            }}>
+              {s.key}
+            </span>
+          </div>
+        ))}
+        <button
+          onClick={onClose}
+          style={{
+            width: '100%', marginTop: 16, padding: '10px',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 6, color: '#6B7280', cursor: 'pointer',
+            fontFamily: 'Space Grotesk, sans-serif', fontSize: 12,
+          }}
+        >
+          Close (Esc)
+        </button>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode, onModeSwitch }) {
   const [tab, setTab] = useState('session')
   const tabs = [
     { id: 'session', label: 'Last Session', icon: Clock },
@@ -799,6 +1085,9 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile }) {
   const activeAgent = selectedAgent ? AGENTS.find(a => a.slug === selectedAgent) : null
   const underlineColor = activeAgent?.color || '#E85D26'
 
+  // Hide HUD drawer toggle in Checklist mode (Checklist IS the task view)
+  const showDrawer = currentMode !== 'checklist'
+
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
@@ -806,7 +1095,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile }) {
       {/* Collapsed bar: 48px */}
       <div style={{
         height: 48,
-        background: 'rgba(10, 15, 30, 0.85)',
+        background: currentMode === 'megaboard' ? 'rgba(5, 8, 15, 0.95)' : 'rgba(10, 15, 30, 0.85)',
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
         boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)',
@@ -827,44 +1116,39 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile }) {
               border: '1px solid rgba(76,175,80,0.2)',
             }}>LOCAL</span>
           )}
+          {/* Connection type indicator */}
+          {CONNECTION_TYPE === 'websocket' && (
+            <span style={{
+              fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+              color: '#3B82F6', background: 'rgba(59,130,246,0.1)',
+              padding: '2px 6px', borderRadius: 3, letterSpacing: '0.1em',
+              border: '1px solid rgba(59,130,246,0.2)',
+            }}>WS</span>
+          )}
         </div>
 
-        {/* Center: Tabs */}
-        <div style={{ display: 'flex', gap: isMobile ? 16 : 28, overflowX: isMobile ? 'auto' : 'visible' }}>
-          {tabs.map(t => {
-            const active = tab === t.id
-            return (
-              <button key={t.id} onClick={() => { setTab(t.id); if (!isOpen) onToggle() }}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: active ? PALETTE.signText : '#6B7280',
-                  borderBottom: active ? `2px solid ${underlineColor}` : '2px solid transparent',
-                  fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, fontWeight: 500,
-                  textTransform: 'uppercase', letterSpacing: '0.08em',
-                  padding: '14px 0', transition: 'color 150ms ease',
-                }}
-                onMouseEnter={e => { if (!active) e.target.style.color = '#A0A0A0' }}
-                onMouseLeave={e => { if (!active) e.target.style.color = '#6B7280' }}
-              >
-                {t.label}
-              </button>
-            )
-          })}
-        </div>
+        {/* Center: Mode Switcher (desktop) */}
+        {!isMobile && (
+          <ModeSwitcher currentMode={currentMode} onModeSwitch={onModeSwitch} isMobile={isMobile} />
+        )}
 
-        {/* Right: Expand chevron */}
-        <button onClick={onToggle}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, transition: 'color 150ms' }}
-          onMouseEnter={e => e.target.style.color = PALETTE.signText}
-          onMouseLeave={e => e.target.style.color = '#6B7280'}
-        >
-          <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms ease' }} />
-        </button>
+        {/* Right: Expand chevron (only if drawer is available) */}
+        {showDrawer ? (
+          <button onClick={onToggle}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, transition: 'color 150ms' }}
+            onMouseEnter={e => e.target.style.color = PALETTE.signText}
+            onMouseLeave={e => e.target.style.color = '#6B7280'}
+          >
+            <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms ease' }} />
+          </button>
+        ) : (
+          <div style={{ width: 24 }} /> // Spacer
+        )}
       </div>
 
       {/* Expanded drawer: 280px */}
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && showDrawer && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: isMobile ? '60vh' : 280, opacity: 1 }}
@@ -879,11 +1163,38 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile }) {
               position: 'relative',
             }}
           >
+            {/* Sub-tabs inside drawer (moved from collapsed bar per Steffen C3 spec) */}
+            <div style={{
+              display: 'flex', gap: isMobile ? 16 : 28,
+              padding: '0 20px',
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+            }}>
+              {tabs.map(t => {
+                const active = tab === t.id
+                return (
+                  <button key={t.id} onClick={() => setTab(t.id)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: active ? PALETTE.signText : '#6B7280',
+                      borderBottom: active ? `2px solid ${underlineColor}` : '2px solid transparent',
+                      fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, fontWeight: 500,
+                      textTransform: 'uppercase', letterSpacing: '0.08em',
+                      padding: '10px 0', transition: 'color 150ms ease',
+                    }}
+                    onMouseEnter={e => { if (!active) e.target.style.color = '#A0A0A0' }}
+                    onMouseLeave={e => { if (!active) e.target.style.color = '#6B7280' }}
+                  >
+                    {t.label}
+                  </button>
+                )
+              })}
+            </div>
+
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.15 }}
-              style={{ padding: '16px 20px 20px', height: '100%', overflowY: 'auto' }}
+              style={{ padding: '16px 20px 20px', height: 'calc(100% - 40px)', overflowY: 'auto' }}
               className="hud-scroll"
             >
               {tab === 'session' && <SessionTab data={data} />}
@@ -1570,40 +1881,106 @@ export default function GameDashboard() {
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [hoveredRoom, setHoveredRoom] = useState(null)
   const [chatAgent, setChatAgent] = useState(null)
-  const [showMinimap, setShowMinimap] = useState(true) // ON by default now (zoomed in needs minimap)
+  const [showMinimap, setShowMinimap] = useState(true)
   const [notifications, setNotifications] = useState([])
+  const [showShortcuts, setShowShortcuts] = useState(false)
+
+  // C3: MODE STATE
+  const [currentMode, setCurrentMode] = useState(() => {
+    // Check URL first, then localStorage, then default to 'game'
+    const path = window.location.pathname
+    if (path.includes('/checklist')) return 'checklist'
+    if (path.includes('/megaboard')) return 'megaboard'
+    return localStorage.getItem('corner-mode') || 'game'
+  })
 
   // CAMERA STATE: zoomed in on main agent by default
   const [cameraTarget, setCameraTarget] = useState(DEFAULT_AGENT)
-  const [cameraZoom, setCameraZoom] = useState(1.6) // Zoomed in: room fills ~60% viewport
-  const [isOverview, setIsOverview] = useState(false) // false = zoomed in, true = see all
+  const [cameraZoom, setCameraZoom] = useState(1.6)
+  const [isOverview, setIsOverview] = useState(false)
+
+  // C3: Streaming state tracking (for speaking sprite)
+  const [streamingAgent, setStreamingAgent] = useState(null)
 
   const { data, error, loading } = useDashboardData()
   const isMobile = useIsMobile()
 
+  // C3: WebSocket connection
+  const wsHook = useWebSocket({
+    enabled: true,
+    onEvent: useCallback((event) => {
+      // Handle WebSocket events for notifications
+      if (event.type === 'task_complete' || event.type === 'handoff' || event.type === 'error_recovery') {
+        const agentSlug = event.agent || event.from_agent
+        const agent = AGENTS.find(a => a.slug === agentSlug)
+        setNotifications(prev => [{
+          id: `ws-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          type: event.type,
+          agentSlug,
+          agentName: agent?.name || agentSlug,
+          agentColor: agent?.color,
+          message: event.message || event.task || `${event.type.replace(/_/g, ' ')}`,
+          time: 'just now',
+          timestamp: event.timestamp,
+        }, ...prev].slice(0, 10))
+      }
+
+      // Track streaming agent for speaking sprite
+      if (event.type === 'agent_state_change') {
+        if (event.state === 'speaking') setStreamingAgent(event.agent)
+        else if (event.state === 'idle' || event.state === 'done') {
+          if (streamingAgent === event.agent) setStreamingAgent(null)
+        }
+      }
+    }, [streamingAgent]),
+  })
+
   // Preload all idle sprites for instant display
   usePreloadSprites()
+
+  // Mode switching handler
+  const handleModeSwitch = useCallback((mode) => {
+    setCurrentMode(mode)
+    localStorage.setItem('corner-mode', mode)
+    // Update URL
+    const modeConfig = MODES[mode]
+    if (modeConfig) {
+      window.history.replaceState(null, '', modeConfig.path)
+    }
+    // Close HUD drawer when switching modes
+    setHudOpen(false)
+  }, [])
 
   // URL-based agent selection
   useEffect(() => {
     const path = window.location.pathname
-    const match = path.match(/\/dashboard\/agent\/(.+)/)
-    if (match) {
-      const slug = match[1]
+    const agentMatch = path.match(/\/dashboard\/agent\/(.+)/)
+    if (agentMatch) {
+      const slug = agentMatch[1]
       setSelectedRoom(slug)
       setChatAgent(slug)
-      setCameraTarget(slug) // Camera moves to URL agent
+      setCameraTarget(slug)
+    }
+    const checklistMatch = path.match(/\/dashboard\/checklist\/(.+)/)
+    if (checklistMatch) {
+      setCurrentMode('checklist')
+    }
+    const megaMatch = path.match(/\/dashboard\/megaboard\/agent\/(.+)/)
+    if (megaMatch) {
+      setCurrentMode('megaboard')
     }
   }, [])
 
-  // Update URL
+  // Update URL based on mode and selected agent
   useEffect(() => {
-    if (chatAgent) {
-      window.history.replaceState(null, '', `/dashboard/agent/${chatAgent}`)
-    } else {
-      window.history.replaceState(null, '', '/dashboard')
+    if (currentMode === 'game') {
+      if (chatAgent) {
+        window.history.replaceState(null, '', `/dashboard/agent/${chatAgent}`)
+      } else {
+        window.history.replaceState(null, '', '/dashboard')
+      }
     }
-  }, [chatAgent])
+  }, [chatAgent, currentMode])
 
   // Agent status lookup
   const agentStatus = useMemo(() => {
@@ -1659,6 +2036,14 @@ export default function GameDashboard() {
     setCameraZoom(1.6)
   }
 
+  // Notification management
+  const handleDismissNotification = useCallback((id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id))
+  }, [])
+
+  const visibleNotifications = notifications.slice(0, 3)
+  const queuedNotificationCount = Math.max(0, notifications.length - 3)
+
   // Keyboard shortcuts
   const agentSlugs = AGENTS.filter(a => ROOM_MAP[a.slug]).map(a => a.slug)
   useKeyboardShortcuts({
@@ -1667,18 +2052,17 @@ export default function GameDashboard() {
       // Focus chat or open it
     },
     onToggleMinimap: () => setShowMinimap(m => !m),
-    onEscape: () => { setSelectedRoom(null); setChatAgent(null); setHudOpen(false) },
-    onAgentSelect: (idx) => {
-      if (idx < agentSlugs.length) {
-        const slug = agentSlugs[idx]
-        setSelectedRoom(slug)
-        setCameraTarget(slug)
-        setIsOverview(false)
-      }
+    onEscape: () => {
+      if (showShortcuts) { setShowShortcuts(false); return }
+      setSelectedRoom(null); setChatAgent(null); setHudOpen(false)
     },
+    onAgentSelect: null, // Removed: 1-9 now used for mode switching
     onZoomIn: () => setCameraZoom(z => Math.min(2.0, z + 0.15)),
     onZoomOut: () => setCameraZoom(z => Math.max(0.5, z - 0.15)),
     onOverview: () => setIsOverview(o => !o),
+    onModeSwitch: handleModeSwitch,
+    onCommandPalette: () => { /* Command palette: future C3.1 */ },
+    onShowShortcuts: () => setShowShortcuts(s => !s),
   })
 
   if (!authed) {
@@ -1694,58 +2078,104 @@ export default function GameDashboard() {
       fontFamily: 'Inter, system-ui, sans-serif',
     }}>
       {/* Task HUD (top) */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} />
 
-      {/* Main game area */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', perspective: '1000px', paddingTop: 48 }}>
-        <IsometricOffice
-          agentStatus={agentStatus}
-          onRoomClick={handleRoomClick}
-          selectedRoom={selectedRoom}
-          hoveredRoom={hoveredRoom}
-          setHoveredRoom={setHoveredRoom}
-          cameraTarget={cameraTarget}
-          cameraZoom={cameraZoom}
-          isOverview={isOverview}
-        />
+      {/* Main content area with mode switching */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: 48, paddingBottom: isMobile ? 100 : 0 }}>
+        <AnimatePresence mode="wait">
+          {/* GAME MODE */}
+          {currentMode === 'game' && (
+            <motion.div
+              key="game"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{ width: '100%', height: '100%', perspective: '1000px' }}
+            >
+              <IsometricOffice
+                agentStatus={agentStatus}
+                onRoomClick={handleRoomClick}
+                selectedRoom={selectedRoom}
+                hoveredRoom={hoveredRoom}
+                setHoveredRoom={setHoveredRoom}
+                cameraTarget={cameraTarget}
+                cameraZoom={cameraZoom}
+                isOverview={isOverview}
+              />
 
-        {/* Camera controls (floating) */}
-        <CameraControls
-          cameraZoom={cameraZoom}
-          setCameraZoom={setCameraZoom}
-          isOverview={isOverview}
-          setIsOverview={setIsOverview}
-          cameraTarget={cameraTarget}
-          setCameraTarget={setCameraTarget}
-          onHomeRoom={handleHomeRoom}
-        />
+              {/* Camera controls (floating, game mode only) */}
+              <CameraControls
+                cameraZoom={cameraZoom}
+                setCameraZoom={setCameraZoom}
+                isOverview={isOverview}
+                setIsOverview={setIsOverview}
+                cameraTarget={cameraTarget}
+                setCameraTarget={setCameraTarget}
+                onHomeRoom={handleHomeRoom}
+              />
 
-        {/* Room detail sidebar */}
-        <AnimatePresence>
-          {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
-            <RoomDetailSidebar
-              key={selectedRoom}
-              room={ROOM_MAP[selectedRoom]}
-              agent={AGENTS.find(a => a.slug === selectedRoom)}
-              agentStatus={agentStatus[selectedRoom]}
-              onClose={() => setSelectedRoom(null)}
-              onChat={handleChat}
-            />
+              {/* Room detail sidebar */}
+              <AnimatePresence>
+                {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+                  <RoomDetailSidebar
+                    key={selectedRoom}
+                    room={ROOM_MAP[selectedRoom]}
+                    agent={AGENTS.find(a => a.slug === selectedRoom)}
+                    agentStatus={agentStatus[selectedRoom]}
+                    onClose={() => setSelectedRoom(null)}
+                    onChat={handleChat}
+                  />
+                )}
+              </AnimatePresence>
+
+              {/* Window light animation overlay */}
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at center, rgba(255,216,122,0.02) 0%, transparent 70%)' }}>
+                <div style={{
+                  position: 'absolute', top: '10%', left: '10%', width: 200, height: 200,
+                  background: 'radial-gradient(circle, rgba(255,183,77,0.04) 0%, transparent 70%)',
+                  borderRadius: '50%', animation: 'windowLight 30s ease-in-out infinite',
+                }} />
+              </div>
+            </motion.div>
+          )}
+
+          {/* CHECKLIST MODE */}
+          {currentMode === 'checklist' && (
+            <motion.div
+              key="checklist"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{ width: '100%', height: '100%' }}
+            >
+              <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 13 }}>Loading Checklist...</div>}>
+                <ChecklistMode agentStatus={agentStatus} isMobile={isMobile} data={data} />
+              </Suspense>
+            </motion.div>
+          )}
+
+          {/* MEGABOARD MODE */}
+          {currentMode === 'megaboard' && (
+            <motion.div
+              key="megaboard"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{ width: '100%', height: '100%' }}
+            >
+              <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 13 }}>Loading Megaboard...</div>}>
+                <MegaboardMode agentStatus={agentStatus} data={data} isMobile={isMobile} />
+              </Suspense>
+            </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Window light animation overlay */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at center, rgba(255,216,122,0.02) 0%, transparent 70%)' }}>
-          <div style={{
-            position: 'absolute', top: '10%', left: '10%', width: 200, height: 200,
-            background: 'radial-gradient(circle, rgba(255,183,77,0.04) 0%, transparent 70%)',
-            borderRadius: '50%', animation: 'windowLight 30s ease-in-out infinite',
-          }} />
-        </div>
       </div>
 
-      {/* Mini-map - ON by default since we're zoomed in */}
-      {showMinimap && (
+      {/* Mini-map - only in Game mode, ON by default */}
+      {showMinimap && currentMode === 'game' && (
         <MiniMap
           rooms={GRID_SPEC.rooms}
           agentStatus={agentStatus}
@@ -1757,8 +2187,26 @@ export default function GameDashboard() {
         />
       )}
 
+      {/* Mobile mode tab bar */}
+      {isMobile && (
+        <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />
+      )}
+
       {/* Notification toasts */}
-      <NotificationToast notifications={notifications} onClickNotification={(n) => { setChatAgent(n.agentSlug); setSelectedRoom(n.agentSlug); setCameraTarget(n.agentSlug) }} />
+      <NotificationToast
+        notifications={visibleNotifications}
+        onDismiss={handleDismissNotification}
+        onClickNotification={(n) => {
+          handleDismissNotification(n.id)
+          if (n.agentSlug) {
+            setChatAgent(n.agentSlug)
+            setSelectedRoom(n.agentSlug)
+            setCameraTarget(n.agentSlug)
+            if (currentMode !== 'game') handleModeSwitch('game')
+          }
+        }}
+        queuedCount={queuedNotificationCount}
+      />
 
       {/* Chat bar (bottom) */}
       <ChatBar
@@ -1768,16 +2216,36 @@ export default function GameDashboard() {
         isMobile={isMobile}
       />
 
+      {/* Keyboard shortcuts overlay */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />
+        )}
+      </AnimatePresence>
+
       {/* Error / connection indicator */}
       {error && (
         <div style={{
-          position: 'fixed', bottom: 80, left: showMinimap ? 192 : 16,
+          position: 'fixed', bottom: isMobile ? 112 : 80, left: showMinimap && currentMode === 'game' ? 192 : 16,
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
           color: '#EF4444', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
           padding: '6px 12px', borderRadius: 4, zIndex: 50,
           transition: 'left 200ms ease',
         }}>
           {IS_LOCAL ? 'Local file read failed. Is AOM-EA accessible?' : 'Status update failed. Showing cached data.'}
+        </div>
+      )}
+
+      {/* WebSocket connection indicator */}
+      {wsHook.isReconnecting && (
+        <div style={{
+          position: 'fixed', bottom: isMobile ? 112 : 80,
+          right: 16, zIndex: 50,
+          background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
+          color: '#F59E0B', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
+          padding: '6px 12px', borderRadius: 4,
+        }}>
+          WebSocket reconnecting...
         </div>
       )}
 

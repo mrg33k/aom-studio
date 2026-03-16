@@ -104,6 +104,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/skills" element={<Skills />} />
           <Route path="/dashboard" element={<GameDashboard />} />
           <Route path="/dashboard/agent/:slug" element={<GameDashboard />} />
+          <Route path="/dashboard/checklist" element={<GameDashboard />} />
+          <Route path="/dashboard/checklist/:slug" element={<GameDashboard />} />
+          <Route path="/dashboard/megaboard" element={<GameDashboard />} />
+          <Route path="/dashboard/megaboard/agent/:slug" element={<GameDashboard />} />
           <Route path="/dashboard/chat" element={<ChatDashboard />} />
           <Route path="/dashboard/chat/agent/:slug" element={<ChatDashboard />} />
           <Route path="/dashboard/v1" element={<DashboardV2 />} />

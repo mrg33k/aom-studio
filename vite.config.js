@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 import fs from 'fs'
+import { WebSocketServer } from 'ws'
+import { watch } from 'chokidar'
 
 // AOM-EA local filesystem root for localhost dashboard mode
 const AOM_EA_ROOT = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA'
@@ -270,8 +272,171 @@ function localDashboardPlugin() {
   }
 }
 
+// ---- WebSocket Server Plugin (C3) -------------------------------------------
+// Runs a WebSocket server on port 3001 during development.
+// Watches relay-outbox.jsonl for new messages and broadcasts to connected clients.
+// Handles ping/pong heartbeat and multiplexed agent channels.
+function webSocketServerPlugin() {
+  let wss = null
+  let outboxWatcher = null
+  let lastOutboxSize = 0
+
+  function broadcast(data) {
+    if (!wss) return
+    const msg = typeof data === 'string' ? data : JSON.stringify(data)
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) { // WebSocket.OPEN
+        client.send(msg)
+      }
+    })
+  }
+
+  return {
+    name: 'aom-websocket-server',
+    configureServer() {
+      // Start WebSocket server on port 3001
+      try {
+        wss = new WebSocketServer({ port: 3001 })
+        console.log('[C3 WebSocket] Server running on ws://localhost:3001')
+
+        wss.on('connection', (ws) => {
+          console.log('[C3 WebSocket] Client connected')
+
+          // Send welcome event
+          ws.send(JSON.stringify({
+            type: 'system_status',
+            status: 'connected',
+            message: 'Corner C3 WebSocket active',
+            timestamp: new Date().toISOString(),
+          }))
+
+          ws.on('message', (raw) => {
+            try {
+              const data = JSON.parse(raw.toString())
+
+              // Handle ping
+              if (data.type === 'ping') {
+                ws.send(JSON.stringify({ type: 'pong', timestamp: new Date().toISOString() }))
+                return
+              }
+
+              // Handle chat messages (forward to relay system)
+              if (data.type === 'chat_message') {
+                const outboxPath = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
+                const entry = {
+                  agent: data.agent,
+                  message: data.content,
+                  source: 'corner-websocket',
+                  timestamp: new Date().toISOString(),
+                }
+                fs.appendFileSync(outboxPath, JSON.stringify(entry) + '\n')
+
+                // Broadcast agent state change: thinking
+                broadcast({
+                  type: 'agent_state_change',
+                  agent: data.agent,
+                  state: 'thinking',
+                  timestamp: new Date().toISOString(),
+                })
+              }
+            } catch {
+              // ignore malformed messages
+            }
+          })
+
+          ws.on('close', () => {
+            console.log('[C3 WebSocket] Client disconnected')
+          })
+        })
+
+        wss.on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            console.log('[C3 WebSocket] Port 3001 in use, skipping WebSocket server')
+            wss = null
+          }
+        })
+
+        // Watch relay-outbox.jsonl for new messages
+        const outboxPath = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
+        try {
+          if (fs.existsSync(outboxPath)) {
+            lastOutboxSize = fs.statSync(outboxPath).size
+          }
+        } catch {}
+
+        outboxWatcher = watch(outboxPath, { persistent: true, ignoreInitial: true })
+        outboxWatcher.on('change', () => {
+          try {
+            const content = fs.readFileSync(outboxPath, 'utf-8')
+            const currentSize = Buffer.byteLength(content, 'utf-8')
+            if (currentSize > lastOutboxSize) {
+              // New content added, parse the new lines
+              const newContent = content.slice(lastOutboxSize)
+              const newLines = newContent.split('\n').filter(l => l.trim())
+              for (const line of newLines) {
+                try {
+                  const data = JSON.parse(line)
+                  // Broadcast as a token_stream or system event
+                  if (data.message || data.text) {
+                    broadcast({
+                      type: 'token_stream',
+                      agent: data.agent || 'system',
+                      token: data.message || data.text,
+                      timestamp: data.timestamp || new Date().toISOString(),
+                    })
+                  }
+                } catch {}
+              }
+            }
+            lastOutboxSize = currentSize
+          } catch {}
+        })
+
+        // Also watch agent-notifications.md for events
+        const notifPath = resolve(AOM_EA_ROOT, 'context/agent-notifications.md')
+        const notifWatcher = watch(notifPath, { persistent: true, ignoreInitial: true })
+        let lastNotifSize = 0
+        try { if (fs.existsSync(notifPath)) lastNotifSize = fs.statSync(notifPath).size } catch {}
+
+        notifWatcher.on('change', () => {
+          try {
+            const content = fs.readFileSync(notifPath, 'utf-8')
+            const currentSize = Buffer.byteLength(content, 'utf-8')
+            if (currentSize > lastNotifSize) {
+              const newContent = content.slice(lastNotifSize)
+              const newLines = newContent.split('\n').filter(l => l.trim().startsWith('['))
+              for (const line of newLines) {
+                const match = line.match(/^\[([^\]]+)\]\s*(.*)$/)
+                if (match) {
+                  // Detect event type from content
+                  const text = match[2].toLowerCase()
+                  let eventType = 'system_status'
+                  if (text.includes('complete') || text.includes('shipped') || text.includes('done')) eventType = 'task_complete'
+                  else if (text.includes('handoff') || text.includes('handed off')) eventType = 'handoff'
+                  else if (text.includes('error') || text.includes('crash') || text.includes('failed')) eventType = 'error_recovery'
+
+                  broadcast({
+                    type: eventType,
+                    message: match[2],
+                    time: match[1],
+                    timestamp: new Date().toISOString(),
+                  })
+                }
+              }
+            }
+            lastNotifSize = currentSize
+          } catch {}
+        })
+
+      } catch (err) {
+        console.log('[C3 WebSocket] Failed to start:', err.message)
+      }
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), localDashboardPlugin()],
+  plugins: [react(), localDashboardPlugin(), webSocketServerPlugin()],
   build: {
     rollupOptions: {
       input: {
