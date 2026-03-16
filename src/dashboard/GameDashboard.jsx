@@ -2998,17 +2998,17 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     {agent?.name || 'Agent'}
                   </div>
                   <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', textAlign: 'center' }}>
-                    Messages filtered to {agent?.name}. Send a message to get started.
+                    Full relay conversation. Terminal + Telegram + Dashboard all in one view.
                   </div>
                   <div style={{ color: '#4A6080', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                    Relay Chat
+                    Unified Relay
                   </div>
                 </div>
               )}
               {chatMessages && chatMessages.map((msg, i) => {
                 const isUser = msg.role === 'user'
                 return (
-                  <div key={i} style={{
+                  <div key={msg.id || i} style={{
                     display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start',
                     marginBottom: 10,
                   }}>
@@ -3017,6 +3017,18 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         style={{ marginRight: 8, marginBottom: 14, flexShrink: 0 }} />
                     )}
                     <div style={{ maxWidth: '80%' }}>
+                      {/* Source label for all messages */}
+                      {msg.source && (
+                        <div style={{
+                          fontSize: 10, fontFamily: 'JetBrains Mono, monospace',
+                          color: isUser ? 'rgba(232,93,38,0.5)' : 'rgba(100,180,255,0.4)',
+                          marginBottom: 3, textAlign: isUser ? 'right' : 'left',
+                          textTransform: 'uppercase', letterSpacing: '0.08em',
+                        }}>
+                          {msg.source}
+                          {msg.targetAgent && ` to ${msg.targetAgent}`}
+                        </div>
+                      )}
                       <div style={{
                         padding: '8px 12px', fontSize: 13,
                         fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.5,
@@ -3034,6 +3046,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           </div>
                         )}
                       </div>
+                      {/* Timestamp */}
+                      {msg.time && !msg.streaming && (
+                        <div style={{
+                          fontSize: 9, fontFamily: 'JetBrains Mono, monospace',
+                          color: 'rgba(107,114,128,0.5)', marginTop: 3,
+                          textAlign: isUser ? 'right' : 'left',
+                        }}>
+                          {timeAgo(msg.time)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
@@ -3270,18 +3292,19 @@ export default function GameDashboard() {
     }
   }, [])
 
-  // Background outbox polling: check for new messages every 5 seconds
-  // Shows badge even when chat panel is closed
+  // Background outbox polling: check for new responses every 3 seconds
+  // Picks up EA responses and adds them to the unified conversation
   useEffect(() => {
     if (!IS_LOCAL) return
 
-    // Initialize the last check timestamp
+    // Initialize the last check timestamp if not already set by history load
     const initBgPoll = async () => {
+      if (lastBgOutboxCheckRef.current) return // already set by history load
       try {
         const res = await fetch('/api/local/relay-outbox')
         if (res.ok) {
           const data = await res.json()
-          const msgs = data.messages || []
+          const msgs = (data.messages || []).filter(m => m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
           if (msgs.length > 0) {
             lastBgOutboxCheckRef.current = msgs[msgs.length - 1].timestamp
           } else {
@@ -3306,70 +3329,68 @@ export default function GameDashboard() {
           const latest = newMsgs[newMsgs.length - 1]
           lastBgOutboxCheckRef.current = latest.timestamp
 
-          // Only count as unread if the panel for that agent is not currently open
-          const newUnread = {}
-          for (const msg of newMsgs) {
-            const agent = msg.agent || 'system'
-            if (agent !== selectedRoom || !panelVisible) {
-              newUnread[agent] = (newUnread[agent] || 0) + 1
-            }
-            // Also add to panelMessages for the agent
-            setPanelMessages(prev => {
-              const agentMsgs = [...(prev[agent] || [])]
+          // Add new responses to the unified conversation (_all)
+          setPanelMessages(prev => {
+            const allMsgs = [...(prev._all || [])]
+            for (const msg of newMsgs) {
               // Don't add duplicates
-              if (agentMsgs.some(m => m.id === msg.id)) return prev
-              agentMsgs.push({
+              if (allMsgs.some(m => m.id === msg.id)) continue
+              allMsgs.push({
                 role: 'assistant',
                 content: msg.message,
                 time: msg.timestamp || new Date().toISOString(),
-                source: msg.agent || 'system',
+                source: msg.agent ? `${msg.agent}` : 'system',
                 id: msg.id,
               })
-              return { ...prev, [agent]: agentMsgs }
-            })
-          }
+            }
+            return { ...prev, _all: allMsgs }
+          })
 
-          if (Object.keys(newUnread).length > 0) {
-            setUnreadAgents(prev => {
-              const next = { ...prev }
-              for (const [agent, count] of Object.entries(newUnread)) {
-                next[agent] = (next[agent] || 0) + count
-              }
-              return next
-            })
+          // Also replace any streaming placeholder with the real response
+          setPanelMessages(prev => {
+            const allMsgs = [...(prev._all || [])]
+            const lastMsg = allMsgs[allMsgs.length - 1]
+            // If there's a streaming placeholder right before the new real message, remove the placeholder
+            const hasPendingStreaming = allMsgs.some(m => m.streaming)
+            if (hasPendingStreaming) {
+              const filtered = allMsgs.filter(m => !m.streaming)
+              return { ...prev, _all: filtered }
+            }
+            return prev
+          })
+
+          // Count unread if panel is closed
+          if (!panelVisible) {
             setUnreadCount(prev => prev + newMsgs.length)
           }
+
+          // Clear streaming state
+          setPanelStreaming(false)
         }
       } catch {}
-    }, 5000)
+    }, 3000) // Poll every 3 seconds for faster response display
 
     return () => {
       if (bgOutboxPollRef.current) clearInterval(bgOutboxPollRef.current)
     }
-  }, [selectedRoom, panelVisible])
+  }, [panelVisible])
 
-  // Clear unread for an agent when their panel is opened
+  // Clear unread when panel is opened
   useEffect(() => {
-    if (selectedRoom && panelVisible) {
-      setUnreadAgents(prev => {
-        const next = { ...prev }
-        const agentUnread = next[selectedRoom] || 0
-        delete next[selectedRoom]
-        if (agentUnread > 0) {
-          setUnreadCount(prev => Math.max(0, prev - agentUnread))
-        }
-        return next
-      })
+    if (panelVisible) {
+      setUnreadCount(0)
     }
-  }, [selectedRoom, panelVisible])
+  }, [panelVisible])
 
-  // Load relay history filtered by agent when panel opens on an agent
-  const panelHistoryLoadedRef = useRef({})
+  // Load FULL relay conversation history (all sources) when panel opens
+  // The relay is a unified conversation channel. Show everything so terminal,
+  // Telegram, and dashboard messages all appear in the chat.
+  const panelHistoryLoadedRef = useRef(false)
   useEffect(() => {
-    if (!selectedRoom || !IS_LOCAL || panelHistoryLoadedRef.current[selectedRoom]) return
-    panelHistoryLoadedRef.current[selectedRoom] = true
+    if (!IS_LOCAL || panelHistoryLoadedRef.current) return
+    panelHistoryLoadedRef.current = true
 
-    const loadAgentHistory = async () => {
+    const loadFullHistory = async () => {
       try {
         const [inboxRes, outboxRes] = await Promise.all([
           fetch('/api/local/relay-inbox'),
@@ -3379,53 +3400,61 @@ export default function GameDashboard() {
         const outbox = outboxRes.ok ? await outboxRes.json() : { messages: [] }
 
         const all = []
-        // Inbox: user messages - filter to this agent
+        // Inbox: ALL user messages from any source (dashboard, telegram, terminal)
         for (const msg of inbox.messages) {
           if (!msg.message?.trim()) continue
-          // Match messages sent TO this agent (agent field) or mentioning the agent
-          const isForAgent = msg.agent === selectedRoom || msg.agent === selectedRoom.toLowerCase()
-          if (!isForAgent && msg.source !== 'corner-dashboard') continue
-          if (!isForAgent) continue // Only show messages explicitly for this agent
+          // Derive source label
+          let sourceLabel = 'unknown'
+          if (msg.source === 'corner-dashboard' || msg.source === 'corner-websocket') sourceLabel = 'via dashboard'
+          else if (msg.source === 'telegram') sourceLabel = 'via telegram'
+          else if (msg.source === 'terminal' || msg.source === 'cli') sourceLabel = 'via terminal'
+          else if (msg.source) sourceLabel = `via ${msg.source}`
           all.push({
             role: 'user',
             content: msg.message,
             time: msg.timestamp,
-            source: msg.source || 'unknown',
+            source: sourceLabel,
+            targetAgent: msg.agent || null,
             id: msg.id,
           })
         }
-        // Outbox: agent responses - filter to this agent
+        // Outbox: ALL EA/agent responses (no filtering by agent -- it's one conversation)
         for (const msg of outbox.messages) {
           if (!msg.message?.trim()) continue
-          const isFromAgent = msg.agent === selectedRoom || msg.agent === selectedRoom.toLowerCase()
-          // Also check if the message was a response to a message targeted at this agent
-          if (!isFromAgent) continue
+          // Skip messages that are actually dashboard sends that leaked into outbox
+          if (msg.source === 'corner-dashboard' || msg.source === 'corner-websocket') continue
           all.push({
             role: 'assistant',
             content: msg.message,
             time: msg.timestamp,
-            source: msg.agent || 'system',
+            source: msg.agent ? `${msg.agent}` : 'system',
             id: msg.id,
           })
         }
 
-        // Sort by timestamp and take last 30
+        // Sort by timestamp and take last 50
         all.sort((a, b) => new Date(a.time) - new Date(b.time))
-        const recent = all.slice(-30)
+        const recent = all.slice(-50)
 
         if (recent.length > 0) {
+          // Store under a global key '_all' for the unified conversation view
           setPanelMessages(prev => ({
             ...prev,
-            [selectedRoom]: [...recent, ...(prev[selectedRoom] || [])],
+            _all: recent,
           }))
+          // Also set the last outbox timestamp for background polling
+          const lastOutbox = outbox.messages.filter(m => m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
+          if (lastOutbox.length > 0) {
+            lastBgOutboxCheckRef.current = lastOutbox[lastOutbox.length - 1].timestamp
+          }
         }
       } catch (err) {
-        console.warn('Failed to load agent relay history:', err)
+        console.warn('Failed to load relay history:', err)
       }
     }
 
-    loadAgentHistory()
-  }, [selectedRoom])
+    loadFullHistory()
+  }, [])
 
   // Right-click context menu state
   const [contextMenu, setContextMenu] = useState(null) // { type, data, position: {x, y} }
@@ -3775,7 +3804,7 @@ export default function GameDashboard() {
                       allAgentStatus={agentStatus}
                       onClose={() => setPanelVisible(false)}
                       onChat={handleChat}
-                      chatMessages={panelMessages[selectedRoom] || []}
+                      chatMessages={panelMessages._all || []}
                       chatInput={panelChatInput}
                       onChatInputChange={setPanelChatInput}
                       streaming={panelStreaming}
@@ -3786,16 +3815,16 @@ export default function GameDashboard() {
                         if (!text || panelStreaming) return
                         setPanelChatInput('')
                         const sentTime = new Date().toISOString()
-                        // Add user message
+                        // Add user message to unified conversation
                         setPanelMessages(prev => ({
                           ...prev,
-                          [selectedRoom]: [...(prev[selectedRoom] || []), { role: 'user', content: text, time: sentTime }],
+                          _all: [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom }],
                         }))
                         setPanelStreaming(true)
                         // Add placeholder assistant message
                         setPanelMessages(prev => ({
                           ...prev,
-                          [selectedRoom]: [...(prev[selectedRoom] || []), { role: 'assistant', content: '', streaming: true, time: sentTime }],
+                          _all: [...(prev._all || []), { role: 'assistant', content: '', streaming: true, time: sentTime }],
                         }))
                         // Send via relay (local mode)
                         if (IS_LOCAL) {
@@ -3804,7 +3833,8 @@ export default function GameDashboard() {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
                           }).then(() => {
-                            // Start polling for response
+                            // Background poll will pick up the response automatically
+                            // Also start a faster dedicated poll as backup
                             if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current)
                             const lastCheck = { ts: sentTime }
                             panelRelayPollRef.current = setInterval(async () => {
@@ -3814,21 +3844,22 @@ export default function GameDashboard() {
                                 if (!res.ok) return
                                 const data = await res.json()
                                 if (data.messages?.length > 0) {
-                                  const responses = data.messages.filter(m => m.message && m.source !== 'corner-dashboard')
+                                  const responses = data.messages.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
                                   if (responses.length > 0) {
                                     const latest = responses[responses.length - 1]
                                     setPanelMessages(prev => {
-                                      const msgs = [...(prev[selectedRoom] || [])]
-                                      const lastMsg = msgs[msgs.length - 1]
-                                      if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
-                                        msgs[msgs.length - 1] = { ...lastMsg, content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString() }
-                                      } else {
-                                        msgs.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString() })
+                                      const msgs = [...(prev._all || [])]
+                                      // Remove streaming placeholder
+                                      const filtered = msgs.filter(m => !m.streaming)
+                                      // Add real response if not duplicate
+                                      if (!filtered.some(m => m.id === latest.id)) {
+                                        filtered.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString(), source: latest.agent || 'system', id: latest.id })
                                       }
-                                      return { ...prev, [selectedRoom]: msgs }
+                                      return { ...prev, _all: filtered }
                                     })
                                     setPanelStreaming(false)
                                     lastCheck.ts = latest.timestamp
+                                    lastBgOutboxCheckRef.current = latest.timestamp
                                     clearInterval(panelRelayPollRef.current)
                                     panelRelayPollRef.current = null
                                   }
@@ -3837,10 +3868,10 @@ export default function GameDashboard() {
                             }, 2000)
                           }).catch(err => {
                             setPanelMessages(prev => {
-                              const msgs = [...(prev[selectedRoom] || [])]
+                              const msgs = [...(prev._all || [])]
                               const last = msgs[msgs.length - 1]
                               if (last) msgs[msgs.length - 1] = { ...last, content: `Failed: ${err.message}`, streaming: false }
-                              return { ...prev, [selectedRoom]: msgs }
+                              return { ...prev, _all: msgs }
                             })
                             setPanelStreaming(false)
                           })
