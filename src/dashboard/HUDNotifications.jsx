@@ -227,8 +227,8 @@ export function HUDToasts() {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 130, right: 16, zIndex: 50,
-      display: 'flex', flexDirection: 'column-reverse', gap: 8,
+      position: 'fixed', top: 80, left: 16, zIndex: 50,
+      display: 'flex', flexDirection: 'column', gap: 8,
       pointerEvents: 'none',
     }}>
       <AnimatePresence>
@@ -241,9 +241,9 @@ export function HUDToasts() {
           return (
             <motion.div
               key={n.id}
-              initial={{ x: 340, opacity: 0, scale: 0.9 }}
+              initial={{ x: -340, opacity: 0, scale: 0.9 }}
               animate={{ x: 0, opacity: 1, scale: 1 }}
-              exit={{ x: 340, opacity: 0, scale: 0.9 }}
+              exit={{ x: -340, opacity: 0, scale: 0.9 }}
               transition={{ type: 'spring', damping: 22, stiffness: 250 }}
               onMouseEnter={() => setHoveredId(n.id)}
               onMouseLeave={() => setHoveredId(null)}
@@ -298,7 +298,7 @@ export function HUDToasts() {
               {/* Message */}
               <div style={{
                 color: HUD_COLORS.textPrimary, fontSize: 14,
-                fontFamily: 'Space Grotesk, sans-serif',
+                fontFamily: "'Inter', system-ui, sans-serif",
                 lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis',
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
               }}>

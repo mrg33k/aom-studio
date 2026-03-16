@@ -432,11 +432,9 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
       {/* Sprite image - show first frame from 2x2 spritesheet (top-left quadrant)
           Sprite PNGs are 256x256 with 4 frames in 2x2 grid. Each frame is 128x128.
           We render at 2x container size and overflow:hidden crops to top-left frame.
-          mix-blend-mode: lighten makes the dark sprite background transparent. */}
+          Full silhouette shown (no circle clip, no blend mode corruption). */}
       <div style={{
         width: spriteSize, height: spriteSize, overflow: 'hidden', position: 'relative',
-        borderRadius: '50%',
-        mixBlendMode: 'screen',
       }}>
         {/* Zoom into center of first frame to show character, not dark corners.
             Sprite is 256x256, frame is 128x128. We show frame at 2.6x to zoom into the character. */}
@@ -923,6 +921,15 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
     return () => window.removeEventListener('resize', measure)
   }, [])
 
+  // Time-based theme: daytime (warm) before 9pm, night after 9pm
+  const [isNightMode, setIsNightMode] = useState(() => new Date().getHours() >= 21)
+  useEffect(() => {
+    const check = () => setIsNightMode(new Date().getHours() >= 21)
+    const timer = setInterval(check, 60000) // check every minute
+    return () => clearInterval(timer)
+  }, [])
+  const officeImage = isNightMode ? '/corner/office-full-night.png' : '/corner/full-office-warm-night.png'
+
   // Fill viewport: use the LARGER dimension to ensure no dead space
   // The building image is roughly square, so we scale to cover the viewport
   const IMG_SIZE = Math.max(containerSize.w, containerSize.h, 880) * 1.15
@@ -1121,7 +1128,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
       }}>
         {/* The full office image - ONE cohesive building. No double walls. */}
         <img
-          src="/corner/office-full-night.png"
+          src={officeImage}
           alt="Corner Office"
           draggable={false}
           style={{
@@ -1580,7 +1587,7 @@ function NotificationToast({ notifications, onDismiss, onClickNotification, queu
 
   return (
     <div style={{
-      position: 'fixed', top: 64, right: 16, zIndex: 45,
+      position: 'fixed', top: 80, left: 16, zIndex: 45,
       display: 'flex', flexDirection: 'column', gap: 8,
     }}
       role="status" aria-live="polite"
@@ -1596,9 +1603,9 @@ function NotificationToast({ notifications, onDismiss, onClickNotification, queu
             <motion.div
               key={n.id}
               role="alert"
-              initial={{ x: 340, opacity: 0 }}
+              initial={{ x: -340, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 340, opacity: 0 }}
+              exit={{ x: -340, opacity: 0 }}
               transition={{ type: 'spring', damping: 20, stiffness: 200 }}
               onClick={() => onClickNotification?.(n)}
               onMouseEnter={() => setHoveredId(n.id)}
