@@ -1056,27 +1056,31 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // Room hit-target positions mapped to the Crossy Road voxel office image (percentages).
 // RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
 // Each room has an isometric hexagon clip-path for accurate click areas.
-// TODO(patrik): Diamond hitboxes for isometric rooms -- current rectangular/hexagon clip-paths don't align with where you visually click. Room shapes should be DIAMOND (rotated 45deg square) matching the isometric perspective. Click targets must match the visual room outlines exactly at all zoom levels.
+// DONE(bobby): Diamond hitboxes for isometric rooms -- clip-paths changed to 4-point diamonds (polygon 50% 0%, 100% 50%, 50% 100%, 0% 50%). Matches isometric perspective at both zoom presets.
 // DONE(bobby): Fixed zoom levels -- 2 preset snap levels: overview (0.7) and detail (1.6). Scroll/button snaps between them. No free zoom. Consistent click targets.
 const ZOOM_PRESETS = [0.7, 1.6] // overview, detail -- only two levels, snap between them
+// Diamond clip-path for isometric rooms: a rotated 45-degree square.
+// The diamond shape matches where rooms visually appear in isometric perspective.
+const DIAMOND_CLIP = 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
+const DIAMOND_CLIP_WIDE = 'polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%)' // slightly inset for wide rooms like main-hall
 const IMAGE_ROOM_TARGETS = {
   // Row 0: top row, 4 rooms (back wall of building, smaller due to perspective)
-  patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
-  mom:        { x: 37, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
-  alex:       { x: 51, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
-  steve:      { x: 63, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
+  patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
+  mom:        { x: 37, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
+  alex:       { x: 51, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
+  steve:      { x: 63, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
   // Row 1: steffen left, main-hall center (wide), jacob right
-  steffen:    { x: 14, y: 25, w: 16, h: 17, labelY: 22, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
-  'main-hall':{ x: 30, y: 25, w: 30, h: 17, labelY: 22, clipPath: 'polygon(5% 0%, 95% 0%, 100% 25%, 100% 75%, 95% 100%, 5% 100%, 0% 75%, 0% 25%)' },
-  jacob:      { x: 58, y: 25, w: 18, h: 17, labelY: 22, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  steffen:    { x: 14, y: 25, w: 16, h: 17, labelY: 22, clipPath: DIAMOND_CLIP },
+  'main-hall':{ x: 30, y: 25, w: 30, h: 17, labelY: 22, clipPath: DIAMOND_CLIP_WIDE },
+  jacob:      { x: 58, y: 25, w: 18, h: 17, labelY: 22, clipPath: DIAMOND_CLIP },
   // Row 2: 4 rooms across lower-front (bigger due to perspective, closer to camera)
-  bobby:      { x: 7,  y: 43, w: 17, h: 17, labelY: 40, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
-  colton:     { x: 23, y: 43, w: 16, h: 17, labelY: 40, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
-  cleo:       { x: 38, y: 43, w: 16, h: 17, labelY: 40, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
-  tony:       { x: 53, y: 43, w: 18, h: 17, labelY: 40, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  bobby:      { x: 7,  y: 43, w: 17, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
+  colton:     { x: 23, y: 43, w: 16, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
+  cleo:       { x: 38, y: 43, w: 16, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
+  tony:       { x: 53, y: 43, w: 18, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
   // Row 3: bottom 2 rooms (front of building, largest)
-  elmo:       { x: 22, y: 62, w: 17, h: 16, labelY: 59, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
-  elon:       { x: 38, y: 62, w: 17, h: 16, labelY: 59, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  elmo:       { x: 22, y: 62, w: 17, h: 16, labelY: 59, clipPath: DIAMOND_CLIP },
+  elon:       { x: 38, y: 62, w: 17, h: 16, labelY: 59, clipPath: DIAMOND_CLIP },
 }
 
 // Wave animation: staggered delay per room for load-in ripple effect
