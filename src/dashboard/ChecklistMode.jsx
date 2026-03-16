@@ -7,6 +7,13 @@
 // TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable. [SURVIVES: Drag-and-drop is React UI logic. No engine dependency.]
 // DONE(bobby2): RIGHT NOW PILL (CHECKLIST) -- Right Now section at TOP of checklist (before Today). Shows active agent tasks with avatars + progress bars + LIVE badges. Data from agent-notifications.md TASK entries + relay activity. Drag-to target for priority escalation (drag-and-drop TODO(patrik) still open). Ref: Patrik feedback Pass 21.
 // DONE(bobby): LABEL SIDEBAR COUNTS (CHECKLIST) -- All count badges now show "N left" instead of bare numbers. Sidebar (mobile + desktop), project group headers all labeled. "Done" section already labeled. Ref: Patrik feedback Pass 22.
+//
+// FILE OWNER: Bobby2 (HUD team). Bobby (Canvas team) does NOT touch this file.
+//
+// ========== PATRIK DIRECTIVES (Pass 25, lines 258-263) ==========
+// TODO(bobby2): LIVE TASK UPDATES IN CHECKLIST -- Tasks MUST update in real time. When an agent completes a task, the checklist reflects it IMMEDIATELY. Poll agent-notifications.md and relay for TASK FINISHED entries. Auto-check completed items. Auto-add new tasks from relay directives. Priority sort: Right Now items first, then Today, then by importance. "The proof is seeing it work on screen, not just code that exists in the codebase." Ref: Patrik feedback line 258-259, 263.
+// TODO(bobby2): RIGHT NOW CHECKLIST ITEMS WITH PROGRESS -- Each Right Now task row: agent avatar + task name + thin progress bar filling as agent works. Real time. Activity feed energy baked into the task list. Not a percentage number. A thin bar. SimCity build progress energy. Ref: Patrik clarification line 253.
+// ==========
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'

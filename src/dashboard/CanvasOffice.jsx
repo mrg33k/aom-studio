@@ -5,6 +5,19 @@ import { GRID_SPEC, ROOM_MAP } from './gridSpec.js'
 // Replaces flat office-full.png with composited room-background PNGs.
 // Features: isometric grid, click-to-select room, mouse drag pan, scroll zoom,
 // hover glow, active agent glow, room labels, smooth interactions.
+//
+// FILE OWNER: Bobby (Canvas team). Bobby2 (HUD team) does NOT touch this file.
+//
+// ========== PATRIK DIRECTIVES (Pass 25, lines 255-265) ==========
+// TODO(bobby): DARK BACKGROUND + ELON ROOM ONLY -- Remove ALL old flat PNG office images. Set canvas background to dark/night (#0D0D1A or similar). Render ONLY Elon's CanvasRoom on a dark background. No other rooms until Elon's room is PERFECT. Clean slate. "1 turns into 13 if you can count to 1." Ref: Patrik directive line 255, 264.
+// TODO(bobby): ELON ROOM FOCUS -- Strip multi-room grid rendering temporarily. Single room centered on canvas. All agent energy on ONE room: style, spacing, click, hover, depth, character. When Elon walks in his server room and it feels like a game, THEN add room 2. Ref: Patrik directive line 264-265.
+// TODO(bobby): CLICK SELECTION PERFECTION -- Current hitTest is rectangular bounding box. Needs to feel crisp: click on room = instant highlight, click outside = deselect. Test at multiple zoom levels. No ambiguity. Ref: Patrik feedback line 262.
+// TODO(bobby): ROOM SPACING PERFECTION -- When rooms eventually scale back to 13, spacing between rooms must feel intentional. No overlap, no cramping, no dead space. But DO NOT add rooms yet. Elon first. Ref: Patrik feedback line 262.
+// TODO(bobby): BIG ROOM TILING (FUTURE) -- Main hall and large rooms render as 4 PIECES that tile into one large room. Same diamond shape, 4 quadrants. 2x2 grid of tiles = one big room. Scales infinitely. Any room can be 1x1, 2x2, or bigger. NOT a current priority. Perfect single room first. Ref: Patrik feedback line 257, 262.
+// TODO(bobby): MULTI-CELL ROOM SUPPORT (FUTURE) -- Grid must support variable room sizes. Standard rooms = 1x1 cell. Main hall = 2x2 or 3x1 cells. All same isometric diamond shape, just spanning more cells. Blocked until single room is perfect. Ref: Patrik feedback line 257.
+// TODO(bobby): STRIP ALL OTHER ROOMS -- Remove ALL rooms except Elon from the Canvas. Elon's room FRONT AND CENTER on dark background. One room only on screen. Nothing else. Ref: Patrik directive line 268.
+// TODO(bobby): AGENT NAME ON WALL -- Agent name tag should be ON THE WALL inside the room, not underneath as a DOM label. Like a real office nameplate. Part of the Canvas room scene. Render as a wall element inside the Canvas, not a text overlay below. Ref: Patrik feedback line 269.
+// ==========
 
 // ---- LAYOUT ----
 // Room images are 512x512. We render each at RENDER_SIZE and space them in a grid.

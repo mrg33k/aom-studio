@@ -17,6 +17,15 @@
 // DONE(bobby2): AGENT SELECTOR ICONS BIGGER -- Expanded agent dots bumped 24px -> 40px. Expand button 28px -> 36px. Sprite images proportionally scaled. Main plumbob stays 52px. Vegas energy = big, bold, readable. Ref: Patrik feedback Pass 22.
 // DONE(bobby2): SQUINT TEST (VEGAS RULE) -- CompactStats dots 7px -> 10px. Main agent status dot 10px -> 14px. Expand button 28px -> 36px. All secondary agents 24px -> 40px. Standing rule for all future elements. Ref: Patrik feedback Pass 22.
 // DONE(bobby2): DAYTIME STAT PILL TEXT COLOR -- ProjectCard now receives isNightMode. Pill name text swaps to dark (#0F172A) in daytime. Pill backgrounds + borders + shadows all adjusted for light theme. Tag colors and revenue badge already use project.color so they remain readable. [SURVIVES: CSS/theme bug. Engine-independent.]
+//
+// FILE OWNER: Bobby2 (HUD team). Bobby (Canvas team) does NOT touch this file.
+//
+// ========== PATRIK DIRECTIVES (Pass 25, lines 258-263) ==========
+// TODO(bobby2): LIVE TASK UPDATES IN HUD (KEY KEY KEY) -- Tasks must update in REAL TIME and show most important at top based on where we left off. This is Patrik's #1 HUD priority. Not just static punch-list parsing. Poll relay + agent-notifications for task completions. When an agent finishes a task, HUD reflects it IMMEDIATELY. Priority sort: Right Now > Today > by-importance. The proof is seeing it work on screen, not just code that exists. Ref: Patrik feedback line 258-259, 263.
+// TODO(bobby2): SELECTED PILL CONTRAST BUG (REGRESSION) -- Selected pill text turns white on light background. Daytime contrast bug is BACK. When a project pill is selected/active in daytime mode, text must remain dark and readable. Check: pill selected state background vs text color in daytime theme. Ref: Patrik feedback line 258, 260.
+// TODO(bobby2): RIGHT NOW PILL = CHECKLIST ITEMS WITH PROGRESS BARS -- Right Now pill shows active tasks as checklist items with thin progress bars under EACH item. Not a separate progress view. Agent avatar + task name + thin progress bar filling as agent works. Real time. Activity feed energy baked into the task list itself. Ref: Patrik clarification line 253.
+// TODO(bobby2): KILL MINIMAP -- Remove MAP LOCAL component from GameHUD entirely. Minimap comes back later as big Vegas-style SimCity minimap (auto-updates as rooms added, diamond grid shape). Not now. Ref: Patrik directive line 267.
+// ==========
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -1009,7 +1018,9 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
       <span style={{
         fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 20, fontWeight: 900,
-        color: isExpanded ? '#FFFFFF' : isDaytime ? '#0F172A' : (isToday ? '#EDF2FA' : HUD.textPrimary),
+        color: isExpanded
+          ? (isDaytime ? project.color : '#FFFFFF')
+          : isDaytime ? '#0F172A' : (isToday ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',

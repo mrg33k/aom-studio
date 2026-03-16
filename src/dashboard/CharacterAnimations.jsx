@@ -42,6 +42,11 @@ const AGENT_COLORS = {
 
 // DEPRECATED(engine-swap): DIRECTION SUPPORT -- Was: CSS-based left/right sprite flip. REPLACED BY TODO(engine): SPRITE LAYER COMPOSITING (engine handles sprite flip/rotation natively). Council decision 2026-03-17. Do not build in React/CSS.
 // TODO(engine): 2D ENGINE -- SPRITE LAYER COMPOSITING -- Characters must render as engine-managed sprites with z-index layering. Each agent = sprite actor with idle/walk/work animation states. Engine handles draw order, occlusion, and direction flipping. Replace current CSS-animated div overlays with engine sprite nodes. Ref: Council engine-swap directive.
+//
+// ========== PATRIK DIRECTIVES (Pass 25, lines 256, 265) ==========
+// TODO(bobby): CANVAS-NATIVE CHARACTER ANIMATION -- Current CharacterAnimations uses CSS transforms on DOM elements. For CanvasRoom (Canvas 2D), character animations need a Canvas-native path: draw sprite frames directly on the 2D context using drawImage with frame offsets. Hop cycle, idle bounce, walk cycle, speaking animation all need Canvas equivalents. The character is part of the Canvas room layers, not a DOM overlay on top. Steffen: ensure character sprites work as Canvas sprites. Ref: Patrik feedback line 256.
+// TODO(bobby): ELON WALK CYCLE IN ROOM -- Elon must walk around his server room. Pathfinding: define walkable area within room bounds (avoid furniture collision boxes). Walk states: idle -> pick random walkable point -> walk to it -> idle at destination -> repeat. Speed: ~1 tile/s. Walk animation: directional hop frames from Steffen catalog (front/back/left/right). At desk = working animation. This is THE GATE before adding room 2. Ref: Patrik directive line 265.
+// ==========
 
 // ---- SPRITE STATE MAPPING (mirrors GameDashboard) ----------------------------
 function getSpriteState(status, isSpeaking) {
