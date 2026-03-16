@@ -7,6 +7,7 @@
 // TODO(patrik): Drag-to-reorder project pills in the HUD strip (Trello card energy)
 // TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
 // TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
+// TODO(patrik): Bottom bar cleanup -- remove chat input from bottom bar (chat only in sidebar). Replace Active/Blocked stat pills with scrollable/searchable PROJECT PILLS. Bottom bar = minimap + agent portrait + project pills + notification icons. Clean, no chat input.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
