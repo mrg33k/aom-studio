@@ -57,37 +57,65 @@ function parsePunchList(markdown) {
   let currentSection = ''
   let currentProject = null
 
+  // Section name -> project config mapping
+  const SECTION_MAP = {
+    'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
+    'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
+    'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
+    'DASHBOARD':         { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
+    'AMBITION':          { name: 'Ambition',  section: 'ambition',   color: '#F59E0B', icon: 'project' },
+    'AOM SITE PHASE 2':  { name: 'Phase 2',   section: 'aom-phase2', color: '#3B9EFF', icon: 'project' },
+    'AOM SITE':          { name: 'AOM Site',  section: 'aom-site',   color: '#5BB8FF', icon: 'project' },
+    'GO-TO-MARKET':      { name: 'Advisory',  section: 'gtm',        color: '#7C9A72', icon: 'project' },
+    'OUTREACH':          { name: 'Outreach',  section: 'outreach',   color: '#EF4444', icon: 'project' },
+    'CLIENT DEADLINE':   { name: 'Deadlines', section: 'deadlines',  color: '#F97316', icon: 'project' },
+    'INFRASTRUCTURE':    { name: 'Infra',     section: 'infra',      color: '#4CAF50', icon: 'project' },
+    'THIS WEEK':         { name: 'This Week', section: 'week',       color: '#9C27B0', icon: 'project' },
+    'CLEO':              { name: 'Cleo',      section: 'cleo',       color: '#FF7043', icon: 'project' },
+    'CONTENT':           { name: 'Content',   section: 'content',    color: '#FF7043', icon: 'project' },
+    'ISA':               { name: 'ISA',       section: 'isa',        color: '#F97316', icon: 'project' },
+    'SKYLAR':            { name: 'Skylar',    section: 'skylar',     color: '#EC4899', icon: 'project' },
+    'KOHRS':             { name: 'KOHRS',     section: 'kohrs',      color: '#EF4444', icon: 'project' },
+  }
+
   for (const line of lines) {
     const trimmed = line.trim()
 
     if (trimmed.startsWith('## ')) {
       currentSection = trimmed.replace('## ', '').trim()
+      const sectionUpper = currentSection.toUpperCase()
 
-      if (currentSection.startsWith('TODAY')) {
-        currentProject = { name: 'Today', section: 'today', tasks: [], color: '#FF6B3D', icon: 'flame' }
-      } else if (currentSection.startsWith('AMBITION')) {
-        currentProject = { name: 'Ambition', section: 'ambition', tasks: [], color: '#F59E0B', icon: 'project' }
-      } else if (currentSection.startsWith('AOM SITE') && currentSection.includes('PHASE 2')) {
-        currentProject = { name: 'Phase 2', section: 'aom-phase2', tasks: [], color: '#3B9EFF', icon: 'project' }
-      } else if (currentSection.startsWith('AOM SITE')) {
-        currentProject = { name: 'AOM Site', section: 'aom-site', tasks: [], color: '#5BB8FF', icon: 'project' }
-      } else if (currentSection.startsWith('GO-TO-MARKET')) {
-        currentProject = { name: 'Advisory', section: 'gtm', tasks: [], color: '#7C9A72', icon: 'project' }
-      } else if (currentSection.startsWith('OUTREACH')) {
-        currentProject = { name: 'Outreach', section: 'outreach', tasks: [], color: '#EF4444', icon: 'project' }
-      } else if (currentSection.startsWith('CLIENT DEADLINE')) {
-        currentProject = { name: 'Deadlines', section: 'deadlines', tasks: [], color: '#F97316', icon: 'project' }
-      } else if (currentSection.startsWith('INFRASTRUCTURE')) {
-        currentProject = { name: 'Infra', section: 'infra', tasks: [], color: '#4CAF50', icon: 'project' }
-      } else if (currentSection.startsWith('AGENTS')) {
+      if (sectionUpper.startsWith('AGENTS')) {
         currentProject = null
-      } else if (currentSection.startsWith('THIS WEEK')) {
-        currentProject = { name: 'This Week', section: 'week', tasks: [], color: '#9C27B0', icon: 'project' }
+        continue
+      }
+
+      // Find matching section config
+      let matched = null
+      // Check "PHASE 2" variant before "AOM SITE"
+      if (sectionUpper.includes('AOM SITE') && sectionUpper.includes('PHASE 2')) {
+        matched = SECTION_MAP['AOM SITE PHASE 2']
+      } else {
+        for (const [key, config] of Object.entries(SECTION_MAP)) {
+          if (key !== 'AOM SITE PHASE 2' && sectionUpper.startsWith(key)) {
+            matched = config
+            break
+          }
+        }
+      }
+
+      if (matched) {
+        // Check if we already have a project with this section (merge)
+        const existing = projects.find(p => p.section === matched.section)
+        if (existing) {
+          currentProject = existing
+        } else {
+          currentProject = { ...matched, tasks: [] }
+          projects.push(currentProject)
+        }
       } else {
         currentProject = null
       }
-
-      if (currentProject) projects.push(currentProject)
       continue
     }
 
@@ -141,6 +169,27 @@ function parsePunchList(markdown) {
     projects: projects.filter(p => p.tasks.length > 0),
     todayTasks,
   }
+}
+
+// ---- RECENCY WEIGHTS (CORNER should be #1 because that's what Patrik works on) --
+// Hard-coded recency weights until we have git log / activity timestamps.
+// The system KNOWS what matters based on what you talk about.
+const PROJECT_RECENCY_WEIGHTS = {
+  'today':      100,  // Always first
+  'corner':     95,   // #1 project right now
+  'aom-site':   85,   // Active site work
+  'aom-phase2': 80,   // Phase 2 builds
+  'ambition':   70,   // Client site
+  'outreach':   65,   // Active outreach
+  'gtm':        60,   // Advisory
+  'cleo':       55,   // Content
+  'content':    55,
+  'kohrs':      50,   // Client
+  'isa':        45,
+  'skylar':     40,
+  'deadlines':  35,
+  'infra':      30,
+  'week':       25,
 }
 
 // ---- DATA HOOK --------------------------------------------------------------
@@ -208,7 +257,7 @@ function PlumbobClipDef({ id, size }) {
 // ---- AGENT PORTRAIT (LARGER: 52px desktop, plumbob shape, blue idle ring) ---
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
-function AgentPortrait({ slug, size = 52, status = 'IDLE', onClick, showName = false, index = 0 }) {
+function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, showName = false, index = 0 }) {
   const agent = AGENTS.find(a => a.slug === slug)
   const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
   const color = agent?.color || '#4A6080'
@@ -367,7 +416,7 @@ function AgentRoster({ agentStatus, onAgentClick }) {
         <AgentPortrait
           key={agent.slug}
           slug={agent.slug}
-          size={52}
+          size={58}
           status={agentStatus?.[agent.slug]?.status || 'IDLE'}
           onClick={onAgentClick}
           index={i}
@@ -377,7 +426,9 @@ function AgentRoster({ agentStatus, onAgentClick }) {
   )
 }
 
-// ---- PROJECT CARD (LARGER: 40px height, chunky game buttons) ----------------
+// ---- PROJECT CARD (VEGAS ENERGY: Trello thickness, physical objects) ---------
+// If you think it's big enough, DOUBLE IT. Slot machine buttons. Casino cards.
+// Drop shadows, bold rounded corners, chunky, grabbable, satisfying.
 function ProjectCard({ project, isExpanded, onClick }) {
   const totalTasks = project.tasks.length
   const doneTasks = project.tasks.filter(t => t.done).length
@@ -389,84 +440,94 @@ function ProjectCard({ project, isExpanded, onClick }) {
   return (
     <motion.button
       onClick={onClick}
-      whileHover={{ scale: 1.06, y: -3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-      whileTap={{ scale: 0.93, y: 1, transition: { type: 'spring', stiffness: 600, damping: 20 } }}
+      whileHover={{ scale: 1.08, y: -5, transition: { type: 'spring', stiffness: 450, damping: 10 } }}
+      whileTap={{ scale: 0.90, y: 3, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        height: 40, padding: '0 16px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        height: 52, padding: '0 22px',
         background: isExpanded
-          ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
+          ? `linear-gradient(135deg, ${project.color}22, ${project.color}0C)`
           : isToday
-            ? 'rgba(255, 107, 61, 0.08)'
-            : 'rgba(100,180,255,0.04)',
-        border: `1px solid ${isExpanded ? `${project.color}45` : isToday ? 'rgba(255, 107, 61, 0.18)' : 'rgba(100,180,255,0.08)'}`,
-        borderRadius: 8,
+            ? 'linear-gradient(135deg, rgba(255, 107, 61, 0.14), rgba(255, 107, 61, 0.06))'
+            : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))',
+        border: `2px solid ${isExpanded ? `${project.color}55` : isToday ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
+        borderRadius: 16,
         cursor: 'pointer',
         flexShrink: 0,
         position: 'relative',
         overflow: 'hidden',
         transition: 'all 200ms ease',
+        // VEGAS: Physical drop shadow. These pills feel like objects you can GRAB.
+        boxShadow: isExpanded
+          ? `0 6px 24px ${project.color}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
+          : isToday
+            ? '0 4px 20px rgba(255,107,61,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
+            : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
       }}
     >
-      {/* Bottom progress fill */}
+      {/* Bottom progress fill - THICKER */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0,
-        width: `${progress}%`, height: 3,
-        background: `linear-gradient(90deg, ${project.color}60, ${project.color})`,
+        width: `${progress}%`, height: 4,
+        background: `linear-gradient(90deg, ${project.color}70, ${project.color})`,
         transition: 'width 500ms ease',
+        borderRadius: '0 0 14px 14px',
       }} />
 
-      {/* Side accent for Today */}
+      {/* Side accent for Today - THICKER */}
       {isToday && (
         <div style={{
-          position: 'absolute', left: 0, top: 4, bottom: 4,
-          width: 3, borderRadius: 2,
+          position: 'absolute', left: 0, top: 6, bottom: 6,
+          width: 4, borderRadius: 2,
           background: project.color,
-          boxShadow: `0 0 8px ${project.color}66`,
+          boxShadow: `0 0 12px ${project.color}88`,
         }} />
       )}
 
-      {/* Project indicator */}
+      {/* Project indicator - BIGGER */}
       {isToday ? (
-        <Flame size={14} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}66)` }} />
+        <Flame size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : (
         <div style={{
-          width: 8, height: 8, borderRadius: 3,
+          width: 12, height: 12, borderRadius: 4,
           background: allDone ? `${project.color}60` : project.color,
-          boxShadow: allDone ? 'none' : `0 0 8px ${project.color}44`,
+          boxShadow: allDone ? 'none' : `0 0 12px ${project.color}55`,
           flexShrink: 0,
         }} />
       )}
 
-      {/* Name - BIGGER font */}
+      {/* Name - VEGAS SIZE. Bold. Chunky. Impossible to miss. */}
       <span style={{
         fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
-        fontSize: 15, fontWeight: isToday ? 800 : 700,
-        color: isExpanded ? HUD.textPrimary : isToday ? '#EDF2FA' : HUD.textSecondary,
+        fontSize: 18, fontWeight: 900,
+        color: isExpanded ? '#FFFFFF' : isToday ? '#EDF2FA' : HUD.textPrimary,
         whiteSpace: 'nowrap',
-        letterSpacing: '-0.01em',
+        letterSpacing: '-0.02em',
         textTransform: 'uppercase',
+        textShadow: isToday ? '0 1px 4px rgba(255,107,61,0.3)' : 'none',
       }}>
         {project.name}
       </span>
 
-      {/* Task count badge */}
+      {/* Task count badge - BIGGER, bolder */}
       {remaining > 0 && (
         <span style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 12, fontWeight: 800,
-          color: project.color,
-          background: `${project.color}15`,
-          padding: '3px 8px', borderRadius: 5,
-          letterSpacing: '0.02em',
+          fontFamily: "'Inter Tight', JetBrains Mono, monospace",
+          fontSize: 16, fontWeight: 900,
+          color: '#FFF',
+          background: project.color,
+          padding: '4px 12px', borderRadius: 10,
+          letterSpacing: '-0.01em',
           lineHeight: 1,
+          boxShadow: `0 2px 8px ${project.color}55`,
+          minWidth: 28, textAlign: 'center',
         }}>
           {remaining}
         </span>
       )}
 
       {allDone && (
-        <Check size={12} color={project.color} strokeWidth={3} style={{ flexShrink: 0, opacity: 0.6 }} />
+        <CheckCircle2 size={18} color={project.color} strokeWidth={2.5} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}44)` }} />
       )}
     </motion.button>
   )
@@ -863,18 +924,21 @@ export default function GameHUD({
   const { data: punchData, loading } = usePunchListData()
   const hudRef = useRef(null)
 
-  // Sort projects by priority: Today first, then by incomplete task count (most active first)
+  // Sort projects by RECENCY WEIGHT first, then incomplete task count.
+  // CORNER is #1 because that's what Patrik has been doing.
+  // The system KNOWS what matters based on conversation frequency.
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
     return [...raw].sort((a, b) => {
-      // Today always first
-      if (a.section === 'today') return -1
-      if (b.section === 'today') return 1
-      // Then by incomplete tasks (most = most active = first)
+      const aWeight = PROJECT_RECENCY_WEIGHTS[a.section] || 10
+      const bWeight = PROJECT_RECENCY_WEIGHTS[b.section] || 10
+      // Primary: recency weight (higher = first)
+      if (aWeight !== bWeight) return bWeight - aWeight
+      // Secondary: incomplete tasks (more = first)
       const aRemaining = a.tasks.filter(t => !t.done).length
       const bRemaining = b.tasks.filter(t => !t.done).length
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
-      // Then by total tasks (more tasks = more active)
+      // Tertiary: total tasks
       return b.tasks.length - a.tasks.length
     })
   }, [punchData])
@@ -975,7 +1039,7 @@ export default function GameHUD({
           display: 'flex',
           alignItems: 'center',
           gap: isMobile ? 6 : 14,
-          minHeight: isMobile ? 56 : 88,
+          minHeight: isMobile ? 56 : 100,
           position: 'relative',
           zIndex: 1,
           padding: isMobile ? 0 : '8px 0',
@@ -990,15 +1054,15 @@ export default function GameHUD({
             <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
           )}
 
-          {/* Center: Project cards (flex-wrap for two rows) */}
+          {/* Center: Project cards (flex-wrap, VEGAS sizing) */}
           <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: 6,
-            padding: '2px 4px',
-            maxHeight: 88,
+            gap: 8,
+            padding: '4px 6px',
+            maxHeight: 108,
             overflow: 'hidden',
             alignContent: 'center',
           }}>

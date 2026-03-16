@@ -40,10 +40,14 @@ const STATUS_CONFIG = {
 }
 
 // ---- ZOOM DETAIL LEVELS (Steffen c3-room-zoom-spec) -------------------------
+// ZOOM LIMITS: Clamped so it never goes past where it looks good.
+// Min 0.55 = full building visible, no dot. Max 2.5 = room detail, no pixelation.
+const ZOOM_MIN = 0.55
+const ZOOM_MAX = 2.5
 const ZOOM_LEVELS = {
-  OVERVIEW: { min: 0.5, max: 1.0, scale: 0.7, label: 'Overview' },
-  NEIGHBORHOOD: { min: 1.0, max: 2.2, scale: 1.6, label: 'Neighborhood' },
-  DETAIL: { min: 2.2, max: 3.5, scale: 2.8, label: 'Detail' },
+  OVERVIEW: { min: 0.55, max: 1.0, scale: 0.7, label: 'Overview' },
+  NEIGHBORHOOD: { min: 1.0, max: 2.0, scale: 1.6, label: 'Neighborhood' },
+  DETAIL: { min: 2.0, max: 2.5, scale: 2.2, label: 'Detail' },
 }
 
 function getDetailLevel(zoom) {
@@ -853,7 +857,7 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
     const handleWheel = (e) => {
       e.preventDefault()
       const delta = e.deltaY > 0 ? -0.15 : 0.15
-      onZoomChange?.(z => Math.min(3.5, Math.max(0.3, z + delta)))
+      onZoomChange?.(z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z + delta)))
     }
     el.addEventListener('wheel', handleWheel, { passive: false })
     return () => el.removeEventListener('wheel', handleWheel)
@@ -936,7 +940,7 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
       const dy = e.touches[0].clientY - e.touches[1].clientY
       const dist = Math.hypot(dx, dy)
       const scale = dist / pinchRef.current.initialDist
-      const newZoom = Math.min(3.5, Math.max(0.3, pinchRef.current.initialZoom * scale))
+      const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, pinchRef.current.initialZoom * scale))
       onZoomChange?.(() => newZoom)
     }
   }, [onZoomChange])
@@ -1631,7 +1635,7 @@ function ShortcutsOverlay({ onClose }) {
     { key: 'T', action: 'Toggle Task HUD' },
     { key: 'M', action: 'Toggle mini-map' },
     { key: 'O', action: 'Overview / zoom out' },
-    { key: '+/-', action: 'Zoom in / out (0.5x to 3.5x)' },
+    { key: '+/-', action: 'Zoom in / out' },
     { key: 'Scroll', action: 'Scroll wheel zoom' },
     { key: 'Click+Drag', action: 'Pan when zoomed' },
     { key: 'Double-click', action: 'Zoom to detail view' },
@@ -2670,7 +2674,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
       padding: 4,
     }}>
       {/* Zoom in */}
-      <button onClick={() => setCameraZoom(z => Math.min(3.5, z + 0.15))}
+      <button onClick={() => setCameraZoom(z => Math.min(ZOOM_MAX, z + 0.15))}
         title="Zoom in (+)"
         style={{
           width: 32, height: 32, background: 'transparent', border: 'none',
@@ -2689,7 +2693,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
       </span>
 
       {/* Zoom out */}
-      <button onClick={() => setCameraZoom(z => Math.max(0.5, z - 0.15))}
+      <button onClick={() => setCameraZoom(z => Math.max(ZOOM_MIN, z - 0.15))}
         title="Zoom out (-)"
         style={{
           width: 32, height: 32, background: 'transparent', border: 'none',
@@ -2906,7 +2910,7 @@ export default function GameDashboard() {
 
     if (roomId === selectedRoom) {
       // Already selected: zoom to Level 3 (detail) and open chat
-      setCameraZoom(2.8)
+      setCameraZoom(ZOOM_MAX)
       setChatAgent(roomId)
     } else {
       // First click: zoom to Level 2 (neighborhood)
@@ -2956,13 +2960,13 @@ export default function GameDashboard() {
     onEscape: () => {
       if (showShortcuts) { setShowShortcuts(false); return }
       if (chatAgent) { setChatAgent(null); return }
-      if (cameraZoom > 2.2) { setCameraZoom(1.6); return }
+      if (cameraZoom > 2.0) { setCameraZoom(1.6); return }
       if (selectedRoom) { setSelectedRoom(null); setIsOverview(true); return }
       setHudOpen(false)
     },
     onAgentSelect: null, // Removed: 1-9 now used for mode switching
-    onZoomIn: () => setCameraZoom(z => Math.min(3.5, z + 0.15)),
-    onZoomOut: () => setCameraZoom(z => Math.max(0.5, z - 0.15)),
+    onZoomIn: () => setCameraZoom(z => Math.min(ZOOM_MAX, z + 0.15)),
+    onZoomOut: () => setCameraZoom(z => Math.max(ZOOM_MIN, z - 0.15)),
     onOverview: () => setIsOverview(o => !o),
     onModeSwitch: handleModeSwitch,
     onCommandPalette: () => { /* Command palette: future C3.1 */ },
@@ -3157,6 +3161,7 @@ export default function GameDashboard() {
             onAgentClick={(slug) => {
               setCameraTarget(slug)
               setSelectedRoom(slug)
+              setChatAgent(slug)
               setIsOverview(false)
               setCameraZoom(1.6)
             }}
@@ -3218,7 +3223,7 @@ export default function GameDashboard() {
         onSelectAgent={setChatAgent}
         agentStatus={agentStatus}
         isMobile={isMobile}
-        bottomOffset={currentMode === 'game' ? (isMobile ? 50 : 58) : 0}
+        bottomOffset={currentMode === 'game' ? (isMobile ? 50 : 68) : 0}
         hideCollapsed={currentMode === 'game'}
         onSpeaking={(slug, speaking) => {
           if (speaking) setStreamingAgent(slug)
