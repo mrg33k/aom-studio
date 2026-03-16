@@ -4567,7 +4567,8 @@ export default function GameDashboard() {
   // Load FULL relay conversation history (all sources) when panel opens
   // The relay is a unified conversation channel. Show everything so terminal,
   // Telegram, and dashboard messages all appear in the chat.
-  // TODO(bobby): Relay is THE source of truth -- EVERYTHING tracked off the relay conversation log. Both Patrik's messages AND agent responses from ANY device (terminal, dashboard, telegram) ALL get logged. When context is lost or session resets, the relay log is searched to recover. This means: (1) persist all messages to relay-inbox/outbox, (2) load full history on dashboard open (already done), (3) add search capability over relay history.
+  // TODO(bobby): TERMINAL MESSAGES NOT APPEARING -- After split-brain fix (b7be6a7), terminal-sourced messages may not flow to dashboard. Verify that messages from the CLI session (this terminal) also get written to relay inbox so dashboard picks them up. Currently only dashboard-sent and Telegram messages may be flowing. Ref: Patrik feedback line 185.
+  // TODO(bobby): ONE CONVERSATION STREAM -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source. No separation by device. Two sides only: Patrik's messages (right) and agent responses (left), interleaved by timestamp. relay-inbox + relay-outbox combined and sorted = the conversation. Add search capability over this unified stream. Ref: Patrik directives lines 144, 186.
   const panelHistoryLoadedRef = useRef(false)
   useEffect(() => {
     if (!IS_LOCAL || panelHistoryLoadedRef.current) return
