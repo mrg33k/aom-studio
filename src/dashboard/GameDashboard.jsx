@@ -865,6 +865,9 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // No individual room tiles = no double walls. The north star IS the background.
 // Interactive click targets, nameplates, and status dots overlay on top.
 // C4: Crossy Road bounce energy, viewport-filling, wave animation on load.
+// TODO(patrik): Time-of-day office image -- bright daytime (office-full.png) should be the DEFAULT. Switch to night (office-full-night.png) at 9pm local time. Steffen has daytime Crossy Road target at visual-target/crossy-road-style/office-full.png. Currently hardcoded to night only.
+// TODO(steffen): Create/finalize production-ready daytime office-full.png for Corner (Crossy Road voxel style). Steffen's existing daytime target has blue sky, green grass, clouds, warm pastel rooms. Needs to be pixel-matched to office-full-night.png dimensions so Bobby can swap them with JS time check.
+// TODO(bobby): Implement time-of-day swap logic -- check user's local time, load office-full.png (daytime, default) before 9pm and office-full-night.png after 9pm. Could also add golden-hour transition. Image src is at line ~1121.
 
 // Room hit-target positions mapped to the Crossy Road voxel office image (percentages).
 // RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
