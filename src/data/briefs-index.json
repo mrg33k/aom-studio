@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T07:20:41.490Z",
+  "generated": "2026-03-16T07:36:36.411Z",
   "categories": [
     {
       "name": "Strategy",
@@ -240,6 +240,16 @@
           "hasPage": true
         },
         {
+          "title": "Corner C3 - Command Palette Design Spec",
+          "slug": "c3-command-palette",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Cmd+K command palette. Search agents, tasks, switch modes. The power-user shortcut that makes Corner feel like a pro tool.",
+          "path": "/briefs/c3-command-palette",
+          "hasPage": true
+        },
+        {
           "title": "Corner C3 - Agent Death/Error Animation Spec",
           "slug": "c3-death-animation",
           "agent": "Steffen",
@@ -267,6 +277,16 @@
           "dateFormatted": "Mar 16",
           "summary": "The RPG tactical menu. Party screen, quest log, mission feed. Pokemon meets business intelligence. Dark theme, game typography, HP bars.",
           "path": "/briefs/c3-megaboard-mode",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 - Mobile Layout Wireframes",
+          "slug": "c3-mobile-layout",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "All 3 modes at 390px width. Bottom sheet, PWA icon, splash screen. Touch interactions. iPhone-first.",
+          "path": "/briefs/c3-mobile-layout",
           "hasPage": true
         },
         {
@@ -307,6 +327,56 @@
           "dateFormatted": "Mar 16",
           "summary": "4-directional walking animations for all agents. 6 frames per direction. Consistent with existing idle/thinking/speaking/done sprites.",
           "path": "/briefs/c3-walking-sprites",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C4 - Admin Panel Visual Spec",
+          "slug": "c4-admin-panel",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Visual design for AOM's internal admin panel. Fleet overview, client detail, update management, revenue dashboard. Dark theme control room for managing all Corner clients.",
+          "path": "/briefs/c4-admin-panel",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C4 - Onboarding Wizard Visual Spec",
+          "slug": "c4-onboarding-wizard",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Visual design for the Corner client onboarding flow. One-question-per-screen, stage selector, dream office input, room generation loading, Meet Your Team reveal, and first interaction prompt.",
+          "path": "/briefs/c4-onboarding-wizard",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C4 - Welcome to Your Corner Reveal Spec",
+          "slug": "c4-welcome-reveal",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "The hero reveal moment when a new client first sees their Corner office. Beat-by-beat choreography. This is the moment that makes people say 'holy shit.' Bobby builds this from frame-perfect specs.",
+          "path": "/briefs/c4-welcome-reveal",
+          "hasPage": true
+        },
+        {
+          "title": "Corner Product Site - Landed in Heaven Visual Spec",
+          "slug": "corner-product-site",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Visual design for corner.app (or the Corner product section of aheadofmarket.com). Ultra clean, white, spacious. Apple keynote energy. The calm before the game storm. Bobby builds this.",
+          "path": "/briefs/corner-product-site",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Pricing Page Design Brief",
+          "slug": "pricing-page-spec",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Full design brief for the Corner pricing page. Competitive analysis (Vercel, Linear, Notion), 4-tier pricing model, feature comparison matrix, FAQ, conversion optimization, responsive design, visual direction. Bobby builds, Steffen designs.",
+          "path": "/briefs/pricing-page-spec",
           "hasPage": true
         },
         {
@@ -1156,6 +1226,26 @@
           "dateFormatted": "Mar 16",
           "summary": "C6 forward-looking notes. White-label, multi-language, voice interface, Corner SDK, enterprise tier, third-party skill marketplace, API integrations, AI-to-AI collaboration, brand partnerships. Early thinking for the ecosystem layer.",
           "path": "/briefs/c6-notes",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER C7 Notes: The Intelligence Layer",
+          "slug": "c7-notes",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "C7 forward-looking notes. Corner Academy, video agents, predictive intelligence, multi-user collaboration, industry editions, offline mode, marketplace data, autonomous agent networks, mobile-native features, Corner for Education. The layer where Corner becomes smarter than the people using it.",
+          "path": "/briefs/c7-notes",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Spec Amendments: C3/C4/C5 Gaps",
+          "slug": "spec-amendments",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Gaps and amendments identified in C3, C4, and C5 specs after writing C6 and C7. Backward-looking review. Things the later specs revealed that the earlier specs missed or underspecified.",
+          "path": "/briefs/spec-amendments",
           "hasPage": true
         },
         {
