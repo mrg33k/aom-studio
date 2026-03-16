@@ -1,0 +1,182 @@
+{
+  "generated": "2026-03-16T00:18:07.433Z",
+  "categories": [
+    {
+      "name": "Strategy",
+      "items": [
+        {
+          "title": "Partnership Strategy",
+          "slug": "partnerships",
+          "agent": "Alex",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Why partnerships beat cold email. 30+ specific targets for AOM growth.",
+          "path": "/briefs/partnerships",
+          "hasPage": true
+        },
+        {
+          "title": "AI Advisory Services Strategy",
+          "slug": "ai-advisory",
+          "agent": "Steve",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "How AOM turns its internal AI system into a sellable product.",
+          "path": "/briefs/ai-advisory",
+          "hasPage": true
+        }
+      ]
+    },
+    {
+      "name": "Design Specs",
+      "items": [
+        {
+          "title": "Ambition Section Specs",
+          "slug": "ambition-sections",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "11 section-level design specs with layout, motion, hierarchy, and wow moments.",
+          "path": "/briefs/ambition-sections",
+          "hasPage": true
+        },
+        {
+          "title": "ROI Calculator Design Spec",
+          "slug": "roi-calculator",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "13-section implementation-ready spec for the ROI calculator page.",
+          "path": "/briefs/roi-calculator",
+          "hasPage": true
+        },
+        {
+          "title": "Audit Onboarding Tool",
+          "slug": "audit-onboarding",
+          "agent": "Steffen",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Premium Typeform-style 27-slide audit intake experience.",
+          "path": "/briefs/audit-onboarding",
+          "hasPage": true
+        },
+        {
+          "title": "Full-Screen Site Redesign",
+          "slug": "fullscreen-site",
+          "agent": "Steffen",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "8-slide scroll-snap pitch deck experience for aheadofmarket.com.",
+          "path": "/briefs/fullscreen-site",
+          "hasPage": true
+        },
+        {
+          "title": "Ideas Tracker (Brain Map)",
+          "slug": "ideas-tracker",
+          "agent": "Steffen",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Force-directed graph visualization for idea management.",
+          "path": "/briefs/ideas-tracker",
+          "hasPage": true
+        }
+      ]
+    },
+    {
+      "name": "Audits",
+      "items": [
+        {
+          "title": "Web Design Upgrade",
+          "slug": "web-design-upgrade",
+          "agent": "Elon",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Aceternity UI, Magic UI, construction patterns, and anti-AI-slop techniques.",
+          "path": "/briefs/web-design-upgrade",
+          "hasPage": true
+        },
+        {
+          "title": "Build Velocity Audit",
+          "slug": "velocity",
+          "agent": "Elon",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Analysis of development speed and deployment efficiency.",
+          "path": "/briefs/velocity",
+          "hasPage": true
+        },
+        {
+          "title": "Competitive Deep Dive",
+          "slug": "competitors",
+          "agent": "Elon",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Market analysis of AI advisory competitors and positioning.",
+          "path": "/briefs/competitors",
+          "hasPage": true
+        },
+        {
+          "title": "Masterplan System Audit",
+          "slug": "masterplan",
+          "agent": "Elon",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Comprehensive audit of AOM agent system architecture.",
+          "path": "/briefs/masterplan",
+          "hasPage": true
+        },
+        {
+          "title": "Security Architecture",
+          "slug": "security",
+          "agent": "Elon",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Security posture review and SOC 2 readiness assessment.",
+          "path": "/briefs/security",
+          "hasPage": true
+        }
+      ]
+    },
+    {
+      "name": "Client Reports",
+      "items": []
+    },
+    {
+      "name": "Outreach",
+      "items": [
+        {
+          "title": "Ambition LinkedIn Posts",
+          "slug": "ambition-linkedin",
+          "agent": "Alex",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "3 LinkedIn posts ready to copy-paste. Breaking 4+ weeks of silence.",
+          "path": "/briefs/ambition-linkedin",
+          "hasPage": true
+        }
+      ]
+    },
+    {
+      "name": "Technical",
+      "items": []
+    },
+    {
+      "name": "Content",
+      "items": []
+    },
+    {
+      "name": "Council",
+      "items": [
+        {
+          "title": "AI Advisory Sprint Plan",
+          "slug": "sprint-plan",
+          "agent": "Council",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Multi-agent sprint plan for the AI advisory product launch.",
+          "path": "/briefs/sprint-plan",
+          "hasPage": true
+        }
+      ]
+    }
+  ]
+}

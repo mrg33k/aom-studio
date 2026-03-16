@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Search } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
 import SiteFooter from '../components/SiteFooter';
+import briefsIndex from '../data/briefs-index.json';
 
 function useSEO() {
   useEffect(() => {
@@ -28,103 +29,108 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.5, delay, ease: 'easeOut' },
 });
 
-// All briefs organized by category
-const categories = [
-  {
-    name: 'Strategy',
-    items: [
-      { title: 'Partnership Strategy', agent: 'Alex', date: 'Mar 10', path: '/briefs/partnerships', summary: 'Why partnerships beat cold email. 30+ specific targets for AOM growth.' },
-      { title: 'AI Advisory Services Strategy', agent: 'Steve', date: 'Mar 10', path: '/briefs/ai-advisory', summary: 'How AOM turns its internal AI system into a sellable product.' },
-      { title: 'AI Advisory Sprint Plan', agent: 'Council', date: 'Mar 10', path: '/briefs/sprint-plan', summary: 'Multi-agent sprint plan for the AI advisory product launch.' },
-      { title: 'Growth Plan', agent: 'Alex', date: 'Mar 2026', path: '/growth-plan', summary: 'Revenue growth strategy and client acquisition roadmap.' },
-      { title: 'Build Proposal Template', agent: 'Alex', date: 'Mar 2026', path: null, summary: 'Standardized proposal format for client engagements.' },
-      { title: 'Case Study Brief', agent: 'Alex', date: 'Mar 2026', path: null, summary: 'Content brief for the AOM case study page.' },
-      { title: 'AI Advisory Offer Language', agent: 'Steve', date: 'Mar 2026', path: null, summary: 'Messaging and positioning for the AI advisory service.' },
-      { title: 'Biz Dev Brief', agent: 'Alex', date: 'Mar 2026', path: null, summary: 'Business development strategy and pipeline targets.' },
-      { title: 'Dashboard Brief', agent: 'Alex', date: 'Mar 2026', path: null, summary: 'Product brief for the AOM dashboard experience.' },
-      { title: 'Website V2 Direction', agent: 'Alex', date: 'Mar 2026', path: null, summary: 'Strategic direction for the full-screen site redesign.' },
-    ],
-  },
-  {
-    name: 'Design Specs',
-    items: [
-      { title: 'Full-Screen Site Redesign', agent: 'Steffen', date: 'Mar 11', path: '/briefs/fullscreen-site', summary: '8-slide scroll-snap pitch deck experience for aheadofmarket.com.' },
-      { title: 'Ideas Tracker (Brain Map)', agent: 'Steffen', date: 'Mar 11', path: '/briefs/ideas-tracker', summary: 'Force-directed graph visualization for idea management.' },
-      { title: 'Audit Onboarding Tool', agent: 'Steffen', date: 'Mar 11', path: '/briefs/audit-onboarding', summary: 'Premium Typeform-style 27-slide audit intake experience.' },
-      { title: 'ROI Calculator Design Spec', agent: 'Steffen', date: 'Mar 12', path: '/briefs/roi-calculator', summary: '13-section implementation-ready spec for the ROI calculator page.' },
-      { title: 'Case Study Design Spec', agent: 'Steffen', date: 'Mar 2026', path: null, summary: '16-section design spec for the AOM case study page.' },
-      { title: 'Audit Deliverable Design Spec', agent: 'Steffen', date: 'Mar 2026', path: null, summary: 'Visual spec for the client-facing audit report.' },
-      { title: 'Ambition Section Specs', agent: 'Steffen', date: 'Mar 12', path: '/briefs/ambition-sections', summary: '11 section-level design specs with layout, motion, hierarchy, and wow moments.' },
-      { title: 'Ambition Loader Spec', agent: 'Steffen', date: 'Mar 2026', path: null, summary: 'Loading animation spec for the Ambition Mechanical site.' },
-      { title: 'Ambition Rebuild Spec', agent: 'Steffen', date: 'Mar 2026', path: null, summary: 'Full rebuild design direction for ambition-teal.vercel.app.' },
-      { title: 'OG Image Spec', agent: 'Steffen', date: 'Mar 2026', path: null, summary: 'Standardized social preview images for all AOM pages.' },
-    ],
-  },
-  {
-    name: 'Audits',
-    items: [
-      { title: 'Masterplan System Audit', agent: 'Elon', date: 'Mar 10', path: '/briefs/masterplan', summary: 'Comprehensive audit of AOM agent system architecture.' },
-      { title: 'Build Velocity Audit', agent: 'Elon', date: 'Mar 10', path: '/briefs/velocity', summary: 'Analysis of development speed and deployment efficiency.' },
-      { title: 'Security Architecture', agent: 'Elon', date: 'Mar 10', path: '/briefs/security', summary: 'Security posture review and SOC 2 readiness assessment.' },
-      { title: 'Competitive Deep Dive', agent: 'Elon', date: 'Mar 10', path: '/briefs/competitors', summary: 'Market analysis of AI advisory competitors and positioning.' },
-      { title: 'Web Design Upgrade', agent: 'Elon', date: 'Mar 12', path: '/briefs/web-design-upgrade', summary: 'Aceternity UI, Magic UI, construction patterns, and anti-AI-slop techniques.' },
-      { title: 'System Audit (Mar 9)', agent: 'Elon', date: 'Mar 9', path: null, summary: 'Daily system health check and infrastructure status.' },
-      { title: 'Context Efficiency Audit', agent: 'Elon', date: 'Mar 2026', path: null, summary: 'Audit of context window usage and optimization opportunities.' },
-    ],
-  },
-  {
-    name: 'Client Reports',
-    items: [
-      { title: 'Client Health Dashboard', agent: 'Paige', date: 'Mar 12', path: null, summary: 'Client satisfaction monitoring and risk flagging system.' },
-      { title: 'Onboarding Sequence', agent: 'Alex', date: 'Mar 2026', path: null, summary: 'New client onboarding workflow and checklist.' },
-      { title: 'ROI Calculator Spec', agent: 'Steve', date: 'Mar 12', path: '/roi-calculator', summary: 'Interactive ROI calculator for AI advisory prospects.' },
-      { title: 'Dashboard Teardown', agent: 'Elon', date: 'Mar 2026', path: null, summary: 'Technical teardown and improvement plan for the dashboard.' },
-    ],
-  },
-  {
-    name: 'Outreach',
-    items: [
-      { title: 'Outreach Plan', agent: 'Jacob', date: 'Mar 2026', path: '/outreach-plan', summary: 'Email outreach strategy targeting construction and CPA verticals.' },
-      { title: 'HVAC Ads Research', agent: 'Alex', date: 'Mar 2026', path: '/research/hvac-ads-arizona', summary: 'Arizona HVAC market research for targeted ad campaigns.' },
-      { title: 'Ambition LinkedIn Posts', agent: 'Alex', date: 'Mar 12', path: '/briefs/ambition-linkedin', summary: '3 LinkedIn posts ready to copy-paste. Breaking 4+ weeks of silence.' },
-      { title: 'Cold Email Analysis Brief', agent: 'Jacob', date: 'Mar 2026', path: null, summary: 'Performance analysis of cold email campaigns and optimization.' },
-      { title: 'Voice Template', agent: 'Jacob', date: 'Mar 2026', path: null, summary: 'Brand voice template for outreach communications.' },
-      { title: 'Next Batch Research', agent: 'Jacob', date: 'Mar 2026', path: null, summary: 'Research for the next batch of outreach prospects.' },
-      { title: 'Niche Database Research', agent: 'Jacob', date: 'Mar 2026', path: null, summary: 'Niche market database sourcing and qualification.' },
-      { title: 'AZ ROC Leads', agent: 'Jacob', date: 'Mar 2026', path: null, summary: 'Arizona Registrar of Contractors lead generation.' },
-    ],
-  },
-  {
-    name: 'Technical',
-    items: [
-      { title: 'Relay Compaction Fix', agent: 'Elon', date: 'Mar 2026', path: null, summary: 'Fix for message loss during conversation compaction.' },
-      { title: 'Telegram Bridge Research', agent: 'Elon', date: 'Mar 2026', path: null, summary: 'Research on Telegram bot relay architecture options.' },
-      { title: 'Credential Rotation Plan', agent: 'Elon', date: 'Mar 2026', path: null, summary: 'Automated credential rotation and secret management.' },
-      { title: 'Email Deliverability Report', agent: 'Elon', date: 'Mar 2026', path: null, summary: 'Email deliverability analysis and improvement recommendations.' },
-      { title: 'Mom Infrastructure Audit', agent: 'Elon', date: 'Mar 2026', path: null, summary: 'Infrastructure audit of the Mom orchestration system.' },
-    ],
-  },
-  {
-    name: 'Content',
-    items: [
-      { title: 'Crown V10 Plan', agent: 'Cleo', date: 'Mar 2026', path: null, summary: 'Production plan for Crown video series version 10.' },
-      { title: 'Ambition Footage Scan', agent: 'Cleo', date: 'Mar 2026', path: null, summary: 'Footage inventory scan for Ambition Mechanical content.' },
-      { title: 'Ambition Crown Editor Guide', agent: 'Cleo', date: 'Mar 2026', path: '/guides/ambition-crown', summary: 'Editing guide for the Ambition Crown video project.' },
-      { title: 'Memorial Tower Editor Guide', agent: 'Cleo', date: 'Mar 2026', path: '/guides/ambition-memorial-tower', summary: 'Editing guide for the Memorial Tower video project.' },
-      { title: 'Hook Library', agent: 'Tony', date: 'Mar 2026', path: null, summary: 'Social media hook templates for content creation.' },
-      { title: 'Platform Best Practices', agent: 'Tony', date: 'Mar 2026', path: null, summary: 'Platform-specific posting guides for LinkedIn, IG, TikTok.' },
-    ],
-  },
-  {
-    name: 'Council',
-    items: [
-      { title: 'AI Advisory Sprint (Mar 10)', agent: 'Council', date: 'Mar 10', path: '/briefs/sprint-plan', summary: 'Multi-agent sprint plan for the AI advisory product launch.' },
-      { title: 'Business Growth Strategy (Mar 10)', agent: 'Council', date: 'Mar 10', path: null, summary: 'Council brief on AOM business growth strategy.' },
-      { title: 'AOM Website Redesign (Mar 9)', agent: 'Council', date: 'Mar 9', path: null, summary: 'Council brief on the website redesign direction.' },
-      { title: 'Briefs Reorg + Offer Strategy (Mar 12)', agent: 'Council', date: 'Mar 12', path: null, summary: 'Council brief on briefs reorganization and offer strategy.' },
-    ],
-  },
+// Fallback items that don't have frontmatter yet (shown as "Coming")
+// These get merged with generated data so the accordion always shows the full picture.
+// As agents add frontmatter, items move from this list to the generated index automatically.
+const fallbackItems = [
+  // Strategy
+  { title: 'Growth Plan', agent: 'Alex', date: 'Mar 2026', path: '/growth-plan', category: 'Strategy', summary: 'Revenue growth strategy and client acquisition roadmap.' },
+  { title: 'Build Proposal Template', agent: 'Alex', date: 'Mar 2026', path: null, category: 'Strategy', summary: 'Standardized proposal format for client engagements.' },
+  { title: 'Case Study Brief', agent: 'Alex', date: 'Mar 2026', path: null, category: 'Strategy', summary: 'Content brief for the AOM case study page.' },
+  { title: 'AI Advisory Offer Language', agent: 'Steve', date: 'Mar 2026', path: null, category: 'Strategy', summary: 'Messaging and positioning for the AI advisory service.' },
+  { title: 'Biz Dev Brief', agent: 'Alex', date: 'Mar 2026', path: null, category: 'Strategy', summary: 'Business development strategy and pipeline targets.' },
+  { title: 'Dashboard Brief', agent: 'Alex', date: 'Mar 2026', path: null, category: 'Strategy', summary: 'Product brief for the AOM dashboard experience.' },
+  { title: 'Website V2 Direction', agent: 'Alex', date: 'Mar 2026', path: null, category: 'Strategy', summary: 'Strategic direction for the full-screen site redesign.' },
+  // Design Specs
+  { title: 'Case Study Design Spec', agent: 'Steffen', date: 'Mar 2026', path: null, category: 'Design Specs', summary: '16-section design spec for the AOM case study page.' },
+  { title: 'Audit Deliverable Design Spec', agent: 'Steffen', date: 'Mar 2026', path: null, category: 'Design Specs', summary: 'Visual spec for the client-facing audit report.' },
+  { title: 'Ambition Loader Spec', agent: 'Steffen', date: 'Mar 2026', path: null, category: 'Design Specs', summary: 'Loading animation spec for the Ambition Mechanical site.' },
+  { title: 'Ambition Rebuild Spec', agent: 'Steffen', date: 'Mar 2026', path: null, category: 'Design Specs', summary: 'Full rebuild design direction for ambition-teal.vercel.app.' },
+  { title: 'OG Image Spec', agent: 'Steffen', date: 'Mar 2026', path: null, category: 'Design Specs', summary: 'Standardized social preview images for all AOM pages.' },
+  // Audits
+  { title: 'System Audit (Mar 9)', agent: 'Elon', date: 'Mar 9', path: null, category: 'Audits', summary: 'Daily system health check and infrastructure status.' },
+  { title: 'Context Efficiency Audit', agent: 'Elon', date: 'Mar 2026', path: null, category: 'Audits', summary: 'Audit of context window usage and optimization opportunities.' },
+  // Client Reports
+  { title: 'Client Health Dashboard', agent: 'Paige', date: 'Mar 12', path: null, category: 'Client Reports', summary: 'Client satisfaction monitoring and risk flagging system.' },
+  { title: 'Onboarding Sequence', agent: 'Alex', date: 'Mar 2026', path: null, category: 'Client Reports', summary: 'New client onboarding workflow and checklist.' },
+  { title: 'ROI Calculator Spec', agent: 'Steve', date: 'Mar 12', path: '/roi-calculator', category: 'Client Reports', summary: 'Interactive ROI calculator for AI advisory prospects.' },
+  { title: 'Dashboard Teardown', agent: 'Elon', date: 'Mar 2026', path: null, category: 'Client Reports', summary: 'Technical teardown and improvement plan for the dashboard.' },
+  // Outreach
+  { title: 'Outreach Plan', agent: 'Jacob', date: 'Mar 2026', path: '/outreach-plan', category: 'Outreach', summary: 'Email outreach strategy targeting construction and CPA verticals.' },
+  { title: 'HVAC Ads Research', agent: 'Alex', date: 'Mar 2026', path: '/research/hvac-ads-arizona', category: 'Outreach', summary: 'Arizona HVAC market research for targeted ad campaigns.' },
+  { title: 'Cold Email Analysis Brief', agent: 'Jacob', date: 'Mar 2026', path: null, category: 'Outreach', summary: 'Performance analysis of cold email campaigns and optimization.' },
+  { title: 'Voice Template', agent: 'Jacob', date: 'Mar 2026', path: null, category: 'Outreach', summary: 'Brand voice template for outreach communications.' },
+  { title: 'Next Batch Research', agent: 'Jacob', date: 'Mar 2026', path: null, category: 'Outreach', summary: 'Research for the next batch of outreach prospects.' },
+  { title: 'Niche Database Research', agent: 'Jacob', date: 'Mar 2026', path: null, category: 'Outreach', summary: 'Niche market database sourcing and qualification.' },
+  { title: 'AZ ROC Leads', agent: 'Jacob', date: 'Mar 2026', path: null, category: 'Outreach', summary: 'Arizona Registrar of Contractors lead generation.' },
+  // Technical
+  { title: 'Relay Compaction Fix', agent: 'Elon', date: 'Mar 2026', path: null, category: 'Technical', summary: 'Fix for message loss during conversation compaction.' },
+  { title: 'Telegram Bridge Research', agent: 'Elon', date: 'Mar 2026', path: null, category: 'Technical', summary: 'Research on Telegram bot relay architecture options.' },
+  { title: 'Credential Rotation Plan', agent: 'Elon', date: 'Mar 2026', path: null, category: 'Technical', summary: 'Automated credential rotation and secret management.' },
+  { title: 'Email Deliverability Report', agent: 'Elon', date: 'Mar 2026', path: null, category: 'Technical', summary: 'Email deliverability analysis and improvement recommendations.' },
+  { title: 'Mom Infrastructure Audit', agent: 'Elon', date: 'Mar 2026', path: null, category: 'Technical', summary: 'Infrastructure audit of the Mom orchestration system.' },
+  // Content
+  { title: 'Crown V10 Plan', agent: 'Cleo', date: 'Mar 2026', path: null, category: 'Content', summary: 'Production plan for Crown video series version 10.' },
+  { title: 'Ambition Footage Scan', agent: 'Cleo', date: 'Mar 2026', path: null, category: 'Content', summary: 'Footage inventory scan for Ambition Mechanical content.' },
+  { title: 'Ambition Crown Editor Guide', agent: 'Cleo', date: 'Mar 2026', path: '/guides/ambition-crown', category: 'Content', summary: 'Editing guide for the Ambition Crown video project.' },
+  { title: 'Memorial Tower Editor Guide', agent: 'Cleo', date: 'Mar 2026', path: '/guides/ambition-memorial-tower', category: 'Content', summary: 'Editing guide for the Memorial Tower video project.' },
+  { title: 'Hook Library', agent: 'Tony', date: 'Mar 2026', path: null, category: 'Content', summary: 'Social media hook templates for content creation.' },
+  { title: 'Platform Best Practices', agent: 'Tony', date: 'Mar 2026', path: null, category: 'Content', summary: 'Platform-specific posting guides for LinkedIn, IG, TikTok.' },
+  // Council
+  { title: 'Business Growth Strategy (Mar 10)', agent: 'Council', date: 'Mar 10', path: null, category: 'Council', summary: 'Council brief on AOM business growth strategy.' },
+  { title: 'AOM Website Redesign (Mar 9)', agent: 'Council', date: 'Mar 9', path: null, category: 'Council', summary: 'Council brief on the website redesign direction.' },
+  { title: 'Briefs Reorg + Offer Strategy (Mar 12)', agent: 'Council', date: 'Mar 12', path: null, category: 'Council', summary: 'Council brief on briefs reorganization and offer strategy.' },
 ];
+
+// Category display order (fixed, per Steffen spec)
+const CATEGORY_ORDER = [
+  'Strategy',
+  'Design Specs',
+  'Audits',
+  'Client Reports',
+  'Outreach',
+  'Technical',
+  'Content',
+  'Council',
+];
+
+// Merge generated index with fallback items
+function buildCategories() {
+  // Collect all generated slugs/paths so we can skip duplicates in fallbacks
+  const generatedPaths = new Set();
+  const generatedTitles = new Set();
+
+  for (const cat of briefsIndex.categories) {
+    for (const item of cat.items) {
+      generatedPaths.add(item.path);
+      generatedTitles.add(item.title.toLowerCase());
+    }
+  }
+
+  // Build merged categories
+  return CATEGORY_ORDER.map(catName => {
+    const genCat = briefsIndex.categories.find(c => c.name === catName);
+    const genItems = genCat ? genCat.items.map(item => ({
+      ...item,
+      date: item.dateFormatted || item.date,
+    })) : [];
+
+    // Add fallback items for this category that aren't already in generated data
+    const fallbacks = fallbackItems
+      .filter(f => f.category === catName)
+      .filter(f => {
+        // Skip if already in generated data (match by path or title)
+        if (f.path && generatedPaths.has(f.path)) return false;
+        if (generatedTitles.has(f.title.toLowerCase())) return false;
+        return true;
+      });
+
+    return {
+      name: catName,
+      items: [...genItems, ...fallbacks],
+    };
+  });
+}
 
 function CategoryAccordion({ category, index, isOpen, onToggle, isSearching }) {
   const itemCount = category.items.length;
@@ -150,7 +156,7 @@ function CategoryAccordion({ category, index, isOpen, onToggle, isSearching }) {
             {category.name}
           </h3>
           <span className="font-mono text-sm text-[#7C9A72]">
-            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+            {itemCount} {itemCount === 1 ? 'brief' : 'briefs'}
           </span>
         </div>
 
@@ -254,7 +260,9 @@ function BriefItem({ item }) {
 
 export default function BriefsHub() {
   useSEO();
-  // Fix #3: All categories collapsed by default
+
+  const categories = useMemo(() => buildCategories(), []);
+
   const [openCategories, setOpenCategories] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -282,7 +290,7 @@ export default function BriefsHub() {
         }, 300);
       }
     }
-  }, []);
+  }, [categories]);
 
   // Filter categories based on search
   const filteredCategories = debouncedQuery
@@ -304,11 +312,9 @@ export default function BriefsHub() {
   const handleSearchChange = useCallback((e) => {
     const value = e.target.value;
     if (value && !searchQuery) {
-      // Starting a search: save current open state
       setPreSearchState(new Set(openCategories));
     }
     if (!value && searchQuery) {
-      // Clearing search: restore pre-search state
       if (preSearchState) {
         setOpenCategories(preSearchState);
         setPreSearchState(null);
@@ -333,7 +339,7 @@ export default function BriefsHub() {
       });
       setOpenCategories(matchingIndices);
     }
-  }, [debouncedQuery]);
+  }, [debouncedQuery, categories]);
 
   // Handle Escape to clear search
   const handleKeyDown = useCallback((e) => {
@@ -462,7 +468,6 @@ export default function BriefsHub() {
         <div className="max-w-4xl mx-auto">
           <div className="border-t border-white/[0.06]">
             {filteredCategories.map((category) => {
-              // Find original index for toggle state
               const originalIndex = categories.findIndex(c => c.name === category.name);
               return (
                 <div key={category.name} id={`category-${originalIndex}`}>

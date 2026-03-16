@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/generate-briefs-index.js",
     "build": "vite build",
+    "generate-briefs": "node scripts/generate-briefs-index.js",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -21,6 +23,8 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.18",
+    "gray-matter": "^4.0.3",
+    "marked": "^17.0.4",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "vite": "^5.1.6"

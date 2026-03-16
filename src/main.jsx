@@ -32,6 +32,7 @@ import GuideAmbitionMemorialTower from './pages/GuideAmbitionMemorialTower.jsx'
 import ROICalculator from './pages/ROICalculator.jsx'
 import CaseStudy from './pages/CaseStudy.jsx'
 import Corner from './pages/Corner.jsx'
+import BriefPage from './pages/BriefPage.jsx'
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 import './index.css'
 
@@ -87,6 +88,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/briefs/web-design-upgrade" element={<BriefWebDesignUpgrade />} />
           <Route path="/briefs/ambition-sections" element={<BriefAmbitionSections />} />
           <Route path="/briefs/ambition-linkedin" element={<BriefAmbitionLinkedIn />} />
+          <Route path="/briefs/:slug" element={<BriefPage />} />
           <Route path="/audit/test" element={<AuditTest />} />
           <Route path="/ideas" element={<IdeasTracker />} />
           <Route path="/guides" element={<GuidesHub />} />
