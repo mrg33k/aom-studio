@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T06:29:33.955Z",
+  "generated": "2026-03-16T06:32:16.438Z",
   "categories": [
     {
       "name": "Strategy",
@@ -1243,6 +1243,16 @@
     {
       "name": "Content",
       "items": [
+        {
+          "title": "Ambition: 15-20 Branded Social Animations",
+          "slug": "ambition-branded-posts",
+          "agent": "Alex",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "18 branded Remotion animation briefs targeting GCs. Tool tips, checklists, industry intel, Phoenix events, culture.",
+          "path": "/briefs/ambition-branded-posts",
+          "hasPage": true
+        },
         {
           "title": "Ambition Mechanical: 30-Day Content Arsenal",
           "slug": "ambition-content-plan",
