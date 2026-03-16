@@ -2981,8 +2981,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   justifyContent: 'center', height: '100%', gap: 10, padding: '24px 0',
                 }}>
                   <SpriteAvatar agentSlug={room?.id} size={44} borderColor={agentColor} />
-                  <div style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', textAlign: 'center' }}>
-                    Message {agent?.name || 'the agent'} to get started
+                  <div style={{ color: '#EDF2FA', fontSize: 14, fontWeight: 600, fontFamily: "'Inter Tight', sans-serif" }}>
+                    {agent?.name || 'Agent'}
+                  </div>
+                  <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', textAlign: 'center' }}>
+                    Messages filtered to {agent?.name}. Send a message to get started.
+                  </div>
+                  <div style={{ color: '#4A6080', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    Relay Chat
                   </div>
                 </div>
               )}
@@ -3227,6 +3233,70 @@ export default function GameDashboard() {
   useEffect(() => {
     return () => { if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current) }
   }, [])
+
+  // Load relay history filtered by agent when panel opens on an agent
+  const panelHistoryLoadedRef = useRef({})
+  useEffect(() => {
+    if (!selectedRoom || !IS_LOCAL || panelHistoryLoadedRef.current[selectedRoom]) return
+    panelHistoryLoadedRef.current[selectedRoom] = true
+
+    const loadAgentHistory = async () => {
+      try {
+        const [inboxRes, outboxRes] = await Promise.all([
+          fetch('/api/local/relay-inbox'),
+          fetch('/api/local/relay-outbox'),
+        ])
+        const inbox = inboxRes.ok ? await inboxRes.json() : { messages: [] }
+        const outbox = outboxRes.ok ? await outboxRes.json() : { messages: [] }
+
+        const all = []
+        // Inbox: user messages - filter to this agent
+        for (const msg of inbox.messages) {
+          if (!msg.message?.trim()) continue
+          // Match messages sent TO this agent (agent field) or mentioning the agent
+          const isForAgent = msg.agent === selectedRoom || msg.agent === selectedRoom.toLowerCase()
+          if (!isForAgent && msg.source !== 'corner-dashboard') continue
+          if (!isForAgent) continue // Only show messages explicitly for this agent
+          all.push({
+            role: 'user',
+            content: msg.message,
+            time: msg.timestamp,
+            source: msg.source || 'unknown',
+            id: msg.id,
+          })
+        }
+        // Outbox: agent responses - filter to this agent
+        for (const msg of outbox.messages) {
+          if (!msg.message?.trim()) continue
+          const isFromAgent = msg.agent === selectedRoom || msg.agent === selectedRoom.toLowerCase()
+          // Also check if the message was a response to a message targeted at this agent
+          if (!isFromAgent) continue
+          all.push({
+            role: 'assistant',
+            content: msg.message,
+            time: msg.timestamp,
+            source: msg.agent || 'system',
+            id: msg.id,
+          })
+        }
+
+        // Sort by timestamp and take last 30
+        all.sort((a, b) => new Date(a.time) - new Date(b.time))
+        const recent = all.slice(-30)
+
+        if (recent.length > 0) {
+          setPanelMessages(prev => ({
+            ...prev,
+            [selectedRoom]: [...recent, ...(prev[selectedRoom] || [])],
+          }))
+        }
+      } catch (err) {
+        console.warn('Failed to load agent relay history:', err)
+      }
+    }
+
+    loadAgentHistory()
+  }, [selectedRoom])
 
   // Right-click context menu state
   const [contextMenu, setContextMenu] = useState(null) // { type, data, position: {x, y} }
