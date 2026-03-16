@@ -21,6 +21,7 @@ import { renderFurniture } from './FurnitureRenderer.jsx'
 import { useWebSocket, WS_STATE } from './useWebSocket.js'
 import { AnimatedAgentCharacter, CharacterAnimationStyles } from './CharacterAnimations.jsx'
 import CanvasRoom from './CanvasRoom.jsx'
+import CanvasOffice from './CanvasOffice.jsx'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -4063,14 +4064,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           )}
                           {sourceLabel && (
                             <span style={{
-                              fontSize: 10, fontWeight: 600, color: '#3B82F6',
-                              background: 'rgba(59,130,246,0.06)',
-                              border: '1px solid rgba(59,130,246,0.1)',
-                              borderRadius: 3, padding: '1px 6px',
+                              fontSize: 9, fontWeight: 500, color: '#94A3B8',
                               letterSpacing: '0.06em',
                               fontFamily: "'JetBrains Mono', monospace",
+                              opacity: 0.4,
+                              textTransform: 'lowercase',
                             }}>
-                              {sourceLabel}
+                              {sourceLabel.toLowerCase()}
                             </span>
                           )}
                         </div>
@@ -4113,6 +4113,28 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               )}
               <div ref={messagesEndRef} />
             </div>
+            {/* New messages indicator */}
+            {showNewMsgIndicator && (
+              <div style={{ position: 'relative', zIndex: 10 }}>
+                <button
+                  onClick={() => {
+                    messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' })
+                    setShowNewMsgIndicator(false)
+                    isNearBottomRef.current = true
+                  }}
+                  style={{
+                    position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+                    background: '#3B82F6', color: '#fff',
+                    fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                    padding: '4px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(59,130,246,0.3)',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  New messages
+                </button>
+              </div>
+            )}
             {/* Chat input */}
             <div style={{
               padding: '16px 20px',
@@ -5150,19 +5172,12 @@ export default function GameDashboard() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
-              <IsometricOffice
+              <CanvasOffice
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}
-                onRoomContextMenu={handleRoomContextMenu}
                 selectedRoom={selectedRoom}
                 hoveredRoom={hoveredRoom}
                 setHoveredRoom={setHoveredRoom}
-                cameraTarget={cameraTarget}
-                cameraZoom={cameraZoom}
-                isOverview={isOverview}
-                onZoomChange={setCameraZoom}
-                agentAnimations={agentAnimations}
-                streamingAgent={streamingAgent}
                 isNightMode={isNightMode}
               />
 
@@ -5324,11 +5339,12 @@ export default function GameDashboard() {
                           const responses = data.messages.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
                           if (responses.length > 0) {
                             const latest = responses[responses.length - 1]
+                            const cleanedResp = sanitizeRelayMessage(latest.message) || latest.message || ''
                             safePanelUpdate(prev => {
                               // Remove streaming, add real response, sort in one pass
                               const filtered = [...(prev._all || [])].filter(m => !m.streaming)
                               if (!filtered.some(m => m.id === latest.id)) {
-                                filtered.push({ role: 'assistant', content: latest.message || '', streaming: false, time: latest.timestamp || new Date().toISOString(), source: extractAgentFromMessage(latest) || 'system', id: latest.id || `resp-${Date.now()}` })
+                                filtered.push({ role: 'assistant', content: cleanedResp, streaming: false, time: latest.timestamp || new Date().toISOString(), source: extractAgentFromMessage(latest) || 'system', id: latest.id || `resp-${Date.now()}` })
                               }
                               filtered.sort(safeTimeSort)
                               return { ...prev, _all: filtered }
