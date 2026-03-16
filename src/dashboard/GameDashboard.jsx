@@ -3796,6 +3796,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </div>
               )}
               {chatMessages && chatMessages.map((msg, i) => {
+                if (!msg || typeof msg !== 'object') return null // guard: skip null/malformed msgs
                 const isUser = msg.role === 'user'
                 // Only show source label on first message in a consecutive sequence from the same source
                 const prevMsg = i > 0 ? chatMessages[i - 1] : null
@@ -3897,7 +3898,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             }
                         ),
                       }}>
-                        {msg.content && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
+                        {msg.content && typeof msg.content === 'string' && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
                         {msg.streaming && !msg.content && (
                           <div style={{ display: 'flex', gap: 5, padding: '4px 0', alignItems: 'center' }}>
                             {[0, 1, 2].map(j => (
@@ -4010,6 +4011,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               </form>
             </div>
           </>
+          </ChatErrorBoundary>
         )}
 
         {/* TASKS TAB */}
