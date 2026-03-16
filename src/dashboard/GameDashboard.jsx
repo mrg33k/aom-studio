@@ -2811,7 +2811,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
           }
         }
       } catch {}
-    }, 2000)
+    }, 2000) // TODO(bobby): Relay real-time -- Patrik wants relay updates within 1 second on localhost. Background outbox poll is already 500ms (line ~4380). This chat-specific poll should match: drop to 500ms or 1000ms. Consider WebSocket for true real-time.
   }
 
   // Start 60-second chat timeout. If no response arrives, show offline message.
@@ -4467,6 +4467,7 @@ export default function GameDashboard() {
   // Load FULL relay conversation history (all sources) when panel opens
   // The relay is a unified conversation channel. Show everything so terminal,
   // Telegram, and dashboard messages all appear in the chat.
+  // TODO(bobby): Relay is THE source of truth -- EVERYTHING tracked off the relay conversation log. Both Patrik's messages AND agent responses from ANY device (terminal, dashboard, telegram) ALL get logged. When context is lost or session resets, the relay log is searched to recover. This means: (1) persist all messages to relay-inbox/outbox, (2) load full history on dashboard open (already done), (3) add search capability over relay history.
   const panelHistoryLoadedRef = useRef(false)
   useEffect(() => {
     if (!IS_LOCAL || panelHistoryLoadedRef.current) return

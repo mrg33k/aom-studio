@@ -4,6 +4,7 @@
 // TODO(steffen-design): Checklist priority badges (TODAY, THIS WEEK) -- review color palette against brand. Current orange/red may clash with agent status colors. Ensure visual hierarchy: high-priority tasks pop, low-priority recede.
 // TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors.
 // TODO(patrik): Task right-click context menu -- right-click any task for: edit text, reassign agent, mark done/undone, set priority (high/med/low), delete. Should feel like Linear/Notion context menus. Applies to both ChecklistMode tasks AND sidebar task items.
+// TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable.
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
