@@ -3,6 +3,7 @@
 // Working checkboxes wired. Apple Reminders meets Linear. Clean, typography-driven.
 // TODO(steffen-design): Checklist priority badges (TODAY, THIS WEEK) -- review color palette against brand. Current orange/red may clash with agent status colors. Ensure visual hierarchy: high-priority tasks pop, low-priority recede.
 // TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors.
+// TODO(patrik): Task right-click context menu -- right-click any task for: edit text, reassign agent, mark done/undone, set priority (high/med/low), delete. Should feel like Linear/Notion context menus. Applies to both ChecklistMode tasks AND sidebar task items.
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
