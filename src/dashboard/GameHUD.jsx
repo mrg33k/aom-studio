@@ -3,7 +3,7 @@
 // The contrast makes both pop. LARGER on desktop. Game scale, not web app scale.
 // Chat + HUD = ONE unified element.
 //
-// TODO(patrik): Checkbox persistence -- clicking a task checkbox should write back to punch-list.md via API
+// DONE(bobby2): Checkbox persistence -- clicking a task checkbox writes back to punch-list.md via /api/local/punch-toggle
 // TODO(patrik): Drag-to-reorder project pills in the HUD strip (Trello card energy)
 // TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
 // TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
@@ -1054,18 +1054,62 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
   )
 }
 
-// ---- EXPANDED TASK PANEL (blue glass, game-styled) --------------------------
+// ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 function TaskPanel({ project, onClose }) {
-  const totalTasks = project.tasks.length
-  const doneTasks = project.tasks.filter(t => t.done).length
+  // Local state for optimistic checkbox toggling
+  const [localToggles, setLocalToggles] = useState({}) // task index -> toggled done state
+  const [saving, setSaving] = useState(null) // which task index is saving
+
+  const tasks = project.tasks
+  const getTaskDone = (task, idx) => localToggles[idx] !== undefined ? localToggles[idx] : task.done
+  const totalTasks = tasks.length
+  const doneTasks = tasks.filter((t, i) => getTaskDone(t, i)).length
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
 
   const sortedTasks = useMemo(() => {
-    return [...project.tasks].sort((a, b) => {
-      if (a.done === b.done) return 0
-      return a.done ? 1 : -1
+    return tasks.map((t, i) => ({ ...t, origIdx: i })).sort((a, b) => {
+      const aDone = getTaskDone(a, a.origIdx)
+      const bDone = getTaskDone(b, b.origIdx)
+      if (aDone === bDone) return 0
+      return aDone ? 1 : -1
     })
-  }, [project.tasks])
+  }, [tasks, localToggles])
+
+  // Toggle checkbox: write to punch-list.md via API
+  const toggleTask = useCallback(async (task, origIdx) => {
+    if (!IS_LOCAL || !task.raw) return
+    const currentDone = getTaskDone(task, origIdx)
+    const newDone = !currentDone
+
+    // Optimistic update
+    setLocalToggles(prev => ({ ...prev, [origIdx]: newDone }))
+    setSaving(origIdx)
+
+    try {
+      const res = await fetch('/api/local/punch-toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lineText: task.raw, markDone: newDone }),
+      })
+      if (!res.ok) {
+        // Revert on failure
+        setLocalToggles(prev => {
+          const next = { ...prev }
+          delete next[origIdx]
+          return next
+        })
+      }
+    } catch {
+      // Revert on error
+      setLocalToggles(prev => {
+        const next = { ...prev }
+        delete next[origIdx]
+        return next
+      })
+    } finally {
+      setSaving(null)
+    }
+  }, [localToggles])
 
   return (
     <motion.div
@@ -1165,79 +1209,89 @@ function TaskPanel({ project, onClose }) {
         padding: '8px 16px 16px',
         overflowY: 'auto', maxHeight: 300,
       }} className="hud-scroll">
-        {sortedTasks.map((task, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.03, duration: 0.15 }}
-            style={{
-              display: 'flex', alignItems: 'flex-start', gap: 12,
-              padding: '10px 8px',
-              borderBottom: i < sortedTasks.length - 1 ? `1px solid ${HUD.divider}` : 'none',
-              opacity: task.done ? 0.35 : 1,
-              transition: 'opacity 200ms ease',
-            }}
-          >
-            {/* Checkbox */}
-            <div style={{
-              width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
-              border: task.done ? 'none' : `1.5px solid rgba(100,180,255,0.18)`,
-              background: task.done ? project.color : 'rgba(100,180,255,0.03)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'all 150ms ease',
-            }}>
-              {task.done && <Check size={12} color="#FFF" strokeWidth={3} />}
-            </div>
+        {sortedTasks.map((task, i) => {
+          const isDone = getTaskDone(task, task.origIdx)
+          const isSaving = saving === task.origIdx
+          return (
+            <motion.div
+              key={task.origIdx}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.03, duration: 0.15 }}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 12,
+                padding: '10px 8px',
+                borderBottom: i < sortedTasks.length - 1 ? `1px solid ${HUD.divider}` : 'none',
+                opacity: isDone ? 0.35 : 1,
+                transition: 'opacity 200ms ease',
+              }}
+            >
+              {/* Checkbox - CLICKABLE */}
+              <motion.div
+                onClick={() => toggleTask(task, task.origIdx)}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.85 }}
+                style={{
+                  width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                  border: isDone ? 'none' : `1.5px solid rgba(100,180,255,0.18)`,
+                  background: isDone ? project.color : 'rgba(100,180,255,0.03)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 150ms ease',
+                  cursor: IS_LOCAL ? 'pointer' : 'default',
+                  opacity: isSaving ? 0.5 : 1,
+                }}>
+                {isDone && <Check size={12} color="#FFF" strokeWidth={3} />}
+              </motion.div>
 
-            {/* Task text - LARGER */}
-            <span style={{
-              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 400,
-              color: task.done ? HUD.textMuted : HUD.textPrimary,
-              lineHeight: 1.45,
-              textDecoration: task.done ? 'line-through' : 'none',
-              flex: 1,
-            }}>
-              {task.text}
-            </span>
+              {/* Task text - LARGER */}
+              <span style={{
+                fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 400,
+                color: isDone ? HUD.textMuted : HUD.textPrimary,
+                lineHeight: 1.45,
+                textDecoration: isDone ? 'line-through' : 'none',
+                flex: 1,
+              }}>
+                {task.text}
+              </span>
 
-            {/* Agent badge */}
-            {task.agent && (() => {
-              const a = AGENTS.find(x => x.slug === task.agent)
-              const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
-              return (
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  border: `1.5px solid ${a?.color || '#4A6080'}`,
-                  overflow: 'hidden', flexShrink: 0,
-                  background: `${a?.color || '#4A6080'}15`,
-                }} title={a?.name || task.agent}>
-                  {hasSpr ? (
-                    <img
-                      src={`/corner/sprites/${task.agent}-idle.png`}
-                      alt=""
-                      style={{
-                        width: 42, height: 42,
-                        objectFit: 'cover', objectPosition: '20% 8%',
-                        imageRendering: 'pixelated', display: 'block',
-                        marginLeft: -6, marginTop: -3,
-                      }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '100%', height: '100%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 12, fontWeight: 700, color: a?.color || '#4A6080',
-                      fontFamily: "'Inter', system-ui, sans-serif",
-                    }}>
-                      {a?.name?.charAt(0) || '?'}
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
-          </motion.div>
-        ))}
+              {/* Agent badge */}
+              {task.agent && (() => {
+                const a = AGENTS.find(x => x.slug === task.agent)
+                const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+                return (
+                  <div style={{
+                    width: 26, height: 26, borderRadius: '50%',
+                    border: `1.5px solid ${a?.color || '#4A6080'}`,
+                    overflow: 'hidden', flexShrink: 0,
+                    background: `${a?.color || '#4A6080'}15`,
+                  }} title={a?.name || task.agent}>
+                    {hasSpr ? (
+                      <img
+                        src={`/corner/sprites/${task.agent}-idle.png`}
+                        alt=""
+                        style={{
+                          width: 42, height: 42,
+                          objectFit: 'cover', objectPosition: '20% 8%',
+                          imageRendering: 'pixelated', display: 'block',
+                          marginLeft: -6, marginTop: -3,
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, fontWeight: 700, color: a?.color || '#4A6080',
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                      }}>
+                        {a?.name?.charAt(0) || '?'}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+            </motion.div>
+          )
+        })}
       </div>
     </motion.div>
   )

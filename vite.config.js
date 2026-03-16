@@ -449,6 +449,60 @@ function localDashboardPlugin() {
         res.end(JSON.stringify({ scores: normalized, raw: scores, timestamp: new Date().toISOString() }))
       })
 
+      // Toggle a checkbox in punch-list.md (for HUD checkbox persistence)
+      server.middlewares.use('/api/local/punch-toggle', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'POST only' }))
+          return
+        }
+        let body = ''
+        req.on('data', chunk => { body += chunk })
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body)
+            const { lineText, markDone } = data
+            if (!lineText) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Missing lineText' }))
+              return
+            }
+
+            const filePath = resolve(AOM_EA_ROOT, 'punch-list.md')
+            const content = fs.readFileSync(filePath, 'utf-8')
+            const lines = content.split('\n')
+            let found = false
+
+            for (let i = 0; i < lines.length; i++) {
+              const trimmed = lines[i].trim()
+              // Match the raw line text from the punch list
+              if (trimmed === lineText || trimmed === lineText.trim()) {
+                if (markDone) {
+                  lines[i] = lines[i].replace('- [ ]', '- [x]')
+                } else {
+                  lines[i] = lines[i].replace('- [x]', '- [ ]').replace('- [X]', '- [ ]')
+                }
+                found = true
+                break
+              }
+            }
+
+            if (!found) {
+              res.statusCode = 404
+              res.end(JSON.stringify({ error: 'Line not found in punch-list.md' }))
+              return
+            }
+
+            fs.writeFileSync(filePath, lines.join('\n'))
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ ok: true, markDone, timestamp: new Date().toISOString() }))
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+        })
+      })
+
       // Notifications endpoint
       server.middlewares.use('/api/local/notifications', (req, res) => {
         const content = readLocalFile('context/agent-notifications.md')
