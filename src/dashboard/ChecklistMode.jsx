@@ -6,6 +6,7 @@
 // DONE(bobby2): Task right-click context menu -- right-click any task for: mark done/undone, set priority (high/med/low), reassign agent, delete. Linear/Notion style.
 // TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable.
 // TODO(bobby): DRAG-TO-RIGHT-NOW (CHECKLIST) -- In checklist view, dragging a task onto the "Right Now" section pushes it to top of priority queue. Right Now section shows at the TOP of checklist (before Today), displays live tasks with time estimates. Tasks dragged here get a pulsing "LIVE" badge. Pairs with GameHUD "Right Now" pill. Ref: Patrik feedback Pass 21.
+// DONE(bobby): LABEL SIDEBAR COUNTS (CHECKLIST) -- All count badges now show "N left" instead of bare numbers. Sidebar (mobile + desktop), project group headers all labeled. "Done" section already labeled. Ref: Patrik feedback Pass 22.
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -390,7 +391,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
                   fontSize: 14, color: '#FFF', background: p.color,
                   padding: '2px 7px', borderRadius: 8, lineHeight: 1,
                 }}>
-                  {remaining}
+                  {remaining} left
                 </span>
               )}
             </button>
@@ -470,7 +471,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
               <div style={{ width: 12, height: 12, borderRadius: 4, background: p.color, flexShrink: 0, boxShadow: `0 0 8px ${p.color}33` }} />
             )}
             <span style={{ flex: 1, letterSpacing: '-0.01em' }}>{p.name}</span>
-            {/* Remaining count */}
+            {/* Remaining count with label */}
             {remaining > 0 ? (
               <span style={{
                 fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
@@ -479,7 +480,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
                 boxShadow: `0 2px 6px ${p.color}44`,
                 minWidth: 26, textAlign: 'center',
               }}>
-                {remaining}
+                {remaining} left
               </span>
             ) : totalTasks > 0 ? (
               <CheckCircle2 size={16} color={p.color} strokeWidth={2} style={{ opacity: 0.5 }} />
@@ -895,7 +896,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
           }} />
         </div>
 
-        {/* Count */}
+        {/* Count with label */}
         {remaining > 0 ? (
           <span style={{
             fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
@@ -904,7 +905,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
             boxShadow: `0 2px 6px ${project.color}44`,
             minWidth: 28, textAlign: 'center',
           }}>
-            {remaining}
+            {remaining} left
           </span>
         ) : allDone ? (
           <CheckCircle2 size={18} color={project.color} strokeWidth={2} style={{ opacity: 0.6 }} />
