@@ -16,6 +16,7 @@ import ServicesGrid from './components/ServicesGrid';
 import ConstructionCallout from './components/ConstructionCallout';
 import AITeaser from './components/AITeaser';
 import BrandsCallout from './components/BrandsCallout';
+import SkillsShowcase from './components/SkillsShowcase';
 
 // --- FIREBASE & STORAGE CONFIG ---
 import { initializeApp } from 'firebase/app';
@@ -736,6 +737,7 @@ export default function App() {
               <button onClick={() => scrollToSection('work')} className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Work</button>
               <button onClick={() => scrollToSection('packages')} className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Services</button>
               <a href="/system" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">The System</a>
+              <a href="/skills" className="text-base font-body font-bold uppercase tracking-[0.15em] text-aom-text-muted hover:text-aom-text-light transition-colors px-3 py-2">Skills</a>
               <button onClick={openPhone} className="flex items-center px-6 py-3 min-h-[44px] bg-white/5 text-aom-text-muted font-body font-bold text-base uppercase tracking-[0.15em] hover:text-aom-text-light border border-white/10 hover:border-white/20 transition-all">Talk to Us</button>
               <button onClick={() => openBrief()} className="px-8 py-3 min-h-[44px] bg-aom-orange text-white font-headline font-extrabold text-base uppercase tracking-[0.15em] hover:bg-aom-orange-hover shadow-lg shadow-aom-orange/20 transition-all flex items-center">Start a Brief</button>
             </nav>
@@ -761,6 +763,7 @@ export default function App() {
                     { label: 'Brands', target: 'brands' },
                     { label: 'Services', target: 'packages' },
                     { label: 'The System', target: 'system', href: '/system' },
+                    { label: 'Skills', target: 'skills', href: '/skills' },
                     { label: 'Digital', target: 'digital' },
                   ].map(item => (
                     item.href ? (
@@ -916,6 +919,9 @@ export default function App() {
 
           {/* 9. AI / DIGITAL (dark) */}
           <AITeaser />
+
+          {/* 9.5. SKILLS SHOWCASE (dark, "WTF" moment) */}
+          <SkillsShowcase />
 
           {/* Pattern strip */}
           <PatternStrip variant="dots" />
