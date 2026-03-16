@@ -3495,10 +3495,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         </button>
       </div>
 
-      {/* ---- QUICK STATS PILLS (4 pills: Active, Blocked, Done, Progress) ---- */}
+      {/* ---- QUICK STATS PILLS (compact row per Steffen target) ---- */}
       <div style={{
-        display: 'flex', gap: 8,
-        padding: '10px 24px',
+        display: 'flex', gap: 6, flexWrap: 'wrap',
+        padding: '8px 24px',
         borderBottom: '2px solid rgba(59,130,246,0.08)',
         background: 'rgba(59,130,246,0.02)',
         flexShrink: 0,
@@ -3507,31 +3507,32 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           { label: 'ACTIVE', value: workingCount, color: '#22C55E' },
           { label: 'BLOCKED', value: blockedCount, color: '#EF4444' },
           { label: 'DONE', value: doneCount, color: '#60A5FA' },
-          { label: 'PROGRESS', value: `${overallProgress}`, suffix: '%', color: '#F1F5F9' },
+          { label: `${overallProgress}%`, value: null, color: '#F1F5F9' },
         ].map(stat => (
           <div key={stat.label} style={{
-            flex: 1,
             background: '#162236',
-            border: '2px solid #1E3A5F',
-            borderRadius: 10,
-            padding: '8px 12px',
-            textAlign: 'center',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            border: '1px solid #1E3A5F',
+            borderRadius: 6,
+            padding: '4px 10px',
+            display: 'flex', alignItems: 'center', gap: 5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
           }}>
-            <div style={{
-              fontSize: 22, fontWeight: 900, color: stat.color,
-              fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-              fontFamily: "'Inter', system-ui, sans-serif",
-            }}>
-              {stat.value}{stat.suffix && <span style={{ fontSize: 14, color: '#64748B' }}>{stat.suffix}</span>}
-            </div>
-            <div style={{
-              fontSize: 12, fontWeight: 700, color: '#64748B',
-              textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2,
+            {stat.value !== null && (
+              <span style={{
+                fontSize: 16, fontWeight: 900, color: stat.color,
+                fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}>
+                {stat.value}
+              </span>
+            )}
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: stat.value !== null ? '#64748B' : stat.color,
+              textTransform: 'uppercase', letterSpacing: '0.06em',
               fontFamily: "'Inter', system-ui, sans-serif",
             }}>
               {stat.label}
-            </div>
+            </span>
           </div>
         ))}
       </div>
@@ -3644,9 +3645,27 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   </div>
                 </div>
               )}
+              {/* TODAY separator */}
+              {chatMessages && chatMessages.length > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  margin: '4px 0 8px',
+                }}>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(100,180,255,0.1)' }} />
+                  <span style={{
+                    fontSize: 13, fontWeight: 700, color: '#475569',
+                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                    fontFamily: "'Inter', sans-serif",
+                  }}>TODAY</span>
+                  <div style={{ flex: 1, height: 1, background: 'rgba(100,180,255,0.1)' }} />
+                </div>
+              )}
               {chatMessages && chatMessages.map((msg, i) => {
                 const isUser = msg.role === 'user'
-                const sourceLabel = formatSource(msg.source)
+                // Only show source label on first message in a consecutive sequence from the same source
+                const prevMsg = i > 0 ? chatMessages[i - 1] : null
+                const isSameSource = prevMsg && prevMsg.role === msg.role && formatSource(prevMsg.source) === formatSource(msg.source)
+                const sourceLabel = isSameSource ? null : formatSource(msg.source)
                 const isNotif = !isUser && isSystemNotification(msg)
 
                 // System notification inline (commit messages, etc.)
@@ -3654,12 +3673,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   return (
                     <div key={msg.id || i} style={{
                       margin: '4px 0',
-                      background: 'rgba(34,197,94,0.06)',
-                      border: '1px solid rgba(34,197,94,0.15)',
+                      background: 'linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.04) 100%)',
+                      border: '1px solid rgba(34,197,94,0.18)',
                       borderLeft: '3px solid #22C55E',
                       borderRadius: 10,
-                      padding: '8px 14px',
+                      padding: '10px 14px',
                       display: 'flex', alignItems: 'center', gap: 10,
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(34,197,94,0.08)',
                     }}>
                       <div style={{
                         width: 8, height: 8, borderRadius: '50%',
@@ -3712,23 +3732,24 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     {/* Message content */}
                     <div style={{ maxWidth: '80%' }}>
                       <div style={{
-                        padding: '10px 14px',
-                        borderRadius: 12,
-                        fontSize: 16, fontWeight: 500, lineHeight: 1.4,
+                        padding: '12px 16px',
+                        borderRadius: 14,
+                        fontSize: 16, fontWeight: 500, lineHeight: 1.45,
                         fontFamily: "'Inter', system-ui, sans-serif",
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
                         ...(isUser
                           ? {
-                              background: 'rgba(59,130,246,0.1)',
-                              border: '2px solid rgba(59,130,246,0.2)',
+                              background: 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)',
+                              border: '2px solid rgba(59,130,246,0.25)',
                               color: '#F1F5F9',
                               borderTopRightRadius: 4,
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.2), 0 1px 2px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)',
                             }
                           : {
-                              background: `${agentColor}10`,
-                              border: `2px solid ${msg.streaming ? agentColor + '30' : agentColor + '20'}`,
+                              background: `linear-gradient(180deg, ${agentColor}14 0%, ${agentColor}08 100%)`,
+                              border: `2px solid ${msg.streaming ? agentColor + '35' : agentColor + '22'}`,
                               color: '#F1F5F9',
                               borderTopLeftRadius: 4,
+                              boxShadow: `0 2px 8px rgba(0,0,0,0.2), 0 1px 2px ${agentColor}10, inset 0 1px 0 rgba(255,255,255,0.04)`,
                             }
                         ),
                       }}>
