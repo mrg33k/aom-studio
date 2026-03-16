@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T08:20:29.189Z",
+  "generated": "2026-03-16T08:47:51.397Z",
   "categories": [
     {
       "name": "Strategy",
@@ -477,6 +477,16 @@
           "dateFormatted": "Mar 16",
           "summary": "Complete visual design spec for Corner's pricing page. 9 deliverables: plan cards (4 variations), comparison table, billing toggle, social proof bar, FAQ accordion, bottom CTA, mobile wireframes, OG image, responsive breakpoints. Bobby builds from this.",
           "path": "/briefs/pricing-page-design",
+          "hasPage": true
+        },
+        {
+          "title": "Visual Target - Crossy Road Style Exploration",
+          "slug": "crossy-road-style-exploration",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Crossy Road voxel art direction applied to Corner. Three office variants + four agent characters. Potential new art direction or style pack.",
+          "path": "/briefs/crossy-road-style-exploration",
           "hasPage": true
         },
         {
@@ -1396,6 +1406,16 @@
           "dateFormatted": "Mar 16",
           "summary": "C9 horizon notes. Self-Building AI, acquisition engine, international expansion, IPO infrastructure, edge deployment, Corner for Government v2, the talent marketplace, Corner Capital, and the self-replicating system. The layer where Corner stops needing humans to grow.",
           "path": "/briefs/c9-notes",
+          "hasPage": true
+        },
+        {
+          "title": "Steve Coach Report - Mar 16",
+          "slug": "coach-report-mar16",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Live coaching review of CORNER build. Two passes: initial C3 review (C+), then updated grades after Bobby's single-image pivot and GameHUD ship.",
+          "path": "/briefs/coach-report-mar16",
           "hasPage": true
         },
         {

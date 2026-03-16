@@ -979,9 +979,9 @@ export default function GameHUD({
             display: 'flex',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: 5,
-            padding: '4px 4px',
-            maxHeight: 48,
+            gap: 4,
+            padding: '2px 4px',
+            maxHeight: 64,
             overflow: 'hidden',
             alignContent: 'center',
           }}>
