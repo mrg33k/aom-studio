@@ -1063,11 +1063,7 @@ const ZOOM_PRESETS = [0.7, 1.6] // overview, detail -- only two levels, snap bet
 // The diamond shape matches where rooms visually appear in isometric perspective.
 const DIAMOND_CLIP = 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
 const DIAMOND_CLIP_WIDE = 'polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%)' // slightly inset for wide rooms like main-hall
-// TODO(bobby): Map feels blind -- "we need a way to understand the map and the clicking. its like were blind." Four fixes needed:
-// (1) HOVER GLOW: When mouse enters a room's diamond, show a visible glowing highlight (not the current subtle radial-gradient). Use a bright border or outline that pulses. Think SimCity hover state -- you always know what's clickable.
-// (2) DIAMOND OUTLINES: Render faint diamond border outlines on ALL rooms at rest (not just on hover). ~1px rgba white or agent-color line along the clip-path edges so rooms are always distinguishable from each other on the map.
-// (3) NAME LABELS: Agent name text labels should be visible on rooms WITHOUT hovering. Currently nameplates are small PNGs. Add a readable text label (agent name, 12-14px, high contrast) anchored below or inside each room that's always visible at overview zoom. Labels hide only at max detail zoom when sprites are large enough.
-// (4) CLICKABLE AREA HIGHLIGHT: On hover, the entire diamond target area should light up (semi-transparent color fill + border glow). Current hover is too subtle (agentColor at 20% opacity). Increase to 40-50% with a visible 2px border in agent color.
+// DONE(bobby): Map blind fix -- diamond outlines at rest, strong hover glow, always-visible name labels at overview zoom.
 const IMAGE_ROOM_TARGETS = {
   // Row 0: top row, 4 rooms (back wall of building, smaller due to perspective)
   patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
@@ -1484,6 +1480,80 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 </motion.div>
               )}
 
+              {/* Diamond outline SVG -- always visible, brightens on hover. Renders OUTSIDE clip-path so border is not clipped. */}
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                style={{
+                  position: 'absolute',
+                  left: `${target.x}%`,
+                  top: `${target.y}%`,
+                  width: `${target.w}%`,
+                  height: `${target.h}%`,
+                  pointerEvents: 'none',
+                  zIndex: (isHovered || isSelected) ? 6 : 1,
+                  overflow: 'visible',
+                  transition: 'opacity 200ms ease',
+                }}
+              >
+                <polygon
+                  points={target.clipPath === DIAMOND_CLIP_WIDE ? '50,5 95,50 50,95 5,50' : '50,0 100,50 50,100 0,50'}
+                  fill="none"
+                  stroke={(isHovered || isSelected) && hasAgent ? agentColor : 'rgba(255,255,255,0.18)'}
+                  strokeWidth={(isHovered || isSelected) && hasAgent ? '2.5' : '1'}
+                  strokeOpacity={(isHovered || isSelected) && hasAgent ? '0.8' : '0.5'}
+                  style={{ transition: 'stroke 200ms ease, stroke-width 200ms ease, stroke-opacity 200ms ease' }}
+                />
+                {/* Outer glow on hover */}
+                {(isHovered || isSelected) && hasAgent && (
+                  <polygon
+                    points={target.clipPath === DIAMOND_CLIP_WIDE ? '50,5 95,50 50,95 5,50' : '50,0 100,50 50,100 0,50'}
+                    fill="none"
+                    stroke={agentColor}
+                    strokeWidth="5"
+                    strokeOpacity="0.2"
+                    style={{ filter: 'blur(3px)' }}
+                  />
+                )}
+              </svg>
+
+              {/* Always-visible agent name label -- anchored below room diamond at overview zoom, hidden at detail zoom */}
+              {hasAgent && detailLevel !== 'detail' && (
+                <div style={{
+                  position: 'absolute',
+                  left: `${target.x}%`,
+                  top: `${target.y + target.h - 1}%`,
+                  width: `${target.w}%`,
+                  display: 'flex', justifyContent: 'center',
+                  pointerEvents: 'none',
+                  zIndex: 11,
+                }}>
+                  <div style={{
+                    background: (isHovered || isSelected)
+                      ? 'rgba(10, 18, 35, 0.92)'
+                      : 'rgba(10, 18, 35, 0.7)',
+                    border: (isHovered || isSelected)
+                      ? `1px solid ${agentColor}60`
+                      : '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 4,
+                    padding: '2px 8px',
+                    color: (isHovered || isSelected) ? '#fff' : 'rgba(255,255,255,0.85)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    letterSpacing: '0.02em',
+                    whiteSpace: 'nowrap',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+                    transition: 'background 200ms ease, border-color 200ms ease, color 200ms ease',
+                    boxShadow: (isHovered || isSelected)
+                      ? `0 0 8px ${agentColor}30`
+                      : 'none',
+                  }}>
+                    {room.agent}
+                  </div>
+                </div>
+              )}
+
               {/* Click target overlay - isometric clip-path, CROSSY ROAD bounce */}
               {/* Bounce harder: squash/stretch on tap, bigger hop on hover */}
               <motion.div
@@ -1513,14 +1583,14 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   zIndex: (isHovered || isSelected) ? 5 : 2,
                   clipPath: target.clipPath || 'none',
                   WebkitClipPath: target.clipPath || 'none',
-                  // TODO(bobby): MAP BLIND FIX -- hover glow too subtle. Increase agentColor opacity from 20 to 40-50. Add visible 2px border in agentColor on hover. At REST (not hovered), render a faint 1px diamond outline so rooms are always distinguishable.
                   background: (isHovered || isSelected) && hasAgent
-                    ? `radial-gradient(ellipse, ${agentColor}20 0%, transparent 70%)`
-                    : 'transparent',
+                    ? `radial-gradient(ellipse, ${agentColor}45 0%, ${agentColor}15 50%, transparent 75%)`
+                    : hasAgent
+                      ? `radial-gradient(ellipse, ${agentColor}08 0%, transparent 60%)`
+                      : 'transparent',
                   boxShadow: (isHovered || isSelected) && hasAgent
-                    ? `0 0 24px ${agentColor}30, inset 0 0 40px ${agentColor}10`
+                    ? `0 0 32px ${agentColor}50, inset 0 0 50px ${agentColor}20`
                     : 'none',
-                  // TODO(bobby): MAP BLIND FIX -- add border here: at rest = `1px solid rgba(255,255,255,0.15)`, on hover = `2px solid ${agentColor}80`. Diamond outline always visible.
                   transition: 'background 200ms ease, box-shadow 200ms ease',
                 }}
               >
@@ -4239,8 +4309,9 @@ export default function GameDashboard() {
     }
   }, [])
 
-  // Background outbox polling: check for new responses every 3 seconds
+  // Background outbox polling: check for new responses
   // Picks up EA responses and adds them to the unified conversation
+  // On localhost: 500ms for near-instant response display
   useEffect(() => {
     if (!IS_LOCAL) return
 
@@ -4276,9 +4347,11 @@ export default function GameDashboard() {
           const latest = newMsgs[newMsgs.length - 1]
           lastBgOutboxCheckRef.current = latest.timestamp
 
-          // Add new responses to the unified conversation (_all)
+          // Add new responses + remove streaming placeholders in ONE state update
+          // (prevents React state race where separate calls see stale data)
           setPanelMessages(prev => {
-            const allMsgs = [...(prev._all || [])]
+            // Start with non-streaming messages only
+            const allMsgs = [...(prev._all || [])].filter(m => !m.streaming)
             for (const msg of newMsgs) {
               // Don't add duplicates
               if (allMsgs.some(m => m.id === msg.id)) continue
@@ -4291,22 +4364,8 @@ export default function GameDashboard() {
               })
             }
             // Sort chronologically so user+agent messages interleave by timestamp
-            // VERIFIED(steve): Chronological chat ordering fixed in commit 9ec8b81. Sort applied in 5 locations across message processing. Patrik's bug report addressed.
             allMsgs.sort((a, b) => new Date(a.time) - new Date(b.time))
             return { ...prev, _all: allMsgs }
-          })
-
-          // Also replace any streaming placeholder with the real response
-          setPanelMessages(prev => {
-            const allMsgs = [...(prev._all || [])]
-            const lastMsg = allMsgs[allMsgs.length - 1]
-            // If there's a streaming placeholder right before the new real message, remove the placeholder
-            const hasPendingStreaming = allMsgs.some(m => m.streaming)
-            if (hasPendingStreaming) {
-              const filtered = allMsgs.filter(m => !m.streaming)
-              return { ...prev, _all: filtered }
-            }
-            return prev
           })
 
           // Count unread if panel is closed
@@ -4318,7 +4377,7 @@ export default function GameDashboard() {
           setPanelStreaming(false)
         }
       } catch {}
-    }, 3000) // Poll every 3 seconds for faster response display
+    }, 500) // Local: 500ms for near-instant relay response display
 
     return () => {
       if (bgOutboxPollRef.current) clearInterval(bgOutboxPollRef.current)
@@ -4386,7 +4445,7 @@ export default function GameDashboard() {
           }
         }
       } catch {}
-    }, 5000) // Poll inbox every 5 seconds
+    }, 500) // Local: 500ms for near-instant relay message display
 
     // Initialize the last check timestamp
     fetch('/api/local/relay-inbox').then(res => {
