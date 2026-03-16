@@ -47,7 +47,7 @@ function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) 
     <div style={{
       width: size, height: size, borderRadius: '50%', border: `2px solid ${color}`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: Math.max(8, size * 0.35), fontWeight: 700, color, background: `${color}33`,
+      fontSize: Math.max(12, size * 0.35), fontWeight: 700, color, background: `${color}33`,
       flexShrink: 0, ...extraStyle,
     }}>
       {agent?.name?.charAt(0) || '?'}

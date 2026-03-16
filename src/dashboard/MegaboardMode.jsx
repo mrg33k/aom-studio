@@ -250,7 +250,9 @@ function QuestItem({ quest, onClick }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 13,
-          color: MB.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          color: MB.textPrimary,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+          overflow: 'hidden', lineHeight: 1.4, wordBreak: 'break-word',
         }}>
           {quest.text}
         </div>
@@ -303,22 +305,23 @@ function FeedEvent({ event }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.2 }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 8,
+        display: 'flex', alignItems: 'flex-start', gap: 8,
         padding: '6px 0', minHeight: 32,
         borderBottom: '1px solid rgba(255,255,255,0.02)',
       }}
     >
-      <Icon size={16} color={iconInfo.color} style={{ flexShrink: 0 }} />
+      <Icon size={16} color={iconInfo.color} style={{ flexShrink: 0, marginTop: 2 }} />
       <span style={{
         fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 12,
         color: MB.textSecondary, flex: 1, minWidth: 0,
-        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+        overflow: 'hidden', lineHeight: 1.45, wordBreak: 'break-word',
       }}>
         {event.description || event.message}
       </span>
       <span style={{
         fontFamily: 'JetBrains Mono, monospace', fontWeight: 400, fontSize: 12,
-        color: MB.textMuted, flexShrink: 0,
+        color: MB.textMuted, flexShrink: 0, marginTop: 1,
       }}>
         {timeAgo(event.time || event.timestamp)}
       </span>

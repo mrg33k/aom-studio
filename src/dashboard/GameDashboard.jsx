@@ -1102,8 +1102,8 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 mass: 0.6,
               }}
             >
-              {/* STEFFEN MODERN NAMEPLATE: Dark navy + agent color accent bar + glow */}
-              {/* Replaces floating text labels with physical office decor feel */}
+              {/* NAMEPLATE PNG: Steffen's catalog asset, wall-mounted inside room */}
+              {/* 128x64 transparent PNG at 2x, centered on back wall ~60% up */}
               {showNameplate && hasAgent && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.7, y: -8 }}
@@ -1111,78 +1111,81 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   transition={{ delay: waveDelay + 0.15, type: 'spring', stiffness: 400, damping: 18, mass: 0.6 }}
                   style={{
                     position: 'absolute',
-                    left: `${target.x + target.w * 0.15}%`,
-                    top: `${target.y + target.h * 0.06}%`,
+                    left: `${target.x + target.w * 0.2}%`,
+                    top: `${target.y + target.h * 0.08}%`,
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                     pointerEvents: 'none', zIndex: 10,
                   }}
                 >
-                  {/* Nameplate body - modern dark style per Steffen spec */}
+                  {/* Nameplate PNG image from catalog */}
                   <div style={{
-                    background: '#1A1A2E',
-                    border: `1px solid ${agentColor}40`,
-                    borderRadius: 6,
-                    padding: '4px 12px 5px',
                     position: 'relative',
-                    overflow: 'hidden',
-                    boxShadow: isActive
-                      ? `0 3px 12px rgba(0,0,0,0.6), 0 0 16px ${agentColor}25, inset 0 1px 0 rgba(255,255,255,0.06)`
-                      : '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
-                    whiteSpace: 'nowrap',
+                    filter: isActive
+                      ? `drop-shadow(0 2px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 12px ${agentColor}30)`
+                      : 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
                   }}>
-                    {/* Agent color accent bar (top) - 3px per Steffen spec */}
+                    <img
+                      src={`/corner/furniture/nameplates/nameplate-${room.id}.png`}
+                      alt={`${room.agent} nameplate`}
+                      draggable={false}
+                      style={{
+                        width: 80, height: 40,
+                        imageRendering: 'auto',
+                        display: 'block',
+                        transition: 'filter 300ms ease',
+                      }}
+                    />
+                    {/* Status dot overlay on nameplate */}
                     <div style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-                      background: `linear-gradient(90deg, ${agentColor}, ${agentColor}CC)`,
-                      borderRadius: '6px 6px 0 0',
+                      position: 'absolute', top: 3, right: 3,
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: cfg.color,
+                      boxShadow: isActive ? `0 0 8px ${cfg.color}, 0 0 3px ${cfg.color}` : `0 0 4px ${cfg.color}60`,
+                      animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
                     }} />
-
-                    {/* Status dot + Name row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                      {/* Status dot with glow */}
-                      <div style={{
-                        width: 7, height: 7, borderRadius: '50%',
-                        background: cfg.color,
-                        flexShrink: 0,
-                        boxShadow: isActive ? `0 0 8px ${cfg.color}, 0 0 3px ${cfg.color}` : `0 0 4px ${cfg.color}60`,
-                        animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
-                      }} />
-                      {/* Agent name in their signature color with subtle glow */}
-                      <span style={{
-                        color: isActive ? agentColor : '#E0E4EE',
-                        fontSize: 13, fontWeight: 800,
-                        fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        textShadow: isActive ? `0 0 8px ${agentColor}60` : '0 1px 1px rgba(0,0,0,0.4)',
-                      }}>
-                        {room.agent}
-                      </span>
-                    </div>
-
-                    {/* Role subtitle - agent color at reduced opacity */}
-                    <div style={{
-                      color: `${agentColor}88`,
-                      fontSize: 12, fontWeight: 600,
-                      fontFamily: 'JetBrains Mono, monospace',
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      marginTop: 1,
-                      paddingLeft: 13,
-                    }}>
-                      {room.role?.split('/')[0]?.trim() || 'Agent'}
-                    </div>
-
-                    {/* Idle: subtle pulsing glow in agent color (modern style only) */}
+                    {/* Active glow border */}
                     {isActive && (
                       <div style={{
                         position: 'absolute', inset: -2,
                         border: `1px solid ${agentColor}30`,
-                        borderRadius: 8,
+                        borderRadius: 6,
                         animation: 'nameplateGlow 2s ease-in-out infinite',
                         pointerEvents: 'none',
                       }} />
                     )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* DOOR SIGN PNG: Steffen's catalog asset, outside room entrance */}
+              {/* 96x128 vertical sign with room number + agent name + status dot */}
+              {showNameplate && hasAgent && AGENT_ROOM_NUMBERS[room.id] && (
+                <motion.div
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={hasLoaded ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: waveDelay + 0.25, type: 'spring', stiffness: 350, damping: 20, mass: 0.5 }}
+                  style={{
+                    position: 'absolute',
+                    left: `${target.x + target.w - 1.5}%`,
+                    top: `${target.y - 1}%`,
+                    pointerEvents: 'none', zIndex: 9,
+                  }}
+                >
+                  <div style={{
+                    filter: isActive
+                      ? `drop-shadow(0 2px 6px rgba(0,0,0,0.4)) drop-shadow(0 0 8px ${agentColor}20)`
+                      : 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                  }}>
+                    <img
+                      src={`/corner/furniture/doorsigns/cr-doorsign-${room.id}.png`}
+                      alt={`Room ${AGENT_ROOM_NUMBERS[room.id]}`}
+                      draggable={false}
+                      style={{
+                        width: 28, height: 38,
+                        imageRendering: 'auto',
+                        display: 'block',
+                      }}
+                    />
                   </div>
                 </motion.div>
               )}
@@ -2832,6 +2835,57 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   )
 })
 
+// ---- SKELETON LOADER (loading placeholder for panel data) -------------------
+function SkeletonLine({ width = '100%', height = 14, style: extraStyle }) {
+  return (
+    <div style={{
+      width, height, borderRadius: 4,
+      background: 'rgba(100, 180, 255, 0.06)',
+      animation: 'skeletonPulse 1.5s ease-in-out infinite',
+      ...extraStyle,
+    }} />
+  )
+}
+
+function SkeletonBlock({ lines = 3, style: extraStyle }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, ...extraStyle }}>
+      {Array.from({ length: lines }).map((_, i) => (
+        <SkeletonLine key={i} width={i === lines - 1 ? '60%' : `${85 + Math.random() * 15}%`} />
+      ))}
+    </div>
+  )
+}
+
+function PanelSkeleton({ agentColor }) {
+  return (
+    <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Agent identity skeleton */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <SkeletonLine width={48} height={48} style={{ borderRadius: '50%', flexShrink: 0 }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <SkeletonLine width="55%" height={20} />
+          <SkeletonLine width="35%" height={14} />
+        </div>
+      </div>
+      {/* Task skeleton */}
+      <div style={{
+        padding: '12px 14px',
+        background: 'rgba(100,180,255,0.04)',
+        border: '1px solid rgba(100,180,255,0.08)',
+        borderRadius: 8,
+      }}>
+        <SkeletonBlock lines={2} />
+      </div>
+      {/* Stats skeleton */}
+      <div style={{ display: 'flex', gap: 16 }}>
+        <SkeletonLine width={80} height={12} />
+        <SkeletonLine width={60} height={12} />
+      </div>
+    </div>
+  )
+}
+
 // ---- UNIFIED RIGHT PANEL (Agent card + stats + chat + tasks + modes) --------
 // Patrik UX overhaul v2: Game is ALWAYS the main viewport.
 // Sidebar contains: Chat, Tasks, Info, Checklist, Megaboard as tabs.
@@ -3220,8 +3274,29 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {/* INFO TAB */}
         {activeTab === 'info' && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+            {/* Skeleton loading when no agent data yet */}
+            {!agentStatus && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <SkeletonLine width={100} height={12} style={{ marginBottom: 10 }} />
+                  <div style={{ padding: '10px 14px', background: 'rgba(100,180,255,0.04)', borderRadius: 8, border: '1px solid rgba(100,180,255,0.08)' }}>
+                    <SkeletonBlock lines={3} />
+                  </div>
+                </div>
+                <div>
+                  <SkeletonLine width={60} height={12} style={{ marginBottom: 10 }} />
+                  <SkeletonLine width="80%" height={16} />
+                  <SkeletonLine width="95%" height={14} style={{ marginTop: 8 }} />
+                </div>
+                <div>
+                  <SkeletonLine width={70} height={12} style={{ marginBottom: 10 }} />
+                  <SkeletonLine width={120} height={32} style={{ borderRadius: 6 }} />
+                </div>
+              </div>
+            )}
+
             {/* Latest Result */}
-            {agentStatus?.latestResult && (
+            {agentStatus && agentStatus?.latestResult && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Latest Result</div>
                 <div style={{
@@ -3236,6 +3311,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             )}
 
             {/* Room info */}
+            {agentStatus && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
               <div style={{ color: '#A8A29E', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
@@ -3243,9 +3319,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 <div style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
               )}
             </div>
+            )}
 
             {/* Data source */}
-            {IS_LOCAL && (
+            {IS_LOCAL && agentStatus && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Data Source</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -3256,6 +3333,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             )}
 
             {/* Status */}
+            {agentStatus && (
             <div>
               <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: cfg.bg, borderRadius: 6 }}>
@@ -3263,6 +3341,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 <span style={{ color: cfg.color, fontSize: 13, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>{cfg.label}</span>
               </div>
             </div>
+            )}
           </div>
         )}
 
@@ -3944,11 +4023,11 @@ export default function GameDashboard() {
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} />
 
-      {/* Main content area -- game is ALWAYS the viewport */}
+      {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
-          {/* GAME IS ALWAYS THE MAIN VIEWPORT */}
-            <div style={{ width: '100%', height: '100%' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
+          {/* GAME VIEWPORT: takes remaining space, sidebar sits beside it */}
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               <IsometricOffice
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}
@@ -3964,7 +4043,7 @@ export default function GameDashboard() {
                 streamingAgent={streamingAgent}
               />
 
-              {/* Camera controls (floating, game mode only) */}
+              {/* Camera controls (floating, right side of game viewport) */}
               <CameraControls
                 cameraZoom={cameraZoom}
                 setCameraZoom={setCameraZoom}
@@ -3973,105 +4052,8 @@ export default function GameDashboard() {
                 cameraTarget={cameraTarget}
                 setCameraTarget={setCameraTarget}
                 onHomeRoom={handleHomeRoom}
-                panelVisible={panelVisible && selectedRoom && !isMobile}
+                panelVisible={false}
               />
-
-              {/* Unified RIGHT panel (agent card + stats + chat + checklist + megaboard) */}
-              {/* v2: Game is ALWAYS the viewport. Modes live in sidebar tabs. */}
-              {!isMobile && (
-                <AnimatePresence>
-                  {panelVisible && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
-                    <UnifiedPanel
-                      key={selectedRoom}
-                      room={ROOM_MAP[selectedRoom]}
-                      agent={AGENTS.find(a => a.slug === selectedRoom)}
-                      agentStatus={agentStatus[selectedRoom]}
-                      allAgentStatus={agentStatus}
-                      onClose={() => setPanelVisible(false)}
-                      onChat={handleChat}
-                      chatMessages={panelMessages._all || []}
-                      chatInput={panelChatInput}
-                      onChatInputChange={setPanelChatInput}
-                      streaming={panelStreaming}
-                      agentSlug={selectedRoom}
-                      isExtended={panelExtended}
-                      onToggleExtend={() => setPanelExtended(e => !e)}
-                      isMobile={isMobile}
-                      data={data}
-                      activeTab={panelActiveTab}
-                      onActiveTabChange={setPanelActiveTab}
-                      onSendMessage={(e) => {
-                        e?.preventDefault()
-                        const text = panelChatInput?.trim()
-                        if (!text || panelStreaming) return
-                        setPanelChatInput('')
-                        const sentTime = new Date().toISOString()
-                        // Add user message to unified conversation
-                        setPanelMessages(prev => ({
-                          ...prev,
-                          _all: [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom }],
-                        }))
-                        setPanelStreaming(true)
-                        // Add placeholder assistant message
-                        setPanelMessages(prev => ({
-                          ...prev,
-                          _all: [...(prev._all || []), { role: 'assistant', content: '', streaming: true, time: sentTime }],
-                        }))
-                        // Send via relay (local mode)
-                        if (IS_LOCAL) {
-                          fetch('/api/local/relay-send', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
-                          }).then(() => {
-                            // Background poll will pick up the response automatically
-                            // Also start a faster dedicated poll as backup
-                            if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current)
-                            const lastCheck = { ts: sentTime }
-                            panelRelayPollRef.current = setInterval(async () => {
-                              try {
-                                const since = encodeURIComponent(lastCheck.ts)
-                                const res = await fetch(`/api/local/relay-outbox?since=${since}`)
-                                if (!res.ok) return
-                                const data = await res.json()
-                                if (data.messages?.length > 0) {
-                                  const responses = data.messages.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
-                                  if (responses.length > 0) {
-                                    const latest = responses[responses.length - 1]
-                                    setPanelMessages(prev => {
-                                      const msgs = [...(prev._all || [])]
-                                      // Remove streaming placeholder
-                                      const filtered = msgs.filter(m => !m.streaming)
-                                      // Add real response if not duplicate
-                                      if (!filtered.some(m => m.id === latest.id)) {
-                                        filtered.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString(), source: latest.agent || 'system', id: latest.id })
-                                      }
-                                      return { ...prev, _all: filtered }
-                                    })
-                                    setPanelStreaming(false)
-                                    lastCheck.ts = latest.timestamp
-                                    lastBgOutboxCheckRef.current = latest.timestamp
-                                    clearInterval(panelRelayPollRef.current)
-                                    panelRelayPollRef.current = null
-                                  }
-                                }
-                              } catch {}
-                            }, 2000)
-                          }).catch(err => {
-                            setPanelMessages(prev => {
-                              const msgs = [...(prev._all || [])]
-                              const last = msgs[msgs.length - 1]
-                              if (last) msgs[msgs.length - 1] = { ...last, content: `Failed: ${err.message}`, streaming: false }
-                              return { ...prev, _all: msgs }
-                            })
-                            setPanelStreaming(false)
-                          })
-                        }
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
-              )}
 
               {/* Window light animation overlay - enhanced depth (Steve action item: boost lighting) */}
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
@@ -4133,6 +4115,91 @@ export default function GameDashboard() {
                 ))}
               </div>
             </div>
+
+          {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
+          {!isMobile && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+            <UnifiedPanel
+              key={selectedRoom}
+              room={ROOM_MAP[selectedRoom]}
+              agent={AGENTS.find(a => a.slug === selectedRoom)}
+              agentStatus={agentStatus[selectedRoom]}
+              allAgentStatus={agentStatus}
+              onClose={() => {}} // Panel always visible, no-op
+              onChat={handleChat}
+              chatMessages={panelMessages._all || []}
+              chatInput={panelChatInput}
+              onChatInputChange={setPanelChatInput}
+              streaming={panelStreaming}
+              agentSlug={selectedRoom}
+              isExtended={panelExtended}
+              onToggleExtend={() => setPanelExtended(e => !e)}
+              isMobile={isMobile}
+              data={data}
+              activeTab={panelActiveTab}
+              onActiveTabChange={setPanelActiveTab}
+              onSendMessage={(e) => {
+                e?.preventDefault()
+                const text = panelChatInput?.trim()
+                if (!text || panelStreaming) return
+                setPanelChatInput('')
+                const sentTime = new Date().toISOString()
+                setPanelMessages(prev => ({
+                  ...prev,
+                  _all: [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom }],
+                }))
+                setPanelStreaming(true)
+                setPanelMessages(prev => ({
+                  ...prev,
+                  _all: [...(prev._all || []), { role: 'assistant', content: '', streaming: true, time: sentTime }],
+                }))
+                if (IS_LOCAL) {
+                  fetch('/api/local/relay-send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
+                  }).then(() => {
+                    if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current)
+                    const lastCheck = { ts: sentTime }
+                    panelRelayPollRef.current = setInterval(async () => {
+                      try {
+                        const since = encodeURIComponent(lastCheck.ts)
+                        const res = await fetch(`/api/local/relay-outbox?since=${since}`)
+                        if (!res.ok) return
+                        const data = await res.json()
+                        if (data.messages?.length > 0) {
+                          const responses = data.messages.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
+                          if (responses.length > 0) {
+                            const latest = responses[responses.length - 1]
+                            setPanelMessages(prev => {
+                              const msgs = [...(prev._all || [])]
+                              const filtered = msgs.filter(m => !m.streaming)
+                              if (!filtered.some(m => m.id === latest.id)) {
+                                filtered.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString(), source: latest.agent || 'system', id: latest.id })
+                              }
+                              return { ...prev, _all: filtered }
+                            })
+                            setPanelStreaming(false)
+                            lastCheck.ts = latest.timestamp
+                            lastBgOutboxCheckRef.current = latest.timestamp
+                            clearInterval(panelRelayPollRef.current)
+                            panelRelayPollRef.current = null
+                          }
+                        }
+                      } catch {}
+                    }, 2000)
+                  }).catch(err => {
+                    setPanelMessages(prev => {
+                      const msgs = [...(prev._all || [])]
+                      const last = msgs[msgs.length - 1]
+                      if (last) msgs[msgs.length - 1] = { ...last, content: `Failed: ${err.message}`, streaming: false }
+                      return { ...prev, _all: msgs }
+                    })
+                    setPanelStreaming(false)
+                  })
+                }
+              }}
+            />
+          )}
       </div>
 
       {/* Mini-map - always visible (game is always the viewport) */}
@@ -4416,6 +4483,10 @@ export default function GameDashboard() {
         @keyframes nameplateGlow {
           0%, 100% { opacity: 0.6; }
           50% { opacity: 1; }
+        }
+        @keyframes skeletonPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
         }
         .animate-spin { animation: spin 1s linear infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }
