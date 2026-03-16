@@ -12,6 +12,10 @@
 // TODO(bobby): "RIGHT NOW" PILL -- Add a "Right Now" pill NEXT TO "Today" pill. Right Now shows LIVE tasks (agents currently running), simplified with small time estimates (e.g. "Bobby: HUD polish ~15min"). Today = day's agenda (what you plan to do). Right Now = live sprint (what's happening THIS SECOND). Drag tasks FROM Today or any project pill TO the Right Now pill to push them to top of priority queue. Right Now is always pinned first (before Today). Visual: pulsing/glowing accent to show liveness. Data: pull from active-missions.md or agentStatus for running agents. Ref: Patrik feedback Pass 21.
 // DONE(bobby2): Bottom bar cleanup -- chat input + chat button REMOVED from bottom bar. Project pills now horizontally scrollable (no wrapping). Bottom bar = agent roster | scrollable project pills | compact stats | notification bell. No chat elements.
 // DONE(bobby2): Project pill category labels -- pills now show category text (CLIENT / PROJECT / OUTREACH) not color-status text. Color communicates status visually, text label tells you WHAT it is.
+// DONE(bobby2): LABEL ALL COUNTERS -- Every bare number labeled. ProjectCard: "{remaining} tasks". CompactStats: "{working} active" / "{blocked} blocked". Progress ring: "{overallProgress}%". Ref: Patrik feedback Pass 22.
+// DONE(bobby2): DAYTIME BOTTOM HUD THEME -- Bottom HUD now accepts isNightMode prop. Daytime = white glass with vibrant blue accents (matches top bar). Night = dark blue glass. Both bars feel like the same system. Ref: Patrik feedback Pass 22.
+// DONE(bobby2): AGENT SELECTOR ICONS BIGGER -- Expanded agent dots bumped 24px -> 40px. Expand button 28px -> 36px. Sprite images proportionally scaled. Main plumbob stays 52px. Vegas energy = big, bold, readable. Ref: Patrik feedback Pass 22.
+// DONE(bobby2): SQUINT TEST (VEGAS RULE) -- CompactStats dots 7px -> 10px. Main agent status dot 10px -> 14px. Expand button 28px -> 36px. All secondary agents 24px -> 40px. Standing rule for all future elements. Ref: Patrik feedback Pass 22.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -715,22 +719,22 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
           <path d={`M 26 ${52*0.02} L ${26+52*0.48} ${52*0.22} L ${26+52*0.48} ${52*0.72} Q ${26+52*0.48} ${52*0.98}, 26 ${52*0.98} Q ${26-52*0.48} ${52*0.98}, ${26-52*0.48} ${52*0.72} L ${26-52*0.48} ${52*0.22} Z`} fill="none" stroke={mainCfg.ring} strokeWidth={2.5} strokeLinejoin="round" style={{ filter: mainStatus === 'WORKING' ? `drop-shadow(0 0 6px ${mainCfg.glow})` : 'none' }} />
         </svg>
         <div style={{
-          position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)',
-          width: 10, height: 10, borderRadius: '50%', background: mainCfg.color,
-          border: `2px solid ${HUD.panelBgSolid}`, boxShadow: `0 0 8px ${mainCfg.glow}`,
+          position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
+          width: 14, height: 14, borderRadius: '50%', background: mainCfg.color,
+          border: `2px solid ${HUD.panelBgSolid}`, boxShadow: `0 0 10px ${mainCfg.glow}`,
           animation: mainStatus === 'WORKING' ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
         }} />
       </motion.div>
 
-      {/* Expand button to see all agents */}
+      {/* Expand button to see all agents -- VEGAS SIZE 36px */}
       <motion.button
         onClick={() => setExpanded(!expanded)}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         style={{
-          width: 28, height: 28, borderRadius: '50%',
+          width: 36, height: 36, borderRadius: '50%',
           background: expanded ? 'rgba(59,158,255,0.15)' : 'rgba(100,180,255,0.06)',
-          border: `1.5px solid ${expanded ? HUD.accent + '44' : HUD.divider}`,
+          border: `2px solid ${expanded ? HUD.accent + '44' : HUD.divider}`,
           color: expanded ? HUD.accent : HUD.textMuted,
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0, transition: 'all 150ms ease',
@@ -738,10 +742,10 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
         }}
         title="Show all agents"
       >
-        <Users size={14} />
+        <Users size={18} />
       </motion.button>
 
-      {/* Expanded: small 24px dots for other agents */}
+      {/* Expanded: BIGGER 40px portraits for other agents -- VEGAS RULE */}
       <AnimatePresence>
         {expanded && sortedAgents.filter(a => a.slug !== mainAgent.slug).map((agent, idx) => {
           const status = agentStatus?.[agent.slug]?.status || 'IDLE'
@@ -756,25 +760,25 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
               transition={{ type: 'spring', stiffness: 400, damping: 15, delay: idx * 0.02 }}
               onClick={() => onAgentClick?.(agent.slug)}
               onContextMenu={(e) => handleRightClick(e, agent.slug)}
-              whileHover={{ scale: 1.3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+              whileHover={{ scale: 1.2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
               title={`${agent.name}: ${cfg.label}`}
               style={{
-                width: 24, height: 24, minWidth: 24, minHeight: 24,
+                width: 40, height: 40, minWidth: 40, minHeight: 40,
                 borderRadius: '50%',
-                border: `2px solid ${cfg.ring}`,
+                border: `2.5px solid ${cfg.ring}`,
                 overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
                 background: '#0A0F1E',
-                boxShadow: status === 'WORKING' ? `0 0 10px ${cfg.glow}` : status === 'BLOCKED' ? `0 0 8px rgba(239,68,68,0.4)` : 'none',
+                boxShadow: status === 'WORKING' ? `0 0 12px ${cfg.glow}` : status === 'BLOCKED' ? `0 0 10px rgba(239,68,68,0.4)` : 'none',
                 animation: status === 'WORKING' ? 'hudMiniDotPulse 2s ease-in-out infinite' : status === 'BLOCKED' ? 'hudMiniDotBlocked 1.5s ease-in-out infinite' : 'none',
                 opacity: status === 'IDLE' ? 0.6 : 1,
               }}
             >
               {hasSpr ? (
                 <img src={`/corner/sprites/${agent.slug}-idle.png`} alt=""
-                  width={40} height={40}
-                  style={{ width: 40, height: 40, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -6, marginTop: -4 }} />
+                  width={60} height={60}
+                  style={{ width: 60, height: 60, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -8, marginTop: -5 }} />
               ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: "'Inter', system-ui, sans-serif" }}>
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: "'Inter', system-ui, sans-serif" }}>
                   {agent.name?.charAt(0) || '?'}
                 </div>
               )}
@@ -1034,7 +1038,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
         </span>
       )}
 
-      {/* Task count badge - VEGAS. Oversized. Casino chip energy. */}
+      {/* Task count badge - VEGAS. Oversized. Casino chip energy. LABELED. */}
       {remaining > 0 && !isClient && (
         <span style={{
           fontFamily: "'Inter Tight', JetBrains Mono, monospace",
@@ -1046,8 +1050,9 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
           lineHeight: 1,
           boxShadow: `0 3px 12px ${project.color}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
           minWidth: 32, textAlign: 'center',
+          whiteSpace: 'nowrap',
         }}>
-          {remaining}
+          {remaining} <span style={{ fontSize: 12, fontWeight: 700, opacity: 0.85, letterSpacing: '0.04em' }}>tasks</span>
         </span>
       )}
 
@@ -1302,45 +1307,49 @@ function TaskPanel({ project, onClose }) {
 }
 
 // ---- COMPACT STATS (blue-themed, LARGER) ------------------------------------
-function CompactStats({ agentStatus, throughput, overallProgress }) {
+function CompactStats({ agentStatus, throughput, overallProgress, isNightMode }) {
   const working = throughput?.working || Object.values(agentStatus || {}).filter(a => a?.status === 'WORKING').length
   const blocked = throughput?.blocked || Object.values(agentStatus || {}).filter(a => a?.status === 'BLOCKED').length
 
+  const labelColor = isNightMode === false ? '#475569' : HUD.textMuted
+
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
+      display: 'flex', alignItems: 'center', gap: 12,
       fontFamily: 'JetBrains Mono, monospace', fontSize: 14, fontWeight: 600,
       letterSpacing: '0.02em',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.4)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 8px rgba(34,197,94,0.5)' }} />
         <span style={{ color: '#22C55E' }}>{working}</span>
+        <span style={{ color: labelColor, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>active</span>
       </div>
       {blocked > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 6px rgba(239,68,68,0.4)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 8px rgba(239,68,68,0.5)' }} />
           <span style={{ color: '#EF4444' }}>{blocked}</span>
+          <span style={{ color: labelColor, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>blocked</span>
         </div>
       )}
       {/* Mini progress ring - LARGER */}
-      <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
-        <svg width={36} height={36} viewBox="0 0 36 36">
-          <circle cx={18} cy={18} r={13} fill="none" stroke="rgba(100,180,255,0.08)" strokeWidth={3} />
+      <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
+        <svg width={40} height={40} viewBox="0 0 40 40">
+          <circle cx={20} cy={20} r={15} fill="none" stroke={isNightMode === false ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.08)'} strokeWidth={3} />
           <circle
-            cx={18} cy={18} r={13}
-            fill="none" stroke={HUD.accent} strokeWidth={3}
+            cx={20} cy={20} r={15}
+            fill="none" stroke={isNightMode === false ? '#2563EB' : HUD.accent} strokeWidth={3}
             strokeLinecap="round"
-            strokeDasharray={`${overallProgress * 0.817} 81.7`}
-            transform="rotate(-90 18 18)"
-            style={{ transition: 'stroke-dasharray 600ms ease', filter: `drop-shadow(0 0 4px ${HUD.accentGlow})` }}
+            strokeDasharray={`${overallProgress * 0.942} 94.2`}
+            transform="rotate(-90 20 20)"
+            style={{ transition: 'stroke-dasharray 600ms ease', filter: `drop-shadow(0 0 4px ${isNightMode === false ? 'rgba(37,99,235,0.35)' : HUD.accentGlow})` }}
           />
         </svg>
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 14, fontWeight: 800, color: HUD.accent,
+          fontSize: 13, fontWeight: 800, color: isNightMode === false ? '#2563EB' : HUD.accent,
         }}>
-          {overallProgress}
+          {overallProgress}%
         </div>
       </div>
     </div>
@@ -1356,7 +1365,23 @@ export default function GameHUD({
   chatAgent, onChatSubmit, onExpandChat,
   // Context menu props
   onAgentContextMenu, onProjectContextMenu,
+  // Daytime/nighttime theme -- when false, bottom HUD goes white/vibrant blue to match top bar
+  isNightMode,
 }) {
+  // Daytime palette: white glass with vibrant blue accents (matches top bar)
+  const isDaytime = isNightMode === false
+  const hudPanelBg = isDaytime ? 'rgba(248, 250, 255, 0.94)' : HUD.panelBg
+  const hudPanelBorder = isDaytime ? 'rgba(59, 130, 246, 0.2)' : HUD.panelBorder
+  const hudPanelShadow = isDaytime
+    ? '0 -8px 48px rgba(0,0,0,0.08), 0 -2px 0 rgba(59,130,246,0.12), inset 0 1px 0 rgba(255,255,255,0.9)'
+    : HUD.panelShadow
+  const hudBlueOverlay = isDaytime
+    ? 'linear-gradient(180deg, rgba(59,130,246,0.04) 0%, rgba(59,130,246,0.01) 50%, transparent 100%)'
+    : HUD.blueOverlay
+  const hudDivider = isDaytime ? 'rgba(59, 130, 246, 0.12)' : HUD.divider
+  const hudTextPrimary = isDaytime ? '#0F172A' : HUD.textPrimary
+  const hudTextMuted = isDaytime ? '#64748B' : HUD.textMuted
+  const hudAccent = isDaytime ? '#2563EB' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -1455,30 +1480,31 @@ export default function GameHUD({
         )}
       </AnimatePresence>
 
-      {/* The HUD panel - BLUE GLASS game panel */}
+      {/* The HUD panel - BLUE GLASS game panel (daytime = white/vibrant blue) */}
       <div
         className="hud-panel-shimmer"
         style={{
-          background: HUD.panelBg,
+          background: hudPanelBg,
           backdropFilter: 'blur(24px)',
-          borderTop: `2px solid ${HUD.panelBorder}`,
-          borderLeft: '2px solid rgba(100,180,255,0.08)',
-          borderRight: '2px solid rgba(100,180,255,0.08)',
+          borderTop: `2px solid ${hudPanelBorder}`,
+          borderLeft: `2px solid ${isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(100,180,255,0.08)'}`,
+          borderRight: `2px solid ${isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(100,180,255,0.08)'}`,
           // Chunky game panel shape
           borderRadius: isMobile ? 0 : '18px 18px 0 0',
-          boxShadow: HUD.panelShadow,
+          boxShadow: hudPanelShadow,
           padding: isMobile ? '4px 10px' : '0 20px',
           margin: isMobile ? 0 : '0 12px',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
           overflow: 'visible',
+          transition: 'background 400ms ease, border-color 400ms ease, box-shadow 400ms ease',
         }}
       >
         {/* Blue glow overlay */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
-          background: HUD.blueOverlay,
+          background: hudBlueOverlay,
           pointerEvents: 'none',
           borderRadius: 'inherit',
         }} />
@@ -1486,7 +1512,9 @@ export default function GameHUD({
         {/* Blue shimmer on top border */}
         <div className="hud-border-shimmer" style={{
           position: 'absolute', top: -1, left: 24, right: 24, height: 2,
-          background: 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.35) 25%, rgba(140,210,255,0.55) 50%, rgba(100,180,255,0.35) 75%, transparent 100%)',
+          background: isDaytime
+            ? 'linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.25) 25%, rgba(59,130,246,0.45) 50%, rgba(59,130,246,0.25) 75%, transparent 100%)'
+            : 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.35) 25%, rgba(140,210,255,0.55) 50%, rgba(100,180,255,0.35) 75%, transparent 100%)',
           backgroundSize: '200% 100%',
           borderRadius: 1,
           pointerEvents: 'none',
@@ -1517,7 +1545,7 @@ export default function GameHUD({
 
           {/* Divider */}
           {!isMobile && (
-            <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
+            <div style={{ width: 1, height: 36, background: hudDivider, flexShrink: 0 }} />
           )}
 
           {/* Center: Search + Project pills (scrollable, no wrapping) */}
@@ -1552,12 +1580,12 @@ export default function GameHUD({
                       }}
                       placeholder="Filter projects..."
                       style={{
-                        background: 'rgba(100,180,255,0.06)',
-                        border: `1px solid ${HUD.panelBorder}`,
+                        background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)',
+                        border: `1px solid ${hudPanelBorder}`,
                         borderRadius: 10,
                         height: 36,
                         padding: '0 12px',
-                        color: HUD.textPrimary,
+                        color: hudTextPrimary,
                         fontSize: 14,
                         fontFamily: "'Inter', system-ui, sans-serif",
                         outline: 'none',
