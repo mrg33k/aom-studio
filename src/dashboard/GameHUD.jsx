@@ -958,10 +958,11 @@ export default function GameHUD({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? 6 : 12,
-          height: isMobile ? 50 : 56,
+          gap: isMobile ? 6 : 10,
+          minHeight: isMobile ? 50 : 60,
           position: 'relative',
           zIndex: 1,
+          padding: isMobile ? 0 : '4px 0',
         }}>
           {/* Left: Agent plumbob portraits */}
           {!isMobile && (
