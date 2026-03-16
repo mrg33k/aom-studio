@@ -299,40 +299,226 @@ function azTime() {
 }
 
 // ---- PASSWORD GATE ---------------------------------------------------------
-// TODO(steffen-design): Password gate visual polish -- first impression for clients. Consider: Corner logo/icon above title, subtle background animation (stars or building silhouette), loading state after submit. Current is functional but needs brand energy.
+// DONE(bobby): Password gate visual polish -- building silhouette, animated particles, blue glow, loading state on submit. Brand energy for client first impression.
 function PasswordGate({ onAuth }) {
   const [pw, setPw] = useState('')
   const [shake, setShake] = useState(false)
+  const [entering, setEntering] = useState(false)
+  const [focused, setFocused] = useState(false)
 
   const submit = (e) => {
     e.preventDefault()
+    if (entering) return
     if (pw === DASHBOARD_PASSWORD) {
+      setEntering(true)
       sessionStorage.setItem('dash-auth', '1')
-      onAuth()
+      // Brief loading state before entering the office
+      setTimeout(() => onAuth(), 800)
     } else {
       setShake(true)
       setTimeout(() => setShake(false), 600)
     }
   }
 
+  // Generate stable star positions once
+  const stars = useMemo(() =>
+    Array.from({ length: 40 }, (_, i) => ({
+      left: `${5 + (i * 23.7) % 90}%`,
+      top: `${3 + (i * 17.3) % 85}%`,
+      size: i % 3 === 0 ? 3 : i % 5 === 0 ? 2.5 : 1.5,
+      delay: `${(i * 0.37) % 4}s`,
+      duration: `${3 + (i % 4)}s`,
+      bright: i % 7 === 0,
+    })),
+  [])
+
   return (
-    <div style={{ minHeight: '100vh', background: PALETTE.background, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <form onSubmit={submit} style={{ width: '100%', maxWidth: 360 }} className={shake ? 'animate-shake' : ''}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ color: PALETTE.signText, fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>CORNER</div>
-          <h1 style={{ color: '#F5F0EB', fontSize: 24, fontWeight: 900, fontStyle: 'italic', fontFamily: "'Inter Tight', sans-serif", letterSpacing: '-0.02em' }}>Your Office</h1>
+    <div style={{
+      minHeight: '100vh',
+      background: `linear-gradient(180deg, #060A14 0%, #0A1028 40%, #0F1830 100%)`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '1rem', position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Animated star field */}
+      {stars.map((s, i) => (
+        <div key={`star-${i}`} style={{
+          position: 'absolute', left: s.left, top: s.top,
+          width: s.size, height: s.size, borderRadius: '50%',
+          background: s.bright ? 'rgba(100,180,255,0.9)' : 'rgba(200,210,230,0.5)',
+          boxShadow: s.bright ? '0 0 6px rgba(100,180,255,0.4)' : 'none',
+          animation: `gateStarTwinkle ${s.duration} ease-in-out ${s.delay} infinite`,
+          pointerEvents: 'none',
+        }} />
+      ))}
+
+      {/* Building silhouette at bottom */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '80%', maxWidth: 600, height: 200, pointerEvents: 'none',
+        opacity: 0.08,
+      }}>
+        {/* Simplified building outline using CSS */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: '10%', width: '25%', height: '70%',
+          background: 'linear-gradient(180deg, rgba(59,130,246,0.3) 0%, rgba(59,130,246,0.1) 100%)',
+          borderRadius: '4px 4px 0 0',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: 0, left: '30%', width: '40%', height: '100%',
+          background: 'linear-gradient(180deg, rgba(59,130,246,0.35) 0%, rgba(59,130,246,0.12) 100%)',
+          borderRadius: '4px 4px 0 0',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: 0, right: '10%', width: '20%', height: '55%',
+          background: 'linear-gradient(180deg, rgba(59,130,246,0.25) 0%, rgba(59,130,246,0.08) 100%)',
+          borderRadius: '4px 4px 0 0',
+        }} />
+        {/* Window dots on main building */}
+        {[0.35, 0.45, 0.55, 0.65].map((x, col) =>
+          [0.2, 0.35, 0.5, 0.65, 0.8].map((y, row) => (
+            <div key={`win-${col}-${row}`} style={{
+              position: 'absolute', left: `${x * 100}%`, top: `${y * 100}%`,
+              width: 6, height: 4, borderRadius: 1,
+              background: 'rgba(255,183,77,0.25)',
+              animation: `gateWindowFlicker ${4 + (col + row) % 3}s ease-in-out ${(col * 0.5 + row * 0.3)}s infinite`,
+            }} />
+          ))
+        )}
+      </div>
+
+      {/* Blue ambient glow behind form */}
+      <div style={{
+        position: 'absolute', left: '50%', top: '40%', transform: 'translate(-50%, -50%)',
+        width: 500, height: 500,
+        background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 60%)',
+        pointerEvents: 'none', animation: 'gateGlowPulse 6s ease-in-out infinite',
+      }} />
+
+      {/* Login card */}
+      <motion.form
+        onSubmit={submit}
+        initial={{ opacity: 0, y: 20 }}
+        animate={entering ? { opacity: 0, y: -20, scale: 0.95 } : { opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: entering ? 0.5 : 0.6, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          width: '100%', maxWidth: 380,
+          position: 'relative', zIndex: 2,
+        }}
+        className={shake ? 'animate-shake' : ''}
+      >
+        {/* Corner branding */}
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          {/* Building icon */}
+          <div style={{ marginBottom: 20 }}>
+            <svg width={48} height={48} viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto' }}>
+              <rect x={8} y={16} width={14} height={28} rx={2} fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.35)" strokeWidth={1.5} />
+              <rect x={26} y={8} width={14} height={36} rx={2} fill="rgba(59,130,246,0.2)" stroke="rgba(59,130,246,0.4)" strokeWidth={1.5} />
+              <rect x={12} y={22} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.5)" />
+              <rect x={12} y={28} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.35)" />
+              <rect x={12} y={34} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.5)" />
+              <rect x={30} y={14} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.5)" />
+              <rect x={30} y={20} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.35)" />
+              <rect x={30} y={26} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.5)" />
+              <rect x={30} y={32} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.35)" />
+              <rect x={36} y={14} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.3)" />
+              <rect x={36} y={20} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.5)" />
+              <rect x={36} y={26} width={3} height={3} rx={0.5} fill="rgba(255,183,77,0.3)" />
+            </svg>
+          </div>
+
+          <div style={{
+            color: '#F1F5F9', fontFamily: 'Syne, sans-serif',
+            fontSize: 32, fontWeight: 800, letterSpacing: '0.12em',
+            textTransform: 'uppercase', marginBottom: 8,
+            textShadow: '0 0 40px rgba(59,130,246,0.2)',
+          }}>
+            CORNER
+          </div>
+          <div style={{
+            color: '#64748B', fontSize: 16, fontWeight: 500,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            letterSpacing: '0.02em',
+          }}>
+            Enter your office
+          </div>
         </div>
-        <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Password" autoFocus
-          style={{ width: '100%', background: '#141822', border: '1px solid #2A3040', color: '#F5F0EB', padding: '12px 16px', fontSize: 16, fontFamily: 'JetBrains Mono, monospace', outline: 'none', borderRadius: 2 }} />
-        <button type="submit" style={{ width: '100%', marginTop: 12, background: '#E85D26', color: 'white', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 16, padding: '14px', border: 'none', cursor: 'pointer', borderRadius: 2 }}>
-          Enter
+
+        {/* Password input with blue glow on focus */}
+        <div style={{ position: 'relative', marginBottom: 16 }}>
+          <input type="password" value={pw} onChange={e => setPw(e.target.value)}
+            placeholder="Password" autoFocus disabled={entering}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            style={{
+              width: '100%',
+              background: 'rgba(15,27,45,0.8)',
+              border: `2px solid ${focused ? 'rgba(59,130,246,0.5)' : 'rgba(59,130,246,0.15)'}`,
+              color: '#F1F5F9', padding: '14px 18px',
+              fontSize: 16, fontFamily: "'JetBrains Mono', monospace",
+              outline: 'none', borderRadius: 10,
+              backdropFilter: 'blur(8px)',
+              boxShadow: focused ? '0 0 0 3px rgba(59,130,246,0.12), 0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.2)',
+              transition: 'border-color 200ms ease, box-shadow 200ms ease',
+            }}
+          />
+        </div>
+
+        {/* Enter button */}
+        <button type="submit" disabled={entering} style={{
+          width: '100%',
+          background: entering
+            ? 'linear-gradient(135deg, rgba(59,130,246,0.4) 0%, rgba(59,130,246,0.2) 100%)'
+            : 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+          color: 'white', fontWeight: 800, textTransform: 'uppercase',
+          letterSpacing: '0.12em', fontSize: 16, padding: '16px',
+          border: 'none', cursor: entering ? 'default' : 'pointer',
+          borderRadius: 10,
+          boxShadow: entering ? 'none' : '0 4px 20px rgba(59,130,246,0.35), 0 2px 8px rgba(0,0,0,0.3)',
+          fontFamily: "'Inter', system-ui, sans-serif",
+          transition: 'all 200ms ease',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        }}>
+          {entering ? (
+            <>
+              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              Opening...
+            </>
+          ) : (
+            'Enter'
+          )}
         </button>
+
         {IS_LOCAL && (
-          <div style={{ textAlign: 'center', marginTop: 12, color: '#4CAF50', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.1em' }}>
-            LOCAL MODE ACTIVE
+          <div style={{
+            textAlign: 'center', marginTop: 16,
+            color: '#22C55E', fontSize: 12,
+            fontFamily: "'JetBrains Mono', monospace",
+            letterSpacing: '0.1em',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px #22C55E' }} />
+            LOCAL MODE
           </div>
         )}
-      </form>
+      </motion.form>
+
+      {/* Password gate styles */}
+      <style>{`
+        @keyframes gateStarTwinkle {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.3); }
+        }
+        @keyframes gateGlowPulse {
+          0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        }
+        @keyframes gateWindowFlicker {
+          0%, 100% { opacity: 0.3; }
+          30% { opacity: 0.7; }
+          60% { opacity: 0.2; }
+          80% { opacity: 0.6; }
+        }
+      `}</style>
     </div>
   )
 }
