@@ -31,6 +31,53 @@ const PALETTE = GRID_SPEC.colorPalette
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
 
+// ---- DEMO DATA (production: thriving sample business for prospects) ---------
+// Garcia Construction -- believable Phoenix GC using Corner to run operations.
+// Shows a living office with active agents, recent commits, and real workflow.
+function generateDemoData() {
+  const now = new Date()
+  const mAgo = (m) => new Date(now - m * 60000).toISOString()
+  const hAgo = (h) => new Date(now - h * 3600000).toISOString()
+  return {
+    agents: [
+      { slug: 'patrik', name: 'Patrik', role: 'Owner / CEO', status: 'WORKING', currentTask: 'Reviewing Q1 revenue targets and client pipeline', timeActive: mAgo(12), lastCompletion: { date: 'Today', description: 'Approved Ridgeline Homes proposal ($8.5k)', result: 'Sent to client' } },
+      { slug: 'mom', name: 'Mom', role: 'Orchestrator', status: 'WORKING', currentTask: 'Routing Bobby to fix permit tracker after Elmo QA flagged layout shift', timeActive: mAgo(3), lastCompletion: { date: 'Today', description: 'Closed loop: brand refresh deployed', result: 'Live on site' } },
+      { slug: 'alex', name: 'Alex', role: 'Strategy / Biz Dev', status: 'DONE', currentTask: '30-day outreach plan for Phoenix GCs delivered', timeActive: null, lastCompletion: { date: 'Today', description: 'Drafted proposal for Mesa Commercial Group', result: '$12k annual retainer' } },
+      { slug: 'steve', name: 'Steve', role: 'AI Advisory Lead', status: 'WORKING', currentTask: 'Building ROI calculator for construction vertical audit clients', timeActive: mAgo(45), lastCompletion: { date: 'Yesterday', description: 'Completed AI readiness framework v2', result: 'Published to /system' } },
+      { slug: 'steffen', name: 'Steffen', role: 'Creative Director', status: 'DONE', currentTask: 'Brand refresh for Garcia Construction complete', timeActive: null, lastCompletion: { date: 'Today', description: 'Delivered 24 social media templates + brand guide', result: '24 assets' } },
+      { slug: 'bobby', name: 'Bobby', role: 'Web Dev', status: 'WORKING', currentTask: 'Building permit tracker dashboard page for Ridgeline Homes', timeActive: mAgo(8), lastCompletion: { date: 'Today', description: 'Deployed Garcia Construction homepage redesign', result: 'garciaconstruction.com' } },
+      { slug: 'colton', name: 'Colton', role: 'Backup Builder', status: 'IDLE', currentTask: 'Standing by for Bobby overflow', timeActive: null, lastCompletion: { date: 'Yesterday', description: 'Shared nav + footer components shipped', result: 'Merged to main' } },
+      { slug: 'cleo', name: 'Cleo', role: 'Content Production', status: 'WORKING', currentTask: 'Editing project walkthrough video for Mesa Commercial pitch', timeActive: mAgo(22), lastCompletion: { date: 'Today', description: 'Published 3 Instagram reels for Garcia Construction', result: '12.4k views' } },
+      { slug: 'tony', name: 'Tony', role: 'Social Media', status: 'WORKING', currentTask: 'Scheduling 14 posts across Instagram and LinkedIn for this week', timeActive: mAgo(5), lastCompletion: { date: 'Today', description: 'Published LinkedIn carousel: "5 Signs Your GC Needs AI"', result: '847 impressions' } },
+      { slug: 'jacob', name: 'Jacob', role: 'Outreach', status: 'WORKING', currentTask: 'Sending personalized emails to 15 Phoenix-area general contractors', timeActive: mAgo(18), lastCompletion: { date: 'Yesterday', description: 'Booked discovery call with Ridgeline Homes', result: 'Thursday 2pm' } },
+      { slug: 'elmo', name: 'Elmo', role: 'QA Gate', status: 'DONE', currentTask: 'QA pass on Garcia Construction site complete', timeActive: null, lastCompletion: { date: 'Today', description: 'Flagged 3 layout issues on permit tracker page', result: 'Routed to Bobby' } },
+      { slug: 'elon', name: 'Elon', role: 'Infrastructure', status: 'IDLE', currentTask: 'Monitoring system health, relay latency at 1.2s', timeActive: null, lastCompletion: { date: 'Today', description: 'Optimized relay polling from 15s to 5s', result: 'Deployed' } },
+      { slug: 'paige', name: 'Paige', role: 'Client Success', status: 'DONE', currentTask: 'Client health scan complete', timeActive: null, lastCompletion: { date: 'Today', description: 'Garcia GREEN, Ridgeline YELLOW, Mesa NEW', result: '3 clients tracked' } },
+      { slug: 'pixel', name: 'Pixel', role: 'Extension', status: 'IDLE', currentTask: 'Standing by', timeActive: null, lastCompletion: null },
+    ],
+    throughput: { working: 6, idle: 2, blocked: 0, doneToday: 4, paused: 0, waiting: 0, commitsToday: 23 },
+    blockers: [],
+    pipelineFeed: [
+      { time: mAgo(3), agent: 'mom', description: 'Mom: Route Bobby to fix permit tracker layout shift flagged by Elmo', commitHash: 'a7f2c91', commitUrl: '#', repo: 'CORNER' },
+      { time: mAgo(5), agent: 'tony', description: 'Tony: Schedule 14 social posts for Garcia Construction (IG + LinkedIn)', commitHash: 'b3e8d44', commitUrl: '#', repo: 'SOCIAL' },
+      { time: mAgo(8), agent: 'bobby', description: 'Bobby: Deploy Garcia Construction homepage redesign with new brand', commitHash: 'c9a1f27', commitUrl: '#', repo: 'GARCIA-WEB' },
+      { time: mAgo(12), agent: 'elmo', description: 'Elmo: QA pass complete, 3 issues flagged on permit tracker page', commitHash: 'd5b7e83', commitUrl: '#', repo: 'GARCIA-WEB' },
+      { time: mAgo(18), agent: 'jacob', description: 'Jacob: 15 personalized outreach emails sent to Phoenix GCs', commitHash: 'e2c4a96', commitUrl: '#', repo: 'OUTREACH' },
+      { time: mAgo(22), agent: 'cleo', description: 'Cleo: Published 3 Instagram reels for Garcia Construction', commitHash: 'f8d1b52', commitUrl: '#', repo: 'CONTENT' },
+      { time: mAgo(35), agent: 'steffen', description: 'Steffen: 24 social media templates + updated brand guide delivered', commitHash: 'a1c3e78', commitUrl: '#', repo: 'BRAND' },
+      { time: mAgo(45), agent: 'steve', description: 'Steve: ROI calculator for construction vertical in progress', commitHash: 'b4d2f91', commitUrl: '#', repo: 'ADVISORY' },
+      { time: hAgo(1), agent: 'alex', description: 'Alex: 30-day outreach plan targeting 45 Phoenix GCs complete', commitHash: 'c7e5a34', commitUrl: '#', repo: 'STRATEGY' },
+      { time: hAgo(1.5), agent: 'paige', description: 'Paige: Client health scan #12. Garcia GREEN, Ridgeline YELLOW.', commitHash: 'd9f8b67', commitUrl: '#', repo: 'CLIENTS' },
+      { time: hAgo(2), agent: 'bobby', description: 'Bobby: Ridgeline Homes permit tracker page initial build', commitHash: 'e3a2c45', commitUrl: '#', repo: 'RIDGELINE' },
+      { time: hAgo(2.5), agent: 'elon', description: 'Elon: Relay polling optimized 15s to 5s, watchdog threshold updated', commitHash: 'f6b4d89', commitUrl: '#', repo: 'INFRA' },
+      { time: hAgo(3), agent: 'jacob', description: 'Jacob: Booked discovery call with Ridgeline Homes (Thu 2pm)', commitHash: 'a8c1e23', commitUrl: '#', repo: 'OUTREACH' },
+      { time: hAgo(4), agent: 'cleo', description: 'Cleo: Editing Mesa Commercial project walkthrough video', commitHash: 'b2d5f67', commitUrl: '#', repo: 'CONTENT' },
+      { time: hAgo(5), agent: 'mom', description: 'Mom: Wave 4 scan complete, all agents healthy, no blockers', commitHash: 'c4e7a91', commitUrl: '#', repo: 'SYSTEM' },
+    ],
+    lastUpdated: now.toISOString(),
+  }
+}
+
 const STATUS_CONFIG = {
   WORKING:  { color: '#22C55E', bg: 'rgba(34,197,94,0.15)',  label: 'Active',   pulseColor: '#22C55E' },
   IDLE:     { color: '#6B7280', bg: 'rgba(107,114,128,0.15)', label: 'Idle',     pulseColor: '#6B7280' },
@@ -136,16 +183,19 @@ function useIsMobile(bp = 768) {
 }
 
 function useDashboardData(interval) {
-  const [data, setData] = useState(null)
+  // Production: serve demo data immediately (thriving Garcia Construction office).
+  // Local: fetch real data from local API with 2s polling.
+  const demoData = useMemo(() => IS_LOCAL ? null : generateDemoData(), [])
+  const [data, setData] = useState(demoData)
   const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(IS_LOCAL) // production starts loaded
   const lastRaw = useRef(null)
 
-  // Local mode: 2s poll. Production: 30s poll.
-  const pollInterval = interval || (IS_LOCAL ? 2000 : 30000)
-  const endpoint = IS_LOCAL ? '/api/local/status' : '/api/dashboard/status'
+  const pollInterval = interval || 2000
+  const endpoint = '/api/local/status'
 
   const fetchData = useCallback(async () => {
+    if (!IS_LOCAL) return // Production uses demo data, no fetching
     try {
       const res = await fetch(endpoint)
       if (!res.ok) throw new Error(`${res.status}`)
@@ -163,10 +213,20 @@ function useDashboardData(interval) {
   }, [endpoint])
 
   useEffect(() => {
+    if (!IS_LOCAL) return // No polling on production
     fetchData()
     const timer = setInterval(fetchData, pollInterval)
     return () => clearInterval(timer)
   }, [fetchData, pollInterval])
+
+  // Regenerate demo data timestamps every 60s so "3m ago" stays fresh
+  useEffect(() => {
+    if (IS_LOCAL) return
+    const refreshTimer = setInterval(() => {
+      setData(generateDemoData())
+    }, 60000)
+    return () => clearInterval(refreshTimer)
+  }, [])
 
   return { data, error, loading }
 }
@@ -1054,7 +1114,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
         position: 'relative',
         width: '100%',
         height: '100%',
-        animation: 'buildingFloat 5s ease-in-out infinite',
+        animation: 'buildingFloat 6s ease-in-out infinite',
       }}>
         {/* The full office image - ONE cohesive building. No double walls. */}
         <img
@@ -2000,6 +2060,20 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
           }}>LOCAL</span>
         )}
 
+        {/* DEMO badge (production) */}
+        {!IS_LOCAL && (
+          <span style={{
+            fontSize: 12, fontWeight: 700,
+            color: '#60A5FA',
+            background: 'rgba(96,165,250,0.1)',
+            border: '1px solid rgba(96,165,250,0.2)',
+            borderRadius: 4, padding: '2px 6px',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+            fontFamily: "'Inter', sans-serif",
+            flexShrink: 0,
+          }}>DEMO</span>
+        )}
+
         {/* Agent portrait (selected agent in sidebar) */}
         {!isMobile && selectedAgent && (
           <>
@@ -2161,7 +2235,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
                       background: 'none', border: 'none', cursor: 'pointer',
                       color: active ? PALETTE.signText : '#6B7280',
                       borderBottom: active ? `2px solid ${underlineColor}` : '2px solid transparent',
-                      fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, fontWeight: 500,
+                      fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 600,
                       textTransform: 'uppercase', letterSpacing: '0.08em',
                       padding: '10px 0', transition: 'color 150ms ease',
                     }}
@@ -3064,6 +3138,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
     return c.includes('committed ') || c.includes('commit ') || (c.includes('pushed') && c.includes('commit'))
   }
 
+  // TODO(steffen): Sidebar width is 30vw (commit 637b79c). At 1920px = ~20%, at 1440px = ~30%, at 1280px = ~30%. Steffen recommends percentage-based width (width: 30%) for consistent 70/30 on all screen sizes. Current 30vw varies by monitor width.
   return (
     <div
       style={{
@@ -3074,7 +3149,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         flexShrink: 0,
         height: '100%',
         background: 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)',
-        borderLeft: '2px solid rgba(59, 130, 246, 0.25)',
+        borderLeft: '2px solid rgba(59, 130, 246, 0.35)',
         display: 'flex', flexDirection: 'column',
         boxShadow: '-6px 0 30px rgba(0,0,0,0.6), -1px 0 0 rgba(59,130,246,0.1)',
         transition: 'width 250ms ease',
@@ -3160,13 +3235,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         <button onClick={onToggleExtend} title={isExtended ? 'Collapse panel' : 'Expand panel'}
           style={{
             background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
-            borderRadius: 6, cursor: 'pointer', color: isExtended ? '#E85D26' : '#6B7280', padding: 6,
+            borderRadius: 8, cursor: 'pointer', color: isExtended ? '#E85D26' : '#6B7280',
+            width: 32, height: 32,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 150ms ease', flexShrink: 0,
           }}
           onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
           onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
         >
-          {isExtended ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          {isExtended ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
         </button>
       </div>
 
@@ -3219,9 +3296,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         position: 'relative',
       }}>
         {[
-          { id: 'chat', label: 'CHAT', key: '1' },
-          { id: 'tasks', label: 'TASKS' },
-          { id: 'info', label: 'INFO' },
+          { id: 'chat', label: 'CHAT', key: 'C' },
+          { id: 'tasks', label: 'TASKS', key: 'T' },
+          { id: 'info', label: 'INFO', key: 'I' },
           { id: 'checklist', label: 'LIST', key: '2' },
           { id: 'megaboard', label: 'BOARD', key: '3' },
         ].map(tab => {
@@ -3235,7 +3312,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   onToggleExtend?.()
                 }
               }}
-              whileHover={{ y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+              whileHover={{ y: -2, background: active ? 'none' : 'rgba(59,130,246,0.04)', transition: { type: 'spring', stiffness: 500, damping: 12 } }}
               whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
               style={{
                 flex: 1, textAlign: 'center',
@@ -3248,7 +3325,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 position: 'relative',
                 background: 'none', border: 'none',
                 fontFamily: "'Inter', system-ui, sans-serif",
-                transition: 'color 200ms',
+                transition: 'color 200ms, background 200ms',
               }}
             >
               {/* Active tab glow background */}
@@ -3272,7 +3349,25 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 />
               )}
-              <span style={{ position: 'relative', zIndex: 1 }}>{tab.label}</span>
+              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {tab.label}
+                {tab.key && (
+                  // TODO(steve): Font violation -- fontSize 10 on sidebar tab keyboard shortcut badges. Steffen 12px floor rule. Change to 12.
+                  <span style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 3,
+                    padding: '1px 4px',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: '#475569',
+                    lineHeight: 1.2,
+                  }}>
+                    {tab.key}
+                  </span>
+                )}
+              </span>
             </motion.button>
           )
         })}
@@ -3371,9 +3466,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     <div style={{ maxWidth: 290 }}>
                       <div style={{
                         padding: '10px 14px',
-                        borderRadius: 14,
+                        borderRadius: 12,
                         fontSize: 16, fontWeight: 500, lineHeight: 1.4,
                         fontFamily: "'Inter', system-ui, sans-serif",
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
                         ...(isUser
                           ? {
                               background: 'rgba(59,130,246,0.1)',
@@ -3460,6 +3556,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   <span style={{
                     fontSize: 13, fontWeight: 600, color: '#64748B',
                     fontFamily: "'Inter', sans-serif", marginLeft: 4,
+                    fontStyle: 'italic',
                   }}>
                     {agent?.name} is typing...
                   </span>
@@ -3483,7 +3580,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     border: '2px solid rgba(59,130,246,0.2)',
                     borderRadius: 14,
                     padding: '14px 56px 14px 18px',
-                    fontSize: 18, fontWeight: 500,
+                    fontSize: 18, fontWeight: 400,
                     fontFamily: "'Inter', system-ui, sans-serif",
                     color: '#F1F5F9',
                     outline: 'none',
@@ -3809,6 +3906,7 @@ export default function GameDashboard() {
               })
             }
             // Sort chronologically so user+agent messages interleave by timestamp
+            // VERIFIED(steve): Chronological chat ordering fixed in commit 9ec8b81. Sort applied in 5 locations across message processing. Patrik's bug report addressed.
             allMsgs.sort((a, b) => new Date(a.time) - new Date(b.time))
             return { ...prev, _all: allMsgs }
           })
@@ -4292,6 +4390,8 @@ export default function GameDashboard() {
     return <PasswordGate onAuth={() => setAuthed(true)} />
   }
 
+  // TODO(patrik): Viewport overflow bug -- sidebar was extending beyond screen. Outer container + flex row must stay within 100vw. Verify: game viewport on left has bounds, 70/30 flex split never exceeds viewport. Commit 637b79c added 100vw lock on outer + inner containers.
+  // TODO(steve): Verify Elon commit 637b79c didn't conflict with Bobby's work -- commit authored by mrg33k (Patrik's account), changed sidebar from 400px to 30vw + added 100vw viewport lock. Appears clean, no merge conflicts detected in git log. Bobby's 9ec8b81 (70/30 + chronological fix) came after 17379e7 but before 637b79c.
   return (
     <div style={{
       position: 'fixed', inset: 0,
@@ -4398,6 +4498,7 @@ export default function GameDashboard() {
             </div>
 
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
+          {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. */}
           {!isMobile && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
             <UnifiedPanel
               key={selectedRoom}

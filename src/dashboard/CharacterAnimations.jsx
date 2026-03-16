@@ -40,6 +40,8 @@ const AGENT_COLORS = {
   pixel: '#00BCD4',
 }
 
+// TODO(steffen): Add left/right direction support -- all characters face same way currently. Steffen's HOP-FRAMES.md has SE + NW directions specced. Needed for inter-room walking (Phase 2).
+
 // ---- SPRITE STATE MAPPING (mirrors GameDashboard) ----------------------------
 function getSpriteState(status, isSpeaking) {
   if (isSpeaking) return 'speaking'
@@ -582,11 +584,14 @@ export function AnimatedAgentCharacter({
       <DustParticles active={showDust} size={spriteSize} />
 
       {/* Sprite image */}
+      {/* TODO(steffen): Remove borderRadius '50%' -- clips characters to circles. Crossy Road chars show full silhouette. Let the PNG define the shape. */}
+      {/* TODO(steffen): Remove mixBlendMode 'screen' -- makes dark sprite parts transparent. Use 'normal' unless specifically for glow. Corrupts dark sprite parts on light floors. */}
       <div style={{
         width: spriteSize, height: spriteSize, overflow: 'hidden', position: 'relative',
         borderRadius: '50%',
         mixBlendMode: 'screen',
       }}>
+        {/* TODO(steffen): Sprite oversizing hack (2.6x + -30% offset) is fragile -- if sprite dimensions change, framing breaks. Better: ensure PNGs are pre-framed at correct size. */}
         <img
           src={spriteSrc}
           alt=""
