@@ -5018,16 +5018,16 @@ export default function GameDashboard() {
                 if (!text || panelStreaming) return
                 setPanelChatInput('')
                 const sentTime = new Date().toISOString()
+                // Single state update: user message sorted + streaming placeholder at end
+                // Prevents React batching race that groups messages by sender
                 setPanelMessages(prev => {
-                  const msgs = [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom }]
-                  msgs.sort((a, b) => new Date(a.time) - new Date(b.time))
-                  return { ...prev, _all: msgs }
+                  const sorted = [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom }]
+                  sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
+                  // Streaming placeholder always appended last (typing indicator)
+                  sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
+                  return { ...prev, _all: sorted }
                 })
                 setPanelStreaming(true)
-                setPanelMessages(prev => ({
-                  ...prev,
-                  _all: [...(prev._all || []), { role: 'assistant', content: '', streaming: true, time: sentTime }],
-                }))
                 if (IS_LOCAL) {
                   fetch('/api/local/relay-send', {
                     method: 'POST',
@@ -5047,12 +5047,11 @@ export default function GameDashboard() {
                           if (responses.length > 0) {
                             const latest = responses[responses.length - 1]
                             setPanelMessages(prev => {
-                              const msgs = [...(prev._all || [])]
-                              const filtered = msgs.filter(m => !m.streaming)
+                              // Remove streaming, add real response, sort in one pass
+                              const filtered = [...(prev._all || [])].filter(m => !m.streaming)
                               if (!filtered.some(m => m.id === latest.id)) {
                                 filtered.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString(), source: latest.agent || 'system', id: latest.id })
                               }
-                              // Sort chronologically so messages interleave by timestamp
                               filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
                               return { ...prev, _all: filtered }
                             })
@@ -5064,7 +5063,7 @@ export default function GameDashboard() {
                           }
                         }
                       } catch {}
-                    }, 2000)
+                    }, 500) // Local: 500ms for near-instant response display
                   }).catch(err => {
                     setPanelMessages(prev => {
                       const msgs = [...(prev._all || [])]

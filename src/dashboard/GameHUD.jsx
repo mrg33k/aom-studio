@@ -8,7 +8,7 @@
 // TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
 // TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
 // TODO(patrik): Bottom bar cleanup -- remove chat input from bottom bar (chat only in sidebar). Replace Active/Blocked stat pills with scrollable/searchable PROJECT PILLS. Bottom bar = minimap + agent portrait + project pills + notification icons. Clean, no chat input.
-// TODO(patrik): Project pill category labels -- pills should show category text (client / project / outreach) not color-status text (RED / GREEN / ORANGE). Color already communicates status visually. The text label should tell you WHAT it is, not repeat what the color says. Update statusTag rendering (around the tag badge) to display category type instead.
+// DONE(bobby2): Project pill category labels -- pills now show category text (CLIENT / PROJECT / OUTREACH) not color-status text. Color communicates status visually, text label tells you WHAT it is.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -1008,7 +1008,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
         </span>
       )}
 
-      {/* Status tag for clients (RED, GREEN, etc.) */}
+      {/* Category tag for pills -- shows WHAT it is (client/project/outreach), not the color.
+          Color already communicates status visually. Text label tells you the category. */}
       {tagStyle && (
         <span style={{
           fontFamily: 'JetBrains Mono, monospace',
@@ -1023,7 +1024,9 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
           boxShadow: tagStyle.glow !== 'none' ? `0 0 10px ${tagStyle.glow}` : 'none',
           animation: project.statusTag === 'RED' ? 'statusPulse 2.5s ease-in-out infinite' : 'none',
         }}>
-          {project.statusTag}
+          {project.section === 'outreach' ? 'OUTREACH'
+            : project.icon === 'client' || project.isClient ? 'CLIENT'
+            : 'PROJECT'}
         </span>
       )}
 

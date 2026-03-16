@@ -464,7 +464,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
         }
       } catch {}
-    }, 5000) // Background poll every 5 seconds
+    }, 500) // Local: 500ms for near-instant relay display
 
     return () => {
       if (bgPollRef.current) clearInterval(bgPollRef.current)
@@ -495,28 +495,18 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           if (responses.length > 0) {
             const latest = responses[responses.length - 1]
             setMessages(prev => {
-              const updated = [...prev]
-              const lastMsg = updated[updated.length - 1]
-              if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
-                // Replace the streaming placeholder with the real response
-                updated[updated.length - 1] = {
-                  ...lastMsg,
-                  content: latest.message,
-                  streaming: false,
-                  time: latest.timestamp || new Date().toISOString(),
-                  source: latest.agent || 'system',
-                }
-              } else {
-                // Append as new message
-                updated.push({
-                  role: 'assistant',
-                  content: latest.message,
-                  streaming: false,
-                  time: latest.timestamp || new Date().toISOString(),
-                  source: latest.agent || 'system',
-                })
-              }
-              return updated
+              // Remove streaming placeholders, add real response, re-sort
+              const filtered = prev.filter(m => !m.streaming)
+              filtered.push({
+                role: 'assistant',
+                content: latest.message,
+                streaming: false,
+                time: latest.timestamp || new Date().toISOString(),
+                source: latest.agent || 'system',
+                id: latest.id,
+              })
+              filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
+              return filtered
             })
             setStreaming(false)
             clearChatTimeout()
@@ -528,7 +518,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
         }
       } catch {}
-    }, 2000) // Poll every 2 seconds
+    }, IS_LOCAL ? 500 : 2000) // Local: 500ms, remote: 2s
   }
 
   // 60-second timeout: if no response arrives, show offline message
@@ -570,9 +560,15 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
     const sentTime = new Date().toISOString()
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard' }])
+    // Single state update: user message sorted + streaming placeholder at end
+    // Prevents React batching race that groups messages by sender
+    setMessages(prev => {
+      const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard' }]
+      sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
+      sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
+      return sorted
+    })
     setStreaming(true)
-    setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
     startChatTimeout()
 
     try {
