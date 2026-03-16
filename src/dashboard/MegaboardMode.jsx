@@ -169,7 +169,7 @@ function AgentCard({ agent, status, onClick, isMobile }) {
         <SpriteAvatar agentSlug={agent.slug} size={36} borderColor={agent.color} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 16,
+            fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 16,
             color: MB.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {agent.name}
@@ -209,7 +209,7 @@ function AgentCard({ agent, status, onClick, isMobile }) {
 
       {/* Current quest */}
       <div style={{
-        fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 12,
+        fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 12,
         color: currentTask === 'Idle' || currentTask === 'Standing by' ? MB.textMuted : MB.textPrimary,
         fontStyle: currentTask === 'Idle' || currentTask === 'Standing by' ? 'italic' : 'normal',
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -251,7 +251,7 @@ function QuestItem({ quest, onClick }) {
       <SpriteAvatar agentSlug={agent?.slug} size={24} borderColor={agent?.color} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 13,
+          fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 13,
           color: MB.textPrimary,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
           overflow: 'hidden', lineHeight: 1.4, wordBreak: 'break-word',
@@ -314,7 +314,7 @@ function FeedEvent({ event }) {
     >
       <Icon size={16} color={iconInfo.color} style={{ flexShrink: 0, marginTop: 2 }} />
       <span style={{
-        fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 12,
+        fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 12,
         color: MB.textSecondary, flex: 1, minWidth: 0,
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
         overflow: 'hidden', lineHeight: 1.45, wordBreak: 'break-word',
@@ -346,7 +346,7 @@ function AgentDeepDive({ agent, status, onBack }) {
         style={{
           display: 'flex', alignItems: 'center', gap: 4,
           background: 'none', border: 'none', cursor: 'pointer',
-          fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 12,
+          fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 12,
           color: MB.textSecondary, marginBottom: 20,
           padding: 0, transition: 'color 150ms',
         }}
@@ -363,7 +363,7 @@ function AgentDeepDive({ agent, status, onBack }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{
-              fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 22,
+              fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 22,
               color: MB.textPrimary,
             }}>
               {agent.name}
@@ -401,7 +401,7 @@ function AgentDeepDive({ agent, status, onBack }) {
           CURRENT QUEST
         </div>
         <div style={{
-          fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 14,
+          fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 14,
           color: MB.textPrimary, marginBottom: 4,
         }}>
           {status?.currentTask || 'Idle'}
@@ -463,7 +463,7 @@ function AgentDeepDive({ agent, status, onBack }) {
           </div>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, color: '#6B7280',
+            fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: '#6B7280',
           }}>
             <CheckCircle2 size={14} color={MB.hpGreen} />
             <span style={{ textDecoration: 'line-through' }}>{status.lastCompletion.description}</span>
@@ -548,7 +548,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
                 {quests.length === 0 && (
                   <div style={{
                     textAlign: 'center', padding: '40px 0',
-                    fontFamily: 'Space Grotesk, sans-serif', fontSize: 13, color: MB.textSecondary,
+                    fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: MB.textSecondary,
                   }}>
                     All quests complete. Your team is idle.
                   </div>
@@ -667,7 +667,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
             {feed.length === 0 && (
               <div style={{
                 textAlign: 'center', padding: '24px 0',
-                fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, color: MB.textSecondary,
+                fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: MB.textSecondary,
               }}>
                 No recent events
               </div>
@@ -725,7 +725,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
           {filteredQuests.length === 0 && (
             <div style={{
               textAlign: 'center', padding: '40px 0',
-              fontFamily: 'Space Grotesk, sans-serif', fontSize: 13, color: MB.textSecondary,
+              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: MB.textSecondary,
             }}>
               {questFilter === 'all' ? 'All quests complete. Your team is idle.' : `No ${questFilter} quests.`}
             </div>

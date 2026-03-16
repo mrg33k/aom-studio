@@ -255,7 +255,7 @@ export const GRID_SPEC = {
     lightSpillRadius: 32,
     lightSpillOpacity: 0.12,
     nameplateOffset: { x: 0, y: -8 },
-    nameplateFont: 'Space Grotesk',
+    nameplateFont: 'Inter',
     nameplateFontSize: 11,
     nameplateFontWeight: 600,
     zoomLevels: {

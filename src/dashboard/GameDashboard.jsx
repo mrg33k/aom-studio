@@ -3780,9 +3780,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 }}>
                   <div style={{ flex: 1, height: 1, background: 'rgba(100,180,255,0.1)' }} />
                   <span style={{
-                    fontSize: 13, fontWeight: 700, color: '#475569',
-                    textTransform: 'uppercase', letterSpacing: '0.1em',
-                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 11, fontWeight: 700, color: '#475569',
+                    textTransform: 'uppercase', letterSpacing: '0.12em',
+                    fontFamily: "'JetBrains Mono', monospace",
                   }}>TODAY</span>
                   <div style={{ flex: 1, height: 1, background: 'rgba(100,180,255,0.1)' }} />
                 </div>
@@ -3913,20 +3913,20 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         }}>
                           {msg.time && (
                             <span style={{
-                              fontSize: 12, fontWeight: 500, color: '#475569',
-                              fontFamily: "'Inter', sans-serif",
+                              fontSize: 10, fontWeight: 500, color: '#94A3B8',
+                              fontFamily: "'JetBrains Mono', monospace",
                             }}>
                               {formatChatTime(msg.time)}
                             </span>
                           )}
                           {sourceLabel && (
                             <span style={{
-                              fontSize: 12, fontWeight: 600, color: '#3B82F6',
-                              background: 'rgba(59,130,246,0.08)',
-                              border: '1px solid rgba(59,130,246,0.15)',
-                              borderRadius: 4, padding: '1px 6px',
-                              letterSpacing: '0.05em',
-                              fontFamily: "'Inter', sans-serif",
+                              fontSize: 10, fontWeight: 600, color: '#3B82F6',
+                              background: 'rgba(59,130,246,0.06)',
+                              border: '1px solid rgba(59,130,246,0.1)',
+                              borderRadius: 3, padding: '1px 6px',
+                              letterSpacing: '0.06em',
+                              fontFamily: "'JetBrains Mono', monospace",
                             }}>
                               {sourceLabel}
                             </span>
@@ -3937,13 +3937,30 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   </div>
                 )
               })}
-              {/* Timeout ring + typing indicator */}
+              {/* Timeout ring + typing indicator with label */}
               {streaming && (
                 <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '4px 0' }}>
-                  <SpriteAvatar agentSlug={room?.id} size={36} borderColor={agentColor}
+                  <SpriteAvatar agentSlug={room?.id} size={30} borderColor={agentColor}
                     status={status}
                     style={{ flexShrink: 0, boxShadow: `0 0 8px ${agentColor}33`, marginTop: 4 }} />
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 24 }}>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        {[0, 1, 2].map(j => (
+                          <div key={j} style={{
+                            width: 6, height: 6, borderRadius: '50%',
+                            background: agentColor,
+                            animation: `vegasTypingBounce 1.4s ease-in-out ${j * 0.2}s infinite`,
+                          }} />
+                        ))}
+                      </div>
+                      <span style={{
+                        fontSize: 13, color: '#94A3B8', fontStyle: 'italic', fontWeight: 500,
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                      }}>
+                        {agent?.name || 'Agent'} is typing...
+                      </span>
+                    </div>
                     <ChatTimeoutRing
                       streaming={streaming}
                       agentColor={agentColor}
@@ -3989,16 +4006,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 />
                 <button type="submit" disabled={!chatInput?.trim() || streaming} style={{
                   position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                  width: 42, height: 42, borderRadius: '50%',
-                  background: chatInput?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.12)',
+                  width: 38, height: 38, borderRadius: 11,
+                  background: chatInput?.trim() ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' : 'rgba(59,130,246,0.12)',
                   border: chatInput?.trim() ? '2px solid rgba(59,130,246,0.6)' : '2px solid rgba(59,130,246,0.2)',
                   color: '#FFF',
                   cursor: chatInput?.trim() ? 'pointer' : 'default',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: chatInput?.trim() ? '0 0 16px rgba(59,130,246,0.5), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
+                  boxShadow: chatInput?.trim() ? '0 3px 12px rgba(59,130,246,0.3)' : 'none',
                   transition: 'all 150ms ease',
                 }}>
-                  {streaming ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} fill="currentColor" style={{ marginLeft: 2 }} />}
+                  {streaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                 </button>
               </form>
             </div>
