@@ -775,19 +775,23 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 
 // Room hit-target positions mapped to the 1024x1024 full-office image (percentages).
 const IMAGE_ROOM_TARGETS = {
-  patrik:     { x: 22, y: 7,  w: 16, h: 16, labelY: 5  },
-  mom:        { x: 36, y: 7,  w: 16, h: 16, labelY: 5  },
-  alex:       { x: 50, y: 7,  w: 16, h: 16, labelY: 5  },
-  steve:      { x: 64, y: 7,  w: 16, h: 16, labelY: 5  },
-  steffen:    { x: 14, y: 24, w: 16, h: 18, labelY: 22 },
-  'main-hall':{ x: 30, y: 24, w: 30, h: 18, labelY: 22 },
-  jacob:      { x: 60, y: 24, w: 18, h: 18, labelY: 22 },
-  bobby:      { x: 8,  y: 44, w: 16, h: 18, labelY: 42 },
-  colton:     { x: 24, y: 44, w: 16, h: 18, labelY: 42 },
-  cleo:       { x: 40, y: 44, w: 16, h: 18, labelY: 42 },
-  tony:       { x: 56, y: 44, w: 16, h: 18, labelY: 42 },
-  elmo:       { x: 24, y: 64, w: 16, h: 16, labelY: 62 },
-  elon:       { x: 40, y: 64, w: 16, h: 16, labelY: 62 },
+  // Row 0: top row, 4 rooms
+  patrik:     { x: 24, y: 10, w: 14, h: 14, labelY: 7  },
+  mom:        { x: 38, y: 10, w: 14, h: 14, labelY: 7  },
+  alex:       { x: 52, y: 10, w: 14, h: 14, labelY: 7  },
+  steve:      { x: 64, y: 10, w: 14, h: 14, labelY: 7  },
+  // Row 1: steffen left, main-hall center (wide), jacob right
+  steffen:    { x: 16, y: 26, w: 15, h: 16, labelY: 23 },
+  'main-hall':{ x: 31, y: 26, w: 28, h: 16, labelY: 23 },
+  jacob:      { x: 59, y: 26, w: 17, h: 16, labelY: 23 },
+  // Row 2: 4 rooms across lower-front
+  bobby:      { x: 9,  y: 44, w: 15, h: 16, labelY: 41 },
+  colton:     { x: 24, y: 44, w: 15, h: 16, labelY: 41 },
+  cleo:       { x: 39, y: 44, w: 15, h: 16, labelY: 41 },
+  tony:       { x: 54, y: 44, w: 17, h: 16, labelY: 41 },
+  // Row 3: bottom 2 rooms
+  elmo:       { x: 24, y: 62, w: 15, h: 15, labelY: 59 },
+  elon:       { x: 39, y: 62, w: 15, h: 15, labelY: 59 },
 }
 // ---- SINGLE-IMAGE APPROACH: uses full-office-warm-night.png ------
 function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations }) {
