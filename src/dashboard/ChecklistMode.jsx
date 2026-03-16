@@ -19,6 +19,14 @@
 // DONE(bobby2): RIGHT NOW CHECKLIST COLOR = ORANGE/FIRE -- Changed all Right Now colors from green (#3BFF6B / rgba(59,255,107)) to orange (#FF6B3D / rgba(255,107,61)). Matches HUD pill color. Green = done, orange = active sprint. Ref: Patrik feedback line 273.
 // DONE(bobby2): DAYTIME WHITE CHECKLIST RIGHT NOW -- ChecklistMode detects 8pm threshold (same as GameHUD). Right Now section title, task cards, and avatars all flip to light palette in daytime. Ref: Patrik feedback line 274.
 // ==========
+//
+// ========== TASK LIFECYCLE (Pass 27) ==========
+// DONE(bobby2): THREE-TIER TASK LIFECYCLE in checklist view.
+// (1) RIGHT NOW = Real-time active tasks (existing, enhanced). Orange/fire energy, LIVE badges, progress bars.
+// (2) YOUR TODOS = Patrik's personal TODO list. Tasks tagged [Patrik] from punch-list. Red accent, "NEEDS YOU" badge, checkbox energy.
+// (3) CHECKING IN = Stale tasks (blocked/overdue keywords). Gray/amber, muted "STALE" badge, nudge to reassign or close.
+// Sidebar: Right Now > Your TODOs > Checking In > projects. Each with count badge and appropriate styling.
+// ==========
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -26,7 +34,7 @@ import {
   ChevronRight, ChevronDown, Check, Plus, GripVertical,
   LayoutGrid, FolderKanban, Flame, CheckCircle2,
   CheckSquare, Square, Trash2, ArrowUpCircle, ArrowRightCircle, ArrowDownCircle, UserCircle2,
-  Zap,
+  Zap, AlertCircle, History,
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
 
@@ -87,6 +95,8 @@ function parsePunchList(markdown) {
 
   const SECTION_MAP = {
     'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy
+    'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },
+    'CHECKING IN':       { name: 'Checking In', section: 'checking-in', color: '#94A3B8', icon: 'history' },
     'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -198,6 +208,7 @@ function parsePunchList(markdown) {
 // Default recency weights (fallback when conversation data unavailable)
 const DEFAULT_RECENCY_WEIGHTS = {
   'rightnow':   110,
+  'your-todos': 105,
   'today':      100,
   'corner':     95,
   'aom-site':   85,
@@ -488,6 +499,63 @@ function useAutoCheckFromNotifications() {
   return isAutoChecked
 }
 
+// ---- YOUR TODOS: Patrik's personal blocked items from punch-list.md ---------
+function usePatrikTodos(punchData) {
+  return useMemo(() => {
+    if (!punchData?.projects) return []
+    const todos = []
+    for (const project of punchData.projects) {
+      for (const task of project.tasks) {
+        if (task.done) continue
+        const isPatrik = task.agent === 'patrik' ||
+          /\[Patrik\b/i.test(task.raw || '') ||
+          /\bPatrik\s*[-\u2013]/i.test(task.raw || '')
+        if (isPatrik) {
+          todos.push({
+            text: task.text,
+            agent: 'patrik',
+            project: project.name,
+            projectColor: project.color,
+            raw: task.raw,
+            done: false,
+          })
+        }
+      }
+    }
+    return todos
+  }, [punchData])
+}
+
+// ---- CHECKING IN: Stale tasks needing attention -----------------------------
+function useCheckingInTasks(punchData) {
+  return useMemo(() => {
+    if (!punchData?.projects) return []
+    const stale = []
+    const activeSections = new Set(['rightnow', 'today', 'your-todos', 'checking-in'])
+    for (const project of punchData.projects) {
+      if (activeSections.has(project.section)) continue
+      for (const task of project.tasks) {
+        if (task.done) continue
+        const hasBlockedKeyword = /blocked|overdue|behind|zero|waiting|red|urgent/i.test(task.raw || '')
+        const hasRecentKeyword = /shipped|done|live|active|relaunched/i.test(task.raw || '')
+        if (hasRecentKeyword) continue
+        if (hasBlockedKeyword) {
+          stale.push({
+            text: task.text,
+            agent: task.agent,
+            project: project.name,
+            projectColor: project.color,
+            raw: task.raw,
+            done: false,
+            isStale: true,
+          })
+        }
+      }
+    }
+    return stale.slice(0, 6)
+  }, [punchData])
+}
+
 // ---- DATA HOOK for punch-list.md --------------------------------------------
 function usePunchListData() {
   // Production: demo checklist data. Local: fetch from punch-list.md.
@@ -524,7 +592,7 @@ function usePunchListData() {
 }
 
 // ---- PROJECT SIDEBAR (replaces agent sidebar) --------------------------------
-function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, rightNowCount = 0 }) {
+function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, rightNowCount = 0, todosCount = 0, checkingInCount = 0 }) {
   if (isMobile) {
     // Horizontal scroll chips on mobile
     return (
@@ -581,6 +649,62 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               padding: '2px 7px', borderRadius: 8, lineHeight: 1,
             }}>
               {rightNowCount}
+            </span>
+          </button>
+        )}
+
+        {/* Your TODOs chip (mobile) */}
+        {todosCount > 0 && (
+          <button
+            onClick={() => onSelectProject('your-todos')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              height: 40, padding: '0 14px',
+              background: selectedProject === 'your-todos' ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.04)',
+              border: `1.5px solid ${selectedProject === 'your-todos' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.12)'}`,
+              borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+              cursor: 'pointer', scrollSnapAlign: 'start',
+              color: '#EF4444',
+              fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
+              textTransform: 'uppercase',
+            }}
+          >
+            <AlertCircle size={14} color="#EF4444" style={{ filter: 'drop-shadow(0 0 4px rgba(239,68,68,0.5))' }} />
+            TODOs
+            <span style={{
+              fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+              fontSize: 13, color: '#FFF', background: '#EF4444',
+              padding: '2px 7px', borderRadius: 8, lineHeight: 1,
+            }}>
+              {todosCount}
+            </span>
+          </button>
+        )}
+
+        {/* Checking In chip (mobile) */}
+        {checkingInCount > 0 && (
+          <button
+            onClick={() => onSelectProject('checking-in')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              height: 40, padding: '0 14px',
+              background: selectedProject === 'checking-in' ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.04)',
+              border: `1.5px solid ${selectedProject === 'checking-in' ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.1)'}`,
+              borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+              cursor: 'pointer', scrollSnapAlign: 'start',
+              color: '#94A3B8',
+              fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
+              textTransform: 'uppercase',
+            }}
+          >
+            <History size={14} color="#94A3B8" />
+            Check In
+            <span style={{
+              fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+              fontSize: 13, color: '#FFF', background: '#94A3B8',
+              padding: '2px 7px', borderRadius: 8, lineHeight: 1,
+            }}>
+              {checkingInCount}
             </span>
           </button>
         )}
@@ -703,6 +827,73 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               animation: 'rightNowPulse 2s ease-in-out infinite',
             }} />
           </div>
+        </button>
+      )}
+
+      {/* Your TODOs entry (desktop sidebar) */}
+      {todosCount > 0 && (
+        <button
+          onClick={() => onSelectProject('your-todos')}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+            height: 48, padding: selectedProject === 'your-todos' ? '0 13px' : '0 16px',
+            background: selectedProject === 'your-todos' ? 'rgba(239,68,68,0.08)' : 'transparent',
+            border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
+            borderLeftWidth: 3, borderLeftStyle: 'solid',
+            borderLeftColor: selectedProject === 'your-todos' ? '#EF4444' : 'transparent',
+            cursor: 'pointer', transition: 'background 100ms ease',
+            color: '#F0ECE6', fontFamily: "'Inter Tight', system-ui, sans-serif",
+            fontSize: 15, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
+            position: 'relative',
+          }}
+        >
+          <AlertCircle size={16} color="#EF4444" style={{
+            flexShrink: 0,
+            filter: 'drop-shadow(0 0 4px rgba(239,68,68,0.5))',
+            animation: 'todosPulse 2.5s ease-in-out infinite',
+          }} />
+          <span style={{ flex: 1, letterSpacing: '-0.01em', color: '#EF4444' }}>Your TODOs</span>
+          <span style={{
+            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+            fontSize: 13, color: '#FFF', background: '#EF4444',
+            padding: '3px 9px', borderRadius: 8, lineHeight: 1,
+            boxShadow: '0 2px 6px rgba(239,68,68,0.3)',
+            minWidth: 26, textAlign: 'center',
+          }}>
+            {todosCount}
+          </span>
+        </button>
+      )}
+
+      {/* Checking In entry (desktop sidebar) */}
+      {checkingInCount > 0 && (
+        <button
+          onClick={() => onSelectProject('checking-in')}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+            height: 44, padding: selectedProject === 'checking-in' ? '0 13px' : '0 16px',
+            background: selectedProject === 'checking-in' ? 'rgba(148,163,184,0.06)' : 'transparent',
+            border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
+            borderLeftWidth: 3, borderLeftStyle: 'solid',
+            borderLeftColor: selectedProject === 'checking-in' ? '#94A3B8' : 'transparent',
+            cursor: 'pointer', transition: 'background 100ms ease',
+            color: '#8BA4C4', fontFamily: "'Inter Tight', system-ui, sans-serif",
+            fontSize: 14, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
+            opacity: 0.75,
+          }}
+        >
+          <History size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, letterSpacing: '-0.01em' }}>Checking In</span>
+          <span style={{
+            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
+            fontSize: 12, color: '#94A3B8',
+            background: 'rgba(148,163,184,0.10)',
+            padding: '3px 9px', borderRadius: 8, lineHeight: 1,
+            border: '1px solid rgba(148,163,184,0.15)',
+            minWidth: 26, textAlign: 'center',
+          }}>
+            {checkingInCount}
+          </span>
         </button>
       )}
 
@@ -1321,6 +1512,334 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime }) {
   )
 }
 
+// ---- YOUR TODOS TASK CARD (red accent, checkbox energy) ---------------------
+function YourTodoTaskCard({ task, index, isDaytime, onCheck }) {
+  const [isHovered, setIsHovered] = useState(false)
+  const agentInfo = AGENTS.find(a => a.slug === 'patrik') || { name: 'Patrik', color: '#EF4444' }
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 20, scale: 0.95 }}
+      transition={{ duration: 0.18, delay: index * 0.04 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        background: isHovered
+          ? (isDaytime ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.06)')
+          : (isDaytime ? 'rgba(239,68,68,0.03)' : 'rgba(239,68,68,0.02)'),
+        border: `1px solid ${isHovered
+          ? (isDaytime ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.15)')
+          : (isDaytime ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.06)')}`,
+        borderRadius: 12,
+        padding: '12px 16px',
+        marginBottom: 6,
+        cursor: 'default',
+        transition: 'background 120ms ease, border-color 120ms ease',
+        position: 'relative',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        {/* Checkbox */}
+        <button
+          onClick={() => onCheck?.(task)}
+          style={{
+            width: 22, height: 22, flexShrink: 0,
+            border: '2px solid rgba(239,68,68,0.3)',
+            borderRadius: 6,
+            background: task.done ? '#EF4444' : 'transparent',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 200ms ease',
+            marginTop: 1,
+          }}
+        >
+          {task.done && <Check size={14} color="#FFF" strokeWidth={3} />}
+        </button>
+
+        {/* Task text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 500, fontSize: 15,
+            color: task.done ? '#6B7280' : (isDaytime ? '#1E293B' : '#F0ECE6'),
+            lineHeight: 1.35,
+            textDecoration: task.done ? 'line-through' : 'none',
+            opacity: task.done ? 0.6 : 1,
+          }}>
+            {task.text}
+          </div>
+          {/* Source project label */}
+          {task.projectSource && (
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 11,
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              color: task.projectColor || '#6B7280',
+              marginTop: 3, display: 'inline-block',
+            }}>
+              from {task.projectSource}
+            </span>
+          )}
+        </div>
+
+        {/* Needs You badge */}
+        <span style={{
+          fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 10,
+          textTransform: 'uppercase', letterSpacing: '0.12em',
+          color: '#EF4444',
+          background: 'rgba(239,68,68,0.10)',
+          border: '1px solid rgba(239,68,68,0.2)',
+          borderRadius: 4, padding: '3px 8px',
+          display: 'flex', alignItems: 'center', gap: 4,
+          flexShrink: 0,
+          animation: 'todosPulse 2.5s ease-in-out infinite',
+        }}>
+          <AlertCircle size={10} />
+          YOU
+        </span>
+      </div>
+    </motion.div>
+  )
+}
+
+// ---- YOUR TODOS SECTION (Patrik's personal blocked items) -------------------
+function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck }) {
+  if (!tasks || tasks.length === 0) return null
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      {/* Header */}
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '16px 0 10px', marginBottom: 4,
+          background: 'none', border: 'none', cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} />}
+
+        <AlertCircle size={20} color="#EF4444" style={{
+          filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.5))',
+          animation: 'todosPulse 2.5s ease-in-out infinite',
+        }} />
+
+        <span style={{
+          fontFamily: "'Inter Tight', system-ui, sans-serif",
+          fontSize: 22, fontWeight: 900,
+          color: isDaytime ? '#0F172A' : '#EDF2FA',
+          textTransform: 'uppercase',
+          letterSpacing: '-0.02em',
+          flex: 1,
+          textShadow: isDaytime ? 'none' : '0 0 20px rgba(239,68,68,0.2)',
+        }}>
+          Your TODOs
+        </span>
+
+        {/* Count badge */}
+        {tasks.length > 0 && (
+          <span style={{
+            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+            fontSize: 14, color: '#FFF',
+            background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+            padding: '4px 12px', borderRadius: 10, lineHeight: 1,
+            boxShadow: '0 2px 8px rgba(239,68,68,0.4), 0 0 20px rgba(239,68,68,0.15)',
+            minWidth: 28, textAlign: 'center',
+            animation: 'todosPulse 3s ease-in-out infinite',
+          }}>
+            {tasks.length} needs you
+          </span>
+        )}
+      </button>
+
+      {/* Task cards */}
+      {!isCollapsed && (
+        <AnimatePresence>
+          {tasks.map((task, i) => (
+            <YourTodoTaskCard
+              key={`todo-${i}-${task.text?.slice(0,15)}`}
+              task={task}
+              index={i}
+              isDaytime={isDaytime}
+              onCheck={onCheck}
+            />
+          ))}
+        </AnimatePresence>
+      )}
+    </div>
+  )
+}
+
+// ---- CHECKING IN TASK CARD (muted gray/amber, timestamp, stale nudge) -------
+function CheckingInTaskCard({ task, index, isDaytime }) {
+  const [isHovered, setIsHovered] = useState(false)
+  const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
+  const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 20, scale: 0.95 }}
+      transition={{ duration: 0.18, delay: index * 0.04 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        background: isHovered
+          ? (isDaytime ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.05)')
+          : (isDaytime ? 'rgba(148,163,184,0.03)' : 'rgba(148,163,184,0.02)'),
+        border: `1px solid ${isHovered
+          ? (isDaytime ? 'rgba(148,163,184,0.18)' : 'rgba(148,163,184,0.12)')
+          : (isDaytime ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.05)')}`,
+        borderRadius: 12,
+        padding: '12px 16px',
+        marginBottom: 6,
+        cursor: 'default',
+        transition: 'background 120ms ease, border-color 120ms ease',
+        opacity: 0.75,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Agent avatar */}
+        {agentInfo && hasSpr ? (
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%',
+            border: `2px solid ${agentInfo.color}55`,
+            overflow: 'hidden', flexShrink: 0,
+            background: isDaytime ? '#F1F5F9' : '#0A0F1E',
+            opacity: 0.7,
+          }}>
+            <img
+              src={`/corner/sprites/${task.agent}-idle.png`}
+              alt=""
+              style={{
+                width: 46, height: 46,
+                objectFit: 'cover', objectPosition: '20% 8%',
+                imageRendering: 'pixelated', display: 'block',
+                marginLeft: -6, marginTop: -4,
+              }}
+            />
+          </div>
+        ) : agentInfo ? (
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%',
+            border: `2px solid ${agentInfo.color}55`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 12, fontWeight: 700, color: `${agentInfo.color}88`,
+            background: `${agentInfo.color}11`, flexShrink: 0,
+          }}>
+            {agentInfo.name.charAt(0)}
+          </div>
+        ) : null}
+
+        {/* Task text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 15,
+            color: isDaytime ? '#64748B' : '#8BA4C4',
+            lineHeight: 1.35,
+          }}>
+            {task.text}
+          </div>
+          {/* Source project */}
+          {task.projectSource && (
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 11,
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              color: task.projectColor ? `${task.projectColor}88` : '#6B728088',
+              marginTop: 2, display: 'inline-block',
+            }}>
+              {task.projectSource}
+            </span>
+          )}
+        </div>
+
+        {/* Stale badge */}
+        <span style={{
+          fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 10,
+          textTransform: 'uppercase', letterSpacing: '0.12em',
+          color: '#94A3B8',
+          background: 'rgba(148,163,184,0.08)',
+          border: '1px solid rgba(148,163,184,0.15)',
+          borderRadius: 4, padding: '3px 8px',
+          display: 'flex', alignItems: 'center', gap: 4,
+          flexShrink: 0,
+        }}>
+          <History size={10} />
+          STALE
+        </span>
+      </div>
+    </motion.div>
+  )
+}
+
+// ---- CHECKING IN SECTION (stale tasks, muted nudge) -------------------------
+function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime }) {
+  if (!tasks || tasks.length === 0) return null
+
+  return (
+    <div style={{ marginBottom: 12, opacity: 0.85 }}>
+      {/* Header */}
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '16px 0 10px', marginBottom: 4,
+          background: 'none', border: 'none', cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} />}
+
+        <History size={20} color="#94A3B8" style={{
+          filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.3))',
+        }} />
+
+        <span style={{
+          fontFamily: "'Inter Tight', system-ui, sans-serif",
+          fontSize: 20, fontWeight: 800,
+          color: isDaytime ? '#64748B' : '#8BA4C4',
+          textTransform: 'uppercase',
+          letterSpacing: '-0.01em',
+          flex: 1,
+        }}>
+          Checking In
+        </span>
+
+        {/* Count badge - muted */}
+        {tasks.length > 0 && (
+          <span style={{
+            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
+            fontSize: 13, color: '#94A3B8',
+            background: 'rgba(148,163,184,0.10)',
+            padding: '4px 12px', borderRadius: 10, lineHeight: 1,
+            border: '1px solid rgba(148,163,184,0.15)',
+            minWidth: 28, textAlign: 'center',
+          }}>
+            {tasks.length} stale
+          </span>
+        )}
+      </button>
+
+      {/* Task cards */}
+      {!isCollapsed && (
+        <AnimatePresence>
+          {tasks.map((task, i) => (
+            <CheckingInTaskCard
+              key={`stale-${i}-${task.text?.slice(0,15)}`}
+              task={task}
+              index={i}
+              isDaytime={isDaytime}
+            />
+          ))}
+        </AnimatePresence>
+      )}
+    </div>
+  )
+}
+
 // ---- PROJECT GROUP HEADER ---------------------------------------------------
 function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
   const totalTasks = project.tasks.length
@@ -1509,6 +2028,14 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const rightNowTasks = IS_LOCAL ? liveRightNowTasks : generateDemoRightNow()
   const showRightNow = rightNowTasks.length > 0 && (!selectedProject || selectedProject === 'rightnow')
 
+  // Your TODOs: Patrik's personal blocked items
+  const patrikTodos = usePatrikTodos(punchData)
+  const showTodos = patrikTodos.length > 0 && (!selectedProject || selectedProject === 'your-todos')
+
+  // Checking In: stale tasks needing attention
+  const checkingInTasks = useCheckingInTasks(punchData)
+  const showCheckingIn = checkingInTasks.length > 0 && (!selectedProject || selectedProject === 'checking-in')
+
   // Sort projects by conversation-driven recency weight
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
@@ -1528,9 +2055,15 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
       // Right Now always first (live sprint)
       if (a.section === 'rightnow') return -1
       if (b.section === 'rightnow') return 1
-      // Today always second (day's agenda)
+      // Your TODOs always second (Patrik's blocked items)
+      if (a.section === 'your-todos') return -1
+      if (b.section === 'your-todos') return 1
+      // Today always third (day's agenda)
       if (a.section === 'today') return -1
       if (b.section === 'today') return 1
+      // Checking In always last among priority pills
+      if (a.section === 'checking-in' && b.section !== 'checking-in') return 1
+      if (b.section === 'checking-in' && a.section !== 'checking-in') return -1
       const aWeight = weights[a.section] || 10
       const bWeight = weights[b.section] || 10
       if (aWeight !== bWeight) return bWeight - aWeight
@@ -1595,6 +2128,8 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         onSelectProject={setSelectedProject}
         isMobile={isMobile}
         rightNowCount={rightNowTasks.length}
+        todosCount={patrikTodos.length}
+        checkingInCount={checkingInTasks.length}
       />
 
       {/* Task List */}
@@ -1622,7 +2157,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             margin: '0 auto', width: '100%',
           }}>
             {/* Empty state */}
-            {visibleProjects.length === 0 && !showRightNow && <EmptyState />}
+            {visibleProjects.length === 0 && !showRightNow && !showTodos && !showCheckingIn && <EmptyState />}
 
             {/* RIGHT NOW section: pinned first, before Today */}
             {showRightNow && (
@@ -1631,6 +2166,17 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 isCollapsed={collapsedProjects['rightnow-live']}
                 onToggle={() => toggleCollapse('rightnow-live')}
                 isDaytime={isDaytime}
+              />
+            )}
+
+            {/* YOUR TODOS section: Patrik's personal blocked items */}
+            {showTodos && (
+              <YourTodosSection
+                tasks={patrikTodos}
+                isCollapsed={collapsedProjects['your-todos-live']}
+                onToggle={() => toggleCollapse('your-todos-live')}
+                isDaytime={isDaytime}
+                onCheck={handleCheck}
               />
             )}
 
@@ -1741,6 +2287,16 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 </div>
               )
             })}
+
+            {/* CHECKING IN section: stale tasks (at the bottom, muted nudge) */}
+            {showCheckingIn && (
+              <CheckingInSection
+                tasks={checkingInTasks}
+                isCollapsed={collapsedProjects['checking-in-live']}
+                onToggle={() => toggleCollapse('checking-in-live')}
+                isDaytime={isDaytime}
+              />
+            )}
           </div>
         )}
 
@@ -1797,6 +2353,10 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         @keyframes rightNowDotPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.7; }
+        }
+        @keyframes todosPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.65; }
         }
       `}</style>
     </div>

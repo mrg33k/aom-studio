@@ -31,6 +31,15 @@
 // DONE(bobby2): DARK MODE SWITCH AT 8PM -- GameHUD overrides isNightMode prop with own 8pm check (was 9pm in GameDashboard). Ref: Patrik directive.
 // DONE(bobby2): SELECTED PILL CONTRAST FIX -- Expanded pill in daytime now uses dark text (#1E293B) instead of project.color which could be too light. Ref: Patrik feedback line 258, 260.
 // ==========
+//
+// ========== TASK LIFECYCLE (Pass 27) ==========
+// DONE(bobby2): THREE-TIER TASK LIFECYCLE -- Right Now (live), Your TODOs (blocked/Patrik), Checking In (stale).
+// (1) RIGHT NOW = Real-time active tasks. Agents doing work THIS SECOND. Orange/fire energy, LIVE badges, progress bars. Polls 3s.
+// (2) YOUR TODOS = Patrik's personal TODO list. Tasks tagged [Patrik] from punch-list. Red accent, checkbox energy, NEEDS YOU badge.
+// (3) CHECKING IN = Stale tasks (24+ hours, blocked keywords). Gray/amber, muted, STALE badge. Nudge to reassign or close.
+// usePatrikTodos() scans punch-list for [Patrik] tagged items. useCheckingInTasks() finds stale blocked items.
+// Sort order: Right Now > Your TODOs > Today > rest by recency > Checking In last.
+// ==========
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -38,7 +47,7 @@ import {
   ChevronDown, Check, Circle, AlertTriangle,
   Activity, Pause, Eye, Clock, Zap, Users, FolderKanban,
   LayoutGrid, X, Loader2, CheckCircle2, Timer, Flame,
-  Search,
+  Search, AlertCircle, UserCheck, History,
 } from 'lucide-react'
 import { AGENTS, GRID_SPEC } from './gridSpec.js'
 import { HUDBellButton, HUDToasts, HUD_NOTIFICATION_STYLES } from './HUDNotifications.jsx'
@@ -90,6 +99,8 @@ function parsePunchList(markdown) {
   // Section name -> project config mapping
   const SECTION_MAP = {
     'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy. [SURVIVES: HUD data pill.]
+    'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },  // Patrik's personal blocked items
+    'CHECKING IN':       { name: 'Checking In', section: 'checking-in', color: '#94A3B8', icon: 'history' },  // Stale tasks needing attention
     'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -312,6 +323,7 @@ function parsePunchList(markdown) {
 // Fallback weights used when conversation data isn't available.
 const DEFAULT_RECENCY_WEIGHTS = {
   'today':          100,  // Always first
+  'your-todos':     98,   // Patrik's personal TODOs -- right after Today
   'ih':             92,   // $9k payment pending -- RED
   'isa-client':     90,   // Apr 10 deadline -- RED
   'kohrs-client':   88,   // Behind on 10 videos -- RED
@@ -565,6 +577,73 @@ function useAutoCheckFromNotifications() {
   }, [autoChecked])
 
   return isAutoChecked
+}
+
+// ---- YOUR TODOS: Patrik's personal blocked items from punch-list.md ---------
+// Scans ALL tasks for [Patrik] agent tag or "Patrik" in the raw line.
+// These are items only Patrik can unblock. Displayed as a personal TODO list.
+function usePatrikTodos(punchData) {
+  return useMemo(() => {
+    if (!punchData?.projects) return []
+    const todos = []
+    for (const project of punchData.projects) {
+      for (const task of project.tasks) {
+        if (task.done) continue
+        // Match tasks assigned to Patrik: [Patrik], [Patrik --], or containing "Patrik" as owner
+        const isPatrik = task.agent === 'patrik' ||
+          /\[Patrik\b/i.test(task.raw || '') ||
+          /\bPatrik\s*[-\u2013]/i.test(task.raw || '')
+        if (isPatrik) {
+          todos.push({
+            text: task.text,
+            agent: 'patrik',
+            project: project.name,
+            projectColor: project.color,
+            raw: task.raw,
+            done: false,
+          })
+        }
+      }
+    }
+    return todos
+  }, [punchData])
+}
+
+// ---- CHECKING IN: Stale tasks with no recent activity -----------------------
+// Tasks that haven't had movement in a while. Nudge to reassign or close.
+// Uses notification timestamps to detect staleness (24+ hours without updates).
+function useCheckingInTasks(punchData) {
+  return useMemo(() => {
+    if (!punchData?.projects) return []
+    const stale = []
+    // Tasks from "THIS WEEK" or other non-today sections that aren't done
+    // and are not in "rightnow" or "today" (those are active by definition)
+    const activeSections = new Set(['rightnow', 'today', 'your-todos', 'checking-in'])
+    for (const project of punchData.projects) {
+      if (activeSections.has(project.section)) continue
+      for (const task of project.tasks) {
+        if (task.done) continue
+        // Skip tasks that are clearly recent (e.g., just shipped or active agents)
+        const hasBlockedKeyword = /blocked|overdue|behind|zero|waiting|red|urgent/i.test(task.raw || '')
+        const hasRecentKeyword = /shipped|done|live|active|relaunched/i.test(task.raw || '')
+        if (hasRecentKeyword) continue
+        // Items that smell stale: blocked keywords, no recent activity words
+        if (hasBlockedKeyword) {
+          stale.push({
+            text: task.text,
+            agent: task.agent,
+            project: project.name,
+            projectColor: project.color,
+            raw: task.raw,
+            done: false,
+            isStale: true,
+          })
+        }
+      }
+    }
+    // Limit to 6 most relevant stale items
+    return stale.slice(0, 6)
+  }, [punchData])
 }
 
 // ---- SIMS PLUMBOB SVG CLIP PATH (the iconic diamond shape) ------------------
@@ -1089,6 +1168,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
   const remaining = totalTasks - doneTasks
   const isToday = project.section === 'today'
   const isRightNow = project.section === 'rightnow'
+  const isTodoList = project.section === 'your-todos'
+  const isCheckingIn = project.section === 'checking-in'
   const hasLiveTasks = isRightNow && project.tasks.some(t => t.isLive)
   const isClient = project.isClient
   const allDone = remaining === 0 && totalTasks > 0
@@ -1162,20 +1243,24 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         boxShadow: `0 0 8px ${project.color}44`,
       }} />
 
-      {/* Side accent for Right Now, Today, or RED clients - THICKER */}
-      {(isRightNow || isToday || (isClient && project.statusTag === 'RED')) && (
+      {/* Side accent for Right Now, Today, Your TODOs, or RED clients - THICKER */}
+      {(isRightNow || isToday || isTodoList || (isClient && project.statusTag === 'RED')) && (
         <div style={{
           position: 'absolute', left: 0, top: 6, bottom: 6,
           width: 4, borderRadius: 2,
-          background: isRightNow ? project.color : isToday ? project.color : '#EF4444',
-          boxShadow: `0 0 12px ${(isRightNow || isToday) ? project.color : 'rgba(239,68,68,0.6)'}88`,
-          animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isClient && project.statusTag === 'RED') ? 'statusPulse 2s ease-in-out infinite' : 'none',
+          background: isTodoList ? '#EF4444' : isRightNow ? project.color : isToday ? project.color : '#EF4444',
+          boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isToday) ? project.color : 'rgba(239,68,68,0.6)'}88`,
+          animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
         }} />
       )}
 
-      {/* Project indicator - BIGGER. $ icon for clients. Zap for Right Now. */}
+      {/* Project indicator - BIGGER. Icons per section type. */}
       {isRightNow ? (
         <Zap size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+      ) : isTodoList ? (
+        <AlertCircle size={18} color="#EF4444" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.6))' }} />
+      ) : isCheckingIn ? (
+        <History size={18} color="#94A3B8" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.4))' }} />
       ) : isToday ? (
         <Flame size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isClient ? (
@@ -1234,6 +1319,45 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
             animation: 'statusPulse 1.5s ease-in-out infinite',
           }} />
           LIVE
+        </span>
+      )}
+
+      {/* NEEDS YOU badge for Your TODOs pill */}
+      {isTodoList && remaining > 0 && (
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 11, fontWeight: 800,
+          color: '#EF4444',
+          background: 'rgba(239,68,68,0.10)',
+          padding: '3px 8px', borderRadius: 6,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          border: '1.5px solid rgba(239,68,68,0.25)',
+          whiteSpace: 'nowrap',
+          animation: 'statusPulse 2.5s ease-in-out infinite',
+        }}>
+          <AlertCircle size={10} />
+          NEEDS YOU
+        </span>
+      )}
+
+      {/* STALE badge for Checking In pill */}
+      {isCheckingIn && remaining > 0 && (
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 11, fontWeight: 700,
+          color: '#94A3B8',
+          background: 'rgba(148,163,184,0.08)',
+          padding: '3px 8px', borderRadius: 6,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          border: '1.5px solid rgba(148,163,184,0.2)',
+          whiteSpace: 'nowrap',
+        }}>
+          <History size={10} />
+          STALE
         </span>
       )}
 
@@ -1657,11 +1781,15 @@ export default function GameHUD({
   const conversationScores = useConversationRecency()
   const liveRightNowTasks = useRightNowLiveTasks()
   const isAutoChecked = useAutoCheckFromNotifications()
+  const patrikTodos = usePatrikTodos(punchData)
+  const checkingInTasks = useCheckingInTasks(punchData)
 
   // Sort projects by CONVERSATION RECENCY first, then incomplete task count.
   // The system KNOWS what matters based on what you TALK ABOUT.
   // Uses live conversation parsing on localhost, falls back to defaults on production.
   // Right Now pill is LIVE: merges agent-notifications.md tasks with punch-list.md "RIGHT NOW" section.
+  // Your TODOs pill: Patrik's personal blocked items (things only he can unblock).
+  // Checking In pill: stale tasks that haven't had movement in 24+ hours.
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
 
@@ -1695,6 +1823,53 @@ export default function GameHUD({
       }
     }
 
+    // YOUR TODOS: Patrik's personal blocked items (things only he can unblock)
+    // Creates a synthetic "Your TODOs" pill from punch-list tasks tagged [Patrik]
+    if (patrikTodos.length > 0) {
+      const existingTodos = merged.find(p => p.section === 'your-todos')
+      if (!existingTodos) {
+        merged.push({
+          name: 'Your TODOs',
+          section: 'your-todos',
+          color: '#EF4444',
+          icon: 'user-check',
+          tasks: patrikTodos.map(t => ({
+            text: t.text,
+            done: false,
+            agent: 'patrik',
+            raw: t.raw,
+            projectSource: t.project,
+            projectColor: t.projectColor,
+          })),
+          isTodoList: true,
+        })
+      }
+    }
+
+    // CHECKING IN: Stale tasks that haven't had movement
+    // Subtle nudge for tasks that need attention
+    if (checkingInTasks.length > 0) {
+      const existingStale = merged.find(p => p.section === 'checking-in')
+      if (!existingStale) {
+        merged.push({
+          name: 'Checking In',
+          section: 'checking-in',
+          color: '#94A3B8',
+          icon: 'history',
+          tasks: checkingInTasks.map(t => ({
+            text: t.text,
+            done: false,
+            agent: t.agent,
+            raw: t.raw,
+            projectSource: t.project,
+            projectColor: t.projectColor,
+            isStale: true,
+          })),
+          isCheckingIn: true,
+        })
+      }
+    }
+
     // LIVE TASK AUTO-CHECK: mark tasks as done if they match TASK FINISHED notifications
     // This is optimistic UI: the checkbox appears checked before punch-list.md is updated on disk.
     for (const project of merged) {
@@ -1707,14 +1882,20 @@ export default function GameHUD({
     }
 
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
-    // Right Now always first, Today always second
+    // Sort order: Right Now > Your TODOs > Today > rest by recency weight
     return [...merged].sort((a, b) => {
       // Right Now is always first (live sprint)
       if (a.section === 'rightnow') return -1
       if (b.section === 'rightnow') return 1
-      // Today is always second (day's agenda)
+      // Your TODOs always second (Patrik's personal blocked items)
+      if (a.section === 'your-todos') return -1
+      if (b.section === 'your-todos') return 1
+      // Today always third (day's agenda)
       if (a.section === 'today') return -1
       if (b.section === 'today') return 1
+      // Checking In always last among priority pills (stale nudges)
+      if (a.section === 'checking-in' && b.section !== 'checking-in') return 1
+      if (b.section === 'checking-in' && a.section !== 'checking-in') return -1
       // Primary: conversation-driven weight (higher = first)
       const aWeight = weights[a.section] || 10
       const bWeight = weights[b.section] || 10
@@ -1726,7 +1907,7 @@ export default function GameHUD({
       // Tertiary: total tasks
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, liveRightNowTasks, isAutoChecked])
+  }, [punchData, conversationScores, liveRightNowTasks, isAutoChecked, patrikTodos, checkingInTasks])
 
   // Filter projects by search query
   const filteredProjects = useMemo(() => {
