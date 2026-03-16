@@ -1063,6 +1063,11 @@ const ZOOM_PRESETS = [0.7, 1.6] // overview, detail -- only two levels, snap bet
 // The diamond shape matches where rooms visually appear in isometric perspective.
 const DIAMOND_CLIP = 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
 const DIAMOND_CLIP_WIDE = 'polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%)' // slightly inset for wide rooms like main-hall
+// TODO(bobby): Map feels blind -- "we need a way to understand the map and the clicking. its like were blind." Four fixes needed:
+// (1) HOVER GLOW: When mouse enters a room's diamond, show a visible glowing highlight (not the current subtle radial-gradient). Use a bright border or outline that pulses. Think SimCity hover state -- you always know what's clickable.
+// (2) DIAMOND OUTLINES: Render faint diamond border outlines on ALL rooms at rest (not just on hover). ~1px rgba white or agent-color line along the clip-path edges so rooms are always distinguishable from each other on the map.
+// (3) NAME LABELS: Agent name text labels should be visible on rooms WITHOUT hovering. Currently nameplates are small PNGs. Add a readable text label (agent name, 12-14px, high contrast) anchored below or inside each room that's always visible at overview zoom. Labels hide only at max detail zoom when sprites are large enough.
+// (4) CLICKABLE AREA HIGHLIGHT: On hover, the entire diamond target area should light up (semi-transparent color fill + border glow). Current hover is too subtle (agentColor at 20% opacity). Increase to 40-50% with a visible 2px border in agent color.
 const IMAGE_ROOM_TARGETS = {
   // Row 0: top row, 4 rooms (back wall of building, smaller due to perspective)
   patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
@@ -1508,12 +1513,14 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   zIndex: (isHovered || isSelected) ? 5 : 2,
                   clipPath: target.clipPath || 'none',
                   WebkitClipPath: target.clipPath || 'none',
+                  // TODO(bobby): MAP BLIND FIX -- hover glow too subtle. Increase agentColor opacity from 20 to 40-50. Add visible 2px border in agentColor on hover. At REST (not hovered), render a faint 1px diamond outline so rooms are always distinguishable.
                   background: (isHovered || isSelected) && hasAgent
                     ? `radial-gradient(ellipse, ${agentColor}20 0%, transparent 70%)`
                     : 'transparent',
                   boxShadow: (isHovered || isSelected) && hasAgent
                     ? `0 0 24px ${agentColor}30, inset 0 0 40px ${agentColor}10`
                     : 'none',
+                  // TODO(bobby): MAP BLIND FIX -- add border here: at rest = `1px solid rgba(255,255,255,0.15)`, on hover = `2px solid ${agentColor}80`. Diamond outline always visible.
                   transition: 'background 200ms ease, box-shadow 200ms ease',
                 }}
               >
