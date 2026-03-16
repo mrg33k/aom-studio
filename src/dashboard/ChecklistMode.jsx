@@ -215,21 +215,89 @@ function useConversationRecency() {
   return scores
 }
 
+// ---- DEMO CHECKLIST DATA (production: Garcia Construction tasks) -------------
+function generateDemoChecklist() {
+  return {
+    projects: [
+      {
+        name: 'Today', section: 'today', color: '#FF6B3D', icon: 'flame',
+        tasks: [
+          { text: 'Review Garcia Construction homepage final proof', done: false, agent: 'patrik' },
+          { text: 'Confirm Ridgeline Homes proposal sent ($8.5k)', done: true, agent: 'patrik' },
+          { text: 'Approve social media templates from Steffen', done: true, agent: 'patrik' },
+          { text: 'Reply to Mesa Commercial Group inquiry', done: false, agent: 'patrik' },
+          { text: 'Check permit tracker page after Bobby fix', done: false, agent: 'elmo' },
+        ],
+      },
+      {
+        name: 'Garcia Construction', section: 'corner', color: '#3B9EFF', icon: 'project',
+        tasks: [
+          { text: 'Homepage redesign deployed to production', done: true, agent: 'bobby' },
+          { text: 'Brand guide v2 with updated color palette', done: true, agent: 'steffen' },
+          { text: 'Permit tracker dashboard page', done: false, agent: 'bobby' },
+          { text: 'Social media content calendar (March)', done: true, agent: 'tony' },
+          { text: '3 project walkthrough reels for Instagram', done: true, agent: 'cleo' },
+          { text: 'QA pass on all new pages', done: false, agent: 'elmo' },
+          { text: 'Client health scan and satisfaction check-in', done: true, agent: 'paige' },
+        ],
+      },
+      {
+        name: 'Ridgeline Homes', section: 'ambition', color: '#F59E0B', icon: 'project',
+        tasks: [
+          { text: 'Proposal drafted and sent ($8.5k annual)', done: true, agent: 'alex' },
+          { text: 'Discovery call scheduled (Thursday 2pm)', done: true, agent: 'jacob' },
+          { text: 'Permit tracker page initial build', done: false, agent: 'bobby' },
+          { text: 'Prepare case study from Garcia engagement', done: false, agent: 'steve' },
+        ],
+      },
+      {
+        name: 'Outreach', section: 'outreach', color: '#EF4444', icon: 'project',
+        tasks: [
+          { text: '15 personalized emails to Phoenix GCs', done: false, agent: 'jacob' },
+          { text: '30-day outreach plan finalized', done: true, agent: 'alex' },
+          { text: 'LinkedIn carousel posted: "5 Signs Your GC Needs AI"', done: true, agent: 'tony' },
+          { text: 'Follow up with Mesa Commercial Group', done: false, agent: 'jacob' },
+        ],
+      },
+      {
+        name: 'Advisory', section: 'gtm', color: '#7C9A72', icon: 'project',
+        tasks: [
+          { text: 'ROI calculator for construction vertical', done: false, agent: 'steve' },
+          { text: 'AI readiness framework v2 published', done: true, agent: 'steve' },
+          { text: 'Audit onboarding flow design', done: false, agent: 'steffen' },
+        ],
+      },
+      {
+        name: 'Infra', section: 'infra', color: '#4CAF50', icon: 'project',
+        tasks: [
+          { text: 'Relay polling optimized (15s to 5s)', done: true, agent: 'elon' },
+          { text: 'System health monitoring active', done: true, agent: 'elon' },
+          { text: 'Shared nav + footer components shipped', done: true, agent: 'colton' },
+        ],
+      },
+    ],
+    todayTasks: [
+      { text: 'Review Garcia Construction homepage final proof', done: false, agent: 'patrik', project: 'Today' },
+      { text: 'Reply to Mesa Commercial Group inquiry', done: false, agent: 'patrik', project: 'Today' },
+      { text: 'Check permit tracker page after Bobby fix', done: false, agent: 'elmo', project: 'Today' },
+    ],
+  }
+}
+
 // ---- DATA HOOK for punch-list.md --------------------------------------------
 function usePunchListData() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // Production: demo checklist data. Local: fetch from punch-list.md.
+  const demoData = IS_LOCAL ? null : generateDemoChecklist()
+  const [data, setData] = useState(demoData)
+  const [loading, setLoading] = useState(IS_LOCAL)
 
   const fetchData = useCallback(async () => {
+    if (!IS_LOCAL) return // Production uses demo data
     try {
-      const endpoint = IS_LOCAL
-        ? '/api/local/file?path=punch-list.md'
-        : '/api/dashboard/status'
-      const res = await fetch(endpoint)
+      const res = await fetch('/api/local/file?path=punch-list.md')
       if (!res.ok) throw new Error(`${res.status}`)
       const json = await res.json()
-
-      if (IS_LOCAL && json.content) {
+      if (json.content) {
         setData(parsePunchList(json.content))
       } else {
         setData(null)
@@ -242,8 +310,9 @@ function usePunchListData() {
   }, [])
 
   useEffect(() => {
+    if (!IS_LOCAL) return
     fetchData()
-    const timer = setInterval(fetchData, IS_LOCAL ? 5000 : 60000)
+    const timer = setInterval(fetchData, 5000)
     return () => clearInterval(timer)
   }, [fetchData])
 
