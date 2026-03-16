@@ -299,6 +299,7 @@ function azTime() {
 }
 
 // ---- PASSWORD GATE ---------------------------------------------------------
+// TODO(steffen-design): Password gate visual polish -- first impression for clients. Consider: Corner logo/icon above title, subtle background animation (stars or building silhouette), loading state after submit. Current is functional but needs brand energy.
 function PasswordGate({ onAuth }) {
   const [pw, setPw] = useState('')
   const [shake, setShake] = useState(false)
@@ -853,7 +854,7 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
     <g>
       <rect x={roomW / 2 - 30} y={-18} width={60} height={16} rx={4} fill={PALETTE.nameplate.background} stroke={PALETTE.nameplate.border} strokeWidth={1} />
       <circle cx={roomW / 2 - 18} cy={-10} r={3} fill={dotColor} />
-      <text x={roomW / 2 - 10} y={-7} fill={PALETTE.nameplate.text} fontSize={13} fontWeight={600} fontFamily="Space Grotesk, sans-serif">{room.agent}</text>
+      <text x={roomW / 2 - 10} y={-7} fill={PALETTE.nameplate.text} fontSize={13} fontWeight={600} fontFamily="Inter, system-ui, sans-serif">{room.agent}</text>
     </g>
   )
 }
@@ -863,9 +864,8 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // No individual room tiles = no double walls. The north star IS the background.
 // Interactive click targets, nameplates, and status dots overlay on top.
 // C4: Crossy Road bounce energy, viewport-filling, wave animation on load.
-// TODO(patrik): Time-of-day office image -- bright daytime (office-full.png) should be the DEFAULT. Switch to night (office-full-night.png) at 9pm local time. Steffen has daytime Crossy Road target at visual-target/crossy-road-style/office-full.png. Currently hardcoded to night only.
-// TODO(steffen): Create/finalize production-ready daytime office-full.png for Corner (Crossy Road voxel style). Steffen's existing daytime target has blue sky, green grass, clouds, warm pastel rooms. Needs to be pixel-matched to office-full-night.png dimensions so Bobby can swap them with JS time check.
-// TODO(bobby): Implement time-of-day swap logic -- check user's local time, load office-full.png (daytime, default) before 9pm and office-full-night.png after 9pm. Could also add golden-hour transition. Image src is at line ~1121.
+// DONE(bobby2): Time-of-day swap IMPLEMENTED (commit 4e101fc). Uses full-office-warm-night.png (daytime) before 9pm, office-full-night.png after 9pm. Checks every 60s.
+// TODO(steffen): Create production-ready bright daytime office-full.png (blue sky, green grass, Crossy Road style). Current "daytime" uses full-office-warm-night.png as a stand-in. When true daytime asset is ready, update officeImage path in IsometricOffice.
 
 // Room hit-target positions mapped to the Crossy Road voxel office image (percentages).
 // RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
@@ -1684,69 +1684,6 @@ function NotificationToast({ notifications, onDismiss, onClickNotification, queu
           +{queuedCount} more
         </div>
       )}
-    </div>
-  )
-}
-
-// ---- MODE SWITCHER (center of HUD bar) - Steffen c3-mode-switcher-spec -----
-function ModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
-  const [hoveredMode, setHoveredMode] = useState(null)
-  const modeList = [MODES.game, MODES.checklist, MODES.megaboard]
-
-  if (isMobile) {
-    // Mobile: bottom tab bar (rendered separately, not here)
-    return null
-  }
-
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 0, position: 'relative', height: 48,
-    }}>
-      {modeList.map(mode => {
-        const active = currentMode === mode.id
-        const Icon = mode.icon
-        const isHovered = hoveredMode === mode.id
-        return (
-          <motion.button
-            key={mode.id}
-            onClick={() => onModeSwitch(mode.id)}
-            onMouseEnter={() => setHoveredMode(mode.id)}
-            onMouseLeave={() => setHoveredMode(null)}
-            whileHover={{ y: -2, transition: { type: 'spring', stiffness: 500, damping: 15 } }}
-            whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '0 18px', height: 52,
-              background: 'none', border: 'none',
-              borderBottom: active ? '3px solid #E85D26' : '3px solid transparent',
-              cursor: 'pointer',
-              color: active ? '#FDF6EC' : isHovered ? '#A0A0A0' : '#6B7280',
-              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14,
-              fontWeight: active ? 800 : 600,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-              transition: 'color 150ms ease',
-              position: 'relative',
-            }}
-          >
-            <Icon size={16} style={{ color: active ? '#E85D26' : 'inherit' }} />
-            {mode.label}
-
-            {/* Keyboard shortcut hint on hover */}
-            {isHovered && !active && (
-              <span style={{
-                position: 'absolute', top: 6, right: 4,
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 3, padding: '1px 4px',
-                fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 12,
-                color: '#6B7280',
-              }}>
-                {mode.key}
-              </span>
-            )}
-          </motion.button>
-        )
-      })}
     </div>
   )
 }
@@ -3556,7 +3493,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     display: 'flex', gap: 5, alignItems: 'center',
                     background: `${agentColor}08`,
                     border: `2px solid ${agentColor}15`,
-                    borderRadius: 14, padding: '12px 18px',
+                    borderRadius: 12, padding: '12px 18px',
                     borderTopLeftRadius: 4,
                   }}>
                     {[0, 1, 2].map(j => (
@@ -3593,7 +3530,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     width: '100%',
                     background: 'rgba(59,130,246,0.06)',
                     border: '2px solid rgba(59,130,246,0.2)',
-                    borderRadius: 14,
+                    borderRadius: 12,
                     padding: '14px 56px 14px 18px',
                     fontSize: 18, fontWeight: 400,
                     fontFamily: "'Inter', system-ui, sans-serif",
@@ -4455,6 +4392,30 @@ export default function GameDashboard() {
                 streamingAgent={streamingAgent}
               />
 
+              {/* SimCity floating stats overlay (bottom-left of game viewport) */}
+              {!isMobile && (
+                <div style={{
+                  position: 'absolute', bottom: 16, left: 16, zIndex: 10,
+                  background: 'rgba(15,27,45,0.8)',
+                  border: '1px solid rgba(59,130,246,0.15)',
+                  borderRadius: 8,
+                  padding: '6px 12px',
+                  display: 'flex', gap: 12, alignItems: 'center',
+                  backdropFilter: 'blur(8px)',
+                  pointerEvents: 'none',
+                  opacity: cameraZoom > 2.5 ? 0 : 1,
+                  transition: 'opacity 300ms ease',
+                }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#22C55E', fontFamily: "'Inter', system-ui, sans-serif" }}>
+                    {Object.values(agentStatus).filter(a => a?.status === 'WORKING').length} Active
+                  </span>
+                  <span style={{ color: 'rgba(59,130,246,0.3)' }}>|</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#EF4444', fontFamily: "'Inter', system-ui, sans-serif" }}>
+                    {Object.values(agentStatus).filter(a => a?.status === 'BLOCKED').length} Blocked
+                  </span>
+                </div>
+              )}
+
               {/* Camera controls (floating, right side of game viewport) */}
               <CameraControls
                 cameraZoom={cameraZoom}
@@ -4530,6 +4491,7 @@ export default function GameDashboard() {
 
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
           {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. */}
+          {/* TODO(steffen-design): Mobile bottom-sheet drawer UX -- design the swipe-up drawer for mobile. Should show: agent name/status at peek height, chat on half-pull, full panel on full-pull. Reference Steffen's c3-mobile-layout-spec.md. The notification cards currently overlap the bottom bar on mobile. */}
           {!isMobile && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
             <UnifiedPanel
               key={selectedRoom}
