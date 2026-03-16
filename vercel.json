@@ -28,6 +28,8 @@
     { "source": "/case-study", "destination": "/index.html" },
     { "source": "/corner", "destination": "/index.html" },
     { "source": "/dashboard/agent/:slug", "destination": "/index.html" },
+    { "source": "/dashboard/chat", "destination": "/index.html" },
+    { "source": "/dashboard/chat/agent/:slug", "destination": "/index.html" },
     { "source": "/dashboard/v1", "destination": "/index.html" }
   ]
 }

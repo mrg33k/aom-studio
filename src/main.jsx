@@ -38,6 +38,7 @@ import './index.css'
 
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
 const ChatDashboard = lazy(() => import('./dashboard/ChatDashboard.jsx'))
+const GameDashboard = lazy(() => import('./dashboard/GameDashboard.jsx'))
 
 function ConstructionRedirect() {
   const navigate = useNavigate()
@@ -99,8 +100,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/case-study" element={<CaseStudy />} />
           <Route path="/book" element={<BookAudit />} />
           <Route path="/corner" element={<Corner />} />
-          <Route path="/dashboard" element={<ChatDashboard />} />
-          <Route path="/dashboard/agent/:slug" element={<ChatDashboard />} />
+          <Route path="/dashboard" element={<GameDashboard />} />
+          <Route path="/dashboard/agent/:slug" element={<GameDashboard />} />
+          <Route path="/dashboard/chat" element={<ChatDashboard />} />
+          <Route path="/dashboard/chat/agent/:slug" element={<ChatDashboard />} />
           <Route path="/dashboard/v1" element={<DashboardV2 />} />
         </Routes>
       </Suspense>
