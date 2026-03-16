@@ -1933,6 +1933,7 @@ function ShortcutsOverlay({ onClose }) {
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
 function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode, onModeSwitch, detailLevel }) {
   const [tab, setTab] = useState('session')
+  const [topSearchOpen, setTopSearchOpen] = useState(false)
   const tabs = [
     { id: 'session', label: 'Last Session', icon: Clock },
     { id: 'project', label: 'By Project', icon: FolderKanban },
@@ -1943,6 +1944,19 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
   // Active underline color: agent color or default orange
   const activeAgent = selectedAgent ? AGENTS.find(a => a.slug === selectedAgent) : null
   const underlineColor = activeAgent?.color || '#E85D26'
+  const agentColor = activeAgent?.color || '#9C27B0'
+  const agentName = activeAgent?.name || 'Elon'
+
+  // Agent status from data
+  const agentStatusFromData = data?.agents?.find(a => a.slug === selectedAgent)
+  const agentStatusLabel = agentStatusFromData?.status || 'IDLE'
+  const statusColorMap = { WORKING: '#22C55E', BLOCKED: '#EF4444', DONE: '#3B82F6', WAITING: '#F59E0B', PAUSED: '#F97316', IDLE: '#6B7280' }
+  const agentStatusColor = statusColorMap[agentStatusLabel] || '#6B7280'
+
+  // Compute top-level stats
+  const topWorkingCount = (data?.agents || []).filter(a => a.status === 'WORKING').length
+  const topBlockedCount = (data?.agents || []).filter(a => a.status === 'BLOCKED').length
+  const topDoneCount = (data?.agents || []).filter(a => a.status === 'DONE').length
 
   // Hide HUD drawer toggle in Checklist mode (Checklist IS the task view)
   const showDrawer = currentMode !== 'checklist'
@@ -1951,53 +1965,168 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
     }}>
-      {/* Collapsed bar: 48px (36px at detail zoom per Steffen spec) */}
+      {/* Top HUD bar (matches top-hud-clean.png) */}
       <div style={{
-        height: detailLevel === 'detail' && currentMode === 'game' ? 40 : (isMobile ? 48 : 54),
+        height: detailLevel === 'detail' && currentMode === 'game' ? 40 : (isMobile ? 48 : 56),
         transition: 'height 200ms ease',
-        background: currentMode === 'megaboard' ? 'rgba(5, 8, 15, 0.95)' : 'rgba(10, 15, 30, 0.85)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 20px',
+        background: 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(59,130,246,0.15)',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.4)',
+        display: 'flex', alignItems: 'center',
+        padding: '0 24px',
+        gap: 16,
       }}>
-        {/* Left: CORNER logo + mode badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 20, color: PALETTE.signText, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            CORNER
-          </span>
-          <span style={{ color: '#E85D26', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 20 }}>.</span>
-          {IS_LOCAL && (
-            <span style={{
-              fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-              color: '#4CAF50', background: 'rgba(76,175,80,0.1)',
-              padding: '2px 6px', borderRadius: 3, letterSpacing: '0.1em',
-              border: '1px solid rgba(76,175,80,0.2)',
-            }}>LOCAL</span>
-          )}
-          {/* Connection type indicator */}
-          {CONNECTION_TYPE === 'websocket' && (
-            <span style={{
-              fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-              color: '#3B82F6', background: 'rgba(59,130,246,0.1)',
-              padding: '2px 6px', borderRadius: 3, letterSpacing: '0.1em',
-              border: '1px solid rgba(59,130,246,0.2)',
-            }}>WS</span>
-          )}
+        {/* Corner. logo */}
+        <div style={{
+          fontSize: 22, fontWeight: 900, color: '#F1F5F9',
+          fontFamily: "'Inter', system-ui, sans-serif",
+          letterSpacing: '0.01em', flexShrink: 0,
+        }}>
+          Corner<span style={{ color: '#3B82F6' }}>.</span>
         </div>
 
-        {/* Right: Expand chevron (only if drawer is available) */}
-        {showDrawer ? (
+        {/* LOCAL badge */}
+        {IS_LOCAL && (
+          <span style={{
+            fontSize: 10, fontWeight: 700,
+            color: '#22C55E',
+            background: 'rgba(34,197,94,0.1)',
+            border: '1px solid rgba(34,197,94,0.2)',
+            borderRadius: 4, padding: '2px 6px',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+            fontFamily: "'Inter', sans-serif",
+            flexShrink: 0,
+          }}>LOCAL</span>
+        )}
+
+        {/* Agent portrait (selected agent in sidebar) */}
+        {!isMobile && selectedAgent && (
+          <>
+            <SpriteAvatar agentSlug={selectedAgent} size={40} borderColor={agentColor}
+              style={{
+                boxShadow: `0 0 12px ${agentColor}30`,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{
+              fontSize: 16, fontWeight: 700, color: '#F1F5F9',
+              fontFamily: "'Inter', sans-serif",
+              flexShrink: 0,
+            }}>
+              {agentName}
+            </span>
+            <span style={{
+              fontSize: 11, fontWeight: 700,
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              color: agentStatusColor,
+              background: `${agentStatusColor}15`,
+              border: `1px solid ${agentStatusColor}25`,
+              padding: '2px 8px', borderRadius: 6,
+              fontFamily: "'Inter', sans-serif",
+              flexShrink: 0,
+            }}>
+              {agentStatusLabel === 'WORKING' ? 'ACTIVE' : agentStatusLabel}
+            </span>
+          </>
+        )}
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Stat pills (Active / Blocked / Done) */}
+        {!isMobile && (
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {[
+              { dot: 'green', count: topWorkingCount, label: 'Active' },
+              { dot: 'orange', count: topBlockedCount, label: 'Blocked' },
+              { dot: 'blue', count: topDoneCount, label: 'Done' },
+            ].map(pill => (
+              <div key={pill.label} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: '#162236',
+                border: '2px solid #1E3A5F',
+                borderRadius: 12, padding: '6px 14px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              }}>
+                <div style={{
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: pill.dot === 'green' ? '#22C55E' : pill.dot === 'orange' ? '#F59E0B' : '#3B82F6',
+                  boxShadow: `0 0 6px ${pill.dot === 'green' ? '#22C55E' : pill.dot === 'orange' ? '#F59E0B' : '#3B82F6'}`,
+                }} />
+                <span style={{
+                  fontSize: 20, fontWeight: 900, color: '#60A5FA',
+                  fontVariantNumeric: 'tabular-nums',
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  {pill.count}
+                </span>
+                <span style={{
+                  fontSize: 14, fontWeight: 600, color: '#94A3B8',
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  {pill.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Search */}
+        {!isMobile && (
+          <input type="text" placeholder="Search agents..."
+            style={{
+              width: 200,
+              background: 'rgba(59,130,246,0.06)',
+              border: '2px solid rgba(59,130,246,0.12)',
+              borderRadius: 10, padding: '8px 14px',
+              fontSize: 14,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              color: '#64748B', outline: 'none',
+              flexShrink: 0,
+            }}
+            readOnly
+          />
+        )}
+
+        {/* Notification bell */}
+        {!isMobile && (
+          <div style={{
+            width: 40, height: 40,
+            background: '#162236',
+            border: '2px solid #1E3A5F',
+            borderRadius: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, color: '#94A3B8',
+            position: 'relative', flexShrink: 0,
+            cursor: 'pointer',
+          }}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <div style={{
+              position: 'absolute', top: -4, right: -4,
+              width: 18, height: 18, borderRadius: '50%',
+              background: '#EF4444',
+              color: 'white', fontSize: 10, fontWeight: 800,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '2px solid #0F1B2D',
+              boxShadow: '0 0 6px rgba(239,68,68,0.4)',
+              fontFamily: "'Inter', sans-serif",
+            }}>4</div>
+          </div>
+        )}
+
+        {/* Expand chevron (only if drawer is available) */}
+        {showDrawer && (
           <button onClick={onToggle}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, transition: 'color 150ms' }}
-            onMouseEnter={e => e.target.style.color = PALETTE.signText}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, transition: 'color 150ms', flexShrink: 0 }}
+            onMouseEnter={e => e.target.style.color = '#F1F5F9'}
             onMouseLeave={e => e.target.style.color = '#6B7280'}
           >
             <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms ease' }} />
           </button>
-        ) : (
-          <div style={{ width: 24 }} /> // Spacer
         )}
       </div>
 
@@ -2873,10 +3002,10 @@ function PanelSkeleton({ agentColor }) {
   )
 }
 
-// ---- UNIFIED RIGHT PANEL (Agent card + stats + chat + tasks + modes) --------
-// Patrik UX overhaul v2: Game is ALWAYS the main viewport.
-// Sidebar contains: Chat, Tasks, Info, Checklist, Megaboard as tabs.
-// "Extend" button widens sidebar to 65% for detailed views.
+// ---- UNIFIED RIGHT PANEL (Vegas sidebar - Steffen visual target match) ------
+// Matches: vegas-sidebar-isolated.png, chat-view-full.png
+// Blue glass sidebar. 64px avatar, status dot, quick stats pills, tab bar with glow.
+// Chat: avatars on both sides, source label pills, system notification inline, typing dots.
 function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
@@ -2899,196 +3028,244 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   // Working agents count
   const workingCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'WORKING').length
   const blockedCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
+  const doneCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'DONE').length
+  const totalAgents = Object.keys(allAgentStatus || {}).length || 13
+  const overallProgress = totalAgents > 0 ? Math.round(((workingCount + doneCount) / totalAgents) * 100) : 0
+
+  // Format chat timestamp to HH:MM AM/PM
+  const formatChatTime = (dateStr) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    if (isNaN(d)) return ''
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  }
+
+  // Format source label for display
+  const formatSource = (source) => {
+    if (!source) return null
+    const s = source.toLowerCase().replace(/^via\s+/, '')
+    if (s === 'dashboard' || s === 'corner-dashboard') return 'VIA DASHBOARD'
+    if (s === 'telegram') return 'VIA TELEGRAM'
+    if (s === 'terminal' || s === 'cli') return 'VIA TERMINAL'
+    if (s.startsWith('via ')) return s.toUpperCase()
+    return `VIA ${s.toUpperCase()}`
+  }
+
+  // Detect system notifications (commits, completions) in messages
+  const isSystemNotification = (msg) => {
+    if (!msg.content) return false
+    const c = msg.content.toLowerCase()
+    return c.includes('committed ') || c.includes('commit ') || (c.includes('pushed') && c.includes('commit'))
+  }
 
   return (
     <div
       style={{
-        flex: isExtended ? '0 0 65vw' : '0 0 30%',
-        width: isExtended ? '65vw' : '30%',
-        minWidth: 320,
+        flex: isExtended ? '0 0 65vw' : '0 0 400px',
+        width: isExtended ? '65vw' : 400,
+        minWidth: 380,
         flexShrink: 0,
         height: '100%',
-        background: 'linear-gradient(180deg, rgba(6, 12, 28, 0.98) 0%, rgba(8, 16, 36, 0.97) 50%, rgba(6, 12, 28, 0.98) 100%)',
-        borderLeft: '2px solid rgba(59, 158, 255, 0.35)',
+        background: 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)',
+        borderLeft: '2px solid rgba(59, 130, 246, 0.25)',
         display: 'flex', flexDirection: 'column',
-        boxShadow: '-12px 0 60px rgba(0,0,0,0.5), -2px 0 20px rgba(59,158,255,0.08), inset 1px 0 0 rgba(100,180,255,0.06)',
+        boxShadow: '-6px 0 30px rgba(0,0,0,0.6), -1px 0 0 rgba(59,130,246,0.1)',
         transition: 'width 250ms ease',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      {/* ---- AGENT CARD + STATS (top section) ---- */}
+      {/* Ambient glow at top */}
       <div style={{
-        padding: '18px 20px 14px',
-        borderBottom: '2px solid rgba(59,158,255,0.18)',
+        position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)',
+        width: 300, height: 120,
+        background: 'radial-gradient(ellipse, rgba(59,130,246,0.08) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* ---- AGENT CARD (chunky, game-scale, 64px avatar) ---- */}
+      <div style={{
+        padding: '20px 24px',
+        background: 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%)',
+        borderBottom: '2px solid rgba(59,130,246,0.15)',
         flexShrink: 0,
-        background: 'linear-gradient(180deg, rgba(59,158,255,0.06) 0%, transparent 100%)',
+        display: 'flex', alignItems: 'center', gap: 16,
       }}>
-        {/* Agent identity row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <SpriteAvatar agentSlug={room?.id} size={48} borderColor={agentColor} />
-          <div style={{ flex: 1 }}>
-            <div style={{
-              color: PALETTE.signText, fontSize: 22, fontWeight: 900,
-              fontFamily: "'Inter Tight', sans-serif", letterSpacing: '-0.02em',
-            }}>
-              {agent?.name || room?.agent}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-              <span style={{
-                color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
-                textTransform: 'uppercase', letterSpacing: '0.1em',
-              }}>
-                {agent?.role || room?.role}
-              </span>
-              <span style={{
-                fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 12,
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-                color: cfg.color, background: cfg.bg,
-                padding: '3px 10px', borderRadius: 4,
-              }}>
-                {cfg.label}
-              </span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {/* Extend/collapse toggle */}
-            <button onClick={onToggleExtend} title={isExtended ? 'Collapse panel' : 'Expand panel'}
-              style={{
-                background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
-                borderRadius: 6, cursor: 'pointer', color: isExtended ? '#E85D26' : '#6B7280', padding: 6,
-                transition: 'all 150ms ease',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
-            >
-              {isExtended ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Current task */}
-        <div style={{
-          marginTop: 12, padding: '12px 16px',
-          background: 'linear-gradient(135deg, rgba(59,158,255,0.06) 0%, rgba(59,158,255,0.02) 100%)',
-          border: '2px solid rgba(59,158,255,0.15)',
-          borderRadius: 10,
-          boxShadow: 'inset 0 1px 0 rgba(100,180,255,0.06)',
-        }}>
+        {/* 64px avatar with agent color ring + status dot */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <SpriteAvatar agentSlug={room?.id} size={64} borderColor={agentColor}
+            status={status}
+            style={{
+              borderWidth: 3,
+              boxShadow: `0 0 20px ${agentColor}30, 0 0 40px ${agentColor}10`,
+            }}
+          />
+          {/* Status dot (bottom-right, large) */}
           <div style={{
-            color: '#F0ECE6', fontSize: 15, lineHeight: 1.45,
-            fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontWeight: 600,
+            position: 'absolute', bottom: 0, right: 0,
+            width: 18, height: 18, borderRadius: '50%',
+            background: cfg.color,
+            border: '3px solid #0F1B2D',
+            boxShadow: `0 0 8px ${cfg.color}`,
+          }} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            color: '#F1F5F9', fontSize: 22, fontWeight: 900,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            letterSpacing: '0.01em', lineHeight: 1.1,
           }}>
-            {task}
+            {agent?.name || room?.agent}
+          </div>
+          <div style={{
+            color: agentColor, fontSize: 16, fontWeight: 600,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            marginTop: 2,
+          }}>
+            {agent?.role || room?.role}
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+            <span style={{
+              fontSize: 14, fontWeight: 700, color: '#94A3B8',
+              fontFamily: "'Inter', system-ui, sans-serif",
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}>
+              <span style={{ fontSize: 18, fontWeight: 900, color: '#22C55E', fontVariantNumeric: 'tabular-nums' }}>
+                {agentStatus?.buildCount || workingCount || 0}
+              </span>
+              builds
+            </span>
+            <span style={{
+              fontSize: 14, fontWeight: 700, color: '#94A3B8',
+              fontFamily: "'Inter', system-ui, sans-serif",
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}>
+              <span style={{ fontSize: 18, fontWeight: 900, color: '#60A5FA', fontVariantNumeric: 'tabular-nums' }}>
+                {agentStatus?.taskCount || 0}
+              </span>
+              tasks
+            </span>
           </div>
         </div>
 
-        {/* Stats row */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 16, marginTop: 12,
-          fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.4)' }} />
-            <span style={{ color: '#22C55E' }}>{workingCount} active</span>
-          </div>
-          {blockedCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444' }} />
-              <span style={{ color: '#EF4444' }}>{blockedCount} blocked</span>
-            </div>
-          )}
-          {agentStatus?.lastCompletion && (
-            <span style={{ color: '#6B7280', fontSize: 12, marginLeft: 'auto' }}>
-              Last: {agentStatus.lastCompletion.date}
-            </span>
-          )}
-        </div>
+        {/* Extend/collapse */}
+        <button onClick={onToggleExtend} title={isExtended ? 'Collapse panel' : 'Expand panel'}
+          style={{
+            background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
+            borderRadius: 6, cursor: 'pointer', color: isExtended ? '#E85D26' : '#6B7280', padding: 6,
+            transition: 'all 150ms ease', flexShrink: 0,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
+        >
+          {isExtended ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+        </button>
       </div>
 
-      {/* ---- TAB SWITCHER (Chat / Tasks / Info / Checklist / Megaboard) ---- */}
-      {/* VEGAS ENERGY: bold, glowing, game-scale tabs with spring animation */}
+      {/* ---- QUICK STATS PILLS (4 pills: Active, Blocked, Done, Progress) ---- */}
       <div style={{
-        display: 'flex', borderBottom: '2px solid rgba(59,158,255,0.18)',
-        flexShrink: 0, overflowX: 'auto',
-        background: 'rgba(8,16,36,0.6)',
-        padding: '0 4px',
+        display: 'flex', gap: 8,
+        padding: '10px 24px',
+        borderBottom: '2px solid rgba(59,130,246,0.08)',
+        background: 'rgba(59,130,246,0.02)',
+        flexShrink: 0,
       }}>
         {[
-          { id: 'chat', label: 'Chat', icon: MessageSquare, key: '1' },
-          { id: 'tasks', label: 'Tasks', icon: ListTodo },
-          { id: 'info', label: 'Info', icon: Activity },
-          { id: 'checklist', label: 'Checklist', icon: ListTodo, key: '2' },
-          { id: 'megaboard', label: 'Board', icon: LayoutDashboard, key: '3' },
+          { label: 'ACTIVE', value: workingCount, color: '#22C55E' },
+          { label: 'BLOCKED', value: blockedCount, color: '#EF4444' },
+          { label: 'DONE', value: doneCount, color: '#60A5FA' },
+          { label: 'PROGRESS', value: `${overallProgress}`, suffix: '%', color: '#F1F5F9' },
+        ].map(stat => (
+          <div key={stat.label} style={{
+            flex: 1,
+            background: '#162236',
+            border: '2px solid #1E3A5F',
+            borderRadius: 10,
+            padding: '8px 12px',
+            textAlign: 'center',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{
+              fontSize: 22, fontWeight: 900, color: stat.color,
+              fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}>
+              {stat.value}{stat.suffix && <span style={{ fontSize: 14, color: '#64748B' }}>{stat.suffix}</span>}
+            </div>
+            <div style={{
+              fontSize: 11, fontWeight: 700, color: '#64748B',
+              textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2,
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}>
+              {stat.label}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ---- TAB BAR (Vegas glow tabs: Chat / Tasks / Info / List / Board) ---- */}
+      <div style={{
+        display: 'flex',
+        borderBottom: '2px solid rgba(59,130,246,0.12)',
+        flexShrink: 0,
+        position: 'relative',
+      }}>
+        {[
+          { id: 'chat', label: 'CHAT', key: '1' },
+          { id: 'tasks', label: 'TASKS' },
+          { id: 'info', label: 'INFO' },
+          { id: 'checklist', label: 'LIST', key: '2' },
+          { id: 'megaboard', label: 'BOARD', key: '3' },
         ].map(tab => {
           const active = activeTab === tab.id
-          const TabIcon = tab.icon
           return (
             <motion.button
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id)
-                // Auto-extend for Checklist and Megaboard views
                 if ((tab.id === 'checklist' || tab.id === 'megaboard') && !isExtended) {
                   onToggleExtend?.()
                 }
               }}
-              whileHover={{
-                y: -2,
-                transition: { type: 'spring', stiffness: 500, damping: 12 }
-              }}
-              whileTap={{
-                scale: 0.92, y: 2,
-                transition: { type: 'spring', stiffness: 600, damping: 18 }
-              }}
+              whileHover={{ y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+              whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
               style={{
-                flex: isExtended ? 'none' : 1,
-                padding: isExtended ? '0 18px' : '0 4px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                height: 48, background: active ? 'linear-gradient(180deg, rgba(59,158,255,0.12) 0%, rgba(59,158,255,0.04) 100%)' : 'none',
-                border: 'none', borderRadius: '8px 8px 0 0',
+                flex: 1, textAlign: 'center',
+                padding: '14px 0',
+                fontSize: 16, fontWeight: 900,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: active ? '#F1F5F9' : '#475569',
                 cursor: 'pointer',
-                color: active ? '#EDF2FA' : '#5A7A9A',
-                fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
-                fontSize: 16, fontWeight: active ? 900 : 700,
-                textTransform: 'uppercase', letterSpacing: '0.05em',
                 position: 'relative',
-                transition: 'color 150ms ease',
-                whiteSpace: 'nowrap',
-                textShadow: active ? '0 0 12px rgba(59,158,255,0.4)' : 'none',
+                background: 'none', border: 'none',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                transition: 'color 200ms',
               }}
             >
-              {/* Active tab glow bar */}
+              {/* Active tab glow background */}
+              {active && (
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0, height: '100%',
+                  background: 'linear-gradient(180deg, transparent 0%, rgba(59,130,246,0.06) 100%)',
+                  pointerEvents: 'none',
+                }} />
+              )}
+              {/* Active tab blue bar */}
               {active && (
                 <motion.div
-                  layoutId="panel-tab-glow"
+                  layoutId="vegas-tab-glow"
                   style={{
-                    position: 'absolute', bottom: 0, left: 6, right: 6,
-                    height: 3, borderRadius: 2,
-                    background: '#3B9EFF',
-                    boxShadow: '0 0 12px rgba(59,158,255,0.5), 0 0 4px rgba(59,158,255,0.3)',
+                    position: 'absolute', bottom: -2, left: 8, right: 8,
+                    height: 3, borderRadius: '3px 3px 0 0',
+                    background: '#3B82F6',
+                    boxShadow: '0 0 12px rgba(59,130,246,0.6), 0 0 24px rgba(59,130,246,0.2)',
                   }}
                   transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 />
               )}
-              <TabIcon size={16} style={{
-                color: active ? '#3B9EFF' : 'inherit',
-                filter: active ? 'drop-shadow(0 0 4px rgba(59,158,255,0.4))' : 'none',
-              }} />
-              {tab.label}
-              {/* Keyboard shortcut badge */}
-              {tab.key && (
-                <span style={{
-                  marginLeft: 2,
-                  background: active ? 'rgba(59,158,255,0.15)' : 'rgba(100,180,255,0.06)',
-                  border: `1px solid ${active ? 'rgba(59,158,255,0.3)' : 'rgba(100,180,255,0.1)'}`,
-                  borderRadius: 4, padding: '1px 5px',
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontWeight: 600, fontSize: 11,
-                  color: active ? '#3B9EFF' : '#4A6080',
-                  lineHeight: 1.3,
-                }}>
-                  {tab.key}
-                </span>
-              )}
+              <span style={{ position: 'relative', zIndex: 1 }}>{tab.label}</span>
             </motion.button>
           )
         })}
@@ -3096,117 +3273,238 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
       {/* ---- TAB CONTENT ---- */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* CHAT TAB */}
+        {/* CHAT TAB (matches chat-view-full.png) */}
         {activeTab === 'chat' && (
           <>
-            {/* Messages */}
+            {/* Messages area */}
             <div ref={messagesContainerRef} style={{
-              flex: 1, overflowY: 'auto', padding: '12px 16px',
+              flex: 1, overflowY: 'auto', padding: '16px 20px',
+              display: 'flex', flexDirection: 'column', gap: 14,
             }}>
               {(!chatMessages || chatMessages.length === 0) && (
                 <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   justifyContent: 'center', height: '100%', gap: 10, padding: '24px 0',
                 }}>
-                  <SpriteAvatar agentSlug={room?.id} size={44} borderColor={agentColor} />
-                  <div style={{ color: '#EDF2FA', fontSize: 14, fontWeight: 600, fontFamily: "'Inter Tight', sans-serif" }}>
+                  <SpriteAvatar agentSlug={room?.id} size={48} borderColor={agentColor} />
+                  <div style={{ color: '#F1F5F9', fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
                     {agent?.name || 'Agent'}
                   </div>
-                  <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', textAlign: 'center' }}>
-                    Full relay conversation. Terminal + Telegram + Dashboard all in one view.
-                  </div>
-                  <div style={{ color: '#4A6080', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                    Unified Relay
+                  <div style={{ color: '#64748B', fontSize: 14, fontFamily: "'Inter', sans-serif", textAlign: 'center' }}>
+                    Real relay chat. Terminal + Telegram + Dashboard.
                   </div>
                 </div>
               )}
               {chatMessages && chatMessages.map((msg, i) => {
                 const isUser = msg.role === 'user'
+                const sourceLabel = formatSource(msg.source)
+                const isNotif = !isUser && isSystemNotification(msg)
+
+                // System notification inline (commit messages, etc.)
+                if (isNotif && !msg.streaming) {
+                  return (
+                    <div key={msg.id || i} style={{
+                      margin: '4px 0',
+                      background: 'rgba(34,197,94,0.06)',
+                      border: '1px solid rgba(34,197,94,0.15)',
+                      borderLeft: '3px solid #22C55E',
+                      borderRadius: 10,
+                      padding: '8px 14px',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                    }}>
+                      <div style={{
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: '#22C55E', boxShadow: '0 0 6px #22C55E',
+                        flexShrink: 0,
+                      }} />
+                      <span style={{
+                        fontSize: 14, fontWeight: 600, color: '#94A3B8',
+                        fontFamily: "'Inter', sans-serif", flex: 1,
+                      }}>
+                        <strong style={{ color: agentColor, fontWeight: 800 }}>{agent?.name || 'Agent'}</strong> {msg.content}
+                      </span>
+                      {msg.time && (
+                        <span style={{ fontSize: 12, color: '#475569', whiteSpace: 'nowrap', fontFamily: "'Inter', sans-serif" }}>
+                          {formatChatTime(msg.time)}
+                        </span>
+                      )}
+                    </div>
+                  )
+                }
+
                 return (
                   <div key={msg.id || i} style={{
-                    display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start',
-                    marginBottom: 10,
+                    display: 'flex', gap: 10, alignItems: 'flex-start',
+                    flexDirection: isUser ? 'row-reverse' : 'row',
                   }}>
-                    {!isUser && (
-                      <SpriteAvatar agentSlug={room?.id} size={22} borderColor={agentColor}
-                        style={{ marginRight: 8, marginBottom: 14, flexShrink: 0 }} />
-                    )}
-                    <div style={{ maxWidth: '80%' }}>
-                      {/* Source label for all messages */}
-                      {msg.source && (
-                        <div style={{
-                          fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
-                          color: isUser ? 'rgba(232,93,38,0.5)' : 'rgba(100,180,255,0.4)',
-                          marginBottom: 3, textAlign: isUser ? 'right' : 'left',
-                          textTransform: 'uppercase', letterSpacing: '0.08em',
-                        }}>
-                          {msg.source}
-                          {msg.targetAgent && ` to ${msg.targetAgent}`}
-                        </div>
-                      )}
+                    {/* Avatar */}
+                    {isUser ? (
                       <div style={{
-                        padding: '8px 12px', fontSize: 13,
-                        fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.5,
+                        width: 36, height: 36, borderRadius: '50%',
+                        border: '2px solid #3B82F6',
+                        background: '#0F1B2D',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 800, color: '#3B82F6',
+                        flexShrink: 0,
+                        boxShadow: '0 0 8px rgba(59,130,246,0.2)',
+                      }}>
+                        P
+                      </div>
+                    ) : (
+                      <SpriteAvatar agentSlug={room?.id} size={36} borderColor={agentColor}
+                        status={status}
+                        style={{
+                          flexShrink: 0,
+                          boxShadow: `0 0 8px ${agentColor}33`,
+                        }}
+                      />
+                    )}
+
+                    {/* Message content */}
+                    <div style={{ maxWidth: 290 }}>
+                      <div style={{
+                        padding: '10px 14px',
+                        borderRadius: 14,
+                        fontSize: 16, fontWeight: 500, lineHeight: 1.4,
+                        fontFamily: "'Inter', system-ui, sans-serif",
                         ...(isUser
-                          ? { background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.20)', borderRadius: '12px 4px 12px 12px', color: '#F5F0EB' }
-                          : { background: 'rgba(100,180,255,0.06)', border: `1px solid ${msg.streaming ? agentColor + '30' : 'rgba(100,180,255,0.08)'}`, borderRadius: '4px 12px 12px 12px', color: '#F0ECE6' }
+                          ? {
+                              background: 'rgba(59,130,246,0.1)',
+                              border: '2px solid rgba(59,130,246,0.2)',
+                              color: '#F1F5F9',
+                              borderTopRightRadius: 4,
+                            }
+                          : {
+                              background: `${agentColor}10`,
+                              border: `2px solid ${msg.streaming ? agentColor + '30' : agentColor + '20'}`,
+                              color: '#F1F5F9',
+                              borderTopLeftRadius: 4,
+                            }
                         ),
                       }}>
                         {msg.content && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
                         {msg.streaming && !msg.content && (
-                          <div style={{ display: 'flex', gap: 5, padding: '4px 0' }}>
+                          <div style={{ display: 'flex', gap: 5, padding: '4px 0', alignItems: 'center' }}>
                             {[0, 1, 2].map(j => (
-                              <div key={j} style={{ width: 6, height: 6, borderRadius: '50%', background: agentColor, animation: `chatTypingDot 1.2s ease-in-out ${j * 0.15}s infinite` }} />
+                              <div key={j} style={{
+                                width: 8, height: 8, borderRadius: '50%',
+                                background: agentColor,
+                                opacity: j === 0 ? 0.9 : j === 1 ? 0.55 : 0.25,
+                                animation: `vegasTypingBounce 1.4s ease-in-out ${j * 0.2}s infinite`,
+                              }} />
                             ))}
                           </div>
                         )}
                       </div>
-                      {/* Timestamp */}
-                      {msg.time && !msg.streaming && (
+                      {/* Meta row: timestamp + source pill */}
+                      {!msg.streaming && (
                         <div style={{
-                          fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
-                          color: 'rgba(107,114,128,0.5)', marginTop: 3,
-                          textAlign: isUser ? 'right' : 'left',
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          marginTop: 4, padding: '0 4px',
+                          flexDirection: isUser ? 'row-reverse' : 'row',
                         }}>
-                          {timeAgo(msg.time)}
+                          {msg.time && (
+                            <span style={{
+                              fontSize: 12, fontWeight: 500, color: '#475569',
+                              fontFamily: "'Inter', sans-serif",
+                            }}>
+                              {formatChatTime(msg.time)}
+                            </span>
+                          )}
+                          {sourceLabel && (
+                            <span style={{
+                              fontSize: 11, fontWeight: 600, color: '#3B82F6',
+                              background: 'rgba(59,130,246,0.08)',
+                              border: '1px solid rgba(59,130,246,0.15)',
+                              borderRadius: 4, padding: '1px 6px',
+                              letterSpacing: '0.05em',
+                              fontFamily: "'Inter', sans-serif",
+                            }}>
+                              {sourceLabel}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
                 )
               })}
+              {/* Typing indicator row */}
+              {streaming && (
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 0' }}>
+                  <SpriteAvatar agentSlug={room?.id} size={36} borderColor={agentColor}
+                    style={{ flexShrink: 0, boxShadow: `0 0 8px ${agentColor}33` }} />
+                  <div style={{
+                    display: 'flex', gap: 5, alignItems: 'center',
+                    background: `${agentColor}08`,
+                    border: `2px solid ${agentColor}15`,
+                    borderRadius: 14, padding: '12px 18px',
+                    borderTopLeftRadius: 4,
+                  }}>
+                    {[0, 1, 2].map(j => (
+                      <div key={j} style={{
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: agentColor,
+                        opacity: j === 0 ? 0.9 : j === 1 ? 0.55 : 0.25,
+                        animation: `vegasTypingBounce 1.4s ease-in-out ${j * 0.2}s infinite`,
+                      }} />
+                    ))}
+                  </div>
+                  <span style={{
+                    fontSize: 13, fontWeight: 600, color: '#64748B',
+                    fontFamily: "'Inter', sans-serif", marginLeft: 4,
+                  }}>
+                    {agent?.name} is typing...
+                  </span>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
-            {/* Chat input */}
-            <form onSubmit={onSendMessage} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 14px', borderTop: '1px solid rgba(100,180,255,0.08)',
-              flexShrink: 0, background: 'rgba(0,0,0,0.15)',
+            {/* Chat input (matches vegas-sidebar-isolated.png) */}
+            <div style={{
+              padding: '16px 20px',
+              borderTop: '2px solid rgba(59,130,246,0.12)',
+              background: 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)',
+              flexShrink: 0,
             }}>
-              <input type="text" value={chatInput || ''} onChange={e => onChatInputChange?.(e.target.value)}
-                placeholder={`Message ${agent?.name || 'agent'}...`} disabled={streaming}
-                style={{
-                  flex: 1, background: 'rgba(100,180,255,0.04)',
-                  border: '1px solid rgba(100,180,255,0.10)', borderRadius: 8,
-                  height: 36, padding: '0 12px', color: '#F5F0EB',
-                  fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', outline: 'none',
-                  transition: 'border-color 200ms ease',
-                }}
-                onFocus={e => e.target.style.borderColor = `${agentColor}66`}
-                onBlur={e => e.target.style.borderColor = 'rgba(100,180,255,0.10)'}
-              />
-              <button type="submit" disabled={!chatInput?.trim() || streaming} style={{
-                width: 34, height: 34, borderRadius: '50%',
-                background: chatInput?.trim() ? agentColor : 'rgba(100,180,255,0.06)',
-                color: '#FFF', border: 'none',
-                cursor: chatInput?.trim() ? 'pointer' : 'default',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                opacity: streaming ? 0.5 : chatInput?.trim() ? 1 : 0.3,
-                transition: 'all 150ms ease',
-              }}>
-                {streaming ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} style={{ marginLeft: 1 }} />}
-              </button>
-            </form>
+              <form onSubmit={onSendMessage} style={{ position: 'relative' }}>
+                <input type="text" value={chatInput || ''} onChange={e => onChatInputChange?.(e.target.value)}
+                  placeholder={`Talk to ${agent?.name || 'agent'}...`} disabled={streaming}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(59,130,246,0.06)',
+                    border: '2px solid rgba(59,130,246,0.2)',
+                    borderRadius: 14,
+                    padding: '14px 56px 14px 18px',
+                    fontSize: 18, fontWeight: 500,
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    color: '#F1F5F9',
+                    outline: 'none',
+                    transition: 'border-color 200ms ease, box-shadow 200ms ease',
+                  }}
+                  onFocus={e => {
+                    e.target.style.borderColor = `rgba(59,130,246,0.45)`
+                    e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)'
+                  }}
+                  onBlur={e => {
+                    e.target.style.borderColor = 'rgba(59,130,246,0.2)'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                />
+                <button type="submit" disabled={!chatInput?.trim() || streaming} style={{
+                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                  width: 40, height: 40, borderRadius: 12,
+                  background: chatInput?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.15)',
+                  color: '#FFF', border: 'none',
+                  cursor: chatInput?.trim() ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: chatInput?.trim() ? '0 0 12px rgba(59,130,246,0.4), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
+                  transition: 'all 150ms ease',
+                }}>
+                  {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} style={{ marginLeft: 1 }} />}
+                </button>
+              </form>
+            </div>
           </>
         )}
 
@@ -4001,8 +4299,8 @@ export default function GameDashboard() {
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
-          {/* GAME VIEWPORT: 70% width, sidebar gets 30% */}
-            <div style={{ flex: '0 0 70%', width: '70%', position: 'relative', overflow: 'hidden' }}>
+          {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               <IsometricOffice
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}
@@ -4475,6 +4773,11 @@ export default function GameDashboard() {
         @keyframes chatTypingDot {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
           30% { transform: translateY(-4px); opacity: 1; }
+        }
+        @keyframes vegasTypingBounce {
+          0%, 100% { transform: translateY(0); }
+          30% { transform: translateY(-5px); }
+          60% { transform: translateY(0); }
         }
         @keyframes chatBadgePulse { 0%, 100% { box-shadow: 0 4px 20px rgba(232,93,38,0.4), 0 0 0 2px rgba(232,93,38,0.2); } 50% { box-shadow: 0 4px 24px rgba(232,93,38,0.6), 0 0 0 4px rgba(232,93,38,0.15); } }
         @keyframes chatCursorBlink {
