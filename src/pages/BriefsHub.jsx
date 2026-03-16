@@ -188,7 +188,7 @@ function BriefItem({ item }) {
             <span className="font-mono text-sm text-[#7C9A72]">
               {item.agent}
             </span>
-            <span className="font-mono text-sm text-[#7C9A72]/50 w-[60px] text-right">
+            <span className="font-mono text-[13px] font-semibold text-[#A8A29E]/70 min-w-[80px] text-right tabular-nums" title={item.date}>
               {item.date}
             </span>
           </div>
@@ -228,7 +228,7 @@ function BriefItem({ item }) {
           <span className="font-mono text-xs text-[#7C9A72]">
             {item.agent}
           </span>
-          <span className="font-mono text-xs text-[#7C9A72]/50">
+          <span className="font-mono text-xs font-semibold text-[#A8A29E]/70 tabular-nums">
             {item.date}
           </span>
         </div>

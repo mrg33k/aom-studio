@@ -212,7 +212,7 @@ function PlumbobClipDef({ id, size }) {
 // ---- AGENT PORTRAIT (Sims plumbob shape, 42px, with status ring) ------------
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
-function AgentPortrait({ slug, size = 42, status = 'IDLE', onClick, showName = false, index = 0 }) {
+function AgentPortrait({ slug, size = 56, status = 'IDLE', onClick, showName = false, index = 0 }) {
   const agent = AGENTS.find(a => a.slug === slug)
   const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
   const color = agent?.color || '#6B5E52'
@@ -372,7 +372,7 @@ function AgentRoster({ agentStatus, onAgentClick }) {
         <AgentPortrait
           key={agent.slug}
           slug={agent.slug}
-          size={42}
+          size={56}
           status={agentStatus?.[agent.slug]?.status || 'IDLE'}
           onClick={onAgentClick}
           index={i}
@@ -397,15 +397,15 @@ function ProjectCard({ project, isExpanded, onClick }) {
       whileHover={{ scale: 1.06, y: -3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
       whileTap={{ scale: 0.93, y: 1, transition: { type: 'spring', stiffness: 600, damping: 20 } }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        height: 28, padding: '0 10px',
+        display: 'flex', alignItems: 'center', gap: 8,
+        height: 36, padding: '0 14px',
         background: isExpanded
           ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
           : isToday
             ? 'rgba(232, 93, 38, 0.06)'
             : 'rgba(255,255,255,0.025)',
         border: `1px solid ${isExpanded ? `${project.color}45` : isToday ? 'rgba(232, 93, 38, 0.15)' : 'rgba(255,183,77,0.06)'}`,
-        borderRadius: 5,
+        borderRadius: 6,
         cursor: 'pointer',
         flexShrink: 0,
         position: 'relative',
@@ -445,11 +445,12 @@ function ProjectCard({ project, isExpanded, onClick }) {
 
       {/* Name */}
       <span style={{
-        fontFamily: 'Space Grotesk, sans-serif',
-        fontSize: 11, fontWeight: isToday ? 700 : 600,
+        fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+        fontSize: 14, fontWeight: isToday ? 800 : 700,
         color: isExpanded ? HUD.textPrimary : isToday ? '#F0ECE6' : HUD.textSecondary,
         whiteSpace: 'nowrap',
-        letterSpacing: '0.01em',
+        letterSpacing: '-0.01em',
+        textTransform: 'uppercase',
       }}>
         {project.name}
       </span>
@@ -458,10 +459,10 @@ function ProjectCard({ project, isExpanded, onClick }) {
       {remaining > 0 && (
         <span style={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 9, fontWeight: 700,
+          fontSize: 11, fontWeight: 800,
           color: project.color,
-          background: `${project.color}12`,
-          padding: '1px 5px', borderRadius: 3,
+          background: `${project.color}15`,
+          padding: '2px 7px', borderRadius: 4,
           letterSpacing: '0.02em',
           lineHeight: 1,
         }}>
@@ -528,13 +529,15 @@ function TaskPanel({ project, onClose }) {
             boxShadow: `0 0 10px ${project.color}44`,
           }} />
           <span style={{
-            fontFamily: 'Space Grotesk, sans-serif', fontSize: 15, fontWeight: 700,
+            fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 800,
             color: HUD.textPrimary,
+            textTransform: 'uppercase',
+            letterSpacing: '-0.02em',
           }}>
             {project.name}
           </span>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 500,
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 600,
             color: HUD.textMuted,
           }}>
             {doneTasks}/{totalTasks}
@@ -612,8 +615,8 @@ function TaskPanel({ project, onClose }) {
 
             {/* Task text */}
             <span style={{
-              fontFamily: 'Space Grotesk, sans-serif', fontSize: 13, fontWeight: 400,
-              color: task.done ? HUD.textMuted : HUD.textSecondary,
+              fontFamily: 'Space Grotesk, sans-serif', fontSize: 15, fontWeight: 400,
+              color: task.done ? HUD.textMuted : HUD.textPrimary,
               lineHeight: 1.45,
               textDecoration: task.done ? 'line-through' : 'none',
               flex: 1,
@@ -670,37 +673,37 @@ function CompactStats({ agentStatus, throughput, overallProgress }) {
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 600,
+      display: 'flex', alignItems: 'center', gap: 10,
+      fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
       letterSpacing: '0.02em',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 4px rgba(34,197,94,0.4)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.5)' }} />
         <span style={{ color: '#22C55E' }}>{working}</span>
       </div>
       {blocked > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 4px rgba(239,68,68,0.4)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 6px rgba(239,68,68,0.5)' }} />
           <span style={{ color: '#EF4444' }}>{blocked}</span>
         </div>
       )}
       {/* Mini progress ring */}
-      <div style={{ position: 'relative', width: 28, height: 28, flexShrink: 0 }}>
-        <svg width={28} height={28} viewBox="0 0 28 28">
-          <circle cx={14} cy={14} r={10} fill="none" stroke="rgba(255,183,77,0.06)" strokeWidth={2.5} />
+      <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
+        <svg width={36} height={36} viewBox="0 0 36 36">
+          <circle cx={18} cy={18} r={13} fill="none" stroke="rgba(255,183,77,0.06)" strokeWidth={3} />
           <circle
-            cx={14} cy={14} r={10}
-            fill="none" stroke={HUD.accent} strokeWidth={2.5}
+            cx={18} cy={18} r={13}
+            fill="none" stroke={HUD.accent} strokeWidth={3}
             strokeLinecap="round"
-            strokeDasharray={`${overallProgress * 0.628} 62.8`}
-            transform="rotate(-90 14 14)"
-            style={{ transition: 'stroke-dasharray 600ms ease', filter: `drop-shadow(0 0 3px ${HUD.accentGlow})` }}
+            strokeDasharray={`${overallProgress * 0.817} 81.7`}
+            transform="rotate(-90 18 18)"
+            style={{ transition: 'stroke-dasharray 600ms ease', filter: `drop-shadow(0 0 4px ${HUD.accentGlow})` }}
           />
         </svg>
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 8, fontWeight: 800, color: HUD.accent,
+          fontSize: 11, fontWeight: 900, color: HUD.accent,
         }}>
           {overallProgress}
         </div>
@@ -731,44 +734,44 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
 
   return (
     <form onSubmit={handleSubmit} style={{
-      display: 'flex', alignItems: 'center', gap: 6,
+      display: 'flex', alignItems: 'center', gap: 8,
       flexShrink: 0,
-      minWidth: isMobile ? 0 : 220,
-      maxWidth: isMobile ? '100%' : 320,
+      minWidth: isMobile ? 0 : 260,
+      maxWidth: isMobile ? '100%' : 380,
     }}>
       {/* Agent plumbob mini portrait */}
       <div
         onClick={() => onExpandChat?.()}
         style={{
-          width: 30, height: 30, flexShrink: 0,
+          width: 38, height: 38, flexShrink: 0,
           cursor: 'pointer', position: 'relative',
         }}
         title={`Chat with ${currentAgent?.name}`}
       >
-        <svg width={30} height={30} viewBox="0 0 30 30">
-          <PlumbobClipDef id="chat-plumbob-clip" size={30} />
+        <svg width={38} height={38} viewBox="0 0 38 38">
+          <PlumbobClipDef id="chat-plumbob-clip" size={38} />
           <path
-            d={`M 15 ${30*0.02} L ${15+30*0.48} ${30*0.22} L ${15+30*0.48} ${30*0.72} Q ${15+30*0.48} ${30*0.98}, 15 ${30*0.98} Q ${15-30*0.48} ${30*0.98}, ${15-30*0.48} ${30*0.72} L ${15-30*0.48} ${30*0.22} Z`}
+            d={`M 19 ${38*0.02} L ${19+38*0.48} ${38*0.22} L ${19+38*0.48} ${38*0.72} Q ${19+38*0.48} ${38*0.98}, 19 ${38*0.98} Q ${19-38*0.48} ${38*0.98}, ${19-38*0.48} ${38*0.72} L ${19-38*0.48} ${38*0.22} Z`}
             fill={`${agentColor}25`}
           />
           {hasSpriteFile ? (
             <image
               href={`/corner/sprites/${agentSlug}-idle.png`}
-              x={-4} y={-1}
-              width={40} height={40}
+              x={-5} y={-1}
+              width={50} height={50}
               clipPath="url(#chat-plumbob-clip)"
               style={{ imageRendering: 'pixelated' }}
               preserveAspectRatio="xMidYMin slice"
             />
           ) : (
-            <text x={15} y={18} textAnchor="middle" dominantBaseline="middle"
+            <text x={19} y={22} textAnchor="middle" dominantBaseline="middle"
               fill={agentColor} fontFamily="Space Grotesk, sans-serif"
-              fontWeight="700" fontSize={12}>
+              fontWeight="700" fontSize={14}>
               {currentAgent?.name?.charAt(0) || '?'}
             </text>
           )}
           <path
-            d={`M 15 ${30*0.02} L ${15+30*0.48} ${30*0.22} L ${15+30*0.48} ${30*0.72} Q ${15+30*0.48} ${30*0.98}, 15 ${30*0.98} Q ${15-30*0.48} ${30*0.98}, ${15-30*0.48} ${30*0.72} L ${15-30*0.48} ${30*0.22} Z`}
+            d={`M 19 ${38*0.02} L ${19+38*0.48} ${38*0.22} L ${19+38*0.48} ${38*0.72} Q ${19+38*0.48} ${38*0.98}, 19 ${38*0.98} Q ${19-38*0.48} ${38*0.98}, ${19-38*0.48} ${38*0.72} L ${19-38*0.48} ${38*0.22} Z`}
             fill="none" stroke={agentColor} strokeWidth={1.5} strokeLinejoin="round"
           />
         </svg>
@@ -786,11 +789,12 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
           background: 'rgba(255,255,255,0.04)',
           border: `1px solid rgba(255,183,77,0.08)`,
           borderRadius: 8,
-          height: 32,
-          padding: '0 12px',
+          height: 40,
+          padding: '0 14px',
           color: HUD.textPrimary,
-          fontSize: 13,
+          fontSize: 15,
           fontFamily: 'Space Grotesk, sans-serif',
+          fontWeight: 500,
           outline: 'none',
           transition: 'border-color 200ms ease, box-shadow 200ms ease',
           minWidth: 0,
@@ -810,7 +814,7 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
         type="submit"
         disabled={!input.trim()}
         style={{
-          width: 30, height: 30, borderRadius: '50%',
+          width: 36, height: 36, borderRadius: '50%',
           background: input.trim() ? agentColor : 'rgba(255,255,255,0.04)',
           color: input.trim() ? '#FDF6EC' : HUD.textMuted,
           border: input.trim() ? 'none' : `1px solid ${HUD.divider}`,
@@ -821,7 +825,7 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
           opacity: input.trim() ? 1 : 0.5,
         }}
       >
-        <Send size={13} style={{ marginLeft: 1 }} />
+        <Send size={15} style={{ marginLeft: 1 }} />
       </button>
 
       {/* Expand chat button */}
@@ -921,7 +925,7 @@ export default function GameHUD({
           // Distinctive tab shape: wider top corners like a Sims panel
           borderRadius: isMobile ? 0 : '16px 16px 0 0',
           boxShadow: HUD.panelShadow,
-          padding: isMobile ? '4px 8px' : '0 16px',
+          padding: isMobile ? '4px 8px' : '0 20px',
           margin: isMobile ? 0 : '0 8px',
           display: 'flex',
           flexDirection: 'column',
@@ -958,11 +962,11 @@ export default function GameHUD({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? 6 : 10,
-          minHeight: isMobile ? 50 : 60,
+          gap: isMobile ? 6 : 12,
+          minHeight: isMobile ? 56 : 76,
           position: 'relative',
           zIndex: 1,
-          padding: isMobile ? 0 : '4px 0',
+          padding: isMobile ? 0 : '6px 0',
         }}>
           {/* Left: Agent plumbob portraits */}
           {!isMobile && (

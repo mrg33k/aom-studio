@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T08:47:51.397Z",
+  "generated": "2026-03-16T08:57:47.921Z",
   "categories": [
     {
       "name": "Strategy",
@@ -270,6 +270,26 @@
       "name": "Design Specs",
       "items": [
         {
+          "title": "Avatar System Decisions",
+          "slug": "avatar-system-decisions",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Steffen 1 + Steffen 2 coordination document. Avatar system decisions, style direction, character proportions, color palette consistency.",
+          "path": "/briefs/avatar-system-decisions",
+          "hasPage": true
+        },
+        {
+          "title": "Build Review: Crossy Road Energy + Viewport Fill (e8d1832)",
+          "slug": "build-review-e8d1832",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Creative Director review of Bobby's Crossy Road energy build. 8/10. Bounce physics are right, viewport fill works, wave animation delivers. Three items need iteration.",
+          "path": "/briefs/build-review-e8d1832",
+          "hasPage": true
+        },
+        {
           "title": "Corner C2.2 - Pixel Art Integration + Visual Polish",
           "slug": "c2-2-refinement-spec",
           "agent": "Steffen",
@@ -460,6 +480,26 @@
           "hasPage": true
         },
         {
+          "title": "Crossy Road Office Style Pack",
+          "slug": "crossy-road-office-pack",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "15 furniture items in chunky voxel Crossy Road style. First style pack for the Corner catalog marketplace. Tests whether alternate art styles work alongside the default pixel-warm.",
+          "path": "/briefs/crossy-road-office-pack",
+          "hasPage": true
+        },
+        {
+          "title": "Corner Compositing Spec",
+          "slug": "corner-compositing-spec",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Layer assembly recipe for Bobby. How to composite building shell, room interiors, characters, lighting, and UI into the final game view.",
+          "path": "/briefs/corner-compositing-spec",
+          "hasPage": true
+        },
+        {
           "title": "Corner Product Site - Landed in Heaven Visual Spec",
           "slug": "corner-product-site",
           "agent": "Steffen",
@@ -467,6 +507,16 @@
           "dateFormatted": "Mar 16",
           "summary": "Visual design for corner.app (or the Corner product section of aheadofmarket.com). Ultra clean, white, spacious. Apple keynote energy. The calm before the game storm. Bobby builds this.",
           "path": "/briefs/corner-product-site",
+          "hasPage": true
+        },
+        {
+          "title": "HUD Integration Notes",
+          "slug": "hud-integration-notes",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "How the HUD connects to the game world. Visual rules, interaction patterns, data mapping. For Bobby 2.",
+          "path": "/briefs/hud-integration-notes",
           "hasPage": true
         },
         {

@@ -1067,31 +1067,32 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                     left: `${target.x + target.w / 2}%`,
                     top: `${target.labelY}%`,
                     transform: 'translateX(-50%)',
-                    display: 'flex', alignItems: 'center', gap: 6,
+                    display: 'flex', alignItems: 'center', gap: 7,
                     background: PALETTE.nameplate.background,
                     border: `1px solid ${isHovered ? `${agentColor}4D` : PALETTE.nameplate.border}`,
-                    borderRadius: 6, padding: '3px 10px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                    borderRadius: 8, padding: '5px 14px',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
                     whiteSpace: 'nowrap', zIndex: 10,
                     pointerEvents: 'none',
                   }}
                 >
                   {SPRITE_AGENTS.includes(room.id) && (
-                    <div style={{ width: 16, height: 16, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ width: 20, height: 20, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
                       <img src={`/corner/sprites/${room.id}-idle.png`} alt=""
-                        style={{ width: 32, height: 32, objectFit: 'cover', objectPosition: '0 0', imageRendering: 'pixelated' }} />
+                        style={{ width: 40, height: 40, objectFit: 'cover', objectPosition: '0 0', imageRendering: 'pixelated' }} />
                     </div>
                   )}
                   <div style={{
-                    width: 6, height: 6, borderRadius: '50%',
+                    width: 7, height: 7, borderRadius: '50%',
                     background: isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color),
                     flexShrink: 0,
                     animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
                   }} />
                   <span style={{
                     color: PALETTE.nameplate.text,
-                    fontSize: 11, fontWeight: isHovered ? 700 : 600,
-                    fontFamily: 'Space Grotesk, sans-serif',
+                    fontSize: 14, fontWeight: isHovered ? 800 : 700,
+                    fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+                    letterSpacing: '-0.01em',
                   }}>
                     {room.agent}
                   </span>
@@ -1422,15 +1423,15 @@ function ModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
             onMouseEnter={() => setHoveredMode(mode.id)}
             onMouseLeave={() => setHoveredMode(null)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '0 14px', height: 48,
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '0 18px', height: 52,
               background: 'none', border: 'none',
-              borderBottom: active ? '2px solid #E85D26' : '2px solid transparent',
+              borderBottom: active ? '3px solid #E85D26' : '3px solid transparent',
               cursor: 'pointer',
               color: active ? '#FDF6EC' : isHovered ? '#A0A0A0' : '#6B7280',
-              fontFamily: 'Space Grotesk, sans-serif', fontSize: 12,
-              fontWeight: active ? 600 : 500,
-              textTransform: 'uppercase', letterSpacing: '0.08em',
+              fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontSize: 14,
+              fontWeight: active ? 800 : 600,
+              textTransform: 'uppercase', letterSpacing: '0.06em',
               transition: 'color 150ms ease',
               position: 'relative',
             }}
@@ -1730,7 +1731,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
     }}>
       {/* Collapsed bar: 48px (36px at detail zoom per Steffen spec) */}
       <div style={{
-        height: detailLevel === 'detail' && currentMode === 'game' ? 36 : (isMobile ? 44 : 48),
+        height: detailLevel === 'detail' && currentMode === 'game' ? 40 : (isMobile ? 48 : 54),
         transition: 'height 200ms ease',
         background: currentMode === 'megaboard' ? 'rgba(5, 8, 15, 0.95)' : 'rgba(10, 15, 30, 0.85)',
         backdropFilter: 'blur(16px)',
@@ -1741,10 +1742,10 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
       }}>
         {/* Left: CORNER logo + mode badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 16, color: PALETTE.signText, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 20, color: PALETTE.signText, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             CORNER
           </span>
-          <span style={{ color: '#E85D26', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 16 }}>.</span>
+          <span style={{ color: '#E85D26', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 20 }}>.</span>
           {IS_LOCAL && (
             <span style={{
               fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
@@ -2572,7 +2573,7 @@ function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
       exit={{ x: '100%', opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       style={{
-        position: 'absolute', top: 48, right: 0, bottom: 56, width: 320, maxWidth: '100%',
+        position: 'absolute', top: 48, right: 0, bottom: 56, width: 400, maxWidth: '100%',
         background: 'rgba(10, 15, 30, 0.97)',
         backdropFilter: 'blur(16px)',
         borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
@@ -2581,73 +2582,75 @@ function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <SpriteAvatar agentSlug={room?.id} size={36} borderColor={agentColor} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <SpriteAvatar agentSlug={room?.id} size={52} borderColor={agentColor} />
           <div>
-            <div style={{ color: PALETTE.signText, fontSize: 16, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>{agent?.name || room?.agent}</div>
-            <div style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <div style={{ color: PALETTE.signText, fontSize: 24, fontWeight: 800, fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", letterSpacing: '-0.02em' }}>{agent?.name || room?.agent}</div>
+            <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2 }}>
               {agent?.role || room?.role || ''}
             </div>
           </div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}>
-          <X size={16} />
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 6 }}>
+          <X size={20} />
         </button>
       </div>
 
       {/* Status */}
-      <div style={{ padding: '12px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: cfg.bg, borderRadius: 4 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color }} />
-          <span style={{ color: cfg.color, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>{cfg.label}</span>
+      <div style={{ padding: '16px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: cfg.bg, borderRadius: 6 }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: cfg.color }} />
+          <span style={{ color: cfg.color, fontSize: 14, fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cfg.label}</span>
         </div>
       </div>
 
       {/* Current task */}
-      <div style={{ padding: '0 16px 12px' }}>
-        <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Current Task</div>
-        <div style={{ color: '#A8A29E', fontSize: 13, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif' }}>{task}</div>
+      <div style={{ padding: '0 24px 16px' }}>
+        <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Current Task</div>
+        <div style={{ color: '#F0ECE6', fontSize: 16, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 500 }}>{task}</div>
       </div>
 
       {/* Last completion */}
       {agentStatus?.lastCompletion && (
-        <div style={{ padding: '0 16px 12px' }}>
-          <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Last Completion</div>
-          <div style={{ color: '#A8A29E', fontSize: 12, lineHeight: 1.5 }}>{agentStatus.lastCompletion.description}</div>
-          <div style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
+        <div style={{ padding: '0 24px 16px' }}>
+          <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Last Completion</div>
+          <div style={{ color: '#A8A29E', fontSize: 15, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif' }}>{agentStatus.lastCompletion.description}</div>
+          <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 6 }}>{agentStatus.lastCompletion.date}</div>
         </div>
       )}
 
       {/* Room info */}
-      <div style={{ padding: '0 16px 12px' }}>
-        <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Room</div>
-        <div style={{ color: '#A8A29E', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
+      <div style={{ padding: '0 24px 16px' }}>
+        <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Room</div>
+        <div style={{ color: '#A8A29E', fontSize: 15, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
         {room?.personality && (
-          <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'Space Grotesk, sans-serif', marginTop: 4, fontStyle: 'italic' }}>{room.personality}</div>
+          <div style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
         )}
       </div>
 
       {/* Data source indicator */}
       {IS_LOCAL && (
-        <div style={{ padding: '0 16px 12px' }}>
-          <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Data Source</div>
+        <div style={{ padding: '0 24px 16px' }}>
+          <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Data Source</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4CAF50' }} />
-            <span style={{ color: '#4CAF50', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}>Local filesystem (2s poll)</span>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
+            <span style={{ color: '#4CAF50', fontSize: 13, fontFamily: 'JetBrains Mono, monospace' }}>Local filesystem (2s poll)</span>
           </div>
         </div>
       )}
 
       {/* Chat button */}
-      <div style={{ padding: '12px 16px', marginTop: 'auto' }}>
+      <div style={{ padding: '16px 24px', marginTop: 'auto' }}>
         <button onClick={() => onChat(room?.id)} style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           background: agentColor, color: '#FFF', border: 'none',
-          padding: 12, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif',
-          cursor: 'pointer', borderRadius: 4,
+          padding: 16, fontSize: 16, fontWeight: 700, fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+          cursor: 'pointer', borderRadius: 6,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
         }}>
-          <MessageSquare size={14} />
+          <MessageSquare size={18} />
           Chat with {agent?.name || room?.agent}
         </button>
       </div>
@@ -2983,7 +2986,7 @@ export default function GameDashboard() {
 
       {/* Main content area with mode switching */}
       {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: isMobile ? 44 : (getDetailLevel(cameraZoom) === 'detail' && currentMode === 'game' ? 36 : 48), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' && currentMode === 'game' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
         <AnimatePresence mode="wait">
           {/* GAME MODE */}
           {currentMode === 'game' && (
@@ -3073,6 +3076,27 @@ export default function GameDashboard() {
                   position: 'absolute', inset: 0,
                   background: 'radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0,0,0,0.2) 100%)',
                 }} />
+
+                {/* Ambient particles - floating dust motes for Three.js-like depth */}
+                {[...Array(18)].map((_, i) => (
+                  <div key={`particle-${i}`} className="ambient-particle" style={{
+                    position: 'absolute',
+                    left: `${10 + Math.random() * 80}%`,
+                    top: `${10 + Math.random() * 80}%`,
+                    width: i % 3 === 0 ? 3 : 2,
+                    height: i % 3 === 0 ? 3 : 2,
+                    borderRadius: '50%',
+                    background: i % 4 === 0
+                      ? 'rgba(255, 183, 77, 0.25)'
+                      : i % 4 === 1
+                        ? 'rgba(156, 39, 176, 0.2)'
+                        : i % 4 === 2
+                          ? 'rgba(76, 175, 80, 0.18)'
+                          : 'rgba(255, 255, 255, 0.12)',
+                    boxShadow: i % 3 === 0 ? '0 0 4px rgba(255,183,77,0.15)' : 'none',
+                    animation: `particleFloat ${6 + (i % 5) * 2}s ease-in-out ${i * 0.7}s infinite`,
+                  }} />
+                ))}
               </div>
             </motion.div>
           )}
@@ -3284,6 +3308,16 @@ export default function GameDashboard() {
           0% { transform: translateY(0) translateX(0); opacity: 0.03; }
           50% { transform: translateY(-8px) translateX(4px); opacity: 0.06; }
           100% { transform: translateY(-16px) translateX(-2px); opacity: 0; }
+        }
+        @keyframes particleFloat {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+          25% { transform: translate(8px, -12px) scale(1.2); opacity: 0.6; }
+          50% { transform: translate(-4px, -20px) scale(0.8); opacity: 0.4; }
+          75% { transform: translate(6px, -8px) scale(1.1); opacity: 0.5; }
+        }
+        .ambient-particle {
+          pointer-events: none;
+          will-change: transform, opacity;
         }
         @keyframes characterGlow {
           0%, 100% { opacity: 0.4; transform: scale(1); }
