@@ -7,7 +7,7 @@
 // DONE(bobby2): Toast click action -- dispatches 'corner-navigate-agent' custom event with { agentSlug }. GameDashboard listens for this to switch rooms.
 // DONE(bobby2): Notification sound -- Web Audio API chime: ascending triad for completions, descending for blocked, neutral for system. 0.08 gain (subtle).
 // TODO(patrik): Notification history panel -- bell click should show full notification log, not just recent 3
-// TODO(patrik): Notification plain English -- toast messages must read like human updates, not technical logs. "Bobby just pushed v3" not "commit a7f2c91 merged to main." No commit hashes, no jargon. Short, plain, conversational. Parse agent-notifications.md entries into human-readable summaries.
+// DONE(bobby2): Notification plain English -- humanizeNotification() strips commit hashes, jargon, @mentions, TODO counts. Extracts SHIPPED items. Truncates to 120 chars. Toast reads like a human update.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -116,6 +116,55 @@ function playNotificationChime(type = 'complete') {
   }
 }
 
+// Humanize raw notification text: strip commit hashes, jargon, technical logs.
+// "Bobby just pushed v3" not "commit a7f2c91 merged to main."
+function humanizeNotification(raw, agentName) {
+  if (!raw) return raw
+  let msg = raw
+
+  // Strip commit hashes (7-char hex like a7f2c91, or full 40-char)
+  msg = msg.replace(/\b[0-9a-f]{7,40}\b/gi, '')
+  // Strip commit ranges (fa3df21..f5c31ab)
+  msg = msg.replace(/\b[0-9a-f]{7}\.\.[0-9a-f]{7}\b/gi, '')
+  // Strip parenthetical commit lists like (e8a152f, a98d618)
+  msg = msg.replace(/\([0-9a-f, ]{7,}\)/gi, '')
+  // Strip "build N:" and "session N:" prefixes
+  msg = msg.replace(/\b(?:build|session)\s*\d+\s*[:\-]/gi, '')
+  // Strip @mentions like @Steffen @Steve
+  msg = msg.replace(/@\w+/g, '')
+  // Strip "N commits pushed" -> "pushed updates"
+  msg = msg.replace(/\d+\s*commits?\s*pushed/gi, 'pushed updates')
+  // Strip "commit" word when standalone
+  msg = msg.replace(/\bcommit\b/gi, '')
+  // Strip REMAINING TODOs sections
+  msg = msg.replace(/REMAINING\s*TODOs?:.*$/i, '')
+  // Strip "N TODOs resolved" detail
+  msg = msg.replace(/\d+\s*TODOs?\s*resolved[^.]*\.?/gi, '')
+  // Clean up double spaces and trailing punctuation
+  msg = msg.replace(/\s{2,}/g, ' ').replace(/\(\s*\)/g, '').replace(/,\s*,/g, ',').trim()
+  // Strip leading punctuation/whitespace
+  msg = msg.replace(/^[\s:,.\-]+/, '').trim()
+
+  // Extract the SHIPPED items if present (most useful part)
+  const shippedMatch = msg.match(/SHIPPED:\s*(.+?)(?:\.\s*(?:REMAINING|$)|\s*$)/i)
+  if (shippedMatch) {
+    msg = shippedMatch[1].trim()
+  }
+
+  // Extract TASK FINISHED summary
+  const taskMatch = msg.match(/TASK\s*FINISHED:\s*\w+\s*[-–]\s*(.+)/i)
+  if (taskMatch) {
+    msg = taskMatch[1].trim()
+  }
+
+  // Truncate to ~120 chars for toast display
+  if (msg.length > 120) {
+    msg = msg.slice(0, 117) + '...'
+  }
+
+  return msg || raw
+}
+
 // Hook: polls agent-notifications.md for new completions
 function useAgentNotifications() {
   const [notifications, setNotifications] = useState([])
@@ -141,12 +190,15 @@ function useAgentNotifications() {
             const agentMatch = line.match(/(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
             const messageMatch = line.match(/:\s*(.+)$/)
 
+            const rawMessage = messageMatch?.[1]?.trim() || line
+            const name = agentMatch?.[0] || 'System'
+
             return {
               id: `notif-${Date.now()}-${i}`,
               time: timestampMatch?.[1] || 'now',
               agentSlug: agentMatch ? agentMatch[0].toLowerCase() : null,
-              agentName: agentMatch?.[0] || 'System',
-              message: messageMatch?.[1]?.trim() || line,
+              agentName: name,
+              message: humanizeNotification(rawMessage, name),
               type: line.toLowerCase().includes('blocked') ? 'blocked'
                 : line.toLowerCase().includes('finish') || line.toLowerCase().includes('ship') || line.toLowerCase().includes('done') ? 'complete'
                 : 'system',

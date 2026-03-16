@@ -2811,7 +2811,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
           }
         }
       } catch {}
-    }, 2000) // TODO(bobby): Relay real-time -- Patrik wants relay updates within 1 second on localhost. Background outbox poll is already 500ms (line ~4380). This chat-specific poll should match: drop to 500ms or 1000ms. Consider WebSocket for true real-time.
+    }, IS_LOCAL ? 500 : 2000) // DONE(bobby2): Local 500ms for sub-second relay response display
   }
 
   // Start 60-second chat timeout. If no response arrives, show offline message.
