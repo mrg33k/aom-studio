@@ -301,66 +301,142 @@ function usePreloadSprites() {
   }, [])
 }
 
-// ---- AGENT CHARACTER (Pixel Art Sprite) ------------------------------------
-function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
+// ---- AGENT CHARACTER (Pixel Art Sprite) - HTML version for div-based rooms --
+function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH }) {
   const spriteState = getSpriteState(status, isSpeaking)
   const isWorking = status === 'WORKING'
   const isThinking = status === 'WAITING'
   const isDone = status === 'DONE'
 
-  // Sprite size in SVG space - fits within room
-  const spriteW = 28
-  const spriteH = 28
   const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
 
+  // Character at 22% of room - visible life indicator, room is the star
+  const spriteSize = Math.min(roomW, roomH) * 0.22
+
   if (!hasSpriteFile) {
-    // Fallback: colored circle for agents without sprites
     return (
-      <g>
-        <ellipse cx={x} cy={y + 6} rx={5} ry={2} fill="#000" opacity={0.2} />
-        <circle cx={x} cy={y - 4} r={6} fill={color} opacity={0.9} />
-        <circle cx={x - 1.5} cy={y - 4.5} r={1} fill="#FFF" opacity={0.9} />
-        <circle cx={x + 1.5} cy={y - 4.5} r={1} fill="#FFF" opacity={0.9} />
-      </g>
+      <div style={{
+        position: 'absolute', bottom: '15%', left: '50%', transform: 'translateX(-50%)',
+        width: spriteSize * 0.4, height: spriteSize * 0.4, borderRadius: '50%',
+        background: color, opacity: 0.9, boxShadow: `0 4px 12px ${color}66`,
+      }} />
     )
   }
 
   const spriteSrc = `/corner/sprites/${agentSlug}-${spriteState}.png`
 
   return (
-    <g>
+    <div style={{
+      position: 'absolute', bottom: '8%', left: '50%', transform: 'translateX(-50%)',
+      width: spriteSize, height: spriteSize, pointerEvents: 'none', zIndex: 2,
+    }}>
       {/* Shadow beneath sprite */}
-      <ellipse cx={x} cy={y + 8} rx={10} ry={3} fill="#000" opacity={0.15} />
+      <div style={{
+        position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
+        width: spriteSize * 0.7, height: spriteSize * 0.15,
+        background: 'rgba(0,0,0,0.25)', borderRadius: '50%', filter: 'blur(3px)',
+      }} />
 
-      {/* Sprite image - foreignObject for HTML img inside SVG */}
-      <foreignObject
-        x={x - spriteW / 2} y={y - spriteH + 4}
-        width={spriteW} height={spriteH}
-        style={{ overflow: 'hidden', pointerEvents: 'none' }}
-      >
+      {/* Sprite image - show first frame from 2x2 spritesheet (top-left quadrant)
+          Sprite PNGs are 256x256 with 4 frames in 2x2 grid. Each frame is 128x128.
+          We render at 2x container size and overflow:hidden crops to top-left frame.
+          mix-blend-mode: lighten makes the dark sprite background transparent. */}
+      <div style={{
+        width: spriteSize, height: spriteSize, overflow: 'hidden', position: 'relative',
+        borderRadius: '50%',
+        mixBlendMode: 'screen',
+      }}>
+        {/* Zoom into center of first frame to show character, not dark corners.
+            Sprite is 256x256, frame is 128x128. We show frame at 2.6x to zoom into the character. */}
         <img
           src={spriteSrc}
           alt=""
           style={{
-            width: spriteW * 2,
-            height: spriteH * 2,
-            objectFit: 'cover',
-            objectPosition: '0 0',
+            position: 'absolute',
+            top: '-30%', left: '-30%',
+            width: spriteSize * 2.6,
+            height: spriteSize * 2.6,
+            maxWidth: 'none',
             imageRendering: 'pixelated',
             display: 'block',
+            filter: isWorking ? `drop-shadow(0 0 8px ${color}66)` : 'none',
+            transition: 'filter 400ms ease',
           }}
         />
-      </foreignObject>
+      </div>
 
       {/* Working glow pulse */}
       {isWorking && (
-        <circle cx={x} cy={y - spriteH / 2 + 4} r={16} fill={color} opacity={0.08}>
-          <animate attributeName="r" values="14;18;14" dur="1.5s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.08;0.03;0.08" dur="1.5s" repeatCount="indefinite" />
-        </circle>
+        <div style={{
+          position: 'absolute', inset: -8,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`,
+          animation: 'characterGlow 2s ease-in-out infinite',
+        }} />
       )}
 
       {/* Thinking dots above sprite */}
+      {isThinking && (
+        <div style={{
+          position: 'absolute', top: -12, right: -4,
+          display: 'flex', gap: 3,
+        }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{
+              width: 5, height: 5, borderRadius: '50%',
+              background: '#F59E0B',
+              animation: `dotPulse 0.8s ease-in-out ${i * 0.2}s infinite`,
+            }} />
+          ))}
+        </div>
+      )}
+
+      {/* Done checkmark */}
+      {isDone && (
+        <div style={{
+          position: 'absolute', top: -4, right: -4,
+          width: 18, height: 18, borderRadius: '50%',
+          background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 2px 6px rgba(16,185,129,0.4)',
+        }}>
+          <svg width={10} height={8} viewBox="0 0 10 8" fill="none">
+            <path d="M1 4L3.5 6.5L9 1" stroke="#FFF" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Legacy SVG version kept for compatibility
+function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
+  const spriteState = getSpriteState(status, isSpeaking)
+  const isWorking = status === 'WORKING'
+  const isThinking = status === 'WAITING'
+  const isDone = status === 'DONE'
+  const spriteW = 28
+  const spriteH = 28
+  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+  if (!hasSpriteFile) {
+    return (
+      <g>
+        <ellipse cx={x} cy={y + 6} rx={5} ry={2} fill="#000" opacity={0.2} />
+        <circle cx={x} cy={y - 4} r={6} fill={color} opacity={0.9} />
+      </g>
+    )
+  }
+  const spriteSrc = `/corner/sprites/${agentSlug}-${spriteState}.png`
+  return (
+    <g>
+      <ellipse cx={x} cy={y + 8} rx={10} ry={3} fill="#000" opacity={0.15} />
+      <foreignObject x={x - spriteW / 2} y={y - spriteH + 4} width={spriteW} height={spriteH} style={{ overflow: 'hidden', pointerEvents: 'none' }}>
+        <img src={spriteSrc} alt="" style={{ width: spriteW * 2, height: spriteH * 2, objectFit: 'cover', objectPosition: '0 0', imageRendering: 'pixelated', display: 'block' }} />
+      </foreignObject>
+      {isWorking && (
+        <circle cx={x} cy={y - spriteH / 2 + 4} r={16} fill={color} opacity={0.08}>
+          <animate attributeName="r" values="14;18;14" dur="1.5s" repeatCount="indefinite" />
+        </circle>
+      )}
       {isThinking && (
         <g>{[0, 1, 2].map(i => (
           <circle key={i} cx={x + 10 + i * 4} cy={y - spriteH - 2} r={1.5} fill="#F59E0B" opacity={0.6}>
@@ -368,8 +444,6 @@ function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
           </circle>
         ))}</g>
       )}
-
-      {/* Done checkmark */}
       {isDone && (
         <g>
           <circle cx={x + 12} cy={y - spriteH} r={4} fill="#10B981" opacity={0.8} />
@@ -445,210 +519,189 @@ const ROOMS_WITH_RENDERS = [
   'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon',
 ]
 
-// ---- ISOMETRIC ROOM --------------------------------------------------------
-function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClick, cellSize, detailLevel, agentAnimation }) {
+// ---- ROOM TILE (HTML/CSS - uses Gemini renders as backgrounds) -------------
+// The renders ARE isometric. No CSS 3D transforms needed. Let the art do the work.
+function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, onMouseEnter, onMouseLeave, tileW, tileH, detailLevel, agentAnimation }) {
   if (!room) return null
 
   const status = agentStatus?.status || 'IDLE'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const isActive = status === 'WORKING'
   const hasAgent = room.agent !== null
-
-  const roomW = cellSize * room.size.cols
-  const roomH = cellSize * room.size.rows
-
-  // Agent color for glow on hover
   const agentColor = room.agentColor || '#FFD87A'
-
-  // Room dimming: enhanced with detail-level aware dimming
   const isAway = agentAnimation?.state === 'away'
-  const baseBrightness = isAway ? 0.25 : (isActive ? 1.0 : (status === 'DONE' ? 1.0 : (status === 'IDLE' ? 0.4 : 0.6)))
-  const brightness = baseBrightness
-
-  // Check if this room has a pixel art render
+  const baseBrightness = isAway ? 0.3 : (isActive ? 1.0 : (status === 'DONE' ? 0.95 : (status === 'IDLE' ? 0.75 : 0.85)))
   const hasRoomRender = ROOMS_WITH_RENDERS.includes(room.id)
-
-  // Per-room lighting overlay
-  const roomLightOverlay = ROOM_LIGHT_OVERLAYS[room.id]
-
-  // Detail-level: show ambient effects only at neighborhood+
+  const roomImgSrc = `/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`
   const showAmbient = detailLevel !== 'overview'
-  const showFullDetail = detailLevel === 'detail'
-
-  // Light source position (varies per room for depth)
-  const lightX = room.lighting?.includes('natural') ? 0.2 : 0.5
-  const lightY = room.lighting?.includes('pendant') || room.lighting?.includes('overhead') ? 0.15 : 0.3
 
   return (
-    <g
+    <div
       onClick={() => hasAgent && onClick?.(room.id)}
-      style={{ cursor: hasAgent ? 'pointer' : 'default', filter: `brightness(${brightness})`, transition: 'filter 400ms ease' }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{
+        position: 'relative',
+        width: tileW, height: tileH,
+        cursor: hasAgent ? 'pointer' : 'default',
+        filter: `brightness(${baseBrightness})`,
+        transition: 'filter 400ms ease, transform 200ms ease',
+        transform: (isHovered && hasAgent) ? 'scale(1.02)' : 'scale(1)',
+        zIndex: (isHovered || isSelected) ? 5 : 1,
+      }}
     >
-      {/* Room background: pixel art render or SVG fallback */}
+      {/* Room render image - the art IS the depth */}
       {hasRoomRender ? (
-        <>
-          <foreignObject x={0} y={0} width={roomW} height={roomH} style={{ overflow: 'hidden' }}>
-            <img
-              src={`/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`}
-              alt=""
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-                imageRendering: 'auto',
-              }}
-            />
-          </foreignObject>
-
-          {/* DEPTH: Inner shadow on all edges for 3D recess effect */}
-          <rect x={0} y={0} width={roomW} height={2}
-            fill="rgba(0,0,0,0.25)" style={{ pointerEvents: 'none' }} />
-          <rect x={0} y={0} width={2} height={roomH}
-            fill="rgba(0,0,0,0.2)" style={{ pointerEvents: 'none' }} />
-          <rect x={0} y={roomH - 3} width={roomW} height={3}
-            fill="rgba(0,0,0,0.15)" style={{ pointerEvents: 'none' }} />
-          <rect x={roomW - 2} y={0} width={2} height={roomH}
-            fill="rgba(0,0,0,0.12)" style={{ pointerEvents: 'none' }} />
-
-          {/* DEPTH: Ceiling light cone (warm glow from above) */}
-          {showAmbient && (
-            <ellipse
-              cx={roomW * lightX} cy={roomH * lightY}
-              rx={roomW * 0.35} ry={roomH * 0.25}
-              fill={room.lightColor || '#FFD87A'}
-              opacity={isActive ? 0.08 : 0.04}
-              style={{ pointerEvents: 'none', mixBlendMode: 'screen' }}
-            >
-              {isActive && (
-                <animate attributeName="opacity" values="0.06;0.1;0.06" dur="4s" repeatCount="indefinite" />
-              )}
-            </ellipse>
-          )}
-
-          {/* DEPTH: Floor shadow gradient (darkens bottom edge, simulates depth) */}
-          <rect x={0} y={roomH * 0.7} width={roomW} height={roomH * 0.3}
-            fill="url(#floorShadow)" opacity={0.3}
-            style={{ pointerEvents: 'none' }} />
-
-          {/* Per-room lighting personality overlay */}
-          {roomLightOverlay && (
-            <rect x={0} y={0} width={roomW} height={roomH} fill={roomLightOverlay} style={{ pointerEvents: 'none' }} />
-          )}
-
-          {/* Bobby's purple LED underglow */}
-          {room.id === 'bobby' && (
-            <rect x={0} y={roomH - 8} width={roomW} height={8}
-              fill="url(#bobbyLedGlow)" opacity={isActive ? 0.6 : 0.35}
-              style={{ pointerEvents: 'none' }}
-            />
-          )}
-
-          {/* DEPTH: Ambient particles (dust/light motes) when active + detail zoom */}
-          {showAmbient && isActive && (
-            <g style={{ pointerEvents: 'none' }}>
-              {[0,1,2,3].map(i => (
-                <circle key={i}
-                  cx={roomW * (0.2 + i * 0.2)}
-                  cy={roomH * 0.3}
-                  r={1}
-                  fill={room.lightColor || '#FFD87A'}
-                  opacity={0.15}
-                >
-                  <animate attributeName="cy"
-                    values={`${roomH * (0.2 + i * 0.05)};${roomH * (0.6 + i * 0.08)};${roomH * (0.2 + i * 0.05)}`}
-                    dur={`${6 + i * 2}s`} repeatCount="indefinite" />
-                  <animate attributeName="opacity"
-                    values="0.08;0.2;0.08" dur={`${4 + i}s`} repeatCount="indefinite" />
-                </circle>
-              ))}
-            </g>
-          )}
-        </>
+        <img
+          src={roomImgSrc}
+          alt={room.name}
+          draggable={false}
+          style={{
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+            imageRendering: 'auto',
+            borderRadius: 2,
+          }}
+        />
       ) : (
-        <>
-          <rect x={0} y={0} width={roomW} height={roomH}
-            fill={room.floorColor || '#C4956A'}
-            stroke={room.floor?.startsWith('tile') ? '#6B7D8F' : '#7A5838'}
-            strokeWidth={0.5}
-          />
-          {renderFurniture(room.id, roomW, roomH, isActive)}
-          {roomLightOverlay && (
-            <rect x={0} y={0} width={roomW} height={roomH} fill={roomLightOverlay} style={{ pointerEvents: 'none' }} />
-          )}
-          {/* Inner shadow for SVG fallback rooms too */}
-          <rect x={0} y={0} width={roomW} height={2} fill="rgba(0,0,0,0.2)" style={{ pointerEvents: 'none' }} />
-          <rect x={0} y={0} width={2} height={roomH} fill="rgba(0,0,0,0.15)" style={{ pointerEvents: 'none' }} />
-        </>
+        <div style={{
+          width: '100%', height: '100%',
+          background: room.floorColor || '#C4956A',
+          borderRadius: 2,
+        }} />
       )}
 
-      {/* Agent sprite character (with animation position override) */}
+      {/* South + East wall thickness (dark borders for 3D wall effect) */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
+        background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.35))',
+        pointerEvents: 'none', borderRadius: '0 0 2px 2px',
+      }} />
+      <div style={{
+        position: 'absolute', top: 0, right: 0, bottom: 0, width: 3,
+        background: 'linear-gradient(to right, transparent, rgba(0,0,0,0.25))',
+        pointerEvents: 'none', borderRadius: '0 2px 2px 0',
+      }} />
+
+      {/* Light spill from windows (warm radial extending outward) */}
+      {showAmbient && room.walls?.north?.includes('window') && (
+        <div style={{
+          position: 'absolute', top: -12, left: '20%', width: '60%', height: 24,
+          background: `radial-gradient(ellipse, ${room.lightColor || '#FFD87A'}20 0%, transparent 70%)`,
+          pointerEvents: 'none', filter: 'blur(8px)',
+        }} />
+      )}
+      {showAmbient && room.walls?.west?.includes('window') && (
+        <div style={{
+          position: 'absolute', top: '20%', left: -12, width: 24, height: '60%',
+          background: `radial-gradient(ellipse, ${room.lightColor || '#FFD87A'}20 0%, transparent 70%)`,
+          pointerEvents: 'none', filter: 'blur(8px)',
+        }} />
+      )}
+      {showAmbient && room.walls?.east?.includes('window') && (
+        <div style={{
+          position: 'absolute', top: '20%', right: -12, width: 24, height: '60%',
+          background: `radial-gradient(ellipse, ${room.lightColor || '#FFD87A'}20 0%, transparent 70%)`,
+          pointerEvents: 'none', filter: 'blur(8px)',
+        }} />
+      )}
+
+      {/* Bobby's purple LED underglow */}
+      {room.id === 'bobby' && (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '20%',
+          background: `linear-gradient(to top, rgba(156,39,176,${isActive ? 0.25 : 0.12}), transparent)`,
+          pointerEvents: 'none', borderRadius: '0 0 2px 2px',
+        }} />
+      )}
+
+      {/* Agent sprite character - LARGE AND CENTERED (30-40% of room) */}
       {hasAgent && agent && !isAway && (
-        <AgentCharacter
-          x={agentAnimation?.x ?? roomW * 0.55}
-          y={agentAnimation?.y ?? roomH * 0.7}
+        <AgentCharacterHTML
           color={agentColor}
           status={status}
           agentSlug={room.id}
+          roomW={tileW}
+          roomH={tileH}
         />
       )}
 
-      {/* "Away" badge when agent is disconnected */}
+      {/* "Away" badge */}
       {isAway && (
-        <g>
-          <rect x={roomW / 2 - 22} y={roomH / 2 - 8} width={44} height={18} rx={9}
-            fill="rgba(10, 15, 30, 0.9)" stroke="rgba(245, 158, 11, 0.3)" strokeWidth={1} />
-          <text x={roomW / 2} y={roomH / 2 + 4} textAnchor="middle"
-            fill="#F59E0B" fontSize={8} fontFamily="JetBrains Mono, monospace" fontWeight={500}
-            style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {agentAnimation?.label || 'Away'}
-          </text>
-        </g>
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          background: 'rgba(10, 15, 30, 0.9)', border: '1px solid rgba(245, 158, 11, 0.3)',
+          borderRadius: 12, padding: '4px 12px',
+          color: '#F59E0B', fontSize: 10, fontFamily: 'JetBrains Mono, monospace',
+          fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em',
+        }}>
+          {agentAnimation?.label || 'Away'}
+        </div>
       )}
 
-      {/* Active indicator dot (top-right) */}
+      {/* Status indicator dot (top-right) */}
       {hasAgent && !isAway && (
-        <circle cx={roomW - 10} cy={10} r={3}
-          fill={isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color)}
-          opacity={isActive ? 1 : 0.6}
-        >
-          {isActive && <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite" />}
-        </circle>
+        <div style={{
+          position: 'absolute', top: 8, right: 8,
+          width: 8, height: 8, borderRadius: '50%',
+          background: isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color),
+          opacity: isActive ? 1 : 0.6,
+          boxShadow: isActive ? `0 0 6px ${cfg.color}` : 'none',
+          animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
+          zIndex: 3,
+        }} />
       )}
 
-      {/* Away indicator dot (amber, solid) */}
-      {hasAgent && isAway && (
-        <circle cx={roomW - 10} cy={10} r={3} fill="#F59E0B" opacity={0.8} />
-      )}
-
-      {/* Hover/selected glow overlay */}
+      {/* Hover/selected glow border */}
       {(isHovered || isSelected) && hasAgent && (
-        <rect x={0} y={0} width={roomW} height={roomH}
-          fill={agentColor}
-          opacity={isSelected ? 0.12 : 0.06}
-          style={{ pointerEvents: 'none' }}
-        />
+        <div style={{
+          position: 'absolute', inset: -2,
+          border: `2px solid ${agentColor}`,
+          borderRadius: 4,
+          opacity: isSelected ? 0.6 : 0.3,
+          boxShadow: `0 0 12px ${agentColor}40, inset 0 0 20px ${agentColor}10`,
+          pointerEvents: 'none',
+          transition: 'opacity 200ms ease',
+        }} />
       )}
+    </div>
+  )
+}
 
-      {/* Room border with depth shadow */}
-      <rect x={0} y={0} width={roomW} height={roomH} fill="none"
-        stroke={isSelected ? agentColor : (isHovered && hasAgent ? agentColor : PALETTE.exteriorWalls)}
-        strokeWidth={isSelected ? 2 : 1}
-        strokeOpacity={isHovered && hasAgent ? 0.6 : 1}
-      />
-      {/* Glow on hover */}
-      {isHovered && hasAgent && (
-        <rect x={-2} y={-2} width={roomW + 4} height={roomH + 4} fill="none"
-          stroke={agentColor} strokeWidth={1} strokeOpacity={0.15} rx={2}
-          style={{ pointerEvents: 'none', filter: `drop-shadow(0 0 6px ${agentColor})` }}
-        />
+// Legacy SVG IsometricRoom kept for fallback
+function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClick, cellSize, detailLevel, agentAnimation }) {
+  if (!room) return null
+  const status = agentStatus?.status || 'IDLE'
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
+  const isActive = status === 'WORKING'
+  const hasAgent = room.agent !== null
+  const roomW = cellSize * room.size.cols
+  const roomH = cellSize * room.size.rows
+  const agentColor = room.agentColor || '#FFD87A'
+  const isAway = agentAnimation?.state === 'away'
+  const baseBrightness = isAway ? 0.25 : (isActive ? 1.0 : (status === 'DONE' ? 1.0 : (status === 'IDLE' ? 0.4 : 0.6)))
+  const hasRoomRender = ROOMS_WITH_RENDERS.includes(room.id)
+  const roomLightOverlay = ROOM_LIGHT_OVERLAYS[room.id]
+  return (
+    <g onClick={() => hasAgent && onClick?.(room.id)} style={{ cursor: hasAgent ? 'pointer' : 'default', filter: `brightness(${baseBrightness})`, transition: 'filter 400ms ease' }}>
+      {hasRoomRender ? (
+        <foreignObject x={0} y={0} width={roomW} height={roomH} style={{ overflow: 'hidden' }}>
+          <img src={`/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        </foreignObject>
+      ) : (
+        <rect x={0} y={0} width={roomW} height={roomH} fill={room.floorColor || '#C4956A'} />
       )}
+      {hasAgent && agent && !isAway && (
+        <AgentCharacter x={roomW * 0.55} y={roomH * 0.7} color={agentColor} status={status} agentSlug={room.id} />
+      )}
+      <rect x={0} y={0} width={roomW} height={roomH} fill="none" stroke={PALETTE.exteriorWalls} strokeWidth={1} />
     </g>
   )
 }
 
-// ---- NAMEPLATE (above room) with sprite avatar (C2.2 spec 4C) -------------
-function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
+// ---- NAMEPLATE (HTML version for div-based layout) -------------------------
+function RoomNameplateHTML({ room, agentStatus, isHovered }) {
   if (!room || room.agent === null) return null
   const status = agentStatus?.status || 'IDLE'
   const dotColor = status === 'WORKING' ? (room.statusColors?.active || '#22C55E')
@@ -658,67 +711,69 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
   const task = agentStatus?.currentTask || ''
   const hasSprite = SPRITE_AGENTS.includes(room.id)
 
-  const roomW = cellSize * room.size.cols
-  const x = roomW / 2
-  const y = -10
-  const plateW = hasSprite ? 70 : 60
-  const plateX = x - plateW / 2
-
   return (
-    <g>
-      {/* Nameplate background */}
-      <rect x={plateX} y={y - 8} width={plateW} height={isHovered ? 24 : 16} rx={4}
-        fill={PALETTE.nameplate.background} stroke={isHovered ? `${room.agentColor}4D` : PALETTE.nameplate.border} strokeWidth={1}
-        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))', transition: 'height 150ms ease' }}
-      />
-      {/* Tiny sprite avatar (16px) */}
+    <div style={{
+      position: 'absolute', top: -28, left: '50%', transform: 'translateX(-50%)',
+      display: 'flex', alignItems: 'center', gap: 6,
+      background: PALETTE.nameplate.background,
+      border: `1px solid ${isHovered ? `${room.agentColor}4D` : PALETTE.nameplate.border}`,
+      borderRadius: 6, padding: '3px 10px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+      whiteSpace: 'nowrap', zIndex: 10,
+      transition: 'border-color 150ms ease',
+    }}>
+      {/* Mini sprite avatar */}
       {hasSprite && (
-        <foreignObject x={plateX + 3} y={y - 7} width={14} height={14} style={{ overflow: 'hidden', borderRadius: '50%' }}>
-          <img
-            src={`/corner/sprites/${room.id}-idle.png`}
-            alt=""
-            style={{
-              width: 28,
-              height: 28,
-              objectFit: 'cover',
-              objectPosition: '0 0',
-              imageRendering: 'pixelated',
-              display: 'block',
-              borderRadius: '50%',
-            }}
-          />
-        </foreignObject>
+        <div style={{ width: 16, height: 16, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+          <img src={`/corner/sprites/${room.id}-idle.png`} alt=""
+            style={{ width: 32, height: 32, objectFit: 'cover', objectPosition: '0 0', imageRendering: 'pixelated' }} />
+        </div>
       )}
       {/* Status dot */}
-      <circle cx={hasSprite ? plateX + 21 : x - 20} cy={y} r={3} fill={dotColor}>
-        {pulse && <animate attributeName="r" values="3;4;3" dur={status === 'WAITING' ? '0.8s' : '1.5s'} repeatCount="indefinite" />}
-      </circle>
+      <div style={{
+        width: 6, height: 6, borderRadius: '50%', background: dotColor, flexShrink: 0,
+        animation: pulse ? `statusPulse ${status === 'WAITING' ? '0.8s' : '1.5s'} ease-in-out infinite` : 'none',
+      }} />
       {/* Name */}
-      <text x={hasSprite ? plateX + 27 : x - 14} y={y + 3} fill={PALETTE.nameplate.text}
-        fontSize={GRID_SPEC.rendering.nameplateFontSize} fontWeight={isHovered ? 700 : GRID_SPEC.rendering.nameplateFontWeight}
-        fontFamily={`${GRID_SPEC.rendering.nameplateFont}, sans-serif`}
-      >
+      <span style={{
+        color: PALETTE.nameplate.text,
+        fontSize: 11, fontWeight: isHovered ? 700 : 600,
+        fontFamily: 'Space Grotesk, sans-serif',
+      }}>
         {room.agent}
-      </text>
+      </span>
       {/* Task on hover */}
       {isHovered && task && (
-        <text x={plateX + 3} y={y + 14} fill="#8A847C" fontSize={9}
-          fontFamily="Space Grotesk, sans-serif" fontWeight={400}
-        >
+        <span style={{ color: '#8A847C', fontSize: 9, fontFamily: 'Space Grotesk, sans-serif', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {task.length > 22 ? task.slice(0, 22) + '...' : task}
-        </text>
+        </span>
       )}
+    </div>
+  )
+}
+
+// Legacy SVG nameplate kept for minimap
+function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
+  if (!room || room.agent === null) return null
+  const status = agentStatus?.status || 'IDLE'
+  const dotColor = status === 'WORKING' ? '#22C55E' : '#6B7280'
+  const roomW = cellSize * room.size.cols
+  return (
+    <g>
+      <rect x={roomW / 2 - 30} y={-18} width={60} height={16} rx={4} fill={PALETTE.nameplate.background} stroke={PALETTE.nameplate.border} strokeWidth={1} />
+      <circle cx={roomW / 2 - 18} cy={-10} r={3} fill={dotColor} />
+      <text x={roomW / 2 - 10} y={-7} fill={PALETTE.nameplate.text} fontSize={11} fontWeight={600} fontFamily="Space Grotesk, sans-serif">{room.agent}</text>
     </g>
   )
 }
 
-// ---- ISOMETRIC OFFICE (main game view) with CAMERA SYSTEM ------------------
+// ---- ISOMETRIC OFFICE (main game view) - DIV-BASED with render images ------
+// The room renders are already isometric. No CSS 3D transform needed.
+// Layout: CSS grid positions rooms. Images provide all depth/walls/lighting.
 function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations }) {
-  const GRID_COLS = 4
-  const GRID_ROWS = 4
-
-  const svgW = CELL_SIZE * GRID_COLS + 60
-  const svgH = CELL_SIZE * GRID_ROWS + 80
+  // Room tile size (px) - each grid cell
+  const TILE_SIZE = 220
+  const TILE_SIZE_WIDE = TILE_SIZE * 2 // main-hall is 2 cols wide
 
   const rooms = GRID_SPEC.rooms
   const containerRef = useRef(null)
@@ -728,14 +783,14 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
   const panState = useRef({ dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0, velX: 0, velY: 0 })
   const momentumRef = useRef(null)
 
-  // Scroll wheel zoom (Steffen spec: 0.15x per tick, 200ms ease)
+  // Scroll wheel zoom
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     const handleWheel = (e) => {
       e.preventDefault()
       const delta = e.deltaY > 0 ? -0.15 : 0.15
-      onZoomChange?.(z => Math.min(3.5, Math.max(0.5, z + delta)))
+      onZoomChange?.(z => Math.min(3.5, Math.max(0.3, z + delta)))
     }
     el.addEventListener('wheel', handleWheel, { passive: false })
     return () => el.removeEventListener('wheel', handleWheel)
@@ -743,10 +798,9 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
 
   // Click-drag pan with momentum
   const handleMouseDown = useCallback((e) => {
-    if (cameraZoom < 1.0) return // No pan in overview
     if (momentumRef.current) cancelAnimationFrame(momentumRef.current)
     panState.current = { dragging: true, startX: e.clientX - panOffset.x, startY: e.clientY - panOffset.y, lastX: e.clientX, lastY: e.clientY, velX: 0, velY: 0 }
-  }, [cameraZoom, panOffset])
+  }, [panOffset])
 
   const handleMouseMove = useCallback((e) => {
     if (!panState.current.dragging) return
@@ -762,7 +816,6 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
   const handleMouseUp = useCallback(() => {
     if (!panState.current.dragging) return
     panState.current.dragging = false
-    // Momentum
     let vx = panState.current.velX
     let vy = panState.current.velY
     const decay = () => {
@@ -784,12 +837,12 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
 
   // Touch support for mobile pan
   const handleTouchStart = useCallback((e) => {
-    if (e.touches.length === 1 && cameraZoom >= 1.0) {
+    if (e.touches.length === 1) {
       const t = e.touches[0]
       if (momentumRef.current) cancelAnimationFrame(momentumRef.current)
       panState.current = { dragging: true, startX: t.clientX - panOffset.x, startY: t.clientY - panOffset.y, lastX: t.clientX, lastY: t.clientY, velX: 0, velY: 0 }
     }
-  }, [cameraZoom, panOffset])
+  }, [panOffset])
 
   const handleTouchMove = useCallback((e) => {
     if (!panState.current.dragging || e.touches.length !== 1) return
@@ -820,7 +873,7 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
       const dy = e.touches[0].clientY - e.touches[1].clientY
       const dist = Math.hypot(dx, dy)
       const scale = dist / pinchRef.current.initialDist
-      const newZoom = Math.min(3.5, Math.max(0.5, pinchRef.current.initialZoom * scale))
+      const newZoom = Math.min(3.5, Math.max(0.3, pinchRef.current.initialZoom * scale))
       onZoomChange?.(() => newZoom)
     }
   }, [onZoomChange])
@@ -830,16 +883,35 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
     if (e.touches.length === 0) handleMouseUp()
   }, [handleMouseUp])
 
-  const targetCenter = getRoomCenter(cameraTarget || DEFAULT_AGENT)
-  const worldCenterX = svgW / 2 - 30
-  const worldCenterY = svgH / 2
-  const offsetX = worldCenterX - targetCenter.x
-  const offsetY = worldCenterY - targetCenter.y
-
   const detailLevel = getDetailLevel(cameraZoom)
-
-  // Transition timing based on Steffen's spec
   const zoomTransition = detailLevel === 'overview' ? '0.5s cubic-bezier(0.4, 0.0, 0.2, 1.0)' : '0.4s cubic-bezier(0.2, 0.9, 0.3, 1.0)'
+
+  // Grid layout: 4 columns (each room is 1 cell, main-hall spans 2)
+  // Row 0: patrik(1) | mom(1) | alex(1) | steve(1)
+  // Row 1: steffen(1) | main-hall(2) | jacob(1)
+  // Row 2: bobby(1) | colton(1) | cleo(1) | tony(1)
+  // Row 3: (empty) | elmo(1) | elon(1) | (empty)
+  // The grid uses CSS grid. No isometric CSS transform. The images ARE isometric.
+
+  // Calculate camera offset to center on target room
+  const getRoomGridPosition = (roomId) => {
+    const room = ROOM_MAP[roomId]
+    if (!room) return { x: 0, y: 0 }
+    const col = room.position.col / 2 // Convert from half-cols to full cols
+    const row = room.position.row
+    const colSpan = room.size.cols / 2
+    return {
+      x: (col + colSpan / 2) * TILE_SIZE,
+      y: (row + 0.5) * TILE_SIZE,
+    }
+  }
+
+  const gridTotalW = 4 * TILE_SIZE
+  const gridTotalH = 4 * TILE_SIZE
+
+  const targetPos = getRoomGridPosition(cameraTarget || DEFAULT_AGENT)
+  const cameraOffsetX = isOverview ? 0 : -(targetPos.x - gridTotalW / 2)
+  const cameraOffsetY = isOverview ? 0 : -(targetPos.y - gridTotalH / 2)
 
   return (
     <div
@@ -849,7 +921,7 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',
         position: 'relative',
-        cursor: cameraZoom >= 1.0 ? (panState.current.dragging ? 'grabbing' : 'grab') : 'default',
+        cursor: panState.current.dragging ? 'grabbing' : 'grab',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -859,129 +931,115 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
       onTouchMove={(e) => { handleTouchMove(e); handleTouchMovePinch(e) }}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Building container - NO rotateX/rotateZ. Images are already isometric. */}
       <div style={{
-        transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${cameraZoom}) rotateX(55deg) rotateZ(-45deg)`,
-        transformStyle: 'preserve-3d',
+        transform: `translate(${panOffset.x + cameraOffsetX * cameraZoom}px, ${panOffset.y + cameraOffsetY * cameraZoom}px) scale(${cameraZoom})`,
         transition: panState.current.dragging ? 'none' : `transform ${zoomTransition}`,
         transformOrigin: 'center center',
-        filter: `drop-shadow(0 20px 60px rgba(255,216,122,${isOverview ? 0.04 : 0.08}))`,
+        position: 'relative',
+        width: gridTotalW,
+        height: gridTotalH + 60, // Extra for CORNER sign
       }}>
-        <svg
-          width={svgW} height={svgH}
-          viewBox={`-30 -30 ${svgW} ${svgH}`}
-          style={{ overflow: 'visible' }}
-        >
-          <g style={{
-            transform: isOverview ? 'translate(0, 0)' : `translate(${offsetX}px, ${offsetY}px)`,
-            transition: panState.current.dragging ? 'none' : `transform ${zoomTransition}`,
-          }}>
-            <defs>
-              <radialGradient id="buildingGlow" cx="50%" cy="50%" r="60%">
-                <stop offset="0%" stopColor="#FFD87A" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="#FFD87A" stopOpacity="0" />
-              </radialGradient>
-              <linearGradient id="bobbyLedGlow" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#9C27B0" stopOpacity="0" />
-                <stop offset="40%" stopColor="#9C27B0" stopOpacity="0.15" />
-                <stop offset="100%" stopColor="#9C27B0" stopOpacity="0.4" />
-              </linearGradient>
-              {/* DEPTH: Floor shadow gradient for all rooms */}
-              <linearGradient id="floorShadow" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#000" stopOpacity="0" />
-                <stop offset="100%" stopColor="#000" stopOpacity="0.4" />
-              </linearGradient>
-              {/* DEPTH: Building edge shadow */}
-              <filter id="buildingShadow" x="-10%" y="-10%" width="120%" height="130%">
-                <feDropShadow dx="3" dy="5" stdDeviation="4" floodColor="#000" floodOpacity="0.35" />
-              </filter>
-            </defs>
+        {/* Building shadow (dark blurred ellipse under the whole structure) */}
+        <div style={{
+          position: 'absolute',
+          top: '5%', left: '-5%', width: '110%', height: '100%',
+          background: 'radial-gradient(ellipse at 55% 55%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 40%, transparent 70%)',
+          filter: 'blur(20px)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
 
-            {/* Ground plane shadow - enhanced depth */}
-            <ellipse cx={svgW / 2 - 30} cy={svgH / 2 + 30} rx={svgW * 0.55} ry={svgH * 0.3}
-              fill={PALETTE.groundPlane} opacity={GRID_SPEC.rendering.shadowOpacity} />
+        {/* Warm building glow (light spill onto void) */}
+        <div style={{
+          position: 'absolute',
+          top: '-15%', left: '-15%', width: '130%', height: '130%',
+          background: 'radial-gradient(ellipse at 50% 45%, rgba(255,216,122,0.06) 0%, rgba(255,183,77,0.03) 30%, transparent 60%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
 
-            {/* DEPTH: Secondary ground shadow (softer, wider) */}
-            <ellipse cx={svgW / 2 - 20} cy={svgH / 2 + 40} rx={svgW * 0.65} ry={svgH * 0.35}
-              fill="#000" opacity={0.08} />
+        {/* Room grid - CSS Grid layout */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(4, ${TILE_SIZE}px)`,
+          gridTemplateRows: `repeat(4, ${TILE_SIZE}px)`,
+          gap: 1, // Minimal gap - rooms share walls like the north star
+          position: 'relative',
+          zIndex: 1,
+        }}>
+          {rooms.map(room => {
+            const col = room.position.col / 2
+            const row = room.position.row
+            const colSpan = room.size.cols / 2
+            const agent = AGENTS.find(a => a.slug === room.id)
+            const showNameplate = detailLevel !== 'detail'
+            const tileW = TILE_SIZE * colSpan + (colSpan - 1) * 1 // account for gap
+            const tileH = TILE_SIZE
 
-            {/* Ground glow */}
-            <rect x={-50} y={-50} width={svgW + 50} height={svgH + 50} fill="url(#buildingGlow)" />
-
-            {/* Render rooms */}
-            {rooms.map(room => {
-              const pixelX = (room.position.col / 2) * CELL_SIZE
-              const pixelY = room.position.row * CELL_SIZE
-              const agent = AGENTS.find(a => a.slug === room.id)
-              const showNameplate = detailLevel !== 'detail'
-
-              return (
-                <g key={room.id}
-                  transform={`translate(${pixelX}, ${pixelY})`}
-                  onMouseEnter={() => setHoveredRoom(room.id)}
-                  onMouseLeave={() => setHoveredRoom(null)}
-                >
-                  {showNameplate && (
-                    <RoomNameplate
-                      room={room}
-                      agentStatus={agentStatus[room.id]}
-                      isHovered={hoveredRoom === room.id}
-                      cellSize={CELL_SIZE}
-                    />
-                  )}
-
-                  <IsometricRoom
+            return (
+              <div
+                key={room.id}
+                style={{
+                  gridColumn: `${col + 1} / span ${colSpan}`,
+                  gridRow: `${row + 1}`,
+                  position: 'relative',
+                }}
+              >
+                {/* Nameplate above room */}
+                {showNameplate && room.agent && (
+                  <RoomNameplateHTML
                     room={room}
-                    agent={agent}
                     agentStatus={agentStatus[room.id]}
                     isHovered={hoveredRoom === room.id}
-                    isSelected={selectedRoom === room.id}
-                    onClick={onRoomClick}
-                    cellSize={CELL_SIZE}
-                    detailLevel={detailLevel}
-                    agentAnimation={agentAnimations?.[room.id]}
                   />
-                </g>
-              )
-            })}
+                )}
 
-            {/* Exterior walls with building shadow filter */}
-            <g style={{ filter: 'url(#buildingShadow)' }}>
-              <line x1={0} y1={0} x2={CELL_SIZE * 4} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-              <line x1={CELL_SIZE * 4} y1={0} x2={CELL_SIZE * 4} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-              <line x1={CELL_SIZE * 4} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-              <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-              <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-              <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-              <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 3} x2={0} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-              <line x1={0} y1={CELL_SIZE * 3} x2={0} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-            </g>
+                <RoomTile
+                  room={room}
+                  agent={agent}
+                  agentStatus={agentStatus[room.id]}
+                  isHovered={hoveredRoom === room.id}
+                  isSelected={selectedRoom === room.id}
+                  onClick={onRoomClick}
+                  onMouseEnter={() => setHoveredRoom(room.id)}
+                  onMouseLeave={() => setHoveredRoom(null)}
+                  tileW={tileW}
+                  tileH={tileH}
+                  detailLevel={detailLevel}
+                  agentAnimation={agentAnimations?.[room.id]}
+                />
+              </div>
+            )
+          })}
+        </div>
 
-            {/* CORNER entrance sign */}
-            <g transform={`translate(${CELL_SIZE * 2}, ${CELL_SIZE * 4 + 25})`}>
-              <rect x={-35} y={-10} width={70} height={22} fill={GRID_SPEC.entrance.awningColor} rx={3} stroke={PALETTE.exteriorWalls} strokeWidth={1} />
-              <text x={0} y={5} textAnchor="middle" fill={GRID_SPEC.entrance.signColor}
-                fontSize={GRID_SPEC.entrance.signFontSize} fontFamily={`${GRID_SPEC.entrance.signFont}, sans-serif`}
-                fontWeight={GRID_SPEC.entrance.signFontWeight} letterSpacing="0.05em">
-                {GRID_SPEC.entrance.sign}
-              </text>
-            </g>
-
-            {/* Path to entrance */}
-            <rect x={CELL_SIZE * 1.7} y={CELL_SIZE * 4 + 2} width={CELL_SIZE * 0.6} height={18}
-              fill={PALETTE.groundPlaneEdge} rx={2} opacity={0.5} />
-
-            {/* Exterior details */}
-            <rect x={-15} y={CELL_SIZE * 1.5} width={8} height={20} fill="#5D4037" rx={1} opacity={0.4} />
-            <circle cx={CELL_SIZE * 4 + 20} cy={CELL_SIZE * 0.8} r={12} fill="#2E7D32" opacity={0.3} />
-            <circle cx={CELL_SIZE * 4 + 20} cy={CELL_SIZE * 0.8} r={8} fill="#388E3C" opacity={0.25} />
-            <rect x={CELL_SIZE * 4 + 18} y={CELL_SIZE * 0.8 + 8} width={4} height={8} fill="#5D4037" opacity={0.3} rx={1} />
-
-            {/* DEPTH: Second tree for visual balance */}
-            <circle cx={-18} cy={CELL_SIZE * 3.2} r={10} fill="#2E7D32" opacity={0.25} />
-            <circle cx={-18} cy={CELL_SIZE * 3.2} r={6} fill="#388E3C" opacity={0.2} />
-            <rect x={-20} y={CELL_SIZE * 3.2 + 7} width={4} height={7} fill="#5D4037" opacity={0.25} rx={1} />
-          </g>
-        </svg>
+        {/* CORNER entrance sign - subtle, part of the building */}
+        <div style={{
+          position: 'absolute',
+          bottom: 8, left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2,
+        }}>
+          <div style={{
+            background: 'rgba(26, 26, 23, 0.9)',
+            border: `1px solid ${PALETTE.exteriorWalls}`,
+            borderRadius: 3,
+            padding: '4px 14px',
+            boxShadow: '0 0 12px rgba(255,216,122,0.1), 0 2px 8px rgba(0,0,0,0.3)',
+          }}>
+            <span style={{
+              color: GRID_SPEC.entrance.signColor,
+              fontFamily: `${GRID_SPEC.entrance.signFont}, sans-serif`,
+              fontWeight: GRID_SPEC.entrance.signFontWeight,
+              fontSize: 13,
+              letterSpacing: '0.08em',
+              textShadow: '0 0 8px rgba(255,216,122,0.3)',
+            }}>
+              {GRID_SPEC.entrance.sign}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -2298,10 +2356,10 @@ export default function GameDashboard() {
     return localStorage.getItem('corner-mode') || 'game'
   })
 
-  // CAMERA STATE: zoomed in on main agent by default
+  // CAMERA STATE: start in overview to see the full building
   const [cameraTarget, setCameraTarget] = useState(DEFAULT_AGENT)
-  const [cameraZoom, setCameraZoom] = useState(1.6)
-  const [isOverview, setIsOverview] = useState(false)
+  const [cameraZoom, setCameraZoom] = useState(0.7)
+  const [isOverview, setIsOverview] = useState(true)
 
   // C3 Step 8: Agent death/error animation state
   // { [agentSlug]: { state: 'away'|'leaving'|'returning', label: 'Away'|'Reconnecting...', x, y } }
@@ -2532,7 +2590,7 @@ export default function GameDashboard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              style={{ width: '100%', height: '100%', perspective: '1000px' }}
+              style={{ width: '100%', height: '100%' }}
             >
               <IsometricOffice
                 agentStatus={agentStatus}
@@ -2749,6 +2807,14 @@ export default function GameDashboard() {
           0% { transform: translateY(0) translateX(0); opacity: 0.03; }
           50% { transform: translateY(-8px) translateX(4px); opacity: 0.06; }
           100% { transform: translateY(-16px) translateX(-2px); opacity: 0; }
+        }
+        @keyframes characterGlow {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.05); }
+        }
+        @keyframes statusPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.3); opacity: 0.6; }
         }
         .animate-spin { animation: spin 1s linear infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }
