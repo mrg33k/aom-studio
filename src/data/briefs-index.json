@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T08:10:31.487Z",
+  "generated": "2026-03-16T08:20:29.189Z",
   "categories": [
     {
       "name": "Strategy",
@@ -12,6 +12,16 @@
           "dateFormatted": "Mar 16",
           "summary": "Step-by-step guide for taking a signed Corner client from contract to live operations. The 14-day journey. Who does what, when, and how. Built for Patrik and the AOM ops team.",
           "path": "/briefs/client-onboarding-guide",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Competitive Battle Cards",
+          "slug": "competitive-battle-cards",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "One-page battle cards for every competitor type Patrik might face in a sales call. Pull up the right card, know exactly what to say. Covers DIY tools, fractional CAIOs, chatbot vendors, AI consulting agencies, and construction-specific competitors.",
+          "path": "/briefs/competitive-battle-cards",
           "hasPage": true
         },
         {
@@ -32,6 +42,26 @@
           "dateFormatted": "Mar 16",
           "summary": "Investor pitch brief for Corner. Market thesis, product vision, business model, competitive landscape, financial projections, team, capital needs, and use of funds. Not a slide deck. The strategic brief that a deck gets built from.",
           "path": "/briefs/investor-pitch-brief",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Legal Templates Spec",
+          "slug": "legal-templates",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "What AOM's client legal documents need to cover. NDA template, Master Service Agreement, and Acceptable Use Policy specs. Not legal advice. The strategic framework for a lawyer to draft from. Covers data isolation, AI liability, SLA commitments, and termination.",
+          "path": "/briefs/legal-templates",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Sales One-Pager",
+          "slug": "sales-one-pager",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "The leave-behind. What Patrik hands a prospect after a demo or attaches to a follow-up email. One page. Both sides. Print-ready and PDF-ready. Steffen designs, Bobby builds the web version at /one-pager.",
+          "path": "/briefs/sales-one-pager",
           "hasPage": true
         },
         {
@@ -1366,6 +1396,16 @@
           "dateFormatted": "Mar 16",
           "summary": "C9 horizon notes. Self-Building AI, acquisition engine, international expansion, IPO infrastructure, edge deployment, Corner for Government v2, the talent marketplace, Corner Capital, and the self-replicating system. The layer where Corner stops needing humans to grow.",
           "path": "/briefs/c9-notes",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Skills Catalog: C3/C4 Launch",
+          "slug": "skills-catalog",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Every skill that ships at C3 and C4 launch. Organized by category. Each skill has: name, trigger, what it does, which agent uses it, and tier availability. This is what Bobby builds. This is what Patrik sells.",
+          "path": "/briefs/skills-catalog",
           "hasPage": true
         },
         {

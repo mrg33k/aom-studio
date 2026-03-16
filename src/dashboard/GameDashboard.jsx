@@ -767,13 +767,31 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
   )
 }
 
-// ---- ISOMETRIC OFFICE (main game view) - DIV-BASED with render images ------
-// The room renders are already isometric. No CSS 3D transform needed.
-// Layout: CSS grid positions rooms. Images provide all depth/walls/lighting.
+// ---- ISOMETRIC OFFICE (main game view) - SINGLE IMAGE APPROACH -------------
+// Uses full-office-warm-night.png as ONE cohesive building.
+// No individual room tiles = no double walls. The north star IS the background.
+// Interactive click targets, nameplates, and status dots overlay on top.
+
+// Room hit-target positions mapped to the 1024x1024 full-office image (percentages).
+const IMAGE_ROOM_TARGETS = {
+  patrik:     { x: 22, y: 7,  w: 16, h: 16, labelY: 5  },
+  mom:        { x: 36, y: 7,  w: 16, h: 16, labelY: 5  },
+  alex:       { x: 50, y: 7,  w: 16, h: 16, labelY: 5  },
+  steve:      { x: 64, y: 7,  w: 16, h: 16, labelY: 5  },
+  steffen:    { x: 14, y: 24, w: 16, h: 18, labelY: 22 },
+  'main-hall':{ x: 30, y: 24, w: 30, h: 18, labelY: 22 },
+  jacob:      { x: 60, y: 24, w: 18, h: 18, labelY: 22 },
+  bobby:      { x: 8,  y: 44, w: 16, h: 18, labelY: 42 },
+  colton:     { x: 24, y: 44, w: 16, h: 18, labelY: 42 },
+  cleo:       { x: 40, y: 44, w: 16, h: 18, labelY: 42 },
+  tony:       { x: 56, y: 44, w: 16, h: 18, labelY: 42 },
+  elmo:       { x: 24, y: 64, w: 16, h: 16, labelY: 62 },
+  elon:       { x: 40, y: 64, w: 16, h: 16, labelY: 62 },
+}
+// ---- SINGLE-IMAGE APPROACH: uses full-office-warm-night.png ------
 function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations }) {
-  // Room tile size (px) - each grid cell
-  const TILE_SIZE = 220
-  const TILE_SIZE_WIDE = TILE_SIZE * 2 // main-hall is 2 cols wide
+  // Image display size (px) - scales the 1024x1024 image
+  const IMG_SIZE = 880
 
   const rooms = GRID_SPEC.rooms
   const containerRef = useRef(null)
@@ -886,32 +904,19 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
   const detailLevel = getDetailLevel(cameraZoom)
   const zoomTransition = detailLevel === 'overview' ? '0.5s cubic-bezier(0.4, 0.0, 0.2, 1.0)' : '0.4s cubic-bezier(0.2, 0.9, 0.3, 1.0)'
 
-  // Grid layout: 4 columns (each room is 1 cell, main-hall spans 2)
-  // Row 0: patrik(1) | mom(1) | alex(1) | steve(1)
-  // Row 1: steffen(1) | main-hall(2) | jacob(1)
-  // Row 2: bobby(1) | colton(1) | cleo(1) | tony(1)
-  // Row 3: (empty) | elmo(1) | elon(1) | (empty)
-  // The grid uses CSS grid. No isometric CSS transform. The images ARE isometric.
-
-  // Calculate camera offset to center on target room
-  const getRoomGridPosition = (roomId) => {
-    const room = ROOM_MAP[roomId]
-    if (!room) return { x: 0, y: 0 }
-    const col = room.position.col / 2 // Convert from half-cols to full cols
-    const row = room.position.row
-    const colSpan = room.size.cols / 2
+  // Camera offset centers on the target room using image-space coordinates
+  const getRoomCenter = (roomId) => {
+    const target = IMAGE_ROOM_TARGETS[roomId]
+    if (!target) return { x: IMG_SIZE / 2, y: IMG_SIZE / 2 }
     return {
-      x: (col + colSpan / 2) * TILE_SIZE,
-      y: (row + 0.5) * TILE_SIZE,
+      x: (target.x + target.w / 2) / 100 * IMG_SIZE,
+      y: (target.y + target.h / 2) / 100 * IMG_SIZE,
     }
   }
 
-  const gridTotalW = 4 * TILE_SIZE
-  const gridTotalH = 4 * TILE_SIZE
-
-  const targetPos = getRoomGridPosition(cameraTarget || DEFAULT_AGENT)
-  const cameraOffsetX = isOverview ? 0 : -(targetPos.x - gridTotalW / 2)
-  const cameraOffsetY = isOverview ? 0 : -(targetPos.y - gridTotalH / 2)
+  const targetPos = getRoomCenter(cameraTarget || DEFAULT_AGENT)
+  const cameraOffsetX = isOverview ? 0 : -(targetPos.x - IMG_SIZE / 2)
+  const cameraOffsetY = isOverview ? 0 : -(targetPos.y - IMG_SIZE / 2)
 
   return (
     <div
@@ -931,115 +936,151 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
       onTouchMove={(e) => { handleTouchMove(e); handleTouchMovePinch(e) }}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Building container - NO rotateX/rotateZ. Images are already isometric. */}
+      {/* Building container - single cohesive image, no grid of tiles */}
       <div style={{
         transform: `translate(${panOffset.x + cameraOffsetX * cameraZoom}px, ${panOffset.y + cameraOffsetY * cameraZoom}px) scale(${cameraZoom})`,
         transition: panState.current.dragging ? 'none' : `transform ${zoomTransition}`,
         transformOrigin: 'center center',
         position: 'relative',
-        width: gridTotalW,
-        height: gridTotalH + 60, // Extra for CORNER sign
+        width: IMG_SIZE,
+        height: IMG_SIZE,
       }}>
-        {/* Building shadow (dark blurred ellipse under the whole structure) */}
-        <div style={{
-          position: 'absolute',
-          top: '5%', left: '-5%', width: '110%', height: '100%',
-          background: 'radial-gradient(ellipse at 55% 55%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 40%, transparent 70%)',
-          filter: 'blur(20px)',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }} />
+        {/* The full office image - ONE cohesive building. No double walls. */}
+        <img
+          src="/corner/full-office-warm-night.png"
+          alt="Corner Office"
+          draggable={false}
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'block',
+            imageRendering: 'auto',
+            userSelect: 'none',
+          }}
+        />
 
-        {/* Warm building glow (light spill onto void) */}
-        <div style={{
-          position: 'absolute',
-          top: '-15%', left: '-15%', width: '130%', height: '130%',
-          background: 'radial-gradient(ellipse at 50% 45%, rgba(255,216,122,0.06) 0%, rgba(255,183,77,0.03) 30%, transparent 60%)',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }} />
+        {/* Interactive room overlays - click targets, nameplates, status */}
+        {rooms.map(room => {
+          const target = IMAGE_ROOM_TARGETS[room.id]
+          if (!target) return null
 
-        {/* Room grid - CSS Grid layout */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(4, ${TILE_SIZE}px)`,
-          gridTemplateRows: `repeat(4, ${TILE_SIZE}px)`,
-          gap: 1, // Minimal gap - rooms share walls like the north star
-          position: 'relative',
-          zIndex: 1,
-        }}>
-          {rooms.map(room => {
-            const col = room.position.col / 2
-            const row = room.position.row
-            const colSpan = room.size.cols / 2
-            const agent = AGENTS.find(a => a.slug === room.id)
-            const showNameplate = detailLevel !== 'detail'
-            const tileW = TILE_SIZE * colSpan + (colSpan - 1) * 1 // account for gap
-            const tileH = TILE_SIZE
+          const hasAgent = room.agent !== null
+          const status = agentStatus[room.id]?.status || 'IDLE'
+          const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
+          const isActive = status === 'WORKING'
+          const isHovered = hoveredRoom === room.id
+          const isSelected = selectedRoom === room.id
+          const agentColor = room.agentColor || '#FFD87A'
+          const isAway = agentAnimations?.[room.id]?.state === 'away'
+          const showNameplate = detailLevel !== 'detail'
 
-            return (
+          return (
+            <div key={room.id}>
+              {/* Nameplate above room */}
+              {showNameplate && hasAgent && (
+                <div style={{
+                  position: 'absolute',
+                  left: `${target.x + target.w / 2}%`,
+                  top: `${target.labelY}%`,
+                  transform: 'translateX(-50%)',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: PALETTE.nameplate.background,
+                  border: `1px solid ${isHovered ? `${agentColor}4D` : PALETTE.nameplate.border}`,
+                  borderRadius: 6, padding: '3px 10px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                  whiteSpace: 'nowrap', zIndex: 10,
+                  transition: 'border-color 150ms ease',
+                  pointerEvents: 'none',
+                }}>
+                  {SPRITE_AGENTS.includes(room.id) && (
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                      <img src={`/corner/sprites/${room.id}-idle.png`} alt=""
+                        style={{ width: 32, height: 32, objectFit: 'cover', objectPosition: '0 0', imageRendering: 'pixelated' }} />
+                    </div>
+                  )}
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color),
+                    flexShrink: 0,
+                    animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
+                  }} />
+                  <span style={{
+                    color: PALETTE.nameplate.text,
+                    fontSize: 11, fontWeight: isHovered ? 700 : 600,
+                    fontFamily: 'Space Grotesk, sans-serif',
+                  }}>
+                    {room.agent}
+                  </span>
+                  {isHovered && agentStatus[room.id]?.currentTask && (
+                    <span style={{ color: '#8A847C', fontSize: 9, fontFamily: 'Space Grotesk, sans-serif', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {agentStatus[room.id].currentTask.length > 22 ? agentStatus[room.id].currentTask.slice(0, 22) + '...' : agentStatus[room.id].currentTask}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Click target overlay */}
               <div
-                key={room.id}
+                onClick={() => hasAgent && onRoomClick?.(room.id)}
+                onMouseEnter={() => setHoveredRoom(room.id)}
+                onMouseLeave={() => setHoveredRoom(null)}
                 style={{
-                  gridColumn: `${col + 1} / span ${colSpan}`,
-                  gridRow: `${row + 1}`,
-                  position: 'relative',
+                  position: 'absolute',
+                  left: `${target.x}%`,
+                  top: `${target.y}%`,
+                  width: `${target.w}%`,
+                  height: `${target.h}%`,
+                  cursor: hasAgent ? 'pointer' : 'default',
+                  zIndex: (isHovered || isSelected) ? 5 : 2,
+                  borderRadius: 4,
+                  background: (isHovered || isSelected) && hasAgent
+                    ? `radial-gradient(ellipse, ${agentColor}18 0%, transparent 70%)`
+                    : 'transparent',
+                  border: (isHovered || isSelected) && hasAgent
+                    ? `2px solid ${agentColor}${isSelected ? '80' : '40'}`
+                    : '2px solid transparent',
+                  boxShadow: (isHovered || isSelected) && hasAgent
+                    ? `0 0 20px ${agentColor}25, inset 0 0 30px ${agentColor}08`
+                    : 'none',
+                  transition: 'border-color 200ms ease, background 200ms ease, box-shadow 200ms ease',
                 }}
               >
-                {/* Nameplate above room */}
-                {showNameplate && room.agent && (
-                  <RoomNameplateHTML
-                    room={room}
-                    agentStatus={agentStatus[room.id]}
-                    isHovered={hoveredRoom === room.id}
-                  />
+                {isAway && (
+                  <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(10, 15, 30, 0.9)', border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: 12, padding: '4px 12px',
+                    color: '#F59E0B', fontSize: 10, fontFamily: 'JetBrains Mono, monospace',
+                    fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em',
+                    zIndex: 6,
+                  }}>
+                    {agentAnimations?.[room.id]?.label || 'Away'}
+                  </div>
                 )}
 
-                <RoomTile
-                  room={room}
-                  agent={agent}
-                  agentStatus={agentStatus[room.id]}
-                  isHovered={hoveredRoom === room.id}
-                  isSelected={selectedRoom === room.id}
-                  onClick={onRoomClick}
-                  onMouseEnter={() => setHoveredRoom(room.id)}
-                  onMouseLeave={() => setHoveredRoom(null)}
-                  tileW={tileW}
-                  tileH={tileH}
-                  detailLevel={detailLevel}
-                  agentAnimation={agentAnimations?.[room.id]}
-                />
-              </div>
-            )
-          })}
-        </div>
+                {isAway && (
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'rgba(0,0,0,0.55)',
+                    borderRadius: 4, pointerEvents: 'none',
+                  }} />
+                )}
 
-        {/* CORNER entrance sign - subtle, part of the building */}
-        <div style={{
-          position: 'absolute',
-          bottom: 8, left: '50%', transform: 'translateX(-50%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2,
-        }}>
-          <div style={{
-            background: 'rgba(26, 26, 23, 0.9)',
-            border: `1px solid ${PALETTE.exteriorWalls}`,
-            borderRadius: 3,
-            padding: '4px 14px',
-            boxShadow: '0 0 12px rgba(255,216,122,0.1), 0 2px 8px rgba(0,0,0,0.3)',
-          }}>
-            <span style={{
-              color: GRID_SPEC.entrance.signColor,
-              fontFamily: `${GRID_SPEC.entrance.signFont}, sans-serif`,
-              fontWeight: GRID_SPEC.entrance.signFontWeight,
-              fontSize: 13,
-              letterSpacing: '0.08em',
-              textShadow: '0 0 8px rgba(255,216,122,0.3)',
-            }}>
-              {GRID_SPEC.entrance.sign}
-            </span>
-          </div>
-        </div>
+                {hasAgent && !isAway && (
+                  <div style={{
+                    position: 'absolute', top: 6, right: 6,
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: cfg.color,
+                    opacity: isActive ? 1 : 0.6,
+                    boxShadow: isActive ? `0 0 8px ${cfg.color}` : 'none',
+                    animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
+                    zIndex: 3,
+                  }} />
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
