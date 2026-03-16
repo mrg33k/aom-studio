@@ -12,6 +12,7 @@ import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
 import { createChatConnection, CONNECTION_TYPE } from './chatConnection.js'
 import { renderFurniture } from './FurnitureRenderer.jsx'
 import { useWebSocket, WS_STATE } from './useWebSocket.js'
+import { AnimatedAgentCharacter, CharacterAnimationStyles } from './CharacterAnimations.jsx'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -1270,36 +1271,22 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   />
                 )}
 
-                {/* Speaking indicator: speech bubble when agent is responding in chat */}
-                {streamingAgent === room.id && hasAgent && !isAway && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                    style={{
-                      position: 'absolute', bottom: '55%', left: '50%', transform: 'translateX(-50%)',
-                      background: 'rgba(10, 15, 30, 0.92)', border: `1px solid ${agentColor}50`,
-                      borderRadius: 10, padding: '5px 10px',
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      zIndex: 8, pointerEvents: 'none',
-                      boxShadow: `0 2px 12px rgba(0,0,0,0.4), 0 0 16px ${agentColor}20`,
-                    }}
-                  >
-                    {[0, 1, 2].map(i => (
-                      <div key={i} style={{
-                        width: 5, height: 5, borderRadius: '50%', background: agentColor,
-                        animation: `chatTypingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
-                      }} />
-                    ))}
-                    {/* Speech bubble tail */}
-                    <div style={{
-                      position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)',
-                      width: 0, height: 0,
-                      borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
-                      borderTop: `5px solid ${agentColor}50`,
-                    }} />
-                  </motion.div>
+                {/* Bobby3: Animated agent character -- hop, idle bounce, state transitions, speaking bubble, celebration */}
+                {hasAgent && !isAway && SPRITE_AGENTS.includes(room.id) && (
+                  <div style={{
+                    position: 'absolute', bottom: '5%', left: '50%', transform: 'translateX(-50%)',
+                    width: '40%', height: '50%',
+                    pointerEvents: 'none', zIndex: 4,
+                  }}>
+                    <AnimatedAgentCharacter
+                      color={agentColor}
+                      status={status}
+                      agentSlug={room.id}
+                      isSpeaking={streamingAgent === room.id}
+                      roomW={120}
+                      roomH={120}
+                    />
+                  </div>
                 )}
               </motion.div>
             </motion.div>
@@ -2914,21 +2901,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const blockedCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
 
   return (
-    <motion.div
-      initial={{ x: '100%', opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: '100%', opacity: 0 }}
-      transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+    <div
       style={{
-        position: 'absolute', top: 0, right: 0, bottom: 0,
         width: isExtended ? '65vw' : 380,
         maxWidth: isExtended ? '85vw' : '85vw',
         minWidth: 380,
+        flexShrink: 0,
+        height: '100%',
         background: 'linear-gradient(180deg, rgba(6, 12, 28, 0.98) 0%, rgba(8, 16, 36, 0.97) 50%, rgba(6, 12, 28, 0.98) 100%)',
-        backdropFilter: 'blur(24px)',
         borderLeft: '2px solid rgba(59, 158, 255, 0.35)',
         display: 'flex', flexDirection: 'column',
-        zIndex: 32,
         boxShadow: '-12px 0 60px rgba(0,0,0,0.5), -2px 0 20px rgba(59,158,255,0.08), inset 1px 0 0 rgba(100,180,255,0.06)',
         transition: 'width 250ms ease',
       }}
@@ -2979,16 +2961,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
             >
               {isExtended ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            </button>
-            <button onClick={onClose} style={{
-              background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
-              borderRadius: 6, cursor: 'pointer', color: '#6B7280', padding: 6,
-              transition: 'all 150ms ease',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
-            >
-              <X size={16} />
             </button>
           </div>
         </div>
@@ -3363,7 +3335,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -3994,7 +3966,8 @@ export default function GameDashboard() {
     onToggleMinimap: () => setShowMinimap(m => !m),
     onEscape: () => {
       if (showShortcuts) { setShowShortcuts(false); return }
-      if (panelVisible) { setPanelVisible(false); return }
+      // Panel is always visible, Escape just collapses extended mode
+      if (panelExtended) { setPanelExtended(false); return }
       if (cameraZoom > 2.0) { setCameraZoom(1.6); return }
       if (selectedRoom) { setSelectedRoom(null); setIsOverview(true); return }
       setHudOpen(false)
