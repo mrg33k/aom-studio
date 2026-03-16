@@ -499,7 +499,7 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
               textAnchor="middle"
               dominantBaseline="middle"
               fill={color}
-              fontFamily="Space Grotesk, sans-serif"
+              fontFamily="Inter, system-ui, sans-serif"
               fontWeight="700"
               fontSize={Math.max(12, size * 0.36)}
             >
@@ -704,7 +704,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
           {mainHasSpr ? (
             <image href={`/corner/sprites/${mainAgent.slug}-idle.png`} x={-52*0.15} y={-52*0.05} width={52*1.35} height={52*1.35} clipPath="url(#main-agent-clip)" style={{ imageRendering: 'pixelated' }} preserveAspectRatio="xMidYMin slice" />
           ) : (
-            <text x={26} y={52*0.58} textAnchor="middle" dominantBaseline="middle" fill={mainAgent.color} fontFamily="Space Grotesk, sans-serif" fontWeight="700" fontSize={20}>{mainAgent.name?.charAt(0)}</text>
+            <text x={26} y={52*0.58} textAnchor="middle" dominantBaseline="middle" fill={mainAgent.color} fontFamily="Inter, system-ui, sans-serif" fontWeight="700" fontSize={20}>{mainAgent.name?.charAt(0)}</text>
           )}
           <path d={`M 26 ${52*0.02} L ${26+52*0.48} ${52*0.22} L ${26+52*0.48} ${52*0.72} Q ${26+52*0.48} ${52*0.98}, 26 ${52*0.98} Q ${26-52*0.48} ${52*0.98}, ${26-52*0.48} ${52*0.72} L ${26-52*0.48} ${52*0.22} Z`} fill="none" stroke={mainCfg.ring} strokeWidth={2.5} strokeLinejoin="round" style={{ filter: mainStatus === 'WORKING' ? `drop-shadow(0 0 6px ${mainCfg.glow})` : 'none' }} />
         </svg>
@@ -768,7 +768,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                   width={40} height={40}
                   style={{ width: 40, height: 40, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -6, marginTop: -4 }} />
               ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: 'Space Grotesk, sans-serif' }}>
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: "'Inter', system-ui, sans-serif" }}>
                   {agent.name?.charAt(0) || '?'}
                 </div>
               )}
@@ -812,7 +812,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                   width: '100%', height: 36, background: 'rgba(100,180,255,0.06)',
                   border: '1.5px solid rgba(100,180,255,0.15)', borderRadius: 8,
                   padding: '0 12px', color: '#EDF2FA', fontSize: 16,
-                  fontFamily: 'Space Grotesk, sans-serif', outline: 'none',
+                  fontFamily: "'Inter', system-ui, sans-serif", outline: 'none',
                 }}
               />
             </div>
@@ -979,7 +979,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
 
       {/* Name - VEGAS SIZE. Font weight 900. Patrik directive. */}
       <span style={{
-        fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+        fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 20, fontWeight: 900,
         color: isExpanded ? '#FFFFFF' : isToday ? '#EDF2FA' : HUD.textPrimary,
         whiteSpace: 'nowrap',
@@ -1101,7 +1101,7 @@ function TaskPanel({ project, onClose }) {
             boxShadow: `0 0 12px ${project.color}44`,
           }} />
           <span style={{
-            fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 900,
+            fontFamily: "'Inter', system-ui, sans-serif", fontSize: 26, fontWeight: 900,
             color: HUD.textPrimary,
             textTransform: 'uppercase',
             letterSpacing: '-0.02em',
@@ -1187,7 +1187,7 @@ function TaskPanel({ project, onClose }) {
 
             {/* Task text - LARGER */}
             <span style={{
-              fontFamily: 'Space Grotesk, sans-serif', fontSize: 16, fontWeight: 400,
+              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 400,
               color: task.done ? HUD.textMuted : HUD.textPrimary,
               lineHeight: 1.45,
               textDecoration: task.done ? 'line-through' : 'none',
@@ -1223,7 +1223,7 @@ function TaskPanel({ project, onClose }) {
                       width: '100%', height: '100%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 12, fontWeight: 700, color: a?.color || '#4A6080',
-                      fontFamily: 'Space Grotesk, sans-serif',
+                      fontFamily: "'Inter', system-ui, sans-serif",
                     }}>
                       {a?.name?.charAt(0) || '?'}
                     </div>
@@ -1341,7 +1341,7 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
             />
           ) : (
             <text x={chatSize/2} y={chatSize*0.58} textAnchor="middle" dominantBaseline="middle"
-              fill={agentColor} fontFamily="Space Grotesk, sans-serif"
+              fill={agentColor} fontFamily="Inter, system-ui, sans-serif"
               fontWeight="700" fontSize={chatSize * 0.38}>
               {currentAgent?.name?.charAt(0) || '?'}
             </text>
@@ -1635,7 +1635,7 @@ export default function GameHUD({
                         padding: '0 12px',
                         color: HUD.textPrimary,
                         fontSize: 14,
-                        fontFamily: 'Space Grotesk, sans-serif',
+                        fontFamily: "'Inter', system-ui, sans-serif",
                         outline: 'none',
                         marginRight: 6,
                       }}
@@ -1663,12 +1663,12 @@ export default function GameHUD({
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
                 <Loader2 size={16} style={{ color: HUD.textMuted, animation: 'spin 1s linear infinite' }} />
-                <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 16, color: HUD.textMuted }}>
+                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: HUD.textMuted }}>
                   Loading...
                 </span>
               </div>
             ) : filteredProjects.length === 0 ? (
-              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 16, color: HUD.textMuted, padding: '0 8px' }}>
+              <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: HUD.textMuted, padding: '0 8px' }}>
                 {searchQuery ? 'No matches' : 'No task data'}
               </span>
             ) : (

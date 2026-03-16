@@ -831,13 +831,13 @@ function RoomNameplateHTML({ room, agentStatus, isHovered }) {
       <span style={{
         color: PALETTE.nameplate.text,
         fontSize: 13, fontWeight: isHovered ? 700 : 600,
-        fontFamily: 'Space Grotesk, sans-serif',
+        fontFamily: "'Inter', system-ui, sans-serif",
       }}>
         {room.agent}
       </span>
       {/* Task on hover */}
       {isHovered && task && (
-        <span style={{ color: '#8A847C', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ color: '#8A847C', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {task.length > 22 ? task.slice(0, 22) + '...' : task}
         </span>
       )}
@@ -1485,7 +1485,7 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
               background: 'none', border: 'none', cursor: 'pointer',
               color: item.danger ? '#EF4444' : item.accent ? '#5BB8FF' : '#D0D8E8',
               fontSize: 14, fontWeight: 500,
-              fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+              fontFamily: "'Inter', system-ui, sans-serif",
               transition: 'background 80ms ease',
               textAlign: 'left',
             }}
@@ -1617,10 +1617,10 @@ function NotificationToast({ notifications, onDismiss, onClickNotification, queu
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <SpriteAvatar agentSlug={n.agentSlug} size={24} borderColor={n.agentColor || accentColor} />
                 <EventIcon size={14} color={accentColor} />
-                <span style={{ color: n.agentColor || accentColor, fontSize: 12, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>
+                <span style={{ color: n.agentColor || accentColor, fontSize: 12, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif" }}>
                   {n.agentName || 'System'}
                 </span>
-                <span style={{ marginLeft: 'auto', color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif' }}>
+                <span style={{ marginLeft: 'auto', color: '#6B7280', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
                   {n.time}
                 </span>
                 {/* Dismiss button */}
@@ -1639,7 +1639,7 @@ function NotificationToast({ notifications, onDismiss, onClickNotification, queu
 
               {/* Message */}
               <div style={{
-                color: '#F0ECE6', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif',
+                color: '#F0ECE6', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif",
                 lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis',
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
               }}>
@@ -1711,7 +1711,7 @@ function ModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
               borderBottom: active ? '3px solid #E85D26' : '3px solid transparent',
               cursor: 'pointer',
               color: active ? '#FDF6EC' : isHovered ? '#A0A0A0' : '#6B7280',
-              fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontSize: 14,
+              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14,
               fontWeight: active ? 800 : 600,
               textTransform: 'uppercase', letterSpacing: '0.06em',
               transition: 'color 150ms ease',
@@ -1834,7 +1834,7 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px 12px' }}>
         <SpriteAvatar agentSlug={room?.id} size={40} borderColor={agentColor} />
         <div style={{ flex: 1 }}>
-          <div style={{ color: '#FDF6EC', fontSize: 18, fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif' }}>
+          <div style={{ color: '#FDF6EC', fontSize: 18, fontWeight: 700, fontFamily: "'Inter', system-ui, sans-serif" }}>
             {agent?.name || room?.agent}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1854,7 +1854,7 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
 
       {/* Current task */}
       <div style={{ padding: '0 20px 16px' }}>
-        <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.4 }}>
+        <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.4 }}>
           {task}
         </div>
       </div>
@@ -1864,7 +1864,7 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
         <button onClick={() => onChat(room?.id)} style={{
           flex: 1, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           background: `${agentColor}26`, color: agentColor, border: `1px solid ${agentColor}40`,
-          borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', cursor: 'pointer',
+          borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
         }}>
           <MessageSquare size={14} />
           Chat with {agent?.name || 'Agent'}
@@ -1872,7 +1872,7 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
         <button onClick={onViewTasks} style={{
           flex: 1, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           background: 'rgba(255,255,255,0.04)', color: '#F0ECE6', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', cursor: 'pointer',
+          borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
         }}>
           <ListTodo size={14} />
           View Tasks
@@ -1886,14 +1886,14 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
             Recent
           </div>
           {agentStatus?.lastCompletion ? (
-            <div style={{ color: '#A8A29E', fontSize: 12, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div style={{ color: '#A8A29E', fontSize: 12, lineHeight: 1.5, fontFamily: "'Inter', system-ui, sans-serif" }}>
               {agentStatus.lastCompletion.description}
               <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>
                 {agentStatus.lastCompletion.date}
               </div>
             </div>
           ) : (
-            <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', padding: '8px 0' }}>
+            <div style={{ color: '#6B7280', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", padding: '8px 0' }}>
               No recent completions
             </div>
           )}
@@ -1960,7 +1960,7 @@ function ShortcutsOverlay({ onClose }) {
             borderBottom: '1px solid rgba(255,255,255,0.04)',
           }}>
             <span style={{
-              fontFamily: 'Space Grotesk, sans-serif', fontSize: 13, color: '#A8A29E',
+              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#A8A29E',
             }}>
               {s.action}
             </span>
@@ -1980,7 +1980,7 @@ function ShortcutsOverlay({ onClose }) {
             width: '100%', marginTop: 16, padding: '10px',
             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 6, color: '#6B7280', cursor: 'pointer',
-            fontFamily: 'Space Grotesk, sans-serif', fontSize: 12,
+            fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12,
           }}
         >
           Close (Esc)
@@ -2315,7 +2315,7 @@ function TaskCard({ entry, agentColor }) {
         )}
         {/* Task title */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 14, color: '#F0ECE6', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 14, color: '#F0ECE6', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {entry.description || entry.currentTask || 'No task'}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
@@ -2330,7 +2330,7 @@ function TaskCard({ entry, agentColor }) {
               </span>
             )}
             {entry.time && (
-              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 12, color: '#6B7280', marginLeft: 'auto' }}>
+              <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 12, color: '#6B7280', marginLeft: 'auto' }}>
                 {timeAgo(entry.time)}
               </span>
             )}
@@ -2397,7 +2397,7 @@ function AddTaskTab() {
           width: '100%', background: 'transparent',
           border: 'none', borderBottom: '2px solid rgba(255, 255, 255, 0.15)',
           color: '#FDF6EC', padding: '12px 0', fontSize: 14,
-          fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400,
+          fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400,
           outline: 'none',
         }}
         onFocus={e => e.target.style.borderBottomColor = '#E85D26'}
@@ -2416,7 +2416,7 @@ function AddTaskTab() {
                 background: sel ? `${a.color}26` : 'transparent',
                 border: `1px solid ${sel ? `${a.color}4D` : 'rgba(255,255,255,0.08)'}`,
                 color: sel ? a.color : '#8A847C',
-                fontSize: 12, fontWeight: 500, fontFamily: 'Space Grotesk, sans-serif',
+                fontSize: 12, fontWeight: 500, fontFamily: "'Inter', system-ui, sans-serif",
                 cursor: 'pointer', transition: 'all 150ms ease',
               }}
             >
@@ -2432,7 +2432,7 @@ function AddTaskTab() {
 
 function EmptyTab({ message }) {
   return (
-    <div style={{ padding: '40px 0', textAlign: 'center', color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif' }}>
+    <div style={{ padding: '40px 0', textAlign: 'center', color: '#6B7280', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif" }}>
       {message}
     </div>
   )
@@ -2804,7 +2804,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 )}
                 <SpriteAvatar agentSlug={agentSlug} size={fullscreen ? 28 : 24} borderColor={agentColor} />
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ color: PALETTE.signText, fontSize: fullscreen ? 15 : 14, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.2 }}>
+                  <span style={{ color: PALETTE.signText, fontSize: fullscreen ? 15 : 14, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.2 }}>
                     {currentAgent?.name}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -2813,7 +2813,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                       background: streaming ? agentColor : (status === 'WORKING' ? '#22C55E' : '#6B7280'),
                       animation: streaming ? 'chatTypingDot 1.2s ease-in-out infinite' : (status === 'WORKING' ? 'statusPulse 1.5s ease-in-out infinite' : 'none'),
                     }} />
-                    <span style={{ color: '#8A847C', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <span style={{ color: '#8A847C', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
                       {streaming ? 'typing...' : (status === 'WORKING' ? 'Active' : status === 'WAITING' ? 'Thinking...' : 'Online')}
                     </span>
                   </div>
@@ -2854,10 +2854,10 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 }}>
                   <SpriteAvatar agentSlug={agentSlug} size={48} borderColor={agentColor} />
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ color: PALETTE.signText, fontSize: 15, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <div style={{ color: PALETTE.signText, fontSize: 15, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif" }}>
                       {currentAgent?.name}
                     </div>
-                    <div style={{ fontSize: 12, marginTop: 4, color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif' }}>
+                    <div style={{ fontSize: 12, marginTop: 4, color: '#6B7280', fontFamily: "'Inter', system-ui, sans-serif" }}>
                       {task}
                     </div>
                   </div>
@@ -2887,7 +2887,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                     <div style={{ maxWidth: '75%' }}>
                       <div style={{
                         padding: '10px 14px', fontSize: fullscreen ? 14 : 13,
-                        fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.55,
+                        fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.55,
                         ...(isUser
                           ? { background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.20)', borderRadius: '14px 4px 14px 14px', color: PALETTE.signText }
                           : { background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%)',
@@ -2906,7 +2906,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                       <div style={{
                         fontSize: 12, color: '#6B728088', marginTop: 4,
                         paddingLeft: isUser ? 0 : 2, paddingRight: isUser ? 2 : 0,
-                        fontFamily: 'Space Grotesk, sans-serif', textAlign: isUser ? 'right' : 'left',
+                        fontFamily: "'Inter', system-ui, sans-serif", textAlign: isUser ? 'right' : 'left',
                       }}>
                         {msg.streaming ? '' : formatTime(msg.time)}
                       </div>
@@ -2930,7 +2930,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                   flex: 1, background: 'rgba(255, 255, 255, 0.05)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
                   borderRadius: 10, height: 38, padding: '0 16px',
-                  color: PALETTE.signText, fontSize: 14, fontFamily: 'Space Grotesk, sans-serif',
+                  color: PALETTE.signText, fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif",
                   outline: 'none', transition: 'border-color 200ms ease, box-shadow 200ms ease',
                 }}
                 onFocus={e => { e.target.style.borderColor = `${agentColor}66`; e.target.style.boxShadow = `0 0 0 2px ${agentColor}15` }}
@@ -2974,7 +2974,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
               <SpriteAvatar agentSlug={agentSlug} size={32} borderColor={agentColor} />
             </div>
             <div onClick={() => setExpanded(true)} style={{ cursor: 'pointer', flexShrink: 0 }}>
-              <span style={{ color: agentColor, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>
+              <span style={{ color: agentColor, fontSize: 13, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif" }}>
                 {currentAgent?.name}
               </span>
               {streaming && (
@@ -2996,7 +2996,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 flex: 1, background: 'rgba(255, 255, 255, 0.04)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: 10, height: 36, padding: '0 16px',
-                color: PALETTE.signText, fontSize: 14, fontFamily: 'Space Grotesk, sans-serif',
+                color: PALETTE.signText, fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif",
                 outline: 'none', margin: '0 4px', transition: 'border-color 200ms ease',
               }}
             />
@@ -3090,8 +3090,8 @@ function PanelSkeleton({ agentColor }) {
 // TODO(patrik): Chat timeout indicator -- show countdown ring when waiting for agent response (60s)
 // TODO(patrik): Agent activity log tab -- show recent commits, file changes, completions per agent
 // TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent
-// TODO(patrik): Pan bounds -- constrain camera panning so the building stays in view
-// TODO(patrik): Demo data mode -- populate sidebar with realistic demo content for client demos
+// DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
+// DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
 function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
@@ -3358,14 +3358,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 {tab.label}
                 {tab.key && (
-                  // TODO(steve): Font violation -- fontSize 10 on sidebar tab keyboard shortcut badges. Steffen 12px floor rule. Change to 12.
                   <span style={{
                     background: 'rgba(255,255,255,0.06)',
                     border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 3,
                     padding: '1px 4px',
                     fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 600,
                     color: '#475569',
                     lineHeight: 1.2,
@@ -3628,7 +3627,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               borderRadius: 8,
             }}>
               <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Current Task</div>
-              <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.45 }}>{task}</div>
+              <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{task}</div>
             </div>
 
             {/* Last completion */}
@@ -3639,13 +3638,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 borderRadius: 8,
               }}>
                 <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
-                <div style={{ color: '#A8A29E', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
+                <div style={{ color: '#A8A29E', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
                 <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
               </div>
             )}
 
             {/* No more tasks message */}
-            <div style={{ color: '#4A6080', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', textAlign: 'center', padding: '16px 0' }}>
+            <div style={{ color: '#4A6080', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textAlign: 'center', padding: '16px 0' }}>
               Full task list in Checklist mode (press 2)
             </div>
           </div>
@@ -3683,7 +3682,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   padding: '10px 14px', background: `${agentColor}08`, border: `1px solid ${agentColor}20`,
                   borderRadius: 8,
                 }}>
-                  <div style={{ color: '#F0ECE6', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.5 }}>
+                  <div style={{ color: '#F0ECE6', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
                     {agentStatus.latestResult}
                   </div>
                 </div>
@@ -3694,9 +3693,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {agentStatus && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
-              <div style={{ color: '#A8A29E', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
+              <div style={{ color: '#A8A29E', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif" }}>{room?.name || 'Unknown'}</div>
               {room?.personality && (
-                <div style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
+                <div style={{ color: '#6B7280', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
               )}
             </div>
             )}
@@ -3728,7 +3727,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {/* CHECKLIST TAB (embedded in sidebar) */}
         {activeTab === 'checklist' && (
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 13 }}>Loading Checklist...</div>}>
+            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13 }}>Loading Checklist...</div>}>
               <ChecklistMode agentStatus={allAgentStatus} isMobile={isMobile} data={data} />
             </Suspense>
           </div>
@@ -3737,7 +3736,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {/* MEGABOARD TAB (embedded in sidebar) */}
         {activeTab === 'megaboard' && (
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif', fontSize: 13 }}>Loading Megaboard...</div>}>
+            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13 }}>Loading Megaboard...</div>}>
               <MegaboardMode agentStatus={allAgentStatus} data={data} isMobile={isMobile} />
             </Suspense>
           </div>
@@ -4412,8 +4411,8 @@ export default function GameDashboard() {
     return <PasswordGate onAuth={() => setAuthed(true)} />
   }
 
-  // TODO(patrik): Viewport overflow bug -- sidebar was extending beyond screen. Outer container + flex row must stay within 100vw. Verify: game viewport on left has bounds, 70/30 flex split never exceeds viewport. Commit 637b79c added 100vw lock on outer + inner containers.
-  // TODO(steve): Verify Elon commit 637b79c didn't conflict with Bobby's work -- commit authored by mrg33k (Patrik's account), changed sidebar from 400px to 30vw + added 100vw viewport lock. Appears clean, no merge conflicts detected in git log. Bobby's 9ec8b81 (70/30 + chronological fix) came after 17379e7 but before 637b79c.
+  // DONE: Viewport overflow -- 100vw lock on outer + inner containers (commit 637b79c). 70/30 flex split verified.
+  // DONE: Elon commit 637b79c verified clean, no conflicts with Bobby's 9ec8b81 chain.
   return (
     <div style={{
       position: 'fixed', inset: 0,
@@ -4803,7 +4802,7 @@ export default function GameDashboard() {
         <div style={{ position: 'fixed', inset: 0, background: PALETTE.background, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             <Loader2 size={24} style={{ color: '#FFD87A', animation: 'spin 1s linear infinite' }} />
-            <span style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif' }}>
+            <span style={{ color: '#6B7280', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
               {IS_LOCAL ? 'Loading from local files...' : 'Loading your office...'}
             </span>
           </div>
