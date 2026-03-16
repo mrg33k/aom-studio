@@ -3061,9 +3061,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   return (
     <div
       style={{
-        flex: isExtended ? '0 0 65vw' : '0 0 400px',
-        width: isExtended ? '65vw' : 400,
-        minWidth: 380,
+        flex: isExtended ? '0 0 65vw' : '0 0 30vw',
+        width: isExtended ? '65vw' : '30vw',
+        minWidth: 320,
+        maxWidth: isExtended ? '65vw' : '40vw',
         flexShrink: 0,
         height: '100%',
         background: 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)',
@@ -4298,7 +4299,7 @@ export default function GameDashboard() {
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100vw', maxWidth: '100vw', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
               <IsometricOffice
