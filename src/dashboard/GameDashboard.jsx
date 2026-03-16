@@ -3330,10 +3330,8 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 // DONE(bobby): Chat timeout indicator -- countdown ring when waiting for agent response (60s). Shows elapsed time + animated SVG ring.
 // DONE(bobby): Agent activity log -- INFO tab now shows recent commits/completions per agent from pipeline feed. Filterable, with commit hashes and timestamps.
 // TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent
-// TODO(patrik): Sidebar seamless column -- sidebar should be ONE continuous full-height column. Chat input sits at the bottom of the sidebar, not in a separate bottom bar. The collapsed chat bar at the bottom should merge into the sidebar panel so it looks like one piece. No separate bottom HUD for chat.
-// TODO(patrik): Chat visual + functional + chronological -- (1) pixel-match Steffen's chat-view-full.png, (2) send/receive relay loop must work end-to-end, (3) messages must display in chronological order (oldest first). Chat is the #1 priority.
-// TODO(patrik): Chat sidebar pixel-match gaps -- 7 issues vs Steffen's chat-view-full.png: (1) no agent responses showing (left side empty), (2) bottom bar disconnected from sidebar, (3) source labels too noisy on every message, (4) stat pills too spread/wide, (5) chat bubbles flat (need Trello depth/shadow), (6) massive empty space where responses should be, (7) agent avatars too small on system messages.
-// TODO(patrik): Kill bottom chat bar -- remove ChatBar from bottom HUD entirely. Chat ONLY lives in the sidebar. No message input in the bottom bar. Sidebar is the only place to chat.
+// DONE(bobby+bobby2): Sidebar seamless column -- sidebar is ONE continuous full-height column. Chat input at bottom of sidebar. ChatBar removed. GameHUD constrained to game viewport width.
+// DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
 function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange }) {
@@ -4760,7 +4758,7 @@ export default function GameDashboard() {
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} />
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
-      {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
+      {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
@@ -5026,14 +5024,22 @@ export default function GameDashboard() {
             isMobile={isMobile}
             chatAgent={chatAgent}
             onChatSubmit={(slug, text) => {
+              // Route chat to sidebar: select the agent and switch to chat tab
               setChatAgent(slug)
-              chatBarRef.current?.sendMsg(slug, text)
+              setSelectedRoom(slug)
+              setPanelActiveTab('chat')
+              if (text) {
+                setPanelChatInput(text)
+              }
             }}
             onExpandChat={() => {
-              chatBarRef.current?.expand()
+              // Focus sidebar chat
+              setPanelActiveTab('chat')
             }}
           />
         </Suspense>
+        </div>
+        </div>
       )}
 
       {/* Mobile mode tab bar */}
@@ -5074,14 +5080,13 @@ export default function GameDashboard() {
         queuedCount={queuedNotificationCount}
       />
 
-      {/* Chat bar (bottom) - sits ABOVE GameHUD in game mode, at bottom otherwise */}
-      {/* Unread message badge (floating, visible when chat panel is closed) */}
+      {/* Unread message badge (floating, visible when sidebar panel is closed) */}
       {unreadCount > 0 && !panelVisible && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           style={{
-            position: 'fixed', bottom: 140, right: 20, zIndex: 50,
+            position: 'fixed', bottom: isMobile ? 70 : 80, right: 20, zIndex: 50,
             minWidth: 44, height: 44, borderRadius: 22,
             background: '#E85D26',
             color: '#FFF', fontFamily: "'Inter Tight', sans-serif", fontWeight: 900, fontSize: 16,
@@ -5092,12 +5097,12 @@ export default function GameDashboard() {
             animation: 'chatBadgePulse 2s ease-in-out infinite',
           }}
           onClick={() => {
-            // Open panel for the agent with most unread
+            // Open sidebar panel for the agent with most unread, switch to chat tab
             const topAgent = Object.entries(unreadAgents).sort((a, b) => b[1] - a[1])[0]
             if (topAgent) {
               setSelectedRoom(topAgent[0])
               setPanelVisible(true)
-              setChatAgent(topAgent[0])
+              setPanelActiveTab('chat')
             }
           }}
           whileHover={{ scale: 1.1 }}
@@ -5108,19 +5113,9 @@ export default function GameDashboard() {
         </motion.div>
       )}
 
-      <ChatBar
-        ref={chatBarRef}
-        activeAgent={chatAgent}
-        onSelectAgent={setChatAgent}
-        agentStatus={agentStatus}
-        isMobile={isMobile}
-        bottomOffset={isMobile ? 50 : 68}
-        hideCollapsed={true}
-        onSpeaking={(slug, speaking) => {
-          if (speaking) setStreamingAgent(slug)
-          else if (streamingAgent === slug) setStreamingAgent(null)
-        }}
-      />
+      {/* ChatBar REMOVED per Patrik directive: chat ONLY lives in the sidebar.
+          Bottom HUD should NOT have a message input. Sidebar is the only place to chat.
+          The ChatBar component still exists in the codebase for potential mobile reuse. */}
 
       {/* Right-click context menu */}
       <AnimatePresence>
