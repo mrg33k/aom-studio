@@ -350,16 +350,19 @@ function webSocketServerPlugin() {
                 return
               }
 
-              // Handle chat messages (forward to relay system)
+              // Handle chat messages (forward to relay inbox so EA hook picks them up)
               if (data.type === 'chat_message') {
-                const outboxPath = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
+                const inboxPath = resolve(AOM_EA_ROOT, 'context/relay-inbox.jsonl')
                 const entry = {
+                  id: crypto.randomUUID(),
                   agent: data.agent,
                   message: data.content,
                   source: 'corner-websocket',
+                  status: 'pending',
+                  chat_id: null,
                   timestamp: new Date().toISOString(),
                 }
-                fs.appendFileSync(outboxPath, JSON.stringify(entry) + '\n')
+                fs.appendFileSync(inboxPath, JSON.stringify(entry) + '\n')
 
                 // Broadcast agent state change: thinking
                 broadcast({
