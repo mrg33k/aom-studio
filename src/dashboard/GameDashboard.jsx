@@ -3428,6 +3428,79 @@ export default function GameDashboard() {
     }
   }, [panelVisible])
 
+  // Background INBOX polling: picks up new messages from terminal/telegram
+  // so the dashboard shows messages sent from other interfaces in real-time
+  const lastBgInboxCheckRef = useRef(null)
+  const bgInboxPollRef = useRef(null)
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    bgInboxPollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/local/relay-inbox')
+        if (!res.ok) return
+        const data = await res.json()
+        const allInbox = data.messages || []
+        if (allInbox.length === 0) return
+
+        // Check for messages newer than what we've seen
+        const since = lastBgInboxCheckRef.current
+        const newMsgs = since
+          ? allInbox.filter(m => m.timestamp && new Date(m.timestamp) > new Date(since))
+          : [] // Don't treat initial load as "new"
+
+        // Always update the last check to the latest inbox message
+        lastBgInboxCheckRef.current = allInbox[allInbox.length - 1].timestamp
+
+        if (newMsgs.length > 0) {
+          // Filter to messages NOT from the dashboard (those are already added on send)
+          const externalMsgs = newMsgs.filter(m =>
+            m.source !== 'corner-dashboard' && m.source !== 'corner-websocket' && m.message?.trim()
+          )
+          if (externalMsgs.length > 0) {
+            setPanelMessages(prev => {
+              const allMsgs = [...(prev._all || [])]
+              for (const msg of externalMsgs) {
+                if (allMsgs.some(m => m.id === msg.id)) continue
+                let sourceLabel = 'unknown'
+                if (msg.source === 'telegram') sourceLabel = 'via telegram'
+                else if (msg.source === 'terminal' || msg.source === 'cli') sourceLabel = 'via terminal'
+                else if (msg.source) sourceLabel = `via ${msg.source}`
+                allMsgs.push({
+                  role: 'user',
+                  content: msg.message,
+                  time: msg.timestamp,
+                  source: sourceLabel,
+                  targetAgent: msg.agent || null,
+                  id: msg.id,
+                })
+              }
+              // Re-sort by time
+              allMsgs.sort((a, b) => new Date(a.time) - new Date(b.time))
+              return { ...prev, _all: allMsgs }
+            })
+          }
+        }
+      } catch {}
+    }, 5000) // Poll inbox every 5 seconds
+
+    // Initialize the last check timestamp
+    fetch('/api/local/relay-inbox').then(res => {
+      if (res.ok) return res.json()
+    }).then(data => {
+      const msgs = data?.messages || []
+      if (msgs.length > 0) {
+        lastBgInboxCheckRef.current = msgs[msgs.length - 1].timestamp
+      } else {
+        lastBgInboxCheckRef.current = new Date().toISOString()
+      }
+    }).catch(() => {})
+
+    return () => {
+      if (bgInboxPollRef.current) clearInterval(bgInboxPollRef.current)
+    }
+  }, [])
+
   // Load FULL relay conversation history (all sources) when panel opens
   // The relay is a unified conversation channel. Show everything so terminal,
   // Telegram, and dashboard messages all appear in the chat.

@@ -351,10 +351,120 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   }, [])
 
   // Clean up on unmount
+  const bgPollRef = useRef(null)
   useEffect(() => {
     return () => {
       if (relayPollRef.current) clearInterval(relayPollRef.current)
       if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+      if (bgPollRef.current) clearInterval(bgPollRef.current)
+    }
+  }, [])
+
+  // Continuous background poll: picks up ALL new messages from any source
+  // (terminal, telegram, dashboard) even when not actively waiting for a response.
+  // This ensures the dashboard shows the same conversation as the terminal.
+  const bgLastInboxCheck = useRef(null)
+  const bgLastOutboxCheck = useRef(null)
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    // Initialize timestamps
+    const init = async () => {
+      try {
+        const [inRes, outRes] = await Promise.all([
+          fetch('/api/local/relay-inbox'),
+          fetch('/api/local/relay-outbox'),
+        ])
+        if (inRes.ok) {
+          const d = await inRes.json()
+          const msgs = d.messages || []
+          bgLastInboxCheck.current = msgs.length > 0 ? msgs[msgs.length - 1].timestamp : new Date().toISOString()
+        }
+        if (outRes.ok) {
+          const d = await outRes.json()
+          const msgs = (d.messages || []).filter(m => m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
+          bgLastOutboxCheck.current = msgs.length > 0 ? msgs[msgs.length - 1].timestamp : new Date().toISOString()
+        }
+      } catch {}
+    }
+    init()
+
+    bgPollRef.current = setInterval(async () => {
+      // Don't poll if we're already polling from a send
+      if (relayPollRef.current) return
+
+      try {
+        // Poll inbox for new messages from terminal/telegram
+        if (bgLastInboxCheck.current) {
+          const inRes = await fetch('/api/local/relay-inbox')
+          if (inRes.ok) {
+            const data = await inRes.json()
+            const allMsgs = data.messages || []
+            const newInbox = allMsgs.filter(m =>
+              m.timestamp && new Date(m.timestamp) > new Date(bgLastInboxCheck.current) &&
+              m.source !== 'corner-dashboard' && m.source !== 'corner-websocket' &&
+              m.message?.trim()
+            )
+            if (newInbox.length > 0) {
+              bgLastInboxCheck.current = allMsgs[allMsgs.length - 1].timestamp
+              setMessages(prev => {
+                const updated = [...prev]
+                for (const msg of newInbox) {
+                  if (updated.some(m => m.id === msg.id)) continue
+                  let sourceLabel = msg.source || 'unknown'
+                  if (sourceLabel === 'telegram') sourceLabel = 'via telegram'
+                  else if (sourceLabel === 'terminal' || sourceLabel === 'cli') sourceLabel = 'via terminal'
+                  else sourceLabel = `via ${sourceLabel}`
+                  updated.push({
+                    role: 'user',
+                    content: msg.message,
+                    time: msg.timestamp,
+                    source: sourceLabel,
+                    id: msg.id,
+                  })
+                }
+                updated.sort((a, b) => new Date(a.time) - new Date(b.time))
+                return updated
+              })
+            }
+          }
+        }
+
+        // Poll outbox for new responses
+        if (bgLastOutboxCheck.current) {
+          const since = encodeURIComponent(bgLastOutboxCheck.current)
+          const outRes = await fetch(`/api/local/relay-outbox?since=${since}`)
+          if (outRes.ok) {
+            const data = await outRes.json()
+            const newOutbox = (data.messages || []).filter(m =>
+              m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
+            )
+            if (newOutbox.length > 0) {
+              const latest = newOutbox[newOutbox.length - 1]
+              bgLastOutboxCheck.current = latest.timestamp
+              setMessages(prev => {
+                const updated = [...prev]
+                for (const msg of newOutbox) {
+                  if (updated.some(m => m.id === msg.id)) continue
+                  updated.push({
+                    role: 'assistant',
+                    content: msg.message,
+                    time: msg.timestamp || new Date().toISOString(),
+                    source: msg.agent || 'system',
+                    id: msg.id,
+                  })
+                }
+                updated.sort((a, b) => new Date(a.time) - new Date(b.time))
+                return updated
+              })
+            }
+          }
+        }
+      } catch {}
+    }, 5000) // Background poll every 5 seconds
+
+    return () => {
+      if (bgPollRef.current) clearInterval(bgPollRef.current)
     }
   }, [])
 
@@ -574,15 +684,18 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                   : 'bg-[#1A1A17] text-[#F0ECE6] border border-[#292524]'
               }`}
             >
-              {/* Source label */}
+              {/* Source label -- shows for ALL messages so you know where they came from */}
               {msg.role === 'assistant' && (
                 <div className="text-[10px] font-mono uppercase tracking-wider mb-1.5" style={{ color: cfg.color }}>
-                  {msg.source === 'system' ? 'System' : agent.name}
+                  {msg.source === 'system' ? 'System' : msg.source || agent.name}
                 </div>
               )}
-              {msg.role === 'user' && msg.source && msg.source !== 'dashboard' && msg.source !== 'corner-dashboard' && (
+              {msg.role === 'user' && msg.source && (
                 <div className="text-[10px] font-mono uppercase tracking-wider mb-1.5 text-[#E85D26]/60">
-                  via {msg.source}
+                  {msg.source === 'dashboard' || msg.source === 'corner-dashboard' ? 'via dashboard'
+                    : msg.source === 'telegram' ? 'via telegram'
+                    : msg.source === 'terminal' || msg.source === 'cli' ? 'via terminal'
+                    : `via ${msg.source}`}
                 </div>
               )}
               <div className="whitespace-pre-wrap break-words">{msg.content}</div>
