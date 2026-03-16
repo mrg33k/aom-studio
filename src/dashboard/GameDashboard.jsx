@@ -4,52 +4,22 @@ import {
   MessageSquare, Send, X, ChevronUp, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, GitCommit, Terminal, Maximize2, Minimize2,
-  ListTodo, FolderKanban, Calendar, Plus, ArrowLeft,
+  ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map,
 } from 'lucide-react'
+import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
+import { createChatConnection } from './chatConnection.js'
+import { renderFurniture } from './FurnitureRenderer.jsx'
 
 // ---- CONFIG ----------------------------------------------------------------
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
-
-const AGENTS = [
-  { slug: 'bobby',   name: 'Bobby',   role: 'Web Dev',           color: '#9C27B0', monitorColor: '#CE93D8', floor: 'wood' },
-  { slug: 'colton',  name: 'Colton',  role: 'Backup Builder',    color: '#7E57C2', monitorColor: '#B39DDB', floor: 'wood' },
-  { slug: 'cleo',    name: 'Cleo',    role: 'Content Creator',   color: '#FF7043', monitorColor: '#FFAB91', floor: 'wood' },
-  { slug: 'tony',    name: 'Tony',    role: 'Social Media',      color: '#EC407A', monitorColor: '#F48FB1', floor: 'wood' },
-  { slug: 'elon',    name: 'Elon',    role: 'Systems Engineer',  color: '#4CAF50', monitorColor: '#81C784', floor: 'tile' },
-  { slug: 'elmo',    name: 'Elmo',    role: 'QA Gate',           color: '#EF5350', monitorColor: '#EF9A9A', floor: 'tile' },
-  { slug: 'steffen', name: 'Steffen', role: 'Creative Director', color: '#FFB74D', monitorColor: '#FFE0B2', floor: 'wood' },
-  { slug: 'alex',    name: 'Alex',    role: 'Strategist',        color: '#42A5F5', monitorColor: '#90CAF9', floor: 'wood' },
-  { slug: 'steve',   name: 'Steve',   role: 'AI Advisory Lead',  color: '#26A69A', monitorColor: '#80CBC4', floor: 'wood' },
-  { slug: 'jacob',   name: 'Jacob',   role: 'Outreach',          color: '#FFA726', monitorColor: '#FFCC80', floor: 'wood' },
-  { slug: 'mom',     name: 'Mom',     role: 'Orchestrator',      color: '#AB47BC', monitorColor: '#CE93D8', floor: 'wood' },
-  { slug: 'paige',   name: 'Paige',   role: 'Client Success',    color: '#66BB6A', monitorColor: '#A5D6A7', floor: 'wood' },
-  { slug: 'pixel',   name: 'Pixel',   role: 'Extension',         color: '#78909C', monitorColor: '#B0BEC5', floor: 'wood' },
-]
-
-// Floor plan grid positions (col, row) - matches Steffen's ASCII layout
-// Grid unit = 1 room width. L-shaped building.
-const FLOOR_PLAN = {
-  patrik:  { col: 0, row: 0, w: 1, h: 1, label: 'Corner Office', isPatrik: true },
-  mom:     { col: 1, row: 0, w: 1, h: 1, label: 'Command Center' },
-  alex:    { col: 2, row: 0, w: 1, h: 1, label: 'Strategy Room' },
-  steve:   { col: 3, row: 0, w: 1, h: 1, label: 'Advisory Lab' },
-  steffen: { col: 0, row: 1, w: 1, h: 1, label: 'Design Studio' },
-  hall:    { col: 1, row: 1, w: 2, h: 1, label: 'Main Hall', isHall: true },
-  jacob:   { col: 3, row: 1, w: 1, h: 1, label: 'Outreach Office' },
-  bobby:   { col: 0, row: 2, w: 1, h: 1, label: 'Dev Lab' },
-  colton:  { col: 1, row: 2, w: 1, h: 1, label: 'Builder Bay' },
-  cleo:    { col: 2, row: 2, w: 1, h: 1, label: 'Content Studio' },
-  tony:    { col: 3, row: 2, w: 1, h: 1, label: 'Social Hub' },
-  elmo:    { col: 1, row: 3, w: 1, h: 1, label: 'QA Lab' },
-  elon:    { col: 2, row: 3, w: 1, h: 1, label: 'Server Room' },
-}
+const PALETTE = GRID_SPEC.colorPalette
 
 const STATUS_CONFIG = {
-  WORKING:  { color: '#22C55E', bg: 'rgba(34,197,94,0.15)',  label: 'Working',  pulseColor: '#22C55E' },
-  IDLE:     { color: '#78716C', bg: 'rgba(120,113,108,0.15)', label: 'Idle',     pulseColor: '#78716C' },
+  WORKING:  { color: '#22C55E', bg: 'rgba(34,197,94,0.15)',  label: 'Active',   pulseColor: '#22C55E' },
+  IDLE:     { color: '#6B7280', bg: 'rgba(107,114,128,0.15)', label: 'Idle',     pulseColor: '#6B7280' },
   BLOCKED:  { color: '#EF4444', bg: 'rgba(239,68,68,0.15)',  label: 'Blocked',  pulseColor: '#EF4444' },
   DONE:     { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', label: 'Done',     pulseColor: '#3B82F6' },
-  WAITING:  { color: '#EAB308', bg: 'rgba(234,179,8,0.15)',  label: 'Waiting',  pulseColor: '#EAB308' },
+  WAITING:  { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', label: 'Thinking', pulseColor: '#F59E0B' },
   PAUSED:   { color: '#F97316', bg: 'rgba(249,115,22,0.15)', label: 'Paused',   pulseColor: '#F97316' },
 }
 
@@ -96,6 +66,34 @@ function useDashboardData(interval = 30000) {
   return { data, error, loading }
 }
 
+function useKeyboardShortcuts({ onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations }) {
+  useEffect(() => {
+    const handler = (e) => {
+      // Skip if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        if (e.key === 'Escape') { e.target.blur(); onEscape?.() }
+        return
+      }
+      switch (e.key.toLowerCase()) {
+        case 't': onToggleHud?.(); break
+        case 'enter': onToggleChat?.(); break
+        case 'escape': onEscape?.(); break
+        case 'm': onToggleMinimap?.(); break
+        case ' ': e.preventDefault(); onToggleAnimations?.(); break
+        case '/': onToggleChat?.(); break
+        default:
+          if (e.key >= '1' && e.key <= '9') {
+            const idx = parseInt(e.key) - 1
+            onAgentSelect?.(idx)
+          }
+          break
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations])
+}
+
 // ---- UTILITIES -------------------------------------------------------------
 function timeAgo(dateStr) {
   if (!dateStr) return ''
@@ -109,7 +107,7 @@ function timeAgo(dateStr) {
   const hrs = Math.floor(mins / 60)
   if (hrs < 24) return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
-  return `${days}d ago`
+  return days === 1 ? 'yesterday' : `${days}d ago`
 }
 
 function azTime() {
@@ -137,774 +135,205 @@ function PasswordGate({ onAuth }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0A0F1E', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+    <div style={{ minHeight: '100vh', background: PALETTE.background, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
       <form onSubmit={submit} style={{ width: '100%', maxWidth: 360 }} className={shake ? 'animate-shake' : ''}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ color: '#FFD87A', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 8 }}>CORNER</div>
+          <div style={{ color: PALETTE.signText, fontFamily: 'Syne, sans-serif', fontSize: 14, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>CORNER</div>
           <h1 style={{ color: '#F5F0EB', fontSize: 24, fontWeight: 900, fontStyle: 'italic', fontFamily: "'Inter Tight', sans-serif", letterSpacing: '-0.02em' }}>Your Office</h1>
         </div>
-        <input
-          type="password"
-          value={pw}
-          onChange={e => setPw(e.target.value)}
-          placeholder="Password"
-          autoFocus
-          style={{
-            width: '100%', background: '#141822', border: '1px solid #2A3040', color: '#F5F0EB',
-            padding: '12px 16px', fontSize: 16, fontFamily: 'JetBrains Mono, monospace',
-            outline: 'none', borderRadius: 2,
-          }}
-        />
-        <button type="submit" style={{
-          width: '100%', marginTop: 12, background: '#E85D26', color: 'white',
-          fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 13,
-          padding: '12px', border: 'none', cursor: 'pointer', borderRadius: 2,
-        }}>
+        <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Password" autoFocus
+          style={{ width: '100%', background: '#141822', border: '1px solid #2A3040', color: '#F5F0EB', padding: '12px 16px', fontSize: 16, fontFamily: 'JetBrains Mono, monospace', outline: 'none', borderRadius: 2 }} />
+        <button type="submit" style={{ width: '100%', marginTop: 12, background: '#E85D26', color: 'white', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 13, padding: '12px', border: 'none', cursor: 'pointer', borderRadius: 2 }}>
           Enter
         </button>
       </form>
-      <style>{`.animate-shake { animation: shake 0.5s ease-in-out; }
-@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }`}</style>
     </div>
   )
 }
 
-// ---- ISOMETRIC ROOM --------------------------------------------------------
-// Each room renders as an isometric box with floor, walls, furniture, and agent
-function IsometricRoom({ room, slug, agent, agentStatus, isHovered, isSelected, onClick, cellSize }) {
-  const floorPlan = FLOOR_PLAN[slug]
-  if (!floorPlan) return null
-
-  const status = agentStatus?.status || 'IDLE'
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
-  const isActive = status === 'WORKING'
-  const isPatrik = floorPlan.isPatrik
-  const isHall = floorPlan.isHall
-
-  // Room dimensions in pixels
-  const roomW = cellSize * (floorPlan.w || 1)
-  const roomH = cellSize * (floorPlan.h || 1)
-  const wallHeight = cellSize * 0.55
-
-  // Floor colors
-  const floorColors = {
-    wood: { base: '#C4956A', dark: '#A87B52', light: '#D4A87A' },
-    tile: { base: '#8B9DAF', dark: '#6B7D8F', light: '#9BADBF' },
-  }
-  const floorType = agent?.floor || (isHall ? 'wood' : 'wood')
-  const fc = floorColors[floorType] || floorColors.wood
-
-  // Room-specific lighting
-  const lightColor = isActive ? cfg.pulseColor : (agent?.monitorColor || '#FFB74D')
-  const lightIntensity = isActive ? 0.3 : 0.15
-  const windowGlow = isPatrik || floorPlan.row === 0 || floorPlan.col === 0 || floorPlan.col === 3
-
-  return (
-    <g
-      onClick={() => !isHall && onClick && onClick(slug)}
-      style={{ cursor: isHall ? 'default' : 'pointer' }}
-    >
-      {/* Floor */}
-      <rect
-        x={0} y={0} width={roomW} height={roomH}
-        fill={fc.base}
-        stroke={fc.dark}
-        strokeWidth={0.5}
-      />
-
-      {/* Floor pattern - wood grain or tiles */}
-      {floorType === 'wood' && (
-        <>
-          {Array.from({ length: Math.floor(roomW / 12) }).map((_, i) => (
-            <line key={`grain-${i}`} x1={i * 12 + 6} y1={0} x2={i * 12 + 6} y2={roomH}
-              stroke={fc.dark} strokeWidth={0.3} opacity={0.3} />
-          ))}
-        </>
-      )}
-      {floorType === 'tile' && (
-        <>
-          {Array.from({ length: Math.floor(roomW / 16) }).map((_, i) => (
-            <React.Fragment key={`tile-${i}`}>
-              <line x1={i * 16} y1={0} x2={i * 16} y2={roomH} stroke={fc.dark} strokeWidth={0.5} opacity={0.4} />
-              {Array.from({ length: Math.floor(roomH / 16) }).map((_, j) => (
-                <line key={`tile-h-${j}`} x1={0} y1={j * 16} x2={roomW} y2={j * 16} stroke={fc.dark} strokeWidth={0.5} opacity={0.4} />
-              ))}
-            </React.Fragment>
-          ))}
-        </>
-      )}
-
-      {/* Room ambient glow */}
-      <rect
-        x={0} y={0} width={roomW} height={roomH}
-        fill={lightColor}
-        opacity={lightIntensity}
-      />
-
-      {/* Window light spill from exterior walls */}
-      {windowGlow && (
-        <rect
-          x={2} y={2} width={roomW - 4} height={roomH * 0.3}
-          fill="#FFD87A"
-          opacity={0.08}
-          rx={2}
-        />
-      )}
-
-      {/* Agent-specific furniture */}
-      {!isHall && !isPatrik && agent && (
-        <RoomFurniture slug={slug} roomW={roomW} roomH={roomH} agent={agent} isActive={isActive} />
-      )}
-
-      {/* Patrik's room furniture */}
-      {isPatrik && (
-        <PatrikRoomFurniture roomW={roomW} roomH={roomH} />
-      )}
-
-      {/* Main Hall furniture */}
-      {isHall && (
-        <MainHallFurniture roomW={roomW} roomH={roomH} />
-      )}
-
-      {/* Agent character */}
-      {!isHall && !isPatrik && agent && (
-        <AgentCharacter
-          x={roomW * 0.7}
-          y={roomH * 0.65}
-          color={agent.color}
-          status={status}
-          name={agent.name}
-        />
-      )}
-
-      {/* Status indicator light */}
-      {!isHall && !isPatrik && (
-        <circle
-          cx={roomW - 8}
-          cy={8}
-          r={4}
-          fill={cfg.color}
-          opacity={isActive ? 1 : 0.6}
-        >
-          {isActive && (
-            <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite" />
-          )}
-        </circle>
-      )}
-
-      {/* Room label */}
-      <text
-        x={roomW / 2}
-        y={roomH - 6}
-        textAnchor="middle"
-        fill="#F5F0EB"
-        fontSize={9}
-        fontFamily="JetBrains Mono, monospace"
-        fontWeight={700}
-        letterSpacing="0.05em"
-        opacity={0.85}
-      >
-        {isPatrik ? 'PATRIK' : isHall ? 'MAIN HALL' : (agent?.name?.toUpperCase() || slug.toUpperCase())}
-      </text>
-
-      {/* Hover/selected overlay */}
-      {(isHovered || isSelected) && !isHall && (
-        <rect
-          x={0} y={0} width={roomW} height={roomH}
-          fill={isSelected ? '#E85D26' : '#FFD87A'}
-          opacity={isSelected ? 0.12 : 0.08}
-          style={{ pointerEvents: 'none' }}
-        />
-      )}
-
-      {/* Room border */}
-      <rect
-        x={0} y={0} width={roomW} height={roomH}
-        fill="none"
-        stroke={isSelected ? '#E85D26' : (isHovered && !isHall ? '#FFD87A' : '#4A5568')}
-        strokeWidth={isSelected ? 2 : 1}
-      />
-    </g>
-  )
-}
-
-// ---- ROOM FURNITURE COMPONENTS ---------------------------------------------
-function RoomFurniture({ slug, roomW, roomH, agent, isActive }) {
-  const deskW = roomW * 0.45
-  const deskH = roomH * 0.22
-  const deskX = roomW * 0.1
-  const deskY = roomH * 0.15
-
-  const monitorColor = agent.monitorColor || '#4FC3F7'
-
-  switch (slug) {
-    case 'elon':
-      return (
-        <g>
-          {/* Server racks */}
-          {[0, 1, 2].map(i => (
-            <g key={`rack-${i}`}>
-              <rect x={roomW * 0.55 + i * 18} y={roomH * 0.1} width={14} height={roomH * 0.55}
-                fill="#1A1A2E" stroke="#2A2A3E" strokeWidth={0.5} />
-              {/* Blinking lights */}
-              {[0, 1, 2, 3, 4, 5].map(j => (
-                <circle key={`light-${j}`}
-                  cx={roomW * 0.55 + i * 18 + 7}
-                  cy={roomH * 0.15 + j * (roomH * 0.07)}
-                  r={1.5}
-                  fill={j % 2 === 0 ? '#4CAF50' : '#2196F3'}
-                >
-                  <animate attributeName="opacity"
-                    values={`${0.3 + Math.random() * 0.4};${0.8 + Math.random() * 0.2};${0.3 + Math.random() * 0.4}`}
-                    dur={`${1 + Math.random() * 2}s`}
-                    repeatCount="indefinite"
-                    begin={`${Math.random() * 2}s`}
-                  />
-                </circle>
-              ))}
-            </g>
-          ))}
-          {/* Terminal */}
-          <rect x={deskX} y={deskY} width={deskW * 0.8} height={deskH} fill="#2A2A1E" rx={1} />
-          <rect x={deskX + 3} y={deskY + 2} width={deskW * 0.8 - 6} height={deskH * 0.65}
-            fill="#0D1A0D" rx={1} />
-          {/* Green terminal text */}
-          {[0, 1, 2].map(i => (
-            <rect key={`text-${i}`}
-              x={deskX + 5} y={deskY + 4 + i * 4}
-              width={deskW * 0.5 - Math.random() * 10} height={1.5}
-              fill="#4CAF50" opacity={0.7}
-            >
-              {isActive && (
-                <animate attributeName="opacity" values="0.7;0.3;0.7" dur="2s" repeatCount="indefinite" begin={`${i * 0.3}s`} />
-              )}
-            </rect>
-          ))}
-          {/* Exposed conduit */}
-          <path d={`M0,${roomH * 0.1} Q${roomW * 0.15},${roomH * 0.05} ${roomW * 0.3},${roomH * 0.1}`}
-            fill="none" stroke="#4A5568" strokeWidth={1.5} opacity={0.5} />
-        </g>
-      )
-
-    case 'bobby':
-      return (
-        <g>
-          {/* Triple monitor setup */}
-          <rect x={deskX} y={deskY} width={deskW * 1.2} height={deskH} fill="#5D4037" rx={1} />
-          {[0, 1, 2].map(i => (
-            <g key={`mon-${i}`}>
-              <rect x={deskX + 2 + i * (deskW * 0.38)}
-                y={deskY - deskH * 0.6}
-                width={deskW * 0.35} height={deskH * 0.55}
-                fill="#1A1A2E" stroke="#2A2A3E" strokeWidth={0.5} rx={1} />
-              <rect x={deskX + 3 + i * (deskW * 0.38)}
-                y={deskY - deskH * 0.55}
-                width={deskW * 0.33} height={deskH * 0.45}
-                fill={i === 1 ? '#1A0A2E' : '#0D1A2E'} rx={1} />
-              {/* Code lines */}
-              {[0, 1, 2].map(j => (
-                <rect key={`code-${j}`}
-                  x={deskX + 5 + i * (deskW * 0.38)}
-                  y={deskY - deskH * 0.5 + j * 3.5}
-                  width={deskW * 0.2 - Math.random() * 8}
-                  height={1.2}
-                  fill={['#CE93D8', '#4FC3F7', '#81C784'][i]}
-                  opacity={0.6}
-                />
-              ))}
-            </g>
-          ))}
-          {/* Purple LED underglow */}
-          <rect x={deskX - 1} y={deskY + deskH} width={deskW * 1.22} height={3}
-            fill="#9C27B0" opacity={0.4}>
-            <animate attributeName="opacity" values="0.3;0.5;0.3" dur="3s" repeatCount="indefinite" />
-          </rect>
-          {/* Keyboard */}
-          <rect x={deskX + deskW * 0.15} y={deskY + deskH * 0.3} width={deskW * 0.5} height={deskH * 0.35}
-            fill="#333" rx={1} stroke="#444" strokeWidth={0.3} />
-          {/* Headphones */}
-          <ellipse cx={deskX + deskW * 1.05} cy={deskY + deskH * 0.4} rx={5} ry={3} fill="#333" stroke="#555" strokeWidth={0.5} />
-        </g>
-      )
-
-    case 'steffen':
-      return (
-        <g>
-          {/* Desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW} height={deskH} fill="#8D6E63" rx={1} />
-          {/* iMac-style monitor */}
-          <rect x={deskX + 5} y={deskY - deskH * 0.3} width={deskW * 0.6} height={deskH * 0.6}
-            fill="#E0E0E0" rx={2} stroke="#BDBDBD" strokeWidth={0.5} />
-          <rect x={deskX + 7} y={deskY - deskH * 0.25} width={deskW * 0.56} height={deskH * 0.45}
-            fill="#1A237E" rx={1} />
-          {/* Color wheel on screen */}
-          <circle cx={deskX + 7 + deskW * 0.28} cy={deskY - deskH * 0.05} r={6}
-            fill="none" stroke="#E85D26" strokeWidth={2} opacity={0.7} />
-          <circle cx={deskX + 7 + deskW * 0.28} cy={deskY - deskH * 0.05} r={3}
-            fill="#FFB74D" opacity={0.5} />
-          {/* Mood board */}
-          <rect x={roomW * 0.6} y={roomH * 0.05} width={roomW * 0.3} height={roomH * 0.35}
-            fill="#5D4037" rx={1} />
-          {[0, 1, 2, 3].map(i => (
-            <rect key={`swatch-${i}`}
-              x={roomW * 0.62 + (i % 2) * (roomW * 0.13)}
-              y={roomH * 0.08 + Math.floor(i / 2) * (roomH * 0.14)}
-              width={roomW * 0.1} height={roomH * 0.1}
-              fill={['#E85D26', '#FFD87A', '#7C9A72', '#4FC3F7'][i]}
-              opacity={0.7} rx={1}
-            />
-          ))}
-          {/* Arched window indicator */}
-          <path d={`M${roomW * 0.02},${roomH * 0.4} Q${roomW * 0.02},${roomH * 0.1} ${roomW * 0.12},${roomH * 0.1} L${roomW * 0.12},${roomH * 0.4}`}
-            fill="none" stroke="#FFD87A" strokeWidth={1.5} opacity={0.3} />
-        </g>
-      )
-
-    case 'cleo':
-      return (
-        <g>
-          {/* Editing desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW} height={deskH} fill="#5D4037" rx={1} />
-          {/* Editing monitors */}
-          <rect x={deskX + 2} y={deskY - 8} width={deskW * 0.55} height={deskH * 0.65}
-            fill="#1A1A1A" rx={1} />
-          {/* Timeline bars on screen */}
-          {[0, 1, 2, 3].map(i => (
-            <rect key={`timeline-${i}`}
-              x={deskX + 4}
-              y={deskY - 6 + i * 3}
-              width={deskW * 0.4 - i * 3}
-              height={1.5}
-              fill={['#FF7043', '#FFB74D', '#4FC3F7', '#81C784'][i]}
-              opacity={0.6}
-            />
-          ))}
-          {/* Camera on tripod */}
-          <rect x={roomW * 0.65} y={roomH * 0.2} width={8} height={6} fill="#333" rx={1} />
-          <line x1={roomW * 0.69} y1={roomH * 0.2 + 6} x2={roomW * 0.66} y2={roomH * 0.45} stroke="#555" strokeWidth={1} />
-          <line x1={roomW * 0.69} y1={roomH * 0.2 + 6} x2={roomW * 0.72} y2={roomH * 0.45} stroke="#555" strokeWidth={1} />
-          {/* Desk lamp */}
-          <line x1={deskX + deskW + 5} y1={deskY + 10} x2={deskX + deskW + 12} y2={deskY - 2} stroke="#8D6E63" strokeWidth={1.5} />
-          <circle cx={deskX + deskW + 12} cy={deskY - 4} r={4} fill="#FFB74D" opacity={0.4}>
-            <animate attributeName="opacity" values="0.3;0.5;0.3" dur="4s" repeatCount="indefinite" />
-          </circle>
-        </g>
-      )
-
-    case 'mom':
-      return (
-        <g>
-          {/* Standing desk */}
-          <rect x={deskX} y={deskY} width={deskW * 0.9} height={deskH * 0.8} fill="#5D4037" rx={1} />
-          {/* Multiple monitors */}
-          {[0, 1].map(i => (
-            <g key={`mon-${i}`}>
-              <rect x={deskX + i * (deskW * 0.43)} y={deskY - deskH * 0.7}
-                width={deskW * 0.4} height={deskH * 0.6} fill="#1A1A2E" rx={1} />
-              {/* Agent status dots on screens */}
-              {[0, 1, 2, 3].map(j => (
-                <circle key={`dot-${j}`}
-                  cx={deskX + i * (deskW * 0.43) + 6 + j * 6}
-                  cy={deskY - deskH * 0.4}
-                  r={2}
-                  fill={['#22C55E', '#EAB308', '#EF4444', '#3B82F6'][j]}
-                  opacity={0.7}
-                />
-              ))}
-            </g>
-          ))}
-          {/* Pipeline board on wall */}
-          <rect x={roomW * 0.55} y={roomH * 0.05} width={roomW * 0.35} height={roomH * 0.4}
-            fill="#37474F" rx={1} />
-          <text x={roomW * 0.72} y={roomH * 0.15} textAnchor="middle" fill="#F5F0EB" fontSize={5}
-            fontFamily="JetBrains Mono, monospace" opacity={0.5}>PIPELINE</text>
-          {/* Arrow flow */}
-          {[0, 1, 2].map(i => (
-            <rect key={`pipe-${i}`}
-              x={roomW * 0.58 + i * (roomW * 0.1)}
-              y={roomH * 0.22}
-              width={roomW * 0.08} height={4}
-              fill={['#E85D26', '#22C55E', '#3B82F6'][i]} opacity={0.5} rx={1}
-            />
-          ))}
-        </g>
-      )
-
-    case 'alex':
-      return (
-        <g>
-          {/* Desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW * 0.8} height={deskH} fill="#5D4037" rx={1} />
-          {/* Laptop */}
-          <rect x={deskX + 3} y={deskY} width={deskW * 0.4} height={deskH * 0.5}
-            fill="#333" rx={1} />
-          <rect x={deskX + 4} y={deskY + 1} width={deskW * 0.38} height={deskH * 0.35}
-            fill="#1A237E" rx={1} />
-          {/* Bookshelf */}
-          <rect x={roomW * 0.6} y={roomH * 0.05} width={roomW * 0.3} height={roomH * 0.5}
-            fill="#5D4037" rx={1} />
-          {[0, 1, 2, 3].map(i => (
-            <rect key={`book-${i}`}
-              x={roomW * 0.62 + i * (roomW * 0.065)}
-              y={roomH * 0.08}
-              width={roomW * 0.05} height={roomH * 0.12}
-              fill={['#1565C0', '#C62828', '#2E7D32', '#E65100'][i]} opacity={0.6} rx={0.5}
-            />
-          ))}
-          {/* Globe */}
-          <circle cx={deskX + deskW * 0.7} cy={deskY + 8} r={5} fill="none" stroke="#42A5F5" strokeWidth={0.8} opacity={0.4} />
-          <line x1={deskX + deskW * 0.7 - 5} y1={deskY + 8} x2={deskX + deskW * 0.7 + 5} y2={deskY + 8}
-            stroke="#42A5F5" strokeWidth={0.5} opacity={0.3} />
-        </g>
-      )
-
-    case 'steve':
-      return (
-        <g>
-          {/* Clean desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW * 0.8} height={deskH} fill="#5D4037" rx={1} />
-          {/* Laptop showing schema */}
-          <rect x={deskX + 3} y={deskY} width={deskW * 0.4} height={deskH * 0.5} fill="#333" rx={1} />
-          <rect x={deskX + 4} y={deskY + 1} width={deskW * 0.38} height={deskH * 0.35} fill="#0D2137" rx={1} />
-          {/* Architecture diagram lines on screen */}
-          {[0, 1, 2].map(i => (
-            <line key={`arch-${i}`}
-              x1={deskX + 6} y1={deskY + 3 + i * 3}
-              x2={deskX + 6 + deskW * 0.2 - i * 4} y2={deskY + 3 + i * 3}
-              stroke="#26A69A" strokeWidth={0.8} opacity={0.5} />
-          ))}
-          {/* Architecture diagrams on wall */}
-          <rect x={roomW * 0.5} y={roomH * 0.05} width={roomW * 0.4} height={roomH * 0.3}
-            fill="#37474F" rx={1} />
-          {/* Flow diagram */}
-          <rect x={roomW * 0.55} y={roomH * 0.1} width={8} height={5} fill="#26A69A" opacity={0.5} rx={1} />
-          <line x1={roomW * 0.55 + 8} y1={roomH * 0.125} x2={roomW * 0.55 + 14} y2={roomH * 0.125}
-            stroke="#80CBC4" strokeWidth={0.5} opacity={0.4} />
-          <rect x={roomW * 0.55 + 14} y={roomH * 0.1} width={8} height={5} fill="#26A69A" opacity={0.5} rx={1} />
-          {/* Calculator */}
-          <rect x={deskX + deskW * 0.55} y={deskY + 8} width={7} height={9} fill="#444" rx={1} />
-        </g>
-      )
-
-    case 'jacob':
-      return (
-        <g>
-          {/* Desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW * 0.9} height={deskH} fill="#5D4037" rx={1} />
-          {/* Monitor with CRM */}
-          <rect x={deskX + 2} y={deskY - 8} width={deskW * 0.55} height={deskH * 0.65} fill="#1A1A2E" rx={1} />
-          {/* CRM rows */}
-          {[0, 1, 2, 3].map(i => (
-            <rect key={`crm-${i}`}
-              x={deskX + 4} y={deskY - 6 + i * 3}
-              width={deskW * 0.45} height={1.5}
-              fill="#FFA726" opacity={0.4 + i * 0.1} />
-          ))}
-          {/* Phoenix map on wall */}
-          <rect x={roomW * 0.6} y={roomH * 0.05} width={roomW * 0.3} height={roomH * 0.35}
-            fill="#37474F" rx={1} />
-          {/* Map pins */}
-          {[0, 1, 2, 3, 4].map(i => (
-            <circle key={`pin-${i}`}
-              cx={roomW * 0.65 + Math.random() * roomW * 0.2}
-              cy={roomH * 0.1 + Math.random() * roomH * 0.25}
-              r={1.5} fill="#EF4444" opacity={0.6} />
-          ))}
-          {/* Phone */}
-          <rect x={deskX + deskW * 0.65} y={deskY + 7} width={5} height={8} fill="#333" rx={1} />
-          {/* Coffee cups */}
-          <circle cx={deskX + deskW * 0.85} cy={deskY + 10} r={3} fill="#8D6E63" stroke="#6D4C41" strokeWidth={0.5} />
-          <circle cx={deskX + deskW * 0.85 + 7} cy={deskY + 12} r={2.5} fill="#795548" stroke="#5D4037" strokeWidth={0.5} />
-        </g>
-      )
-
-    case 'elmo':
-      return (
-        <g>
-          {/* Clean desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW * 1.1} height={deskH} fill="#ECEFF1" rx={1} />
-          {/* Dual monitors */}
-          {[0, 1].map(i => (
-            <g key={`mon-${i}`}>
-              <rect x={deskX + 2 + i * (deskW * 0.52)} y={deskY - 8}
-                width={deskW * 0.48} height={deskH * 0.65} fill="#1A1A2E" rx={1} />
-              {/* Screenshots on screen */}
-              <rect x={deskX + 4 + i * (deskW * 0.52)} y={deskY - 6}
-                width={deskW * 0.4} height={deskH * 0.45}
-                fill={i === 0 ? '#1B5E20' : '#B71C1C'} opacity={0.3} rx={1} />
-            </g>
-          ))}
-          {/* Checklist on wall */}
-          <rect x={roomW * 0.65} y={roomH * 0.05} width={roomW * 0.25} height={roomH * 0.35}
-            fill="#FFF9C4" rx={1} />
-          {[0, 1, 2, 3].map(i => (
-            <g key={`check-${i}`}>
-              <rect x={roomW * 0.67} y={roomH * 0.1 + i * (roomH * 0.07)}
-                width={3} height={3} fill="none" stroke="#333" strokeWidth={0.5} />
-              {i < 2 && (
-                <line x1={roomW * 0.67} y1={roomH * 0.1 + i * (roomH * 0.07) + 1.5}
-                  x2={roomW * 0.67 + 3} y2={roomH * 0.1 + i * (roomH * 0.07) + 1.5}
-                  stroke="#EF4444" strokeWidth={1} />
-              )}
-            </g>
-          ))}
-          {/* Red pen */}
-          <line x1={deskX + deskW * 0.9} y1={deskY + 8}
-            x2={deskX + deskW * 1.0} y2={deskY + 14}
-            stroke="#EF4444" strokeWidth={1.5} />
-          {/* Magnifying glass */}
-          <circle cx={deskX + deskW * 0.8} cy={deskY + 10} r={4}
-            fill="none" stroke="#78909C" strokeWidth={1} />
-          <line x1={deskX + deskW * 0.8 + 3} y1={deskY + 13}
-            x2={deskX + deskW * 0.8 + 6} y2={deskY + 16}
-            stroke="#78909C" strokeWidth={1.5} />
-        </g>
-      )
-
-    case 'colton':
-      return (
-        <g>
-          {/* Desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW * 0.9} height={deskH} fill="#5D4037" rx={1} />
-          {/* Dual monitors */}
-          {[0, 1].map(i => (
-            <g key={`mon-${i}`}>
-              <rect x={deskX + 2 + i * (deskW * 0.42)} y={deskY - 6}
-                width={deskW * 0.38} height={deskH * 0.55} fill="#1A1A2E" rx={1} />
-              {[0, 1, 2].map(j => (
-                <rect key={`code-${j}`}
-                  x={deskX + 4 + i * (deskW * 0.42)}
-                  y={deskY - 4 + j * 3}
-                  width={deskW * 0.25 - j * 2}
-                  height={1.2}
-                  fill="#B39DDB" opacity={0.5} />
-              ))}
-            </g>
-          ))}
-          {/* Component library on wall */}
-          <rect x={roomW * 0.6} y={roomH * 0.08} width={roomW * 0.3} height={roomH * 0.3}
-            fill="#37474F" rx={1} />
-          {[0, 1, 2, 3].map(i => (
-            <rect key={`comp-${i}`}
-              x={roomW * 0.62 + (i % 2) * (roomW * 0.14)}
-              y={roomH * 0.1 + Math.floor(i / 2) * (roomH * 0.12)}
-              width={roomW * 0.11} height={roomH * 0.08}
-              fill="#7E57C2" opacity={0.3} rx={1} />
-          ))}
-        </g>
-      )
-
-    case 'tony':
-      return (
-        <g>
-          {/* Desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW * 0.8} height={deskH} fill="#5D4037" rx={1} />
-          {/* Phone screens */}
-          {[0, 1, 2].map(i => (
-            <g key={`phone-${i}`}>
-              <rect x={deskX + 3 + i * 12} y={deskY - 2}
-                width={9} height={16} fill="#1A1A2E" rx={2} stroke="#333" strokeWidth={0.5} />
-              <rect x={deskX + 4 + i * 12} y={deskY}
-                width={7} height={12} fill={['#E91E63', '#1565C0', '#000'][i]} opacity={0.4} rx={1} />
-            </g>
-          ))}
-          {/* Content calendar */}
-          <rect x={roomW * 0.5} y={roomH * 0.05} width={roomW * 0.4} height={roomH * 0.4}
-            fill="#FFF" opacity={0.1} rx={1} />
-          {/* Calendar grid */}
-          {Array.from({ length: 12 }).map((_, i) => (
-            <rect key={`cal-${i}`}
-              x={roomW * 0.53 + (i % 4) * (roomW * 0.09)}
-              y={roomH * 0.12 + Math.floor(i / 4) * (roomH * 0.1)}
-              width={roomW * 0.07} height={roomH * 0.07}
-              fill={['#EC407A', '#42A5F5', '#66BB6A', '#FFA726'][i % 4]}
-              opacity={0.3} rx={1}
-            />
-          ))}
-          {/* Ring light */}
-          <circle cx={roomW * 0.85} cy={roomH * 0.55} r={8}
-            fill="none" stroke="#FFD87A" strokeWidth={1.5} opacity={0.3}>
-            <animate attributeName="opacity" values="0.2;0.4;0.2" dur="5s" repeatCount="indefinite" />
-          </circle>
-        </g>
-      )
-
-    case 'paige':
-      return (
-        <g>
-          {/* Desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW * 0.8} height={deskH} fill="#5D4037" rx={1} />
-          {/* Monitor */}
-          <rect x={deskX + 3} y={deskY - 6} width={deskW * 0.5} height={deskH * 0.55} fill="#1A1A2E" rx={1} />
-          {/* Client health bars */}
-          {[0, 1, 2].map(i => (
-            <g key={`health-${i}`}>
-              <rect x={deskX + 5} y={deskY - 4 + i * 4}
-                width={deskW * 0.35} height={2}
-                fill="#333" rx={1} />
-              <rect x={deskX + 5} y={deskY - 4 + i * 4}
-                width={deskW * (0.35 - i * 0.08)} height={2}
-                fill={['#22C55E', '#EAB308', '#EF4444'][i]} rx={1} />
-            </g>
-          ))}
-          {/* Notepad */}
-          <rect x={deskX + deskW * 0.6} y={deskY + 7} width={10} height={12} fill="#FFF9C4" rx={1} />
-        </g>
-      )
-
-    case 'pixel':
-      return (
-        <g>
-          {/* Desk */}
-          <rect x={deskX} y={deskY + 5} width={deskW * 0.7} height={deskH} fill="#5D4037" rx={1} />
-          {/* VS Code window */}
-          <rect x={deskX + 3} y={deskY - 6} width={deskW * 0.5} height={deskH * 0.55} fill="#1E1E2E" rx={1} />
-          {/* Sidebar */}
-          <rect x={deskX + 3} y={deskY - 6} width={deskW * 0.1} height={deskH * 0.55} fill="#252530" rx={1} />
-          {/* Extension icon */}
-          <rect x={deskX + 5} y={deskY - 3} width={3} height={3} fill="#78909C" opacity={0.5} rx={0.5} />
-        </g>
-      )
-
-    default:
-      return (
-        <g>
-          <rect x={deskX} y={deskY + 5} width={deskW * 0.8} height={deskH} fill="#5D4037" rx={1} />
-          <rect x={deskX + 3} y={deskY - 3} width={deskW * 0.45} height={deskH * 0.5} fill="#1A1A2E" rx={1} />
-        </g>
-      )
-  }
-}
-
-function PatrikRoomFurniture({ roomW, roomH }) {
-  return (
-    <g>
-      {/* Walnut desk */}
-      <rect x={roomW * 0.15} y={roomH * 0.25} width={roomW * 0.5} height={roomH * 0.2}
-        fill="#6D4C41" rx={1} />
-      {/* Laptop */}
-      <rect x={roomW * 0.2} y={roomH * 0.2} width={roomW * 0.2} height={roomH * 0.12}
-        fill="#333" rx={1} />
-      <rect x={roomW * 0.21} y={roomH * 0.21} width={roomW * 0.18} height={roomH * 0.08}
-        fill="#0D1A2E" rx={1} />
-      {/* Coffee mug */}
-      <circle cx={roomW * 0.55} cy={roomH * 0.32} r={3} fill="#8D6E63" stroke="#6D4C41" strokeWidth={0.5} />
-      {/* Steam */}
-      <path d={`M${roomW * 0.55},${roomH * 0.28} Q${roomW * 0.57},${roomH * 0.24} ${roomW * 0.55},${roomH * 0.2}`}
-        fill="none" stroke="#F5F0EB" strokeWidth={0.5} opacity={0.2}>
-        <animate attributeName="opacity" values="0.1;0.3;0.1" dur="3s" repeatCount="indefinite" />
-      </path>
-      {/* Small plant */}
-      <circle cx={roomW * 0.45} cy={roomH * 0.28} r={3} fill="#4CAF50" opacity={0.5} />
-      <rect x={roomW * 0.43} y={roomH * 0.3} width={4} height={3} fill="#8D6E63" rx={0.5} />
-      {/* Pendant light */}
-      <line x1={roomW * 0.4} y1={0} x2={roomW * 0.4} y2={roomH * 0.08} stroke="#B8860B" strokeWidth={0.8} />
-      <polygon points={`${roomW * 0.35},${roomH * 0.08} ${roomW * 0.45},${roomH * 0.08} ${roomW * 0.42},${roomH * 0.14} ${roomW * 0.38},${roomH * 0.14}`}
-        fill="#B8860B" opacity={0.7} />
-      <circle cx={roomW * 0.4} cy={roomH * 0.12} r={8} fill="#FFD87A" opacity={0.06}>
-        <animate attributeName="opacity" values="0.04;0.08;0.04" dur="6s" repeatCount="indefinite" />
-      </circle>
-      {/* Mood board on wall */}
-      <rect x={roomW * 0.65} y={roomH * 0.05} width={roomW * 0.25} height={roomH * 0.3}
-        fill="#37474F" rx={1} />
-      {/* Window light on two walls */}
-      <rect x={0} y={0} width={3} height={roomH} fill="#FFD87A" opacity={0.06} />
-      <rect x={0} y={0} width={roomW} height={3} fill="#FFD87A" opacity={0.06} />
-    </g>
-  )
-}
-
-function MainHallFurniture({ roomW, roomH }) {
-  return (
-    <g>
-      {/* Couch */}
-      <rect x={roomW * 0.1} y={roomH * 0.35} width={roomW * 0.25} height={roomH * 0.25}
-        fill="#5D4037" rx={2} />
-      <rect x={roomW * 0.11} y={roomH * 0.36} width={roomW * 0.23} height={roomH * 0.15}
-        fill="#795548" rx={2} />
-      {/* Whiteboard with PIPELINE */}
-      <rect x={roomW * 0.4} y={roomH * 0.05} width={roomW * 0.5} height={roomH * 0.35}
-        fill="#ECEFF1" rx={1} />
-      <text x={roomW * 0.65} y={roomH * 0.15} textAnchor="middle" fill="#333" fontSize={6}
-        fontFamily="JetBrains Mono, monospace" fontWeight={700} opacity={0.6}>PIPELINE</text>
-      {/* Pipeline flow arrows */}
-      {['#E85D26', '#AB47BC', '#42A5F5', '#FFB74D', '#9C27B0', '#EF5350'].map((c, i) => (
-        <rect key={`pflow-${i}`}
-          x={roomW * 0.42 + i * (roomW * 0.075)}
-          y={roomH * 0.22}
-          width={roomW * 0.06} height={4}
-          fill={c} opacity={0.5} rx={1} />
-      ))}
-      {/* Potted plant */}
-      <circle cx={roomW * 0.15} cy={roomH * 0.15} r={8} fill="#4CAF50" opacity={0.4} />
-      <circle cx={roomW * 0.15} cy={roomH * 0.15} r={5} fill="#66BB6A" opacity={0.3} />
-      <rect x={roomW * 0.15 - 4} y={roomH * 0.15 + 5} width={8} height={6} fill="#8D6E63" rx={1} />
-      {/* Coffee station */}
-      <rect x={roomW * 0.85} y={roomH * 0.5} width={roomW * 0.1} height={roomH * 0.15}
-        fill="#5D4037" rx={1} />
-      <rect x={roomW * 0.86} y={roomH * 0.48} width={8} height={6} fill="#333" rx={1} />
-    </g>
-  )
-}
-
 // ---- AGENT CHARACTER -------------------------------------------------------
-function AgentCharacter({ x, y, color, status, name }) {
+function AgentCharacter({ x, y, color, status }) {
   const isWorking = status === 'WORKING'
   const isThinking = status === 'WAITING'
   const isDone = status === 'DONE'
 
   return (
     <g>
-      {/* Shadow */}
       <ellipse cx={x} cy={y + 6} rx={5} ry={2} fill="#000" opacity={0.2} />
-
-      {/* Body */}
       <rect x={x - 4} y={y - 4} width={8} height={10} fill={color} rx={2} opacity={0.9}>
-        {isWorking && (
-          <animate attributeName="y" values={`${y - 4};${y - 5};${y - 4}`} dur="2s" repeatCount="indefinite" />
-        )}
+        {isWorking && <animate attributeName="y" values={`${y - 4};${y - 5};${y - 4}`} dur="2s" repeatCount="indefinite" />}
       </rect>
-
-      {/* Head */}
       <circle cx={x} cy={y - 8} r={5} fill={color}>
-        {isWorking && (
-          <animate attributeName="cy" values={`${y - 8};${y - 9};${y - 8}`} dur="2s" repeatCount="indefinite" />
-        )}
+        {isWorking && <animate attributeName="cy" values={`${y - 8};${y - 9};${y - 8}`} dur="2s" repeatCount="indefinite" />}
       </circle>
-
-      {/* Eyes */}
       <circle cx={x - 1.5} cy={y - 8.5} r={1} fill="#FFF" opacity={0.9} />
       <circle cx={x + 1.5} cy={y - 8.5} r={1} fill="#FFF" opacity={0.9} />
-
-      {/* Working: glow pulse */}
       {isWorking && (
         <circle cx={x} cy={y - 4} r={12} fill={color} opacity={0.1}>
           <animate attributeName="r" values="10;14;10" dur="1.5s" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.1;0.05;0.1" dur="1.5s" repeatCount="indefinite" />
         </circle>
       )}
-
-      {/* Thinking: floating dots */}
       {isThinking && (
-        <g>
-          {[0, 1, 2].map(i => (
-            <circle key={`think-${i}`}
-              cx={x + 8 + i * 4} cy={y - 14}
-              r={1.5} fill="#EAB308" opacity={0.6}>
-              <animate attributeName="opacity" values="0.2;0.8;0.2" dur="1s" repeatCount="indefinite"
-                begin={`${i * 0.2}s`} />
-            </circle>
-          ))}
-        </g>
+        <g>{[0, 1, 2].map(i => (
+          <circle key={i} cx={x + 8 + i * 4} cy={y - 14} r={1.5} fill="#F59E0B" opacity={0.6}>
+            <animate attributeName="opacity" values="0.2;0.8;0.2" dur="0.8s" repeatCount="indefinite" begin={`${i * 0.2}s`} />
+          </circle>
+        ))}</g>
       )}
-
-      {/* Done: checkmark */}
       {isDone && (
         <g>
-          <circle cx={x + 7} cy={y - 12} r={4} fill="#3B82F6" opacity={0.8} />
-          <path d={`M${x + 5},${y - 12} L${x + 7},${y - 10} L${x + 10},${y - 14}`}
-            fill="none" stroke="#FFF" strokeWidth={1.2} />
+          <circle cx={x + 7} cy={y - 12} r={4} fill="#10B981" opacity={0.8} />
+          <path d={`M${x + 5},${y - 12} L${x + 7},${y - 10} L${x + 10},${y - 14}`} fill="none" stroke="#FFF" strokeWidth={1.2} />
         </g>
+      )}
+    </g>
+  )
+}
+
+// ---- ISOMETRIC ROOM --------------------------------------------------------
+function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClick, cellSize }) {
+  if (!room) return null
+
+  const status = agentStatus?.status || 'IDLE'
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
+  const isActive = status === 'WORKING'
+  const isHall = room.id === 'main-hall'
+  const hasAgent = room.agent !== null
+
+  const roomW = cellSize * room.size.cols
+  const roomH = cellSize * room.size.rows
+
+  // Floor color from spec
+  const fc = room.floorColor || '#C4956A'
+  const isWood = room.floor?.startsWith('wood') || room.floor === 'carpet-commercial'
+  const isTile = room.floor?.startsWith('tile')
+
+  // Light from spec
+  const lightColor = isActive ? cfg.pulseColor : (room.lightColor || '#FFB74D')
+  const lightIntensity = isActive ? 0.25 : 0.12
+  const hasExteriorWall = room.walls && (
+    room.walls.north?.startsWith('exterior') || room.walls.west?.startsWith('exterior') ||
+    room.walls.east?.startsWith('exterior') || room.walls.south?.startsWith('exterior')
+  )
+
+  // Agent color for glow on hover
+  const agentColor = room.agentColor || '#FFD87A'
+
+  // Room dimming when inactive
+  const brightness = isActive ? 1.0 : (status === 'IDLE' ? 0.7 : 0.85)
+
+  return (
+    <g
+      onClick={() => hasAgent && onClick?.(room.id)}
+      style={{ cursor: hasAgent ? 'pointer' : 'default', filter: `brightness(${brightness})`, transition: 'filter 400ms ease' }}
+    >
+      {/* Floor */}
+      <rect x={0} y={0} width={roomW} height={roomH} fill={fc} stroke={isTile ? '#6B7D8F' : '#7A5838'} strokeWidth={0.5} />
+
+      {/* Floor pattern */}
+      {isWood && Array.from({ length: Math.floor(roomW / 12) }).map((_, i) => (
+        <line key={`grain-${i}`} x1={i * 12 + 6} y1={0} x2={i * 12 + 6} y2={roomH} stroke="rgba(0,0,0,0.12)" strokeWidth={0.3} />
+      ))}
+      {isTile && (
+        <>
+          {Array.from({ length: Math.floor(roomW / 16) + 1 }).map((_, i) => (
+            <line key={`vt-${i}`} x1={i * 16} y1={0} x2={i * 16} y2={roomH} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+          ))}
+          {Array.from({ length: Math.floor(roomH / 16) + 1 }).map((_, j) => (
+            <line key={`ht-${j}`} x1={0} y1={j * 16} x2={roomW} y2={j * 16} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+          ))}
+        </>
+      )}
+
+      {/* Room ambient glow */}
+      <rect x={0} y={0} width={roomW} height={roomH} fill={lightColor} opacity={lightIntensity} />
+
+      {/* Window light spill */}
+      {hasExteriorWall && (
+        <rect x={2} y={2} width={roomW - 4} height={roomH * 0.3} fill="#FFD87A" opacity={0.08} rx={2} />
+      )}
+
+      {/* Config-driven furniture */}
+      {renderFurniture(room.id, roomW, roomH, isActive)}
+
+      {/* Agent character */}
+      {hasAgent && agent && (
+        <AgentCharacter x={roomW * 0.72} y={roomH * 0.65} color={agentColor} status={status} />
+      )}
+
+      {/* Active indicator dot (top-right) - Steffen spec: pulsing-dot, 6px */}
+      {hasAgent && (
+        <circle cx={roomW - 10} cy={10} r={3} fill={isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color)} opacity={isActive ? 1 : 0.6}>
+          {isActive && <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite" />}
+        </circle>
+      )}
+
+      {/* Hover/selected glow overlay */}
+      {(isHovered || isSelected) && hasAgent && (
+        <rect x={0} y={0} width={roomW} height={roomH}
+          fill={isSelected ? agentColor : agentColor}
+          opacity={isSelected ? 0.12 : 0.06}
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
+
+      {/* Room border */}
+      <rect x={0} y={0} width={roomW} height={roomH} fill="none"
+        stroke={isSelected ? agentColor : (isHovered && hasAgent ? agentColor : PALETTE.exteriorWalls)}
+        strokeWidth={isSelected ? 2 : 1}
+        strokeOpacity={isHovered && hasAgent ? 0.6 : 1}
+      />
+      {/* Glow on hover per Steffen interactivity spec */}
+      {isHovered && hasAgent && (
+        <rect x={-2} y={-2} width={roomW + 4} height={roomH + 4} fill="none"
+          stroke={agentColor} strokeWidth={1} strokeOpacity={0.15} rx={2}
+          style={{ pointerEvents: 'none', filter: `drop-shadow(0 0 4px ${agentColor})` }}
+        />
+      )}
+    </g>
+  )
+}
+
+// ---- NAMEPLATE (above room) ------------------------------------------------
+function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
+  if (!room || room.agent === null) return null
+  const status = agentStatus?.status || 'IDLE'
+  const dotColor = status === 'WORKING' ? (room.statusColors?.active || '#22C55E')
+    : status === 'WAITING' ? '#F59E0B'
+    : (room.statusColors?.idle || '#6B7280')
+  const pulse = status === 'WORKING' || status === 'WAITING'
+  const task = agentStatus?.currentTask || ''
+
+  const roomW = cellSize * room.size.cols
+  const x = roomW / 2
+  const y = -10
+
+  return (
+    <g>
+      {/* Nameplate background */}
+      <rect x={x - 30} y={y - 8} width={60} height={isHovered ? 24 : 16} rx={4}
+        fill={PALETTE.nameplate.background} stroke={isHovered ? `${room.agentColor}4D` : PALETTE.nameplate.border} strokeWidth={1}
+        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))', transition: 'height 150ms ease' }}
+      />
+      {/* Status dot */}
+      <circle cx={x - 20} cy={y} r={3} fill={dotColor}>
+        {pulse && <animate attributeName="r" values="3;4;3" dur={status === 'WAITING' ? '0.8s' : '1.5s'} repeatCount="indefinite" />}
+      </circle>
+      {/* Name */}
+      <text x={x - 14} y={y + 3} fill={PALETTE.nameplate.text}
+        fontSize={GRID_SPEC.rendering.nameplateFontSize} fontWeight={isHovered ? 700 : GRID_SPEC.rendering.nameplateFontWeight}
+        fontFamily={`${GRID_SPEC.rendering.nameplateFont}, sans-serif`}
+      >
+        {room.agent}
+      </text>
+      {/* Task on hover */}
+      {isHovered && task && (
+        <text x={x - 20} y={y + 14} fill="#8A847C" fontSize={9}
+          fontFamily="Space Grotesk, sans-serif" fontWeight={400}
+        >
+          {task.length > 20 ? task.slice(0, 20) + '...' : task}
+        </text>
       )}
     </g>
   )
@@ -912,26 +341,18 @@ function AgentCharacter({ x, y, color, status, name }) {
 
 // ---- ISOMETRIC OFFICE (main game view) -------------------------------------
 function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, zoom }) {
-  // Calculate grid dimensions
-  const CELL_SIZE = 120
-  const GRID_COLS = 4
-  const GRID_ROWS = 4
+  // Use grid spec cell size. Each room is 2 grid cells wide (128px in top-down)
+  const CELL_SIZE = 80 // px per grid cell pair (room unit)
+  const GRID_COLS = 4  // 8 grid cols / 2 cols per room = 4 room columns
+  const GRID_ROWS = 4  // max 4 rows
 
-  const svgW = CELL_SIZE * GRID_COLS + 40
-  const svgH = CELL_SIZE * GRID_ROWS + 40
+  const svgW = CELL_SIZE * GRID_COLS + 60
+  const svgH = CELL_SIZE * GRID_ROWS + 80
 
-  const rooms = Object.entries(FLOOR_PLAN)
+  const rooms = GRID_SPEC.rooms
 
   return (
-    <div style={{
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'auto',
-      padding: 20,
-    }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto', padding: 20 }}>
       <div style={{
         transform: `scale(${zoom}) rotateX(55deg) rotateZ(-45deg)`,
         transformStyle: 'preserve-3d',
@@ -939,60 +360,50 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
         transformOrigin: 'center center',
         filter: 'drop-shadow(0 20px 60px rgba(255,216,122,0.06))',
       }}>
-        <svg
-          width={svgW}
-          height={svgH}
-          viewBox={`-20 -20 ${svgW} ${svgH}`}
-          style={{ overflow: 'visible' }}
-        >
-          {/* SVG defs */}
+        <svg width={svgW} height={svgH} viewBox={`-30 -30 ${svgW} ${svgH}`} style={{ overflow: 'visible' }}>
           <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="8" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
             <radialGradient id="buildingGlow" cx="50%" cy="50%" r="60%">
               <stop offset="0%" stopColor="#FFD87A" stopOpacity="0.1" />
               <stop offset="100%" stopColor="#FFD87A" stopOpacity="0" />
             </radialGradient>
-            {/* Window light gradient */}
-            <linearGradient id="windowWarmth" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FFD87A" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#FFD87A" stopOpacity="0" />
-            </linearGradient>
           </defs>
 
-          {/* Building ground shadow */}
-          <ellipse cx={svgW / 2 - 20} cy={svgH / 2 + 30} rx={svgW * 0.55} ry={svgH * 0.3}
-            fill="#000" opacity={0.15} />
+          {/* Ground plane shadow */}
+          <ellipse cx={svgW / 2 - 30} cy={svgH / 2 + 30} rx={svgW * 0.55} ry={svgH * 0.3}
+            fill={PALETTE.groundPlane} opacity={GRID_SPEC.rendering.shadowOpacity} />
 
-          {/* Building ground glow */}
-          <rect x={-40} y={-40} width={svgW + 40} height={svgH + 40}
-            fill="url(#buildingGlow)" />
+          {/* Ground glow */}
+          <rect x={-50} y={-50} width={svgW + 50} height={svgH + 50} fill="url(#buildingGlow)" />
 
-          {/* Render rooms - back to front for proper layering */}
-          {rooms.map(([slug, plan]) => {
-            const agent = AGENTS.find(a => a.slug === slug)
-            const x = plan.col * CELL_SIZE
-            const y = plan.row * CELL_SIZE
+          {/* Render rooms - sorted by row then col for z-order */}
+          {rooms.map(room => {
+            // Convert grid position to pixel position
+            // Each room is 2 grid cols wide in Steffen's 8-col grid, but we use CELL_SIZE per 2 cols
+            const pixelX = (room.position.col / 2) * CELL_SIZE
+            const pixelY = room.position.row * CELL_SIZE
+
+            const agent = AGENTS.find(a => a.slug === room.id)
 
             return (
-              <g
-                key={slug}
-                transform={`translate(${x}, ${y})`}
-                onMouseEnter={() => setHoveredRoom(slug)}
+              <g key={room.id}
+                transform={`translate(${pixelX}, ${pixelY})`}
+                onMouseEnter={() => setHoveredRoom(room.id)}
                 onMouseLeave={() => setHoveredRoom(null)}
               >
+                {/* Nameplate above room */}
+                <RoomNameplate
+                  room={room}
+                  agentStatus={agentStatus[room.id]}
+                  isHovered={hoveredRoom === room.id}
+                  cellSize={CELL_SIZE}
+                />
+
                 <IsometricRoom
-                  room={plan}
-                  slug={slug}
+                  room={room}
                   agent={agent}
-                  agentStatus={agentStatus[slug]}
-                  isHovered={hoveredRoom === slug}
-                  isSelected={selectedRoom === slug}
+                  agentStatus={agentStatus[room.id]}
+                  isHovered={hoveredRoom === room.id}
+                  isSelected={selectedRoom === room.id}
                   onClick={onRoomClick}
                   cellSize={CELL_SIZE}
                 />
@@ -1000,37 +411,37 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
             )
           })}
 
-          {/* Building exterior walls (thicker border around the L-shape) */}
-          {/* Top row */}
-          <line x1={0} y1={0} x2={CELL_SIZE * 4} y2={0} stroke="#5A6578" strokeWidth={3} />
-          {/* Right side top */}
-          <line x1={CELL_SIZE * 4} y1={0} x2={CELL_SIZE * 4} y2={CELL_SIZE * 3} stroke="#5A6578" strokeWidth={3} />
-          {/* Step in the L */}
-          <line x1={CELL_SIZE * 4} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 3} stroke="#5A6578" strokeWidth={3} />
+          {/* Exterior walls - thick border around building perimeter */}
+          {/* Top (row 0): 4 rooms across */}
+          <line x1={0} y1={0} x2={CELL_SIZE * 4} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+          {/* Right side */}
+          <line x1={CELL_SIZE * 4} y1={0} x2={CELL_SIZE * 4} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+          {/* L-shape step */}
+          <line x1={CELL_SIZE * 4} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
           {/* Right side of south extension */}
-          <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 4} stroke="#5A6578" strokeWidth={3} />
+          <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
           {/* Bottom of south extension */}
-          <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 4} stroke="#5A6578" strokeWidth={3} />
+          <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
           {/* Left side of south extension */}
-          <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 3} stroke="#5A6578" strokeWidth={3} />
+          <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
           {/* Bottom left */}
-          <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 3} x2={0} y2={CELL_SIZE * 3} stroke="#5A6578" strokeWidth={3} />
+          <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 3} x2={0} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
           {/* Left side */}
-          <line x1={0} y1={CELL_SIZE * 3} x2={0} y2={0} stroke="#5A6578" strokeWidth={3} />
+          <line x1={0} y1={CELL_SIZE * 3} x2={0} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
 
-          {/* Exterior ground decorations */}
-          {/* Small path to entrance */}
-          <rect x={CELL_SIZE * 1.7} y={CELL_SIZE * 4 + 4} width={CELL_SIZE * 0.6} height={20}
-            fill="#3A4050" rx={2} opacity={0.5} />
-
-          {/* CORNER sign at the entrance */}
-          <g transform={`translate(${CELL_SIZE * 2}, ${CELL_SIZE * 4 + 30})`}>
-            <rect x={-35} y={-10} width={70} height={20} fill="#1A1A2E" rx={3} stroke="#5A6578" strokeWidth={1} />
-            <text x={0} y={5} textAnchor="middle" fill="#FFD87A" fontSize={10}
-              fontFamily="JetBrains Mono, monospace" fontWeight={700} letterSpacing="0.25em">
-              CORNER
+          {/* CORNER entrance sign */}
+          <g transform={`translate(${CELL_SIZE * 2}, ${CELL_SIZE * 4 + 25})`}>
+            <rect x={-35} y={-10} width={70} height={22} fill={GRID_SPEC.entrance.awningColor} rx={3} stroke={PALETTE.exteriorWalls} strokeWidth={1} />
+            <text x={0} y={5} textAnchor="middle" fill={GRID_SPEC.entrance.signColor}
+              fontSize={GRID_SPEC.entrance.signFontSize} fontFamily={`${GRID_SPEC.entrance.signFont}, sans-serif`}
+              fontWeight={GRID_SPEC.entrance.signFontWeight} letterSpacing="0.05em">
+              {GRID_SPEC.entrance.sign}
             </text>
           </g>
+
+          {/* Path to entrance */}
+          <rect x={CELL_SIZE * 1.7} y={CELL_SIZE * 4 + 2} width={CELL_SIZE * 0.6} height={18}
+            fill={PALETTE.groundPlaneEdge} rx={2} opacity={0.5} />
 
           {/* Exterior bench */}
           <rect x={-15} y={CELL_SIZE * 1.5} width={8} height={20} fill="#5D4037" rx={1} opacity={0.4} />
@@ -1045,8 +456,93 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
   )
 }
 
-// ---- TASK HUD (top drawer) -------------------------------------------------
-function TaskHUD({ data, isOpen, onToggle }) {
+// ---- MINI-MAP (bottom-left, Steffen HUD spec) ------------------------------
+function MiniMap({ rooms, agentStatus, selectedRoom, zoom, onRoomClick }) {
+  if (zoom < 1.0) return null // Hidden at overview zoom
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        position: 'fixed', bottom: 80, left: 16, zIndex: 35,
+        width: 140, height: 100,
+        background: 'rgba(10, 15, 30, 0.85)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: 6,
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+        padding: 6,
+      }}
+    >
+      <svg width={128} height={88} viewBox="0 0 320 320">
+        {rooms.map(room => {
+          const x = (room.position.col / 2) * 80
+          const y = room.position.row * 80
+          const w = (room.size.cols / 2) * 80
+          const h = room.size.rows * 80
+          const isActive = agentStatus[room.id]?.status === 'WORKING'
+          return (
+            <rect key={room.id}
+              x={x} y={y} width={w} height={h}
+              fill={room.agentColor || '#4A5568'}
+              opacity={isActive ? 0.6 : 0.3}
+              stroke={selectedRoom === room.id ? '#FDF6EC' : 'rgba(255,255,255,0.1)'}
+              strokeWidth={selectedRoom === room.id ? 2 : 0.5}
+              rx={2}
+              style={{ cursor: room.agent ? 'pointer' : 'default' }}
+              onClick={() => room.agent && onRoomClick(room.id)}
+            />
+          )
+        })}
+      </svg>
+    </motion.div>
+  )
+}
+
+// ---- NOTIFICATION TOAST (top-right) ----------------------------------------
+function NotificationToast({ notifications, onDismiss, onClickNotification }) {
+  return (
+    <div style={{ position: 'fixed', top: 64, right: 16, zIndex: 45, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <AnimatePresence>
+        {notifications.slice(0, 3).map(n => (
+          <motion.div
+            key={n.id}
+            initial={{ x: 340, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 340, opacity: 0 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+            onClick={() => onClickNotification?.(n)}
+            style={{
+              width: 320, cursor: 'pointer',
+              background: 'rgba(10, 15, 30, 0.95)',
+              border: `1px solid ${n.agentColor || '#E85D26'}33`,
+              borderLeft: `3px solid ${n.agentColor || '#E85D26'}`,
+              borderRadius: 8,
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+              padding: '14px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: n.agentColor || '#E85D26', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#FFF' }}>
+                {n.agentName?.charAt(0)}
+              </div>
+              <span style={{ color: n.agentColor || '#E85D26', fontSize: 12, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>{n.agentName}</span>
+              <span style={{ marginLeft: 'auto', color: '#6B7280', fontSize: 10, fontFamily: 'Space Grotesk, sans-serif' }}>{n.time}</span>
+            </div>
+            <div style={{ color: '#F0ECE6', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              {n.message}
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile }) {
   const [tab, setTab] = useState('session')
   const tabs = [
     { id: 'session', label: 'Last Session', icon: Clock },
@@ -1055,54 +551,155 @@ function TaskHUD({ data, isOpen, onToggle }) {
     { id: 'add', label: 'Add New', icon: Plus },
   ]
 
+  // Active underline color: agent color or default orange
+  const activeAgent = selectedAgent ? AGENTS.find(a => a.slug === selectedAgent) : null
+  const underlineColor = activeAgent?.color || '#E85D26'
+
   return (
     <div style={{
-      position: 'relative',
-      background: 'rgba(10,15,30,0.95)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid #2A3040',
-      transition: 'max-height 0.3s ease',
-      maxHeight: isOpen ? 320 : 0,
-      overflow: 'hidden',
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
     }}>
-      {/* Tab bar */}
+      {/* Collapsed bar: 48px */}
       <div style={{
-        display: 'flex', gap: 0,
-        borderBottom: '1px solid #1A2030',
-        padding: '0 16px',
+        height: 48,
+        background: 'rgba(10, 15, 30, 0.85)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 20px',
       }}>
-        {tabs.map(t => {
-          const Icon = t.icon
-          const active = tab === t.id
-          return (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '10px 16px',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: active ? '#FFD87A' : '#78716C',
-                borderBottom: active ? '2px solid #FFD87A' : '2px solid transparent',
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 10, fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: '0.1em',
-                transition: 'color 0.2s',
-              }}
-            >
-              <Icon size={12} />
-              {t.label}
-            </button>
-          )
-        })}
+        {/* Left: CORNER logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 16, color: PALETTE.signText, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            CORNER
+          </span>
+          <span style={{ color: '#E85D26', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 16 }}>.</span>
+        </div>
+
+        {/* Center: Tabs */}
+        <div style={{ display: 'flex', gap: isMobile ? 16 : 28, overflowX: isMobile ? 'auto' : 'visible' }}>
+          {tabs.map(t => {
+            const active = tab === t.id
+            return (
+              <button key={t.id} onClick={() => { setTab(t.id); if (!isOpen) onToggle() }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: active ? PALETTE.signText : '#6B7280',
+                  borderBottom: active ? `2px solid ${underlineColor}` : '2px solid transparent',
+                  fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, fontWeight: 500,
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  padding: '14px 0', transition: 'color 150ms ease',
+                }}
+                onMouseEnter={e => { if (!active) e.target.style.color = '#A0A0A0' }}
+                onMouseLeave={e => { if (!active) e.target.style.color = '#6B7280' }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Right: Expand chevron */}
+        <button onClick={onToggle}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, transition: 'color 150ms' }}
+          onMouseEnter={e => e.target.style.color = PALETTE.signText}
+          onMouseLeave={e => e.target.style.color = '#6B7280'}
+        >
+          <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms ease' }} />
+        </button>
       </div>
 
-      {/* Tab content */}
-      <div style={{ padding: '12px 16px', maxHeight: 260, overflowY: 'auto' }}>
-        {tab === 'session' && <SessionTab data={data} />}
-        {tab === 'project' && <ProjectTab data={data} />}
-        {tab === 'upcoming' && <UpcomingTab />}
-        {tab === 'add' && <AddTaskTab />}
+      {/* Expanded drawer: 280px */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: isMobile ? '60vh' : 280, opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            style={{
+              background: 'rgba(10, 15, 30, 0.92)',
+              backdropFilter: 'blur(20px)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.5)',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.15 }}
+              style={{ padding: '16px 20px 20px', height: '100%', overflowY: 'auto' }}
+              className="hud-scroll"
+            >
+              {tab === 'session' && <SessionTab data={data} />}
+              {tab === 'project' && <ProjectTab data={data} />}
+              {tab === 'upcoming' && <UpcomingTab />}
+              {tab === 'add' && <AddTaskTab />}
+            </motion.div>
+
+            {/* Gradient fade at bottom */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: 20,
+              background: 'linear-gradient(to bottom, rgba(10, 15, 30, 0) 0%, rgba(10, 15, 30, 0.92) 100%)',
+              pointerEvents: 'none',
+            }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ---- Task Item Card (Steffen HUD spec) -------------------------------------
+function TaskCard({ entry, agentColor }) {
+  const statusBadgeColors = {
+    DONE: { bg: 'rgba(16,185,129,0.15)', text: '#10B981' },
+    ACTIVE: { bg: 'rgba(245,158,11,0.15)', text: '#F59E0B' },
+    BLOCKED: { bg: 'rgba(239,68,68,0.15)', text: '#EF4444' },
+    QUEUED: { bg: 'rgba(107,114,128,0.15)', text: '#6B7280' },
+    WORKING: { bg: 'rgba(245,158,11,0.15)', text: '#F59E0B' },
+  }
+  const badge = statusBadgeColors[entry.status] || statusBadgeColors.QUEUED
+
+  return (
+    <div style={{
+      minHeight: 64, background: 'rgba(255, 255, 255, 0.03)',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      borderRadius: 6, padding: '14px 16px',
+      cursor: 'pointer', transition: 'background 150ms ease, border-color 150ms ease',
+    }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        {/* Agent dot */}
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: agentColor || '#6B7280', marginTop: 4, flexShrink: 0, boxShadow: `0 0 4px ${agentColor || '#6B7280'}4D` }} />
+        {/* Task title */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 14, color: '#F0ECE6', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            {entry.description || entry.currentTask || 'No task'}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            {entry.agent && (
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: agentColor || '#6B7280' }}>
+                {entry.agent}
+              </span>
+            )}
+            {entry.status && (
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: badge.text, background: badge.bg, padding: '2px 8px', borderRadius: 3 }}>
+                {entry.status === 'WORKING' ? 'ACTIVE' : entry.status}
+              </span>
+            )}
+            {entry.time && (
+              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 11, color: '#6B7280', marginLeft: 'auto' }}>
+                {timeAgo(entry.time)}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -1113,33 +710,11 @@ function SessionTab({ data }) {
   if (feed.length === 0) return <EmptyTab message="No recent activity" />
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {feed.slice(0, 10).map((entry, i) => (
-        <div key={i} style={{
-          display: 'flex', gap: 8, alignItems: 'flex-start',
-          padding: '6px 8px',
-          background: 'rgba(26,32,48,0.5)',
-          borderRadius: 2,
-        }}>
-          <span style={{ color: '#78716C', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', flexShrink: 0, marginTop: 1 }}>
-            {timeAgo(entry.time)}
-          </span>
-          <div style={{ minWidth: 0 }}>
-            {entry.agent && (
-              <span style={{ color: '#E85D26', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginRight: 6 }}>
-                {entry.agent}
-              </span>
-            )}
-            <span style={{ color: '#A8A29E', fontSize: 12 }}>{entry.description}</span>
-            {entry.commitHash && (
-              <a href={entry.commitUrl} target="_blank" rel="noopener"
-                style={{ marginLeft: 6, color: '#78716C', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textDecoration: 'none' }}>
-                {entry.commitHash}
-              </a>
-            )}
-          </div>
-        </div>
-      ))}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+      {feed.slice(0, 12).map((entry, i) => {
+        const agent = AGENTS.find(a => a.slug === entry.agent?.toLowerCase() || a.name === entry.agent)
+        return <TaskCard key={i} entry={entry} agentColor={agent?.color} />
+      })}
     </div>
   )
 }
@@ -1155,29 +730,16 @@ function ProjectTab({ data }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {Object.entries(grouped).map(([group, items]) => (
         <div key={group}>
-          <div style={{
-            color: '#78716C', fontSize: 9, fontFamily: 'JetBrains Mono, monospace',
-            fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em',
-            marginBottom: 4,
-          }}>{group}</div>
-          {items.map(a => (
-            <div key={a.slug} style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px',
-              background: 'rgba(26,32,48,0.3)', borderRadius: 2, marginBottom: 2,
-            }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: (STATUS_CONFIG[a.status] || STATUS_CONFIG.IDLE).color, flexShrink: 0,
-              }} />
-              <span style={{ color: '#F5F0EB', fontSize: 12, fontWeight: 600, width: 60 }}>{a.name}</span>
-              <span style={{ color: '#A8A29E', fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {a.currentTask || 'Standing by'}
-              </span>
-            </div>
-          ))}
+          <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>{group}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
+            {items.map(a => {
+              const specAgent = AGENTS.find(sa => sa.slug === a.slug)
+              return <TaskCard key={a.slug} entry={{ ...a, description: a.currentTask, agent: a.name }} agentColor={specAgent?.color} />
+            })}
+          </div>
         </div>
       ))}
     </div>
@@ -1189,27 +751,44 @@ function UpcomingTab() {
 }
 
 function AddTaskTab() {
+  const [selectedAgent, setSelectedAgent] = useState(null)
+
   return (
     <div style={{ padding: '8px 0' }}>
-      <div style={{ color: '#78716C', fontSize: 11, marginBottom: 8 }}>
-        Quick-add a task (sends to relay)
-      </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          type="text"
-          placeholder="What needs to happen?"
-          style={{
-            flex: 1, background: '#141822', border: '1px solid #2A3040', color: '#F5F0EB',
-            padding: '8px 12px', fontSize: 13, fontFamily: 'Inter, sans-serif',
-            outline: 'none', borderRadius: 2,
-          }}
-        />
-        <button style={{
-          background: '#E85D26', color: '#FFF', border: 'none', padding: '8px 16px',
-          fontWeight: 700, fontSize: 12, cursor: 'pointer', borderRadius: 2,
-        }}>
-          Add
-        </button>
+      {/* Input */}
+      <input type="text" placeholder="Add a task for any agent..."
+        style={{
+          width: '100%', background: 'transparent',
+          border: 'none', borderBottom: '2px solid rgba(255, 255, 255, 0.15)',
+          color: '#FDF6EC', padding: '12px 0', fontSize: 14,
+          fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400,
+          outline: 'none',
+        }}
+        onFocus={e => e.target.style.borderBottomColor = '#E85D26'}
+        onBlur={e => e.target.style.borderBottomColor = 'rgba(255, 255, 255, 0.15)'}
+      />
+
+      {/* Agent pills */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
+        {AGENTS.filter(a => a.slug !== 'paige' && a.slug !== 'pixel').map(a => {
+          const sel = selectedAgent === a.slug
+          return (
+            <button key={a.slug} onClick={() => setSelectedAgent(sel ? null : a.slug)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                height: 28, padding: '4px 12px', borderRadius: 14,
+                background: sel ? `${a.color}26` : 'transparent',
+                border: `1px solid ${sel ? `${a.color}4D` : 'rgba(255,255,255,0.08)'}`,
+                color: sel ? a.color : '#8A847C',
+                fontSize: 11, fontWeight: 500, fontFamily: 'Space Grotesk, sans-serif',
+                cursor: 'pointer', transition: 'all 150ms ease',
+              }}
+            >
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: a.color }} />
+              {a.name}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -1217,47 +796,45 @@ function AddTaskTab() {
 
 function EmptyTab({ message }) {
   return (
-    <div style={{
-      padding: '24px 0', textAlign: 'center',
-      color: '#78716C', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
-    }}>
+    <div style={{ padding: '40px 0', textAlign: 'center', color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif' }}>
       {message}
     </div>
   )
 }
 
-// ---- CHAT BAR (bottom) -----------------------------------------------------
+// ---- CHAT BAR (bottom) - aligned to Steffen c2-hud-spec --------------------
 function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
   const [expanded, setExpanded] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState({}) // per-agent message history
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const connectionRef = useRef(null)
 
   const currentAgent = activeAgent
     ? AGENTS.find(a => a.slug === activeAgent)
-    : AGENTS.find(a => a.slug === 'elon') // Default to Elon
+    : AGENTS.find(a => a.slug === 'elon')
 
-  const status = agentStatus[currentAgent?.slug]?.status || 'IDLE'
-  const task = agentStatus[currentAgent?.slug]?.currentTask || 'Standing by'
+  const agentSlug = currentAgent?.slug || 'elon'
+  const currentMessages = messages[agentSlug] || []
+  const status = agentStatus[agentSlug]?.status || 'IDLE'
+  const task = agentStatus[agentSlug]?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
+  const agentColor = currentAgent?.color || '#E85D26'
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [currentMessages])
 
   useEffect(() => {
-    if (expanded) {
-      setTimeout(() => inputRef.current?.focus(), 200)
-    }
+    if (expanded) setTimeout(() => inputRef.current?.focus(), 200)
   }, [expanded])
 
-  // Reset messages when switching agents
-  useEffect(() => {
-    setMessages([])
-  }, [activeAgent])
+  const updateMessages = (agentSlug, updater) => {
+    setMessages(prev => ({ ...prev, [agentSlug]: updater(prev[agentSlug] || []) }))
+  }
 
   const sendMessage = async (e) => {
     e?.preventDefault()
@@ -1265,315 +842,290 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
     if (!text || streaming) return
 
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: text }])
+    updateMessages(agentSlug, prev => [...prev, { role: 'user', content: text, time: new Date().toISOString() }])
     setStreaming(true)
-    setMessages(prev => [...prev, { role: 'assistant', content: '', streaming: true }])
+    updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: new Date().toISOString() }])
 
-    try {
-      const res = await fetch('/api/dashboard/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slug: currentAgent.slug,
-          message: text,
-          history: messages.map(m => ({ role: m.role, content: m.content })),
-        }),
-      })
+    // Disconnect previous connection
+    connectionRef.current?.disconnect()
 
-      const contentType = res.headers.get('content-type') || ''
-
-      if (contentType.includes('text/event-stream')) {
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.type === 'text') {
-                setMessages(prev => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last && last.role === 'assistant') {
-                    updated[updated.length - 1] = { ...last, content: last.content + data.text }
-                  }
-                  return updated
-                })
-              } else if (data.type === 'done') {
-                setMessages(prev => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last) updated[updated.length - 1] = { ...last, streaming: false }
-                  return updated
-                })
-              } else if (data.type === 'error') {
-                setMessages(prev => {
-                  const updated = [...prev]
-                  const last = updated[updated.length - 1]
-                  if (last) updated[updated.length - 1] = { ...last, content: `Error: ${data.error}`, streaming: false }
-                  return updated
-                })
-              }
-            } catch {}
-          }
-        }
-      } else {
-        const data = await res.json()
-        setMessages(prev => {
+    const conn = createChatConnection(
+      // onMessage
+      (text) => {
+        updateMessages(agentSlug, prev => {
           const updated = [...prev]
           const last = updated[updated.length - 1]
-          if (last) {
-            updated[updated.length - 1] = {
-              ...last,
-              content: data.reply || data.error || 'No response',
-              streaming: false,
-            }
-          }
+          if (last?.role === 'assistant') updated[updated.length - 1] = { ...last, content: last.content + text }
           return updated
         })
+      },
+      // onDone
+      () => {
+        updateMessages(agentSlug, prev => {
+          const updated = [...prev]
+          const last = updated[updated.length - 1]
+          if (last) updated[updated.length - 1] = { ...last, streaming: false }
+          return updated
+        })
+        setStreaming(false)
+      },
+      // onError
+      (error) => {
+        updateMessages(agentSlug, prev => {
+          const updated = [...prev]
+          const last = updated[updated.length - 1]
+          if (last) updated[updated.length - 1] = { ...last, content: `Error: ${error}`, streaming: false }
+          return updated
+        })
+        setStreaming(false)
       }
-    } catch (err) {
-      setMessages(prev => {
-        const updated = [...prev]
-        const last = updated[updated.length - 1]
-        if (last) {
-          updated[updated.length - 1] = {
-            ...last,
-            content: `Connection error: ${err.message}`,
-            streaming: false,
-          }
-        }
-        return updated
-      })
-    } finally {
-      setStreaming(false)
-    }
+    )
+
+    connectionRef.current = conn
+    await conn.send({
+      slug: agentSlug,
+      message: text,
+      history: currentMessages.map(m => ({ role: m.role, content: m.content })),
+    })
   }
 
-  const chatHeight = fullscreen ? '100vh' : (expanded ? '40vh' : 0)
+  // Chat heights per Steffen spec
+  const getHeight = () => {
+    if (fullscreen) return '100vh'
+    if (expanded) return isMobile ? '100vh' : '40vh'
+    return 0
+  }
 
   return (
     <div style={{
-      position: fullscreen ? 'fixed' : 'relative',
+      position: fullscreen ? 'fixed' : 'fixed',
       bottom: 0, left: 0, right: 0,
-      zIndex: fullscreen ? 100 : 20,
+      zIndex: fullscreen ? 100 : 30,
       display: 'flex', flexDirection: 'column',
-      background: fullscreen ? '#0A0F1E' : 'transparent',
     }}>
-      {/* Expanded chat area */}
+      {/* Expanded chat panel */}
       <AnimatePresence>
         {(expanded || fullscreen) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: chatHeight, opacity: 1 }}
+            animate={{ height: getHeight(), opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             style={{
-              background: 'rgba(10,15,30,0.97)',
-              backdropFilter: 'blur(16px)',
-              borderTop: '1px solid #2A3040',
+              background: fullscreen ? PALETTE.background : 'rgba(10, 15, 30, 0.95)',
+              backdropFilter: fullscreen ? 'none' : 'blur(24px)',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.5)',
+              borderRadius: fullscreen ? 0 : '16px 16px 0 0',
               display: 'flex', flexDirection: 'column',
               overflow: 'hidden',
             }}
           >
-            {/* Chat header */}
+            {/* Drag handle */}
+            {!fullscreen && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px' }}>
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255, 255, 255, 0.15)' }} />
+              </div>
+            )}
+
+            {/* Header */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '8px 16px',
-              borderBottom: '1px solid #1A2030',
+              padding: `0 20px`, height: fullscreen ? 56 : 44,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
               flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: cfg.color,
-                }} />
-                <span style={{ color: '#F5F0EB', fontSize: 14, fontWeight: 700 }}>{currentAgent?.name}</span>
-                <span style={{ color: '#78716C', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase' }}>
-                  {currentAgent?.role}
-                </span>
+                {fullscreen && (
+                  <button onClick={() => setFullscreen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}>
+                    <ArrowLeft size={18} />
+                  </button>
+                )}
+                <span style={{ color: PALETTE.signText, fontSize: fullscreen ? 16 : 15, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>{currentAgent?.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: agentColor }}>
+                    {status === 'WORKING' && <animate attributeName="r" values="3;4;3" dur="1.5s" repeatCount="indefinite" />}
+                  </div>
+                  <span style={{ color: agentColor, fontSize: 11, fontFamily: 'Space Grotesk, sans-serif' }}>
+                    {status === 'WORKING' ? 'Active' : status === 'WAITING' ? 'Thinking...' : 'Idle'}
+                  </span>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button onClick={() => setFullscreen(!fullscreen)} style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#78716C',
-                }}>
-                  {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                </button>
-                <button onClick={() => { setExpanded(false); setFullscreen(false) }} style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#78716C',
-                }}>
-                  <X size={14} />
+              <div style={{ display: 'flex', gap: 12 }}>
+                {!fullscreen && (
+                  <button onClick={() => setFullscreen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}
+                    onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
+                    <Maximize2 size={16} />
+                  </button>
+                )}
+                <button onClick={() => { setExpanded(false); setFullscreen(false) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}
+                  onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
+                  <X size={16} />
                 </button>
               </div>
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-              {messages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '32px 0', color: '#78716C', fontSize: 13 }}>
-                  Chat with <span style={{ color: '#F5F0EB', fontWeight: 700 }}>{currentAgent?.name}</span>
-                  <div style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{task}</div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', maxWidth: fullscreen ? 720 : '100%', margin: fullscreen ? '0 auto' : 0, width: '100%' }}>
+              {currentMessages.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B7280', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif' }}>
+                  Chat with <span style={{ color: PALETTE.signText, fontWeight: 600 }}>{currentAgent?.name}</span>
+                  <div style={{ fontSize: 12, marginTop: 6, color: '#6B7280' }}>{task}</div>
                 </div>
               )}
-              {messages.map((msg, i) => (
-                <div key={i} style={{
-                  display: 'flex',
-                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  marginBottom: 8,
-                }}>
-                  <div style={{
-                    maxWidth: '80%',
-                    padding: '8px 12px',
-                    borderRadius: 2,
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                    ...(msg.role === 'user'
-                      ? { background: 'rgba(232,93,38,0.12)', color: '#F5F0EB', border: '1px solid rgba(232,93,38,0.2)' }
-                      : { background: 'rgba(26,32,48,0.8)', color: '#F5F0EB', border: '1px solid #2A3040' }
-                    ),
-                  }}>
-                    {msg.role === 'assistant' && (
-                      <div style={{ color: cfg.color, fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
-                        {currentAgent?.name}
-                      </div>
-                    )}
-                    <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>
-                    {msg.streaming && (
-                      <span style={{ display: 'inline-block', width: 6, height: 16, background: '#E85D26', marginLeft: 2, animation: 'pulse 1s infinite' }} />
-                    )}
+              {currentMessages.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
+                  {msg.role === 'assistant' && (
+                    <div style={{ width: fullscreen ? 28 : 20, height: fullscreen ? 28 : 20, borderRadius: '50%', border: `2px solid ${agentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 700, color: agentColor, marginRight: 8, flexShrink: 0, marginTop: 2 }}>
+                      {currentAgent?.name?.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <div style={{
+                      maxWidth: '75%',
+                      padding: '12px 16px',
+                      fontSize: fullscreen ? 15 : 14,
+                      fontFamily: 'Space Grotesk, sans-serif',
+                      lineHeight: 1.55,
+                      ...(msg.role === 'user'
+                        ? {
+                          background: 'rgba(232,93,38,0.12)',
+                          border: '1px solid rgba(232,93,38,0.20)',
+                          borderRadius: '12px 2px 12px 12px',
+                          color: PALETTE.signText,
+                        }
+                        : {
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: '2px 12px 12px 12px',
+                          color: '#F0ECE6',
+                        }
+                      ),
+                    }}>
+                      <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>
+                      {msg.streaming && !msg.content && (
+                        <div style={{ display: 'flex', gap: 4, padding: '4px 0' }}>
+                          {[0, 1, 2].map(i => (
+                            <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: agentColor, animation: `dotPulse 0.6s ease-in-out ${i * 0.2}s infinite` }} />
+                          ))}
+                        </div>
+                      )}
+                      {msg.streaming && msg.content && (
+                        <span style={{ display: 'inline-block', width: 6, height: 16, background: agentColor, marginLeft: 2, animation: 'pulse 1s infinite' }} />
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#6B7280', marginTop: 4, fontFamily: 'Space Grotesk, sans-serif', textAlign: msg.role === 'user' ? 'right' : 'left' }}>
+                      {msg.time ? timeAgo(msg.time) : ''}
+                    </div>
                   </div>
                 </div>
               ))}
               <div ref={messagesEndRef} />
             </div>
+
+            {/* Input bar inside expanded panel */}
+            <form onSubmit={sendMessage} style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '10px 16px', height: 56,
+              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              flexShrink: 0,
+            }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${agentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: agentColor, flexShrink: 0 }}>
+                {currentAgent?.name?.charAt(0)}
+              </div>
+              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
+                placeholder={`Message ${currentAgent?.name}...`} disabled={streaming}
+                style={{
+                  flex: 1, background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 8, height: 36, padding: '0 16px',
+                  color: PALETTE.signText, fontSize: 14,
+                  fontFamily: 'Space Grotesk, sans-serif',
+                  outline: 'none', transition: 'border-color 150ms ease',
+                }}
+                onFocus={e => e.target.style.borderColor = `${agentColor}66`}
+                onBlur={e => e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)'}
+              />
+              <button type="submit" disabled={!input.trim() || streaming}
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: input.trim() ? agentColor : '#2A3040',
+                  color: '#FDF6EC', border: 'none',
+                  cursor: input.trim() ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: '150ms ease',
+                  opacity: streaming ? 0.5 : 1,
+                }}>
+                {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              </button>
+            </form>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Input bar (always visible) */}
-      <form onSubmit={sendMessage} style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 16px',
-        background: 'rgba(20,24,34,0.98)',
-        borderTop: '1px solid #2A3040',
-      }}>
-        {/* Agent avatar */}
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: '#F5F0EB', padding: '4px 8px',
-            borderRadius: 2,
-          }}
-        >
-          <div style={{
-            width: 28, height: 28, borderRadius: 4,
-            background: currentAgent?.color || '#78716C',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 800, color: '#FFF',
-          }}>
+      {/* Collapsed chat bar: 56px */}
+      {!expanded && !fullscreen && (
+        <form onSubmit={sendMessage} style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          height: 56, padding: '0 16px',
+          background: 'rgba(10, 15, 30, 0.85)',
+          backdropFilter: 'blur(16px)',
+          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          boxShadow: '0 -2px 12px rgba(0, 0, 0, 0.3)',
+        }}>
+          {/* Agent avatar */}
+          <div style={{ width: 32, height: 32, borderRadius: '50%', border: `2px solid ${agentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#FFF', background: `${agentColor}33`, flexShrink: 0 }}>
             {currentAgent?.name?.charAt(0)}
           </div>
-          <span style={{ fontSize: 12, fontWeight: 600 }}>{currentAgent?.name}</span>
-          {expanded ? <ChevronDown size={12} style={{ color: '#78716C' }} /> : <ChevronUp size={12} style={{ color: '#78716C' }} />}
-        </button>
-
-        {/* Input */}
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onFocus={() => { if (!expanded) setExpanded(true) }}
-          placeholder={`Message ${currentAgent?.name}...`}
-          disabled={streaming}
-          style={{
-            flex: 1, background: '#0F1320', border: '1px solid #2A3040', color: '#F5F0EB',
-            padding: '10px 14px', fontSize: 14, borderRadius: 2,
-            outline: 'none', fontFamily: 'Inter, sans-serif',
-          }}
-        />
-
-        {/* Send */}
-        <button
-          type="submit"
-          disabled={!input.trim() || streaming}
-          style={{
-            background: input.trim() ? '#E85D26' : '#2A3040',
-            color: '#FFF', border: 'none', padding: 10, cursor: input.trim() ? 'pointer' : 'default',
-            borderRadius: 2, transition: 'background 0.2s',
-            opacity: streaming ? 0.5 : 1,
-          }}
-        >
-          {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-        </button>
-      </form>
-
-      <style>{`
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .animate-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-      `}</style>
-    </div>
-  )
-}
-
-// ---- THROUGHPUT BAR --------------------------------------------------------
-function ThroughputBar({ throughput }) {
-  if (!throughput) return null
-
-  const metrics = [
-    { label: 'Working', value: throughput.working || 0, color: '#22C55E' },
-    { label: 'Done', value: throughput.doneToday || 0, color: '#3B82F6' },
-    { label: 'Blocked', value: throughput.blocked || 0, color: '#EF4444' },
-    { label: 'Idle', value: throughput.idle || 0, color: '#78716C' },
-    { label: 'Commits', value: throughput.commitsToday || 0, color: '#F5F0EB' },
-  ]
-
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      gap: 20, padding: '6px 16px',
-      background: 'rgba(20,24,34,0.6)',
-      borderBottom: '1px solid #1A2030',
-    }}>
-      {metrics.map(m => (
-        <div key={m.label} style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-          <span style={{
-            fontSize: 16, fontWeight: 900, fontStyle: 'italic', color: m.color,
-            fontFamily: "'Inter Tight', sans-serif",
-          }}>
-            {m.value}
+          <span style={{ color: agentColor, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', flexShrink: 0 }}>
+            {currentAgent?.name}
           </span>
-          <span style={{
-            fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.12em', color: '#78716C',
+
+          {/* Input */}
+          <input type="text" value={input} onChange={e => setInput(e.target.value)}
+            onFocus={() => setExpanded(true)}
+            placeholder={`Message ${currentAgent?.name}...`} disabled={streaming}
+            style={{
+              flex: 1, background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 8, height: 36, padding: '0 16px',
+              color: PALETTE.signText, fontSize: 14,
+              fontFamily: 'Space Grotesk, sans-serif',
+              outline: 'none', margin: '0 8px',
+            }}
+          />
+
+          {/* Send */}
+          <button type="submit" disabled={!input.trim() || streaming}
+            style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: input.trim() ? agentColor : '#2A3040',
+              color: '#FDF6EC', border: 'none',
+              cursor: input.trim() ? 'pointer' : 'default',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: streaming ? 0.3 : (input.trim() ? 1 : 0.3),
+            }}>
+            <Send size={16} />
+          </button>
+
+          {/* Expand */}
+          <button type="button" onClick={() => setExpanded(true)} style={{
+            background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4,
           }}>
-            {m.label}
-          </span>
-        </div>
-      ))}
+            <ChevronUp size={16} />
+          </button>
+        </form>
+      )}
     </div>
   )
 }
 
 // ---- ROOM DETAIL SIDEBAR ---------------------------------------------------
-function RoomDetailSidebar({ slug, agent, agentStatus, onClose, onChat }) {
+function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
-  const floorPlan = FLOOR_PLAN[slug]
+  const agentColor = room?.agentColor || agent?.color || '#6B7280'
 
   return (
     <motion.div
@@ -1582,100 +1134,74 @@ function RoomDetailSidebar({ slug, agent, agentStatus, onClose, onChat }) {
       exit={{ x: '100%', opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       style={{
-        position: 'absolute', top: 0, right: 0, bottom: 0,
-        width: 320, maxWidth: '100%',
-        background: 'rgba(10,15,30,0.97)',
+        position: 'absolute', top: 48, right: 0, bottom: 56, width: 320, maxWidth: '100%',
+        background: 'rgba(10, 15, 30, 0.97)',
         backdropFilter: 'blur(16px)',
-        borderLeft: '1px solid #2A3040',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex', flexDirection: 'column',
-        zIndex: 30,
+        zIndex: 32,
       }}
     >
       {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px', borderBottom: '1px solid #1A2030',
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 4,
-            background: agent?.color || '#78716C',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 800, color: '#FFF',
-          }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: `${agentColor}33`, border: `2px solid ${agentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: agentColor }}>
             {agent?.name?.charAt(0) || '?'}
           </div>
           <div>
-            <div style={{ color: '#F5F0EB', fontSize: 16, fontWeight: 700 }}>{agent?.name || slug}</div>
-            <div style={{ color: '#78716C', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              {agent?.role || floorPlan?.label || ''}
+            <div style={{ color: PALETTE.signText, fontSize: 16, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>{agent?.name || room?.agent}</div>
+            <div style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {agent?.role || room?.role || ''}
             </div>
           </div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#78716C', padding: 4 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}>
           <X size={16} />
         </button>
       </div>
 
       {/* Status */}
       <div style={{ padding: '12px 16px' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px 12px',
-          background: cfg.bg,
-          borderRadius: 2,
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: cfg.bg, borderRadius: 4 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color }} />
-          <span style={{ color: cfg.color, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>
-            {cfg.label}
-          </span>
+          <span style={{ color: cfg.color, fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>{cfg.label}</span>
         </div>
       </div>
 
       {/* Current task */}
       <div style={{ padding: '0 16px 12px' }}>
-        <div style={{ color: '#78716C', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>
-          Current Task
-        </div>
-        <div style={{ color: '#A8A29E', fontSize: 13, lineHeight: 1.5 }}>{task}</div>
+        <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Current Task</div>
+        <div style={{ color: '#A8A29E', fontSize: 13, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif' }}>{task}</div>
       </div>
 
       {/* Last completion */}
       {agentStatus?.lastCompletion && (
         <div style={{ padding: '0 16px 12px' }}>
-          <div style={{ color: '#78716C', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>
-            Last Completion
-          </div>
-          <div style={{ color: '#A8A29E', fontSize: 12, lineHeight: 1.5 }}>
-            {agentStatus.lastCompletion.description}
-          </div>
-          <div style={{ color: '#78716C', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>
-            {agentStatus.lastCompletion.date}
-          </div>
+          <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Last Completion</div>
+          <div style={{ color: '#A8A29E', fontSize: 12, lineHeight: 1.5 }}>{agentStatus.lastCompletion.description}</div>
+          <div style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
         </div>
       )}
 
       {/* Room info */}
       <div style={{ padding: '0 16px 12px' }}>
-        <div style={{ color: '#78716C', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>
-          Room
-        </div>
-        <div style={{ color: '#A8A29E', fontSize: 12 }}>{floorPlan?.label || slug}</div>
+        <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Room</div>
+        <div style={{ color: '#A8A29E', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
+        {room?.personality && (
+          <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'Space Grotesk, sans-serif', marginTop: 4, fontStyle: 'italic' }}>{room.personality}</div>
+        )}
       </div>
 
       {/* Chat button */}
       <div style={{ padding: '12px 16px', marginTop: 'auto' }}>
-        <button
-          onClick={() => onChat(slug)}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: '#E85D26', color: '#FFF', border: 'none',
-            padding: '12px', fontSize: 13, fontWeight: 700,
-            cursor: 'pointer', borderRadius: 2,
-          }}
-        >
+        <button onClick={() => onChat(room?.id)} style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          background: agentColor, color: '#FFF', border: 'none',
+          padding: 12, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif',
+          cursor: 'pointer', borderRadius: 4,
+        }}>
           <MessageSquare size={14} />
-          Chat with {agent?.name || slug}
+          Chat with {agent?.name || room?.agent}
         </button>
       </div>
     </motion.div>
@@ -1685,20 +1211,15 @@ function RoomDetailSidebar({ slug, agent, agentStatus, onClose, onChat }) {
 // ---- MAIN GAME DASHBOARD ---------------------------------------------------
 export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
-  const [clock, setClock] = useState(azTime())
-  const [hudOpen, setHudOpen] = useState(true)
+  const [hudOpen, setHudOpen] = useState(false)
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [hoveredRoom, setHoveredRoom] = useState(null)
   const [chatAgent, setChatAgent] = useState(null)
   const [zoom, setZoom] = useState(0.85)
+  const [showMinimap, setShowMinimap] = useState(false)
+  const [notifications, setNotifications] = useState([])
   const { data, error, loading } = useDashboardData(30000)
   const isMobile = useIsMobile()
-
-  // Clock tick
-  useEffect(() => {
-    const timer = setInterval(() => setClock(azTime()), 60000)
-    return () => clearInterval(timer)
-  }, [])
 
   // URL-based agent selection
   useEffect(() => {
@@ -1715,12 +1236,10 @@ export default function GameDashboard() {
   useEffect(() => {
     if (chatAgent) {
       window.history.replaceState(null, '', `/dashboard/agent/${chatAgent}`)
-    } else if (selectedRoom) {
-      window.history.replaceState(null, '', `/dashboard`)
     } else {
       window.history.replaceState(null, '', '/dashboard')
     }
-  }, [chatAgent, selectedRoom])
+  }, [chatAgent])
 
   // Agent status lookup
   const agentStatus = useMemo(() => {
@@ -1730,21 +1249,37 @@ export default function GameDashboard() {
     return map
   }, [data])
 
-  const handleRoomClick = (slug) => {
-    const plan = FLOOR_PLAN[slug]
-    if (!plan || plan.isHall || plan.isPatrik) return
-    if (slug === selectedRoom) {
-      // Double-click: open chat
-      setChatAgent(slug)
+  const handleRoomClick = (roomId) => {
+    const room = ROOM_MAP[roomId]
+    if (!room || room.agent === null) return
+    if (roomId === selectedRoom) {
+      setChatAgent(roomId)
     } else {
-      setSelectedRoom(slug)
+      setSelectedRoom(roomId)
     }
   }
 
-  const handleChat = (slug) => {
-    setChatAgent(slug)
-    setSelectedRoom(slug)
+  const handleChat = (roomId) => {
+    setChatAgent(roomId)
+    setSelectedRoom(roomId)
   }
+
+  // Keyboard shortcuts
+  const agentSlugs = AGENTS.filter(a => ROOM_MAP[a.slug]).map(a => a.slug)
+  useKeyboardShortcuts({
+    onToggleHud: () => setHudOpen(h => !h),
+    onToggleChat: () => {
+      // Focus chat or open it
+    },
+    onToggleMinimap: () => setShowMinimap(m => !m),
+    onEscape: () => { setSelectedRoom(null); setChatAgent(null); setHudOpen(false) },
+    onAgentSelect: (idx) => {
+      if (idx < agentSlugs.length) {
+        const slug = agentSlugs[idx]
+        setSelectedRoom(slug)
+      }
+    },
+  })
 
   if (!authed) {
     return <PasswordGate onAuth={() => setAuthed(true)} />
@@ -1753,74 +1288,16 @@ export default function GameDashboard() {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: '#0A0F1E',
+      background: PALETTE.background,
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',
     }}>
-      {/* Header */}
-      <header style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 16px',
-        background: 'rgba(10,15,30,0.95)',
-        borderBottom: '1px solid #1A2030',
-        flexShrink: 0,
-        zIndex: 40,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            color: '#FFD87A',
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 9, fontWeight: 700,
-            letterSpacing: '0.3em', textTransform: 'uppercase',
-          }}>CORNER</div>
-          <h1 style={{
-            color: '#F5F0EB', fontSize: 16, fontWeight: 900, fontStyle: 'italic',
-            fontFamily: "'Inter Tight', sans-serif",
-            letterSpacing: '-0.02em', textTransform: 'uppercase', margin: 0,
-          }}>
-            Your Office
-          </h1>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Zoom controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} style={{
-              background: 'none', border: '1px solid #2A3040', color: '#78716C',
-              width: 24, height: 24, cursor: 'pointer', borderRadius: 2, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>-</button>
-            <span style={{ color: '#78716C', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', width: 35, textAlign: 'center' }}>
-              {Math.round(zoom * 100)}%
-            </span>
-            <button onClick={() => setZoom(z => Math.min(1.5, z + 0.1))} style={{
-              background: 'none', border: '1px solid #2A3040', color: '#78716C',
-              width: 24, height: 24, cursor: 'pointer', borderRadius: 2, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>+</button>
-          </div>
-          {/* HUD toggle */}
-          <button onClick={() => setHudOpen(!hudOpen)} style={{
-            background: 'none', border: '1px solid #2A3040', color: '#78716C',
-            padding: '4px 8px', cursor: 'pointer', borderRadius: 2,
-            fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            display: 'flex', alignItems: 'center', gap: 4,
-          }}>
-            <ListTodo size={12} />
-            HUD
-            {hudOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-          </button>
-          <span style={{ color: '#78716C', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}>{clock}</span>
-        </div>
-      </header>
-
-      {/* Throughput bar */}
-      <ThroughputBar throughput={data?.throughput} />
-
-      {/* Task HUD */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} />
+      {/* Task HUD (top) */}
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} />
 
       {/* Main game area */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', perspective: '1000px' }}>
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', perspective: '1000px', paddingTop: 48 }}>
         <IsometricOffice
           agentStatus={agentStatus}
           onRoomClick={handleRoomClick}
@@ -1830,12 +1307,30 @@ export default function GameDashboard() {
           zoom={zoom}
         />
 
+        {/* Zoom controls (floating) */}
+        <div style={{
+          position: 'absolute', top: 16, right: 16, zIndex: 32,
+          display: 'flex', flexDirection: 'column', gap: 4,
+        }}>
+          <button onClick={() => setZoom(z => Math.min(1.5, z + 0.1))} style={{
+            width: 32, height: 32, background: 'rgba(10,15,30,0.85)', border: '1px solid rgba(255,255,255,0.08)',
+            color: '#6B7280', cursor: 'pointer', borderRadius: 6, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>+</button>
+          <span style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', textAlign: 'center' }}>
+            {Math.round(zoom * 100)}%
+          </span>
+          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} style={{
+            width: 32, height: 32, background: 'rgba(10,15,30,0.85)', border: '1px solid rgba(255,255,255,0.08)',
+            color: '#6B7280', cursor: 'pointer', borderRadius: 6, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>-</button>
+        </div>
+
         {/* Room detail sidebar */}
         <AnimatePresence>
-          {selectedRoom && FLOOR_PLAN[selectedRoom] && !FLOOR_PLAN[selectedRoom].isHall && (
+          {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
             <RoomDetailSidebar
               key={selectedRoom}
-              slug={selectedRoom}
+              room={ROOM_MAP[selectedRoom]}
               agent={AGENTS.find(a => a.slug === selectedRoom)}
               agentStatus={agentStatus[selectedRoom]}
               onClose={() => setSelectedRoom(null)}
@@ -1845,21 +1340,30 @@ export default function GameDashboard() {
         </AnimatePresence>
 
         {/* Window light animation overlay */}
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at center, rgba(255,216,122,0.02) 0%, transparent 70%)',
-        }}>
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at center, rgba(255,216,122,0.02) 0%, transparent 70%)' }}>
           <div style={{
-            position: 'absolute', top: '10%', left: '10%',
-            width: 200, height: 200,
+            position: 'absolute', top: '10%', left: '10%', width: 200, height: 200,
             background: 'radial-gradient(circle, rgba(255,183,77,0.04) 0%, transparent 70%)',
-            borderRadius: '50%',
-            animation: 'windowLight 30s ease-in-out infinite',
+            borderRadius: '50%', animation: 'windowLight 30s ease-in-out infinite',
           }} />
         </div>
       </div>
 
-      {/* Chat bar */}
+      {/* Mini-map */}
+      {showMinimap && (
+        <MiniMap
+          rooms={GRID_SPEC.rooms}
+          agentStatus={agentStatus}
+          selectedRoom={selectedRoom}
+          zoom={zoom}
+          onRoomClick={handleRoomClick}
+        />
+      )}
+
+      {/* Notification toasts */}
+      <NotificationToast notifications={notifications} onClickNotification={(n) => { setChatAgent(n.agentSlug); setSelectedRoom(n.agentSlug) }} />
+
+      {/* Chat bar (bottom) */}
       <ChatBar
         activeAgent={chatAgent}
         onSelectAgent={setChatAgent}
@@ -1873,7 +1377,7 @@ export default function GameDashboard() {
           position: 'fixed', bottom: 80, left: 16,
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
           color: '#EF4444', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
-          padding: '6px 12px', borderRadius: 2, zIndex: 50,
+          padding: '6px 12px', borderRadius: 4, zIndex: 50,
         }}>
           Status update failed. Showing cached data.
         </div>
@@ -1881,29 +1385,34 @@ export default function GameDashboard() {
 
       {/* Loading */}
       {loading && !data && (
-        <div style={{
-          position: 'fixed', inset: 0, background: '#0A0F1E',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
-        }}>
+        <div style={{ position: 'fixed', inset: 0, background: PALETTE.background, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             <Loader2 size={24} style={{ color: '#FFD87A', animation: 'spin 1s linear infinite' }} />
-            <span style={{ color: '#78716C', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}>Loading your office...</span>
+            <span style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif' }}>Loading your office...</span>
           </div>
         </div>
       )}
 
-      {/* Global ambient styles */}
+      {/* Global styles */}
       <style>{`
         @keyframes windowLight {
           0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.04; }
           50% { transform: translate(20px, -10px) scale(1.1); opacity: 0.06; }
         }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes dotPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
+        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        .animate-spin { animation: spin 1s linear infinite; }
+        .animate-shake { animation: shake 0.5s ease-in-out; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { overflow: hidden; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #2A3040; border-radius: 2px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3A4050; }
+        ::-webkit-scrollbar-thumb { background: #2D3748; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4A5568; }
+        .hud-scroll::-webkit-scrollbar { width: 4px; }
+        .hud-scroll::-webkit-scrollbar-thumb { background: #4A5568; }
       `}</style>
     </div>
   )
