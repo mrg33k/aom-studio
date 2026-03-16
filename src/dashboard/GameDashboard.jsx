@@ -1889,6 +1889,8 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const connectionRef = useRef(null)
+  const relayPollRef = useRef(null)
+  const lastOutboxCheckRef = useRef(null)
 
   const currentAgent = activeAgent
     ? AGENTS.find(a => a.slug === activeAgent)
@@ -1909,8 +1911,64 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
     if (expanded) setTimeout(() => inputRef.current?.focus(), 200)
   }, [expanded])
 
+  // Clean up relay poll on unmount
+  useEffect(() => {
+    return () => {
+      if (relayPollRef.current) clearInterval(relayPollRef.current)
+    }
+  }, [])
+
   const updateMessages = (agentSlug, updater) => {
     setMessages(prev => ({ ...prev, [agentSlug]: updater(prev[agentSlug] || []) }))
+  }
+
+  // Start polling relay-outbox for EA responses (local mode only)
+  const startRelayPoll = (sentTimestamp) => {
+    if (relayPollRef.current) clearInterval(relayPollRef.current)
+    lastOutboxCheckRef.current = sentTimestamp
+
+    relayPollRef.current = setInterval(async () => {
+      try {
+        const since = encodeURIComponent(lastOutboxCheckRef.current)
+        const res = await fetch(`/api/local/relay-outbox?since=${since}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.messages && data.messages.length > 0) {
+          // Find response messages (from EA, not from dashboard sends)
+          const responses = data.messages.filter(m =>
+            m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
+          )
+          if (responses.length > 0) {
+            const latest = responses[responses.length - 1]
+            updateMessages(agentSlug, prev => {
+              const updated = [...prev]
+              const lastMsg = updated[updated.length - 1]
+              if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
+                updated[updated.length - 1] = {
+                  ...lastMsg,
+                  content: latest.message,
+                  streaming: false,
+                }
+              } else {
+                updated.push({
+                  role: 'assistant',
+                  content: latest.message,
+                  streaming: false,
+                  time: latest.timestamp,
+                })
+              }
+              return updated
+            })
+            setStreaming(false)
+            lastOutboxCheckRef.current = latest.timestamp
+            if (relayPollRef.current) {
+              clearInterval(relayPollRef.current)
+              relayPollRef.current = null
+            }
+          }
+        }
+      } catch {}
+    }, 2000)
   }
 
   const sendMessage = async (e) => {
@@ -1918,23 +1976,34 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
     const text = input.trim()
     if (!text || streaming) return
 
+    const sentTime = new Date().toISOString()
     setInput('')
-    updateMessages(agentSlug, prev => [...prev, { role: 'user', content: text, time: new Date().toISOString() }])
+    updateMessages(agentSlug, prev => [...prev, { role: 'user', content: text, time: sentTime }])
     setStreaming(true)
-    updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: new Date().toISOString() }])
+    updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
 
-    // In local mode, also write to relay-outbox for the Telegram bridge
     if (IS_LOCAL) {
+      // Local mode: write to relay-inbox (EA picks up via hook), poll outbox for responses
       try {
         await fetch('/api/local/relay-send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ agent: agentSlug, message: text, source: 'corner-dashboard' }),
         })
-      } catch {}
+        startRelayPoll(sentTime)
+      } catch (err) {
+        updateMessages(agentSlug, prev => {
+          const updated = [...prev]
+          const last = updated[updated.length - 1]
+          if (last) updated[updated.length - 1] = { ...last, content: `Failed to send: ${err.message}`, streaming: false }
+          return updated
+        })
+        setStreaming(false)
+      }
+      return
     }
 
-    // Disconnect previous connection
+    // Production mode: use SSE/WebSocket chat connection
     connectionRef.current?.disconnect()
 
     const conn = createChatConnection(

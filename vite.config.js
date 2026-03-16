@@ -237,7 +237,7 @@ function localDashboardPlugin() {
         res.end(JSON.stringify({ messages, timestamp: new Date().toISOString() }))
       })
 
-      // Relay outbox write (for chat sends)
+      // Relay send (dashboard -> EA inbox, so the hook picks it up)
       server.middlewares.use('/api/local/relay-send', (req, res) => {
         if (req.method !== 'POST') {
           res.statusCode = 405
@@ -249,16 +249,46 @@ function localDashboardPlugin() {
         req.on('end', () => {
           try {
             const data = JSON.parse(body)
-            const outboxPath = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
-            const entry = { ...data, timestamp: new Date().toISOString() }
-            fs.appendFileSync(outboxPath, JSON.stringify(entry) + '\n')
+            const id = crypto.randomUUID()
+            const inboxPath = resolve(AOM_EA_ROOT, 'context/relay-inbox.jsonl')
+            const entry = {
+              id,
+              timestamp: new Date().toISOString(),
+              source: data.source || 'corner-dashboard',
+              message: data.message,
+              status: 'pending',
+              chat_id: null,
+              agent: data.agent || null,
+            }
+            fs.appendFileSync(inboxPath, JSON.stringify(entry) + '\n')
             res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ ok: true }))
+            res.end(JSON.stringify({ ok: true, id }))
           } catch (err) {
             res.statusCode = 500
             res.end(JSON.stringify({ error: err.message }))
           }
         })
+      })
+
+      // Relay outbox read (EA responses, for dashboard polling)
+      server.middlewares.use('/api/local/relay-outbox', (req, res) => {
+        const url = new URL(req.url, 'http://localhost')
+        const since = url.searchParams.get('since')
+        const outboxPath = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
+        const messages = []
+        try {
+          const content = fs.readFileSync(outboxPath, 'utf-8')
+          for (const line of content.split('\n').filter(l => l.trim())) {
+            try {
+              const msg = JSON.parse(line)
+              if (since && msg.timestamp && new Date(msg.timestamp) <= new Date(since)) continue
+              messages.push(msg)
+            } catch {}
+          }
+        } catch {}
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        res.end(JSON.stringify({ messages, timestamp: new Date().toISOString() }))
       })
 
       // Notifications endpoint
