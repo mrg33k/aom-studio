@@ -278,20 +278,34 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const task = statusData?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
 
-  // Format timestamp for display
+  // Format timestamp for display (show actual time like iMessage/Telegram)
   const formatTime = (dateStr) => {
     if (!dateStr) return ''
     const d = new Date(dateStr)
     if (isNaN(d)) return ''
-    const now = new Date()
-    const diffMs = now - d
-    const mins = Math.floor(diffMs / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Phoenix' })
   }
+
+  // Format source label for display below bubbles (returns { text, color })
+  const formatSource = (msg) => {
+    if (!msg.source) return null
+    const s = msg.source
+    if (s === 'dashboard' || s === 'corner-dashboard') return { text: 'VIA DASHBOARD', color: '#3B82F6' }
+    if (s === 'telegram') return { text: 'VIA TELEGRAM', color: '#3B82F6' }
+    if (s === 'terminal' || s === 'cli') return { text: 'VIA TERMINAL', color: '#22C55E' }
+    if (s === 'via terminal') return { text: 'VIA TERMINAL', color: '#22C55E' }
+    if (s === 'via telegram') return { text: 'VIA TELEGRAM', color: '#3B82F6' }
+    if (s === 'via dashboard') return { text: 'VIA DASHBOARD', color: '#3B82F6' }
+    if (s === 'system') return { text: 'SYSTEM', color: '#78716C' }
+    // Agent names as source (from extractAgentSource)
+    const knownSlugs = ['bobby','steffen','cleo','elon','steve','alex','mom','jacob','paige','tony','elmo','colton','pixel']
+    if (knownSlugs.includes(s)) return { text: `VIA ${s.toUpperCase()}`, color: '#22C55E' }
+    if (s.startsWith('via ')) return { text: s.toUpperCase(), color: '#78716C' }
+    return { text: `VIA ${s.toUpperCase()}`, color: '#78716C' }
+  }
+
+  // Get agent initial for avatar
+  const agentInitial = agent.name.charAt(0).toUpperCase()
 
   // Load recent relay history on mount (both inbox + outbox, last 30 messages)
   useEffect(() => {
@@ -657,132 +671,162 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       }`}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#292524] bg-[#141412] shrink-0">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#292524] bg-[#0F0F0D] shrink-0">
         <button
           onClick={onClose}
-          className="p-1.5 hover:bg-[#292524] rounded-sm transition-colors"
+          className="p-1.5 hover:bg-[#292524] rounded-full transition-colors"
         >
           {isMobile ? <ArrowLeft className="w-5 h-5 text-[#A8A29E]" /> : <X className="w-4 h-4 text-[#A8A29E]" />}
         </button>
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          {agent.img && (
-            <img src={agent.img} alt="" className="w-8 h-8 rounded-sm object-cover" />
-          )}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {/* Agent avatar circle with status ring */}
+          <div className="relative shrink-0">
+            <div className="w-10 h-10 rounded-full bg-[#C026D3]/10 border-2 border-[#C026D3]/50 flex items-center justify-center">
+              <span className="text-[#C026D3] font-bold text-base">{agentInitial}</span>
+            </div>
+            {/* Online dot */}
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0F0F0D]" style={{ background: cfg.color }} />
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[#F0ECE6] font-bold text-sm">{agent.name}</span>
-              <StatusPill status={status} />
+              <span className="text-[#F0ECE6] font-bold text-base tracking-tight">{agent.name}</span>
             </div>
-            <p className="text-[#78716C] text-[12px] font-mono truncate">{task}</p>
+            <p className="text-[#C026D3]/70 text-[12px] font-mono">{agent.role}</p>
           </div>
         </div>
         {/* Relay connection indicator */}
         <div className="flex items-center gap-1.5 shrink-0" title={IS_LOCAL ? 'Local relay (direct file I/O)' : 'Remote relay (GitHub API)'}>
           <Radio className={`w-3 h-3 ${relayConnected ? 'text-[#22C55E]' : 'text-[#78716C]'}`} />
-          <span className="text-[12px] font-mono uppercase tracking-wider text-[#78716C]">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#78716C]">
             {IS_LOCAL ? 'LOCAL' : 'RELAY'}
           </span>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 scroll-smooth">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 scroll-smooth chat-messages-area">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            {agent.img && (
-              <img src={agent.img} alt="" className="w-20 h-20 rounded-sm object-cover mb-4 opacity-60" />
-            )}
-            <p className="text-[#78716C] text-sm mb-1">
-              Real relay chat with <span className="text-[#F0ECE6] font-bold">{agent.name}</span>
+            <div className="w-16 h-16 rounded-full bg-[#1A1A17] border-2 border-[#C026D3]/40 flex items-center justify-center mb-4">
+              <span className="text-[#C026D3] font-bold text-xl">{agentInitial}</span>
+            </div>
+            <p className="text-[#A8A29E] text-sm mb-1">
+              Chat with <span className="text-[#F0ECE6] font-bold">{agent.name}</span>
             </p>
             <p className="text-[#78716C] text-xs font-mono mb-3">{agent.role}</p>
-            <p className="text-[#78716C]/60 text-[12px] font-mono">
-              Messages go through the same relay as Telegram
+            <p className="text-[#78716C]/40 text-[11px] font-mono">
+              Same relay as Telegram
             </p>
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div
-            key={msg.id || i}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-[85%] px-3.5 py-2.5 rounded-sm text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-[#E85D26]/15 text-[#F0ECE6] border border-[#E85D26]/20'
-                  : 'bg-[#1A1A17] text-[#F0ECE6] border border-[#292524]'
-              }`}
-            >
-              {/* Source label -- shows for ALL messages so you know where they came from */}
-              {msg.role === 'assistant' && (
-                <div className="text-[12px] font-mono uppercase tracking-wider mb-1.5" style={{ color: cfg.color }}>
-                  {msg.source === 'system' ? 'System' : msg.source || agent.name}
-                </div>
-              )}
-              {msg.role === 'user' && msg.source && (
-                <div className="text-[12px] font-mono uppercase tracking-wider mb-1.5 text-[#E85D26]/60">
-                  {msg.source === 'dashboard' || msg.source === 'corner-dashboard' ? 'via dashboard'
-                    : msg.source === 'telegram' ? 'via telegram'
-                    : msg.source === 'terminal' || msg.source === 'cli' ? 'via terminal'
-                    : `via ${msg.source}`}
-                </div>
-              )}
-              {msg.role === 'assistant' && msg.content && !msg.streaming ? (
-                <div
-                  className="chat-md break-words"
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                />
-              ) : (
-                <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-              )}
-              {msg.streaming && !msg.content && (
-                <div className="flex items-center gap-1 py-1">
-                  {[0, 1, 2].map(j => (
-                    <span
-                      key={j}
-                      className="inline-block w-1.5 h-1.5 rounded-full bg-[#E85D26]"
-                      style={{ animation: `pulse 1.2s ease-in-out ${j * 0.15}s infinite` }}
-                    />
-                  ))}
-                </div>
-              )}
-              {msg.streaming && msg.content && (
-                <span className="inline-block w-1.5 h-4 bg-[#E85D26] ml-0.5 animate-pulse" />
-              )}
-              {/* Timestamp */}
-              {msg.time && !msg.streaming && (
-                <div className="text-[12px] font-mono text-[#78716C]/50 mt-1.5 text-right">
-                  {formatTime(msg.time)}
-                </div>
-              )}
-            </div>
+        {/* TODAY divider */}
+        {messages.length > 0 && (
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 h-px bg-[#292524]" />
+            <span className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">Today</span>
+            <div className="flex-1 h-px bg-[#292524]" />
           </div>
-        ))}
+        )}
+
+        {messages.map((msg, i) => {
+          const isUser = msg.role === 'user'
+          const sourceLabel = formatSource(msg)
+          const timeStr = msg.time && !msg.streaming ? formatTime(msg.time) : null
+
+          return (
+            <div key={msg.id || i} className={`flex items-end gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+              {/* Avatar */}
+              <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 ${
+                isUser
+                  ? 'border-[#3B82F6]/50 bg-[#3B82F6]/10 text-[#3B82F6]'
+                  : 'border-[#C026D3]/50 bg-[#C026D3]/10 text-[#C026D3]'
+              }`}>
+                {isUser ? 'P' : agentInitial}
+              </div>
+
+              {/* Bubble + meta */}
+              <div className={`flex flex-col max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
+                {/* Message bubble */}
+                <div
+                  className={`px-4 py-3 text-sm leading-relaxed ${
+                    isUser
+                      ? 'bg-[#1E3A5F] text-[#F0ECE6] rounded-2xl rounded-br-md'
+                      : 'bg-[#1C1C1A] text-[#F0ECE6] border border-[#2A2A28] rounded-2xl rounded-bl-md shadow-lg shadow-black/20'
+                  }`}
+                >
+                  {msg.role === 'assistant' && msg.content && !msg.streaming ? (
+                    <div
+                      className="chat-md break-words"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                    />
+                  ) : (
+                    <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                  )}
+                  {msg.streaming && !msg.content && (
+                    <div className="flex items-center gap-1.5 py-0.5">
+                      {[0, 1, 2].map(j => (
+                        <span
+                          key={j}
+                          className="inline-block w-2 h-2 rounded-full bg-[#C026D3]/60"
+                          style={{ animation: `chatBounce 1.4s ease-in-out ${j * 0.2}s infinite` }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {msg.streaming && msg.content && (
+                    <span className="inline-block w-1.5 h-4 bg-[#C026D3] ml-0.5 animate-pulse rounded-full" />
+                  )}
+                </div>
+
+                {/* Timestamp + source below bubble */}
+                {(timeStr || sourceLabel) && (
+                  <div className={`flex items-center gap-2 mt-1.5 px-1 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                    {timeStr && (
+                      <span className="text-[11px] font-mono text-[#78716C]/60">{timeStr}</span>
+                    )}
+                    {sourceLabel && (
+                      <span
+                        className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded border"
+                        style={{
+                          color: sourceLabel.color,
+                          borderColor: `${sourceLabel.color}40`,
+                          background: `${sourceLabel.color}10`,
+                        }}
+                      >
+                        {sourceLabel.text}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="shrink-0 px-4 py-3 border-t border-[#292524] bg-[#141412]">
-        <div className="flex items-center gap-2">
+      <form onSubmit={sendMessage} className="shrink-0 px-4 py-3 border-t border-[#292524]/50 bg-[#0F0F0D]">
+        <div className="flex items-center gap-3 bg-[#1A1A17] border border-[#292524] rounded-full px-4 py-1 focus-within:border-[#3B82F6]/40 focus-within:shadow-[0_0_0_2px_rgba(59,130,246,0.1)] transition-all">
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={streaming ? 'Waiting for response...' : `Message ${agent.name}...`}
+            placeholder={streaming ? 'Waiting for response...' : `Talk to ${agent.name}...`}
             disabled={streaming}
-            className="flex-1 bg-[#1A1A17] border border-[#292524] text-[#F0ECE6] px-3 py-2.5 text-sm rounded-sm focus:outline-none focus:border-[#E85D26]/50 placeholder:text-[#78716C] disabled:opacity-50"
+            className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60 disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={!input.trim() || streaming}
-            className="p-2.5 bg-[#E85D26] text-white rounded-sm hover:bg-[#D14E1C] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            className="w-9 h-9 flex items-center justify-center bg-[#3B82F6] text-white rounded-full hover:bg-[#2563EB] disabled:opacity-20 disabled:cursor-not-allowed transition-all shrink-0"
           >
             {streaming ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4 ml-0.5" />
             )}
           </button>
         </div>
@@ -1043,8 +1087,16 @@ export default function ChatDashboard() {
         </div>
       )}
 
-      {/* Chat markdown styles */}
+      {/* Chat styles */}
       <style>{`
+        @keyframes chatBounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-6px); opacity: 1; }
+        }
+        .chat-messages-area::-webkit-scrollbar { width: 4px; }
+        .chat-messages-area::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages-area::-webkit-scrollbar-thumb { background: rgba(120,113,108,0.3); border-radius: 4px; }
+        .chat-messages-area::-webkit-scrollbar-thumb:hover { background: rgba(120,113,108,0.5); }
         .chat-md p { margin: 0 0 0.4em 0; }
         .chat-md p:last-child { margin-bottom: 0; }
         .chat-md ul, .chat-md ol { margin: 0.3em 0; padding-left: 1.4em; }
@@ -1059,7 +1111,7 @@ export default function ChatDashboard() {
         .chat-md pre {
           background: rgba(0,0,0,0.3);
           border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 6px;
+          border-radius: 8px;
           padding: 0.6em 0.8em;
           margin: 0.4em 0;
           overflow-x: auto;
