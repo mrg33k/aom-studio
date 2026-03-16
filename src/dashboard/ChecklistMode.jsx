@@ -174,8 +174,8 @@ function parsePunchList(markdown) {
   }
 }
 
-// Recency weights (same as GameHUD)
-const PROJECT_RECENCY_WEIGHTS = {
+// Default recency weights (fallback when conversation data unavailable)
+const DEFAULT_RECENCY_WEIGHTS = {
   'today':      100,
   'corner':     95,
   'aom-site':   85,
@@ -191,6 +191,28 @@ const PROJECT_RECENCY_WEIGHTS = {
   'deadlines':  35,
   'infra':      30,
   'week':       25,
+}
+
+// Hook to fetch live conversation-driven recency scores
+function useConversationRecency() {
+  const [scores, setScores] = useState(null)
+
+  useEffect(() => {
+    if (!IS_LOCAL) return
+    const fetchScores = async () => {
+      try {
+        const res = await fetch('/api/local/project-recency')
+        if (!res.ok) return
+        const json = await res.json()
+        if (json.scores) setScores(json.scores)
+      } catch {}
+    }
+    fetchScores()
+    const timer = setInterval(fetchScores, 30000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return scores
 }
 
 // ---- DATA HOOK for punch-list.md --------------------------------------------
@@ -619,20 +641,25 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
 
   // Fetch punch-list data (grouped by project)
   const { data: punchData, loading } = usePunchListData()
+  const conversationScores = useConversationRecency()
 
-  // Sort projects by recency weight
+  // Sort projects by conversation-driven recency weight
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
+    const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     return [...raw].sort((a, b) => {
-      const aWeight = PROJECT_RECENCY_WEIGHTS[a.section] || 10
-      const bWeight = PROJECT_RECENCY_WEIGHTS[b.section] || 10
+      // Today always first
+      if (a.section === 'today') return -1
+      if (b.section === 'today') return 1
+      const aWeight = weights[a.section] || 10
+      const bWeight = weights[b.section] || 10
       if (aWeight !== bWeight) return bWeight - aWeight
       const aRemaining = a.tasks.filter(t => !t.done).length
       const bRemaining = b.tasks.filter(t => !t.done).length
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData])
+  }, [punchData, conversationScores])
 
   // Filter projects based on sidebar selection
   const visibleProjects = selectedProject

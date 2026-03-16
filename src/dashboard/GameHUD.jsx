@@ -468,8 +468,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
       whileHover={{ scale: 1.08, y: -5, transition: { type: 'spring', stiffness: 450, damping: 10 } }}
       whileTap={{ scale: 0.90, y: 3, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        height: 52, padding: '0 22px',
+        display: 'flex', alignItems: 'center', gap: 14,
+        height: 56, padding: '0 24px',
         background: isExpanded
           ? `linear-gradient(135deg, ${project.color}22, ${project.color}0C)`
           : isToday
@@ -610,7 +610,7 @@ function TaskPanel({ project, onClose }) {
             boxShadow: `0 0 12px ${project.color}44`,
           }} />
           <span style={{
-            fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 800,
+            fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 900,
             color: HUD.textPrimary,
             textTransform: 'uppercase',
             letterSpacing: '-0.02em',
@@ -874,10 +874,10 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
           background: 'rgba(100,180,255,0.04)',
           border: '1px solid rgba(100,180,255,0.10)',
           borderRadius: 10,
-          height: isMobile ? 34 : 40,
+          height: isMobile ? 36 : 44,
           padding: '0 16px',
           color: HUD.textPrimary,
-          fontSize: isMobile ? 14 : 15,
+          fontSize: isMobile ? 15 : 16,
           fontFamily: 'Space Grotesk, sans-serif',
           outline: 'none',
           transition: 'border-color 200ms ease, box-shadow 200ms ease',
@@ -1072,7 +1072,7 @@ export default function GameHUD({
           display: 'flex',
           alignItems: 'center',
           gap: isMobile ? 6 : 14,
-          minHeight: isMobile ? 56 : 100,
+          minHeight: isMobile ? 58 : 108,
           position: 'relative',
           zIndex: 1,
           padding: isMobile ? 0 : '8px 0',

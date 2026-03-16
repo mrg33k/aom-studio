@@ -3514,7 +3514,9 @@ export default function GameDashboard() {
         }
         @keyframes buildingFloat {
           0%, 100% { transform: translateY(0); }
+          25% { transform: translateY(-1.5px); }
           50% { transform: translateY(-3px); }
+          75% { transform: translateY(-1.5px); }
         }
         /* Crossy Road bounce energy: subtle idle bob for the whole building */
         @keyframes crossyBounce {
