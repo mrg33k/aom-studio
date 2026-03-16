@@ -3034,7 +3034,7 @@ function PanelSkeleton({ agentColor }) {
 // Blue glass sidebar. 64px avatar, status dot, quick stats pills, tab bar with glow.
 // Chat: avatars on both sides, source label pills, system notification inline, typing dots.
 //
-// TODO(patrik): Chat timeout indicator -- show countdown ring when waiting for agent response (60s)
+// DONE(bobby): Chat timeout indicator -- countdown ring when waiting for agent response (60s). Shows elapsed time + animated SVG ring.
 // TODO(patrik): Agent activity log tab -- show recent commits, file changes, completions per agent
 // TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
@@ -4353,6 +4353,21 @@ export default function GameDashboard() {
     onCommandPalette: () => { /* Command palette: future C3.1 */ },
     onShowShortcuts: () => setShowShortcuts(s => !s),
   })
+
+  // Listen for toast click navigation (HUDNotifications dispatches 'corner-navigate-agent')
+  useEffect(() => {
+    const handler = (e) => {
+      const slug = e.detail?.agentSlug
+      if (slug && ROOM_MAP[slug]) {
+        setCameraTarget(slug)
+        setSelectedRoom(slug)
+        setChatAgent(slug)
+        setIsOverview(false)
+      }
+    }
+    window.addEventListener('corner-navigate-agent', handler)
+    return () => window.removeEventListener('corner-navigate-agent', handler)
+  }, [])
 
   if (!authed) {
     return <PasswordGate onAuth={() => setAuthed(true)} />

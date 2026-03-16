@@ -4,7 +4,7 @@
 // Does NOT conflict with GameDashboard.jsx's existing NotificationToast.
 // This component lives in the HUD strip (GameHUD.jsx) only.
 //
-// TODO(patrik): Toast click action -- clicking a toast should navigate to the relevant agent/room
+// DONE(bobby2): Toast click action -- dispatches 'corner-navigate-agent' custom event with { agentSlug }. GameDashboard listens for this to switch rooms.
 // TODO(patrik): Notification sound -- play a subtle game-style chime on new agent completions
 // TODO(patrik): Notification history panel -- bell click should show full notification log, not just recent 3
 
@@ -247,6 +247,12 @@ export function HUDToasts() {
               transition={{ type: 'spring', damping: 22, stiffness: 250 }}
               onMouseEnter={() => setHoveredId(n.id)}
               onMouseLeave={() => setHoveredId(null)}
+              onClick={() => {
+                if (n.agentSlug) {
+                  window.dispatchEvent(new CustomEvent('corner-navigate-agent', { detail: { agentSlug: n.agentSlug } }))
+                  dismiss(n.id)
+                }
+              }}
               style={{
                 width: 300, pointerEvents: 'auto',
                 background: 'rgba(10, 15, 30, 0.95)',
@@ -258,7 +264,7 @@ export function HUDToasts() {
                 padding: '12px 14px',
                 position: 'relative',
                 overflow: 'hidden',
-                cursor: 'default',
+                cursor: n.agentSlug ? 'pointer' : 'default',
               }}
             >
               {/* Header row */}
