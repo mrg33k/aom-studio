@@ -398,6 +398,9 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
   const color = agent?.color || '#4A6080'
   const isActive = status === 'WORKING'
   const isBlocked = status === 'BLOCKED'
+  const isDone = status === 'DONE'
+  const isWaiting = status === 'WAITING'
+  const isPaused = status === 'PAUSED'
   const hasSpriteFile = slug && SPRITE_AGENTS.includes(slug)
   const clipId = `plumbob-clip-${slug}`
 
@@ -434,12 +437,32 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
         flexShrink: 0,
       }}
     >
-      {/* Active agent glow */}
+      {/* Active agent glow - blue pulse per spec */}
       {isActive && (
         <div style={{
           position: 'absolute', inset: -8,
           background: `radial-gradient(ellipse at center, ${cfg.glow} 0%, transparent 70%)`,
           animation: 'hudActiveGlow 2s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+      )}
+
+      {/* Blocked agent red pulse glow */}
+      {isBlocked && (
+        <div style={{
+          position: 'absolute', inset: -6,
+          background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.3) 0%, transparent 70%)',
+          animation: 'hudBlockedPulse 1.5s ease-in-out infinite',
+          pointerEvents: 'none',
+        }} />
+      )}
+
+      {/* Waiting/thinking amber shimmer */}
+      {isWaiting && (
+        <div style={{
+          position: 'absolute', inset: -5,
+          background: 'radial-gradient(ellipse at center, rgba(245,158,11,0.2) 0%, transparent 70%)',
+          animation: 'hudWaitingPulse 2.5s ease-in-out infinite',
           pointerEvents: 'none',
         }} />
       )}
@@ -479,15 +502,15 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
           </g>
         )}
 
-        {/* Plumbob outline stroke - status colored */}
+        {/* Plumbob outline stroke - status colored, thicker for active states */}
         <path
           d={outlinePath}
           fill="none"
           stroke={cfg.ring}
-          strokeWidth={isActive ? 2.5 : 1.8}
+          strokeWidth={isActive ? 2.8 : isBlocked ? 2.5 : isDone ? 2.2 : 1.8}
           strokeLinejoin="round"
           style={{
-            filter: isActive ? `drop-shadow(0 0 6px ${cfg.glow})` : 'none',
+            filter: (isActive || isBlocked) ? `drop-shadow(0 0 6px ${cfg.glow})` : isDone ? `drop-shadow(0 0 4px ${cfg.glow})` : 'none',
             transition: 'all 300ms ease',
           }}
         />
@@ -504,26 +527,81 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
         />
       </svg>
 
-      {/* Status dot at bottom center */}
-      <div style={{
-        position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)',
-        width: 10, height: 10, borderRadius: '50%',
-        background: cfg.color,
-        border: `2px solid ${HUD.panelBgSolid}`,
-        boxShadow: `0 0 8px ${cfg.glow}`,
-        animation: isActive ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
-      }} />
+      {/* Status indicator at bottom center - varies by status */}
+      {isDone ? (
+        /* DONE: green checkmark badge */
+        <div style={{
+          position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
+          width: 14, height: 14, borderRadius: '50%',
+          background: '#22C55E',
+          border: `2px solid ${HUD.panelBgSolid}`,
+          boxShadow: '0 0 8px rgba(34,197,94,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Check size={8} color="#FFF" strokeWidth={3} />
+        </div>
+      ) : isPaused ? (
+        /* PAUSED: orange pause bars */
+        <div style={{
+          position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
+          width: 14, height: 14, borderRadius: '50%',
+          background: '#F97316',
+          border: `2px solid ${HUD.panelBgSolid}`,
+          boxShadow: '0 0 8px rgba(249,115,22,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Pause size={7} color="#FFF" strokeWidth={3} />
+        </div>
+      ) : isWaiting ? (
+        /* WAITING: amber spinning indicator */
+        <div style={{
+          position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
+          width: 14, height: 14, borderRadius: '50%',
+          background: '#F59E0B',
+          border: `2px solid ${HUD.panelBgSolid}`,
+          boxShadow: '0 0 8px rgba(245,158,11,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'hudWaitingSpin 3s linear infinite',
+        }}>
+          <Clock size={7} color="#FFF" strokeWidth={3} />
+        </div>
+      ) : (
+        /* DEFAULT: status dot */
+        <div style={{
+          position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)',
+          width: 10, height: 10, borderRadius: '50%',
+          background: cfg.color,
+          border: `2px solid ${HUD.panelBgSolid}`,
+          boxShadow: `0 0 8px ${cfg.glow}`,
+          animation: isActive ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
+        }} />
+      )}
 
-      {/* Blocked X badge */}
+      {/* Blocked X badge - top right, LARGER and more visible */}
       {isBlocked && (
         <div style={{
-          position: 'absolute', top: -2, right: -2,
-          width: 15, height: 15, borderRadius: '50%',
+          position: 'absolute', top: -3, right: -3,
+          width: 18, height: 18, borderRadius: '50%',
           background: '#EF4444', border: `2px solid ${HUD.panelBgSolid}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 8px rgba(239,68,68,0.5)',
+          boxShadow: '0 0 10px rgba(239,68,68,0.6)',
+          animation: 'hudBlockedBadge 2s ease-in-out infinite',
         }}>
-          <X size={8} color="#FFF" strokeWidth={3} />
+          <X size={10} color="#FFF" strokeWidth={3} />
+        </div>
+      )}
+
+      {/* Agent name below portrait (optional) */}
+      {showName && agent?.name && (
+        <div style={{
+          position: 'absolute', top: size + 2, left: '50%', transform: 'translateX(-50%)',
+          fontSize: 12, fontWeight: 600, color: cfg.color,
+          fontFamily: "'Inter Tight', sans-serif",
+          whiteSpace: 'nowrap', textAlign: 'center',
+          letterSpacing: '0.01em',
+          textShadow: `0 0 8px ${cfg.glow}`,
+        }}>
+          {agent.name}
         </div>
       )}
     </motion.div>
@@ -707,7 +785,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
               width: 240,
               background: 'rgba(12, 18, 35, 0.97)',
               backdropFilter: 'blur(24px)',
-              border: '1px solid rgba(100, 180, 255, 0.2)',
+              border: '2px solid rgba(100, 180, 255, 0.2)',
               borderRadius: 14,
               boxShadow: '0 16px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(100,180,255,0.08)',
               zIndex: 200, overflow: 'hidden',
@@ -1659,6 +1737,24 @@ export default function GameHUD({
         @keyframes statusPulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+        @keyframes hudBlockedPulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 0.2; transform: scale(1.08); }
+        }
+        @keyframes hudBlockedBadge {
+          0%, 100% { transform: scale(1); }
+          25% { transform: scale(1.15); }
+          50% { transform: scale(1); }
+          75% { transform: scale(1.1); }
+        }
+        @keyframes hudWaitingPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.15; }
+        }
+        @keyframes hudWaitingSpin {
+          from { transform: translateX(-50%) rotate(0deg); }
+          to { transform: translateX(-50%) rotate(360deg); }
         }
       `}</style>
     </div>

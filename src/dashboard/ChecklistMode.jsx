@@ -275,7 +275,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
             borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
             cursor: 'pointer', scrollSnapAlign: 'start',
             color: !selectedProject ? '#3B9EFF' : '#F0ECE6',
-            fontFamily: "'Inter Tight', Space Grotesk, sans-serif", fontSize: 13, fontWeight: 700,
+            fontFamily: "'Inter Tight', Space Grotesk, sans-serif", fontSize: 15, fontWeight: 700,
             textTransform: 'uppercase',
           }}
         >
@@ -298,7 +298,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
                 borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
                 cursor: 'pointer', scrollSnapAlign: 'start',
                 color: selected ? p.color : '#F0ECE6',
-                fontFamily: "'Inter Tight', Space Grotesk, sans-serif", fontSize: 13, fontWeight: 700,
+                fontFamily: "'Inter Tight', Space Grotesk, sans-serif", fontSize: 15, fontWeight: 700,
                 textTransform: 'uppercase',
               }}
             >
@@ -309,7 +309,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
               {remaining > 0 && (
                 <span style={{
                   fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-                  fontSize: 12, color: '#FFF', background: p.color,
+                  fontSize: 14, color: '#FFF', background: p.color,
                   padding: '2px 7px', borderRadius: 8, lineHeight: 1,
                 }}>
                   {remaining}
@@ -333,7 +333,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
       {/* Section label */}
       <div style={{
         padding: '0 16px', marginBottom: 12,
-        fontSize: 10, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+        fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
         color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.15em',
       }}>
         PROJECTS
@@ -407,8 +407,8 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
 
             {/* Progress bar at bottom */}
             <div style={{
-              position: 'absolute', bottom: 0, left: 16, right: 16, height: 2,
-              background: 'rgba(255,255,255,0.04)', borderRadius: 1,
+              position: 'absolute', bottom: 0, left: 16, right: 16, height: 5,
+              background: 'rgba(255,255,255,0.06)', borderRadius: 3,
             }}>
               <div style={{
                 width: `${progress}%`, height: '100%',
@@ -518,7 +518,7 @@ function TaskCard({ task, projectColor, onCheck, index }) {
               </div>
             ) : null}
             <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 10,
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
               textTransform: 'uppercase', letterSpacing: '0.1em',
               color: agentInfo.color,
             }}>
@@ -580,7 +580,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* Progress bar */}
         <div style={{
-          width: 80, height: 5, borderRadius: 3,
+          width: 80, height: 8, borderRadius: 4,
           background: 'rgba(255,255,255,0.06)',
         }}>
           <div style={{
@@ -828,7 +828,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                           >
                             <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.04)' }} />
                             <span style={{
-                              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 10,
+                              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
                               color: '#4A6080', textTransform: 'uppercase',
                               display: 'flex', alignItems: 'center', gap: 4,
                             }}>

@@ -638,7 +638,7 @@ function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, on
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
           background: 'rgba(10, 15, 30, 0.9)', border: '1px solid rgba(245, 158, 11, 0.3)',
           borderRadius: 12, padding: '4px 12px',
-          color: '#F59E0B', fontSize: 10, fontFamily: 'JetBrains Mono, monospace',
+          color: '#F59E0B', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
           fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em',
         }}>
           {agentAnimation?.label || 'Away'}
@@ -742,14 +742,14 @@ function RoomNameplateHTML({ room, agentStatus, isHovered }) {
       {/* Name */}
       <span style={{
         color: PALETTE.nameplate.text,
-        fontSize: 11, fontWeight: isHovered ? 700 : 600,
+        fontSize: 13, fontWeight: isHovered ? 700 : 600,
         fontFamily: 'Space Grotesk, sans-serif',
       }}>
         {room.agent}
       </span>
       {/* Task on hover */}
       {isHovered && task && (
-        <span style={{ color: '#8A847C', fontSize: 9, fontFamily: 'Space Grotesk, sans-serif', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ color: '#8A847C', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {task.length > 22 ? task.slice(0, 22) + '...' : task}
         </span>
       )}
@@ -767,7 +767,7 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
     <g>
       <rect x={roomW / 2 - 30} y={-18} width={60} height={16} rx={4} fill={PALETTE.nameplate.background} stroke={PALETTE.nameplate.border} strokeWidth={1} />
       <circle cx={roomW / 2 - 18} cy={-10} r={3} fill={dotColor} />
-      <text x={roomW / 2 - 10} y={-7} fill={PALETTE.nameplate.text} fontSize={11} fontWeight={600} fontFamily="Space Grotesk, sans-serif">{room.agent}</text>
+      <text x={roomW / 2 - 10} y={-7} fill={PALETTE.nameplate.text} fontSize={13} fontWeight={600} fontFamily="Space Grotesk, sans-serif">{room.agent}</text>
     </g>
   )
 }
@@ -1123,7 +1123,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                       {/* Agent name in their signature color with subtle glow */}
                       <span style={{
                         color: isActive ? agentColor : '#E0E4EE',
-                        fontSize: 11, fontWeight: 800,
+                        fontSize: 13, fontWeight: 800,
                         fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
                         letterSpacing: '0.06em',
                         textTransform: 'uppercase',
@@ -1136,7 +1136,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                     {/* Role subtitle - agent color at reduced opacity */}
                     <div style={{
                       color: `${agentColor}88`,
-                      fontSize: 7, fontWeight: 600,
+                      fontSize: 12, fontWeight: 600,
                       fontFamily: 'JetBrains Mono, monospace',
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
@@ -1373,7 +1373,7 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
         minWidth: 200,
         background: 'rgba(12, 18, 35, 0.96)',
         backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(100, 180, 255, 0.18)',
+        border: '2px solid rgba(100, 180, 255, 0.18)',
         borderRadius: 10,
         padding: '6px 0',
         boxShadow: '0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(100,180,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
@@ -1384,7 +1384,7 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
       {data?.label && (
         <div style={{
           padding: '6px 14px 8px',
-          fontSize: 10, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+          fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
           color: '#4A6080', textTransform: 'uppercase', letterSpacing: '0.12em',
           borderBottom: '1px solid rgba(100,180,255,0.08)',
           marginBottom: 2,
@@ -1443,7 +1443,7 @@ function MiniMap({ rooms, agentStatus, selectedRoom, cameraTarget, cameraZoom, i
       }}
     >
       {/* Title */}
-      <div style={{ fontSize: 8, fontFamily: 'JetBrains Mono, monospace', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>
+      <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>
         MAP {IS_LOCAL && <span style={{ color: '#4CAF50' }}>LOCAL</span>}
       </div>
       <svg width={144} height={96} viewBox="0 0 320 320">
@@ -1591,7 +1591,7 @@ function NotificationToast({ notifications, onDismiss, onClickNotification, queu
       {/* Queued toast indicator */}
       {queuedCount > 0 && (
         <div style={{
-          fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 9,
+          fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 11,
           color: '#6B7280', textAlign: 'center', marginTop: 4,
         }}>
           +{queuedCount} more
@@ -1651,7 +1651,7 @@ function ModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
                 background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 3, padding: '1px 4px',
-                fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 8,
+                fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 10,
                 color: '#6B7280',
               }}>
                 {mode.key}
@@ -1765,7 +1765,7 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
               {agent?.role || room?.role}
             </span>
             <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 9,
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 11,
               textTransform: 'uppercase', letterSpacing: '0.1em',
               color: cfg.color, background: cfg.bg, padding: '2px 8px', borderRadius: 3,
             }}>
@@ -1805,7 +1805,7 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
       {/* Expanded content: recent completions */}
       {expanded && (
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', padding: '12px 0 8px' }}>
+          <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', padding: '12px 0 8px' }}>
             Recent
           </div>
           {agentStatus?.lastCompletion ? (
@@ -1953,7 +1953,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
           <span style={{ color: '#E85D26', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 20 }}>.</span>
           {IS_LOCAL && (
             <span style={{
-              fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+              fontSize: 10, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
               color: '#4CAF50', background: 'rgba(76,175,80,0.1)',
               padding: '2px 6px', borderRadius: 3, letterSpacing: '0.1em',
               border: '1px solid rgba(76,175,80,0.2)',
@@ -1962,7 +1962,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
           {/* Connection type indicator */}
           {CONNECTION_TYPE === 'websocket' && (
             <span style={{
-              fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+              fontSize: 10, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
               color: '#3B82F6', background: 'rgba(59,130,246,0.1)',
               padding: '2px 6px', borderRadius: 3, letterSpacing: '0.1em',
               border: '1px solid rgba(59,130,246,0.2)',
@@ -2104,7 +2104,7 @@ function TaskCard({ entry, agentColor }) {
               </span>
             )}
             {entry.status && (
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: badge.text, background: badge.bg, padding: '2px 8px', borderRadius: 3 }}>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: badge.text, background: badge.bg, padding: '2px 8px', borderRadius: 3 }}>
                 {entry.status === 'WORKING' ? 'ACTIVE' : entry.status}
               </span>
             )}
@@ -2148,7 +2148,7 @@ function ProjectTab({ data }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {Object.entries(grouped).map(([group, items]) => (
         <div key={group}>
-          <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>{group}</div>
+          <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>{group}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
             {items.map(a => {
               const specAgent = AGENTS.find(sa => sa.slug === a.slug)
@@ -2848,7 +2848,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         width: 380, maxWidth: '85vw',
         background: 'rgba(10, 15, 30, 0.97)',
         backdropFilter: 'blur(20px)',
-        borderLeft: '1px solid rgba(100, 180, 255, 0.12)',
+        borderLeft: '2px solid rgba(100, 180, 255, 0.15)',
         display: 'flex', flexDirection: 'column',
         zIndex: 32,
         boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
@@ -2872,16 +2872,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
               <span style={{
-                color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace',
+                color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
                 textTransform: 'uppercase', letterSpacing: '0.1em',
               }}>
                 {agent?.role || room?.role}
               </span>
               <span style={{
-                fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 9,
+                fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 12,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
                 color: cfg.color, background: cfg.bg,
-                padding: '2px 8px', borderRadius: 4,
+                padding: '3px 10px', borderRadius: 4,
               }}>
                 {cfg.label}
               </span>
@@ -3063,7 +3063,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               background: `${agentColor}10`, border: `1px solid ${agentColor}25`,
               borderRadius: 8,
             }}>
-              <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Current Task</div>
+              <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Current Task</div>
               <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.45 }}>{task}</div>
             </div>
 
@@ -3074,7 +3074,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 background: 'rgba(100,180,255,0.04)', border: '1px solid rgba(100,180,255,0.08)',
                 borderRadius: 8,
               }}>
-                <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
+                <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
                 <div style={{ color: '#A8A29E', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
                 <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
               </div>
@@ -3092,7 +3092,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
             {/* Room info */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
+              <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
               <div style={{ color: '#A8A29E', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
               {room?.personality && (
                 <div style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
@@ -3102,7 +3102,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Data source */}
             {IS_LOCAL && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Data Source</div>
+                <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Data Source</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
                   <span style={{ color: '#4CAF50', fontSize: 13, fontFamily: 'JetBrains Mono, monospace' }}>Local (2s poll)</span>
@@ -3112,7 +3112,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
             {/* Status */}
             <div>
-              <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
+              <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: cfg.bg, borderRadius: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color }} />
                 <span style={{ color: cfg.color, fontSize: 13, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>{cfg.label}</span>
@@ -3152,7 +3152,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
       </button>
 
       {/* Zoom level */}
-      <span style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', textAlign: 'center', padding: '2px 0' }}>
+      <span style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', textAlign: 'center', padding: '2px 0' }}>
         {Math.round(cameraZoom * 100)}%
       </span>
 
