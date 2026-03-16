@@ -778,26 +778,27 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // Interactive click targets, nameplates, and status dots overlay on top.
 // C4: Crossy Road bounce energy, viewport-filling, wave animation on load.
 
-// Room hit-target positions mapped to the 1024x1024 full-office image (percentages).
-// Each room also has an isometric clip-path polygon for proper click areas.
+// Room hit-target positions mapped to the Crossy Road voxel office image (percentages).
+// RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
+// Each room has an isometric hexagon clip-path for accurate click areas.
 const IMAGE_ROOM_TARGETS = {
-  // Row 0: top row, 4 rooms
-  patrik:     { x: 24, y: 10, w: 14, h: 14, labelY: 7,  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
-  mom:        { x: 38, y: 10, w: 14, h: 14, labelY: 7,  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
-  alex:       { x: 52, y: 10, w: 14, h: 14, labelY: 7,  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
-  steve:      { x: 64, y: 10, w: 14, h: 14, labelY: 7,  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+  // Row 0: top row, 4 rooms (back wall of building, smaller due to perspective)
+  patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
+  mom:        { x: 37, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
+  alex:       { x: 51, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
+  steve:      { x: 63, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
   // Row 1: steffen left, main-hall center (wide), jacob right
-  steffen:    { x: 16, y: 26, w: 15, h: 16, labelY: 23, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
-  'main-hall':{ x: 31, y: 26, w: 28, h: 16, labelY: 23, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
-  jacob:      { x: 59, y: 26, w: 17, h: 16, labelY: 23, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
-  // Row 2: 4 rooms across lower-front
-  bobby:      { x: 9,  y: 44, w: 15, h: 16, labelY: 41, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
-  colton:     { x: 24, y: 44, w: 15, h: 16, labelY: 41, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
-  cleo:       { x: 39, y: 44, w: 15, h: 16, labelY: 41, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
-  tony:       { x: 54, y: 44, w: 17, h: 16, labelY: 41, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
-  // Row 3: bottom 2 rooms
-  elmo:       { x: 24, y: 62, w: 15, h: 15, labelY: 59, clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
-  elon:       { x: 39, y: 62, w: 15, h: 15, labelY: 59, clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+  steffen:    { x: 14, y: 25, w: 16, h: 17, labelY: 22, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  'main-hall':{ x: 30, y: 25, w: 30, h: 17, labelY: 22, clipPath: 'polygon(5% 0%, 95% 0%, 100% 25%, 100% 75%, 95% 100%, 5% 100%, 0% 75%, 0% 25%)' },
+  jacob:      { x: 58, y: 25, w: 18, h: 17, labelY: 22, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  // Row 2: 4 rooms across lower-front (bigger due to perspective, closer to camera)
+  bobby:      { x: 7,  y: 43, w: 17, h: 17, labelY: 40, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  colton:     { x: 23, y: 43, w: 16, h: 17, labelY: 40, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  cleo:       { x: 38, y: 43, w: 16, h: 17, labelY: 40, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  tony:       { x: 53, y: 43, w: 18, h: 17, labelY: 40, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  // Row 3: bottom 2 rooms (front of building, largest)
+  elmo:       { x: 22, y: 62, w: 17, h: 16, labelY: 59, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
+  elon:       { x: 38, y: 62, w: 17, h: 16, labelY: 59, clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 100% 75%, 90% 100%, 10% 100%, 0% 75%, 0% 25%)' },
 }
 
 // Wave animation: staggered delay per room for load-in ripple effect
@@ -1056,79 +1057,121 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
           return (
             <motion.div
               key={room.id}
-              initial={{ opacity: 0, scale: 0.85, y: 12 }}
+              initial={{ opacity: 0, scale: 0.7, y: 20 }}
               animate={hasLoaded ? {
                 opacity: 1, scale: 1, y: 0,
               } : {}}
               transition={{
                 delay: waveDelay,
                 type: 'spring',
-                stiffness: 340,
-                damping: 22,
-                mass: 0.8,
+                stiffness: 380,
+                damping: 16,
+                mass: 0.6,
               }}
             >
-              {/* IN-ROOM nameplate: wall-mounted office sign, like reading someone's name on their door */}
+              {/* STEFFEN MODERN NAMEPLATE: Dark navy + agent color accent bar + glow */}
+              {/* Replaces floating text labels with physical office decor feel */}
               {showNameplate && hasAgent && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={hasLoaded ? { opacity: 1, scale: 1 } : {}}
-                  transition={{ delay: waveDelay + 0.15, type: 'spring', stiffness: 300, damping: 20 }}
+                  initial={{ opacity: 0, scale: 0.7, y: -8 }}
+                  animate={hasLoaded ? { opacity: 1, scale: 1, y: 0 } : {}}
+                  transition={{ delay: waveDelay + 0.15, type: 'spring', stiffness: 400, damping: 18, mass: 0.6 }}
                   style={{
                     position: 'absolute',
-                    left: `${target.x + target.w * 0.12}%`,
-                    top: `${target.y + target.h * 0.08}%`,
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    // Gold/silver nameplate on the wall inside the room
-                    background: isActive
-                      ? 'linear-gradient(135deg, rgba(255,216,122,0.25) 0%, rgba(200,170,100,0.18) 50%, rgba(255,216,122,0.22) 100%)'
-                      : 'linear-gradient(135deg, rgba(180,190,210,0.18) 0%, rgba(140,155,180,0.12) 50%, rgba(180,190,210,0.16) 100%)',
-                    border: `1px solid ${isActive ? 'rgba(255,216,122,0.35)' : 'rgba(180,190,210,0.25)'}`,
-                    borderRadius: 4, padding: '3px 10px 3px 8px',
-                    boxShadow: isActive
-                      ? '0 2px 8px rgba(0,0,0,0.5), 0 0 12px rgba(255,216,122,0.15), inset 0 1px 0 rgba(255,255,255,0.15)'
-                      : '0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
-                    whiteSpace: 'nowrap', zIndex: 10,
-                    pointerEvents: 'none',
+                    left: `${target.x + target.w * 0.15}%`,
+                    top: `${target.y + target.h * 0.06}%`,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    pointerEvents: 'none', zIndex: 10,
                   }}
                 >
-                  {/* Status dot - compact, on the nameplate */}
+                  {/* Nameplate body - modern dark style per Steffen spec */}
                   <div style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color),
-                    flexShrink: 0,
-                    boxShadow: isActive ? `0 0 6px ${cfg.color}` : 'none',
-                    animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
-                  }} />
-                  {/* Name - clean, bold, like an office door sign */}
-                  <span style={{
-                    color: isActive ? '#FFE4A8' : '#D0D8E8',
-                    fontSize: 11, fontWeight: 800,
-                    fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    textShadow: isActive ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 1px rgba(0,0,0,0.3)',
+                    background: '#1A1A2E',
+                    border: `1px solid ${agentColor}40`,
+                    borderRadius: 6,
+                    padding: '4px 12px 5px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: isActive
+                      ? `0 3px 12px rgba(0,0,0,0.6), 0 0 16px ${agentColor}25, inset 0 1px 0 rgba(255,255,255,0.06)`
+                      : '0 2px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
+                    whiteSpace: 'nowrap',
                   }}>
-                    {room.agent}
-                  </span>
+                    {/* Agent color accent bar (top) - 3px per Steffen spec */}
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                      background: `linear-gradient(90deg, ${agentColor}, ${agentColor}CC)`,
+                      borderRadius: '6px 6px 0 0',
+                    }} />
+
+                    {/* Status dot + Name row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      {/* Status dot with glow */}
+                      <div style={{
+                        width: 7, height: 7, borderRadius: '50%',
+                        background: cfg.color,
+                        flexShrink: 0,
+                        boxShadow: isActive ? `0 0 8px ${cfg.color}, 0 0 3px ${cfg.color}` : `0 0 4px ${cfg.color}60`,
+                        animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
+                      }} />
+                      {/* Agent name in their signature color with subtle glow */}
+                      <span style={{
+                        color: isActive ? agentColor : '#E0E4EE',
+                        fontSize: 11, fontWeight: 800,
+                        fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        textShadow: isActive ? `0 0 8px ${agentColor}60` : '0 1px 1px rgba(0,0,0,0.4)',
+                      }}>
+                        {room.agent}
+                      </span>
+                    </div>
+
+                    {/* Role subtitle - agent color at reduced opacity */}
+                    <div style={{
+                      color: `${agentColor}88`,
+                      fontSize: 7, fontWeight: 600,
+                      fontFamily: 'JetBrains Mono, monospace',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      marginTop: 1,
+                      paddingLeft: 13,
+                    }}>
+                      {room.role?.split('/')[0]?.trim() || 'Agent'}
+                    </div>
+
+                    {/* Idle: subtle pulsing glow in agent color (modern style only) */}
+                    {isActive && (
+                      <div style={{
+                        position: 'absolute', inset: -2,
+                        border: `1px solid ${agentColor}30`,
+                        borderRadius: 8,
+                        animation: 'nameplateGlow 2s ease-in-out infinite',
+                        pointerEvents: 'none',
+                      }} />
+                    )}
+                  </div>
                 </motion.div>
               )}
 
-              {/* Click target overlay - isometric clip-path, Crossy Road bounce */}
+              {/* Click target overlay - isometric clip-path, CROSSY ROAD bounce */}
+              {/* Bounce harder: squash/stretch on tap, bigger hop on hover */}
               <motion.div
                 onClick={() => hasAgent && onRoomClick?.(room.id)}
                 onContextMenu={(e) => hasAgent && onRoomContextMenu?.(e, room.id)}
                 onMouseEnter={() => setHoveredRoom(room.id)}
                 onMouseLeave={() => setHoveredRoom(null)}
                 whileHover={hasAgent ? {
-                  scale: 1.04,
-                  y: -3,
-                  transition: { type: 'spring', stiffness: 500, damping: 15 }
+                  scale: 1.06,
+                  y: -6,
+                  transition: { type: 'spring', stiffness: 500, damping: 12, mass: 0.5 }
                 } : {}}
                 whileTap={hasAgent ? {
-                  scale: 0.96,
-                  y: 2,
-                  transition: { type: 'spring', stiffness: 600, damping: 20 }
+                  scale: 0.92,
+                  y: 4,
+                  scaleY: 0.94,
+                  scaleX: 1.04,
+                  transition: { type: 'spring', stiffness: 700, damping: 15 }
                 } : {}}
                 style={{
                   position: 'absolute',
@@ -1571,11 +1614,13 @@ function ModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
         const Icon = mode.icon
         const isHovered = hoveredMode === mode.id
         return (
-          <button
+          <motion.button
             key={mode.id}
             onClick={() => onModeSwitch(mode.id)}
             onMouseEnter={() => setHoveredMode(mode.id)}
             onMouseLeave={() => setHoveredMode(null)}
+            whileHover={{ y: -2, transition: { type: 'spring', stiffness: 500, damping: 15 } }}
+            whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '0 18px', height: 52,
@@ -1606,7 +1651,7 @@ function ModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
                 {mode.key}
               </span>
             )}
-          </button>
+          </motion.button>
         )
       })}
     </div>
@@ -3826,29 +3871,36 @@ export default function GameDashboard() {
           50% { transform: translate(20px, -10px) scale(1.1); opacity: 0.06; }
         }
         @keyframes buildingFloat {
-          0%, 100% { transform: translateY(0); }
-          25% { transform: translateY(-1.5px); }
-          50% { transform: translateY(-3px); }
-          75% { transform: translateY(-1.5px); }
+          0%, 100% { transform: translateY(0) scale(1); }
+          15% { transform: translateY(-2px) scale(1.001, 0.999); }
+          30% { transform: translateY(-4px) scale(0.999, 1.002); }
+          50% { transform: translateY(-5px) scale(1.001); }
+          70% { transform: translateY(-3px) scale(0.999, 1.001); }
+          85% { transform: translateY(-1px) scale(1.001, 0.999); }
         }
-        /* Crossy Road bounce energy: subtle idle bob for the whole building */
+        /* Crossy Road bounce energy: idle bob with squash/stretch */
         @keyframes crossyBounce {
           0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-2px) scale(1.002); }
+          25% { transform: translateY(-3px) scale(1.003, 0.997); }
+          50% { transform: translateY(-5px) scale(0.998, 1.003); }
+          75% { transform: translateY(-2px) scale(1.002, 0.998); }
         }
-        /* Crossy Road hop: rooms hop on status change */
+        /* Crossy Road hop: rooms hop on status change -- MORE BOUNCE */
         @keyframes crossyHop {
           0% { transform: translateY(0) scaleY(1) scaleX(1); }
-          15% { transform: translateY(-8px) scaleY(1.08) scaleX(0.95); }
-          30% { transform: translateY(0) scaleY(0.92) scaleX(1.04); }
-          50% { transform: translateY(-3px) scaleY(1.03) scaleX(0.98); }
-          70% { transform: translateY(0) scaleY(0.98) scaleX(1.01); }
+          10% { transform: translateY(-10px) scaleY(1.1) scaleX(0.93); }
+          25% { transform: translateY(2px) scaleY(0.88) scaleX(1.06); }
+          40% { transform: translateY(-5px) scaleY(1.05) scaleX(0.97); }
+          55% { transform: translateY(1px) scaleY(0.96) scaleX(1.02); }
+          70% { transform: translateY(-2px) scaleY(1.02) scaleX(0.99); }
+          85% { transform: translateY(0) scaleY(0.99) scaleX(1.005); }
           100% { transform: translateY(0) scaleY(1) scaleX(1); }
         }
-        /* Pill bounce for project cards in HUD */
+        /* Pill bounce for project cards in HUD - Crossy Road style */
         @keyframes pillBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-2px); }
+          0%, 100% { transform: translateY(0) scale(1); }
+          30% { transform: translateY(-3px) scale(1.02); }
+          60% { transform: translateY(-1px) scale(0.99); }
         }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes dotPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
@@ -3881,6 +3933,11 @@ export default function GameDashboard() {
         @keyframes nameplateFloat {
           0%, 100% { transform: translateX(-50%) translateY(0); }
           50% { transform: translateX(-50%) translateY(-1px); }
+        }
+        /* Steffen modern nameplate glow on active agents */
+        @keyframes nameplateGlow {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
         }
         .animate-spin { animation: spin 1s linear infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }

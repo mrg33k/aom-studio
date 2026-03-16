@@ -1,0 +1,135 @@
+{
+  "pass": 9,
+  "commit": "12603a4",
+  "workingTreeClean": false,
+  "tests": [
+    {
+      "test": "T0-LOGIN",
+      "status": "PASS",
+      "detail": "Authenticated via password gate"
+    },
+    {
+      "test": "T1-BUILDING",
+      "status": "PASS",
+      "detail": "Building 1009x1161px [Crossy Road] [/corner/office-full-night.png]"
+    },
+    {
+      "test": "T2a-PANEL",
+      "status": "PASS",
+      "detail": "Right panel: 380x900px, 0px from right"
+    },
+    {
+      "test": "T2b-CONTENT",
+      "status": "PASS",
+      "detail": "Agent=true, Chat=true, Tabs=true, Status=true (4/4)"
+    },
+    {
+      "test": "T3-NO-LEFT",
+      "status": "PASS",
+      "detail": "No left sidebar"
+    },
+    {
+      "test": "T4-ZOOM",
+      "status": "PASS",
+      "detail": "before=\"matrix(0.7, 0, 0, 0.7, 0, 0)\" after=\"matrix(1.02853, 0, 0, 1.02853, 0, 0)\""
+    },
+    {
+      "test": "T5-PAN-BOUNDS",
+      "status": "PASS",
+      "detail": "Building after aggressive pan: visible=true, left=930, right=1722"
+    },
+    {
+      "test": "T6a-PILLS",
+      "status": "PASS",
+      "detail": "15 pills: Advisory6 | $KOHRS$2kRED | $NABI$25kRED | $LBX$6kHOLD | AOM Site | Today10"
+    },
+    {
+      "test": "T6b-TODAY",
+      "status": "FAIL",
+      "detail": "First pill: \"Advisory6\" (expected: Today)"
+    },
+    {
+      "test": "T6c-CORNER",
+      "status": "PASS",
+      "detail": "Corner at position 11"
+    },
+    {
+      "test": "T6d-WEIGHT",
+      "status": "FAIL",
+      "detail": "Pill font weight: 400 (target: 900)"
+    },
+    {
+      "test": "T7-CLIENTS",
+      "status": "PASS",
+      "detail": "Client projects: Ambition, KOHRS, Brandon Wiley, Skylar (4/6)"
+    },
+    {
+      "test": "T8-BIZ-METRICS",
+      "status": "PASS",
+      "detail": "Revenue=true, Deadline=false, Payment=false, Amount=true (2/4)"
+    },
+    {
+      "test": "T9a-DATA-API",
+      "status": "PASS",
+      "detail": "Punch-list API: 23462 chars"
+    },
+    {
+      "test": "T9b-DATA-FRESH",
+      "status": "PASS",
+      "detail": "Today's data: true"
+    },
+    {
+      "test": "T9c-RECENCY",
+      "status": "PASS",
+      "detail": "Recency: 13 projects. Top: corner=100"
+    },
+    {
+      "test": "T10a-CHECKLIST",
+      "status": "PASS",
+      "detail": "Checklist is project-grouped (NOT system queue)"
+    },
+    {
+      "test": "T10b-CHECKBOXES",
+      "status": "PASS",
+      "detail": "Checkboxes: 0 native + 60 styled"
+    },
+    {
+      "test": "T10c-PROJECTS",
+      "status": "WARN",
+      "detail": "Projects: Corner, Ambition (2)"
+    },
+    {
+      "test": "T11-PERSIST",
+      "status": "FAIL",
+      "detail": "Checkbox persistence after reload: 0 checked (LOST)"
+    },
+    {
+      "test": "T12-MEGABOARD",
+      "status": "PASS",
+      "detail": "Party=true, Mission=true, Agents=12"
+    },
+    {
+      "test": "RUNTIME",
+      "status": "FAIL",
+      "detail": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, ena"
+    }
+  ],
+  "summary": {
+    "total": 22,
+    "pass": 17,
+    "fail": 4,
+    "warn": 1
+  },
+  "tier0": {
+    "Auth (Supabase)": false,
+    "Chat responds": false,
+    "Client projects": true,
+    "Checkbox persist": false,
+    "Chat timeout": false,
+    "Pan bounds": true,
+    "Demo data": false
+  },
+  "tier0Done": 2,
+  "grade": "C",
+  "timestamp": "2026-03-16T10:09:43.853Z"
+}

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T10:06:01.916Z",
+  "generated": "2026-03-16T10:09:59.676Z",
   "categories": [
     {
       "name": "Strategy",
@@ -1606,6 +1606,16 @@
           "dateFormatted": "Mar 16",
           "summary": "Live coaching review of CORNER build. Two passes: initial C3 review (C+), then updated grades after Bobby's single-image pivot and GameHUD ship.",
           "path": "/briefs/coach-report-mar16",
+          "hasPage": true
+        },
+        {
+          "title": "Steve Coach Report - Pass 9 (c75dc5b)",
+          "slug": "coach-report-pass9",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Pass 9 against Bobby's UX overhaul (c75dc5b). Recalibrated to D+. Tested with Playwright. 14 PASS / 4 FAIL / 2 WARN. Grade: C+ (upgraded from D+, not yet B). The UX overhaul is real progress. Still not demo-ready for a GC.",
+          "path": "/briefs/coach-report-pass9",
           "hasPage": true
         },
         {

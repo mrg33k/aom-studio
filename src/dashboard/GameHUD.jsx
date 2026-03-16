@@ -78,12 +78,37 @@ function parsePunchList(markdown) {
     'KOHRS':             { name: 'KOHRS',     section: 'kohrs',      color: '#EF4444', icon: 'project' },
   }
 
+  // CLIENT PROJECTS subsection -> pill config mapping
+  // These are real paying clients. They MUST show in the HUD.
+  const CLIENT_SUBSECTION_MAP = {
+    'INCLUDED HEALTH':    { name: 'IH',        section: 'ih',         color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
+    'AMBITION':           { name: 'Ambition',  section: 'ambition-client', color: '#22C55E', icon: 'client', statusColor: '#22C55E' },
+    'KOHRS':              { name: 'KOHRS',     section: 'kohrs-client',    color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
+    'ISA ENERGY':         { name: 'ISA',       section: 'isa-client',      color: '#F97316', icon: 'client', statusColor: '#EF4444' },
+    'SKYLAR':             { name: 'Skylar',    section: 'skylar-client',   color: '#EC4899', icon: 'client', statusColor: '#F59E0B' },
+    'BRANDON':            { name: 'Brandon',   section: 'brandon-client',  color: '#F59E0B', icon: 'client', statusColor: '#F59E0B' },
+    'NABI':               { name: 'NABI',      section: 'nabi-client',     color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
+    'LBX':                { name: 'LBX',       section: 'lbx-client',      color: '#6B7280', icon: 'client', statusColor: '#6B7280' },
+  }
+
+  let inClientProjects = false // track when we're inside ## CLIENT PROJECTS
+
   for (const line of lines) {
     const trimmed = line.trim()
 
+    // Handle ## section headers
     if (trimmed.startsWith('## ')) {
       currentSection = trimmed.replace('## ', '').trim()
       const sectionUpper = currentSection.toUpperCase()
+
+      // Track CLIENT PROJECTS section
+      if (sectionUpper.startsWith('CLIENT')) {
+        inClientProjects = true
+        currentProject = null
+        continue
+      } else {
+        inClientProjects = false
+      }
 
       if (sectionUpper.startsWith('AGENTS')) {
         currentProject = null
@@ -119,6 +144,61 @@ function parsePunchList(markdown) {
       continue
     }
 
+    // Handle ### subsections inside CLIENT PROJECTS
+    if (inClientProjects && trimmed.startsWith('### ')) {
+      const subName = trimmed.replace('### ', '').trim()
+      const subUpper = subName.toUpperCase()
+
+      // Match against CLIENT_SUBSECTION_MAP
+      let matched = null
+      for (const [key, config] of Object.entries(CLIENT_SUBSECTION_MAP)) {
+        if (subUpper.startsWith(key)) {
+          matched = config
+          break
+        }
+      }
+
+      if (matched) {
+        // Extract status from the ### line (e.g., "-- RED", "-- GREEN")
+        const statusMatch = subName.match(/--(.*?)$/i)
+        let statusTag = null
+        if (statusMatch) {
+          const tag = statusMatch[1].trim().toUpperCase()
+          if (tag.includes('RED')) statusTag = 'RED'
+          else if (tag.includes('GREEN')) statusTag = 'GREEN'
+          else if (tag.includes('ORANGE')) statusTag = 'ORANGE'
+          else if (tag.includes('YELLOW')) statusTag = 'YELLOW'
+          else if (tag.includes('HOLD')) statusTag = 'HOLD'
+        }
+
+        // Extract revenue info from the ### line
+        const revenueMatch = subName.match(/\$[\d,]+k?/i)
+        const revenue = revenueMatch ? revenueMatch[0] : null
+
+        const existing = projects.find(p => p.section === matched.section)
+        if (existing) {
+          currentProject = existing
+          if (statusTag) currentProject.statusTag = statusTag
+          if (revenue) currentProject.revenue = revenue
+        } else {
+          currentProject = { ...matched, tasks: [], isClient: true, statusTag, revenue }
+          projects.push(currentProject)
+        }
+      } else {
+        // Unknown subsection but still client. Create a generic entry.
+        const cleanName = subName.replace(/\s*--.*$/, '').replace(/\*\*/g, '').trim()
+        if (cleanName.length > 1 && cleanName.length < 40) {
+          const slug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          currentProject = { name: cleanName, section: `client-${slug}`, color: '#6B7280', icon: 'client', tasks: [], isClient: true }
+          projects.push(currentProject)
+        } else {
+          currentProject = null
+        }
+      }
+      continue
+    }
+
+    // Parse task items (checkboxes) for regular sections
     if (currentProject && (trimmed.startsWith('- [') || trimmed.startsWith('| '))) {
       const isDone = trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]')
       const isCheckbox = trimmed.startsWith('- [')
@@ -163,6 +243,31 @@ function parsePunchList(markdown) {
         }
       }
     }
+
+    // Parse client project description lines as tasks (for CLIENT PROJECTS subsections)
+    // These use `- **Label:**` format instead of checkboxes
+    if (inClientProjects && currentProject?.isClient && trimmed.startsWith('- **')) {
+      // Extract Action items as tasks, Status/What as info
+      const labelMatch = trimmed.match(/^- \*\*(\w+):\*\*\s*(.*)$/)
+      if (labelMatch) {
+        const label = labelMatch[1].toLowerCase()
+        const content = labelMatch[2].replace(/\*\*/g, '').replace(/\[.*?\]/g, '').trim()
+
+        if (label === 'action' && content) {
+          // Action items become tasks
+          const isDone = content.toLowerCase().includes('done') || content.toLowerCase().includes('complete') || content.toLowerCase().includes('wrapped')
+          let text = content
+          if (text.length > 80) text = text.slice(0, 77) + '...'
+          currentProject.tasks.push({ text, done: isDone, agent: null, raw: trimmed, isAction: true })
+        } else if (label === 'status' && content) {
+          // Status becomes a info task so the pill has content
+          const isDone = content.toLowerCase().includes('done') || content.toLowerCase().includes('complete') || content.toLowerCase().includes('green')
+          let text = content
+          if (text.length > 80) text = text.slice(0, 77) + '...'
+          currentProject.tasks.push({ text, done: isDone, agent: null, raw: trimmed, isStatus: true })
+        }
+      }
+    }
   }
 
   return {
@@ -175,21 +280,29 @@ function parsePunchList(markdown) {
 // Projects ranked by what you TALK ABOUT, not static order.
 // Fallback weights used when conversation data isn't available.
 const DEFAULT_RECENCY_WEIGHTS = {
-  'today':      100,  // Always first
-  'corner':     95,   // #1 project right now
-  'aom-site':   85,   // Active site work
-  'aom-phase2': 80,   // Phase 2 builds
-  'ambition':   70,   // Client site
-  'outreach':   65,   // Active outreach
-  'gtm':        60,   // Advisory
-  'cleo':       55,   // Content
-  'content':    55,
-  'kohrs':      50,   // Client
-  'isa':        45,
-  'skylar':     40,
-  'deadlines':  35,
-  'infra':      30,
-  'week':       25,
+  'today':          100,  // Always first
+  'ih':             92,   // $9k payment pending -- RED
+  'isa-client':     90,   // Apr 10 deadline -- RED
+  'kohrs-client':   88,   // Behind on 10 videos -- RED
+  'corner':         85,   // #1 product build
+  'ambition-client':82,   // Active retainer -- GREEN
+  'skylar-client':  78,   // Music video needs editing
+  'aom-site':       75,   // Active site work
+  'aom-phase2':     72,   // Phase 2 builds
+  'ambition':       70,   // Ambition site build tasks
+  'brandon-client': 68,   // Documentary
+  'outreach':       65,   // Active outreach
+  'gtm':            60,   // Advisory
+  'nabi-client':    58,   // Kill date Mar 17
+  'cleo':           55,   // Content
+  'content':        55,
+  'kohrs':          50,   // Old section (merged)
+  'isa':            45,   // Old section (merged)
+  'skylar':         40,   // Old section (merged)
+  'lbx-client':     38,   // On hold
+  'deadlines':      35,
+  'infra':          30,
+  'week':           25,
 }
 
 // Hook to fetch live conversation-driven recency scores
@@ -310,8 +423,8 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
     <motion.div
       onClick={() => onClick?.(slug)}
       onContextMenu={(e) => onContextMenu?.(e, slug)}
-      whileHover={{ scale: 1.15, y: -5, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-      whileTap={{ scale: 0.88, y: 2, transition: { type: 'spring', stiffness: 600, damping: 20 } }}
+      whileHover={{ scale: 1.18, y: -7, rotate: 2, transition: { type: 'spring', stiffness: 500, damping: 10, mass: 0.5 } }}
+      whileTap={{ scale: 0.85, y: 3, scaleY: 0.9, scaleX: 1.05, transition: { type: 'spring', stiffness: 700, damping: 15 } }}
       title={`${agent?.name || slug}: ${cfg.label}`}
       style={{
         position: 'relative',
@@ -699,35 +812,50 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
   const remaining = totalTasks - doneTasks
   const isToday = project.section === 'today'
+  const isClient = project.isClient
   const allDone = remaining === 0 && totalTasks > 0
+
+  // Client status tag colors
+  const STATUS_TAG_COLORS = {
+    RED: { bg: 'rgba(239,68,68,0.25)', border: 'rgba(239,68,68,0.5)', text: '#FF6B6B', glow: 'rgba(239,68,68,0.3)' },
+    GREEN: { bg: 'rgba(34,197,94,0.2)', border: 'rgba(34,197,94,0.4)', text: '#4ADE80', glow: 'rgba(34,197,94,0.2)' },
+    ORANGE: { bg: 'rgba(249,115,22,0.2)', border: 'rgba(249,115,22,0.4)', text: '#FB923C', glow: 'rgba(249,115,22,0.2)' },
+    YELLOW: { bg: 'rgba(234,179,8,0.2)', border: 'rgba(234,179,8,0.4)', text: '#FACC15', glow: 'rgba(234,179,8,0.2)' },
+    HOLD: { bg: 'rgba(107,114,128,0.2)', border: 'rgba(107,114,128,0.3)', text: '#9CA3AF', glow: 'none' },
+  }
+  const tagStyle = isClient && project.statusTag ? STATUS_TAG_COLORS[project.statusTag] : null
 
   return (
     <motion.button
       onClick={onClick}
       onContextMenu={(e) => onContextMenu?.(e, project)}
-      whileHover={{ scale: 1.08, y: -5, transition: { type: 'spring', stiffness: 450, damping: 10 } }}
-      whileTap={{ scale: 0.90, y: 3, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
+      whileHover={{ scale: 1.08, y: -6, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+      whileTap={{ scale: 0.88, y: 4, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
         display: 'flex', alignItems: 'center', gap: 14,
         height: 56, padding: '0 24px',
         background: isExpanded
           ? `linear-gradient(135deg, ${project.color}22, ${project.color}0C)`
-          : isToday
-            ? 'linear-gradient(135deg, rgba(255, 107, 61, 0.14), rgba(255, 107, 61, 0.06))'
-            : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))',
-        border: `2px solid ${isExpanded ? `${project.color}55` : isToday ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
+          : isClient
+            ? `linear-gradient(135deg, ${project.color}14, ${project.color}06)`
+            : isToday
+              ? 'linear-gradient(135deg, rgba(255, 107, 61, 0.14), rgba(255, 107, 61, 0.06))'
+              : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))',
+        border: `2px solid ${isExpanded ? `${project.color}55` : isClient ? `${project.color}30` : isToday ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
         borderRadius: 16,
         cursor: 'pointer',
         flexShrink: 0,
         position: 'relative',
         overflow: 'hidden',
         transition: 'all 200ms ease',
-        // VEGAS: Physical drop shadow. These pills feel like objects you can GRAB.
+        // VEGAS + CROSSY ROAD: Physical drop shadow. Chunky grabbable pills.
         boxShadow: isExpanded
           ? `0 6px 24px ${project.color}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
-          : isToday
-            ? '0 4px 20px rgba(255,107,61,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
-            : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+          : isClient && project.statusTag === 'RED'
+            ? `0 4px 20px rgba(239,68,68,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)`
+            : isToday
+              ? '0 4px 20px rgba(255,107,61,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
+              : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
       }}
     >
       {/* Bottom progress fill - THICKER */}
@@ -739,19 +867,30 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
         borderRadius: '0 0 14px 14px',
       }} />
 
-      {/* Side accent for Today - THICKER */}
-      {isToday && (
+      {/* Side accent for Today or RED clients - THICKER */}
+      {(isToday || (isClient && project.statusTag === 'RED')) && (
         <div style={{
           position: 'absolute', left: 0, top: 6, bottom: 6,
           width: 4, borderRadius: 2,
-          background: project.color,
-          boxShadow: `0 0 12px ${project.color}88`,
+          background: isToday ? project.color : '#EF4444',
+          boxShadow: `0 0 12px ${isToday ? project.color : 'rgba(239,68,68,0.6)'}88`,
+          animation: isClient && project.statusTag === 'RED' ? 'statusPulse 2s ease-in-out infinite' : 'none',
         }} />
       )}
 
-      {/* Project indicator - BIGGER */}
+      {/* Project indicator - BIGGER. $ icon for clients */}
       {isToday ? (
         <Flame size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
+      ) : isClient ? (
+        <div style={{
+          width: 14, height: 14, borderRadius: '50%',
+          background: project.color,
+          boxShadow: `0 0 10px ${project.color}55`,
+          flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 8, fontWeight: 900, color: '#FFF',
+          fontFamily: "'Inter Tight', sans-serif",
+        }}>$</div>
       ) : (
         <div style={{
           width: 12, height: 12, borderRadius: 4,
@@ -774,8 +913,43 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
         {project.name}
       </span>
 
+      {/* Revenue badge for clients */}
+      {isClient && project.revenue && (
+        <span style={{
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 11, fontWeight: 700,
+          color: project.color,
+          background: `${project.color}15`,
+          padding: '2px 8px', borderRadius: 6,
+          letterSpacing: '0.02em',
+          whiteSpace: 'nowrap',
+          border: `1px solid ${project.color}25`,
+        }}>
+          {project.revenue}
+        </span>
+      )}
+
+      {/* Status tag for clients (RED, GREEN, etc.) */}
+      {tagStyle && (
+        <span style={{
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 9, fontWeight: 800,
+          color: tagStyle.text,
+          background: tagStyle.bg,
+          padding: '2px 6px', borderRadius: 4,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          border: `1px solid ${tagStyle.border}`,
+          whiteSpace: 'nowrap',
+          boxShadow: tagStyle.glow !== 'none' ? `0 0 8px ${tagStyle.glow}` : 'none',
+          animation: project.statusTag === 'RED' ? 'statusPulse 2.5s ease-in-out infinite' : 'none',
+        }}>
+          {project.statusTag}
+        </span>
+      )}
+
       {/* Task count badge - VEGAS. Oversized. Casino chip energy. */}
-      {remaining > 0 && (
+      {remaining > 0 && !isClient && (
         <span style={{
           fontFamily: "'Inter Tight', JetBrains Mono, monospace",
           fontSize: 18, fontWeight: 900,
