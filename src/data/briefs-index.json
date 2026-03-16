@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T09:18:40.026Z",
+  "generated": "2026-03-16T10:06:01.916Z",
   "categories": [
     {
       "name": "Strategy",
@@ -490,6 +490,36 @@
           "hasPage": true
         },
         {
+          "title": "Crossy Road Hop Frames",
+          "slug": "crossy-road-hop-frames",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "39 hop animation frames for all 13 agents. 3 frames per agent: ground, peak, landing. The signature Crossy Road movement.",
+          "path": "/briefs/crossy-road-hop-frames",
+          "hasPage": true
+        },
+        {
+          "title": "Crossy Road State Sheets",
+          "slug": "crossy-road-state-sheets",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "52 state sprites for ALL 13 agents in 4 states: working, speaking, thinking, done.",
+          "path": "/briefs/crossy-road-state-sheets",
+          "hasPage": true
+        },
+        {
+          "title": "Hat Pack 1 - First Accessory Collection",
+          "slug": "hat-pack-1",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "5 hats at 3 sizes = 15 transparent PNG overlays. First accessory pack for the Corner character system.",
+          "path": "/briefs/hat-pack-1",
+          "hasPage": true
+        },
+        {
           "title": "Construction HQ Style Pack",
           "slug": "construction-hq-pack",
           "agent": "Steffen",
@@ -507,6 +537,46 @@
           "dateFormatted": "Mar 16",
           "summary": "15 furniture items in chunky voxel Crossy Road style. First style pack for the Corner catalog marketplace. Tests whether alternate art styles work alongside the default pixel-warm.",
           "path": "/briefs/crossy-road-office-pack",
+          "hasPage": true
+        },
+        {
+          "title": "Door Sign Collection",
+          "slug": "door-sign-collection",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "13 in-room door sign assets. Modern dark style with room numbers, agent names, and status dots. Go OUTSIDE each room door, complementing the wall nameplates inside.",
+          "path": "/briefs/door-sign-collection",
+          "hasPage": true
+        },
+        {
+          "title": "Executive Suite Style Pack",
+          "slug": "executive-suite-pack",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "5 premium furniture items for Patrik's room and high-end client offices. Award shelf, whiskey decanter, desk globe, cigar box, executive leather chair. The corner office energy.",
+          "path": "/briefs/executive-suite-pack",
+          "hasPage": true
+        },
+        {
+          "title": "Gaming Setup Pack Expansion",
+          "slug": "gaming-setup-expansion",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "3 new gaming setup items. RGB mechanical keyboard, collectible display shelf, gaming poster wall. Fills the expansion pack gaps.",
+          "path": "/briefs/gaming-setup-expansion",
+          "hasPage": true
+        },
+        {
+          "title": "Law Firm Pack",
+          "slug": "law-firm-pack",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "5 law firm furniture items. Gavel, scales of justice, law library wall, mahogany desk, leather conference chair. Authority and tradition.",
+          "path": "/briefs/law-firm-pack",
           "hasPage": true
         },
         {
@@ -537,6 +607,16 @@
           "dateFormatted": "Mar 16",
           "summary": "5 furniture items that work in any office. Wall clock, fire extinguisher, vending machine, kanban board, pizza stack. Every office has these.",
           "path": "/briefs/universal-bonus-pack",
+          "hasPage": true
+        },
+        {
+          "title": "Zen Garden Pack",
+          "slug": "zen-garden-pack",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "4 zen garden items. Bamboo stalks, desktop rock garden, meditation cushion, desktop water feature. Calm and mindfulness.",
+          "path": "/briefs/zen-garden-pack",
           "hasPage": true
         },
         {
@@ -1526,6 +1606,16 @@
           "dateFormatted": "Mar 16",
           "summary": "Live coaching review of CORNER build. Two passes: initial C3 review (C+), then updated grades after Bobby's single-image pivot and GameHUD ship.",
           "path": "/briefs/coach-report-mar16",
+          "hasPage": true
+        },
+        {
+          "title": "Steve Coach Report - RECALIBRATED",
+          "slug": "coach-report-recalibrated",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Patrik rated the build C-. Steve rated it A-. This report re-grades every component against Crossy Road smoothness, Trello snappiness, and Uber cleanliness. Honest assessment of what a paying customer would actually experience.",
+          "path": "/briefs/coach-report-recalibrated",
           "hasPage": true
         },
         {

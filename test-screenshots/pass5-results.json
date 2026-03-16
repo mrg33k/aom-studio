@@ -1,0 +1,128 @@
+{
+  "commit": "bebc327",
+  "commitMessage": "Bobby: Steve's B+ to A fixes + Vegas energy + zoom limits",
+  "timestamp": "2026-03-16T09:19:58.222Z",
+  "summary": {
+    "total": 23,
+    "pass": 10,
+    "fail": 3,
+    "warn": 10
+  },
+  "tests": [
+    {
+      "test": "T0: Page Load",
+      "status": "PASS",
+      "detail": "Dashboard loaded at /dashboard"
+    },
+    {
+      "test": "T1: Building Render",
+      "status": "PASS",
+      "detail": "Building image 1008x1159px"
+    },
+    {
+      "test": "T2a: Mode Switch (Checklist)",
+      "status": "PASS",
+      "detail": "Keyboard \"2\" switches to checklist mode"
+    },
+    {
+      "test": "T2b: Mode Switch (Megaboard)",
+      "status": "PASS",
+      "detail": "Keyboard \"3\" switches to megaboard mode"
+    },
+    {
+      "test": "T3: HUD Panel",
+      "status": "PASS",
+      "detail": "Found 6 HUD elements. Tallest: 900px"
+    },
+    {
+      "test": "T4a: Today Pill First",
+      "status": "WARN",
+      "detail": "First pill: \"Infra13\" (expected Today)"
+    },
+    {
+      "test": "T4b: Corner Pill Position",
+      "status": "FAIL",
+      "detail": "No \"Corner\" pill found in HUD"
+    },
+    {
+      "test": "T5: Vegas Energy (Pill Size)",
+      "status": "PASS",
+      "detail": "Pill height: 56px (target: 52px). Font: 16px/400. Radius: 16px"
+    },
+    {
+      "test": "T5: Vegas Energy (Overall)",
+      "status": "WARN",
+      "detail": "Some metrics below target. H:56 F:16 W:400 R:16"
+    },
+    {
+      "test": "T4c: Pill Count",
+      "status": "PASS",
+      "detail": "7 pills found in HUD area"
+    },
+    {
+      "test": "T6a: Room Click Targets",
+      "status": "PASS",
+      "detail": "13 clip-path rooms found"
+    },
+    {
+      "test": "T6b: Room Click -> Chat Switch",
+      "status": "PASS",
+      "detail": "Chat changed: \"Message Elon...\" -> \"Message Jacob...\""
+    },
+    {
+      "test": "PAGE_ERROR",
+      "status": "WARN",
+      "detail": "PROJECT_RECENCY_WEIGHTS is not defined"
+    },
+    {
+      "test": "PAGE_ERROR",
+      "status": "WARN",
+      "detail": "PROJECT_RECENCY_WEIGHTS is not defined"
+    },
+    {
+      "test": "PAGE_ERROR",
+      "status": "WARN",
+      "detail": "PROJECT_RECENCY_WEIGHTS is not defined"
+    },
+    {
+      "test": "T7a: Checklist Project Groups",
+      "status": "FAIL",
+      "detail": "Only 0 projects: "
+    },
+    {
+      "test": "T7b: Working Checkboxes",
+      "status": "WARN",
+      "detail": "No clear checkbox UI found (native: 0)"
+    },
+    {
+      "test": "T7c: Checkbox Toggle",
+      "status": "WARN",
+      "detail": "Could not find a checkbox-sized button to click"
+    },
+    {
+      "test": "T8: Zoom Limits",
+      "status": "WARN",
+      "detail": "Could not read scale transforms. Max found: false, Min found: false"
+    },
+    {
+      "test": "T9: Agent Portraits",
+      "status": "WARN",
+      "detail": "No sprite portraits found in current view"
+    },
+    {
+      "test": "T10: 30-Second Day Mgmt",
+      "status": "FAIL",
+      "detail": "0/8 vitals visible. NO:agentStatus, NO:projects, NO:time, NO:agentNames, NO:progress, NO:blocked, NO:recent, NO:urgent"
+    },
+    {
+      "test": "T11: Chat Bar",
+      "status": "WARN",
+      "detail": "No chat input found"
+    },
+    {
+      "test": "T12: Z-Index (Bottom)",
+      "status": "PASS",
+      "detail": "0 positioned elements in bottom 120px, 0 with explicit z-index"
+    }
+  ]
+}

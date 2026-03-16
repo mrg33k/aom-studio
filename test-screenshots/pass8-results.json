@@ -1,0 +1,144 @@
+{
+  "pass": 8,
+  "commit": "c75dc5b",
+  "workingTreeClean": false,
+  "tests": [
+    {
+      "test": "T0-LOGIN",
+      "status": "PASS",
+      "detail": "Authenticated via password gate"
+    },
+    {
+      "test": "T1-BUILDING",
+      "status": "PASS",
+      "detail": "Building 1008x1159px [Crossy Road] [/corner/office-full-night.png]"
+    },
+    {
+      "test": "T2a-PANEL-EXISTS",
+      "status": "PASS",
+      "detail": "Right panel: 380x900px, 0px from right edge"
+    },
+    {
+      "test": "T2b-PANEL-CONTENT",
+      "status": "PASS",
+      "detail": "Agent=true, Chat=true, Tabs=true, Status=true (4/4)"
+    },
+    {
+      "test": "T3-DEFAULT-AGENT",
+      "status": "WARN",
+      "detail": "Default agent: none. Has Elon=false, role=false"
+    },
+    {
+      "test": "T4-REVOLVER",
+      "status": "WARN",
+      "detail": "No revolver pop-out detected on right-click (may need HUD agent button)"
+    },
+    {
+      "test": "T5-ZOOM",
+      "status": "PASS",
+      "detail": "Zoom: before=\"matrix(0.7, 0, 0, 0.7, 0, 0)\" after=\"matrix(1.02853, 0, 0, 1.02853, 0, 0)\""
+    },
+    {
+      "test": "T6-ROOM-PANEL",
+      "status": "PASS",
+      "detail": "After room click: panel shows unknown"
+    },
+    {
+      "test": "T7a-PILLS",
+      "status": "PASS",
+      "detail": "8 pills: Advisory6 | Outreach9 | Today10 | This Week7 | AOM Site | Corner14"
+    },
+    {
+      "test": "T7b-TODAY",
+      "status": "FAIL",
+      "detail": "First pill: \"Advisory6\" (expected: Today)"
+    },
+    {
+      "test": "T7c-CORNER",
+      "status": "PASS",
+      "detail": "Corner at position 6"
+    },
+    {
+      "test": "T7d-WEIGHT",
+      "status": "FAIL",
+      "detail": "Pill font weight: 400 (target: 900)"
+    },
+    {
+      "test": "T8-CLIENTS",
+      "status": "FAIL",
+      "detail": "Client projects in HUD: NONE (0/6)"
+    },
+    {
+      "test": "T9a-DATA-API",
+      "status": "PASS",
+      "detail": "Punch-list API: 23709 chars, timestamp 2026-03-16T09:58:04.339Z"
+    },
+    {
+      "test": "T9b-DATA-FRESH",
+      "status": "PASS",
+      "detail": "Data contains today's date: true"
+    },
+    {
+      "test": "T9c-RECENCY",
+      "status": "PASS",
+      "detail": "Recency: 13 projects. Top: corner=100"
+    },
+    {
+      "test": "T10-REGRESSION",
+      "status": "PASS",
+      "detail": "Checklist is project-grouped (NOT system queue)"
+    },
+    {
+      "test": "T10b-CHECKBOXES",
+      "status": "PASS",
+      "detail": "Checkboxes: 0 native + 61 styled"
+    },
+    {
+      "test": "T10c-PROJECTS",
+      "status": "WARN",
+      "detail": "Projects: Corner, Ambition (2)"
+    },
+    {
+      "test": "T11-MEGABOARD",
+      "status": "PASS",
+      "detail": "Party=true, Mission=true, Agents=12"
+    },
+    {
+      "test": "T13-CHAT",
+      "status": "PASS",
+      "detail": "Chat in right panel: \"Message Steffen...\" (309px)"
+    },
+    {
+      "test": "T14-NO-LEFT",
+      "status": "PASS",
+      "detail": "No left sidebar detected"
+    },
+    {
+      "test": "T15-ERRORS",
+      "status": "PASS",
+      "detail": "Console errors: 0"
+    },
+    {
+      "test": "T16-FONTS",
+      "status": "WARN",
+      "detail": "12 sub-12px elements. \"LOCAL\" (8px), \"Steffen\" (11px), \"Jacob\" (11px), \"Bobby\" (11px), \"Colton\" (11px)"
+    },
+    {
+      "test": "T17-VITALS",
+      "status": "PASS",
+      "detail": "Morning vitals: 12 agents, status=true, projects=true, chat=true, tasks=true (5/5)"
+    }
+  ],
+  "summary": {
+    "total": 25,
+    "pass": 18,
+    "fail": 3,
+    "warn": 4
+  },
+  "checklistRegressed": false,
+  "uxOverhaul": {
+    "panelExists": true,
+    "noLeftSidebar": true
+  },
+  "timestamp": "2026-03-16T09:58:12.213Z"
+}

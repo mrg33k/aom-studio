@@ -1,0 +1,114 @@
+{
+  "pass": 7,
+  "commit": "a1a5553",
+  "tests": [
+    {
+      "test": "T0",
+      "status": "PASS",
+      "detail": "Authenticated via password gate"
+    },
+    {
+      "test": "T1",
+      "status": "PASS",
+      "detail": "Building 1008x1159px (Crossy Road skin) [/corner/office-full-night.png]"
+    },
+    {
+      "test": "T2a",
+      "status": "PASS",
+      "detail": "9 pills: Advisory6 | Deadlines7 | Today10 | Outreach9 | Phase 2 | Corner12"
+    },
+    {
+      "test": "T2b",
+      "status": "FAIL",
+      "detail": "First pill: \"Advisory6\" (expected: Today)"
+    },
+    {
+      "test": "T2c",
+      "status": "PASS",
+      "detail": "Corner pill at position 6"
+    },
+    {
+      "test": "T2d",
+      "status": "FAIL",
+      "detail": "Pill font weight: 400 (target: 900)"
+    },
+    {
+      "test": "T3",
+      "status": "WARN",
+      "detail": "13 room click targets (target: 14+, best: 26)"
+    },
+    {
+      "test": "T4",
+      "status": "PASS",
+      "detail": "Chat switched: \"Message Elon...\" -> \"Message Jacob...\""
+    },
+    {
+      "test": "T5",
+      "status": "PASS",
+      "detail": "Right-click menu: Alex's RoomChat with AlexZoom InView TasksRecent ActivityAssign Task"
+    },
+    {
+      "test": "T6",
+      "status": "WARN",
+      "detail": "Info panel: status=false, task=false, completion=false"
+    },
+    {
+      "test": "T7-REGRESSION",
+      "status": "PASS",
+      "detail": "No system queue detected. Checklist is NOT the regressed version."
+    },
+    {
+      "test": "T7a",
+      "status": "FAIL",
+      "detail": "Projects found: Corner, Ambition (2 total, need 4+)"
+    },
+    {
+      "test": "T7b",
+      "status": "PASS",
+      "detail": "Checkboxes: 0 native + 66 styled (need > 0)"
+    },
+    {
+      "test": "T7c",
+      "status": "PASS",
+      "detail": "Task text found: true"
+    },
+    {
+      "test": "T8",
+      "status": "PASS",
+      "detail": "Megaboard: Party=true, Mission=true, HP=true, Agents=12"
+    },
+    {
+      "test": "T9",
+      "status": "WARN",
+      "detail": "Vitals: 12 agents, status=false, projects=true, chat=false, CORNER=true"
+    },
+    {
+      "test": "T10",
+      "status": "PASS",
+      "detail": "6 in-room name badges"
+    },
+    {
+      "test": "T11",
+      "status": "PASS",
+      "detail": "Vegas: pill=56px, font=16px/700"
+    },
+    {
+      "test": "T12",
+      "status": "PASS",
+      "detail": "Console errors: 0"
+    },
+    {
+      "test": "T13",
+      "status": "PASS",
+      "detail": "Conversation ranking: 13 project scores"
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "pass": 14,
+    "fail": 3,
+    "warn": 3
+  },
+  "checklistRegressed": false,
+  "timestamp": "2026-03-16T09:49:40.300Z"
+}

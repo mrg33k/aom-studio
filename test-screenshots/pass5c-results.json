@@ -1,0 +1,20 @@
+{
+  "commit": "e1b8d09",
+  "tests": [
+    {
+      "test": "T0",
+      "status": "PASS",
+      "detail": "Authenticated via password gate"
+    },
+    {
+      "test": "RUNTIME",
+      "status": "FAIL",
+      "detail": "page.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for "
+    }
+  ],
+  "summary": {
+    "pass": 1,
+    "fail": 1,
+    "warn": 0
+  }
+}

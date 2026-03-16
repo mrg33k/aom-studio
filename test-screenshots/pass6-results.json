@@ -1,0 +1,98 @@
+{
+  "commit": "b3d836d",
+  "commitMessage": "System queue checklist: real-time agent state replaces static punch-list",
+  "timestamp": "2026-03-16T09:35:08.157Z",
+  "summary": {
+    "total": 17,
+    "pass": 16,
+    "fail": 0,
+    "warn": 1
+  },
+  "tests": [
+    {
+      "test": "T0: Page Load",
+      "status": "PASS",
+      "detail": "Dashboard loaded at /dashboard"
+    },
+    {
+      "test": "T0b: Password Gate",
+      "status": "PASS",
+      "detail": "Authenticated with password"
+    },
+    {
+      "test": "T1: Building Render",
+      "status": "PASS",
+      "detail": "Building image 1008x1159px"
+    },
+    {
+      "test": "T2a: Mode Switch (Checklist)",
+      "status": "PASS",
+      "detail": "Keyboard \"2\" switches to checklist mode"
+    },
+    {
+      "test": "T2b: Mode Switch (Megaboard)",
+      "status": "PASS",
+      "detail": "Keyboard \"3\" switches to megaboard mode"
+    },
+    {
+      "test": "T3: HUD Panel",
+      "status": "PASS",
+      "detail": "Found 2 HUD elements, 17 bottom-area elements"
+    },
+    {
+      "test": "T4: Project Pills",
+      "status": "PASS",
+      "detail": "7 pills found. First: \"INFRA\n13\" (56px tall)"
+    },
+    {
+      "test": "T5: Vegas Energy",
+      "status": "PASS",
+      "detail": "Pill H:56 F:16px W:400 R:16px"
+    },
+    {
+      "test": "T6a: Room Click Targets",
+      "status": "PASS",
+      "detail": "26 click targets found (26 clip-path)"
+    },
+    {
+      "test": "T6b: Room Click -> Chat Switch",
+      "status": "PASS",
+      "detail": "Chat changed: \"Message Elon...\" -> \"Message Alex...\""
+    },
+    {
+      "test": "T7: Right-Click Menu",
+      "status": "PASS",
+      "detail": "Context menu appeared: \"PATRIK'S ROOM\nChat with Patrik\nZoom In\nView Tasks\nRecent Act\""
+    },
+    {
+      "test": "T8a: Checklist Sections",
+      "status": "PASS",
+      "detail": "Sections found: RUNNING, COMPLETED, UP NEXT"
+    },
+    {
+      "test": "T8b: Checklist Items",
+      "status": "WARN",
+      "detail": "0 checkboxes, 0 task-like elements"
+    },
+    {
+      "test": "T9a: Megaboard Cards",
+      "status": "PASS",
+      "detail": "Party cards with HP/LV found"
+    },
+    {
+      "test": "T9b: Mission Feed",
+      "status": "PASS",
+      "detail": "Mission feed present"
+    },
+    {
+      "test": "T10: Chat Bar",
+      "status": "PASS",
+      "detail": "Chat input found: \"Message Alex...\""
+    },
+    {
+      "test": "T11: 30-Second Day Mgmt",
+      "status": "PASS",
+      "detail": "3/4 vitals visible. NO:agentStatus, YES:projects, YES:agentNames, YES:progress"
+    }
+  ]
+}
