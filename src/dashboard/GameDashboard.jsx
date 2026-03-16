@@ -3829,6 +3829,36 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   )
                 }
 
+                // Ambient message: compact, muted inline status update from agents
+                // Think Slack channel energy: "Bobby: pushed HUD commit, testing now"
+                if (msg.ambient && !msg.streaming) {
+                  const ambientAgent = AGENTS.find(a => a.slug === msg.source) || agent
+                  const ambientColor = ambientAgent?.color || '#6B7280'
+                  return (
+                    <div key={msg.id || i} style={{
+                      margin: '2px 0',
+                      padding: '6px 12px',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      opacity: 0.7,
+                    }}>
+                      <SpriteAvatar agentSlug={ambientAgent?.slug || msg.source} size={20} borderColor={ambientColor} />
+                      <span style={{
+                        fontSize: 13, fontWeight: 500, color: '#94A3B8',
+                        fontFamily: "'Inter', sans-serif", flex: 1,
+                        fontStyle: 'italic',
+                      }}>
+                        <span style={{ color: ambientColor, fontWeight: 700, fontStyle: 'normal' }}>{ambientAgent?.name || msg.source}</span>{' '}
+                        {msg.content}
+                      </span>
+                      {msg.time && (
+                        <span style={{ fontSize: 10, color: '#475569', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" }}>
+                          {formatChatTime(msg.time)}
+                        </span>
+                      )}
+                    </div>
+                  )
+                }
+
                 return (
                   <div key={msg.id || i} style={{
                     display: 'flex', gap: 10, alignItems: 'flex-start',
@@ -4456,6 +4486,7 @@ export default function GameDashboard() {
                 time: msg.timestamp || new Date().toISOString(),
                 source: agentSlug || 'system',
                 id: msg.id || `bg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+                ambient: msg.ambient === true || msg.ambient === 'true',
               })
             }
             allMsgs.sort(safeTimeSort)
@@ -4612,6 +4643,7 @@ export default function GameDashboard() {
             time: msg.timestamp,
             source: agentSlug || 'system',
             id: msg.id,
+            ambient: msg.ambient === true || msg.ambient === 'true',
           })
         }
 

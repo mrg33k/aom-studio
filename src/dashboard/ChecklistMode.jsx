@@ -13,6 +13,7 @@ import {
   ChevronRight, ChevronDown, Check, Plus, GripVertical,
   LayoutGrid, FolderKanban, Flame, CheckCircle2,
   CheckSquare, Square, Trash2, ArrowUpCircle, ArrowRightCircle, ArrowDownCircle, UserCircle2,
+  Zap,
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
 
@@ -72,6 +73,7 @@ function parsePunchList(markdown) {
   let currentProject = null
 
   const SECTION_MAP = {
+    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#3BFF6B', icon: 'zap' },
     'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -182,6 +184,7 @@ function parsePunchList(markdown) {
 
 // Default recency weights (fallback when conversation data unavailable)
 const DEFAULT_RECENCY_WEIGHTS = {
+  'rightnow':   110,
   'today':      100,
   'corner':     95,
   'aom-site':   85,
@@ -377,7 +380,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
                 textTransform: 'uppercase',
               }}
             >
-              {p.section === 'today' ? <Flame size={14} color={p.color} /> : (
+              {p.section === 'rightnow' ? <Zap size={14} color={p.color} style={{ filter: `drop-shadow(0 0 4px ${p.color}AA)` }} /> : p.section === 'today' ? <Flame size={14} color={p.color} /> : (
                 <div style={{ width: 10, height: 10, borderRadius: 3, background: p.color, flexShrink: 0 }} />
               )}
               {p.name}
@@ -459,7 +462,9 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
               position: 'relative',
             }}
           >
-            {isToday ? (
+            {p.section === 'rightnow' ? (
+              <Zap size={16} color={p.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${p.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
+            ) : isToday ? (
               <Flame size={16} color={p.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${p.color}66)` }} />
             ) : (
               <div style={{ width: 12, height: 12, borderRadius: 4, background: p.color, flexShrink: 0, boxShadow: `0 0 8px ${p.color}33` }} />
@@ -694,7 +699,7 @@ function TaskContextMenu({ position, task, onClose, onAction }) {
 }
 
 // ---- TASK ITEM CARD (with WORKING checkbox + right-click context menu) ------
-function TaskCard({ task, projectColor, onCheck, index, onContextMenu }) {
+function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive }) {
   const [isHovered, setIsHovered] = useState(false)
   const isDone = task.done
 
@@ -772,27 +777,27 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu }) {
           {task.text}
         </div>
 
-        {/* Agent badge (if assigned) */}
-        {agentInfo && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-            {hasSpr ? (
-              <div style={{
-                width: 20, height: 20, borderRadius: '50%',
-                border: `1.5px solid ${agentInfo.color}`,
-                overflow: 'hidden', flexShrink: 0, background: '#0A0F1E',
-              }}>
-                <img
-                  src={`/corner/sprites/${task.agent}-idle.png`}
-                  alt=""
-                  style={{
-                    width: 34, height: 34,
-                    objectFit: 'cover', objectPosition: '20% 8%',
-                    imageRendering: 'pixelated', display: 'block',
-                    marginLeft: -5, marginTop: -3,
-                  }}
-                />
-              </div>
-            ) : null}
+        {/* Agent badge + LIVE badge row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: agentInfo || isLive ? 6 : 0 }}>
+          {agentInfo && hasSpr && (
+            <div style={{
+              width: 20, height: 20, borderRadius: '50%',
+              border: `1.5px solid ${agentInfo.color}`,
+              overflow: 'hidden', flexShrink: 0, background: '#0A0F1E',
+            }}>
+              <img
+                src={`/corner/sprites/${task.agent}-idle.png`}
+                alt=""
+                style={{
+                  width: 34, height: 34,
+                  objectFit: 'cover', objectPosition: '20% 8%',
+                  imageRendering: 'pixelated', display: 'block',
+                  marginLeft: -5, marginTop: -3,
+                }}
+              />
+            </div>
+          )}
+          {agentInfo && (
             <span style={{
               fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
               textTransform: 'uppercase', letterSpacing: '0.1em',
@@ -800,8 +805,28 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu }) {
             }}>
               {agentInfo.name}
             </span>
-          </div>
-        )}
+          )}
+          {isLive && (
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 11,
+              textTransform: 'uppercase', letterSpacing: '0.15em',
+              color: '#3BFF6B',
+              background: 'rgba(59,255,107,0.12)',
+              border: '1px solid rgba(59,255,107,0.3)',
+              borderRadius: 4, padding: '2px 8px',
+              display: 'flex', alignItems: 'center', gap: 5,
+              animation: 'rightNowPulse 2s ease-in-out infinite',
+            }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: '#3BFF6B',
+                boxShadow: '0 0 6px #3BFF6B',
+                animation: 'rightNowDotPulse 1.5s ease-in-out infinite',
+              }} />
+              LIVE
+            </span>
+          )}
+        </div>
       </div>
     </motion.div>
   )
@@ -814,6 +839,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
   const remaining = totalTasks - doneTasks
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
   const isToday = project.section === 'today'
+  const isRightNow = project.section === 'rightnow'
   const allDone = remaining === 0 && totalTasks > 0
 
   return (
@@ -830,7 +856,9 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
       {isCollapsed ? <ChevronRight size={16} color="#6B7280" /> : <ChevronDown size={16} color="#6B7280" />}
 
       {/* Project icon */}
-      {isToday ? (
+      {isRightNow ? (
+        <Zap size={18} color={project.color} style={{ filter: `drop-shadow(0 0 6px ${project.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
+      ) : isToday ? (
         <Flame size={18} color={project.color} style={{ filter: `drop-shadow(0 0 4px ${project.color}66)` }} />
       ) : (
         <div style={{
@@ -982,7 +1010,10 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     const raw = punchData?.projects || []
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     return [...raw].sort((a, b) => {
-      // Today always first
+      // Right Now always first (live sprint)
+      if (a.section === 'rightnow') return -1
+      if (b.section === 'rightnow') return 1
+      // Today always second (day's agenda)
       if (a.section === 'today') return -1
       if (b.section === 'today') return 1
       const aWeight = weights[a.section] || 10
@@ -1106,7 +1137,9 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                   {/* Single project header when filtered */}
                   {selectedProject && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                      {project.section === 'today' ? (
+                      {project.section === 'rightnow' ? (
+                        <Zap size={24} color={project.color} style={{ filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
+                      ) : project.section === 'today' ? (
                         <Flame size={24} color={project.color} style={{ filter: `drop-shadow(0 0 6px ${project.color}66)` }} />
                       ) : (
                         <div style={{ width: 16, height: 16, borderRadius: 4, background: project.color, boxShadow: `0 0 12px ${project.color}44` }} />
@@ -1138,6 +1171,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                           onCheck={handleCheck}
                           onContextMenu={handleTaskContextMenu}
                           index={i}
+                          isLive={project.section === 'rightnow'}
                         />
                       ))}
 
@@ -1229,6 +1263,14 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         @keyframes checklistDotPulse {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.3); }
+        }
+        @keyframes rightNowPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes rightNowDotPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 0.7; }
         }
       `}</style>
     </div>
