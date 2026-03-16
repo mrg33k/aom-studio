@@ -1051,7 +1051,7 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // Interactive click targets, nameplates, and status dots overlay on top.
 // C4: Crossy Road bounce energy, viewport-filling, wave animation on load.
 // DONE(bobby2): Time-of-day swap IMPLEMENTED (commit 4e101fc). Uses full-office-warm-night.png (daytime) before 9pm, office-full-night.png after 9pm. Checks every 60s.
-// TODO(steffen): Create production-ready bright daytime office-full.png (blue sky, green grass, Crossy Road style). Current "daytime" uses full-office-warm-night.png as a stand-in. When true daytime asset is ready, update officeImage path in IsometricOffice.
+// DONE(steffen): Bright daytime office-full.png delivered (blue sky, green grass, Crossy Road clouds, 1024x1024). Path updated to /corner/office-full.png.
 
 
 // TODO(bobby): MODULAR OFFICE FRAMEWORK -- Extract IMAGE_ROOM_TARGETS into a standalone config (e.g., officeLayouts/default.js) that pairs a background image with its room map. ONE layout for everyone. Perfect the diamond mapping at BOTH zoom presets (0.7 overview, 1.6 detail) for this single image first. Once mapping is pixel-perfect at every zoom level, the system becomes modular: swap image file + room config = new office skin. Framework = skeleton (diamond grid + zoom behavior). Image = skin. Do not try arbitrary layouts yet. Nail this one. Ref: Patrik directive line 147.
@@ -2235,7 +2235,7 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode, onModeSwitch, detailLevel }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode }) {
   const [tab, setTab] = useState('session')
   const [topSearchOpen, setTopSearchOpen] = useState(false)
   const tabs = [
@@ -2269,25 +2269,32 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
     }}>
-      {/* Top HUD bar (matches top-hud-clean.png) */}
+      {/* Top HUD bar - DAYTIME: white glass with blue accents (layout-daytime.png). NIGHT: dark blue glass. */}
       <div style={{
         height: detailLevel === 'detail' && currentMode === 'game' ? 40 : (isMobile ? 48 : 56),
-        transition: 'height 200ms ease',
-        background: 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)',
+        transition: 'height 200ms ease, background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
+        background: isNightMode
+          ? 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)'
+          : 'rgba(255, 255, 255, 0.92)',
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(59,130,246,0.15)',
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.4)',
+        borderBottom: isNightMode
+          ? '1px solid rgba(59,130,246,0.15)'
+          : '2px solid rgba(59, 130, 246, 0.25)',
+        boxShadow: isNightMode
+          ? '0 2px 12px rgba(0, 0, 0, 0.4)'
+          : '0 2px 12px rgba(0,0,0,0.08), 0 1px 0 rgba(59,130,246,0.1)',
         display: 'flex', alignItems: 'center',
         padding: '0 24px',
         gap: 16,
       }}>
         {/* Corner. logo */}
         <div style={{
-          fontSize: 22, fontWeight: 900, color: '#F1F5F9',
+          fontSize: 22, fontWeight: 900,
+          color: isNightMode ? '#F1F5F9' : '#1D4ED8',
           fontFamily: "'Inter', system-ui, sans-serif",
           letterSpacing: '0.01em', flexShrink: 0,
         }}>
-          Corner<span style={{ color: '#3B82F6' }}>.</span>
+          Corner<span style={{ color: isNightMode ? '#3B82F6' : '#E85D26' }}>.</span>
         </div>
 
         {/* LOCAL badge */}
@@ -2328,7 +2335,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
               }}
             />
             <span style={{
-              fontSize: 16, fontWeight: 700, color: '#F1F5F9',
+              fontSize: 16, fontWeight: 700, color: isNightMode ? '#F1F5F9' : '#0F172A',
               fontFamily: "'Inter', sans-serif",
               flexShrink: 0,
             }}>
@@ -2359,34 +2366,38 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
               { dot: 'green', count: topWorkingCount, label: 'Active' },
               { dot: 'orange', count: topBlockedCount, label: 'Blocked' },
               { dot: 'blue', count: topDoneCount, label: 'Done' },
-            ].map(pill => (
+            ].map(pill => {
+              const dotColor = pill.dot === 'green' ? '#22C55E' : pill.dot === 'orange' ? '#F59E0B' : '#3B82F6'
+              return (
               <div key={pill.label} style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: '#162236',
-                border: '2px solid #1E3A5F',
+                background: isNightMode ? '#162236' : `${dotColor}0D`,
+                border: isNightMode ? '2px solid #1E3A5F' : `2px solid ${dotColor}40`,
                 borderRadius: 12, padding: '6px 14px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                boxShadow: isNightMode ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
               }}>
                 <div style={{
                   width: 10, height: 10, borderRadius: '50%',
-                  background: pill.dot === 'green' ? '#22C55E' : pill.dot === 'orange' ? '#F59E0B' : '#3B82F6',
-                  boxShadow: `0 0 6px ${pill.dot === 'green' ? '#22C55E' : pill.dot === 'orange' ? '#F59E0B' : '#3B82F6'}`,
+                  background: dotColor,
+                  boxShadow: `0 0 6px ${dotColor}`,
                 }} />
                 <span style={{
-                  fontSize: 20, fontWeight: 900, color: '#60A5FA',
+                  fontSize: 20, fontWeight: 900,
+                  color: isNightMode ? '#60A5FA' : dotColor,
                   fontVariantNumeric: 'tabular-nums',
                   fontFamily: "'Inter', sans-serif",
                 }}>
                   {pill.count}
                 </span>
                 <span style={{
-                  fontSize: 14, fontWeight: 600, color: '#94A3B8',
+                  fontSize: 14, fontWeight: 600,
+                  color: isNightMode ? '#94A3B8' : '#64748B',
                   fontFamily: "'Inter', sans-serif",
                 }}>
                   {pill.label}
                 </span>
               </div>
-            ))}
+            )})}
           </div>
         )}
 
@@ -2395,12 +2406,12 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
           <input type="text" placeholder="Search... (Cmd+K)"
             style={{
               width: 200,
-              background: 'rgba(59,130,246,0.06)',
-              border: '2px solid rgba(59,130,246,0.12)',
+              background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.05)',
+              border: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '1.5px solid rgba(59,130,246,0.15)',
               borderRadius: 10, padding: '8px 14px',
               fontSize: 14,
               fontFamily: "'Inter', system-ui, sans-serif",
-              color: '#64748B', outline: 'none',
+              color: isNightMode ? '#64748B' : '#94A3B8', outline: 'none',
               flexShrink: 0,
               cursor: 'pointer',
             }}
@@ -2415,11 +2426,11 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
         {!isMobile && (
           <div style={{
             width: 40, height: 40,
-            background: '#162236',
-            border: '2px solid #1E3A5F',
+            background: isNightMode ? '#162236' : 'rgba(59,130,246,0.05)',
+            border: isNightMode ? '2px solid #1E3A5F' : '1.5px solid rgba(59,130,246,0.15)',
             borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20, color: '#94A3B8',
+            fontSize: 20, color: isNightMode ? '#94A3B8' : '#64748B',
             position: 'relative', flexShrink: 0,
             cursor: 'pointer',
           }}>
@@ -2434,7 +2445,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
                 background: '#EF4444',
                 color: 'white', fontSize: 12, fontWeight: 800,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid #0F1B2D',
+                border: isNightMode ? '2px solid #0F1B2D' : '1.5px solid #FFFFFF',
                 boxShadow: '0 0 6px rgba(239,68,68,0.4)',
                 fontFamily: "'Inter', sans-serif",
               }}>{topBlockedCount}</div>
@@ -5028,6 +5039,7 @@ export default function GameDashboard() {
               data={data}
               activeTab={panelActiveTab}
               onActiveTabChange={setPanelActiveTab}
+              isNightMode={isNightMode}
               onSendMessage={(e) => {
                 e?.preventDefault()
                 const text = panelChatInput?.trim()

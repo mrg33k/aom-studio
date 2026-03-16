@@ -1,4 +1,4 @@
-// TODO(patrik): Chat message markdown rendering -- agent responses with code blocks/lists should render properly
+// DONE(bobby2): Chat message markdown rendering -- agent responses render markdown (bold, lists, code blocks, links) via marked library
 // TODO(patrik): Chat message search -- filter past messages by keyword
 // TODO(patrik): Typing indicator from relay -- show real "agent is typing" state from relay pipeline
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
@@ -8,6 +8,26 @@ import {
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, BarChart3, GitCommit, Terminal, Radio,
 } from 'lucide-react'
+import { marked } from 'marked'
+
+// Configure marked for safe, minimal rendering
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+})
+
+// Render markdown to sanitized HTML (strips script tags)
+function renderMarkdown(text) {
+  if (!text) return ''
+  try {
+    let html = marked.parse(text)
+    // Strip script tags for safety
+    html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    return html
+  } catch {
+    return text
+  }
+}
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
@@ -518,7 +538,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
         }
       } catch {}
-    }, IS_LOCAL ? 500 : 2000) // Local: 500ms, remote: 2s
+    }, 500) // 500ms for real-time relay feel
   }
 
   // 60-second timeout: if no response arrives, show offline message
@@ -697,7 +717,14 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                     : `via ${msg.source}`}
                 </div>
               )}
-              <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+              {msg.role === 'assistant' && msg.content && !msg.streaming ? (
+                <div
+                  className="chat-md break-words"
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                />
+              ) : (
+                <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+              )}
               {msg.streaming && !msg.content && (
                 <div className="flex items-center gap-1 py-1">
                   {[0, 1, 2].map(j => (
@@ -878,11 +905,7 @@ export default function ChatDashboard() {
     }
   }, [activeAgent])
 
-  if (!authed) {
-    return <PasswordGate onAuth={() => setAuthed(true)} />
-  }
-
-  // Build agent status lookup
+  // Build agent status lookup (must be above early return to keep hooks order stable)
   const agentStatus = useMemo(() => {
     if (!data?.agents) return {}
     const map = {}
@@ -891,6 +914,10 @@ export default function ChatDashboard() {
     }
     return map
   }, [data])
+
+  if (!authed) {
+    return <PasswordGate onAuth={() => setAuthed(true)} />
+  }
 
   const openChat = (agent) => {
     setActiveAgent(agent)
@@ -1004,6 +1031,53 @@ export default function ChatDashboard() {
           </div>
         </div>
       )}
+
+      {/* Chat markdown styles */}
+      <style>{`
+        .chat-md p { margin: 0 0 0.4em 0; }
+        .chat-md p:last-child { margin-bottom: 0; }
+        .chat-md ul, .chat-md ol { margin: 0.3em 0; padding-left: 1.4em; }
+        .chat-md li { margin: 0.15em 0; }
+        .chat-md code {
+          background: rgba(255,255,255,0.08);
+          padding: 0.15em 0.4em;
+          border-radius: 3px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.88em;
+        }
+        .chat-md pre {
+          background: rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 6px;
+          padding: 0.6em 0.8em;
+          margin: 0.4em 0;
+          overflow-x: auto;
+          font-size: 0.85em;
+        }
+        .chat-md pre code {
+          background: none;
+          padding: 0;
+          font-size: 1em;
+        }
+        .chat-md strong { font-weight: 700; }
+        .chat-md a { color: #3B9EFF; text-decoration: underline; }
+        .chat-md a:hover { color: #5BB8FF; }
+        .chat-md h1, .chat-md h2, .chat-md h3 {
+          font-weight: 800;
+          margin: 0.5em 0 0.25em;
+          line-height: 1.3;
+        }
+        .chat-md h1 { font-size: 1.15em; }
+        .chat-md h2 { font-size: 1.08em; }
+        .chat-md h3 { font-size: 1em; }
+        .chat-md blockquote {
+          border-left: 3px solid rgba(255,255,255,0.15);
+          margin: 0.3em 0;
+          padding: 0.2em 0.8em;
+          color: rgba(240,236,230,0.7);
+        }
+        .chat-md hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 0.5em 0; }
+      `}</style>
     </div>
   )
 }

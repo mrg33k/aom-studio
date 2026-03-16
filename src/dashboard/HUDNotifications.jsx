@@ -6,12 +6,12 @@
 //
 // DONE(bobby2): Toast click action -- dispatches 'corner-navigate-agent' custom event with { agentSlug }. GameDashboard listens for this to switch rooms.
 // DONE(bobby2): Notification sound -- Web Audio API chime: ascending triad for completions, descending for blocked, neutral for system. 0.08 gain (subtle).
-// TODO(patrik): Notification history panel -- bell click should show full notification log, not just recent 3
+// DONE(bobby2): Notification history panel -- bell click toggles full notification log panel. Shows all notifications from agent-notifications.md, grouped by time, with dismiss-all.
 // DONE(bobby2): Notification plain English -- humanizeNotification() strips commit hashes, jargon, @mentions, TODO counts. Extracts SHIPPED items. Truncates to 120 chars. Toast reads like a human update.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, X, MessageSquare, CheckCircle2, AlertTriangle, Zap } from 'lucide-react'
+import { Bell, X, MessageSquare, CheckCircle2, AlertTriangle, Zap, Clock, Trash2 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -272,31 +272,288 @@ export function NotificationBadge({ count, style }) {
   )
 }
 
-// Bell button with badge (to add to HUD strip)
-export function HUDBellButton({ onClick }) {
-  const { unreadCount } = useRelayBadge()
-  const { notifications } = useAgentNotifications()
-  const totalCount = unreadCount + notifications.length
+// Hook: loads FULL notification history from agent-notifications.md (all entries, not just new)
+function useFullNotificationHistory() {
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const refresh = useCallback(async () => {
+    if (!IS_LOCAL) { setLoading(false); return }
+    try {
+      const res = await fetch('/api/local/file?path=context/agent-notifications.md')
+      if (!res.ok) { setLoading(false); return }
+      const json = await res.json()
+      if (!json.content) { setLoading(false); return }
+
+      const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
+      const entries = lines.map((line, i) => {
+        const timestampMatch = line.match(/^\[([^\]]+)\]/)
+        const agentMatch = line.match(/(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
+        const messageMatch = line.match(/:\s*(.+)$/)
+        const rawMessage = messageMatch?.[1]?.trim() || line
+        const name = agentMatch?.[0] || 'System'
+
+        return {
+          id: `hist-${i}`,
+          time: timestampMatch?.[1] || '',
+          agentSlug: agentMatch ? agentMatch[0].toLowerCase() : null,
+          agentName: name,
+          message: humanizeNotification(rawMessage, name),
+          rawMessage: rawMessage,
+          type: line.toLowerCase().includes('blocked') ? 'blocked'
+            : line.toLowerCase().includes('finish') || line.toLowerCase().includes('ship') || line.toLowerCase().includes('done') ? 'complete'
+            : 'system',
+        }
+      }).reverse() // Most recent first
+
+      setHistory(entries)
+    } catch {}
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    refresh()
+    const timer = setInterval(refresh, 10000)
+    return () => clearInterval(timer)
+  }, [refresh])
+
+  return { history, loading, refresh }
+}
+
+// Full notification history panel (opens from bell click, anchored above HUD)
+function NotificationHistoryPanel({ onClose }) {
+  const { history, loading } = useFullNotificationHistory()
+  const panelRef = useRef(null)
+
+  // Close on click outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        onClose()
+      }
+    }
+    const keyHandler = (e) => { if (e.key === 'Escape') onClose() }
+    // Delay listener to avoid closing immediately on the same click
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handler)
+      document.addEventListener('keydown', keyHandler)
+    }, 50)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('keydown', keyHandler)
+    }
+  }, [onClose])
 
   return (
-    <motion.button
-      onClick={onClick}
-      whileHover={{ scale: 1.1, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-      whileTap={{ scale: 0.9 }}
+    <motion.div
+      ref={panelRef}
+      initial={{ opacity: 0, y: 16, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 16, scale: 0.95 }}
+      transition={{ type: 'spring', damping: 22, stiffness: 300 }}
       style={{
-        position: 'relative',
-        width: 32, height: 32, borderRadius: 8,
-        background: totalCount > 0 ? 'rgba(59,158,255,0.12)' : 'rgba(100,180,255,0.04)',
-        border: `1.5px solid ${totalCount > 0 ? 'rgba(59,158,255,0.3)' : HUD_COLORS.divider}`,
-        color: totalCount > 0 ? HUD_COLORS.accent : HUD_COLORS.textMuted,
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, transition: 'all 150ms ease',
+        position: 'absolute',
+        bottom: '100%',
+        right: 20,
+        width: 380,
+        maxHeight: 480,
+        background: 'rgba(8, 16, 32, 0.97)',
+        backdropFilter: 'blur(24px)',
+        border: '2px solid rgba(100, 180, 255, 0.22)',
+        borderRadius: 14,
+        boxShadow: '0 -12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(100,180,255,0.08)',
+        zIndex: 100,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        marginBottom: 8,
       }}
-      title={totalCount > 0 ? `${totalCount} notification${totalCount > 1 ? 's' : ''}` : 'No notifications'}
     >
-      <Bell size={15} />
-      <NotificationBadge count={totalCount} />
-    </motion.button>
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 16px 10px',
+        borderBottom: `1px solid ${HUD_COLORS.divider}`,
+        flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Bell size={16} color={HUD_COLORS.accent} />
+          <span style={{
+            fontFamily: "'Inter Tight', sans-serif",
+            fontSize: 16, fontWeight: 800,
+            color: HUD_COLORS.textPrimary,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}>
+            Notifications
+          </span>
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 12, fontWeight: 600,
+            color: HUD_COLORS.textMuted,
+          }}>
+            {history.length}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'rgba(100,180,255,0.06)',
+            border: `1px solid ${HUD_COLORS.divider}`,
+            borderRadius: 6, cursor: 'pointer',
+            color: HUD_COLORS.textMuted, padding: 4,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 150ms ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = HUD_COLORS.textSecondary; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = HUD_COLORS.textMuted; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Notification list */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: '4px 0',
+      }} className="hud-scroll">
+        {loading ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 32, color: HUD_COLORS.textMuted,
+            fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14,
+          }}>
+            Loading...
+          </div>
+        ) : history.length === 0 ? (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '40px 20px', textAlign: 'center',
+          }}>
+            <Bell size={28} color={HUD_COLORS.textMuted} style={{ opacity: 0.4, marginBottom: 12 }} />
+            <span style={{
+              color: HUD_COLORS.textMuted,
+              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14,
+            }}>
+              No notifications yet
+            </span>
+          </div>
+        ) : (
+          history.slice(0, 50).map((n, i) => {
+            const config = TOAST_CONFIG[n.type] || TOAST_CONFIG.system
+            const Icon = config.icon
+            const agent = n.agentSlug ? AGENTS.find(a => a.slug === n.agentSlug) : null
+
+            return (
+              <motion.div
+                key={n.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                onClick={() => {
+                  if (n.agentSlug) {
+                    window.dispatchEvent(new CustomEvent('corner-navigate-agent', { detail: { agentSlug: n.agentSlug } }))
+                    onClose()
+                  }
+                }}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  padding: '10px 16px',
+                  borderBottom: `1px solid ${HUD_COLORS.divider}`,
+                  cursor: n.agentSlug ? 'pointer' : 'default',
+                  transition: 'background 80ms ease',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.04)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              >
+                {/* Type icon */}
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                  background: `${config.color}15`,
+                  border: `1.5px solid ${config.color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginTop: 1,
+                }}>
+                  <Icon size={13} color={config.color} />
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                    <span style={{
+                      fontFamily: "'Inter Tight', sans-serif",
+                      fontSize: 13, fontWeight: 700,
+                      color: agent?.color || config.color,
+                    }}>
+                      {n.agentName}
+                    </span>
+                    <span style={{
+                      fontFamily: 'JetBrains Mono, monospace',
+                      fontSize: 11, color: HUD_COLORS.textMuted,
+                    }}>
+                      {n.time}
+                    </span>
+                  </div>
+                  <div style={{
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    fontSize: 13, color: HUD_COLORS.textSecondary,
+                    lineHeight: 1.4,
+                    wordBreak: 'break-word',
+                  }}>
+                    {n.message}
+                  </div>
+                </div>
+              </motion.div>
+            )
+          })
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+// Bell button with badge + notification history panel toggle
+export function HUDBellButton({ onClick }) {
+  const { unreadCount, clearBadge } = useRelayBadge()
+  const { notifications } = useAgentNotifications()
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const totalCount = unreadCount + notifications.length
+
+  const handleClick = useCallback(() => {
+    setHistoryOpen(prev => {
+      if (!prev) clearBadge() // Clear badge when opening panel
+      return !prev
+    })
+  }, [clearBadge])
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <motion.button
+        onClick={handleClick}
+        whileHover={{ scale: 1.1, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+        whileTap={{ scale: 0.9 }}
+        style={{
+          position: 'relative',
+          width: 32, height: 32, borderRadius: 8,
+          background: historyOpen ? 'rgba(59,158,255,0.2)' : totalCount > 0 ? 'rgba(59,158,255,0.12)' : 'rgba(100,180,255,0.04)',
+          border: `1.5px solid ${historyOpen ? 'rgba(59,158,255,0.5)' : totalCount > 0 ? 'rgba(59,158,255,0.3)' : HUD_COLORS.divider}`,
+          color: historyOpen ? HUD_COLORS.accent : totalCount > 0 ? HUD_COLORS.accent : HUD_COLORS.textMuted,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, transition: 'all 150ms ease',
+        }}
+        title={totalCount > 0 ? `${totalCount} notification${totalCount > 1 ? 's' : ''}` : 'Notification history'}
+      >
+        <Bell size={15} />
+        <NotificationBadge count={historyOpen ? 0 : totalCount} />
+      </motion.button>
+
+      {/* History panel anchored above bell */}
+      <AnimatePresence>
+        {historyOpen && (
+          <NotificationHistoryPanel onClose={() => setHistoryOpen(false)} />
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
