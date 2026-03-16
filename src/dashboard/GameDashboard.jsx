@@ -772,34 +772,74 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // Uses full-office-warm-night.png as ONE cohesive building.
 // No individual room tiles = no double walls. The north star IS the background.
 // Interactive click targets, nameplates, and status dots overlay on top.
+// C4: Crossy Road bounce energy, viewport-filling, wave animation on load.
 
 // Room hit-target positions mapped to the 1024x1024 full-office image (percentages).
+// Each room also has an isometric clip-path polygon for proper click areas.
 const IMAGE_ROOM_TARGETS = {
   // Row 0: top row, 4 rooms
-  patrik:     { x: 24, y: 10, w: 14, h: 14, labelY: 7  },
-  mom:        { x: 38, y: 10, w: 14, h: 14, labelY: 7  },
-  alex:       { x: 52, y: 10, w: 14, h: 14, labelY: 7  },
-  steve:      { x: 64, y: 10, w: 14, h: 14, labelY: 7  },
+  patrik:     { x: 24, y: 10, w: 14, h: 14, labelY: 7,  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+  mom:        { x: 38, y: 10, w: 14, h: 14, labelY: 7,  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+  alex:       { x: 52, y: 10, w: 14, h: 14, labelY: 7,  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+  steve:      { x: 64, y: 10, w: 14, h: 14, labelY: 7,  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
   // Row 1: steffen left, main-hall center (wide), jacob right
-  steffen:    { x: 16, y: 26, w: 15, h: 16, labelY: 23 },
-  'main-hall':{ x: 31, y: 26, w: 28, h: 16, labelY: 23 },
-  jacob:      { x: 59, y: 26, w: 17, h: 16, labelY: 23 },
+  steffen:    { x: 16, y: 26, w: 15, h: 16, labelY: 23, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
+  'main-hall':{ x: 31, y: 26, w: 28, h: 16, labelY: 23, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
+  jacob:      { x: 59, y: 26, w: 17, h: 16, labelY: 23, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
   // Row 2: 4 rooms across lower-front
-  bobby:      { x: 9,  y: 44, w: 15, h: 16, labelY: 41 },
-  colton:     { x: 24, y: 44, w: 15, h: 16, labelY: 41 },
-  cleo:       { x: 39, y: 44, w: 15, h: 16, labelY: 41 },
-  tony:       { x: 54, y: 44, w: 17, h: 16, labelY: 41 },
+  bobby:      { x: 9,  y: 44, w: 15, h: 16, labelY: 41, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
+  colton:     { x: 24, y: 44, w: 15, h: 16, labelY: 41, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
+  cleo:       { x: 39, y: 44, w: 15, h: 16, labelY: 41, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
+  tony:       { x: 54, y: 44, w: 17, h: 16, labelY: 41, clipPath: 'polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)' },
   // Row 3: bottom 2 rooms
-  elmo:       { x: 24, y: 62, w: 15, h: 15, labelY: 59 },
-  elon:       { x: 39, y: 62, w: 15, h: 15, labelY: 59 },
+  elmo:       { x: 24, y: 62, w: 15, h: 15, labelY: 59, clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+  elon:       { x: 39, y: 62, w: 15, h: 15, labelY: 59, clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+}
+
+// Wave animation: staggered delay per room for load-in ripple effect
+const ROOM_WAVE_ORDER = [
+  'main-hall', // center first
+  'mom', 'alex', 'steffen', 'jacob', // row 1 ripples out
+  'patrik', 'steve', // corners
+  'bobby', 'colton', 'cleo', 'tony', // row 2
+  'elmo', 'elon', // row 3
+]
+const getRoomWaveDelay = (roomId) => {
+  const idx = ROOM_WAVE_ORDER.indexOf(roomId)
+  return idx >= 0 ? idx * 0.06 : 0.3
 }
 // ---- SINGLE-IMAGE APPROACH: uses full-office-warm-night.png ------
+// C4: Building FILLS the viewport. No dead space. Crossy Road bounce energy.
 function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations, streamingAgent }) {
-  // Image display size (px) - scales the 1024x1024 image
-  const IMG_SIZE = 880
+  // FILL THE VIEWPORT: size based on container, not fixed pixels
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 })
+  const sizeRef = useRef(null)
+
+  useEffect(() => {
+    const measure = () => {
+      if (sizeRef.current) {
+        const rect = sizeRef.current.getBoundingClientRect()
+        setContainerSize({ w: rect.width, h: rect.height })
+      }
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+
+  // Fill viewport: use the LARGER dimension to ensure no dead space
+  // The building image is roughly square, so we scale to cover the viewport
+  const IMG_SIZE = Math.max(containerSize.w, containerSize.h, 880) * 1.15
 
   const rooms = GRID_SPEC.rooms
   const containerRef = useRef(null)
+
+  // Wave animation: track if initial load animation has played
+  const [hasLoaded, setHasLoaded] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setHasLoaded(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Pan state for click-drag
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
@@ -925,7 +965,7 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
 
   return (
     <div
-      ref={containerRef}
+      ref={(el) => { containerRef.current = el; sizeRef.current = el }}
       style={{
         width: '100%', height: '100%',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
