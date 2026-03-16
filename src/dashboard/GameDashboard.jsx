@@ -6,7 +6,7 @@ import {
   Pause, Eye, Zap, GitCommit, Terminal, Maximize2, Minimize2,
   ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map,
   ZoomIn, ZoomOut, Home, LayoutDashboard, Gamepad2, Command,
-  ArrowRight,
+  ArrowRight, Coffee,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
 import { createChatConnection, CONNECTION_TYPE } from './chatConnection.js'
@@ -36,6 +36,70 @@ const STATUS_CONFIG = {
   DONE:     { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', label: 'Done',     pulseColor: '#3B82F6' },
   WAITING:  { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', label: 'Thinking', pulseColor: '#F59E0B' },
   PAUSED:   { color: '#F97316', bg: 'rgba(249,115,22,0.15)', label: 'Paused',   pulseColor: '#F97316' },
+}
+
+// ---- ZOOM DETAIL LEVELS (Steffen c3-room-zoom-spec) -------------------------
+const ZOOM_LEVELS = {
+  OVERVIEW: { min: 0.5, max: 1.0, scale: 0.7, label: 'Overview' },
+  NEIGHBORHOOD: { min: 1.0, max: 2.2, scale: 1.6, label: 'Neighborhood' },
+  DETAIL: { min: 2.2, max: 3.5, scale: 2.8, label: 'Detail' },
+}
+
+function getDetailLevel(zoom) {
+  if (zoom < ZOOM_LEVELS.NEIGHBORHOOD.min) return 'overview'
+  if (zoom < ZOOM_LEVELS.DETAIL.min) return 'neighborhood'
+  return 'detail'
+}
+
+// ---- ROOM ADJACENCY MAP (for pathfinding) -----------------------------------
+const ROOM_ADJACENCY = {
+  patrik:     ['mom', 'steffen'],
+  mom:        ['patrik', 'alex', 'main-hall'],
+  alex:       ['mom', 'steve', 'main-hall'],
+  steve:      ['alex'],
+  steffen:    ['patrik', 'main-hall'],
+  'main-hall':['mom', 'alex', 'steffen', 'bobby', 'cleo', 'elmo'],
+  bobby:      ['main-hall', 'colton'],
+  colton:     ['bobby'],
+  cleo:       ['main-hall', 'tony'],
+  tony:       ['cleo'],
+  elmo:       ['main-hall', 'elon', 'jacob'],
+  elon:       ['elmo'],
+  jacob:      ['elmo'],
+}
+
+// BFS shortest path
+function findPath(from, to) {
+  if (from === to) return [from]
+  const visited = new Set([from])
+  const queue = [[from]]
+  while (queue.length > 0) {
+    const path = queue.shift()
+    const current = path[path.length - 1]
+    const neighbors = ROOM_ADJACENCY[current] || []
+    for (const next of neighbors) {
+      if (next === to) return [...path, next]
+      if (!visited.has(next)) {
+        visited.add(next)
+        queue.push([...path, next])
+      }
+    }
+  }
+  return [from, to] // fallback
+}
+
+// Door positions per room (relative to room, in SVG units)
+function getDoorPosition(roomId) {
+  const room = ROOM_MAP[roomId]
+  if (!room) return { x: 40, y: 40 }
+  const w = 80 * room.size.cols
+  const h = 80 * room.size.rows
+  // Door is roughly at the south or east wall opening
+  if (room.walls?.south?.includes('door') || room.walls?.south?.includes('open')) return { x: w / 2, y: h - 4 }
+  if (room.walls?.east?.includes('door') || room.walls?.east?.includes('open')) return { x: w - 4, y: h / 2 }
+  if (room.walls?.north?.includes('door') || room.walls?.north?.includes('open')) return { x: w / 2, y: 4 }
+  if (room.walls?.west?.includes('door') || room.walls?.west?.includes('open')) return { x: 4, y: h / 2 }
+  return { x: w / 2, y: h - 4 }
 }
 
 // ---- CAMERA SYSTEM ---------------------------------------------------------
@@ -382,7 +446,7 @@ const ROOMS_WITH_RENDERS = [
 ]
 
 // ---- ISOMETRIC ROOM --------------------------------------------------------
-function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClick, cellSize }) {
+function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClick, cellSize, detailLevel, agentAnimation }) {
   if (!room) return null
 
   const status = agentStatus?.status || 'IDLE'
@@ -396,14 +460,24 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
   // Agent color for glow on hover
   const agentColor = room.agentColor || '#FFD87A'
 
-  // Room dimming: Steffen C2.2 spec 4D - 40% inactive, 100% active
-  const brightness = isActive ? 1.0 : (status === 'DONE' ? 1.0 : (status === 'IDLE' ? 0.4 : 0.6))
+  // Room dimming: enhanced with detail-level aware dimming
+  const isAway = agentAnimation?.state === 'away'
+  const baseBrightness = isAway ? 0.25 : (isActive ? 1.0 : (status === 'DONE' ? 1.0 : (status === 'IDLE' ? 0.4 : 0.6)))
+  const brightness = baseBrightness
 
   // Check if this room has a pixel art render
   const hasRoomRender = ROOMS_WITH_RENDERS.includes(room.id)
 
   // Per-room lighting overlay
   const roomLightOverlay = ROOM_LIGHT_OVERLAYS[room.id]
+
+  // Detail-level: show ambient effects only at neighborhood+
+  const showAmbient = detailLevel !== 'overview'
+  const showFullDetail = detailLevel === 'detail'
+
+  // Light source position (varies per room for depth)
+  const lightX = room.lighting?.includes('natural') ? 0.2 : 0.5
+  const lightY = room.lighting?.includes('pendant') || room.lighting?.includes('overhead') ? 0.15 : 0.3
 
   return (
     <g
@@ -413,7 +487,6 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
       {/* Room background: pixel art render or SVG fallback */}
       {hasRoomRender ? (
         <>
-          {/* Pixel art room render as background (Option B per Steffen) */}
           <foreignObject x={0} y={0} width={roomW} height={roomH} style={{ overflow: 'hidden' }}>
             <img
               src={`/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`}
@@ -428,56 +501,124 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
             />
           </foreignObject>
 
+          {/* DEPTH: Inner shadow on all edges for 3D recess effect */}
+          <rect x={0} y={0} width={roomW} height={2}
+            fill="rgba(0,0,0,0.25)" style={{ pointerEvents: 'none' }} />
+          <rect x={0} y={0} width={2} height={roomH}
+            fill="rgba(0,0,0,0.2)" style={{ pointerEvents: 'none' }} />
+          <rect x={0} y={roomH - 3} width={roomW} height={3}
+            fill="rgba(0,0,0,0.15)" style={{ pointerEvents: 'none' }} />
+          <rect x={roomW - 2} y={0} width={2} height={roomH}
+            fill="rgba(0,0,0,0.12)" style={{ pointerEvents: 'none' }} />
+
+          {/* DEPTH: Ceiling light cone (warm glow from above) */}
+          {showAmbient && (
+            <ellipse
+              cx={roomW * lightX} cy={roomH * lightY}
+              rx={roomW * 0.35} ry={roomH * 0.25}
+              fill={room.lightColor || '#FFD87A'}
+              opacity={isActive ? 0.08 : 0.04}
+              style={{ pointerEvents: 'none', mixBlendMode: 'screen' }}
+            >
+              {isActive && (
+                <animate attributeName="opacity" values="0.06;0.1;0.06" dur="4s" repeatCount="indefinite" />
+              )}
+            </ellipse>
+          )}
+
+          {/* DEPTH: Floor shadow gradient (darkens bottom edge, simulates depth) */}
+          <rect x={0} y={roomH * 0.7} width={roomW} height={roomH * 0.3}
+            fill="url(#floorShadow)" opacity={0.3}
+            style={{ pointerEvents: 'none' }} />
+
           {/* Per-room lighting personality overlay */}
           {roomLightOverlay && (
             <rect x={0} y={0} width={roomW} height={roomH} fill={roomLightOverlay} style={{ pointerEvents: 'none' }} />
           )}
 
-          {/* Bobby's purple LED underglow (C2.2 spec 4A) */}
+          {/* Bobby's purple LED underglow */}
           {room.id === 'bobby' && (
             <rect x={0} y={roomH - 8} width={roomW} height={8}
               fill="url(#bobbyLedGlow)" opacity={isActive ? 0.6 : 0.35}
               style={{ pointerEvents: 'none' }}
             />
           )}
+
+          {/* DEPTH: Ambient particles (dust/light motes) when active + detail zoom */}
+          {showAmbient && isActive && (
+            <g style={{ pointerEvents: 'none' }}>
+              {[0,1,2,3].map(i => (
+                <circle key={i}
+                  cx={roomW * (0.2 + i * 0.2)}
+                  cy={roomH * 0.3}
+                  r={1}
+                  fill={room.lightColor || '#FFD87A'}
+                  opacity={0.15}
+                >
+                  <animate attributeName="cy"
+                    values={`${roomH * (0.2 + i * 0.05)};${roomH * (0.6 + i * 0.08)};${roomH * (0.2 + i * 0.05)}`}
+                    dur={`${6 + i * 2}s`} repeatCount="indefinite" />
+                  <animate attributeName="opacity"
+                    values="0.08;0.2;0.08" dur={`${4 + i}s`} repeatCount="indefinite" />
+                </circle>
+              ))}
+            </g>
+          )}
         </>
       ) : (
         <>
-          {/* SVG fallback for rooms without renders */}
           <rect x={0} y={0} width={roomW} height={roomH}
             fill={room.floorColor || '#C4956A'}
             stroke={room.floor?.startsWith('tile') ? '#6B7D8F' : '#7A5838'}
             strokeWidth={0.5}
           />
-          {/* Config-driven SVG furniture (fallback) */}
           {renderFurniture(room.id, roomW, roomH, isActive)}
-
-          {/* Per-room lighting overlay */}
           {roomLightOverlay && (
             <rect x={0} y={0} width={roomW} height={roomH} fill={roomLightOverlay} style={{ pointerEvents: 'none' }} />
           )}
+          {/* Inner shadow for SVG fallback rooms too */}
+          <rect x={0} y={0} width={roomW} height={2} fill="rgba(0,0,0,0.2)" style={{ pointerEvents: 'none' }} />
+          <rect x={0} y={0} width={2} height={roomH} fill="rgba(0,0,0,0.15)" style={{ pointerEvents: 'none' }} />
         </>
       )}
 
-      {/* Agent sprite character */}
-      {hasAgent && agent && (
+      {/* Agent sprite character (with animation position override) */}
+      {hasAgent && agent && !isAway && (
         <AgentCharacter
-          x={roomW * 0.55}
-          y={roomH * 0.7}
+          x={agentAnimation?.x ?? roomW * 0.55}
+          y={agentAnimation?.y ?? roomH * 0.7}
           color={agentColor}
           status={status}
           agentSlug={room.id}
         />
       )}
 
-      {/* Active indicator dot (top-right) - Steffen spec: pulsing-dot, 6px */}
-      {hasAgent && (
+      {/* "Away" badge when agent is disconnected */}
+      {isAway && (
+        <g>
+          <rect x={roomW / 2 - 22} y={roomH / 2 - 8} width={44} height={18} rx={9}
+            fill="rgba(10, 15, 30, 0.9)" stroke="rgba(245, 158, 11, 0.3)" strokeWidth={1} />
+          <text x={roomW / 2} y={roomH / 2 + 4} textAnchor="middle"
+            fill="#F59E0B" fontSize={8} fontFamily="JetBrains Mono, monospace" fontWeight={500}
+            style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {agentAnimation?.label || 'Away'}
+          </text>
+        </g>
+      )}
+
+      {/* Active indicator dot (top-right) */}
+      {hasAgent && !isAway && (
         <circle cx={roomW - 10} cy={10} r={3}
           fill={isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color)}
           opacity={isActive ? 1 : 0.6}
         >
           {isActive && <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite" />}
         </circle>
+      )}
+
+      {/* Away indicator dot (amber, solid) */}
+      {hasAgent && isAway && (
+        <circle cx={roomW - 10} cy={10} r={3} fill="#F59E0B" opacity={0.8} />
       )}
 
       {/* Hover/selected glow overlay */}
@@ -489,17 +630,17 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
         />
       )}
 
-      {/* Room border */}
+      {/* Room border with depth shadow */}
       <rect x={0} y={0} width={roomW} height={roomH} fill="none"
         stroke={isSelected ? agentColor : (isHovered && hasAgent ? agentColor : PALETTE.exteriorWalls)}
         strokeWidth={isSelected ? 2 : 1}
         strokeOpacity={isHovered && hasAgent ? 0.6 : 1}
       />
-      {/* Glow on hover per Steffen interactivity spec */}
+      {/* Glow on hover */}
       {isHovered && hasAgent && (
         <rect x={-2} y={-2} width={roomW + 4} height={roomH + 4} fill="none"
           stroke={agentColor} strokeWidth={1} strokeOpacity={0.15} rx={2}
-          style={{ pointerEvents: 'none', filter: `drop-shadow(0 0 4px ${agentColor})` }}
+          style={{ pointerEvents: 'none', filter: `drop-shadow(0 0 6px ${agentColor})` }}
         />
       )}
     </g>
@@ -572,77 +713,206 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 }
 
 // ---- ISOMETRIC OFFICE (main game view) with CAMERA SYSTEM ------------------
-function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview }) {
-  const GRID_COLS = 4  // 8 grid cols / 2 cols per room = 4 room columns
-  const GRID_ROWS = 4  // max 4 rows
+function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations }) {
+  const GRID_COLS = 4
+  const GRID_ROWS = 4
 
   const svgW = CELL_SIZE * GRID_COLS + 60
   const svgH = CELL_SIZE * GRID_ROWS + 80
 
   const rooms = GRID_SPEC.rooms
+  const containerRef = useRef(null)
 
-  // Calculate camera translation to center the target room
-  // The isometric transform rotates the entire container, so we translate the SVG inside
-  // to position the target room at the center of the viewport
+  // Pan state for click-drag
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const panState = useRef({ dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0, velX: 0, velY: 0 })
+  const momentumRef = useRef(null)
+
+  // Scroll wheel zoom (Steffen spec: 0.15x per tick, 200ms ease)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const handleWheel = (e) => {
+      e.preventDefault()
+      const delta = e.deltaY > 0 ? -0.15 : 0.15
+      onZoomChange?.(z => Math.min(3.5, Math.max(0.5, z + delta)))
+    }
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    return () => el.removeEventListener('wheel', handleWheel)
+  }, [onZoomChange])
+
+  // Click-drag pan with momentum
+  const handleMouseDown = useCallback((e) => {
+    if (cameraZoom < 1.0) return // No pan in overview
+    if (momentumRef.current) cancelAnimationFrame(momentumRef.current)
+    panState.current = { dragging: true, startX: e.clientX - panOffset.x, startY: e.clientY - panOffset.y, lastX: e.clientX, lastY: e.clientY, velX: 0, velY: 0 }
+  }, [cameraZoom, panOffset])
+
+  const handleMouseMove = useCallback((e) => {
+    if (!panState.current.dragging) return
+    const newX = e.clientX - panState.current.startX
+    const newY = e.clientY - panState.current.startY
+    panState.current.velX = e.clientX - panState.current.lastX
+    panState.current.velY = e.clientY - panState.current.lastY
+    panState.current.lastX = e.clientX
+    panState.current.lastY = e.clientY
+    setPanOffset({ x: newX, y: newY })
+  }, [])
+
+  const handleMouseUp = useCallback(() => {
+    if (!panState.current.dragging) return
+    panState.current.dragging = false
+    // Momentum
+    let vx = panState.current.velX
+    let vy = panState.current.velY
+    const decay = () => {
+      if (Math.abs(vx) < 0.5 && Math.abs(vy) < 0.5) return
+      vx *= 0.92
+      vy *= 0.92
+      setPanOffset(prev => ({ x: prev.x + vx, y: prev.y + vy }))
+      momentumRef.current = requestAnimationFrame(decay)
+    }
+    if (Math.abs(vx) > 1 || Math.abs(vy) > 1) {
+      momentumRef.current = requestAnimationFrame(decay)
+    }
+  }, [])
+
+  // Reset pan when camera target changes
+  useEffect(() => {
+    setPanOffset({ x: 0, y: 0 })
+  }, [cameraTarget, isOverview])
+
+  // Touch support for mobile pan
+  const handleTouchStart = useCallback((e) => {
+    if (e.touches.length === 1 && cameraZoom >= 1.0) {
+      const t = e.touches[0]
+      if (momentumRef.current) cancelAnimationFrame(momentumRef.current)
+      panState.current = { dragging: true, startX: t.clientX - panOffset.x, startY: t.clientY - panOffset.y, lastX: t.clientX, lastY: t.clientY, velX: 0, velY: 0 }
+    }
+  }, [cameraZoom, panOffset])
+
+  const handleTouchMove = useCallback((e) => {
+    if (!panState.current.dragging || e.touches.length !== 1) return
+    const t = e.touches[0]
+    const newX = t.clientX - panState.current.startX
+    const newY = t.clientY - panState.current.startY
+    panState.current.velX = t.clientX - panState.current.lastX
+    panState.current.velY = t.clientY - panState.current.lastY
+    panState.current.lastX = t.clientX
+    panState.current.lastY = t.clientY
+    setPanOffset({ x: newX, y: newY })
+  }, [])
+
+  // Pinch-to-zoom
+  const pinchRef = useRef({ active: false, initialDist: 0, initialZoom: 1 })
+  const handleTouchStartPinch = useCallback((e) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      pinchRef.current = { active: true, initialDist: Math.hypot(dx, dy), initialZoom: cameraZoom }
+    }
+  }, [cameraZoom])
+
+  const handleTouchMovePinch = useCallback((e) => {
+    if (e.touches.length === 2 && pinchRef.current.active) {
+      e.preventDefault()
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.hypot(dx, dy)
+      const scale = dist / pinchRef.current.initialDist
+      const newZoom = Math.min(3.5, Math.max(0.5, pinchRef.current.initialZoom * scale))
+      onZoomChange?.(() => newZoom)
+    }
+  }, [onZoomChange])
+
+  const handleTouchEnd = useCallback((e) => {
+    if (e.touches.length < 2) pinchRef.current.active = false
+    if (e.touches.length === 0) handleMouseUp()
+  }, [handleMouseUp])
+
   const targetCenter = getRoomCenter(cameraTarget || DEFAULT_AGENT)
-
-  // Center of the SVG world
   const worldCenterX = svgW / 2 - 30
   const worldCenterY = svgH / 2
-
-  // Offset to move target room to center (in SVG space, pre-isometric-transform)
   const offsetX = worldCenterX - targetCenter.x
   const offsetY = worldCenterY - targetCenter.y
 
+  const detailLevel = getDetailLevel(cameraZoom)
+
+  // Transition timing based on Steffen's spec
+  const zoomTransition = detailLevel === 'overview' ? '0.5s cubic-bezier(0.4, 0.0, 0.2, 1.0)' : '0.4s cubic-bezier(0.2, 0.9, 0.3, 1.0)'
+
   return (
-    <div style={{
-      width: '100%', height: '100%',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      overflow: 'hidden', // HIDDEN not auto - camera controls what you see
-      position: 'relative',
-    }}>
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%', height: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
+        position: 'relative',
+        cursor: cameraZoom >= 1.0 ? (panState.current.dragging ? 'grabbing' : 'grab') : 'default',
+      }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onTouchStart={(e) => { handleTouchStart(e); handleTouchStartPinch(e) }}
+      onTouchMove={(e) => { handleTouchMove(e); handleTouchMovePinch(e) }}
+      onTouchEnd={handleTouchEnd}
+    >
       <div style={{
-        transform: `scale(${cameraZoom}) rotateX(55deg) rotateZ(-45deg)`,
+        transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${cameraZoom}) rotateX(55deg) rotateZ(-45deg)`,
         transformStyle: 'preserve-3d',
-        transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: panState.current.dragging ? 'none' : `transform ${zoomTransition}`,
         transformOrigin: 'center center',
-        filter: 'drop-shadow(0 20px 60px rgba(255,216,122,0.06))',
+        filter: `drop-shadow(0 20px 60px rgba(255,216,122,${isOverview ? 0.04 : 0.08}))`,
       }}>
         <svg
           width={svgW} height={svgH}
           viewBox={`-30 -30 ${svgW} ${svgH}`}
           style={{ overflow: 'visible' }}
         >
-          {/* Inner translate group for camera panning */}
           <g style={{
             transform: isOverview ? 'translate(0, 0)' : `translate(${offsetX}px, ${offsetY}px)`,
-            transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: panState.current.dragging ? 'none' : `transform ${zoomTransition}`,
           }}>
             <defs>
               <radialGradient id="buildingGlow" cx="50%" cy="50%" r="60%">
                 <stop offset="0%" stopColor="#FFD87A" stopOpacity="0.1" />
                 <stop offset="100%" stopColor="#FFD87A" stopOpacity="0" />
               </radialGradient>
-              {/* Bobby's purple LED underglow gradient (C2.2 spec 4A) */}
               <linearGradient id="bobbyLedGlow" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#9C27B0" stopOpacity="0" />
                 <stop offset="40%" stopColor="#9C27B0" stopOpacity="0.15" />
                 <stop offset="100%" stopColor="#9C27B0" stopOpacity="0.4" />
               </linearGradient>
+              {/* DEPTH: Floor shadow gradient for all rooms */}
+              <linearGradient id="floorShadow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#000" stopOpacity="0" />
+                <stop offset="100%" stopColor="#000" stopOpacity="0.4" />
+              </linearGradient>
+              {/* DEPTH: Building edge shadow */}
+              <filter id="buildingShadow" x="-10%" y="-10%" width="120%" height="130%">
+                <feDropShadow dx="3" dy="5" stdDeviation="4" floodColor="#000" floodOpacity="0.35" />
+              </filter>
             </defs>
 
-            {/* Ground plane shadow */}
+            {/* Ground plane shadow - enhanced depth */}
             <ellipse cx={svgW / 2 - 30} cy={svgH / 2 + 30} rx={svgW * 0.55} ry={svgH * 0.3}
               fill={PALETTE.groundPlane} opacity={GRID_SPEC.rendering.shadowOpacity} />
+
+            {/* DEPTH: Secondary ground shadow (softer, wider) */}
+            <ellipse cx={svgW / 2 - 20} cy={svgH / 2 + 40} rx={svgW * 0.65} ry={svgH * 0.35}
+              fill="#000" opacity={0.08} />
 
             {/* Ground glow */}
             <rect x={-50} y={-50} width={svgW + 50} height={svgH + 50} fill="url(#buildingGlow)" />
 
-            {/* Render rooms - sorted by row then col for z-order */}
+            {/* Render rooms */}
             {rooms.map(room => {
               const pixelX = (room.position.col / 2) * CELL_SIZE
               const pixelY = room.position.row * CELL_SIZE
               const agent = AGENTS.find(a => a.slug === room.id)
+              const showNameplate = detailLevel !== 'detail'
 
               return (
                 <g key={room.id}
@@ -650,13 +920,14 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                   onMouseEnter={() => setHoveredRoom(room.id)}
                   onMouseLeave={() => setHoveredRoom(null)}
                 >
-                  {/* Nameplate above room */}
-                  <RoomNameplate
-                    room={room}
-                    agentStatus={agentStatus[room.id]}
-                    isHovered={hoveredRoom === room.id}
-                    cellSize={CELL_SIZE}
-                  />
+                  {showNameplate && (
+                    <RoomNameplate
+                      room={room}
+                      agentStatus={agentStatus[room.id]}
+                      isHovered={hoveredRoom === room.id}
+                      cellSize={CELL_SIZE}
+                    />
+                  )}
 
                   <IsometricRoom
                     room={room}
@@ -666,20 +937,24 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                     isSelected={selectedRoom === room.id}
                     onClick={onRoomClick}
                     cellSize={CELL_SIZE}
+                    detailLevel={detailLevel}
+                    agentAnimation={agentAnimations?.[room.id]}
                   />
                 </g>
               )
             })}
 
-            {/* Exterior walls - thick border around building perimeter */}
-            <line x1={0} y1={0} x2={CELL_SIZE * 4} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-            <line x1={CELL_SIZE * 4} y1={0} x2={CELL_SIZE * 4} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-            <line x1={CELL_SIZE * 4} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-            <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-            <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-            <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-            <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 3} x2={0} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-            <line x1={0} y1={CELL_SIZE * 3} x2={0} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            {/* Exterior walls with building shadow filter */}
+            <g style={{ filter: 'url(#buildingShadow)' }}>
+              <line x1={0} y1={0} x2={CELL_SIZE * 4} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+              <line x1={CELL_SIZE * 4} y1={0} x2={CELL_SIZE * 4} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+              <line x1={CELL_SIZE * 4} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+              <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+              <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+              <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+              <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 3} x2={0} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+              <line x1={0} y1={CELL_SIZE * 3} x2={0} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            </g>
 
             {/* CORNER entrance sign */}
             <g transform={`translate(${CELL_SIZE * 2}, ${CELL_SIZE * 4 + 25})`}>
@@ -695,13 +970,16 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
             <rect x={CELL_SIZE * 1.7} y={CELL_SIZE * 4 + 2} width={CELL_SIZE * 0.6} height={18}
               fill={PALETTE.groundPlaneEdge} rx={2} opacity={0.5} />
 
-            {/* Exterior bench */}
+            {/* Exterior details */}
             <rect x={-15} y={CELL_SIZE * 1.5} width={8} height={20} fill="#5D4037" rx={1} opacity={0.4} />
-
-            {/* Exterior tree */}
             <circle cx={CELL_SIZE * 4 + 20} cy={CELL_SIZE * 0.8} r={12} fill="#2E7D32" opacity={0.3} />
             <circle cx={CELL_SIZE * 4 + 20} cy={CELL_SIZE * 0.8} r={8} fill="#388E3C" opacity={0.25} />
             <rect x={CELL_SIZE * 4 + 18} y={CELL_SIZE * 0.8 + 8} width={4} height={8} fill="#5D4037" opacity={0.3} rx={1} />
+
+            {/* DEPTH: Second tree for visual balance */}
+            <circle cx={-18} cy={CELL_SIZE * 3.2} r={10} fill="#2E7D32" opacity={0.25} />
+            <circle cx={-18} cy={CELL_SIZE * 3.2} r={6} fill="#388E3C" opacity={0.2} />
+            <rect x={-20} y={CELL_SIZE * 3.2 + 7} width={4} height={7} fill="#5D4037" opacity={0.25} rx={1} />
           </g>
         </svg>
       </div>
@@ -947,7 +1225,7 @@ function ModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
   )
 }
 
-// ---- MOBILE MODE TAB BAR ---------------------------------------------------
+// ---- MOBILE MODE TAB BAR (Steffen c3-mobile-layout-spec) --------------------
 function MobileModeBar({ currentMode, onModeSwitch }) {
   const modeList = [MODES.game, MODES.checklist, MODES.megaboard]
 
@@ -973,10 +1251,10 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
               background: 'none', border: 'none', cursor: 'pointer',
               color: active ? '#E85D26' : '#6B7280',
+              minWidth: 44, minHeight: 44, // Touch target
             }}
           >
             <Icon size={20} />
-            {/* Active dot indicator */}
             {active && (
               <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#E85D26' }} />
             )}
@@ -984,6 +1262,128 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
         )
       })}
     </div>
+  )
+}
+
+// ---- MOBILE BOTTOM SHEET (Steffen c3-mobile-layout-spec) --------------------
+function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTasks }) {
+  const [expanded, setExpanded] = useState(false)
+  const status = agentStatus?.status || 'IDLE'
+  const task = agentStatus?.currentTask || 'Standing by'
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
+  const agentColor = room?.agentColor || agent?.color || '#6B7280'
+
+  // Swipe down to dismiss
+  const startY = useRef(0)
+  const handleTouchStart = (e) => { startY.current = e.touches[0].clientY }
+  const handleTouchEnd = (e) => {
+    const deltaY = e.changedTouches[0].clientY - startY.current
+    if (deltaY > 60) {
+      if (expanded) setExpanded(false)
+      else onClose()
+    } else if (deltaY < -60 && !expanded) {
+      setExpanded(true)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        position: 'fixed',
+        bottom: 100, // above mode bar + chat bar
+        left: 0, right: 0,
+        height: expanded ? '60vh' : 200,
+        background: 'rgba(10, 15, 30, 0.98)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '16px 16px 0 0',
+        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.4)',
+        zIndex: 38,
+        overflow: 'hidden',
+        transition: 'height 300ms ease',
+        display: 'flex', flexDirection: 'column',
+      }}
+    >
+      {/* Drag handle */}
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255, 255, 255, 0.15)' }} />
+      </div>
+
+      {/* Agent info */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px 12px' }}>
+        <SpriteAvatar agentSlug={room?.id} size={40} borderColor={agentColor} />
+        <div style={{ flex: 1 }}>
+          <div style={{ color: '#FDF6EC', fontSize: 18, fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif' }}>
+            {agent?.name || room?.agent}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {agent?.role || room?.role}
+            </span>
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 9,
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              color: cfg.color, background: cfg.bg, padding: '2px 8px', borderRadius: 3,
+            }}>
+              {cfg.label}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Current task */}
+      <div style={{ padding: '0 20px 16px' }}>
+        <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.4 }}>
+          {task}
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: 12, padding: '0 20px 16px' }}>
+        <button onClick={() => onChat(room?.id)} style={{
+          flex: 1, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          background: `${agentColor}26`, color: agentColor, border: `1px solid ${agentColor}40`,
+          borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', cursor: 'pointer',
+        }}>
+          <MessageSquare size={14} />
+          Chat with {agent?.name || 'Agent'}
+        </button>
+        <button onClick={onViewTasks} style={{
+          flex: 1, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          background: 'rgba(255,255,255,0.04)', color: '#F0ECE6', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', cursor: 'pointer',
+        }}>
+          <ListTodo size={14} />
+          View Tasks
+        </button>
+      </div>
+
+      {/* Expanded content: recent completions */}
+      {expanded && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', padding: '12px 0 8px' }}>
+            Recent
+          </div>
+          {agentStatus?.lastCompletion ? (
+            <div style={{ color: '#A8A29E', fontSize: 12, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif' }}>
+              {agentStatus.lastCompletion.description}
+              <div style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>
+                {agentStatus.lastCompletion.date}
+              </div>
+            </div>
+          ) : (
+            <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', padding: '8px 0' }}>
+              No recent completions
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
   )
 }
 
@@ -997,7 +1397,10 @@ function ShortcutsOverlay({ onClose }) {
     { key: 'T', action: 'Toggle Task HUD' },
     { key: 'M', action: 'Toggle mini-map' },
     { key: 'O', action: 'Overview / zoom out' },
-    { key: '+/-', action: 'Zoom in / out' },
+    { key: '+/-', action: 'Zoom in / out (0.5x to 3.5x)' },
+    { key: 'Scroll', action: 'Scroll wheel zoom' },
+    { key: 'Click+Drag', action: 'Pan when zoomed' },
+    { key: 'Double-click', action: 'Zoom to detail view' },
     { key: 'Esc', action: 'Close / go back' },
     { key: '?', action: 'Show this overlay' },
     { key: 'Cmd+K', action: 'Command palette' },
@@ -1072,7 +1475,7 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode, onModeSwitch }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode, onModeSwitch, detailLevel }) {
   const [tab, setTab] = useState('session')
   const tabs = [
     { id: 'session', label: 'Last Session', icon: Clock },
@@ -1092,9 +1495,10 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
     }}>
-      {/* Collapsed bar: 48px */}
+      {/* Collapsed bar: 48px (36px at detail zoom per Steffen spec) */}
       <div style={{
-        height: 48,
+        height: detailLevel === 'detail' && currentMode === 'game' ? 36 : (isMobile ? 44 : 48),
+        transition: 'height 200ms ease',
         background: currentMode === 'megaboard' ? 'rgba(5, 8, 15, 0.95)' : 'rgba(10, 15, 30, 0.85)',
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
@@ -1806,7 +2210,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
       padding: 4,
     }}>
       {/* Zoom in */}
-      <button onClick={() => setCameraZoom(z => Math.min(2.0, z + 0.15))}
+      <button onClick={() => setCameraZoom(z => Math.min(3.5, z + 0.15))}
         title="Zoom in (+)"
         style={{
           width: 32, height: 32, background: 'transparent', border: 'none',
@@ -1899,6 +2303,10 @@ export default function GameDashboard() {
   const [cameraZoom, setCameraZoom] = useState(1.6)
   const [isOverview, setIsOverview] = useState(false)
 
+  // C3 Step 8: Agent death/error animation state
+  // { [agentSlug]: { state: 'away'|'leaving'|'returning', label: 'Away'|'Reconnecting...', x, y } }
+  const [agentAnimations, setAgentAnimations] = useState({})
+
   // C3: Streaming state tracking (for speaking sprite)
   const [streamingAgent, setStreamingAgent] = useState(null)
 
@@ -1923,6 +2331,32 @@ export default function GameDashboard() {
           time: 'just now',
           timestamp: event.timestamp,
         }, ...prev].slice(0, 10))
+      }
+
+      // C3 Step 8: Agent death/error animations
+      if (event.type === 'error_recovery') {
+        const agentSlug = event.agent
+        if (event.status === 'disconnected') {
+          // Agent leaves: animate walk-out, then set to "away"
+          setAgentAnimations(prev => ({
+            ...prev,
+            [agentSlug]: { state: 'away', label: 'Away' },
+          }))
+        } else if (event.status === 'reconnecting') {
+          setAgentAnimations(prev => ({
+            ...prev,
+            [agentSlug]: { ...(prev[agentSlug] || {}), state: 'away', label: 'Reconnecting...' },
+          }))
+        } else if (event.status === 'reconnected') {
+          // Agent returns: clear away state after a short delay for walk-back feel
+          setTimeout(() => {
+            setAgentAnimations(prev => {
+              const next = { ...prev }
+              delete next[agentSlug]
+              return next
+            })
+          }, 1800)
+        }
       }
 
       // Track streaming agent for speaking sprite
@@ -1990,12 +2424,12 @@ export default function GameDashboard() {
     return map
   }, [data])
 
-  // When overview mode changes, adjust zoom
+  // When overview mode changes, adjust zoom (Steffen spec: 0.7x overview, 1.6x neighborhood)
   useEffect(() => {
     if (isOverview) {
-      setCameraZoom(0.7) // Zoomed out to see everything
+      setCameraZoom(0.7)
     } else {
-      setCameraZoom(1.6) // Zoomed in
+      setCameraZoom(1.6)
     }
   }, [isOverview])
 
@@ -2008,9 +2442,12 @@ export default function GameDashboard() {
     setIsOverview(false)
 
     if (roomId === selectedRoom) {
-      // Double click / already selected -> open chat
+      // Already selected: zoom to Level 3 (detail) and open chat
+      setCameraZoom(2.8)
       setChatAgent(roomId)
     } else {
+      // First click: zoom to Level 2 (neighborhood)
+      setCameraZoom(1.6)
       setSelectedRoom(roomId)
     }
   }
@@ -2026,6 +2463,7 @@ export default function GameDashboard() {
     setCameraTarget(DEFAULT_AGENT)
     setIsOverview(false)
     setCameraZoom(1.6)
+    setSelectedRoom(null)
   }
 
   // Mini-map room click -> move camera
@@ -2054,10 +2492,13 @@ export default function GameDashboard() {
     onToggleMinimap: () => setShowMinimap(m => !m),
     onEscape: () => {
       if (showShortcuts) { setShowShortcuts(false); return }
-      setSelectedRoom(null); setChatAgent(null); setHudOpen(false)
+      if (chatAgent) { setChatAgent(null); return }
+      if (cameraZoom > 2.2) { setCameraZoom(1.6); return }
+      if (selectedRoom) { setSelectedRoom(null); setIsOverview(true); return }
+      setHudOpen(false)
     },
     onAgentSelect: null, // Removed: 1-9 now used for mode switching
-    onZoomIn: () => setCameraZoom(z => Math.min(2.0, z + 0.15)),
+    onZoomIn: () => setCameraZoom(z => Math.min(3.5, z + 0.15)),
     onZoomOut: () => setCameraZoom(z => Math.max(0.5, z - 0.15)),
     onOverview: () => setIsOverview(o => !o),
     onModeSwitch: handleModeSwitch,
@@ -2077,11 +2518,11 @@ export default function GameDashboard() {
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',
     }}>
-      {/* Task HUD (top) */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} />
+      {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} />
 
       {/* Main content area with mode switching */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: 48, paddingBottom: isMobile ? 100 : 0 }}>
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: isMobile ? 44 : (getDetailLevel(cameraZoom) === 'detail' && currentMode === 'game' ? 36 : 48), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
         <AnimatePresence mode="wait">
           {/* GAME MODE */}
           {currentMode === 'game' && (
@@ -2102,6 +2543,8 @@ export default function GameDashboard() {
                 cameraTarget={cameraTarget}
                 cameraZoom={cameraZoom}
                 isOverview={isOverview}
+                onZoomChange={setCameraZoom}
+                agentAnimations={agentAnimations}
               />
 
               {/* Camera controls (floating, game mode only) */}
@@ -2115,26 +2558,40 @@ export default function GameDashboard() {
                 onHomeRoom={handleHomeRoom}
               />
 
-              {/* Room detail sidebar */}
-              <AnimatePresence>
-                {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
-                  <RoomDetailSidebar
-                    key={selectedRoom}
-                    room={ROOM_MAP[selectedRoom]}
-                    agent={AGENTS.find(a => a.slug === selectedRoom)}
-                    agentStatus={agentStatus[selectedRoom]}
-                    onClose={() => setSelectedRoom(null)}
-                    onChat={handleChat}
-                  />
-                )}
-              </AnimatePresence>
+              {/* Room detail sidebar (desktop) */}
+              {!isMobile && (
+                <AnimatePresence>
+                  {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+                    <RoomDetailSidebar
+                      key={selectedRoom}
+                      room={ROOM_MAP[selectedRoom]}
+                      agent={AGENTS.find(a => a.slug === selectedRoom)}
+                      agentStatus={agentStatus[selectedRoom]}
+                      onClose={() => setSelectedRoom(null)}
+                      onChat={handleChat}
+                    />
+                  )}
+                </AnimatePresence>
+              )}
 
-              {/* Window light animation overlay */}
-              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at center, rgba(255,216,122,0.02) 0%, transparent 70%)' }}>
+              {/* Window light animation overlay - enhanced depth */}
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                {/* Primary warm light */}
                 <div style={{
-                  position: 'absolute', top: '10%', left: '10%', width: 200, height: 200,
-                  background: 'radial-gradient(circle, rgba(255,183,77,0.04) 0%, transparent 70%)',
+                  position: 'absolute', top: '8%', left: '8%', width: 280, height: 280,
+                  background: 'radial-gradient(circle, rgba(255,183,77,0.05) 0%, transparent 60%)',
                   borderRadius: '50%', animation: 'windowLight 30s ease-in-out infinite',
+                }} />
+                {/* Secondary cool light (depth contrast) */}
+                <div style={{
+                  position: 'absolute', bottom: '15%', right: '12%', width: 200, height: 200,
+                  background: 'radial-gradient(circle, rgba(100,150,255,0.02) 0%, transparent 60%)',
+                  borderRadius: '50%', animation: 'windowLight 25s ease-in-out infinite reverse',
+                }} />
+                {/* Vignette for depth */}
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.15) 100%)',
                 }} />
               </div>
             </motion.div>
@@ -2190,6 +2647,23 @@ export default function GameDashboard() {
       {/* Mobile mode tab bar */}
       {isMobile && (
         <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />
+      )}
+
+      {/* Mobile bottom sheet (game mode only) */}
+      {isMobile && currentMode === 'game' && (
+        <AnimatePresence>
+          {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+            <MobileBottomSheet
+              key={selectedRoom}
+              room={ROOM_MAP[selectedRoom]}
+              agent={AGENTS.find(a => a.slug === selectedRoom)}
+              agentStatus={agentStatus[selectedRoom]}
+              onClose={() => { setSelectedRoom(null); setIsOverview(true) }}
+              onChat={handleChat}
+              onViewTasks={() => { handleModeSwitch('checklist') }}
+            />
+          )}
+        </AnimatePresence>
       )}
 
       {/* Notification toasts */}
@@ -2270,6 +2744,12 @@ export default function GameDashboard() {
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes dotPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes awayPulse { 0%,100%{opacity:0.8} 50%{opacity:1.0} }
+        @keyframes dustDrift {
+          0% { transform: translateY(0) translateX(0); opacity: 0.03; }
+          50% { transform: translateY(-8px) translateX(4px); opacity: 0.06; }
+          100% { transform: translateY(-16px) translateX(-2px); opacity: 0; }
+        }
         .animate-spin { animation: spin 1s linear infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
@@ -2281,6 +2761,12 @@ export default function GameDashboard() {
         ::-webkit-scrollbar-thumb:hover { background: #4A5568; }
         .hud-scroll::-webkit-scrollbar { width: 4px; }
         .hud-scroll::-webkit-scrollbar-thumb { background: #4A5568; }
+        /* PWA safe areas */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+          .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        }
+        /* Touch action for game viewport */
+        .game-viewport { touch-action: none; }
       `}</style>
     </div>
   )

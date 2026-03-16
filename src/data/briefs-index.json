@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T07:36:36.411Z",
+  "generated": "2026-03-16T07:45:02.071Z",
   "categories": [
     {
       "name": "Strategy",
@@ -227,6 +227,16 @@
           "dateFormatted": "Mar 16",
           "summary": "Design review of Bobby's C2.2 build (commit adef267). What shipped correctly, what diverged from spec, and what needs fixing in C2.3 before C3 starts.",
           "path": "/briefs/c2-3-review",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 Build Review",
+          "slug": "c3-build-review",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Steffen's visual review of Bobby's C3 build (commit be3a651). Mode switcher, Checklist, Megaboard, notification toasts graded against 10 design specs.",
+          "path": "/briefs/c3-build-review",
           "hasPage": true
         },
         {
@@ -1236,6 +1246,16 @@
           "dateFormatted": "Mar 16",
           "summary": "C7 forward-looking notes. Corner Academy, video agents, predictive intelligence, multi-user collaboration, industry editions, offline mode, marketplace data, autonomous agent networks, mobile-native features, Corner for Education. The layer where Corner becomes smarter than the people using it.",
           "path": "/briefs/c7-notes",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER C8 Notes: The Operating System",
+          "slug": "c8-notes",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "C8 horizon notes. Corner OS, dedicated hardware, franchise model, AI-native CRM, government edition, open-source core, physical spaces, financial infrastructure, agent consciousness, and the AOM network. The layer where Corner becomes an operating system for business.",
+          "path": "/briefs/c8-notes",
           "hasPage": true
         },
         {
