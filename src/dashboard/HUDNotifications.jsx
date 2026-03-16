@@ -7,6 +7,7 @@
 // DONE(bobby2): Toast click action -- dispatches 'corner-navigate-agent' custom event with { agentSlug }. GameDashboard listens for this to switch rooms.
 // DONE(bobby2): Notification sound -- Web Audio API chime: ascending triad for completions, descending for blocked, neutral for system. 0.08 gain (subtle).
 // TODO(patrik): Notification history panel -- bell click should show full notification log, not just recent 3
+// TODO(patrik): Notification plain English -- toast messages must read like human updates, not technical logs. "Bobby just pushed v3" not "commit a7f2c91 merged to main." No commit hashes, no jargon. Short, plain, conversational. Parse agent-notifications.md entries into human-readable summaries.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
