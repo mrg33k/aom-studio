@@ -30,7 +30,7 @@ const fadeUp = (delay = 0) => ({
 });
 
 // Fallback items that don't have frontmatter yet (shown as "Coming")
-// These get merged with generated data so the accordion always shows the full picture.
+// These get merged with generated data so the list always shows the full picture.
 // As agents add frontmatter, items move from this list to the generated index automatically.
 const fallbackItems = [
   // Strategy
@@ -82,7 +82,7 @@ const fallbackItems = [
   { title: 'Briefs Reorg + Offer Strategy (Mar 12)', agent: 'Council', date: 'Mar 12', path: null, category: 'Council', summary: 'Council brief on briefs reorganization and offer strategy.' },
 ];
 
-// Category display order (fixed, per Steffen spec)
+// Category display order
 const CATEGORY_ORDER = [
   'Strategy',
   'Design Specs',
@@ -94,137 +94,113 @@ const CATEGORY_ORDER = [
   'Council',
 ];
 
-// Merge generated index with fallback items
-function buildCategories() {
-  // Collect all generated slugs/paths so we can skip duplicates in fallbacks
+const FILTER_OPTIONS = [
+  { value: 'recent', label: 'Recent' },
+  ...CATEGORY_ORDER.map(c => ({ value: c, label: c })),
+];
+
+// Parse a date string into something sortable.
+// Generated items have ISO dates like "2026-03-15".
+// Fallback items have strings like "Mar 2026", "Mar 12", "Mar 9".
+function parseDateForSort(dateStr) {
+  if (!dateStr) return 0;
+  // ISO date
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    return new Date(dateStr).getTime();
+  }
+  // "Mar 12" style (no year) - assume 2026
+  const monthDay = dateStr.match(/^([A-Za-z]+)\s+(\d+)$/);
+  if (monthDay) {
+    const d = new Date(`${monthDay[1]} ${monthDay[2]}, 2026`);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+  // "Mar 2026" style
+  const monthYear = dateStr.match(/^([A-Za-z]+)\s+(\d{4})$/);
+  if (monthYear) {
+    const d = new Date(`${monthYear[1]} 1, ${monthYear[2]}`);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+  return 0;
+}
+
+// Build a flat list of all briefs, merged from generated + fallback
+function buildAllBriefs() {
   const generatedPaths = new Set();
   const generatedTitles = new Set();
+  const allBriefs = [];
 
   for (const cat of briefsIndex.categories) {
     for (const item of cat.items) {
       generatedPaths.add(item.path);
       generatedTitles.add(item.title.toLowerCase());
+      allBriefs.push({
+        ...item,
+        date: item.dateFormatted || item.date,
+        dateSort: parseDateForSort(item.date),
+        category: cat.name,
+      });
     }
   }
 
-  // Build merged categories
-  return CATEGORY_ORDER.map(catName => {
-    const genCat = briefsIndex.categories.find(c => c.name === catName);
-    const genItems = genCat ? genCat.items.map(item => ({
-      ...item,
-      date: item.dateFormatted || item.date,
-    })) : [];
+  // Add fallback items that aren't already in generated data
+  for (const f of fallbackItems) {
+    if (f.path && generatedPaths.has(f.path)) continue;
+    if (generatedTitles.has(f.title.toLowerCase())) continue;
+    allBriefs.push({
+      ...f,
+      dateSort: parseDateForSort(f.date),
+    });
+  }
 
-    // Add fallback items for this category that aren't already in generated data
-    const fallbacks = fallbackItems
-      .filter(f => f.category === catName)
-      .filter(f => {
-        // Skip if already in generated data (match by path or title)
-        if (f.path && generatedPaths.has(f.path)) return false;
-        if (generatedTitles.has(f.title.toLowerCase())) return false;
-        return true;
-      });
-
-    return {
-      name: catName,
-      items: [...genItems, ...fallbacks],
-    };
-  });
-}
-
-function CategoryAccordion({ category, index, isOpen, onToggle, isSearching }) {
-  const itemCount = category.items.length;
-
-  return (
-    <motion.div
-      className="border-b border-white/[0.06]"
-      {...(isSearching ? {} : fadeUp(index * 0.05))}
-    >
-      {/* Category Header */}
-      <button
-        onClick={onToggle}
-        className={`w-full flex items-center justify-between py-5 px-6 md:px-8 transition-all duration-300 group text-left ${
-          isOpen
-            ? 'bg-[#111110] border-l-[3px] border-l-aom-orange'
-            : 'bg-transparent border-l-[3px] border-l-transparent hover:bg-[#111110]/50'
-        }`}
-      >
-        <div className="flex items-center gap-4">
-          <h3 className={`font-headline text-[18px] font-bold tracking-[-0.01em] transition-colors duration-300 ${
-            isOpen ? 'text-[#F5F0EB]' : 'text-[#F5F0EB]/70 group-hover:text-[#F5F0EB]'
-          }`}>
-            {category.name}
-          </h3>
-          <span className="font-mono text-sm text-[#7C9A72]">
-            {itemCount} {itemCount === 1 ? 'brief' : 'briefs'}
-          </span>
-        </div>
-
-        <ChevronDown
-          size={18}
-          className={`text-[#7C9A72] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {/* Expanded Items */}
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="overflow-hidden bg-[#111110]/60"
-          >
-            <div className="px-6 md:px-8 pb-4 pt-1">
-              {category.items.map((item, i) => (
-                <BriefItem key={item.title + i} item={item} />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
+  return allBriefs;
 }
 
 function BriefItem({ item }) {
   const hasPage = !!item.path;
 
   const content = (
-    <div className={`py-3 sm:py-3 px-4 rounded-sm transition-all duration-200 ${
+    <div className={`py-4 px-5 md:px-6 rounded-sm transition-all duration-200 ${
       hasPage
-        ? 'hover:bg-white/[0.03] cursor-pointer group'
-        : 'opacity-60'
+        ? 'hover:bg-white/[0.04] cursor-pointer group'
+        : 'opacity-50'
     }`}>
-      {/* Desktop: inline row */}
-      <div className="hidden sm:flex items-baseline justify-between">
-        <div className="flex items-baseline gap-3 min-w-0 flex-1">
-          <span className={`font-body text-[16px] leading-snug ${
-            hasPage
-              ? 'text-[#F5F0EB] group-hover:text-aom-orange transition-colors'
-              : 'text-[#F5F0EB]/50'
-          }`}>
-            {item.title}
-          </span>
-          {!hasPage && (
-            <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/20 shrink-0">
-              Coming
+      {/* Desktop layout */}
+      <div className="hidden sm:block">
+        <div className="flex items-baseline justify-between gap-4">
+          <div className="flex items-baseline gap-3 min-w-0 flex-1">
+            <span className={`font-body text-[16px] leading-snug ${
+              hasPage
+                ? 'text-[#F5F0EB] group-hover:text-aom-orange transition-colors'
+                : 'text-[#F5F0EB]/50'
+            }`}>
+              {item.title}
             </span>
-          )}
+            {!hasPage && (
+              <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/20 shrink-0">
+                Coming
+              </span>
+            )}
+          </div>
+          <div className="flex items-baseline gap-4 ml-4 shrink-0">
+            <span className="font-mono text-[13px] text-aom-orange/70">
+              {item.category}
+            </span>
+            <span className="font-mono text-sm text-[#7C9A72]">
+              {item.agent}
+            </span>
+            <span className="font-mono text-sm text-[#7C9A72]/50 w-[60px] text-right">
+              {item.date}
+            </span>
+          </div>
         </div>
-
-        <div className="flex items-baseline gap-3 ml-4 shrink-0">
-          <span className="font-mono text-sm text-[#7C9A72]">
-            {item.agent}
-          </span>
-          <span className="font-mono text-sm text-[#7C9A72]/50">
-            {item.date}
-          </span>
-        </div>
+        {item.summary && (
+          <p className="font-body text-[14px] text-aom-text-muted leading-relaxed mt-1.5 max-w-[70ch]">
+            {item.summary}
+          </p>
+        )}
       </div>
 
-      {/* Mobile: stacked layout - title wraps, agent+date below */}
+      {/* Mobile layout */}
       <div className="sm:hidden">
         <div className="flex items-start gap-2">
           <span className={`font-body text-[16px] leading-snug ${
@@ -240,7 +216,15 @@ function BriefItem({ item }) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 mt-1">
+        {item.summary && (
+          <p className="font-body text-[13px] text-aom-text-muted leading-relaxed mt-1">
+            {item.summary}
+          </p>
+        )}
+        <div className="flex items-center gap-3 mt-2">
+          <span className="font-mono text-[11px] text-aom-orange/70">
+            {item.category}
+          </span>
           <span className="font-mono text-xs text-[#7C9A72]">
             {item.agent}
           </span>
@@ -258,15 +242,92 @@ function BriefItem({ item }) {
   return content;
 }
 
+function CategoryDropdown({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const selectedOption = FILTER_OPTIONS.find(o => o.value === value);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    function handleKey(e) {
+      if (e.key === 'Escape') setIsOpen(false);
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative w-full sm:w-auto">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          w-full sm:w-auto flex items-center justify-between gap-3
+          bg-[#1A1A17] border transition-colors duration-300
+          font-body text-[16px] text-[#F5F0EB]
+          px-5 py-3.5 min-w-[220px]
+          ${isOpen ? 'border-aom-orange/40' : 'border-white/10 hover:border-white/20'}
+        `}
+      >
+        <span>{selectedOption?.label || 'Recent'}</span>
+        <ChevronDown
+          size={16}
+          className={`text-[#7C9A72] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute z-50 top-full left-0 right-0 sm:right-auto mt-1 bg-[#1A1A17] border border-white/10 shadow-lg min-w-[220px]"
+          >
+            {FILTER_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`
+                  w-full text-left px-5 py-3 font-body text-[15px] transition-colors duration-150
+                  ${value === option.value
+                    ? 'text-aom-orange bg-white/[0.04]'
+                    : 'text-[#F5F0EB]/70 hover:text-[#F5F0EB] hover:bg-white/[0.03]'
+                  }
+                `}
+              >
+                {option.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function BriefsHub() {
   useSEO();
 
-  const categories = useMemo(() => buildCategories(), []);
+  const allBriefs = useMemo(() => buildAllBriefs(), []);
 
-  const [openCategories, setOpenCategories] = useState(new Set());
+  const [activeFilter, setActiveFilter] = useState('recent');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [preSearchState, setPreSearchState] = useState(null);
   const searchRef = useRef(null);
 
   // Debounce search input by 150ms
@@ -277,98 +338,52 @@ export default function BriefsHub() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Handle hash-based auto-open
+  // Handle hash-based filter
   useEffect(() => {
     const hash = window.location.hash.replace('#', '').toLowerCase();
     if (hash) {
-      const idx = categories.findIndex(c => c.name.toLowerCase().replace(/\s+/g, '-') === hash);
-      if (idx !== -1) {
-        setOpenCategories(new Set([idx]));
-        setTimeout(() => {
-          const el = document.getElementById(`category-${idx}`);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+      const matchedCategory = CATEGORY_ORDER.find(
+        c => c.toLowerCase().replace(/\s+/g, '-') === hash
+      );
+      if (matchedCategory) {
+        setActiveFilter(matchedCategory);
       }
     }
-  }, [categories]);
+  }, []);
 
-  // Filter categories based on search
-  const filteredCategories = debouncedQuery
-    ? categories.map(cat => ({
-        ...cat,
-        items: cat.items.filter(item => {
-          const q = debouncedQuery.toLowerCase();
-          return (
-            item.title.toLowerCase().includes(q) ||
-            item.agent.toLowerCase().includes(q) ||
-            cat.name.toLowerCase().includes(q) ||
-            (item.summary && item.summary.toLowerCase().includes(q))
-          );
-        }),
-      })).filter(cat => cat.items.length > 0)
-    : categories;
+  // Filter by category
+  const categoryFiltered = useMemo(() => {
+    if (activeFilter === 'recent') return allBriefs;
+    return allBriefs.filter(b => b.category === activeFilter);
+  }, [allBriefs, activeFilter]);
 
-  // When search starts, save pre-search state; when cleared, restore it
-  const handleSearchChange = useCallback((e) => {
-    const value = e.target.value;
-    if (value && !searchQuery) {
-      setPreSearchState(new Set(openCategories));
-    }
-    if (!value && searchQuery) {
-      if (preSearchState) {
-        setOpenCategories(preSearchState);
-        setPreSearchState(null);
-      }
-    }
-    setSearchQuery(value);
-  }, [searchQuery, openCategories, preSearchState]);
-
-  // Auto-expand matching categories during search
-  useEffect(() => {
+  // Filter by search
+  const displayBriefs = useMemo(() => {
+    let results = categoryFiltered;
     if (debouncedQuery) {
-      const matchingIndices = new Set();
-      categories.forEach((cat, i) => {
-        const q = debouncedQuery.toLowerCase();
-        const hasMatch = cat.items.some(item =>
-          item.title.toLowerCase().includes(q) ||
-          item.agent.toLowerCase().includes(q) ||
-          cat.name.toLowerCase().includes(q) ||
-          (item.summary && item.summary.toLowerCase().includes(q))
-        );
-        if (hasMatch) matchingIndices.add(i);
-      });
-      setOpenCategories(matchingIndices);
+      const q = debouncedQuery.toLowerCase();
+      results = results.filter(item =>
+        item.title.toLowerCase().includes(q) ||
+        item.agent.toLowerCase().includes(q) ||
+        (item.category && item.category.toLowerCase().includes(q)) ||
+        (item.summary && item.summary.toLowerCase().includes(q))
+      );
     }
-  }, [debouncedQuery, categories]);
+    // Sort by date descending (newest first)
+    return [...results].sort((a, b) => (b.dateSort || 0) - (a.dateSort || 0));
+  }, [categoryFiltered, debouncedQuery]);
 
   // Handle Escape to clear search
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
       setSearchQuery('');
       setDebouncedQuery('');
-      if (preSearchState) {
-        setOpenCategories(preSearchState);
-        setPreSearchState(null);
-      }
       searchRef.current?.blur();
     }
-  }, [preSearchState]);
+  }, []);
 
-  const toggleCategory = (index) => {
-    setOpenCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
-      return next;
-    });
-  };
-
-  const totalItems = categories.reduce((sum, c) => sum + c.items.length, 0);
-  const liveItems = categories.reduce((sum, c) => sum + c.items.filter(i => i.path).length, 0);
-
+  const totalItems = allBriefs.length;
+  const liveItems = allBriefs.filter(i => i.path).length;
   const isSearching = debouncedQuery.length > 0;
 
   return (
@@ -416,87 +431,89 @@ export default function BriefsHub() {
               {liveItems} live
             </span>
             <span className="font-mono text-sm text-aom-text-muted">
-              {categories.length} categories
+              {CATEGORY_ORDER.length} categories
             </span>
           </motion.div>
         </div>
       </section>
 
-      {/* Search Bar */}
+      {/* Filter bar: dropdown + search */}
       <section className="px-6 md:px-12 pb-8">
         <div className="max-w-4xl mx-auto">
-          <motion.div {...fadeUp(0.22)} className="relative">
-            <Search
-              size={18}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-aom-text-muted pointer-events-none"
+          <motion.div {...fadeUp(0.22)} className="flex flex-col sm:flex-row gap-3">
+            <CategoryDropdown
+              value={activeFilter}
+              onChange={setActiveFilter}
             />
-            <input
-              ref={searchRef}
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Search briefs..."
-              className="w-full bg-[#1A1A17] border border-white/10 focus:border-aom-orange/40 focus:outline-none font-body text-base text-[#F5F0EB] placeholder:text-aom-text-muted pl-12 pr-5 py-4 rounded-none transition-colors duration-300"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setDebouncedQuery('');
-                  if (preSearchState) {
-                    setOpenCategories(preSearchState);
-                    setPreSearchState(null);
-                  }
-                }}
-                className="absolute right-5 top-1/2 -translate-y-1/2 text-aom-text-muted hover:text-[#F5F0EB] transition-colors"
-              >
-                <span className="font-mono text-xs uppercase tracking-wider">Clear</span>
-              </button>
-            )}
+            <div className="relative flex-1">
+              <Search
+                size={18}
+                className="absolute left-5 top-1/2 -translate-y-1/2 text-aom-text-muted pointer-events-none"
+              />
+              <input
+                ref={searchRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Search briefs..."
+                className="w-full bg-[#1A1A17] border border-white/10 focus:border-aom-orange/40 focus:outline-none font-body text-base text-[#F5F0EB] placeholder:text-aom-text-muted pl-12 pr-5 py-3.5 rounded-none transition-colors duration-300"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setDebouncedQuery('');
+                  }}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-aom-text-muted hover:text-[#F5F0EB] transition-colors"
+                >
+                  <span className="font-mono text-xs uppercase tracking-wider">Clear</span>
+                </button>
+              )}
+            </div>
           </motion.div>
           {isSearching && (
             <p className="font-mono text-xs text-aom-text-muted mt-3">
-              {filteredCategories.reduce((sum, c) => sum + c.items.length, 0)} results in {filteredCategories.length} {filteredCategories.length === 1 ? 'category' : 'categories'}
+              {displayBriefs.length} {displayBriefs.length === 1 ? 'result' : 'results'}
+              {activeFilter !== 'recent' ? ` in ${activeFilter}` : ''}
             </p>
           )}
         </div>
       </section>
 
-      {/* Accordion Categories */}
+      {/* Brief list */}
       <section className="px-6 md:px-12 pb-20 md:pb-28">
         <div className="max-w-4xl mx-auto">
           <div className="border-t border-white/[0.06]">
-            {filteredCategories.map((category) => {
-              const originalIndex = categories.findIndex(c => c.name === category.name);
-              return (
-                <div key={category.name} id={`category-${originalIndex}`}>
-                  <CategoryAccordion
-                    category={category}
-                    index={originalIndex}
-                    isOpen={openCategories.has(originalIndex)}
-                    onToggle={() => toggleCategory(originalIndex)}
-                    isSearching={isSearching}
-                  />
-                </div>
-              );
-            })}
-            {isSearching && filteredCategories.length === 0 && (
-              <div className="py-16 text-center">
-                <p className="font-body text-lg text-aom-text-muted">No briefs found for "{debouncedQuery}"</p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setDebouncedQuery('');
-                    if (preSearchState) {
-                      setOpenCategories(preSearchState);
-                      setPreSearchState(null);
-                    }
-                  }}
-                  className="font-mono text-sm text-aom-orange hover:underline mt-4"
+            {displayBriefs.length > 0 ? (
+              displayBriefs.map((item, i) => (
+                <motion.div
+                  key={item.title + item.agent + i}
+                  className="border-b border-white/[0.06]"
+                  {...(isSearching ? {} : fadeUp(Math.min(i * 0.03, 0.5)))}
                 >
-                  Clear search
-                </button>
+                  <BriefItem item={item} />
+                </motion.div>
+              ))
+            ) : (
+              <div className="py-16 text-center">
+                <p className="font-body text-lg text-aom-text-muted">
+                  {isSearching
+                    ? `No briefs found for "${debouncedQuery}"`
+                    : `No briefs in ${activeFilter}`
+                  }
+                </p>
+                {isSearching && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setDebouncedQuery('');
+                    }}
+                    className="font-mono text-sm text-aom-orange hover:underline mt-4"
+                  >
+                    Clear search
+                  </button>
+                )}
               </div>
             )}
           </div>
