@@ -5,7 +5,7 @@
 // This component lives in the HUD strip (GameHUD.jsx) only.
 //
 // DONE(bobby2): Toast click action -- dispatches 'corner-navigate-agent' custom event with { agentSlug }. GameDashboard listens for this to switch rooms.
-// TODO(patrik): Notification sound -- play a subtle game-style chime on new agent completions
+// DONE(bobby2): Notification sound -- Web Audio API chime: ascending triad for completions, descending for blocked, neutral for system. 0.08 gain (subtle).
 // TODO(patrik): Notification history panel -- bell click should show full notification log, not just recent 3
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
@@ -80,6 +80,41 @@ function useRelayBadge() {
   return { unreadCount, clearBadge }
 }
 
+// Game-style notification chime using Web Audio API (no audio files needed)
+function playNotificationChime(type = 'complete') {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+
+    // Different tones by notification type
+    if (type === 'complete') {
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(523, ctx.currentTime) // C5
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.08) // E5
+      osc.frequency.setValueAtTime(784, ctx.currentTime + 0.16) // G5
+    } else if (type === 'blocked') {
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(330, ctx.currentTime) // E4
+      osc.frequency.setValueAtTime(262, ctx.currentTime + 0.12) // C4
+    } else {
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(440, ctx.currentTime) // A4
+      osc.frequency.setValueAtTime(523, ctx.currentTime + 0.1) // C5
+    }
+
+    gain.gain.setValueAtTime(0.08, ctx.currentTime) // Subtle volume
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.35)
+  } catch {
+    // Audio not available, silently ignore
+  }
+}
+
 // Hook: polls agent-notifications.md for new completions
 function useAgentNotifications() {
   const [notifications, setNotifications] = useState([])
@@ -119,6 +154,10 @@ function useAgentNotifications() {
           }).filter(n => !dismissedRef.current.has(n.message))
 
           if (newNotifs.length > 0) {
+            // Play notification chime based on the most important notification type
+            const hasBlocked = newNotifs.some(n => n.type === 'blocked')
+            const hasComplete = newNotifs.some(n => n.type === 'complete')
+            playNotificationChime(hasBlocked ? 'blocked' : hasComplete ? 'complete' : 'system')
             setNotifications(prev => [...newNotifs, ...prev].slice(0, 10))
           }
         }
