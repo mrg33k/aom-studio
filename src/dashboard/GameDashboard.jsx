@@ -75,6 +75,18 @@ const PALETTE = GRID_SPEC.colorPalette
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
 
+// Extract agent name from [AGENT] prefix in relay messages (e.g., "[ELON] ..." -> "elon")
+// relay-respond.py doesn't set an `agent` field, but agents prefix their messages with [NAME].
+function extractAgentFromMessage(msg) {
+  if (msg.agent) return msg.agent
+  if (!msg.message) return null
+  const match = msg.message.match(/^\[([A-Z]+)\]/)
+  if (!match) return null
+  const name = match[1].toLowerCase()
+  const known = AGENTS.find(a => a.slug === name || a.name.toLowerCase() === name)
+  return known ? known.slug : null
+}
+
 // ---- DEMO DATA (production: thriving sample business for prospects) ---------
 // Garcia Construction -- believable Phoenix GC using Corner to run operations.
 // Shows a living office with active agents, recent commits, and real workflow.
@@ -4440,11 +4452,12 @@ export default function GameDashboard() {
               // Dedup by id OR by matching content+time (for messages without id)
               if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
               if (!msg.id && allMsgs.some(m => m.content === msg.message && m.role === 'assistant')) continue
+              const agentSlug = extractAgentFromMessage(msg)
               allMsgs.push({
                 role: 'assistant',
                 content: msg.message || '',
                 time: msg.timestamp || new Date().toISOString(),
-                source: msg.agent ? `${msg.agent}` : 'system',
+                source: agentSlug || 'system',
                 id: msg.id || `bg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
               })
             }
@@ -4593,11 +4606,12 @@ export default function GameDashboard() {
           if (!msg.message?.trim()) continue
           // Skip messages that are actually dashboard sends that leaked into outbox
           if (msg.source === 'corner-dashboard' || msg.source === 'corner-websocket') continue
+          const agentSlug = extractAgentFromMessage(msg)
           all.push({
             role: 'assistant',
             content: msg.message,
             time: msg.timestamp,
-            source: msg.agent ? `${msg.agent}` : 'system',
+            source: agentSlug || 'system',
             id: msg.id,
           })
         }
@@ -5160,7 +5174,7 @@ export default function GameDashboard() {
                               // Remove streaming, add real response, sort in one pass
                               const filtered = [...(prev._all || [])].filter(m => !m.streaming)
                               if (!filtered.some(m => m.id === latest.id)) {
-                                filtered.push({ role: 'assistant', content: latest.message || '', streaming: false, time: latest.timestamp || new Date().toISOString(), source: latest.agent || 'system', id: latest.id || `resp-${Date.now()}` })
+                                filtered.push({ role: 'assistant', content: latest.message || '', streaming: false, time: latest.timestamp || new Date().toISOString(), source: extractAgentFromMessage(latest) || 'system', id: latest.id || `resp-${Date.now()}` })
                               }
                               filtered.sort(safeTimeSort)
                               return { ...prev, _all: filtered }

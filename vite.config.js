@@ -2,11 +2,26 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 import fs from 'fs'
+import os from 'os'
 import { WebSocketServer } from 'ws'
 import { watch } from 'chokidar'
 
 // AOM-EA local filesystem root for localhost dashboard mode
 const AOM_EA_ROOT = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA'
+
+// Relay files: prefer Application Support path (where launchd relay + relay-respond.py write)
+// Falls back to repo path if App Support doesn't exist.
+// This matches the same logic in relay-hook.sh and relay-respond.py.
+const APPDATA_ROOT = resolve(os.homedir(), 'Library/Application Support/aom-ea/data')
+const APPDATA_INBOX = resolve(APPDATA_ROOT, 'context/relay-inbox.jsonl')
+const APPDATA_OUTBOX = resolve(APPDATA_ROOT, 'context/relay-outbox.jsonl')
+
+const RELAY_INBOX_PATH = fs.existsSync(APPDATA_INBOX) ? APPDATA_INBOX : resolve(AOM_EA_ROOT, 'context/relay-inbox.jsonl')
+const RELAY_OUTBOX_PATH = fs.existsSync(APPDATA_OUTBOX) ? APPDATA_OUTBOX : resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
+
+// Also keep repo paths for fallback writes (write to BOTH so hooks pick up from either)
+const REPO_INBOX_PATH = resolve(AOM_EA_ROOT, 'context/relay-inbox.jsonl')
+const REPO_OUTBOX_PATH = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
 
 // Agent folder mapping (slug -> project folder name)
 const AGENT_FOLDERS = {
@@ -310,19 +325,34 @@ function localDashboardPlugin() {
       })
 
       // Relay inbox (for chat)
+      // Reads from BOTH App Support and repo inbox, merges and deduplicates by id.
+      // App Support is where Telegram/watchdog writes; repo is where dashboard writes.
       server.middlewares.use('/api/local/relay-inbox', (req, res) => {
-        const content = readLocalFile('context/relay-inbox.jsonl')
-        const messages = []
-        if (content) {
-          for (const line of content.split('\n').filter(l => l.trim())) {
-            try { messages.push(JSON.parse(line)) } catch {}
-          }
+        const messagesById = new Map()
+        // Read from both paths to capture all sources
+        for (const inboxPath of [RELAY_INBOX_PATH, REPO_INBOX_PATH]) {
+          try {
+            const content = fs.readFileSync(inboxPath, 'utf-8')
+            for (const line of content.split('\n').filter(l => l.trim())) {
+              try {
+                const msg = JSON.parse(line)
+                if (msg.id && !messagesById.has(msg.id)) {
+                  messagesById.set(msg.id, msg)
+                }
+              } catch {}
+            }
+          } catch {}
         }
+        const messages = Array.from(messagesById.values())
+        messages.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0))
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ messages, timestamp: new Date().toISOString() }))
       })
 
       // Relay send (dashboard -> EA inbox, so the hook picks it up)
+      // Writes to BOTH App Support and repo inbox paths.
+      // The EA hook checks App Support first, so we must write there.
+      // Repo path is also written for backward compatibility.
       server.middlewares.use('/api/local/relay-send', (req, res) => {
         if (req.method !== 'POST') {
           res.statusCode = 405
@@ -335,7 +365,6 @@ function localDashboardPlugin() {
           try {
             const data = JSON.parse(body)
             const id = crypto.randomUUID()
-            const inboxPath = resolve(AOM_EA_ROOT, 'context/relay-inbox.jsonl')
             const entry = {
               id,
               timestamp: new Date().toISOString(),
@@ -345,7 +374,12 @@ function localDashboardPlugin() {
               chat_id: null,
               agent: data.agent || null,
             }
-            fs.appendFileSync(inboxPath, JSON.stringify(entry) + '\n')
+            const line = JSON.stringify(entry) + '\n'
+            // Write to both paths so the hook picks it up regardless of which it reads
+            fs.appendFileSync(RELAY_INBOX_PATH, line)
+            if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) {
+              fs.appendFileSync(REPO_INBOX_PATH, line)
+            }
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ ok: true, id }))
           } catch (err) {
@@ -356,21 +390,29 @@ function localDashboardPlugin() {
       })
 
       // Relay outbox read (EA responses, for dashboard polling)
+      // Reads from BOTH App Support and repo outbox, merges and deduplicates by id.
+      // App Support is where relay-respond.py writes agent responses.
       server.middlewares.use('/api/local/relay-outbox', (req, res) => {
         const url = new URL(req.url, 'http://localhost')
         const since = url.searchParams.get('since')
-        const outboxPath = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
-        const messages = []
-        try {
-          const content = fs.readFileSync(outboxPath, 'utf-8')
-          for (const line of content.split('\n').filter(l => l.trim())) {
-            try {
-              const msg = JSON.parse(line)
-              if (since && msg.timestamp && new Date(msg.timestamp) <= new Date(since)) continue
-              messages.push(msg)
-            } catch {}
-          }
-        } catch {}
+        const messagesById = new Map()
+        // Read from both paths to capture all responses
+        for (const outboxPath of [RELAY_OUTBOX_PATH, REPO_OUTBOX_PATH]) {
+          try {
+            const content = fs.readFileSync(outboxPath, 'utf-8')
+            for (const line of content.split('\n').filter(l => l.trim())) {
+              try {
+                const msg = JSON.parse(line)
+                if (since && msg.timestamp && new Date(msg.timestamp) <= new Date(since)) continue
+                if (msg.id && !messagesById.has(msg.id)) {
+                  messagesById.set(msg.id, msg)
+                }
+              } catch {}
+            }
+          } catch {}
+        }
+        const messages = Array.from(messagesById.values())
+        messages.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0))
         res.setHeader('Content-Type', 'application/json')
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         res.end(JSON.stringify({ messages, timestamp: new Date().toISOString() }))
@@ -762,7 +804,6 @@ function webSocketServerPlugin() {
 
               // Handle chat messages (forward to relay inbox so EA hook picks them up)
               if (data.type === 'chat_message') {
-                const inboxPath = resolve(AOM_EA_ROOT, 'context/relay-inbox.jsonl')
                 const entry = {
                   id: crypto.randomUUID(),
                   agent: data.agent,
@@ -772,7 +813,12 @@ function webSocketServerPlugin() {
                   chat_id: null,
                   timestamp: new Date().toISOString(),
                 }
-                fs.appendFileSync(inboxPath, JSON.stringify(entry) + '\n')
+                const line = JSON.stringify(entry) + '\n'
+                // Write to both paths so the hook picks it up
+                fs.appendFileSync(RELAY_INBOX_PATH, line)
+                if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) {
+                  fs.appendFileSync(REPO_INBOX_PATH, line)
+                }
 
                 // Broadcast agent state change: thinking
                 broadcast({
@@ -799,8 +845,8 @@ function webSocketServerPlugin() {
           }
         })
 
-        // Watch relay-outbox.jsonl for new messages
-        const outboxPath = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
+        // Watch relay-outbox.jsonl for new messages (use the resolved path)
+        const outboxPath = RELAY_OUTBOX_PATH
         try {
           if (fs.existsSync(outboxPath)) {
             lastOutboxSize = fs.statSync(outboxPath).size

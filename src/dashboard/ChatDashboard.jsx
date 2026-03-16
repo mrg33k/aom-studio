@@ -29,6 +29,17 @@ function renderMarkdown(text) {
   }
 }
 
+// Extract agent name from [AGENT] prefix in relay messages (e.g., "[ELON] ..." -> "elon")
+function extractAgentSource(msg) {
+  if (msg.agent) return msg.agent
+  if (!msg.message) return null
+  const match = msg.message.match(/^\[([A-Z]+)\]/)
+  if (!match) return null
+  const name = match[1].toLowerCase()
+  const knownSlugs = ['bobby','steffen','cleo','elon','steve','alex','mom','jacob','paige','tony','elmo','colton','pixel']
+  return knownSlugs.includes(name) ? name : null
+}
+
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -319,7 +330,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               role: 'assistant',
               content: msg.message,
               time: msg.timestamp,
-              source: msg.agent || 'system',
+              source: extractAgentSource(msg) || 'system',
               id: msg.id,
             })
           }
@@ -473,7 +484,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                     role: 'assistant',
                     content: msg.message,
                     time: msg.timestamp || new Date().toISOString(),
-                    source: msg.agent || 'system',
+                    source: extractAgentSource(msg) || 'system',
                     id: msg.id,
                   })
                 }
@@ -522,7 +533,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                 content: latest.message,
                 streaming: false,
                 time: latest.timestamp || new Date().toISOString(),
-                source: latest.agent || 'system',
+                source: extractAgentSource(latest) || 'system',
                 id: latest.id,
               })
               filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
