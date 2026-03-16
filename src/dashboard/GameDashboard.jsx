@@ -3091,14 +3091,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
     return c.includes('committed ') || c.includes('commit ') || (c.includes('pushed') && c.includes('commit'))
   }
 
-  // TODO(steffen): Sidebar width is 30vw (commit 637b79c). At 1920px = ~20%, at 1440px = ~30%, at 1280px = ~30%. Steffen recommends percentage-based width (width: 30%) for consistent 70/30 on all screen sizes. Current 30vw varies by monitor width.
+  // DONE(steffen): Sidebar width switched from vw to % for consistent 70/30 on all screen sizes.
   return (
     <div
       style={{
-        flex: isExtended ? '0 0 65vw' : '0 0 30vw',
-        width: isExtended ? '65vw' : '30vw',
+        flex: isExtended ? '0 0 65%' : '0 0 30%',
+        width: isExtended ? '65%' : '30%',
         minWidth: 300,
-        maxWidth: isExtended ? '65vw' : '40vw',
+        maxWidth: isExtended ? '65%' : '40%',
         flexShrink: 0,
         height: '100%',
         background: 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)',

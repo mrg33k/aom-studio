@@ -1,6 +1,8 @@
 // Corner C3.1: Checklist Mode (GROUPED BY PROJECT)
 // Steve's coach fix: group by project, not agent. Reuses GameHUD's parsePunchList.
 // Working checkboxes wired. Apple Reminders meets Linear. Clean, typography-driven.
+// TODO(steffen-design): Checklist priority badges (TODAY, THIS WEEK) -- review color palette against brand. Current orange/red may clash with agent status colors. Ensure visual hierarchy: high-priority tasks pop, low-priority recede.
+// TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors.
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -344,7 +346,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
             borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
             cursor: 'pointer', scrollSnapAlign: 'start',
             color: !selectedProject ? '#3B9EFF' : '#F0ECE6',
-            fontFamily: "'Inter Tight', Space Grotesk, sans-serif", fontSize: 15, fontWeight: 700,
+            fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
             textTransform: 'uppercase',
           }}
         >
@@ -367,7 +369,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
                 borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
                 cursor: 'pointer', scrollSnapAlign: 'start',
                 color: selected ? p.color : '#F0ECE6',
-                fontFamily: "'Inter Tight', Space Grotesk, sans-serif", fontSize: 15, fontWeight: 700,
+                fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
                 textTransform: 'uppercase',
               }}
             >
@@ -419,7 +421,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
           borderLeftWidth: 3, borderLeftStyle: 'solid',
           borderLeftColor: !selectedProject ? '#3B9EFF' : 'transparent',
           cursor: 'pointer', transition: 'background 100ms ease',
-          color: '#F0ECE6', fontFamily: "'Inter Tight', Space Grotesk, sans-serif",
+          color: '#F0ECE6', fontFamily: "'Inter Tight', system-ui, sans-serif",
           fontSize: 15, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
         }}
       >
@@ -448,7 +450,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
               borderLeftWidth: 3, borderLeftStyle: 'solid',
               borderLeftColor: selected ? p.color : 'transparent',
               cursor: 'pointer', transition: 'background 100ms ease',
-              color: '#F0ECE6', fontFamily: "'Inter Tight', Space Grotesk, sans-serif",
+              color: '#F0ECE6', fontFamily: "'Inter Tight', system-ui, sans-serif",
               fontSize: 15, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
               position: 'relative',
             }}
@@ -557,7 +559,7 @@ function TaskCard({ task, projectColor, onCheck, index }) {
       {/* Task text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 16,
+          fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 16,
           color: isDone ? '#6B7280' : '#F0ECE6',
           lineHeight: 1.45,
           textDecoration: isDone ? 'line-through' : 'none',
@@ -685,13 +687,13 @@ function EmptyState() {
     <div style={{ textAlign: 'center', padding: '80px 0' }}>
       <FolderKanban size={48} color="#4A6080" style={{ margin: '0 auto' }} />
       <div style={{
-        fontFamily: "'Inter Tight', Space Grotesk, sans-serif", fontWeight: 800, fontSize: 20,
+        fontFamily: "'Inter Tight', system-ui, sans-serif", fontWeight: 800, fontSize: 20,
         color: '#F0ECE6', marginTop: 16, textTransform: 'uppercase',
       }}>
         No Tasks
       </div>
       <div style={{
-        fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 14,
+        fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 14,
         color: '#6B7280', marginTop: 8,
       }}>
         Tasks sync from punch-list.md
@@ -808,7 +810,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             height: '100%', color: '#6B7280',
-            fontFamily: 'Space Grotesk, sans-serif', fontSize: 14,
+            fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14,
           }}>
             Loading tasks...
           </div>
@@ -945,7 +947,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 10, padding: '0 16px',
-              fontFamily: 'Space Grotesk, sans-serif', fontWeight: 400, fontSize: 15,
+              fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 15,
               color: '#FDF6EC', outline: 'none',
               transition: 'border-color 150ms ease',
             }}
