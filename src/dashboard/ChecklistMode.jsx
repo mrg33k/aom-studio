@@ -635,9 +635,22 @@ function EmptyState() {
 export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const [selectedProject, setSelectedProject] = useState(null)
   const [collapsedProjects, setCollapsedProjects] = useState({})
-  const [checkedTasks, setCheckedTasks] = useState({}) // local check state until Supabase
+  // Persist checkbox state in localStorage until Supabase (C4)
+  const [checkedTasks, setCheckedTasks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('corner-checks')
+      return saved ? JSON.parse(saved) : {}
+    } catch { return {} }
+  })
   const [newTaskText, setNewTaskText] = useState('')
   const inputRef = useRef(null)
+
+  // Sync checkbox state to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem('corner-checks', JSON.stringify(checkedTasks))
+    } catch { /* quota exceeded or private browsing - ignore */ }
+  }, [checkedTasks])
 
   // Fetch punch-list data (grouped by project)
   const { data: punchData, loading } = usePunchListData()

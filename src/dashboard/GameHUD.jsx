@@ -653,52 +653,42 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
 
       {/* Expanded: small 24px dots for other agents */}
       <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 'auto', opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            style={{
-              display: 'flex', gap: 3, alignItems: 'center', overflow: 'hidden',
-            }}
-          >
-            {sortedAgents.filter(a => a.slug !== mainAgent.slug).map((agent) => {
-              const status = agentStatus?.[agent.slug]?.status || 'IDLE'
-              const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
-              const hasSpr = SPRITE_AGENTS.includes(agent.slug)
-              return (
-                <motion.div
-                  key={agent.slug}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                  onClick={() => onAgentClick?.(agent.slug)}
-                  onContextMenu={(e) => handleRightClick(e, agent.slug)}
-                  whileHover={{ scale: 1.3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-                  title={`${agent.name}: ${cfg.label}`}
-                  style={{
-                    width: 24, height: 24, borderRadius: '50%',
-                    border: `2px solid ${cfg.ring}`,
-                    overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
-                    background: '#0A0F1E',
-                    boxShadow: status === 'WORKING' ? `0 0 8px ${cfg.glow}` : 'none',
-                  }}
-                >
-                  {hasSpr ? (
-                    <img src={`/corner/sprites/${agent.slug}-idle.png`} alt=""
-                      style={{ width: 40, height: 40, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -6, marginTop: -4 }} />
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: 'Space Grotesk, sans-serif' }}>
-                      {agent.name?.charAt(0) || '?'}
-                    </div>
-                  )}
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        )}
+        {expanded && sortedAgents.filter(a => a.slug !== mainAgent.slug).map((agent, idx) => {
+          const status = agentStatus?.[agent.slug]?.status || 'IDLE'
+          const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
+          const hasSpr = SPRITE_AGENTS.includes(agent.slug)
+          return (
+            <motion.div
+              key={agent.slug}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15, delay: idx * 0.02 }}
+              onClick={() => onAgentClick?.(agent.slug)}
+              onContextMenu={(e) => handleRightClick(e, agent.slug)}
+              whileHover={{ scale: 1.3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+              title={`${agent.name}: ${cfg.label}`}
+              style={{
+                width: 24, height: 24, minWidth: 24, minHeight: 24,
+                borderRadius: '50%',
+                border: `2px solid ${cfg.ring}`,
+                overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
+                background: '#0A0F1E',
+                boxShadow: status === 'WORKING' ? `0 0 8px ${cfg.glow}` : 'none',
+              }}
+            >
+              {hasSpr ? (
+                <img src={`/corner/sprites/${agent.slug}-idle.png`} alt=""
+                  width={40} height={40}
+                  style={{ width: 40, height: 40, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -6, marginTop: -4 }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: 'Space Grotesk, sans-serif' }}>
+                  {agent.name?.charAt(0) || '?'}
+                </div>
+              )}
+            </motion.div>
+          )
+        })}
       </AnimatePresence>
 
       {/* REVOLVER POP-OUT (right-click on any agent bubble) */}
@@ -1664,6 +1654,10 @@ export default function GameHUD({
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes statusPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
         }
       `}</style>
     </div>

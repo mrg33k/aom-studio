@@ -847,6 +847,12 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   }, [])
 
   // Pan state for click-drag
+  // Pan bounds: prevent building from scrolling off screen into blank page
+  const MAX_PAN = 600
+  const clampPan = (x, y) => ({
+    x: Math.max(-MAX_PAN, Math.min(MAX_PAN, x)),
+    y: Math.max(-MAX_PAN, Math.min(MAX_PAN, y)),
+  })
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const panState = useRef({ dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0, velX: 0, velY: 0 })
   const momentumRef = useRef(null)
@@ -883,7 +889,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
     panState.current.velY = e.clientY - panState.current.lastY
     panState.current.lastX = e.clientX
     panState.current.lastY = e.clientY
-    setPanOffset({ x: newX, y: newY })
+    setPanOffset(clampPan(newX, newY))
   }, [])
 
   const handleMouseUp = useCallback(() => {
@@ -895,7 +901,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
       if (Math.abs(vx) < 0.5 && Math.abs(vy) < 0.5) return
       vx *= 0.92
       vy *= 0.92
-      setPanOffset(prev => ({ x: prev.x + vx, y: prev.y + vy }))
+      setPanOffset(prev => clampPan(prev.x + vx, prev.y + vy))
       momentumRef.current = requestAnimationFrame(decay)
     }
     if (Math.abs(vx) > 1 || Math.abs(vy) > 1) {
@@ -926,7 +932,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
     panState.current.velY = t.clientY - panState.current.lastY
     panState.current.lastX = t.clientX
     panState.current.lastY = t.clientY
-    setPanOffset({ x: newX, y: newY })
+    setPanOffset(clampPan(newX, newY))
   }, [])
 
   // Pinch-to-zoom
@@ -2226,6 +2232,14 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   const connectionRef = useRef(null)
   const relayPollRef = useRef(null)
   const lastOutboxCheckRef = useRef(null)
+  const chatTimeoutRef = useRef(null)
+
+  // Clear chat timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+    }
+  }, [])
 
   const currentAgent = activeAgent
     ? AGENTS.find(a => a.slug === activeAgent)
@@ -2325,6 +2339,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
               return updated
             })
             setSpeaking(false)
+            clearChatTimeout()
             lastOutboxCheckRef.current = latest.timestamp
             if (relayPollRef.current) {
               clearInterval(relayPollRef.current)
@@ -2334,6 +2349,39 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
         }
       } catch {}
     }, 2000)
+  }
+
+  // Start 60-second chat timeout. If no response arrives, show offline message.
+  const startChatTimeout = (slug) => {
+    if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+    chatTimeoutRef.current = setTimeout(() => {
+      updateMessages(slug, prev => {
+        const updated = [...prev]
+        const last = updated[updated.length - 1]
+        if (last?.role === 'assistant' && last.streaming) {
+          updated[updated.length - 1] = {
+            ...last,
+            content: 'Agent is offline. Message saved.',
+            streaming: false,
+            time: new Date().toISOString(),
+          }
+        }
+        return updated
+      })
+      setSpeaking(false)
+      if (relayPollRef.current) {
+        clearInterval(relayPollRef.current)
+        relayPollRef.current = null
+      }
+    }, 60000) // 60 seconds
+  }
+
+  // Clear timeout when a real response arrives (hook into relay poll success)
+  const clearChatTimeout = () => {
+    if (chatTimeoutRef.current) {
+      clearTimeout(chatTimeoutRef.current)
+      chatTimeoutRef.current = null
+    }
   }
 
   const sendMessage = async (e) => {
@@ -2348,6 +2396,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
     updateMessages(agentSlug, prev => [...prev, { role: 'user', content: text, time: sentTime }])
     setSpeaking(true)
     updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
+    startChatTimeout(agentSlug)
 
     if (IS_LOCAL) {
       try {
@@ -2389,6 +2438,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
           return updated
         })
         setSpeaking(false)
+        clearChatTimeout()
       },
       (error) => {
         updateMessages(agentSlug, prev => {
@@ -2398,6 +2448,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
           return updated
         })
         setSpeaking(false)
+        clearChatTimeout()
       }
     )
 
@@ -2450,6 +2501,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
         updateMessages(slug || agentSlug, prev => [...prev, { role: 'user', content: text, time: sentTime }])
         setSpeaking(true)
         updateMessages(slug || agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
+        startChatTimeout(slug || agentSlug)
 
         if (IS_LOCAL) {
           fetch('/api/local/relay-send', {
