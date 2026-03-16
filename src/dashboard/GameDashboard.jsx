@@ -1111,9 +1111,9 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 
 
 // DONE(bobby): MODULAR OFFICE FRAMEWORK -- Extracted to officeLayouts/default.js. Room targets, clip paths, zoom presets, wave order, and image paths in standalone config. Swap image + config = new office skin.
-// TODO(bobby): INVISIBLE HOTSPOT MAPPING (OVO approach, CLARIFIED) -- NO visible diamond overlays. NO drawn outlines. INVISIBLE click regions that follow the wall boundaries already in the office image. The walls ARE the room boundaries. Map click coordinates to the wall-defined spaces that exist in the art. Hover effect = subtle glow or highlight, but boundary lines themselves are INVISIBLE. The art does the work. ALSO: REMOVE all visible diamond SVG outlines currently drawn. They should not exist. Use point+radius or polygon mapping, but the regions must be INVISIBLE until hovered. Ref: Patrik directives lines 149-151, 187-188.
-// DONE(bobby): ROOM INTERACTION STATES -- Diamond outlines at rest, glow on hover, highlight on selected. Verified at both zoom levels. NOTE: Patrik now says REMOVE visible outlines at rest (lines 187-188). Only glow on hover. Update needed.
-// DONE(bobby): Diamond hitboxes, fixed zoom levels, map blind fix -- all shipped.
+// DONE(bobby): INVISIBLE HOTSPOT MAPPING (OVO approach) -- All diamond SVG outlines REMOVED. Click regions are invisible rectangles matching wall boundaries. Hover = subtle radial glow inside room space. No borders, no outlines, no drawn shapes. Art defines rooms.
+// DONE(bobby): ROOM INTERACTION STATES -- Invisible hitboxes (OVO approach), subtle inner glow on hover only. No drawn outlines. Office walls define rooms.
+// DONE(bobby): Diamond outlines REMOVED. Invisible rectangular hotspots matching art boundaries. Hover = soft radial glow inside room space.
 // Room targets, clip paths, zoom presets, wave order imported from officeLayouts/default.js
 // ---- SINGLE-IMAGE APPROACH: uses office-full.png (Crossy Road voxel, bright daytime) as DEFAULT ------
 // Night mode (office-full-night.png) activates at 9pm+. isNightMode is passed from parent GameDashboard.
@@ -1498,44 +1498,10 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 </motion.div>
               )}
 
-              {/* Diamond outline SVG -- always visible, brightens on hover. Renders OUTSIDE clip-path so border is not clipped. */}
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                style={{
-                  position: 'absolute',
-                  left: `${target.x}%`,
-                  top: `${target.y}%`,
-                  width: `${target.w}%`,
-                  height: `${target.h}%`,
-                  pointerEvents: 'none',
-                  zIndex: (isHovered || isSelected) ? 6 : 1,
-                  overflow: 'visible',
-                  transition: 'opacity 200ms ease',
-                }}
-              >
-                <polygon
-                  points={target.clipPath === DIAMOND_CLIP_WIDE ? '50,5 95,50 50,95 5,50' : '50,0 100,50 50,100 0,50'}
-                  fill="none"
-                  stroke={(isHovered || isSelected) && hasAgent ? agentColor : 'rgba(255,255,255,0.18)'}
-                  strokeWidth={(isHovered || isSelected) && hasAgent ? '2.5' : '1'}
-                  strokeOpacity={(isHovered || isSelected) && hasAgent ? '0.8' : '0.5'}
-                  style={{ transition: 'stroke 200ms ease, stroke-width 200ms ease, stroke-opacity 200ms ease' }}
-                />
-                {/* Outer glow on hover */}
-                {(isHovered || isSelected) && hasAgent && (
-                  <polygon
-                    points={target.clipPath === DIAMOND_CLIP_WIDE ? '50,5 95,50 50,95 5,50' : '50,0 100,50 50,100 0,50'}
-                    fill="none"
-                    stroke={agentColor}
-                    strokeWidth="5"
-                    strokeOpacity="0.2"
-                    style={{ filter: 'blur(3px)' }}
-                  />
-                )}
-              </svg>
+              {/* INVISIBLE HITBOX: No drawn diamond outlines. Office image walls define rooms.
+                  Hover effect = subtle inner glow only (OVO approach). */}
 
-              {/* Always-visible agent name label -- anchored below room diamond at overview zoom, hidden at detail zoom */}
+              {/* Always-visible agent name label -- anchored below room at overview zoom, hidden at detail zoom */}
               {hasAgent && detailLevel !== 'detail' && (
                 <div style={{
                   position: 'absolute',
@@ -1572,23 +1538,20 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 </div>
               )}
 
-              {/* Click target overlay - isometric clip-path, CROSSY ROAD bounce */}
-              {/* Bounce harder: squash/stretch on tap, bigger hop on hover */}
+              {/* Click target overlay - INVISIBLE HITBOX, no clip-path, no borders */}
+              {/* OVO approach: invisible hotspots matching existing art boundaries */}
+              {/* Hover = subtle inner glow INSIDE the room space, not a border */}
               <motion.div
                 onClick={() => hasAgent && onRoomClick?.(room.id)}
                 onContextMenu={(e) => hasAgent && onRoomContextMenu?.(e, room.id)}
                 onMouseEnter={() => setHoveredRoom(room.id)}
                 onMouseLeave={() => setHoveredRoom(null)}
                 whileHover={hasAgent ? {
-                  scale: 1.06,
-                  y: -6,
+                  scale: 1.02,
                   transition: { type: 'spring', stiffness: 500, damping: 12, mass: 0.5 }
                 } : {}}
                 whileTap={hasAgent ? {
-                  scale: 0.92,
-                  y: 4,
-                  scaleY: 0.94,
-                  scaleX: 1.04,
+                  scale: 0.97,
                   transition: { type: 'spring', stiffness: 700, damping: 15 }
                 } : {}}
                 style={{
@@ -1599,17 +1562,14 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   height: `${target.h}%`,
                   cursor: hasAgent ? 'pointer' : 'default',
                   zIndex: (isHovered || isSelected) ? 5 : 2,
-                  clipPath: target.clipPath || 'none',
-                  WebkitClipPath: target.clipPath || 'none',
+                  borderRadius: 6,
                   background: (isHovered || isSelected) && hasAgent
-                    ? `radial-gradient(ellipse, ${agentColor}45 0%, ${agentColor}15 50%, transparent 75%)`
-                    : hasAgent
-                      ? `radial-gradient(ellipse, ${agentColor}08 0%, transparent 60%)`
-                      : 'transparent',
+                    ? `radial-gradient(ellipse, ${agentColor}30 0%, ${agentColor}08 50%, transparent 80%)`
+                    : 'transparent',
                   boxShadow: (isHovered || isSelected) && hasAgent
-                    ? `0 0 32px ${agentColor}50, inset 0 0 50px ${agentColor}20`
+                    ? `inset 0 0 40px ${agentColor}18`
                     : 'none',
-                  transition: 'background 200ms ease, box-shadow 200ms ease',
+                  transition: 'background 250ms ease, box-shadow 250ms ease',
                 }}
               >
                 {isAway && (

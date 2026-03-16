@@ -337,9 +337,24 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             })
           }
 
-          // Outbox: agent responses
+          // Outbox: agent responses (filter out dashboard-originated messages that leaked into outbox)
           for (const msg of outbox.messages) {
             if (!msg.message?.trim()) continue
+            // Messages from corner-dashboard/corner-websocket in outbox are user messages, not agent responses
+            const isDashboardOrigin = msg.source === 'corner-dashboard' || msg.source === 'corner-websocket'
+            if (isDashboardOrigin) {
+              // Only add if not already in inbox (avoid duplicates)
+              if (!all.some(m => m.id === msg.id)) {
+                all.push({
+                  role: 'user',
+                  content: msg.message,
+                  time: msg.timestamp,
+                  source: 'dashboard',
+                  id: msg.id,
+                })
+              }
+              continue
+            }
             all.push({
               role: 'assistant',
               content: msg.message,
