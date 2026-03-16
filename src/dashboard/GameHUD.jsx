@@ -8,6 +8,7 @@
 // TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
 // TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
 // TODO(patrik): Bottom bar cleanup -- remove chat input from bottom bar (chat only in sidebar). Replace Active/Blocked stat pills with scrollable/searchable PROJECT PILLS. Bottom bar = minimap + agent portrait + project pills + notification icons. Clean, no chat input.
+// TODO(patrik): Project pill category labels -- pills should show category text (client / project / outreach) not color-status text (RED / GREEN / ORANGE). Color already communicates status visually. The text label should tell you WHAT it is, not repeat what the color says. Update statusTag rendering (around the tag badge) to display category type instead.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
