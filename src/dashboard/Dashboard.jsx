@@ -250,7 +250,7 @@ function AgentDot({ name, size = 28 }) {
       background: `${color}18`, border: `1.5px solid ${color}40`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontSize: Math.max(size * 0.38, 12), fontWeight: 800, color, flexShrink: 0,
-      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+      fontFamily: '"Inter", system-ui, sans-serif',
     }}>
       {name[0]}
     </div>
@@ -274,7 +274,7 @@ function StatusBadge({ status }) {
       fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
       color: c.color, background: c.bg,
       borderRadius: 4, padding: '3px 8px', textTransform: 'uppercase',
-      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+      fontFamily: '"Inter", system-ui, sans-serif',
     }}>
       {status}
     </span>
@@ -295,7 +295,7 @@ function PasswordGate({ onAuth }) {
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: 24,
-      background: C.bg, fontFamily: '"Space Grotesk", system-ui, sans-serif',
+      background: C.bg, fontFamily: '"Inter", system-ui, sans-serif',
     }}>
       <div style={{ textAlign: 'center', marginBottom: 8 }}>
         <div style={{
@@ -325,7 +325,7 @@ function PasswordGate({ onAuth }) {
             background: C.card, border: `1px solid ${shake ? C.red : C.border}`,
             borderRadius: 2, color: C.cream, fontSize: 16, padding: '14px 20px',
             outline: 'none', width: '100%', textAlign: 'center', letterSpacing: '0.12em',
-            transition: 'border-color 0.15s', fontFamily: '"Space Grotesk", monospace',
+            transition: 'border-color 0.15s', fontFamily: '"JetBrains Mono", monospace',
           }}
         />
         <button
@@ -374,7 +374,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
         </div>
         <div style={{
           fontSize: 16, color: C.textSecondary, marginTop: 8, lineHeight: 1.5,
-          fontFamily: '"Space Grotesk", system-ui, sans-serif',
+          fontFamily: '"Inter", system-ui, sans-serif',
         }}>
           Here's what needs your attention.
         </div>
@@ -392,7 +392,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
           <div style={{
             fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
             textTransform: 'uppercase', fontWeight: 700, marginBottom: 12,
-            fontFamily: '"Space Grotesk", system-ui, sans-serif',
+            fontFamily: '"Inter", system-ui, sans-serif',
           }}>
             Top Priorities
           </div>
@@ -414,13 +414,13 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{
                     fontSize: 15, fontWeight: 600, color: C.cream, lineHeight: 1.3,
-                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontFamily: '"Inter", system-ui, sans-serif',
                     overflowWrap: 'break-word', wordBreak: 'break-word',
                   }}>{p.label}</div>
                   {p.desc && (
                     <div style={{
                       fontSize: 14, color: C.textMuted, marginTop: 4, lineHeight: 1.4,
-                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                      fontFamily: '"Inter", system-ui, sans-serif',
                       overflow: 'hidden', textOverflow: 'ellipsis',
                       display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                     }}>{p.desc}</div>
@@ -445,7 +445,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
             <div style={{
               fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
               textTransform: 'uppercase', fontWeight: 700,
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              fontFamily: '"Inter", system-ui, sans-serif',
             }}>
               Email
             </div>
@@ -453,7 +453,7 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
               <span style={{
                 fontSize: 12, fontWeight: 700, color: C.orange,
                 background: C.orangeMuted, borderRadius: 10, padding: '2px 8px',
-                fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                fontFamily: '"Inter", system-ui, sans-serif',
               }}>
                 {emails.unreadCount} unread
               </span>
@@ -477,18 +477,18 @@ function MorningBriefing({ priorities, emails, agentStatus, isMobile }) {
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{
                     fontSize: 14, fontWeight: e.isNew ? 600 : 400, color: C.cream,
-                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontFamily: '"Inter", system-ui, sans-serif',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>{e.sender}</div>
                   <div style={{
                     fontSize: 14, color: C.textMuted, marginTop: 2,
-                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontFamily: '"Inter", system-ui, sans-serif',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>{e.subject}</div>
                 </div>
                 <span style={{
                   fontSize: 12, color: C.textDim, flexShrink: 0,
-                  fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                  fontFamily: '"Inter", system-ui, sans-serif',
                 }}>{e.time}</span>
               </div>
             ))}
@@ -520,7 +520,7 @@ function TaskDashboard({ priorities, isMobile }) {
       <div style={{
         fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
         textTransform: 'uppercase', fontWeight: 700, marginBottom: 16,
-        fontFamily: '"Space Grotesk", system-ui, sans-serif',
+        fontFamily: '"Inter", system-ui, sans-serif',
       }}>
         Active Work
       </div>
@@ -552,7 +552,7 @@ function TaskDashboard({ priorities, isMobile }) {
                   }} />
                   <div style={{
                     fontSize: 14, color: C.textPrimary, lineHeight: 1.4,
-                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontFamily: '"Inter", system-ui, sans-serif',
                     minWidth: 0, overflowWrap: 'break-word', wordBreak: 'break-word',
                   }}>
                     {item.label}
@@ -588,7 +588,7 @@ function TaskDashboard({ priorities, isMobile }) {
                   }} />
                   <div style={{
                     fontSize: 14, color: C.textPrimary, lineHeight: 1.4,
-                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontFamily: '"Inter", system-ui, sans-serif',
                     minWidth: 0, overflowWrap: 'break-word', wordBreak: 'break-word',
                   }}>
                     {item.label}
@@ -617,7 +617,7 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
       <div style={{
         fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
         textTransform: 'uppercase', fontWeight: 700, marginBottom: 16,
-        fontFamily: '"Space Grotesk", system-ui, sans-serif',
+        fontFamily: '"Inter", system-ui, sans-serif',
       }}>
         Agent Activity
       </div>
@@ -639,13 +639,13 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{
                   fontSize: 14, fontWeight: 600, color: C.cream,
-                  fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                  fontFamily: '"Inter", system-ui, sans-serif',
                 }}>{agent.name}</span>
                 <StatusBadge status={agent.status} />
               </div>
               <div style={{
                 fontSize: 14, color: C.textMuted, marginTop: 3, lineHeight: 1.3,
-                fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                fontFamily: '"Inter", system-ui, sans-serif',
                 overflow: 'hidden', textOverflow: 'ellipsis',
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                 overflowWrap: 'break-word', wordBreak: 'break-word',
@@ -665,14 +665,14 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
           <span style={{
             fontSize: 12, color: C.textDim, fontWeight: 600, letterSpacing: '0.1em',
             textTransform: 'uppercase', alignSelf: 'center', marginRight: 4,
-            fontFamily: '"Space Grotesk", system-ui, sans-serif',
+            fontFamily: '"Inter", system-ui, sans-serif',
           }}>Idle:</span>
           {agentStatus.filter(a => a.status === 'Idle' || a.status === 'Available').map((agent, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <AgentDot name={agent.name} size={26} />
               <span style={{
                 fontSize: 14, color: C.textDim,
-                fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                fontFamily: '"Inter", system-ui, sans-serif',
               }}>{agent.name}</span>
             </div>
           ))}
@@ -685,7 +685,7 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
           <div style={{
             fontSize: 12, letterSpacing: '0.15em', color: C.textDim,
             textTransform: 'uppercase', fontWeight: 700, marginBottom: 10,
-            fontFamily: '"Space Grotesk", system-ui, sans-serif',
+            fontFamily: '"Inter", system-ui, sans-serif',
           }}>
             Recent Actions
           </div>
@@ -703,12 +703,12 @@ function AgentActivityFeed({ agentStatus, agentResults, actions, isMobile }) {
                   {item.date && (
                     <span style={{
                       fontSize: 12, color: C.textDim, marginRight: 8,
-                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                      fontFamily: '"Inter", system-ui, sans-serif',
                     }}>{item.date}</span>
                   )}
                   <span style={{
                     fontSize: 14, color: C.textSecondary, lineHeight: 1.4,
-                    fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    fontFamily: '"Inter", system-ui, sans-serif',
                   }}>{item.text}</span>
                 </div>
               </div>
@@ -809,7 +809,7 @@ function ChatPanel({ isMobile, onRefresh }) {
           <div style={{
             fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
             textTransform: 'uppercase', fontWeight: 700,
-            fontFamily: '"Space Grotesk", system-ui, sans-serif',
+            fontFamily: '"Inter", system-ui, sans-serif',
           }}>
             System Chat
           </div>
@@ -817,7 +817,7 @@ function ChatPanel({ isMobile, onRefresh }) {
             <span style={{
               fontSize: 12, color: C.orange, background: C.orangeMuted,
               borderRadius: 10, padding: '1px 7px', fontWeight: 700,
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              fontFamily: '"Inter", system-ui, sans-serif',
             }}>
               {messages.length}
             </span>
@@ -845,7 +845,7 @@ function ChatPanel({ isMobile, onRefresh }) {
               <div style={{
                 maxWidth: '85%', padding: '10px 14px', borderRadius: 2,
                 fontSize: 14, lineHeight: 1.5,
-                fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                fontFamily: '"Inter", system-ui, sans-serif',
                 background: m.role === 'user' ? C.orangeMuted
                   : m.isError ? C.redMuted
                   : m.isSuccess ? C.greenMuted
@@ -876,7 +876,7 @@ function ChatPanel({ isMobile, onRefresh }) {
               }}>
                 <span style={{
                   fontSize: 14, color: C.textDim, letterSpacing: '0.06em',
-                  fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                  fontFamily: '"Inter", system-ui, sans-serif',
                 }}>thinking...</span>
               </div>
             </div>
@@ -906,7 +906,7 @@ function ChatPanel({ isMobile, onRefresh }) {
           style={{
             flex: 1, minWidth: 0, background: C.surface, border: `1px solid ${C.border}`,
             borderRadius: 2, color: C.cream, fontSize: 15, padding: isMobile ? '10px 12px' : '12px 16px',
-            outline: 'none', fontFamily: '"Space Grotesk", system-ui, sans-serif',
+            outline: 'none', fontFamily: '"Inter", system-ui, sans-serif',
             boxSizing: 'border-box',
           }}
         />
@@ -1013,7 +1013,7 @@ export default function Dashboard() {
   return (
     <div style={{
       minHeight: '100vh', background: C.bg,
-      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+      fontFamily: '"Inter", system-ui, sans-serif',
       width: '100%', maxWidth: '100vw', overflowX: 'hidden',
     }}>
       {/* Noise texture overlay */}
@@ -1057,13 +1057,13 @@ export default function Dashboard() {
           {loading && (
             <span style={{
               fontSize: 12, color: C.textDim, letterSpacing: '0.06em',
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              fontFamily: '"Inter", system-ui, sans-serif',
             }}>syncing...</span>
           )}
           {lastFetched && !loading && (
             <span style={{
               fontSize: 12, color: C.textDim,
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              fontFamily: '"Inter", system-ui, sans-serif',
             }}>
               {lastFetched.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Phoenix' })}
             </span>
@@ -1077,7 +1077,7 @@ export default function Dashboard() {
                 }}>{data.openCount}</span>
                 <span style={{
                   fontSize: 12, color: C.textDim, letterSpacing: '0.08em',
-                  textTransform: 'uppercase', fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                  textTransform: 'uppercase', fontFamily: '"Inter", system-ui, sans-serif',
                 }}>open</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
@@ -1087,7 +1087,7 @@ export default function Dashboard() {
                 }}>{data.doneCount}</span>
                 <span style={{
                   fontSize: 12, color: C.textDim, letterSpacing: '0.08em',
-                  textTransform: 'uppercase', fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                  textTransform: 'uppercase', fontFamily: '"Inter", system-ui, sans-serif',
                 }}>done</span>
               </div>
             </div>
@@ -1098,7 +1098,7 @@ export default function Dashboard() {
               background: 'rgba(255,255,255,0.04)', border: `1px solid ${C.border}`,
               borderRadius: 2, color: C.textMuted, fontSize: 12, padding: isMobile ? '8px 10px' : '8px 14px',
               cursor: 'pointer', letterSpacing: '0.08em', fontWeight: 700,
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              fontFamily: '"Inter", system-ui, sans-serif',
               textTransform: 'uppercase',
             }}
           >
@@ -1138,7 +1138,7 @@ export default function Dashboard() {
             }}>VITE_GITHUB_TOKEN not set</div>
             <div style={{
               fontSize: 14, color: C.textMuted, lineHeight: 1.7, maxWidth: 400,
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              fontFamily: '"Inter", system-ui, sans-serif',
             }}>
               Add VITE_GITHUB_TOKEN to your Vercel environment variables, then redeploy and reload this page.
             </div>
@@ -1188,7 +1188,7 @@ export default function Dashboard() {
             }} />
             <div style={{
               fontSize: 14, color: C.textMuted,
-              fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              fontFamily: '"Inter", system-ui, sans-serif',
             }}>Loading your dashboard...</div>
             <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
           </div>

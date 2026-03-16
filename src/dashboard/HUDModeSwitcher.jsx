@@ -74,7 +74,7 @@ export function HUDModeSwitcher({ currentMode, onModeSwitch, isMobile }) {
               borderRadius: 10,
               cursor: 'pointer',
               color: active ? TEXT_ACTIVE : isHovered ? TEXT_HOVER : TEXT_IDLE,
-              fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+              fontFamily: "'Inter Tight', system-ui, sans-serif",
               fontSize: 16,
               fontWeight: active ? 800 : 600,
               textTransform: 'uppercase',
