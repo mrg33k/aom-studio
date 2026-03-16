@@ -1989,7 +1989,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
         {/* LOCAL badge */}
         {IS_LOCAL && (
           <span style={{
-            fontSize: 10, fontWeight: 700,
+            fontSize: 12, fontWeight: 700,
             color: '#22C55E',
             background: 'rgba(34,197,94,0.1)',
             border: '1px solid rgba(34,197,94,0.2)',
@@ -2017,7 +2017,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
               {agentName}
             </span>
             <span style={{
-              fontSize: 11, fontWeight: 700,
+              fontSize: 12, fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '0.08em',
               color: agentStatusColor,
               background: `${agentStatusColor}15`,
@@ -2109,7 +2109,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
               position: 'absolute', top: -4, right: -4,
               width: 18, height: 18, borderRadius: '50%',
               background: '#EF4444',
-              color: 'white', fontSize: 10, fontWeight: 800,
+              color: 'white', fontSize: 12, fontWeight: 800,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '2px solid #0F1B2D',
               boxShadow: '0 0 6px rgba(239,68,68,0.4)',
@@ -3006,6 +3006,12 @@ function PanelSkeleton({ agentColor }) {
 // Matches: vegas-sidebar-isolated.png, chat-view-full.png
 // Blue glass sidebar. 64px avatar, status dot, quick stats pills, tab bar with glow.
 // Chat: avatars on both sides, source label pills, system notification inline, typing dots.
+//
+// TODO(patrik): Chat timeout indicator -- show countdown ring when waiting for agent response (60s)
+// TODO(patrik): Agent activity log tab -- show recent commits, file changes, completions per agent
+// TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent
+// TODO(patrik): Pan bounds -- constrain camera panning so the building stays in view
+// TODO(patrik): Demo data mode -- populate sidebar with realistic demo content for client demos
 function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
@@ -3063,7 +3069,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       style={{
         flex: isExtended ? '0 0 65vw' : '0 0 30vw',
         width: isExtended ? '65vw' : '30vw',
-        minWidth: 320,
+        minWidth: 300,
         maxWidth: isExtended ? '65vw' : '40vw',
         flexShrink: 0,
         height: '100%',
@@ -3195,7 +3201,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               {stat.value}{stat.suffix && <span style={{ fontSize: 14, color: '#64748B' }}>{stat.suffix}</span>}
             </div>
             <div style={{
-              fontSize: 11, fontWeight: 700, color: '#64748B',
+              fontSize: 12, fontWeight: 700, color: '#64748B',
               textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2,
               fontFamily: "'Inter', system-ui, sans-serif",
             }}>
@@ -3414,7 +3420,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           )}
                           {sourceLabel && (
                             <span style={{
-                              fontSize: 11, fontWeight: 600, color: '#3B82F6',
+                              fontSize: 12, fontWeight: 600, color: '#3B82F6',
                               background: 'rgba(59,130,246,0.08)',
                               border: '1px solid rgba(59,130,246,0.15)',
                               borderRadius: 4, padding: '1px 6px',
@@ -4289,6 +4295,7 @@ export default function GameDashboard() {
   return (
     <div style={{
       position: 'fixed', inset: 0,
+      width: '100vw', maxWidth: '100vw',
       background: PALETTE.background,
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
@@ -4299,9 +4306,9 @@ export default function GameDashboard() {
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100vw', maxWidth: '100vw', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               <IsometricOffice
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}

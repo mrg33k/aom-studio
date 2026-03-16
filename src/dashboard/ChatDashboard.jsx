@@ -1,3 +1,6 @@
+// TODO(patrik): Chat message markdown rendering -- agent responses with code blocks/lists should render properly
+// TODO(patrik): Chat message search -- filter past messages by keyword
+// TODO(patrik): Typing indicator from relay -- show real "agent is typing" state from relay pipeline
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -155,7 +158,7 @@ function StatusPill({ status }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-[0.12em] rounded-sm"
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[12px] font-mono font-bold uppercase tracking-[0.12em] rounded-sm"
       style={{ background: cfg.bg, color: cfg.color }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: cfg.color }} />
@@ -215,7 +218,7 @@ function AgentCard({ agent, statusData, onClick, isActive }) {
           <h3 className="text-[#F0ECE6] font-bold text-base tracking-tight">{agent.name}</h3>
           <MessageSquare className="w-3.5 h-3.5 text-[#78716C] group-hover:text-[#E85D26] transition-colors" />
         </div>
-        <div className="text-[#78716C] text-[11px] font-mono uppercase tracking-wider mb-1.5">{agent.role}</div>
+        <div className="text-[#78716C] text-[12px] font-mono uppercase tracking-wider mb-1.5">{agent.role}</div>
         <p className="text-[#A8A29E] text-xs leading-relaxed line-clamp-2">{task}</p>
       </div>
 
@@ -643,13 +646,13 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               <span className="text-[#F0ECE6] font-bold text-sm">{agent.name}</span>
               <StatusPill status={status} />
             </div>
-            <p className="text-[#78716C] text-[11px] font-mono truncate">{task}</p>
+            <p className="text-[#78716C] text-[12px] font-mono truncate">{task}</p>
           </div>
         </div>
         {/* Relay connection indicator */}
         <div className="flex items-center gap-1.5 shrink-0" title={IS_LOCAL ? 'Local relay (direct file I/O)' : 'Remote relay (GitHub API)'}>
           <Radio className={`w-3 h-3 ${relayConnected ? 'text-[#22C55E]' : 'text-[#78716C]'}`} />
-          <span className="text-[9px] font-mono uppercase tracking-wider text-[#78716C]">
+          <span className="text-[12px] font-mono uppercase tracking-wider text-[#78716C]">
             {IS_LOCAL ? 'LOCAL' : 'RELAY'}
           </span>
         </div>
@@ -666,7 +669,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               Real relay chat with <span className="text-[#F0ECE6] font-bold">{agent.name}</span>
             </p>
             <p className="text-[#78716C] text-xs font-mono mb-3">{agent.role}</p>
-            <p className="text-[#78716C]/60 text-[10px] font-mono">
+            <p className="text-[#78716C]/60 text-[12px] font-mono">
               Messages go through the same relay as Telegram
             </p>
           </div>
@@ -686,12 +689,12 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             >
               {/* Source label -- shows for ALL messages so you know where they came from */}
               {msg.role === 'assistant' && (
-                <div className="text-[10px] font-mono uppercase tracking-wider mb-1.5" style={{ color: cfg.color }}>
+                <div className="text-[12px] font-mono uppercase tracking-wider mb-1.5" style={{ color: cfg.color }}>
                   {msg.source === 'system' ? 'System' : msg.source || agent.name}
                 </div>
               )}
               {msg.role === 'user' && msg.source && (
-                <div className="text-[10px] font-mono uppercase tracking-wider mb-1.5 text-[#E85D26]/60">
+                <div className="text-[12px] font-mono uppercase tracking-wider mb-1.5 text-[#E85D26]/60">
                   {msg.source === 'dashboard' || msg.source === 'corner-dashboard' ? 'via dashboard'
                     : msg.source === 'telegram' ? 'via telegram'
                     : msg.source === 'terminal' || msg.source === 'cli' ? 'via terminal'
@@ -715,7 +718,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               )}
               {/* Timestamp */}
               {msg.time && !msg.streaming && (
-                <div className="text-[9px] font-mono text-[#78716C]/50 mt-1.5 text-right">
+                <div className="text-[12px] font-mono text-[#78716C]/50 mt-1.5 text-right">
                   {formatTime(msg.time)}
                 </div>
               )}
@@ -773,7 +776,7 @@ function ThroughputBar({ throughput }) {
           <span className="text-lg font-black italic tracking-tight" style={{ color: m.color, fontFamily: "'Inter Tight', sans-serif" }}>
             {m.value}
           </span>
-          <span className="text-[9px] font-mono font-bold uppercase tracking-[0.15em] text-[#78716C]">
+          <span className="text-[12px] font-mono font-bold uppercase tracking-[0.15em] text-[#78716C]">
             {m.label}
           </span>
         </div>
@@ -790,16 +793,16 @@ function PipelineFeed({ feed }) {
     <div className="bg-[#141412] border border-[#292524] rounded-sm overflow-hidden">
       <div className="px-3 py-2 border-b border-[#292524] flex items-center gap-2">
         <GitCommit className="w-3.5 h-3.5 text-[#78716C]" />
-        <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">Recent Activity</span>
+        <span className="text-[12px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">Recent Activity</span>
       </div>
       <div className="max-h-[320px] overflow-y-auto">
         {feed.slice(0, 15).map((entry, i) => (
           <div key={i} className="px-3 py-2 border-b border-[#292524]/50 last:border-0 hover:bg-[#1A1A17]/50 transition-colors">
             <div className="flex items-start gap-2">
-              <span className="text-[10px] font-mono text-[#78716C] shrink-0 mt-0.5">{timeAgo(entry.time)}</span>
+              <span className="text-[12px] font-mono text-[#78716C] shrink-0 mt-0.5">{timeAgo(entry.time)}</span>
               <div className="min-w-0">
                 {entry.agent && (
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#E85D26] mr-1.5">{entry.agent}</span>
+                  <span className="text-[12px] font-mono font-bold uppercase tracking-wider text-[#E85D26] mr-1.5">{entry.agent}</span>
                 )}
                 <span className="text-[#A8A29E] text-xs break-words">{entry.description}</span>
                 {entry.commitHash && (
@@ -807,7 +810,7 @@ function PipelineFeed({ feed }) {
                     href={entry.commitUrl}
                     target="_blank"
                     rel="noopener"
-                    className="ml-1.5 text-[10px] font-mono text-[#78716C] hover:text-[#E85D26] transition-colors"
+                    className="ml-1.5 text-[12px] font-mono text-[#78716C] hover:text-[#E85D26] transition-colors"
                   >
                     {entry.commitHash}
                   </a>
@@ -829,13 +832,13 @@ function BlockersSection({ blockers }) {
     <div className="bg-[#141412] border border-[#292524] rounded-sm overflow-hidden border-l-[3px] border-l-[#EF4444]">
       <div className="px-3 py-2 border-b border-[#292524] flex items-center gap-2">
         <AlertTriangle className="w-3.5 h-3.5 text-[#EF4444]" />
-        <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#EF4444]">Blockers</span>
+        <span className="text-[12px] font-mono font-bold uppercase tracking-[0.2em] text-[#EF4444]">Blockers</span>
       </div>
       <div className="divide-y divide-[#292524]/50">
         {blockers.slice(0, 5).map((b, i) => (
           <div key={i} className="px-3 py-2">
             {b.agent && (
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#F97316] mr-1.5">{b.agent}</span>
+              <span className="text-[12px] font-mono font-bold uppercase tracking-wider text-[#F97316] mr-1.5">{b.agent}</span>
             )}
             <span className="text-[#A8A29E] text-xs">{b.description}</span>
           </div>
@@ -906,13 +909,13 @@ export default function ChatDashboard() {
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-[#292524] bg-[#0A0A08] shrink-0">
         <div className="flex items-center gap-3">
-          <div className="text-[#E85D26] font-mono text-[10px] tracking-[0.3em] uppercase font-bold">Corner</div>
+          <div className="text-[#E85D26] font-mono text-[12px] tracking-[0.3em] uppercase font-bold">Corner</div>
           <h1 className="text-[#F0ECE6] text-lg font-black italic uppercase tracking-tight" style={{ fontFamily: "'Inter Tight', sans-serif" }}>
             Relay Chat
           </h1>
           <a
             href="/dashboard"
-            className="text-[10px] font-mono text-[#78716C] hover:text-[#E85D26] transition-colors uppercase tracking-wider ml-2"
+            className="text-[12px] font-mono text-[#78716C] hover:text-[#E85D26] transition-colors uppercase tracking-wider ml-2"
           >
             Game View
           </a>
@@ -920,7 +923,7 @@ export default function ChatDashboard() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <Radio className={`w-3 h-3 ${IS_LOCAL ? 'text-[#22C55E]' : 'text-[#78716C]'}`} />
-            <span className="text-[9px] font-mono text-[#78716C] uppercase tracking-wider">
+            <span className="text-[12px] font-mono text-[#78716C] uppercase tracking-wider">
               {IS_LOCAL ? 'Local Relay' : 'Remote'}
             </span>
           </div>
@@ -941,7 +944,7 @@ export default function ChatDashboard() {
             {/* Section label */}
             <div className="flex items-center gap-2 mb-4">
               <Activity className="w-3.5 h-3.5 text-[#E85D26]" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">
+              <span className="text-[12px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">
                 Agent Roster - Click to chat
               </span>
             </div>

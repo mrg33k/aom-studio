@@ -3,6 +3,10 @@
 // when agents finish tasks or new relay messages arrive.
 // Does NOT conflict with GameDashboard.jsx's existing NotificationToast.
 // This component lives in the HUD strip (GameHUD.jsx) only.
+//
+// TODO(patrik): Toast click action -- clicking a toast should navigate to the relevant agent/room
+// TODO(patrik): Notification sound -- play a subtle game-style chime on new agent completions
+// TODO(patrik): Notification history panel -- bell click should show full notification log, not just recent 3
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'

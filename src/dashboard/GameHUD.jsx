@@ -2,6 +2,11 @@
 // Patrik directive: BLUE HUD. Cool blue glass panel. The warm office glows orange behind it.
 // The contrast makes both pop. LARGER on desktop. Game scale, not web app scale.
 // Chat + HUD = ONE unified element.
+//
+// TODO(patrik): Checkbox persistence -- clicking a task checkbox should write back to punch-list.md via API
+// TODO(patrik): Drag-to-reorder project pills in the HUD strip (Trello card energy)
+// TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
+// TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
