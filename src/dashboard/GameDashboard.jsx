@@ -3706,16 +3706,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     display: 'flex', gap: 10, alignItems: 'flex-start',
                     flexDirection: isUser ? 'row-reverse' : 'row',
                   }}>
-                    {/* Avatar */}
+                    {/* Avatar -- 36px with colored ring per Steffen target */}
                     {isUser ? (
                       <div style={{
                         width: 36, height: 36, borderRadius: '50%',
-                        border: '2px solid #3B82F6',
+                        border: '3px solid #3B82F6',
                         background: '#0F1B2D',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 800, color: '#3B82F6',
+                        fontSize: 14, fontWeight: 800, color: '#3B82F6',
                         flexShrink: 0,
-                        boxShadow: '0 0 8px rgba(59,130,246,0.2)',
+                        boxShadow: '0 0 12px rgba(59,130,246,0.3), 0 2px 4px rgba(0,0,0,0.2)',
                       }}>
                         P
                       </div>
@@ -3724,7 +3724,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         status={status}
                         style={{
                           flexShrink: 0,
-                          boxShadow: `0 0 8px ${agentColor}33`,
+                          borderWidth: 3,
+                          boxShadow: `0 0 12px ${agentColor}40, 0 2px 4px rgba(0,0,0,0.2)`,
                         }}
                       />
                     )}
