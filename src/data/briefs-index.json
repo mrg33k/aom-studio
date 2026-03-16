@@ -1,9 +1,29 @@
 {
-  "generated": "2026-03-16T07:54:17.398Z",
+  "generated": "2026-03-16T08:10:31.487Z",
   "categories": [
     {
       "name": "Strategy",
       "items": [
+        {
+          "title": "CORNER Client Onboarding Guide",
+          "slug": "client-onboarding-guide",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Step-by-step guide for taking a signed Corner client from contract to live operations. The 14-day journey. Who does what, when, and how. Built for Patrik and the AOM ops team.",
+          "path": "/briefs/client-onboarding-guide",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Go-To-Market Playbook",
+          "slug": "go-to-market-playbook",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "How AOM gets the first 15 paying Corner clients. Sales channels, conversion funnel, objection handling, pricing presentation, and the 90-day launch sprint. Built for Patrik + Ash + Jacob.",
+          "path": "/briefs/go-to-market-playbook",
+          "hasPage": true
+        },
         {
           "title": "CORNER Investor Pitch Brief",
           "slug": "investor-pitch-brief",
@@ -437,6 +457,16 @@
           "dateFormatted": "Mar 16",
           "summary": "What makes the visual target work and how Bobby implements it. The gap analysis between current dashboard and the north star.",
           "path": "/briefs/visual-target-notes",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Vision Page Spec",
+          "slug": "corner-vision-page-spec",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Spec for corner.app/vision: the public roadmap page. Shows where Corner is going without revealing proprietary timelines. Builds investor and client confidence. Heaven design language.",
+          "path": "/briefs/corner-vision-page-spec",
           "hasPage": true
         },
         {
@@ -1326,6 +1356,16 @@
           "dateFormatted": "Mar 16",
           "summary": "C8 horizon notes. Corner OS, dedicated hardware, franchise model, AI-native CRM, government edition, open-source core, physical spaces, financial infrastructure, agent consciousness, and the AOM network. The layer where Corner becomes an operating system for business.",
           "path": "/briefs/c8-notes",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER C9 Notes: The Autonomous Company",
+          "slug": "c9-notes",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "C9 horizon notes. Self-Building AI, acquisition engine, international expansion, IPO infrastructure, edge deployment, Corner for Government v2, the talent marketplace, Corner Capital, and the self-replicating system. The layer where Corner stops needing humans to grow.",
+          "path": "/briefs/c9-notes",
           "hasPage": true
         },
         {
