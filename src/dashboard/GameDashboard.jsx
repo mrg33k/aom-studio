@@ -3478,7 +3478,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     )}
 
                     {/* Message content */}
-                    <div style={{ maxWidth: 290 }}>
+                    <div style={{ maxWidth: '80%' }}>
                       <div style={{
                         padding: '10px 14px',
                         borderRadius: 12,

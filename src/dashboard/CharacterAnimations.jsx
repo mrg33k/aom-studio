@@ -583,15 +583,12 @@ export function AnimatedAgentCharacter({
       {/* Dust particles on landing */}
       <DustParticles active={showDust} size={spriteSize} />
 
-      {/* Sprite image */}
-      {/* TODO(steffen): Remove borderRadius '50%' -- clips characters to circles. Crossy Road chars show full silhouette. Let the PNG define the shape. */}
-      {/* TODO(steffen): Remove mixBlendMode 'screen' -- makes dark sprite parts transparent. Use 'normal' unless specifically for glow. Corrupts dark sprite parts on light floors. */}
+      {/* Sprite image -- full silhouette, no circle clipping, no blend mode corruption */}
       <div style={{
         width: spriteSize, height: spriteSize, overflow: 'hidden', position: 'relative',
-        borderRadius: '50%',
-        mixBlendMode: 'screen',
       }}>
-        {/* TODO(steffen): Sprite oversizing hack (2.6x + -30% offset) is fragile -- if sprite dimensions change, framing breaks. Better: ensure PNGs are pre-framed at correct size. */}
+        {/* NOTE: 2.6x oversizing + -30% offset zooms into the character center of 256x256 spritesheets.
+            If sprite dimensions change, this framing needs updating. Ideally PNGs should be pre-framed. */}
         <img
           src={spriteSrc}
           alt=""
