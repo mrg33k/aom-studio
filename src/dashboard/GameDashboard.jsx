@@ -981,13 +981,27 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
       onTouchMove={(e) => { handleTouchMove(e); handleTouchMovePinch(e) }}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Building container: outer = zoom/pan, inner = breathing float */}
+      {/* Ground plane: subtle floor beneath the building for depth */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'radial-gradient(ellipse at 50% 55%, rgba(30, 25, 18, 0.4) 0%, rgba(10, 15, 30, 0.1) 40%, transparent 65%)',
+        pointerEvents: 'none', zIndex: 0,
+      }} />
+      {/* Window light spill on ground */}
+      <div style={{
+        position: 'absolute', left: '25%', top: '55%', width: '50%', height: '30%',
+        background: 'radial-gradient(ellipse, rgba(255,183,77,0.04) 0%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0, filter: 'blur(40px)',
+      }} />
+
+      {/* Building container: outer = zoom/pan, inner = breathing float + bounce */}
       <div style={{
         transform: `translate(${panOffset.x + cameraOffsetX * cameraZoom}px, ${panOffset.y + cameraOffsetY * cameraZoom}px) scale(${cameraZoom})`,
         transition: panState.current.dragging ? 'none' : `transform ${zoomTransition}`,
         transformOrigin: 'center center',
         width: IMG_SIZE,
         height: IMG_SIZE,
+        zIndex: 1,
       }}>
       <div style={{
         position: 'relative',
@@ -1011,7 +1025,8 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
         />
 
         {/* Interactive room overlays - click targets, nameplates, status */}
-        {rooms.map(room => {
+        {/* C4: Wave animation on load, Crossy Road bounce on hover, isometric clip-path */}
+        {rooms.map((room, roomIndex) => {
           const target = IMAGE_ROOM_TARGETS[room.id]
           if (!target) return null
 
@@ -1024,25 +1039,43 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
           const agentColor = room.agentColor || '#FFD87A'
           const isAway = agentAnimations?.[room.id]?.state === 'away'
           const showNameplate = detailLevel !== 'detail'
+          const waveDelay = getRoomWaveDelay(room.id)
 
           return (
-            <div key={room.id}>
+            <motion.div
+              key={room.id}
+              initial={{ opacity: 0, scale: 0.85, y: 12 }}
+              animate={hasLoaded ? {
+                opacity: 1, scale: 1, y: 0,
+              } : {}}
+              transition={{
+                delay: waveDelay,
+                type: 'spring',
+                stiffness: 340,
+                damping: 22,
+                mass: 0.8,
+              }}
+            >
               {/* Nameplate above room */}
               {showNameplate && hasAgent && (
-                <div style={{
-                  position: 'absolute',
-                  left: `${target.x + target.w / 2}%`,
-                  top: `${target.labelY}%`,
-                  transform: 'translateX(-50%)',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: PALETTE.nameplate.background,
-                  border: `1px solid ${isHovered ? `${agentColor}4D` : PALETTE.nameplate.border}`,
-                  borderRadius: 6, padding: '3px 10px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-                  whiteSpace: 'nowrap', zIndex: 10,
-                  transition: 'border-color 150ms ease',
-                  pointerEvents: 'none',
-                }}>
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.9 }}
+                  animate={hasLoaded ? { opacity: 1, y: 0, scale: 1 } : {}}
+                  transition={{ delay: waveDelay + 0.15, type: 'spring', stiffness: 300, damping: 20 }}
+                  style={{
+                    position: 'absolute',
+                    left: `${target.x + target.w / 2}%`,
+                    top: `${target.labelY}%`,
+                    transform: 'translateX(-50%)',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: PALETTE.nameplate.background,
+                    border: `1px solid ${isHovered ? `${agentColor}4D` : PALETTE.nameplate.border}`,
+                    borderRadius: 6, padding: '3px 10px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                    whiteSpace: 'nowrap', zIndex: 10,
+                    pointerEvents: 'none',
+                  }}
+                >
                   {SPRITE_AGENTS.includes(room.id) && (
                     <div style={{ width: 16, height: 16, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
                       <img src={`/corner/sprites/${room.id}-idle.png`} alt=""
@@ -1067,14 +1100,24 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                       {agentStatus[room.id].currentTask.length > 22 ? agentStatus[room.id].currentTask.slice(0, 22) + '...' : agentStatus[room.id].currentTask}
                     </span>
                   )}
-                </div>
+                </motion.div>
               )}
 
-              {/* Click target overlay */}
-              <div
+              {/* Click target overlay - isometric clip-path, Crossy Road bounce */}
+              <motion.div
                 onClick={() => hasAgent && onRoomClick?.(room.id)}
                 onMouseEnter={() => setHoveredRoom(room.id)}
                 onMouseLeave={() => setHoveredRoom(null)}
+                whileHover={hasAgent ? {
+                  scale: 1.04,
+                  y: -3,
+                  transition: { type: 'spring', stiffness: 500, damping: 15 }
+                } : {}}
+                whileTap={hasAgent ? {
+                  scale: 0.96,
+                  y: 2,
+                  transition: { type: 'spring', stiffness: 600, damping: 20 }
+                } : {}}
                 style={{
                   position: 'absolute',
                   left: `${target.x}%`,
@@ -1083,17 +1126,15 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                   height: `${target.h}%`,
                   cursor: hasAgent ? 'pointer' : 'default',
                   zIndex: (isHovered || isSelected) ? 5 : 2,
-                  borderRadius: 4,
+                  clipPath: target.clipPath || 'none',
+                  WebkitClipPath: target.clipPath || 'none',
                   background: (isHovered || isSelected) && hasAgent
-                    ? `radial-gradient(ellipse, ${agentColor}18 0%, transparent 70%)`
+                    ? `radial-gradient(ellipse, ${agentColor}20 0%, transparent 70%)`
                     : 'transparent',
-                  border: (isHovered || isSelected) && hasAgent
-                    ? `2px solid ${agentColor}${isSelected ? '80' : '40'}`
-                    : '2px solid transparent',
                   boxShadow: (isHovered || isSelected) && hasAgent
-                    ? `0 0 20px ${agentColor}25, inset 0 0 30px ${agentColor}08`
+                    ? `0 0 24px ${agentColor}30, inset 0 0 40px ${agentColor}10`
                     : 'none',
-                  transition: 'border-color 200ms ease, background 200ms ease, box-shadow 200ms ease',
+                  transition: 'background 200ms ease, box-shadow 200ms ease',
                 }}
               >
                 {isAway && (
@@ -1113,20 +1154,29 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                   <div style={{
                     position: 'absolute', inset: 0,
                     background: 'rgba(0,0,0,0.55)',
-                    borderRadius: 4, pointerEvents: 'none',
+                    pointerEvents: 'none',
                   }} />
                 )}
 
                 {hasAgent && !isAway && (
-                  <div style={{
-                    position: 'absolute', top: 6, right: 6,
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: cfg.color,
-                    opacity: isActive ? 1 : 0.6,
-                    boxShadow: isActive ? `0 0 8px ${cfg.color}` : 'none',
-                    animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
-                    zIndex: 3,
-                  }} />
+                  <motion.div
+                    animate={isActive ? {
+                      scale: [1, 1.3, 1],
+                    } : {}}
+                    transition={isActive ? {
+                      repeat: Infinity,
+                      duration: 1.5,
+                      ease: 'easeInOut',
+                    } : {}}
+                    style={{
+                      position: 'absolute', top: 6, right: 6,
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: cfg.color,
+                      opacity: isActive ? 1 : 0.6,
+                      boxShadow: isActive ? `0 0 10px ${cfg.color}` : 'none',
+                      zIndex: 3,
+                    }}
+                  />
                 )}
 
                 {/* Speaking indicator: speech bubble when agent is responding in chat */}
@@ -1160,8 +1210,8 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                     }} />
                   </motion.div>
                 )}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )
         })}
       </div>
@@ -1962,7 +2012,9 @@ function EmptyTab({ message }) {
 }
 
 // ---- CHAT BAR (bottom) - polished v2 with typing indicator, speaking state, smooth transitions
-function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking }) {
+// hideCollapsed: when true, the collapsed bar is hidden (HUD handles inline chat in game mode)
+// chatRef: imperative handle for expand() and sendMsg(slug, text)
+const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking, bottomOffset = 0, hideCollapsed = false }, chatRef) {
   const [expanded, setExpanded] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [messages, setMessages] = useState({}) // per-agent message history
@@ -2180,12 +2232,55 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
     }} />
   )
 
+  // Imperative handle for HUD inline chat integration
+  React.useImperativeHandle(chatRef, () => ({
+    expand: () => setExpanded(true),
+    sendMsg: (slug, text) => {
+      if (!text?.trim()) return
+      // Switch agent if needed
+      if (slug && slug !== agentSlug) onSelectAgent?.(slug)
+      setInput(text)
+      // Delay to let state settle, then auto-submit
+      setTimeout(() => {
+        const fakeEvent = { preventDefault: () => {} }
+        // Set input directly and trigger send
+        const sentTime = new Date().toISOString()
+        setInput('')
+        setExpanded(true)
+        updateMessages(slug || agentSlug, prev => [...prev, { role: 'user', content: text, time: sentTime }])
+        setSpeaking(true)
+        updateMessages(slug || agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
+
+        if (IS_LOCAL) {
+          fetch('/api/local/relay-send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent: slug || agentSlug, message: text, source: 'corner-dashboard' }),
+          }).then(() => {
+            startRelayPoll(sentTime)
+          }).catch(err => {
+            updateMessages(slug || agentSlug, prev => {
+              const updated = [...prev]
+              const last = updated[updated.length - 1]
+              if (last) updated[updated.length - 1] = { ...last, content: `Failed to send: ${err.message}`, streaming: false }
+              return updated
+            })
+            setSpeaking(false)
+          })
+        }
+      }, 50)
+    },
+  }), [agentSlug, onSelectAgent, updateMessages, setSpeaking])
+
   return (
     <div style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0,
-      zIndex: fullscreen ? 100 : 30,
+      position: 'fixed', bottom: fullscreen ? 0 : bottomOffset, left: 0, right: 0,
+      zIndex: fullscreen ? 100 : 45,
       display: 'flex', flexDirection: 'column',
+      pointerEvents: 'none',
+      transition: 'bottom 200ms ease',
     }}>
+      <div style={{ pointerEvents: 'auto' }}>
       {/* Expanded / Fullscreen chat panel */}
       <AnimatePresence>
         {(expanded || fullscreen) && (
@@ -2386,8 +2481,8 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
         )}
       </AnimatePresence>
 
-      {/* Collapsed chat bar: 56px */}
-      {!expanded && !fullscreen && (
+      {/* Collapsed chat bar: hidden when HUD has inline chat (game mode) */}
+      {!expanded && !fullscreen && !hideCollapsed && (
         <motion.div
           initial={{ y: 56 }}
           animate={{ y: 0 }}
@@ -2396,9 +2491,10 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
           <form onSubmit={sendMessage} style={{
             display: 'flex', alignItems: 'center', gap: 8,
             height: 56, padding: '0 16px',
-            background: 'rgba(10, 15, 30, 0.88)',
+            background: 'rgba(10, 15, 30, 0.92)',
             backdropFilter: 'blur(16px)',
             borderTop: `1px solid ${agentColor}18`,
+            borderBottom: `1px solid rgba(255,255,255,0.04)`,
             boxShadow: '0 -2px 16px rgba(0, 0, 0, 0.35)',
           }}>
             <div onClick={() => setExpanded(true)} style={{ cursor: 'pointer' }}>
@@ -2457,9 +2553,10 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
           </form>
         </motion.div>
       )}
+      </div>
     </div>
   )
-}
+})
 
 // ---- ROOM DETAIL SIDEBAR ---------------------------------------------------
 function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
@@ -2669,6 +2766,9 @@ export default function GameDashboard() {
 
   // C3: Streaming state tracking (for speaking sprite)
   const [streamingAgent, setStreamingAgent] = useState(null)
+
+  // Chat bar ref for HUD inline chat integration
+  const chatBarRef = useRef(null)
 
   const { data, error, loading } = useDashboardData()
   const isMobile = useIsMobile()
@@ -2882,6 +2982,7 @@ export default function GameDashboard() {
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} />
 
       {/* Main content area with mode switching */}
+      {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden', paddingTop: isMobile ? 44 : (getDetailLevel(cameraZoom) === 'detail' && currentMode === 'game' ? 36 : 48), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
         <AnimatePresence mode="wait">
           {/* GAME MODE */}
@@ -2935,24 +3036,42 @@ export default function GameDashboard() {
                 </AnimatePresence>
               )}
 
-              {/* Window light animation overlay - enhanced depth */}
+              {/* Window light animation overlay - enhanced depth (Steve action item: boost lighting) */}
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-                {/* Primary warm light */}
+                {/* Primary warm light (boosted from 0.05 to 0.12 per Steve's report) */}
                 <div style={{
-                  position: 'absolute', top: '8%', left: '8%', width: 280, height: 280,
-                  background: 'radial-gradient(circle, rgba(255,183,77,0.05) 0%, transparent 60%)',
+                  position: 'absolute', top: '8%', left: '8%', width: 360, height: 360,
+                  background: 'radial-gradient(circle, rgba(255,183,77,0.12) 0%, rgba(255,160,50,0.04) 40%, transparent 65%)',
                   borderRadius: '50%', animation: 'windowLight 30s ease-in-out infinite',
+                }} />
+                {/* Bobby's purple LED glow (boosted to 15-20%) */}
+                <div style={{
+                  position: 'absolute', bottom: '30%', left: '12%', width: 200, height: 200,
+                  background: 'radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 60%)',
+                  borderRadius: '50%', animation: 'windowLight 22s ease-in-out infinite',
+                }} />
+                {/* Elon's green glow (boosted to 12%) */}
+                <div style={{
+                  position: 'absolute', bottom: '18%', right: '25%', width: 180, height: 180,
+                  background: 'radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 60%)',
+                  borderRadius: '50%', animation: 'windowLight 26s ease-in-out infinite reverse',
                 }} />
                 {/* Secondary cool light (depth contrast) */}
                 <div style={{
-                  position: 'absolute', bottom: '15%', right: '12%', width: 200, height: 200,
-                  background: 'radial-gradient(circle, rgba(100,150,255,0.02) 0%, transparent 60%)',
+                  position: 'absolute', bottom: '15%', right: '12%', width: 240, height: 240,
+                  background: 'radial-gradient(circle, rgba(100,150,255,0.04) 0%, transparent 60%)',
                   borderRadius: '50%', animation: 'windowLight 25s ease-in-out infinite reverse',
                 }} />
-                {/* Vignette for depth */}
+                {/* Steffen's golden arch window light */}
+                <div style={{
+                  position: 'absolute', top: '35%', left: '5%', width: 160, height: 200,
+                  background: 'radial-gradient(ellipse, rgba(255,216,122,0.07) 0%, transparent 60%)',
+                  borderRadius: '50%', animation: 'windowLight 35s ease-in-out infinite',
+                }} />
+                {/* Vignette for depth (subtle tighter) */}
                 <div style={{
                   position: 'absolute', inset: 0,
-                  background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.15) 100%)',
+                  background: 'radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0,0,0,0.2) 100%)',
                 }} />
               </div>
             </motion.div>
@@ -3018,6 +3137,14 @@ export default function GameDashboard() {
               setCameraZoom(1.6)
             }}
             isMobile={isMobile}
+            chatAgent={chatAgent}
+            onChatSubmit={(slug, text) => {
+              setChatAgent(slug)
+              chatBarRef.current?.sendMsg(slug, text)
+            }}
+            onExpandChat={() => {
+              chatBarRef.current?.expand()
+            }}
           />
         </Suspense>
       )}
@@ -3060,12 +3187,15 @@ export default function GameDashboard() {
         queuedCount={queuedNotificationCount}
       />
 
-      {/* Chat bar (bottom) */}
+      {/* Chat bar (bottom) - sits ABOVE GameHUD in game mode, at bottom otherwise */}
       <ChatBar
+        ref={chatBarRef}
         activeAgent={chatAgent}
         onSelectAgent={setChatAgent}
         agentStatus={agentStatus}
         isMobile={isMobile}
+        bottomOffset={currentMode === 'game' ? (isMobile ? 50 : 58) : 0}
+        hideCollapsed={currentMode === 'game'}
         onSpeaking={(slug, speaking) => {
           if (speaking) setStreamingAgent(slug)
           else if (streamingAgent === slug) setStreamingAgent(null)
@@ -3127,6 +3257,25 @@ export default function GameDashboard() {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-3px); }
         }
+        /* Crossy Road bounce energy: subtle idle bob for the whole building */
+        @keyframes crossyBounce {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-2px) scale(1.002); }
+        }
+        /* Crossy Road hop: rooms hop on status change */
+        @keyframes crossyHop {
+          0% { transform: translateY(0) scaleY(1) scaleX(1); }
+          15% { transform: translateY(-8px) scaleY(1.08) scaleX(0.95); }
+          30% { transform: translateY(0) scaleY(0.92) scaleX(1.04); }
+          50% { transform: translateY(-3px) scaleY(1.03) scaleX(0.98); }
+          70% { transform: translateY(0) scaleY(0.98) scaleX(1.01); }
+          100% { transform: translateY(0) scaleY(1) scaleX(1); }
+        }
+        /* Pill bounce for project cards in HUD */
+        @keyframes pillBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-2px); }
+        }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes dotPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
@@ -3143,6 +3292,11 @@ export default function GameDashboard() {
         @keyframes statusPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.3); opacity: 0.6; }
+        }
+        /* Nameplate subtle float */
+        @keyframes nameplateFloat {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50% { transform: translateX(-50%) translateY(-1px); }
         }
         .animate-spin { animation: spin 1s linear infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }
