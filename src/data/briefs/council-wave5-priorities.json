@@ -1,0 +1,12 @@
+{
+  "title": "Council: Wave 5 Priorities",
+  "slug": "council-wave5-priorities",
+  "category": "Council",
+  "agent": "Council",
+  "date": "2026-03-12",
+  "dateFormatted": "Mar 12",
+  "updated": null,
+  "summary": "Quick council on what to build next after Wave 4 completions.",
+  "tags": [],
+  "content": "<h1>Council Brief -- Wave 5 Priorities</h1>\n<p><strong>Date:</strong> 2026-03-12\n<strong>Agents present:</strong> Mom (quick council)\n<strong>Question:</strong> What to build/do next after Wave 4 completions?</p>\n<hr>\n<h2>Mom</h2>\n<p>Bobby build queue: (1) /briefs 3 fixes (1-2 hrs), (2) /case-study page (spec + content ready), (3) dashboard MVP.\nAmbition emergency: 4 weeks no posts on $2k/mo. Needs immediate content.\nPatrik reviewing 78 drafts is the biggest blocker.\nSteffen idle until dashboard design. Cleo idle until Crown overlays.</p>\n<hr>\n<h2>Wave 5 Missions</h2>\n<ol>\n<li>Bobby: /briefs 3 fixes then start /case-study page</li>\n<li>Colton: /ideas re-QA fixes if Elmo finds issues</li>\n<li>Elmo: Re-QA /ideas (Bobby just fixed it)</li>\n<li>Steffen: Creative review of /ideas + /briefs as shipped</li>\n<li>Jacob: Prep CPA phone outreach strategy (Alex said phone &gt; email)</li>\n<li>Alex: Ambition content strategy (break 4-week silence)</li>\n<li>Elon: Continue relay pipeline (always-on)</li>\n<li>Paige: Update client health with Wave 4 changes</li>\n<li>Steve: Begin dashboard component wireframes</li>\n<li>Mom: Track and route</li>\n</ol>\n"
+}

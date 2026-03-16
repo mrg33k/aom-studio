@@ -1,9 +1,129 @@
 {
-  "generated": "2026-03-16T00:18:07.433Z",
+  "generated": "2026-03-16T06:29:33.955Z",
   "categories": [
     {
       "name": "Strategy",
       "items": [
+        {
+          "title": "Product Name Research v2",
+          "slug": "product-name-research-v2",
+          "agent": "Steffen",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "Second pass product naming research, starting from zero with full vision context.",
+          "path": "/briefs/product-name-research-v2",
+          "hasPage": true
+        },
+        {
+          "title": "Product Name Research v3",
+          "slug": "product-name-research-v3",
+          "agent": "Steffen",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "Third pass product naming with a completely new direction.",
+          "path": "/briefs/product-name-research-v3",
+          "hasPage": true
+        },
+        {
+          "title": "Product Name Research",
+          "slug": "product-name-research",
+          "agent": "Steffen",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "Initial product naming research for the AI agent platform.",
+          "path": "/briefs/product-name-research",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Content Emergency Plan",
+          "slug": "ambition-content-emergency",
+          "agent": "Alex",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Emergency content strategy for Ambition Mechanical social media launch.",
+          "path": "/briefs/ambition-content-emergency",
+          "hasPage": true
+        },
+        {
+          "title": "Bobby Brief: Build /case-study Page",
+          "slug": "bobby-case-study-brief",
+          "agent": "Alex",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Build brief for Bobby to create the /case-study page showcasing AOM as proof of concept.",
+          "path": "/briefs/bobby-case-study-brief",
+          "hasPage": true
+        },
+        {
+          "title": "Bobby Brief: ROI Calculator Page",
+          "slug": "bobby-roi-brief",
+          "agent": "Alex",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Build brief for Bobby to create the ROI calculator lead magnet page.",
+          "path": "/briefs/bobby-roi-brief",
+          "hasPage": true
+        },
+        {
+          "title": "AI Operations Build-Phase Proposal Template",
+          "slug": "build-proposal-template",
+          "agent": "Alex",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "SOW template to convert $2,500 audit roadmaps into $5-8k build contracts.",
+          "path": "/briefs/build-proposal-template",
+          "hasPage": true
+        },
+        {
+          "title": "Case Study Content Brief",
+          "slug": "case-study-brief",
+          "agent": "Alex",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Content brief for AOM as its own first case study on aheadofmarket.com/case-study.",
+          "path": "/briefs/case-study-brief",
+          "hasPage": true
+        },
+        {
+          "title": "Case Study Page Content",
+          "slug": "case-study-content",
+          "agent": "Alex",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Production-ready content for Bobby, mapped 1:1 to Steffen's 16-section design spec.",
+          "path": "/briefs/case-study-content",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Offer Ladder",
+          "slug": "offer-ladder",
+          "agent": "Alex",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Source of truth for what AOM offers at every stage of the sales pipeline.",
+          "path": "/briefs/offer-ladder",
+          "hasPage": true
+        },
+        {
+          "title": "Client Onboarding Sequence",
+          "slug": "onboarding-sequence",
+          "agent": "Steve",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Complete client onboarding sequence for the AI Operations Audit product.",
+          "path": "/briefs/onboarding-sequence",
+          "hasPage": true
+        },
+        {
+          "title": "AI Advisory Offer Language",
+          "slug": "ai-advisory-offer-language",
+          "agent": "Alex",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Exact language for selling the AI advisory product, plus CPA-specific email angles.",
+          "path": "/briefs/ai-advisory-offer-language",
+          "hasPage": true
+        },
         {
           "title": "Partnership Strategy",
           "slug": "partnerships",
@@ -23,12 +143,122 @@
           "summary": "How AOM turns its internal AI system into a sellable product.",
           "path": "/briefs/ai-advisory",
           "hasPage": true
+        },
+        {
+          "title": "/system Page Content",
+          "slug": "system-explainer-content",
+          "agent": "Steve",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Content for the /system page explaining AOM's AI operations offering.",
+          "path": "/briefs/system-explainer-content",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Website Page Layout Review",
+          "slug": "aom-page-layout-review",
+          "agent": "Alex",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Business owner perspective review of AOM website page layouts and messaging.",
+          "path": "/briefs/aom-page-layout-review",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Website v2 Direction",
+          "slug": "website-v2-direction",
+          "agent": "Alex",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Strategic direction for AOM website v2 redesign, copy and positioning.",
+          "path": "/briefs/website-v2-direction",
+          "hasPage": true
+        },
+        {
+          "title": "Construction Social Media Competitive Landscape",
+          "slug": "construction-social-competitive",
+          "agent": "Alex",
+          "date": "2026-03-08",
+          "dateFormatted": "Mar 8",
+          "summary": "Competitive research to sharpen AOM's $3k/month social media retainer pitch for construction.",
+          "path": "/briefs/construction-social-competitive",
+          "hasPage": true
+        },
+        {
+          "title": "Business Development Brief",
+          "slug": "biz-dev-brief",
+          "agent": "Alex",
+          "date": "2026-03-07",
+          "dateFormatted": "Mar 7",
+          "summary": "Business development strategy informed by Notion data analysis and market positioning.",
+          "path": "/briefs/biz-dev-brief",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Mission Control Dashboard Brief",
+          "slug": "dashboard-brief",
+          "agent": "Bobby",
+          "date": "2026-03-07",
+          "dateFormatted": "Mar 7",
+          "summary": "Gap analysis between current dashboard and reference, with actionable improvement proposals.",
+          "path": "/briefs/dashboard-brief",
+          "hasPage": true
         }
       ]
     },
     {
       "name": "Design Specs",
       "items": [
+        {
+          "title": "Corner C2 - Furniture Starter Pack Spec",
+          "slug": "c2-furniture-spec",
+          "agent": "Steffen",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "15 base furniture items every Corner office gets. Grid-snapping, pixel dimensions, art style guide.",
+          "path": "/briefs/c2-furniture-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C2 - HUD + Chat Visual Spec",
+          "slug": "c2-hud-spec",
+          "agent": "Steffen",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "Task HUD (top) and Chat Bar (bottom) specs for the Corner game dashboard. Complete dimensions, colors, animations.",
+          "path": "/briefs/c2-hud-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C2 - Agent Sprite States",
+          "slug": "c2-sprite-spec",
+          "agent": "Steffen",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "Complete sprite state definitions for all 13 Corner agents. 4 states each. Bobby builds, pixel artist generates.",
+          "path": "/briefs/c2-sprite-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Corner - Connected Office Floor Plan Spec",
+          "slug": "corner-floor-plan-spec",
+          "agent": "Steffen",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "The full connected office floor plan for Corner. One map. All agents. Shared walls.",
+          "path": "/briefs/corner-floor-plan-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Social Media Templates Spec",
+          "slug": "ambition-social-templates-spec",
+          "agent": "Steffen",
+          "date": "2026-03-13",
+          "dateFormatted": "Mar 13",
+          "summary": "Social media templates and video overlay specs for Ambition Mechanical content.",
+          "path": "/briefs/ambition-social-templates-spec",
+          "hasPage": true
+        },
         {
           "title": "Ambition Section Specs",
           "slug": "ambition-sections",
@@ -37,6 +267,56 @@
           "dateFormatted": "Mar 12",
           "summary": "11 section-level design specs with layout, motion, hierarchy, and wow moments.",
           "path": "/briefs/ambition-sections",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Brand Guidelines v2",
+          "slug": "aom-brand-guidelines-v2",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Core AOM brand guidelines synced to the live site, for all agents building AOM work.",
+          "path": "/briefs/aom-brand-guidelines-v2",
+          "hasPage": true
+        },
+        {
+          "title": "AI Audit Deliverable Design Spec",
+          "slug": "audit-deliverable-design-spec",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Design spec for the $2,500 AI Operations Audit deliverable. Must feel premium.",
+          "path": "/briefs/audit-deliverable-design-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Brand Page v4 Update Spec",
+          "slug": "brand-page-v4-spec",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Spec for updating /brand to current v4 standard with expanded template kit.",
+          "path": "/briefs/brand-page-v4-spec",
+          "hasPage": true
+        },
+        {
+          "title": "/briefs Page Accordion Reorg Spec",
+          "slug": "briefs-page-design-spec",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Design spec for reorganizing the /briefs page with accordion categories.",
+          "path": "/briefs/briefs-page-design-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Case Study Page Design Spec",
+          "slug": "case-study-design-spec",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Implementation-ready design spec for the AOM case study page.",
+          "path": "/briefs/case-study-design-spec",
           "hasPage": true
         },
         {
@@ -50,6 +330,26 @@
           "hasPage": true
         },
         {
+          "title": "/v2 Feel Refinement Spec",
+          "slug": "v2-feel-refinement-spec",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Framer Motion addendum for /v2 rebuild: transitions, animations, and premium feel.",
+          "path": "/briefs/v2-feel-refinement-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Audit Onboarding Tool Design Brief",
+          "slug": "audit-onboarding-brief",
+          "agent": "Elon",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Design brief from Elon to Steffen for the audit onboarding tool UX.",
+          "path": "/briefs/audit-onboarding-brief",
+          "hasPage": true
+        },
+        {
           "title": "Audit Onboarding Tool",
           "slug": "audit-onboarding",
           "agent": "Steffen",
@@ -57,6 +357,16 @@
           "dateFormatted": "Mar 11",
           "summary": "Premium Typeform-style 27-slide audit intake experience.",
           "path": "/briefs/audit-onboarding",
+          "hasPage": true
+        },
+        {
+          "title": "Full-Screen Guided Experience Design Brief",
+          "slug": "fullscreen-site-brief",
+          "agent": "Elon",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Design brief from Elon to Steffen for the full-screen guided site experience.",
+          "path": "/briefs/fullscreen-site-brief",
           "hasPage": true
         },
         {
@@ -70,6 +380,16 @@
           "hasPage": true
         },
         {
+          "title": "Ideas Tracker Design Brief",
+          "slug": "ideas-tracker-brief",
+          "agent": "Elon",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Design brief from Elon to Steffen for the ideas tracker page.",
+          "path": "/briefs/ideas-tracker-brief",
+          "hasPage": true
+        },
+        {
           "title": "Ideas Tracker (Brain Map)",
           "slug": "ideas-tracker",
           "agent": "Steffen",
@@ -78,12 +398,192 @@
           "summary": "Force-directed graph visualization for idea management.",
           "path": "/briefs/ideas-tracker",
           "hasPage": true
+        },
+        {
+          "title": "OG Image Design Spec",
+          "slug": "og-image-spec",
+          "agent": "Steffen",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Design spec for AOM Dark OG image, built as HTML/CSS and screenshotted with Playwright.",
+          "path": "/briefs/og-image-spec",
+          "hasPage": true
+        },
+        {
+          "title": "/system Page Design Spec",
+          "slug": "system-page-spec",
+          "agent": "Steffen",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Design spec for the /system page based on Steve's content and AOM Dark Frame v4.",
+          "path": "/briefs/system-page-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Brand Guidelines v2",
+          "slug": "ambition-brand-guidelines-v2",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Second iteration of Ambition Mechanical brand guidelines, live at /brands/ambition.",
+          "path": "/briefs/ambition-brand-guidelines-v2",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Brand Guidelines v3",
+          "slug": "ambition-brand-guidelines-v3",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Comprehensive brand guidelines for Ambition Mechanical, for Tony, Cleo, and Bobby.",
+          "path": "/briefs/ambition-brand-guidelines-v3",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Component Brand Review",
+          "slug": "ambition-component-brand-review",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Component-level brand review for Ambition Mechanical website rebuild.",
+          "path": "/briefs/ambition-component-brand-review",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Loading Screen Spec",
+          "slug": "ambition-loader-spec",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Loading screen design specification for the Ambition Mechanical website.",
+          "path": "/briefs/ambition-loader-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Website Rebuild Spec",
+          "slug": "ambition-rebuild-spec",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Full rebuild specification for the Ambition Mechanical website.",
+          "path": "/briefs/ambition-rebuild-spec",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Brand Guidelines v4",
+          "slug": "aom-brand-guidelines-v4",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Bold Graphic System brand guidelines, built as live React page at /brand/v4.",
+          "path": "/briefs/aom-brand-guidelines-v4",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Brand Iteration v2: Contrast + Life",
+          "slug": "aom-brand-iteration-v2",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Evolution of Bold Graphic direction with contrast and life calibration.",
+          "path": "/briefs/aom-brand-iteration-v2",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Brand: 3 Directions",
+          "slug": "brand-3-directions",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Three brand direction options generated from Patrik's branding board and Pinterest research.",
+          "path": "/briefs/brand-3-directions",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Copy Brand Alignment Review",
+          "slug": "copy-brand-review",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Brand alignment review of Alex's website copy before Bobby implements.",
+          "path": "/briefs/copy-brand-review",
+          "hasPage": true
+        },
+        {
+          "title": "Dashboard UX Review",
+          "slug": "dashboard-ux-review",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "UX review of aheadofmarket.com/dashboard with design improvement recommendations.",
+          "path": "/briefs/dashboard-ux-review",
+          "hasPage": true
+        },
+        {
+          "title": "Recraft AI Prompting Guide",
+          "slug": "recraft-prompting-guide",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Reference guide for generating logos, patterns, and brand assets with Recraft AI.",
+          "path": "/briefs/recraft-prompting-guide",
+          "hasPage": true
+        },
+        {
+          "title": "Super Saiyan Reflection: Brand Page Rebuild",
+          "slug": "supersaiyan-reflection",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Reflection on the AOM brand page rebuild process across 3 rounds.",
+          "path": "/briefs/supersaiyan-reflection",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Website v2 Brand Review",
+          "slug": "website-v2-brand-review",
+          "agent": "Steffen",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Brand review of v2 website direction addressing Patrik's feedback on kerning, monotony, portfolio.",
+          "path": "/briefs/website-v2-brand-review",
+          "hasPage": true
+        },
+        {
+          "title": "Construction Brand Landscape Research",
+          "slug": "construction-brand-landscape",
+          "agent": "Steffen",
+          "date": "2026-03-08",
+          "dateFormatted": "Mar 8",
+          "summary": "Research on construction industry branding to inform AOM's vertical positioning.",
+          "path": "/briefs/construction-brand-landscape",
+          "hasPage": true
         }
       ]
     },
     {
       "name": "Audits",
       "items": [
+        {
+          "title": "Creative Director Review: March 12",
+          "slug": "creative-review-mar12",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Full-pass creative review of aheadofmarket.com and ambition-teal.vercel.app.",
+          "path": "/briefs/creative-review-mar12",
+          "hasPage": true
+        },
+        {
+          "title": "Creative Director Review: Wave 5",
+          "slug": "creative-review-wave5",
+          "agent": "Steffen",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Post-deploy creative review of /ideas, /briefs, and /book pages.",
+          "path": "/briefs/creative-review-wave5",
+          "hasPage": true
+        },
         {
           "title": "Web Design Upgrade",
           "slug": "web-design-upgrade",
@@ -92,6 +592,16 @@
           "dateFormatted": "Mar 12",
           "summary": "Aceternity UI, Magic UI, construction patterns, and anti-AI-slop techniques.",
           "path": "/briefs/web-design-upgrade",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Link and Functionality Audit",
+          "slug": "ambition-link-audit",
+          "agent": "Steffen",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Round 1 link and functionality audit of the Ambition Mechanical website.",
+          "path": "/briefs/ambition-link-audit",
           "hasPage": true
         },
         {
@@ -133,6 +643,216 @@
           "summary": "Security posture review and SOC 2 readiness assessment.",
           "path": "/briefs/security",
           "hasPage": true
+        },
+        {
+          "title": "Ambition QA Report: Brand Review Commit",
+          "slug": "ambition-qa-brand-review",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "QA report on Bobby's brand review commit for Ambition Mechanical.",
+          "path": "/briefs/ambition-qa-brand-review",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition QA Report: Round 5 (Broken)",
+          "slug": "ambition-qa-r5-broken",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Round 5 QA revealing critical rendering failures at desktop and tablet.",
+          "path": "/briefs/ambition-qa-r5-broken",
+          "hasPage": true
+        },
+        {
+          "title": "Super Admin Photo Replace QA",
+          "slug": "colton-super-admin-qa",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Full audit of super admin mode, image replacement, video upload, and admin auth.",
+          "path": "/briefs/colton-super-admin-qa",
+          "hasPage": true
+        },
+        {
+          "title": "Combined QA Report R5: Ambition + AOM",
+          "slug": "elmo-combined-qa-r5",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Combined QA of both Ambition and AOM sites across 4 viewports with Playwright.",
+          "path": "/briefs/elmo-combined-qa-r5",
+          "hasPage": true
+        },
+        {
+          "title": "Brand Pages Inspection Report",
+          "slug": "elmer-brand-pages-report",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "QA inspection of /brands, /brand, and /brands/ambition pages.",
+          "path": "/briefs/elmer-brand-pages-report",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Brand v2 QA: Round 1",
+          "slug": "elmo-ambition-v2-qa-r1",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "First QA round of Ambition brand v2 token cleanup application.",
+          "path": "/briefs/elmo-ambition-v2-qa-r1",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Brand v2 QA: Round 2",
+          "slug": "elmo-ambition-v2-qa-r2",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Second QA round following 14 blockers and 9 warnings from Round 1.",
+          "path": "/briefs/elmo-ambition-v2-qa-r2",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Brand v2 QA: Round 3",
+          "slug": "elmo-ambition-v2-qa-r3",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Third QA round following 8 blockers and 7 warnings from Round 2.",
+          "path": "/briefs/elmo-ambition-v2-qa-r3",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Brand v2 QA: Round 4",
+          "slug": "elmo-ambition-v2-qa-r4",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Fourth QA round testing 3 deployed commits on production.",
+          "path": "/briefs/elmo-ambition-v2-qa-r4",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Functional Test",
+          "slug": "elmo-aom-functional-test",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Functional test of AOM site across desktop and mobile viewports.",
+          "path": "/briefs/elmo-aom-functional-test",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Homepage Redesign QA: Round 1",
+          "slug": "elmo-aom-redesign-qa-r1",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "First QA round of the AOM homepage redesign.",
+          "path": "/briefs/elmo-aom-redesign-qa-r1",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Homepage Redesign QA: Round 2",
+          "slug": "elmo-aom-redesign-qa-r2",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Second QA round testing Bobby's 9 fixes commit.",
+          "path": "/briefs/elmo-aom-redesign-qa-r2",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Homepage Redesign QA: Round 3",
+          "slug": "elmo-aom-redesign-qa-r3",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Third QA round of the AOM homepage redesign.",
+          "path": "/briefs/elmo-aom-redesign-qa-r3",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Homepage Redesign QA: Round 4",
+          "slug": "elmo-aom-redesign-qa-r4",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Fourth QA round of Dark Frame redesign after 3 previous FAILs from stale deploys.",
+          "path": "/briefs/elmo-aom-redesign-qa-r4",
+          "hasPage": true
+        },
+        {
+          "title": "System Audit: March 9, 2026",
+          "slug": "system-audit-mar9",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Full system audit of agents, skills, context files, memory, and repo structure.",
+          "path": "/briefs/system-audit-mar9",
+          "hasPage": true
+        },
+        {
+          "title": "Context Efficiency Audit",
+          "slug": "context-efficiency-audit",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Audit to reduce context consumption and extend session life before compaction.",
+          "path": "/briefs/context-efficiency-audit",
+          "hasPage": true
+        },
+        {
+          "title": "Email Deliverability Report",
+          "slug": "email-deliverability-report",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Deliverability analysis for hello@aom-inhouse.com outbound email.",
+          "path": "/briefs/email-deliverability-report",
+          "hasPage": true
+        },
+        {
+          "title": "Mom Agent Diagnosis",
+          "slug": "mom-diagnosis",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Diagnosis of Mom agent operational issues and recommended fixes.",
+          "path": "/briefs/mom-diagnosis",
+          "hasPage": true
+        },
+        {
+          "title": "Mom Infrastructure Audit",
+          "slug": "mom-infrastructure-audit",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Audit identifying gaps blocking Mom from operating as a full chief of staff.",
+          "path": "/briefs/mom-infrastructure-audit",
+          "hasPage": true
+        },
+        {
+          "title": "System Audit v2: March 9, 2026",
+          "slug": "system-audit-v2-mar9",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Full admin audit of every AGENT.md, SKILL.md, script, and config in the system.",
+          "path": "/briefs/system-audit-v2-mar9",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Site Redesign Visual Audit",
+          "slug": "site-redesign-visual-audit",
+          "agent": "Bobby",
+          "date": "2026-03-08",
+          "dateFormatted": "Mar 8",
+          "summary": "Visual audit of AOM site redesign across iPhone SE, iPhone 12 Pro, and Desktop.",
+          "path": "/briefs/site-redesign-visual-audit",
+          "hasPage": true
         }
       ]
     },
@@ -144,6 +864,16 @@
       "name": "Outreach",
       "items": [
         {
+          "title": "Cold Email v3 Framework",
+          "slug": "cold-email-v3-framework",
+          "agent": "Alex",
+          "date": "2026-03-13",
+          "dateFormatted": "Mar 13",
+          "summary": "Active cold email framework built from Instantly benchmarks and Belkins 5.5M email study.",
+          "path": "/briefs/cold-email-v3-framework",
+          "hasPage": true
+        },
+        {
           "title": "Ambition LinkedIn Posts",
           "slug": "ambition-linkedin",
           "agent": "Alex",
@@ -152,20 +882,652 @@
           "summary": "3 LinkedIn posts ready to copy-paste. Breaking 4+ weeks of silence.",
           "path": "/briefs/ambition-linkedin",
           "hasPage": true
+        },
+        {
+          "title": "CPA Phone Outreach Strategy",
+          "slug": "cpa-phone-strategy",
+          "agent": "Jacob",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Phone outreach strategy for CPAs after 51 cold emails yielded 0 replies.",
+          "path": "/briefs/cpa-phone-strategy",
+          "hasPage": true
+        },
+        {
+          "title": "Arizona Contractor Lead Database Research",
+          "slug": "niche-database-research",
+          "agent": "Jacob",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Research on databases for pre-qualified AZ contractor leads without Apollo credits.",
+          "path": "/briefs/niche-database-research",
+          "hasPage": true
+        },
+        {
+          "title": "Outreach Voice Template v2",
+          "slug": "voice-template-v2",
+          "agent": "Jacob",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Upgraded outreach template with zero-risk offer framework and social proof.",
+          "path": "/briefs/voice-template-v2",
+          "hasPage": true
+        },
+        {
+          "title": "Alex Review: 3 Piece Special Outreach",
+          "slug": "alex-3ps-outreach-review",
+          "agent": "Alex",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Copy quality review of 51 outreach emails for positioning, tone, and CTA consistency.",
+          "path": "/briefs/alex-3ps-outreach-review",
+          "hasPage": true
+        },
+        {
+          "title": "Outreach-to-Website Alignment Review",
+          "slug": "alex-outreach-website-review",
+          "agent": "Alex",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Review of outreach email alignment with AOM website, competitive research, and biz dev brief.",
+          "path": "/briefs/alex-outreach-website-review",
+          "hasPage": true
+        },
+        {
+          "title": "Cold Email Analysis Brief",
+          "slug": "cold-email-analysis-brief",
+          "agent": "Jacob",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Framework analysis from Nate Herk's cold email strategy video.",
+          "path": "/briefs/cold-email-analysis-brief",
+          "hasPage": true
+        },
+        {
+          "title": "Cold Email Framework Video Analysis",
+          "slug": "cold-email-video-transcript",
+          "agent": "Jacob",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Transcript analysis of cold email framework video for $500k+ in sales opportunities.",
+          "path": "/briefs/cold-email-video-transcript",
+          "hasPage": true
+        },
+        {
+          "title": "Outreach Emails QA Report",
+          "slug": "elmer-outreach-qa",
+          "agent": "Elmo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "QA report on 3 Piece Special outreach emails cross-checked against work.md.",
+          "path": "/briefs/elmer-outreach-qa",
+          "hasPage": true
+        },
+        {
+          "title": "Outreach Voice Template",
+          "slug": "voice-template",
+          "agent": "Jacob",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Patrik's original voice template, the source of truth for all cold outreach.",
+          "path": "/briefs/voice-template",
+          "hasPage": true
+        },
+        {
+          "title": "Website Review for Outreach",
+          "slug": "website-outreach-review",
+          "agent": "Jacob",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Review of AOM website from outreach alignment perspective.",
+          "path": "/briefs/website-outreach-review",
+          "hasPage": true
+        },
+        {
+          "title": "Jacob Outreach Workflow Reference",
+          "slug": "jacob-workflow",
+          "agent": "Jacob",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Detailed workflow steps, templates, and reference docs for outreach operations.",
+          "path": "/briefs/jacob-workflow",
+          "hasPage": true
+        },
+        {
+          "title": "Outreach Pipeline Plan",
+          "slug": "outreach-pipeline-plan",
+          "agent": "Jacob",
+          "date": "2026-03-07",
+          "dateFormatted": "Mar 7",
+          "summary": "Full outreach pipeline plan covering 675 Apollo contacts plus 37 existing leads.",
+          "path": "/briefs/outreach-pipeline-plan",
+          "hasPage": true
         }
       ]
     },
     {
       "name": "Technical",
-      "items": []
+      "items": [
+        {
+          "title": "CORNER Product Spec",
+          "slug": "product-spec-web",
+          "agent": "Steve",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "THE BIBLE. Complete product specification for CORNER, the AOM OS web edition. Local-first architecture.",
+          "path": "/briefs/product-spec-web",
+          "hasPage": true
+        },
+        {
+          "title": "Auto-Publish Architecture Spec",
+          "slug": "auto-publish-spec",
+          "agent": "Steve",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Three-layer architecture for auto-publishing .md files as webpages on aheadofmarket.com.",
+          "path": "/briefs/auto-publish-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Dashboard Dual-View Product Spec",
+          "slug": "dashboard-dual-view-spec",
+          "agent": "Steve",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Product spec for two dashboard views: individual agent detail and high-level command center.",
+          "path": "/briefs/dashboard-dual-view-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Dashboard MVP Implementation Brief",
+          "slug": "dashboard-mvp-brief",
+          "agent": "Steve",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Bobby's implementation brief for the dashboard MVP build.",
+          "path": "/briefs/dashboard-mvp-brief",
+          "hasPage": true
+        },
+        {
+          "title": "ROI Calculator Spec",
+          "slug": "roi-calculator-spec",
+          "agent": "Steve",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Interactive ROI calculator spec for AI Operations Advisory lead magnet.",
+          "path": "/briefs/roi-calculator-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Supabase Multi-Tenant Schema Spec",
+          "slug": "supabase-schema-spec",
+          "agent": "Steve",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Supabase schema and auth architecture for multi-tenant dashboard platform.",
+          "path": "/briefs/supabase-schema-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Text Overlay Research for Cleo",
+          "slug": "text-overlay-research",
+          "agent": "Elon",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Research on text overlay tools and techniques for video content production.",
+          "path": "/briefs/text-overlay-research",
+          "hasPage": true
+        },
+        {
+          "title": "AI Advisory Audit Onboarding Tool Spec",
+          "slug": "audit-onboarding-spec",
+          "agent": "Elon",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Technical spec for the audit onboarding tool, ready for Steffen design then Bobby build.",
+          "path": "/briefs/audit-onboarding-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Credential Rotation Plan",
+          "slug": "credential-rotation-plan",
+          "agent": "Elon",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Research-complete plan for rotating credentials across AOM systems.",
+          "path": "/briefs/credential-rotation-plan",
+          "hasPage": true
+        },
+        {
+          "title": "Full-Screen Guided Experience Spec",
+          "slug": "fullscreen-site-spec",
+          "agent": "Elon",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Technical spec for the full-screen guided AOM website redesign experience.",
+          "path": "/briefs/fullscreen-site-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Ideas Tracker System Spec",
+          "slug": "ideas-tracker-spec",
+          "agent": "Elon",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "System spec for the ideas tracker page: a visual of Patrik's brain.",
+          "path": "/briefs/ideas-tracker-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Email Freshness System Design",
+          "slug": "email-freshness-design",
+          "agent": "Elon",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "System design for tracking email freshness and follow-up timing.",
+          "path": "/briefs/email-freshness-design",
+          "hasPage": true
+        },
+        {
+          "title": "Scribe Agent Assessment",
+          "slug": "scribe-agent-assessment",
+          "agent": "Elon",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Assessment of an always-running scribe agent that logs Patrik's requests to GitHub.",
+          "path": "/briefs/scribe-agent-assessment",
+          "hasPage": true
+        },
+        {
+          "title": "Dashboard Control Panel Architecture",
+          "slug": "dashboard-control-panel-arch",
+          "agent": "Alex",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Architecture design for switching dashboard agents to Anthropic tool_use with structured actions.",
+          "path": "/briefs/dashboard-control-panel-arch",
+          "hasPage": true
+        },
+        {
+          "title": "Cleo Video Quality Diagnosis",
+          "slug": "cleo-video-diagnosis",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Diagnosis of video cut quality issues and fixes for pacing, transitions, and text animations.",
+          "path": "/briefs/cleo-video-diagnosis",
+          "hasPage": true
+        },
+        {
+          "title": "Pixel Agents Video Analysis",
+          "slug": "pixel-agents-video-analysis",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Analysis of Nate Herk's visual AI agent monitoring tool and implementation takeaways.",
+          "path": "/briefs/pixel-agents-video-analysis",
+          "hasPage": true
+        },
+        {
+          "title": "Nate Herk Course Analysis",
+          "slug": "nate-herk-analysis",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Analysis of Nate Herk's Build and Sell with Claude Code course for applicable takeaways.",
+          "path": "/briefs/nate-herk-analysis",
+          "hasPage": true
+        },
+        {
+          "title": "Pinterest Board Scraper Report",
+          "slug": "pinterest-scraper-report",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Build report for the Pinterest board scraper tool for brand research.",
+          "path": "/briefs/pinterest-scraper-report",
+          "hasPage": true
+        },
+        {
+          "title": "Pipeline Wiring Report",
+          "slug": "pipeline-wiring-report",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Report on wiring the official AOM production pipeline into the system.",
+          "path": "/briefs/pipeline-wiring-report",
+          "hasPage": true
+        },
+        {
+          "title": "Relay Compaction Fix",
+          "slug": "relay-compaction-fix",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Implementation details for the relay compaction fix with watchdog restart.",
+          "path": "/briefs/relay-compaction-fix",
+          "hasPage": true
+        },
+        {
+          "title": "Steffen Logo Skill Upgrade Research",
+          "slug": "steffen-logo-skill-research",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Research on giving Steffen real logo creation capabilities using SVG in React.",
+          "path": "/briefs/steffen-logo-skill-research",
+          "hasPage": true
+        },
+        {
+          "title": "Telegram Bridge Research",
+          "slug": "telegram-bridge-research",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Research on bridging Telegram to Claude Code for full agent access from mobile.",
+          "path": "/briefs/telegram-bridge-research",
+          "hasPage": true
+        },
+        {
+          "title": "Tony vs Cleo: Content Pipeline Recommendation",
+          "slug": "tony-vs-cleo-recommendation",
+          "agent": "Elon",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Recommendation on whether Tony or Cleo should own the content pipeline tracking.",
+          "path": "/briefs/tony-vs-cleo-recommendation",
+          "hasPage": true
+        }
+      ]
     },
     {
       "name": "Content",
-      "items": []
+      "items": [
+        {
+          "title": "Ambition Mechanical: 30-Day Content Arsenal",
+          "slug": "ambition-content-plan",
+          "agent": "Alex",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "30-day content plan mining Ambition's footage archive. 5 videos/week + 2 LinkedIn authority posts.",
+          "path": "/briefs/ambition-content-plan",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Week 1: Detailed Content Briefs",
+          "slug": "ambition-week1-plan",
+          "agent": "Alex",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "Week 1 detailed briefs for Ambition content. 5 video briefs + 2 LinkedIn posts, ready to produce.",
+          "path": "/briefs/ambition-week1-plan",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Video Intro Catalog",
+          "slug": "ambition-intro-catalog",
+          "agent": "Steffen",
+          "date": "2026-03-15",
+          "dateFormatted": "Mar 15",
+          "summary": "Catalog of Remotion-based video intro compositions for Ambition Mechanical content.",
+          "path": "/briefs/ambition-intro-catalog",
+          "hasPage": true
+        },
+        {
+          "title": "Crown HVAC Audio Sync Map",
+          "slug": "crown-room-sync-map",
+          "agent": "Cleo",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Audio sync map for Crown HVAC Service shoot with DJI MIC timecodes.",
+          "path": "/briefs/crown-room-sync-map",
+          "hasPage": true
+        },
+        {
+          "title": "Crown v10 Production Plan",
+          "slug": "crown-v10-plan",
+          "agent": "Cleo",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Production plan to push Crown from v9 (9/10) to v10 with text overlays and music.",
+          "path": "/briefs/crown-v10-plan",
+          "hasPage": true
+        },
+        {
+          "title": "Memorial Tower Audio Sync Map",
+          "slug": "memorial-tower-sync-map",
+          "agent": "Cleo",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "DJI MIC audio-to-video sync map for the Memorial Tower project.",
+          "path": "/briefs/memorial-tower-sync-map",
+          "hasPage": true
+        },
+        {
+          "title": "Crown v10 Gemini Vision QA Score",
+          "slug": "crown-v10-gemini-score",
+          "agent": "Cleo",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Gemini Vision 9/10 QA score for Crown v10 HVAC video.",
+          "path": "/briefs/crown-v10-gemini-score",
+          "hasPage": true
+        },
+        {
+          "title": "Chiller Mobile Reference Analysis",
+          "slug": "chiller-mobile-analysis",
+          "agent": "Cleo",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Gemini Vision analysis of Chiller Mobile reference video for text overlay style.",
+          "path": "/briefs/chiller-mobile-analysis",
+          "hasPage": true
+        },
+        {
+          "title": "Roka Akor Reference Analysis",
+          "slug": "roka-akor-analysis",
+          "agent": "Cleo",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Gemini Vision analysis of Roka Akor reference video for text overlay style.",
+          "path": "/briefs/roka-akor-analysis",
+          "hasPage": true
+        },
+        {
+          "title": "Crown HVAC Footage Reorg Report",
+          "slug": "ambition-crown-reorg",
+          "agent": "Cleo",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Footage reorganization report for Crown HVAC shoot split into two locations.",
+          "path": "/briefs/ambition-crown-reorg",
+          "hasPage": true
+        },
+        {
+          "title": "Primrose Footage Reorg Report",
+          "slug": "ambition-primrose-reorg",
+          "agent": "Cleo",
+          "date": "2026-03-11",
+          "dateFormatted": "Mar 11",
+          "summary": "Footage organization report for Primrose senior living HVAC project.",
+          "path": "/briefs/ambition-primrose-reorg",
+          "hasPage": true
+        },
+        {
+          "title": "Meta Ads Research: HVAC in Arizona",
+          "slug": "meta-ads-research-hvac-az",
+          "agent": "Cleo",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Meta Ad Library research on Arizona HVAC companies with industry benchmarks.",
+          "path": "/briefs/meta-ads-research-hvac-az",
+          "hasPage": true
+        },
+        {
+          "title": "Meta Ads Research: Web Page Data",
+          "slug": "meta-ads-research-web-data",
+          "agent": "Cleo",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Structured HVAC ad research data for Bobby to build a sales tool webpage.",
+          "path": "/briefs/meta-ads-research-web-data",
+          "hasPage": true
+        },
+        {
+          "title": "Meta Ads Research: Arizona Full Report",
+          "slug": "meta-ads-research-arizona",
+          "agent": "Cleo",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Full Arizona HVAC, plumbing, roofing, and construction Meta Ads Library research.",
+          "path": "/briefs/meta-ads-research-arizona",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Content Briefs: Weeks 1-2",
+          "slug": "ambition-content-briefs",
+          "agent": "Cleo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "First two weeks of content briefs for Ambition Mechanical social media.",
+          "path": "/briefs/ambition-content-briefs",
+          "hasPage": true
+        },
+        {
+          "title": "KOHRS Content Briefs: 10 Videos",
+          "slug": "kohrs-content-briefs",
+          "agent": "Cleo",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Content briefs for 10 videos owed to Leigh Kohrs.",
+          "path": "/briefs/kohrs-content-briefs",
+          "hasPage": true
+        },
+        {
+          "title": "Ambition Mechanical Footage Scan",
+          "slug": "ambition-footage-scan",
+          "agent": "Cleo",
+          "date": "2026-03-08",
+          "dateFormatted": "Mar 8",
+          "summary": "First-pass footage scan of all Ambition Mechanical video assets.",
+          "path": "/briefs/ambition-footage-scan",
+          "hasPage": true
+        },
+        {
+          "title": "Primrose Update Edit Notes",
+          "slug": "primrose-edit-notes",
+          "agent": "Cleo",
+          "date": "2026-03-08",
+          "dateFormatted": "Mar 8",
+          "summary": "Recut edit notes for the Primrose Update video.",
+          "path": "/briefs/primrose-edit-notes",
+          "hasPage": true
+        },
+        {
+          "title": "Primrose V3 Edit Plan",
+          "slug": "primrose-v3-plan",
+          "agent": "Cleo",
+          "date": "2026-03-08",
+          "dateFormatted": "Mar 8",
+          "summary": "Edit plan for Primrose HVAC install progress update video for social platforms.",
+          "path": "/briefs/primrose-v3-plan",
+          "hasPage": true
+        },
+        {
+          "title": "Editing Guide: Crown HVAC Service",
+          "slug": "crown-room-editing-guide",
+          "agent": "Cleo",
+          "date": "2026-03-05",
+          "dateFormatted": "Mar 5",
+          "summary": "Editing guide for Crown HVAC Service shoot across two locations.",
+          "path": "/briefs/crown-room-editing-guide",
+          "hasPage": true
+        },
+        {
+          "title": "Crown Room Editing Guide v4",
+          "slug": "crown-room-only-guide",
+          "agent": "Cleo",
+          "date": "2026-03-05",
+          "dateFormatted": "Mar 5",
+          "summary": "Crown-only editing guide with lav sync for Hotel San Carlos rooftop exhaust replacement.",
+          "path": "/briefs/crown-room-only-guide",
+          "hasPage": true
+        },
+        {
+          "title": "Memorial Tower Editing Guide",
+          "slug": "memorial-tower-editing-guide",
+          "agent": "Cleo",
+          "date": "2026-03-05",
+          "dateFormatted": "Mar 5",
+          "summary": "Editing guide for the Memorial Tower insulation project footage.",
+          "path": "/briefs/memorial-tower-editing-guide",
+          "hasPage": true
+        }
+      ]
     },
     {
       "name": "Council",
       "items": [
+        {
+          "title": "Friday Sprint Plan: AI Advisory Product",
+          "slug": "friday-sprint-plan",
+          "agent": "Council",
+          "date": "2026-03-14",
+          "dateFormatted": "Mar 14",
+          "summary": "Sprint plan to have a sellable AI advisory product by end of day Friday.",
+          "path": "/briefs/friday-sprint-plan",
+          "hasPage": true
+        },
+        {
+          "title": "Council: Briefs Reorg + Offer Strategy",
+          "slug": "council-briefs-reorg-offer",
+          "agent": "Council",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Council on /briefs accordion reorganization and replacing zero-risk offers in outreach.",
+          "path": "/briefs/council-briefs-reorg-offer",
+          "hasPage": true
+        },
+        {
+          "title": "Council: /v2 Rebuild to Audit Standard",
+          "slug": "council-v2-rebuild-wave6",
+          "agent": "Council",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Council on rebuilding /v2 to match audit tool quality standard. Wave 6.",
+          "path": "/briefs/council-v2-rebuild-wave6",
+          "hasPage": true
+        },
+        {
+          "title": "Council: Wave 4 Priorities",
+          "slug": "council-wave4-priorities",
+          "agent": "Council",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Priority stack after /book fix, /briefs ship, and offer ladder completion.",
+          "path": "/briefs/council-wave4-priorities",
+          "hasPage": true
+        },
+        {
+          "title": "Council: Wave 5 Priorities",
+          "slug": "council-wave5-priorities",
+          "agent": "Council",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Quick council on what to build next after Wave 4 completions.",
+          "path": "/briefs/council-wave5-priorities",
+          "hasPage": true
+        },
+        {
+          "title": "Council: Wave 7 Post-Reset Priorities",
+          "slug": "council-wave7-post-reset",
+          "agent": "Council",
+          "date": "2026-03-12",
+          "dateFormatted": "Mar 12",
+          "summary": "Priority stack after rate limit hit during Wave 6 interrupted Bobby and Mom.",
+          "path": "/briefs/council-wave7-post-reset",
+          "hasPage": true
+        },
         {
           "title": "AI Advisory Sprint Plan",
           "slug": "sprint-plan",
@@ -174,6 +1536,56 @@
           "dateFormatted": "Mar 10",
           "summary": "Multi-agent sprint plan for the AI advisory product launch.",
           "path": "/briefs/sprint-plan",
+          "hasPage": true
+        },
+        {
+          "title": "Council: AI Advisory Services",
+          "slug": "council-ai-advisory",
+          "agent": "Council",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Council brief on what AOM sells, how it delivers, and when it starts AI advisory.",
+          "path": "/briefs/council-ai-advisory",
+          "hasPage": true
+        },
+        {
+          "title": "Council: How to Grow AOM",
+          "slug": "council-business-growth",
+          "agent": "Council",
+          "date": "2026-03-10",
+          "dateFormatted": "Mar 10",
+          "summary": "Council brief on new business strategies and revenue growth opportunities.",
+          "path": "/briefs/council-business-growth",
+          "hasPage": true
+        },
+        {
+          "title": "Council: AOM Website Redesign",
+          "slug": "council-website-redesign",
+          "agent": "Council",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Council brief on what the AOM website should become beyond video production.",
+          "path": "/briefs/council-website-redesign",
+          "hasPage": true
+        },
+        {
+          "title": "Council: Why Outreach Is Not Landing",
+          "slug": "council-outreach-not-landing",
+          "agent": "Council",
+          "date": "2026-03-09",
+          "dateFormatted": "Mar 9",
+          "summary": "Council analysis of why cold outreach is getting zero replies and what to change.",
+          "path": "/briefs/council-outreach-not-landing",
+          "hasPage": true
+        },
+        {
+          "title": "AOM Website Visual Audit",
+          "slug": "aom-site-visual-audit",
+          "agent": "Council",
+          "date": "2026-03-08",
+          "dateFormatted": "Mar 8",
+          "summary": "Automated Playwright visual audit of aheadofmarket.com.",
+          "path": "/briefs/aom-site-visual-audit",
           "hasPage": true
         }
       ]

@@ -1,0 +1,12 @@
+{
+  "title": "Tony vs Cleo: Content Pipeline Recommendation",
+  "slug": "tony-vs-cleo-recommendation",
+  "category": "Technical",
+  "agent": "Elon",
+  "date": "2026-03-09",
+  "dateFormatted": "Mar 9",
+  "updated": null,
+  "summary": "Recommendation on whether Tony or Cleo should own the content pipeline tracking.",
+  "tags": [],
+  "content": "<h1>Recommendation: Tony vs Cleo for Content Pipeline Tracking</h1>\n<p><strong>Pick: Tony.</strong></p>\n<ul>\n<li>Tony already owns the content pipeline stages (Filmed &gt; Edited &gt; Approved &gt; Scheduled &gt; Posted) and tracks the gap between &quot;content exists&quot; and &quot;content is in the world.&quot; That&#39;s exactly what pipeline tracking is.</li>\n<li>Cleo&#39;s job is to produce content, not track it. Cleo edits with ffmpeg, applies LUTs, writes captions. Asking Cleo to also manage delivery status and posting cadence splits focus and adds overhead to the creative agent.</li>\n<li>Tony already flags bottlenecks by step and routes to Cleo when editing is the holdup. That handoff direction (Tony flags, Cleo executes) is correct. Reversing it creates confusion.</li>\n<li>Editing deliverables naturally flow downstream: Cleo finishes a clip, Tony picks it up. Tony is the last mile. Making Tony the pipeline owner means nothing falls between &quot;done editing&quot; and &quot;posted.&quot;</li>\n<li>When Postiz goes live, Tony is the one scheduling posts. He needs full pipeline visibility to do that job. Cleo doesn&#39;t touch Postiz.</li>\n</ul>\n<p><strong>Summary:</strong> Cleo produces. Tony tracks and delivers. Don&#39;t mix the roles.</p>\n"
+}
