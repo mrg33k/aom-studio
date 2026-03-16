@@ -9,7 +9,7 @@ import {
   ChevronUp, ChevronDown, Check, Circle, AlertTriangle,
   Activity, Pause, Eye, Clock, Zap, Users, FolderKanban,
   LayoutGrid, X, Loader2, CheckCircle2, Timer, Flame,
-  Send, MessageSquare,
+  Send, MessageSquare, Search,
 } from 'lucide-react'
 import { AGENTS, GRID_SPEC } from './gridSpec.js'
 
@@ -359,7 +359,7 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
               fill={color}
               fontFamily="Space Grotesk, sans-serif"
               fontWeight="700"
-              fontSize={size * 0.36}
+              fontSize={Math.max(12, size * 0.36)}
             >
               {agent?.name?.charAt(0) || '?'}
             </text>
@@ -417,7 +417,7 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
   )
 }
 
-// ---- AGENT ROSTER (horizontal strip, LARGER portraits, game spacing) --------
+// ---- AGENT ROSTER (COMPACT: tiny 24px dots, projects are the main event) ----
 function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
   const sortedAgents = useMemo(() => {
     const statusPriority = { WORKING: 0, BLOCKED: 1, WAITING: 2, PAUSED: 3, DONE: 4, IDLE: 5 }
@@ -432,20 +432,53 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
 
   return (
     <div style={{
-      display: 'flex', gap: 6, alignItems: 'center',
-      padding: '0 4px',
+      display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap',
+      padding: '0 2px', maxWidth: 120,
     }}>
-      {sortedAgents.map((agent, i) => (
-        <AgentPortrait
-          key={agent.slug}
-          slug={agent.slug}
-          size={58}
-          status={agentStatus?.[agent.slug]?.status || 'IDLE'}
-          onClick={onAgentClick}
-          onContextMenu={onAgentContextMenu}
-          index={i}
-        />
-      ))}
+      {sortedAgents.map((agent, i) => {
+        const status = agentStatus?.[agent.slug]?.status || 'IDLE'
+        const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
+        const hasSpr = SPRITE_AGENTS.includes(agent.slug)
+        return (
+          <motion.div
+            key={agent.slug}
+            onClick={() => onAgentClick?.(agent.slug)}
+            onContextMenu={(e) => onAgentContextMenu?.(e, agent.slug)}
+            whileHover={{ scale: 1.3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+            title={`${agent.name}: ${cfg.label}`}
+            style={{
+              width: 24, height: 24, borderRadius: '50%',
+              border: `2px solid ${cfg.ring}`,
+              overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
+              background: '#0A0F1E',
+              boxShadow: status === 'WORKING' ? `0 0 8px ${cfg.glow}` : 'none',
+              position: 'relative',
+            }}
+          >
+            {hasSpr ? (
+              <img
+                src={`/corner/sprites/${agent.slug}-idle.png`}
+                alt=""
+                style={{
+                  width: 40, height: 40,
+                  objectFit: 'cover', objectPosition: '15% 5%',
+                  imageRendering: 'pixelated', display: 'block',
+                  marginLeft: -6, marginTop: -4,
+                }}
+              />
+            ) : (
+              <div style={{
+                width: '100%', height: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, fontWeight: 700, color: agent.color || '#4A6080',
+                fontFamily: 'Space Grotesk, sans-serif',
+              }}>
+                {agent.name?.charAt(0) || '?'}
+              </div>
+            )}
+          </motion.div>
+        )
+      })}
     </div>
   )
 }
@@ -618,7 +651,7 @@ function TaskPanel({ project, onClose }) {
             {project.name}
           </span>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 14, fontWeight: 600,
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 600,
             color: HUD.textMuted,
           }}>
             {doneTasks}/{totalTasks}
@@ -626,21 +659,21 @@ function TaskPanel({ project, onClose }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Progress bar */}
+          {/* Progress bar - THICKER per Steffen spec (12px) */}
           <div style={{
-            width: 100, height: 6, borderRadius: 3,
+            width: 100, height: 12, borderRadius: 6,
             background: 'rgba(100,180,255,0.06)',
             overflow: 'hidden',
           }}>
             <div style={{
               width: `${progress}%`, height: '100%',
               background: `linear-gradient(90deg, ${project.color}AA, ${project.color})`,
-              borderRadius: 3,
+              borderRadius: 6,
               transition: 'width 300ms ease',
             }} />
           </div>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 700,
             color: project.color,
             minWidth: 32,
           }}>
@@ -755,7 +788,7 @@ function CompactStats({ agentStatus, throughput, overallProgress }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
-      fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600,
+      fontFamily: 'JetBrains Mono, monospace', fontSize: 14, fontWeight: 600,
       letterSpacing: '0.02em',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -784,7 +817,7 @@ function CompactStats({ agentStatus, throughput, overallProgress }) {
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 10, fontWeight: 800, color: HUD.accent,
+          fontSize: 12, fontWeight: 800, color: HUD.accent,
         }}>
           {overallProgress}
         </div>
@@ -884,8 +917,8 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
           minWidth: 0,
         }}
         onFocus={e => {
-          e.target.style.borderColor = `${agentColor}55`
-          e.target.style.boxShadow = `0 0 0 3px ${agentColor}12`
+          e.target.style.borderColor = `${agentColor}77`
+          e.target.style.boxShadow = `0 0 0 3px ${agentColor}30, 0 0 16px ${agentColor}18`
         }}
         onBlur={e => {
           e.target.style.borderColor = 'rgba(100,180,255,0.10)'
@@ -948,6 +981,9 @@ export default function GameHUD({
   onAgentContextMenu, onProjectContextMenu,
 }) {
   const [expandedProject, setExpandedProject] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchRef = useRef(null)
   const { data: punchData, loading } = usePunchListData()
   const hudRef = useRef(null)
   const conversationScores = useConversationRecency()
@@ -976,6 +1012,22 @@ export default function GameHUD({
     })
   }, [punchData, conversationScores])
 
+  // Filter projects by search query
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects
+    const q = searchQuery.toLowerCase()
+    return projects.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.section.toLowerCase().includes(q) ||
+      p.tasks.some(t => t.text.toLowerCase().includes(q))
+    )
+  }, [projects, searchQuery])
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (searchOpen && searchRef.current) searchRef.current.focus()
+  }, [searchOpen])
+
   // Close panel on click outside
   useEffect(() => {
     const handler = (e) => {
@@ -996,8 +1048,8 @@ export default function GameHUD({
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  const totalTasks = projects.reduce((sum, p) => sum + p.tasks.length, 0)
-  const totalDone = projects.reduce((sum, p) => sum + p.tasks.filter(t => t.done).length, 0)
+  const totalTasks = filteredProjects.reduce((sum, p) => sum + p.tasks.length, 0)
+  const totalDone = filteredProjects.reduce((sum, p) => sum + p.tasks.filter(t => t.done).length, 0)
   const overallProgress = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0
 
   return (
@@ -1087,7 +1139,7 @@ export default function GameHUD({
             <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
           )}
 
-          {/* Center: Project cards (flex-wrap, VEGAS sizing) */}
+          {/* Center: Search + Project cards (MOSTLY projects, agents are tiny) */}
           <div style={{
             flex: 1,
             display: 'flex',
@@ -1099,19 +1151,70 @@ export default function GameHUD({
             overflow: 'hidden',
             alignContent: 'center',
           }}>
+            {/* Search toggle + input: filters projects in real-time */}
+            {!isMobile && (
+              <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <AnimatePresence>
+                  {searchOpen && (
+                    <motion.input
+                      ref={searchRef}
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: 140, opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false) }
+                      }}
+                      placeholder="Filter projects..."
+                      style={{
+                        background: 'rgba(100,180,255,0.06)',
+                        border: `1px solid ${HUD.panelBorder}`,
+                        borderRadius: 10,
+                        height: 36,
+                        padding: '0 12px',
+                        color: HUD.textPrimary,
+                        fontSize: 14,
+                        fontFamily: 'Space Grotesk, sans-serif',
+                        outline: 'none',
+                        marginRight: 6,
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+                <motion.button
+                  onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setSearchQuery('') }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: searchOpen ? 'rgba(59,158,255,0.15)' : 'rgba(100,180,255,0.04)',
+                    border: `1px solid ${searchOpen ? HUD.accent + '44' : HUD.divider}`,
+                    color: searchOpen ? HUD.accent : HUD.textMuted,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, transition: 'all 150ms ease',
+                  }}
+                >
+                  <Search size={15} />
+                </motion.button>
+              </div>
+            )}
+
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
                 <Loader2 size={16} style={{ color: HUD.textMuted, animation: 'spin 1s linear infinite' }} />
-                <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 14, color: HUD.textMuted }}>
+                <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 16, color: HUD.textMuted }}>
                   Loading...
                 </span>
               </div>
-            ) : projects.length === 0 ? (
-              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 14, color: HUD.textMuted, padding: '0 8px' }}>
-                No task data
+            ) : filteredProjects.length === 0 ? (
+              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 16, color: HUD.textMuted, padding: '0 8px' }}>
+                {searchQuery ? 'No matches' : 'No task data'}
               </span>
             ) : (
-              projects.map(project => (
+              filteredProjects.map(project => (
                 <ProjectCard
                   key={project.section}
                   project={project}

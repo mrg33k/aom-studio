@@ -262,11 +262,11 @@ function PasswordGate({ onAuth }) {
         </div>
         <input type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="Password" autoFocus
           style={{ width: '100%', background: '#141822', border: '1px solid #2A3040', color: '#F5F0EB', padding: '12px 16px', fontSize: 16, fontFamily: 'JetBrains Mono, monospace', outline: 'none', borderRadius: 2 }} />
-        <button type="submit" style={{ width: '100%', marginTop: 12, background: '#E85D26', color: 'white', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 13, padding: '12px', border: 'none', cursor: 'pointer', borderRadius: 2 }}>
+        <button type="submit" style={{ width: '100%', marginTop: 12, background: '#E85D26', color: 'white', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 16, padding: '14px', border: 'none', cursor: 'pointer', borderRadius: 2 }}>
           Enter
         </button>
         {IS_LOCAL && (
-          <div style={{ textAlign: 'center', marginTop: 12, color: '#4CAF50', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.1em' }}>
+          <div style={{ textAlign: 'center', marginTop: 12, color: '#4CAF50', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.1em' }}>
             LOCAL MODE ACTIVE
           </div>
         )}
@@ -773,7 +773,7 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 }
 
 // ---- ISOMETRIC OFFICE (main game view) - SINGLE IMAGE APPROACH -------------
-// Uses full-office-warm-night.png as ONE cohesive building.
+// Uses office-full-night.png (Crossy Road voxel) as ONE cohesive building.
 // No individual room tiles = no double walls. The north star IS the background.
 // Interactive click targets, nameplates, and status dots overlay on top.
 // C4: Crossy Road bounce energy, viewport-filling, wave animation on load.
@@ -812,7 +812,7 @@ const getRoomWaveDelay = (roomId) => {
   const idx = ROOM_WAVE_ORDER.indexOf(roomId)
   return idx >= 0 ? idx * 0.06 : 0.3
 }
-// ---- SINGLE-IMAGE APPROACH: uses full-office-warm-night.png ------
+// ---- SINGLE-IMAGE APPROACH: uses office-full-night.png (Crossy Road voxel) ------
 // C4: Building FILLS the viewport. No dead space. Crossy Road bounce energy.
 function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations, streamingAgent }) {
   // FILL THE VIEWPORT: size based on container, not fixed pixels
@@ -1015,7 +1015,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
       }}>
         {/* The full office image - ONE cohesive building. No double walls. */}
         <img
-          src="/corner/full-office-warm-night.png"
+          src="/corner/office-full-night.png"
           alt="Corner Office"
           draggable={false}
           style={{
@@ -2753,14 +2753,14 @@ function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
 
       {/* Current task */}
       <div style={{ padding: '0 24px 16px' }}>
-        <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Current Task</div>
+        <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Current Task</div>
         <div style={{ color: '#F0ECE6', fontSize: 16, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 500 }}>{task}</div>
       </div>
 
       {/* Last completion */}
       {agentStatus?.lastCompletion && (
         <div style={{ padding: '0 24px 16px' }}>
-          <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Last Completion</div>
+          <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Last Completion</div>
           <div style={{ color: '#A8A29E', fontSize: 15, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif' }}>{agentStatus.lastCompletion.description}</div>
           <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 6 }}>{agentStatus.lastCompletion.date}</div>
         </div>
@@ -2768,20 +2768,20 @@ function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
 
       {/* Room info */}
       <div style={{ padding: '0 24px 16px' }}>
-        <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Room</div>
+        <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Room</div>
         <div style={{ color: '#A8A29E', fontSize: 15, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
         {room?.personality && (
-          <div style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
+          <div style={{ color: '#6B7280', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
         )}
       </div>
 
       {/* Data source indicator */}
       {IS_LOCAL && (
         <div style={{ padding: '0 24px 16px' }}>
-          <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Data Source</div>
+          <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Data Source</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
-            <span style={{ color: '#4CAF50', fontSize: 13, fontFamily: 'JetBrains Mono, monospace' }}>Local filesystem (2s poll)</span>
+            <span style={{ color: '#4CAF50', fontSize: 14, fontFamily: 'JetBrains Mono, monospace' }}>Local filesystem (2s poll)</span>
           </div>
         </div>
       )}
