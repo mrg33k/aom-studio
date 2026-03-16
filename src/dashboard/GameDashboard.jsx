@@ -3243,11 +3243,112 @@ export default function GameDashboard() {
   const [panelMessages, setPanelMessages] = useState({}) // per-agent
   const [panelStreaming, setPanelStreaming] = useState(false)
   const panelRelayPollRef = useRef(null)
+  // Background outbox polling state
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadAgents, setUnreadAgents] = useState({}) // { agentSlug: count }
+  const bgOutboxPollRef = useRef(null)
+  const lastBgOutboxCheckRef = useRef(null)
 
   // Cleanup panel relay poll on unmount
   useEffect(() => {
-    return () => { if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current) }
+    return () => {
+      if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current)
+      if (bgOutboxPollRef.current) clearInterval(bgOutboxPollRef.current)
+    }
   }, [])
+
+  // Background outbox polling: check for new messages every 5 seconds
+  // Shows badge even when chat panel is closed
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    // Initialize the last check timestamp
+    const initBgPoll = async () => {
+      try {
+        const res = await fetch('/api/local/relay-outbox')
+        if (res.ok) {
+          const data = await res.json()
+          const msgs = data.messages || []
+          if (msgs.length > 0) {
+            lastBgOutboxCheckRef.current = msgs[msgs.length - 1].timestamp
+          } else {
+            lastBgOutboxCheckRef.current = new Date().toISOString()
+          }
+        }
+      } catch {}
+    }
+    initBgPoll()
+
+    bgOutboxPollRef.current = setInterval(async () => {
+      if (!lastBgOutboxCheckRef.current) return
+      try {
+        const since = encodeURIComponent(lastBgOutboxCheckRef.current)
+        const res = await fetch(`/api/local/relay-outbox?since=${since}`)
+        if (!res.ok) return
+        const data = await res.json()
+        const newMsgs = (data.messages || []).filter(m =>
+          m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
+        )
+        if (newMsgs.length > 0) {
+          const latest = newMsgs[newMsgs.length - 1]
+          lastBgOutboxCheckRef.current = latest.timestamp
+
+          // Only count as unread if the panel for that agent is not currently open
+          const newUnread = {}
+          for (const msg of newMsgs) {
+            const agent = msg.agent || 'system'
+            if (agent !== selectedRoom || !panelVisible) {
+              newUnread[agent] = (newUnread[agent] || 0) + 1
+            }
+            // Also add to panelMessages for the agent
+            setPanelMessages(prev => {
+              const agentMsgs = [...(prev[agent] || [])]
+              // Don't add duplicates
+              if (agentMsgs.some(m => m.id === msg.id)) return prev
+              agentMsgs.push({
+                role: 'assistant',
+                content: msg.message,
+                time: msg.timestamp || new Date().toISOString(),
+                source: msg.agent || 'system',
+                id: msg.id,
+              })
+              return { ...prev, [agent]: agentMsgs }
+            })
+          }
+
+          if (Object.keys(newUnread).length > 0) {
+            setUnreadAgents(prev => {
+              const next = { ...prev }
+              for (const [agent, count] of Object.entries(newUnread)) {
+                next[agent] = (next[agent] || 0) + count
+              }
+              return next
+            })
+            setUnreadCount(prev => prev + newMsgs.length)
+          }
+        }
+      } catch {}
+    }, 5000)
+
+    return () => {
+      if (bgOutboxPollRef.current) clearInterval(bgOutboxPollRef.current)
+    }
+  }, [selectedRoom, panelVisible])
+
+  // Clear unread for an agent when their panel is opened
+  useEffect(() => {
+    if (selectedRoom && panelVisible) {
+      setUnreadAgents(prev => {
+        const next = { ...prev }
+        const agentUnread = next[selectedRoom] || 0
+        delete next[selectedRoom]
+        if (agentUnread > 0) {
+          setUnreadCount(prev => Math.max(0, prev - agentUnread))
+        }
+        return next
+      })
+    }
+  }, [selectedRoom, panelVisible])
 
   // Load relay history filtered by agent when panel opens on an agent
   const panelHistoryLoadedRef = useRef({})
@@ -3928,6 +4029,39 @@ export default function GameDashboard() {
       />
 
       {/* Chat bar (bottom) - sits ABOVE GameHUD in game mode, at bottom otherwise */}
+      {/* Unread message badge (floating, visible when chat panel is closed) */}
+      {unreadCount > 0 && !panelVisible && (
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          style={{
+            position: 'fixed', bottom: currentMode === 'game' ? 140 : 80, right: 20, zIndex: 50,
+            minWidth: 44, height: 44, borderRadius: 22,
+            background: '#E85D26',
+            color: '#FFF', fontFamily: "'Inter Tight', sans-serif", fontWeight: 900, fontSize: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '0 14px',
+            boxShadow: '0 4px 20px rgba(232,93,38,0.4), 0 0 0 2px rgba(232,93,38,0.2)',
+            cursor: 'pointer',
+            animation: 'chatBadgePulse 2s ease-in-out infinite',
+          }}
+          onClick={() => {
+            // Open panel for the agent with most unread
+            const topAgent = Object.entries(unreadAgents).sort((a, b) => b[1] - a[1])[0]
+            if (topAgent) {
+              setSelectedRoom(topAgent[0])
+              setPanelVisible(true)
+              setChatAgent(topAgent[0])
+            }
+          }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <MessageSquare size={16} />
+          {unreadCount}
+        </motion.div>
+      )}
+
       <ChatBar
         ref={chatBarRef}
         activeAgent={chatAgent}
@@ -4083,6 +4217,7 @@ export default function GameDashboard() {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
           30% { transform: translateY(-4px); opacity: 1; }
         }
+        @keyframes chatBadgePulse { 0%, 100% { box-shadow: 0 4px 20px rgba(232,93,38,0.4), 0 0 0 2px rgba(232,93,38,0.2); } 50% { box-shadow: 0 4px 24px rgba(232,93,38,0.6), 0 0 0 4px rgba(232,93,38,0.15); } }
         @keyframes chatCursorBlink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
