@@ -794,7 +794,7 @@ const IMAGE_ROOM_TARGETS = {
   elon:       { x: 39, y: 62, w: 15, h: 15, labelY: 59 },
 }
 // ---- SINGLE-IMAGE APPROACH: uses full-office-warm-night.png ------
-function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations }) {
+function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations, streamingAgent }) {
   // Image display size (px) - scales the 1024x1024 image
   const IMG_SIZE = 880
 
@@ -1087,6 +1087,38 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                     animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
                     zIndex: 3,
                   }} />
+                )}
+
+                {/* Speaking indicator: speech bubble when agent is responding in chat */}
+                {streamingAgent === room.id && hasAgent && !isAway && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    style={{
+                      position: 'absolute', bottom: '55%', left: '50%', transform: 'translateX(-50%)',
+                      background: 'rgba(10, 15, 30, 0.92)', border: `1px solid ${agentColor}50`,
+                      borderRadius: 10, padding: '5px 10px',
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      zIndex: 8, pointerEvents: 'none',
+                      boxShadow: `0 2px 12px rgba(0,0,0,0.4), 0 0 16px ${agentColor}20`,
+                    }}
+                  >
+                    {[0, 1, 2].map(i => (
+                      <div key={i} style={{
+                        width: 5, height: 5, borderRadius: '50%', background: agentColor,
+                        animation: `chatTypingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
+                      }} />
+                    ))}
+                    {/* Speech bubble tail */}
+                    <div style={{
+                      position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)',
+                      width: 0, height: 0,
+                      borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
+                      borderTop: `5px solid ${agentColor}50`,
+                    }} />
+                  </motion.div>
                 )}
               </div>
             </div>
@@ -1889,7 +1921,7 @@ function EmptyTab({ message }) {
   )
 }
 
-// ---- CHAT BAR (bottom) - aligned to Steffen c2-hud-spec --------------------
+// ---- CHAT BAR (bottom) - polished v2 with typing indicator, speaking state, smooth transitions
 function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking }) {
   const [expanded, setExpanded] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
@@ -1897,6 +1929,7 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
   const connectionRef = useRef(null)
   const relayPollRef = useRef(null)
@@ -1913,9 +1946,20 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const agentColor = currentAgent?.color || '#E85D26'
 
+  // Smooth auto-scroll: instant when sending, smooth when receiving
+  const scrollToBottom = useCallback((instant) => {
+    const container = messagesContainerRef.current
+    if (!container) return
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: instant ? 'instant' : 'smooth',
+    })
+  }, [])
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [currentMessages])
+    const lastMsg = currentMessages[currentMessages.length - 1]
+    scrollToBottom(lastMsg?.role === 'user')
+  }, [currentMessages, scrollToBottom])
 
   useEffect(() => {
     if (expanded) setTimeout(() => inputRef.current?.focus(), 200)
@@ -1928,8 +1972,27 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
     }
   }, [])
 
-  const updateMessages = (agentSlug, updater) => {
-    setMessages(prev => ({ ...prev, [agentSlug]: updater(prev[agentSlug] || []) }))
+  // Notify parent of speaking state changes (drives game sprite animation)
+  const setSpeaking = useCallback((isSpeaking) => {
+    setStreaming(isSpeaking)
+    onSpeaking?.(agentSlug, isSpeaking)
+  }, [agentSlug, onSpeaking])
+
+  const updateMessages = (slug, updater) => {
+    setMessages(prev => ({ ...prev, [slug]: updater(prev[slug] || []) }))
+  }
+
+  // Format timestamp for display
+  const formatTime = (dateStr) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    if (isNaN(d)) return ''
+    const now = new Date()
+    const diffMs = now - d
+    const mins = Math.floor(diffMs / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return `${mins}m ago`
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   }
 
   // Start polling relay-outbox for EA responses (local mode only)
@@ -1944,7 +2007,6 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
         if (!res.ok) return
         const data = await res.json()
         if (data.messages && data.messages.length > 0) {
-          // Find response messages (from EA, not from dashboard sends)
           const responses = data.messages.filter(m =>
             m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
           )
@@ -1958,18 +2020,19 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
                   ...lastMsg,
                   content: latest.message,
                   streaming: false,
+                  time: latest.timestamp || new Date().toISOString(),
                 }
               } else {
                 updated.push({
                   role: 'assistant',
                   content: latest.message,
                   streaming: false,
-                  time: latest.timestamp,
+                  time: latest.timestamp || new Date().toISOString(),
                 })
               }
               return updated
             })
-            setStreaming(false)
+            setSpeaking(false)
             lastOutboxCheckRef.current = latest.timestamp
             if (relayPollRef.current) {
               clearInterval(relayPollRef.current)
@@ -1988,12 +2051,13 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
 
     const sentTime = new Date().toISOString()
     setInput('')
+    // Auto-expand if collapsed
+    if (!expanded && !fullscreen) setExpanded(true)
     updateMessages(agentSlug, prev => [...prev, { role: 'user', content: text, time: sentTime }])
-    setStreaming(true)
+    setSpeaking(true)
     updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
 
     if (IS_LOCAL) {
-      // Local mode: write to relay-inbox (EA picks up via hook), poll outbox for responses
       try {
         await fetch('/api/local/relay-send', {
           method: 'POST',
@@ -2008,7 +2072,7 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
           if (last) updated[updated.length - 1] = { ...last, content: `Failed to send: ${err.message}`, streaming: false }
           return updated
         })
-        setStreaming(false)
+        setSpeaking(false)
       }
       return
     }
@@ -2017,7 +2081,6 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
     connectionRef.current?.disconnect()
 
     const conn = createChatConnection(
-      // onMessage
       (text) => {
         updateMessages(agentSlug, prev => {
           const updated = [...prev]
@@ -2026,17 +2089,15 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
           return updated
         })
       },
-      // onDone
       () => {
         updateMessages(agentSlug, prev => {
           const updated = [...prev]
           const last = updated[updated.length - 1]
-          if (last) updated[updated.length - 1] = { ...last, streaming: false }
+          if (last) updated[updated.length - 1] = { ...last, streaming: false, time: new Date().toISOString() }
           return updated
         })
-        setStreaming(false)
+        setSpeaking(false)
       },
-      // onError
       (error) => {
         updateMessages(agentSlug, prev => {
           const updated = [...prev]
@@ -2044,7 +2105,7 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
           if (last) updated[updated.length - 1] = { ...last, content: `Error: ${error}`, streaming: false }
           return updated
         })
-        setStreaming(false)
+        setSpeaking(false)
       }
     )
 
@@ -2056,33 +2117,55 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
     })
   }
 
-  // Chat heights per Steffen spec
-  const getHeight = () => {
-    if (fullscreen) return '100vh'
-    if (expanded) return isMobile ? '100vh' : '40vh'
-    return 0
-  }
+  // Typing indicator: 3 dots pulsing in agent's color
+  const TypingIndicator = () => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 2px' }}>
+      {[0, 1, 2].map(i => (
+        <div key={i} style={{
+          width: 7, height: 7, borderRadius: '50%',
+          background: agentColor, opacity: 0.9,
+          animation: `chatTypingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
+        }} />
+      ))}
+    </div>
+  )
+
+  // Streaming cursor
+  const StreamingCursor = () => (
+    <span style={{
+      display: 'inline-block', width: 2, height: '1em',
+      background: agentColor, marginLeft: 2,
+      verticalAlign: 'text-bottom',
+      animation: 'chatCursorBlink 0.8s ease-in-out infinite',
+    }} />
+  )
 
   return (
     <div style={{
-      position: fullscreen ? 'fixed' : 'fixed',
-      bottom: 0, left: 0, right: 0,
+      position: 'fixed', bottom: 0, left: 0, right: 0,
       zIndex: fullscreen ? 100 : 30,
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Expanded chat panel */}
+      {/* Expanded / Fullscreen chat panel */}
       <AnimatePresence>
         {(expanded || fullscreen) && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: getHeight(), opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            initial={{ height: 0, opacity: 0, y: 20 }}
+            animate={{
+              height: fullscreen ? '100vh' : (isMobile ? '100vh' : '40vh'),
+              opacity: 1, y: 0,
+            }}
+            exit={{ height: 0, opacity: 0, y: 20 }}
+            transition={{
+              height: { duration: 0.35, ease: [0.32, 0.72, 0, 1] },
+              opacity: { duration: 0.2 },
+              y: { duration: 0.25, ease: [0.32, 0.72, 0, 1] },
+            }}
             style={{
-              background: fullscreen ? PALETTE.background : 'rgba(10, 15, 30, 0.95)',
+              background: fullscreen ? PALETTE.background : 'rgba(10, 15, 30, 0.96)',
               backdropFilter: fullscreen ? 'none' : 'blur(24px)',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.5)',
+              borderTop: `1px solid ${agentColor}22`,
+              boxShadow: `0 -4px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 ${agentColor}15`,
               borderRadius: fullscreen ? 0 : '16px 16px 0 0',
               display: 'flex', flexDirection: 'column',
               overflow: 'hidden',
@@ -2090,15 +2173,18 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
           >
             {/* Drag handle */}
             {!fullscreen && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px' }}>
+              <div
+                onClick={() => setFullscreen(true)}
+                style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', cursor: 'pointer' }}
+              >
                 <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255, 255, 255, 0.15)' }} />
               </div>
             )}
 
-            {/* Header */}
+            {/* Header with agent identity */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: `0 20px`, height: fullscreen ? 56 : 44,
+              padding: '0 20px', height: fullscreen ? 56 : 44,
               borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
               flexShrink: 0,
             }}>
@@ -2108,118 +2194,152 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
                     <ArrowLeft size={18} />
                   </button>
                 )}
-                <span style={{ color: PALETTE.signText, fontSize: fullscreen ? 16 : 15, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>{currentAgent?.name}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: agentColor }}>
-                    {status === 'WORKING' && <animate attributeName="r" values="3;4;3" dur="1.5s" repeatCount="indefinite" />}
-                  </div>
-                  <span style={{ color: agentColor, fontSize: 11, fontFamily: 'Space Grotesk, sans-serif' }}>
-                    {status === 'WORKING' ? 'Active' : status === 'WAITING' ? 'Thinking...' : 'Idle'}
+                <SpriteAvatar agentSlug={agentSlug} size={fullscreen ? 28 : 24} borderColor={agentColor} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ color: PALETTE.signText, fontSize: fullscreen ? 15 : 14, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.2 }}>
+                    {currentAgent?.name}
                   </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{
+                      width: 6, height: 6, borderRadius: '50%',
+                      background: streaming ? agentColor : (status === 'WORKING' ? '#22C55E' : '#6B7280'),
+                      animation: streaming ? 'chatTypingDot 1.2s ease-in-out infinite' : (status === 'WORKING' ? 'statusPulse 1.5s ease-in-out infinite' : 'none'),
+                    }} />
+                    <span style={{ color: '#8A847C', fontSize: 11, fontFamily: 'Space Grotesk, sans-serif' }}>
+                      {streaming ? 'typing...' : (status === 'WORKING' ? 'Active' : status === 'WAITING' ? 'Thinking...' : 'Online')}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
                 {!fullscreen && (
-                  <button onClick={() => setFullscreen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}
+                  <button onClick={() => setFullscreen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, borderRadius: 4, transition: 'color 150ms' }}
                     onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
                     <Maximize2 size={16} />
                   </button>
                 )}
-                <button onClick={() => { setExpanded(false); setFullscreen(false) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}
+                {fullscreen && (
+                  <button onClick={() => setFullscreen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, borderRadius: 4, transition: 'color 150ms' }}
+                    onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
+                    <Minimize2 size={16} />
+                  </button>
+                )}
+                <button onClick={() => { setExpanded(false); setFullscreen(false) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, borderRadius: 4, transition: 'color 150ms' }}
                   onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
-                  <X size={16} />
+                  <ChevronDown size={16} />
                 </button>
               </div>
             </div>
 
-            {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', maxWidth: fullscreen ? 720 : '100%', margin: fullscreen ? '0 auto' : 0, width: '100%' }}>
+            {/* Messages area */}
+            <div ref={messagesContainerRef} style={{
+              flex: 1, overflowY: 'auto', padding: '16px 20px',
+              maxWidth: fullscreen ? 720 : '100%',
+              margin: fullscreen ? '0 auto' : 0, width: '100%',
+            }}>
+              {/* Empty state */}
               {currentMessages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B7280', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif' }}>
-                  Chat with <span style={{ color: PALETTE.signText, fontWeight: 600 }}>{currentAgent?.name}</span>
-                  <div style={{ fontSize: 12, marginTop: 6, color: '#6B7280' }}>{task}</div>
-                </div>
-              )}
-              {currentMessages.map((msg, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
-                  {msg.role === 'assistant' && (
-                    <SpriteAvatar agentSlug={agentSlug} size={fullscreen ? 28 : 20} borderColor={agentColor} style={{ marginRight: 8, marginTop: 2 }} />
-                  )}
-                  <div>
-                    <div style={{
-                      maxWidth: '75%',
-                      padding: '12px 16px',
-                      fontSize: fullscreen ? 15 : 14,
-                      fontFamily: 'Space Grotesk, sans-serif',
-                      lineHeight: 1.55,
-                      ...(msg.role === 'user'
-                        ? {
-                          background: 'rgba(232,93,38,0.12)',
-                          border: '1px solid rgba(232,93,38,0.20)',
-                          borderRadius: '12px 2px 12px 12px',
-                          color: PALETTE.signText,
-                        }
-                        : {
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                          borderRadius: '2px 12px 12px 12px',
-                          color: '#F0ECE6',
-                        }
-                      ),
-                    }}>
-                      <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}</div>
-                      {msg.streaming && !msg.content && (
-                        <div style={{ display: 'flex', gap: 4, padding: '4px 0' }}>
-                          {[0, 1, 2].map(i => (
-                            <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: agentColor, animation: `dotPulse 0.6s ease-in-out ${i * 0.2}s infinite` }} />
-                          ))}
-                        </div>
-                      )}
-                      {msg.streaming && msg.content && (
-                        <span style={{ display: 'inline-block', width: 6, height: 16, background: agentColor, marginLeft: 2, animation: 'pulse 1s infinite' }} />
-                      )}
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', height: '100%', minHeight: 120,
+                  gap: 12, padding: '24px 0',
+                }}>
+                  <SpriteAvatar agentSlug={agentSlug} size={48} borderColor={agentColor} />
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ color: PALETTE.signText, fontSize: 15, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>
+                      {currentAgent?.name}
                     </div>
-                    <div style={{ fontSize: 10, color: '#6B7280', marginTop: 4, fontFamily: 'Space Grotesk, sans-serif', textAlign: msg.role === 'user' ? 'right' : 'left' }}>
-                      {msg.time ? timeAgo(msg.time) : ''}
+                    <div style={{ fontSize: 12, marginTop: 4, color: '#6B7280', fontFamily: 'Space Grotesk, sans-serif' }}>
+                      {task}
                     </div>
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* Message list */}
+              {currentMessages.map((msg, i) => {
+                const isUser = msg.role === 'user'
+                return (
+                  <motion.div
+                    key={`${agentSlug}-${i}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                    style={{
+                      display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start',
+                      marginBottom: 14, alignItems: 'flex-end',
+                    }}
+                  >
+                    {/* Agent avatar */}
+                    {!isUser && (
+                      <SpriteAvatar agentSlug={agentSlug} size={fullscreen ? 30 : 24} borderColor={agentColor}
+                        style={{ marginRight: 8, marginBottom: 18, flexShrink: 0, opacity: msg.streaming ? 1 : 0.85, transition: 'opacity 300ms' }}
+                      />
+                    )}
+                    <div style={{ maxWidth: '75%' }}>
+                      <div style={{
+                        padding: '10px 14px', fontSize: fullscreen ? 14 : 13,
+                        fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.55,
+                        ...(isUser
+                          ? { background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.20)', borderRadius: '14px 4px 14px 14px', color: PALETTE.signText }
+                          : { background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%)',
+                              border: `1px solid ${msg.streaming ? agentColor + '30' : 'rgba(255, 255, 255, 0.08)'}`,
+                              borderRadius: '4px 14px 14px 14px', color: '#F0ECE6', transition: 'border-color 300ms ease' }
+                        ),
+                      }}>
+                        {msg.content && (
+                          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                            {msg.content}
+                            {msg.streaming && msg.content && <StreamingCursor />}
+                          </div>
+                        )}
+                        {msg.streaming && !msg.content && <TypingIndicator />}
+                      </div>
+                      <div style={{
+                        fontSize: 10, color: '#6B728088', marginTop: 4,
+                        paddingLeft: isUser ? 0 : 2, paddingRight: isUser ? 2 : 0,
+                        fontFamily: 'Space Grotesk, sans-serif', textAlign: isUser ? 'right' : 'left',
+                      }}>
+                        {msg.streaming ? '' : formatTime(msg.time)}
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input bar inside expanded panel */}
+            {/* Input bar */}
             <form onSubmit={sendMessage} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
+              display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 16px', height: 56,
               borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-              flexShrink: 0,
+              flexShrink: 0, background: 'rgba(0, 0, 0, 0.15)',
             }}>
-              <SpriteAvatar agentSlug={agentSlug} size={32} borderColor={agentColor} />
               <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
                 placeholder={`Message ${currentAgent?.name}...`} disabled={streaming}
                 style={{
-                  flex: 1, background: 'rgba(255, 255, 255, 0.04)',
+                  flex: 1, background: 'rgba(255, 255, 255, 0.05)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 8, height: 36, padding: '0 16px',
-                  color: PALETTE.signText, fontSize: 14,
-                  fontFamily: 'Space Grotesk, sans-serif',
-                  outline: 'none', transition: 'border-color 150ms ease',
+                  borderRadius: 10, height: 38, padding: '0 16px',
+                  color: PALETTE.signText, fontSize: 14, fontFamily: 'Space Grotesk, sans-serif',
+                  outline: 'none', transition: 'border-color 200ms ease, box-shadow 200ms ease',
                 }}
-                onFocus={e => e.target.style.borderColor = `${agentColor}66`}
-                onBlur={e => e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)'}
+                onFocus={e => { e.target.style.borderColor = `${agentColor}66`; e.target.style.boxShadow = `0 0 0 2px ${agentColor}15` }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)'; e.target.style.boxShadow = 'none' }}
               />
               <button type="submit" disabled={!input.trim() || streaming}
                 style={{
-                  width: 36, height: 36, borderRadius: '50%',
+                  width: 38, height: 38, borderRadius: '50%',
                   background: input.trim() ? agentColor : '#2A3040',
                   color: '#FDF6EC', border: 'none',
                   cursor: input.trim() ? 'pointer' : 'default',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: '150ms ease',
+                  transition: 'background 150ms ease, transform 100ms ease, opacity 150ms',
                   opacity: streaming ? 0.5 : 1,
+                  transform: input.trim() ? 'scale(1)' : 'scale(0.92)',
                 }}>
-                {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} style={{ marginLeft: 1 }} />}
               </button>
             </form>
           </motion.div>
@@ -2228,54 +2348,74 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking
 
       {/* Collapsed chat bar: 56px */}
       {!expanded && !fullscreen && (
-        <form onSubmit={sendMessage} style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          height: 56, padding: '0 16px',
-          background: 'rgba(10, 15, 30, 0.85)',
-          backdropFilter: 'blur(16px)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-          boxShadow: '0 -2px 12px rgba(0, 0, 0, 0.3)',
-        }}>
-          {/* Agent avatar */}
-          <SpriteAvatar agentSlug={agentSlug} size={32} borderColor={agentColor} />
-          <span style={{ color: agentColor, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif', flexShrink: 0 }}>
-            {currentAgent?.name}
-          </span>
-
-          {/* Input */}
-          <input type="text" value={input} onChange={e => setInput(e.target.value)}
-            onFocus={() => setExpanded(true)}
-            placeholder={`Message ${currentAgent?.name}...`} disabled={streaming}
-            style={{
-              flex: 1, background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 8, height: 36, padding: '0 16px',
-              color: PALETTE.signText, fontSize: 14,
-              fontFamily: 'Space Grotesk, sans-serif',
-              outline: 'none', margin: '0 8px',
-            }}
-          />
-
-          {/* Send */}
-          <button type="submit" disabled={!input.trim() || streaming}
-            style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: input.trim() ? agentColor : '#2A3040',
-              color: '#FDF6EC', border: 'none',
-              cursor: input.trim() ? 'pointer' : 'default',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              opacity: streaming ? 0.3 : (input.trim() ? 1 : 0.3),
-            }}>
-            <Send size={16} />
-          </button>
-
-          {/* Expand */}
-          <button type="button" onClick={() => setExpanded(true)} style={{
-            background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4,
+        <motion.div
+          initial={{ y: 56 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+        >
+          <form onSubmit={sendMessage} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            height: 56, padding: '0 16px',
+            background: 'rgba(10, 15, 30, 0.88)',
+            backdropFilter: 'blur(16px)',
+            borderTop: `1px solid ${agentColor}18`,
+            boxShadow: '0 -2px 16px rgba(0, 0, 0, 0.35)',
           }}>
-            <ChevronUp size={16} />
-          </button>
-        </form>
+            <div onClick={() => setExpanded(true)} style={{ cursor: 'pointer' }}>
+              <SpriteAvatar agentSlug={agentSlug} size={32} borderColor={agentColor} />
+            </div>
+            <div onClick={() => setExpanded(true)} style={{ cursor: 'pointer', flexShrink: 0 }}>
+              <span style={{ color: agentColor, fontSize: 13, fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>
+                {currentAgent?.name}
+              </span>
+              {streaming && (
+                <div style={{ display: 'flex', gap: 3, marginTop: 2 }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} style={{
+                      width: 4, height: 4, borderRadius: '50%', background: agentColor,
+                      animation: `chatTypingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
+                    }} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <input type="text" value={input} onChange={e => setInput(e.target.value)}
+              onFocus={() => setExpanded(true)}
+              placeholder={`Message ${currentAgent?.name}...`} disabled={streaming}
+              style={{
+                flex: 1, background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 10, height: 36, padding: '0 16px',
+                color: PALETTE.signText, fontSize: 14, fontFamily: 'Space Grotesk, sans-serif',
+                outline: 'none', margin: '0 4px', transition: 'border-color 200ms ease',
+              }}
+            />
+
+            <button type="submit" disabled={!input.trim() || streaming}
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: input.trim() ? agentColor : '#2A3040',
+                color: '#FDF6EC', border: 'none',
+                cursor: input.trim() ? 'pointer' : 'default',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: streaming ? 0.3 : (input.trim() ? 1 : 0.3),
+                transition: 'all 150ms ease',
+              }}>
+              <Send size={16} />
+            </button>
+
+            <button type="button" onClick={() => setExpanded(true)} style={{
+              background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4,
+              transition: 'color 150ms',
+            }}
+              onMouseEnter={e => e.target.style.color = agentColor}
+              onMouseLeave={e => e.target.style.color = '#6B7280'}
+            >
+              <ChevronUp size={16} />
+            </button>
+          </form>
+        </motion.div>
       )}
     </div>
   )
@@ -2725,6 +2865,7 @@ export default function GameDashboard() {
                 isOverview={isOverview}
                 onZoomChange={setCameraZoom}
                 agentAnimations={agentAnimations}
+                streamingAgent={streamingAgent}
               />
 
               {/* Camera controls (floating, game mode only) */}
@@ -2966,6 +3107,14 @@ export default function GameDashboard() {
         .animate-spin { animation: spin 1s linear infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+        @keyframes chatTypingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-4px); opacity: 1; }
+        }
+        @keyframes chatCursorBlink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { overflow: hidden; }
         ::-webkit-scrollbar { width: 4px; }
