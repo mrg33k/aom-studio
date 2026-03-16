@@ -1258,9 +1258,21 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   }, [onZoomChange])
 
   const handleTouchEnd = useCallback((e) => {
-    if (e.touches.length < 2) pinchRef.current.active = false
+    if (e.touches.length < 2 && pinchRef.current.active) {
+      pinchRef.current.active = false
+      // Snap to nearest preset after pinch ends
+      onZoomChange?.(z => {
+        let closest = ZOOM_PRESETS[0]
+        let minDist = Math.abs(z - closest)
+        for (const p of ZOOM_PRESETS) {
+          const d = Math.abs(z - p)
+          if (d < minDist) { closest = p; minDist = d }
+        }
+        return closest
+      })
+    }
     if (e.touches.length === 0) handleMouseUp()
-  }, [handleMouseUp])
+  }, [handleMouseUp, onZoomChange])
 
   const detailLevel = getDetailLevel(cameraZoom)
   // Game-native zoom transitions: snappy but smooth, no janky web feel
@@ -4091,8 +4103,12 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
       borderRadius: 8,
       padding: 4,
     }}>
-      {/* Zoom in */}
-      <button onClick={() => setCameraZoom(z => Math.min(ZOOM_MAX, z + 0.15))}
+      {/* Zoom in (snap to next preset) */}
+      <button onClick={() => setCameraZoom(z => {
+          const idx = ZOOM_PRESETS.findIndex(p => Math.abs(p - z) < 0.3)
+          const nextIdx = idx >= 0 && idx < ZOOM_PRESETS.length - 1 ? idx + 1 : ZOOM_PRESETS.length - 1
+          return ZOOM_PRESETS[nextIdx]
+        })}
         title="Zoom in (+)"
         style={{
           width: 32, height: 32, background: 'transparent', border: 'none',
@@ -4105,13 +4121,17 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
         <ZoomIn size={16} />
       </button>
 
-      {/* Zoom level */}
+      {/* Zoom level label: ALL (overview) or ROOM (detail) */}
       <span style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textAlign: 'center', padding: '2px 0' }}>
-        {Math.round(cameraZoom * 100)}%
+        {cameraZoom <= 0.9 ? 'ALL' : 'ROOM'}
       </span>
 
-      {/* Zoom out */}
-      <button onClick={() => setCameraZoom(z => Math.max(ZOOM_MIN, z - 0.15))}
+      {/* Zoom out (snap to previous preset) */}
+      <button onClick={() => setCameraZoom(z => {
+          const idx = ZOOM_PRESETS.findIndex(p => Math.abs(p - z) < 0.3)
+          const nextIdx = idx > 0 ? idx - 1 : 0
+          return ZOOM_PRESETS[nextIdx]
+        })}
         title="Zoom out (-)"
         style={{
           width: 32, height: 32, background: 'transparent', border: 'none',
@@ -4732,8 +4752,16 @@ export default function GameDashboard() {
       setHudOpen(false)
     },
     onAgentSelect: null, // Removed: 1-9 now used for mode switching
-    onZoomIn: () => setCameraZoom(z => Math.min(ZOOM_MAX, z + 0.15)),
-    onZoomOut: () => setCameraZoom(z => Math.max(ZOOM_MIN, z - 0.15)),
+    onZoomIn: () => setCameraZoom(z => {
+      const idx = ZOOM_PRESETS.findIndex(p => Math.abs(p - z) < 0.3)
+      const nextIdx = idx >= 0 && idx < ZOOM_PRESETS.length - 1 ? idx + 1 : ZOOM_PRESETS.length - 1
+      return ZOOM_PRESETS[nextIdx]
+    }),
+    onZoomOut: () => setCameraZoom(z => {
+      const idx = ZOOM_PRESETS.findIndex(p => Math.abs(p - z) < 0.3)
+      const nextIdx = idx > 0 ? idx - 1 : 0
+      return ZOOM_PRESETS[nextIdx]
+    }),
     onOverview: () => setIsOverview(o => !o),
     onModeSwitch: handleModeSwitch,
     onCommandPalette: () => { /* Command palette: future C3.1 */ },
