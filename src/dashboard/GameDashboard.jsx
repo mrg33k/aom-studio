@@ -941,14 +941,19 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
       onTouchMove={(e) => { handleTouchMove(e); handleTouchMovePinch(e) }}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Building container - single cohesive image, no grid of tiles */}
+      {/* Building container: outer = zoom/pan, inner = breathing float */}
       <div style={{
         transform: `translate(${panOffset.x + cameraOffsetX * cameraZoom}px, ${panOffset.y + cameraOffsetY * cameraZoom}px) scale(${cameraZoom})`,
         transition: panState.current.dragging ? 'none' : `transform ${zoomTransition}`,
         transformOrigin: 'center center',
-        position: 'relative',
         width: IMG_SIZE,
         height: IMG_SIZE,
+      }}>
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        animation: 'buildingFloat 5s ease-in-out infinite',
       }}>
         {/* The full office image - ONE cohesive building. No double walls. */}
         <img
@@ -1087,6 +1092,7 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
             </div>
           )
         })}
+      </div>
       </div>
     </div>
   )
@@ -1884,7 +1890,7 @@ function EmptyTab({ message }) {
 }
 
 // ---- CHAT BAR (bottom) - aligned to Steffen c2-hud-spec --------------------
-function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
+function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile, onSpeaking }) {
   const [expanded, setExpanded] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [messages, setMessages] = useState({}) // per-agent message history
@@ -2879,6 +2885,10 @@ export default function GameDashboard() {
         onSelectAgent={setChatAgent}
         agentStatus={agentStatus}
         isMobile={isMobile}
+        onSpeaking={(slug, speaking) => {
+          if (speaking) setStreamingAgent(slug)
+          else if (streamingAgent === slug) setStreamingAgent(null)
+        }}
       />
 
       {/* Keyboard shortcuts overlay */}
@@ -2931,6 +2941,10 @@ export default function GameDashboard() {
         @keyframes windowLight {
           0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.04; }
           50% { transform: translate(20px, -10px) scale(1.1); opacity: 0.06; }
+        }
+        @keyframes buildingFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
         }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes dotPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
