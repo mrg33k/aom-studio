@@ -15,6 +15,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
+const GameHUD = lazy(() => import('./GameHUD.jsx'))
 
 // ---- MODE CONFIG -----------------------------------------------------------
 const MODES = {
@@ -956,6 +957,7 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
             display: 'block',
             imageRendering: 'auto',
             userSelect: 'none',
+            pointerEvents: 'none',
           }}
         />
 
@@ -2741,6 +2743,23 @@ export default function GameDashboard() {
           isOverview={isOverview}
           onRoomClick={handleMinimapRoomClick}
         />
+      )}
+
+      {/* Game HUD (Sims x Chaart) - bottom strip with project pills + agent status */}
+      {currentMode === 'game' && (
+        <Suspense fallback={null}>
+          <GameHUD
+            agentStatus={agentStatus}
+            throughput={data?.throughput}
+            onAgentClick={(slug) => {
+              setCameraTarget(slug)
+              setSelectedRoom(slug)
+              setIsOverview(false)
+              setCameraZoom(1.6)
+            }}
+            isMobile={isMobile}
+          />
+        </Suspense>
       )}
 
       {/* Mobile mode tab bar */}
