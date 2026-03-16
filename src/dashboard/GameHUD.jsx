@@ -27,7 +27,7 @@
 // DONE(bobby2): KILL MINIMAP -- No minimap rendered in GameHUD. MiniMap component lives in GameDashboard (separate file owner). GameHUD is clean. Ref: Patrik directive line 267.
 // DONE(bobby2): RIGHT NOW PILL COLOR = ORANGE/FIRE -- Changed from green (#3BFF6B) to orange (#FF6B3D) matching Today's fire energy. Updated SECTION_MAP, LIVE badge, synthetic pill, all Right Now rendering. Ref: Patrik feedback line 273.
 // DONE(bobby2): RIGHT NOW DATA FRESHNESS -- useRightNowLiveTasks polls every 3s (was 8s). Right Now is now the freshest data on screen, beating notifications (8s) and punch-list (5s). Ref: Patrik feedback line 273.
-// TODO(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- Right Now section must be white/light during the day like everything else. EVERYTHING is white/light in daytime: top bar, sidebar, bottom HUD, Right Now, chat, pills. No dark Right Now on a white dashboard. One theme. One switch. Ref: Patrik feedback line 274.
+// DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode. Daytime = white glass (rgba(248,250,255,0.96)), blue accents, dark text. Same theme system as bottom HUD bar. One switch, everything flips. Ref: Patrik feedback line 274.
 // DONE(bobby2): DARK MODE SWITCH AT 8PM -- GameHUD overrides isNightMode prop with own 8pm check (was 9pm in GameDashboard). Ref: Patrik directive.
 // DONE(bobby2): SELECTED PILL CONTRAST FIX -- Expanded pill in daytime now uses dark text (#1E293B) instead of project.color which could be too light. Ref: Patrik feedback line 258, 260.
 // ==========
@@ -1210,7 +1210,26 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
 }
 
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
-function TaskPanel({ project, onClose }) {
+// DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
+function TaskPanel({ project, onClose, isNightMode }) {
+  const isDaytime = isNightMode === false
+  // Daytime palette for the expanded task panel (white glass, blue accents)
+  const tpBg = isDaytime ? 'rgba(248, 250, 255, 0.96)' : HUD.panelBg
+  const tpBorder = isDaytime ? 'rgba(59, 130, 246, 0.2)' : HUD.panelBorder
+  const tpShadow = isDaytime
+    ? '0 -12px 48px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)'
+    : '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(100,180,255,0.08)'
+  const tpDivider = isDaytime ? 'rgba(59, 130, 246, 0.12)' : HUD.divider
+  const tpTextPrimary = isDaytime ? '#0F172A' : HUD.textPrimary
+  const tpTextMuted = isDaytime ? '#64748B' : HUD.textMuted
+  const tpGlow = isDaytime
+    ? 'linear-gradient(180deg, rgba(59,130,246,0.04) 0%, transparent 100%)'
+    : 'linear-gradient(180deg, rgba(100,180,255,0.05) 0%, transparent 100%)'
+  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.2)' : 'rgba(100,180,255,0.18)'
+  const tpCheckboxBg = isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(100,180,255,0.03)'
+  const tpCloseBg = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)'
+  const tpCloseHoverBg = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.12)'
+  const tpProgressBg = isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.06)'
   // Local state for optimistic checkbox toggling
   const [localToggles, setLocalToggles] = useState({}) // task index -> toggled done state
   const [saving, setSaving] = useState(null) // which task index is saving
@@ -1274,20 +1293,20 @@ function TaskPanel({ project, onClose }) {
       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
       style={{
         position: 'absolute', bottom: '100%', left: 16, right: 16,
-        background: HUD.panelBg,
+        background: tpBg,
         backdropFilter: 'blur(24px)',
-        border: `2px solid ${HUD.panelBorder}`,
+        border: `2px solid ${tpBorder}`,
         borderBottom: 'none',
         borderRadius: '12px 12px 0 0',
         overflow: 'hidden',
         maxHeight: 380,
-        boxShadow: '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(100,180,255,0.08)',
+        boxShadow: tpShadow,
       }}
     >
-      {/* Blue inner glow at top */}
+      {/* Inner glow at top */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 50,
-        background: 'linear-gradient(180deg, rgba(100,180,255,0.05) 0%, transparent 100%)',
+        background: tpGlow,
         pointerEvents: 'none',
       }} />
 
@@ -1295,7 +1314,7 @@ function TaskPanel({ project, onClose }) {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '16px 20px 12px',
-        borderBottom: `1px solid ${HUD.divider}`,
+        borderBottom: `1px solid ${tpDivider}`,
         position: 'relative',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1306,7 +1325,7 @@ function TaskPanel({ project, onClose }) {
           }} />
           <span style={{
             fontFamily: "'Inter', system-ui, sans-serif", fontSize: 26, fontWeight: 900,
-            color: HUD.textPrimary,
+            color: tpTextPrimary,
             textTransform: 'uppercase',
             letterSpacing: '-0.02em',
           }}>
@@ -1314,7 +1333,7 @@ function TaskPanel({ project, onClose }) {
           </span>
           <span style={{
             fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 600,
-            color: HUD.textMuted,
+            color: tpTextMuted,
           }}>
             {doneTasks}/{totalTasks}
           </span>
@@ -1324,7 +1343,7 @@ function TaskPanel({ project, onClose }) {
           {/* Progress bar - THICKER per Steffen spec (12px) */}
           <div style={{
             width: 100, height: 12, borderRadius: 6,
-            background: 'rgba(100,180,255,0.06)',
+            background: tpProgressBg,
             overflow: 'hidden',
           }}>
             <div style={{
@@ -1345,14 +1364,14 @@ function TaskPanel({ project, onClose }) {
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(100,180,255,0.06)', border: `1px solid ${HUD.divider}`,
+              background: tpCloseBg, border: `1px solid ${tpDivider}`,
               borderRadius: 6, cursor: 'pointer',
-              color: HUD.textMuted, padding: '4px 4px',
+              color: tpTextMuted, padding: '4px 4px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 150ms ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.12)'; e.currentTarget.style.color = HUD.textSecondary }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.06)'; e.currentTarget.style.color = HUD.textMuted }}
+            onMouseEnter={e => { e.currentTarget.style.background = tpCloseHoverBg; e.currentTarget.style.color = isDaytime ? '#475569' : HUD.textSecondary }}
+            onMouseLeave={e => { e.currentTarget.style.background = tpCloseBg; e.currentTarget.style.color = tpTextMuted }}
           >
             <X size={16} />
           </button>
@@ -1376,7 +1395,7 @@ function TaskPanel({ project, onClose }) {
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12,
                 padding: '10px 8px',
-                borderBottom: i < sortedTasks.length - 1 ? `1px solid ${HUD.divider}` : 'none',
+                borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 opacity: isDone ? 0.35 : 1,
                 transition: 'opacity 200ms ease',
               }}
@@ -1388,8 +1407,8 @@ function TaskPanel({ project, onClose }) {
                 whileTap={{ scale: 0.85 }}
                 style={{
                   width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
-                  border: isDone ? 'none' : `1.5px solid rgba(100,180,255,0.18)`,
-                  background: isDone ? project.color : 'rgba(100,180,255,0.03)',
+                  border: isDone ? 'none' : `1.5px solid ${tpCheckboxBorder}`,
+                  background: isDone ? project.color : tpCheckboxBg,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 150ms ease',
                   cursor: IS_LOCAL ? 'pointer' : 'default',
@@ -1401,7 +1420,7 @@ function TaskPanel({ project, onClose }) {
               {/* Task text - LARGER */}
               <span style={{
                 fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 400,
-                color: isDone ? HUD.textMuted : HUD.textPrimary,
+                color: isDone ? tpTextMuted : tpTextPrimary,
                 lineHeight: 1.45,
                 textDecoration: isDone ? 'line-through' : 'none',
                 flex: 1,
@@ -1663,6 +1682,7 @@ export default function GameHUD({
             key={expandedProject.section}
             project={expandedProject}
             onClose={() => setExpandedProject(null)}
+            isNightMode={isNightMode}
           />
         )}
       </AnimatePresence>

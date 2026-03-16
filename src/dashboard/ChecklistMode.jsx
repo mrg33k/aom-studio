@@ -16,8 +16,8 @@
 // ==========
 //
 // ========== PATRIK DIRECTIVES (Pass 26, lines 273-275) ==========
-// TODO(bobby2): RIGHT NOW CHECKLIST COLOR = ORANGE/FIRE -- Right Now section in checklist must use orange/fire color (not green). Matches HUD pill color change. Green = done/complete energy, not active sprint energy. Ref: Patrik feedback line 273.
-// TODO(bobby2): DAYTIME WHITE CHECKLIST RIGHT NOW -- Right Now section in checklist must be white/light during daytime. Everything flips to light at once. No dark Right Now on a white checklist. Ref: Patrik feedback line 274.
+// DONE(bobby2): RIGHT NOW CHECKLIST COLOR = ORANGE/FIRE -- Changed all Right Now colors from green (#3BFF6B / rgba(59,255,107)) to orange (#FF6B3D / rgba(255,107,61)). Matches HUD pill color. Green = done, orange = active sprint. Ref: Patrik feedback line 273.
+// DONE(bobby2): DAYTIME WHITE CHECKLIST RIGHT NOW -- ChecklistMode detects 8pm threshold (same as GameHUD). Right Now section title, task cards, and avatars all flip to light palette in daytime. Ref: Patrik feedback line 274.
 // ==========
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
@@ -86,7 +86,7 @@ function parsePunchList(markdown) {
   let currentProject = null
 
   const SECTION_MAP = {
-    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#3BFF6B', icon: 'zap' },
+    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy
     'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -488,21 +488,21 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               height: 40, padding: '0 14px',
-              background: selectedProject === 'rightnow' ? 'rgba(59,255,107,0.15)' : 'rgba(59,255,107,0.04)',
-              border: `1.5px solid ${selectedProject === 'rightnow' ? 'rgba(59,255,107,0.4)' : 'rgba(59,255,107,0.12)'}`,
+              background: selectedProject === 'rightnow' ? 'rgba(255,107,61,0.15)' : 'rgba(255,107,61,0.04)',
+              border: `1.5px solid ${selectedProject === 'rightnow' ? 'rgba(255,107,61,0.4)' : 'rgba(255,107,61,0.12)'}`,
               borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
               cursor: 'pointer', scrollSnapAlign: 'start',
-              color: '#3BFF6B',
+              color: '#FF6B3D',
               fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
               textTransform: 'uppercase',
               animation: 'rightNowPulse 3s ease-in-out infinite',
             }}
           >
-            <Zap size={14} color="#3BFF6B" style={{ filter: 'drop-shadow(0 0 4px rgba(59,255,107,0.7))' }} />
+            <Zap size={14} color="#FF6B3D" style={{ filter: 'drop-shadow(0 0 4px rgba(255,107,61,0.7))' }} />
             Right Now
             <span style={{
               fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-              fontSize: 13, color: '#FFF', background: '#3BFF6B',
+              fontSize: 13, color: '#FFF', background: '#FF6B3D',
               padding: '2px 7px', borderRadius: 8, lineHeight: 1,
             }}>
               {rightNowCount}
@@ -592,27 +592,27 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 10,
             height: 48, padding: selectedProject === 'rightnow' ? '0 13px' : '0 16px',
-            background: selectedProject === 'rightnow' ? 'rgba(59,255,107,0.08)' : 'transparent',
+            background: selectedProject === 'rightnow' ? 'rgba(255,107,61,0.08)' : 'transparent',
             border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
             borderLeftWidth: 3, borderLeftStyle: 'solid',
-            borderLeftColor: selectedProject === 'rightnow' ? '#3BFF6B' : 'transparent',
+            borderLeftColor: selectedProject === 'rightnow' ? '#FF6B3D' : 'transparent',
             cursor: 'pointer', transition: 'background 100ms ease',
             color: '#F0ECE6', fontFamily: "'Inter Tight', system-ui, sans-serif",
             fontSize: 15, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
             position: 'relative',
           }}
         >
-          <Zap size={16} color="#3BFF6B" style={{
+          <Zap size={16} color="#FF6B3D" style={{
             flexShrink: 0,
-            filter: 'drop-shadow(0 0 6px rgba(59,255,107,0.7))',
+            filter: 'drop-shadow(0 0 6px rgba(255,107,61,0.7))',
             animation: 'rightNowPulse 2s ease-in-out infinite',
           }} />
-          <span style={{ flex: 1, letterSpacing: '-0.01em', color: '#3BFF6B' }}>Right Now</span>
+          <span style={{ flex: 1, letterSpacing: '-0.01em', color: '#FF6B3D' }}>Right Now</span>
           <span style={{
             fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-            fontSize: 13, color: '#FFF', background: '#3BFF6B',
+            fontSize: 13, color: '#FFF', background: '#FF6B3D',
             padding: '3px 9px', borderRadius: 8, lineHeight: 1,
-            boxShadow: '0 2px 6px rgba(59,255,107,0.3)',
+            boxShadow: '0 2px 6px rgba(255,107,61,0.3)',
             minWidth: 26, textAlign: 'center',
           }}>
             {rightNowCount}
@@ -620,11 +620,11 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           {/* Subtle glow bar at bottom */}
           <div style={{
             position: 'absolute', bottom: 0, left: 16, right: 16, height: 2,
-            background: 'rgba(59,255,107,0.15)', borderRadius: 1,
+            background: 'rgba(255,107,61,0.15)', borderRadius: 1,
           }}>
             <div style={{
               width: '100%', height: '100%',
-              background: 'rgba(59,255,107,0.4)', borderRadius: 1,
+              background: 'rgba(255,107,61,0.4)', borderRadius: 1,
               animation: 'rightNowPulse 2s ease-in-out infinite',
             }} />
           </div>
@@ -1005,17 +1005,17 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive })
             <span style={{
               fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 11,
               textTransform: 'uppercase', letterSpacing: '0.15em',
-              color: '#3BFF6B',
-              background: 'rgba(59,255,107,0.12)',
-              border: '1px solid rgba(59,255,107,0.3)',
+              color: '#FF6B3D',
+              background: 'rgba(255,107,61,0.12)',
+              border: '1px solid rgba(255,107,61,0.3)',
               borderRadius: 4, padding: '2px 8px',
               display: 'flex', alignItems: 'center', gap: 5,
               animation: 'rightNowPulse 2s ease-in-out infinite',
             }}>
               <div style={{
                 width: 6, height: 6, borderRadius: '50%',
-                background: '#3BFF6B',
-                boxShadow: '0 0 6px #3BFF6B',
+                background: '#FF6B3D',
+                boxShadow: '0 0 6px #FF6B3D',
                 animation: 'rightNowDotPulse 1.5s ease-in-out infinite',
               }} />
               LIVE
@@ -1028,11 +1028,11 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive })
 }
 
 // ---- RIGHT NOW TASK CARD (agent avatar + task + progress bar) ---------------
-function RightNowTaskCard({ task, index }) {
+function RightNowTaskCard({ task, index, isDaytime }) {
   const [isHovered, setIsHovered] = useState(false)
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
   const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
-  const color = '#3BFF6B'
+  const color = '#FF6B3D'
   const agentColor = agentInfo?.color || color
 
   return (
@@ -1046,9 +1046,11 @@ function RightNowTaskCard({ task, index }) {
       onMouseLeave={() => setIsHovered(false)}
       style={{
         background: isHovered
-          ? 'rgba(59,255,107,0.06)'
-          : 'rgba(59,255,107,0.02)',
-        border: `1px solid ${isHovered ? 'rgba(59,255,107,0.15)' : 'rgba(59,255,107,0.06)'}`,
+          ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
+          : (isDaytime ? 'rgba(255,107,61,0.04)' : 'rgba(255,107,61,0.02)'),
+        border: `1px solid ${isHovered
+          ? (isDaytime ? 'rgba(255,107,61,0.2)' : 'rgba(255,107,61,0.15)')
+          : (isDaytime ? 'rgba(255,107,61,0.1)' : 'rgba(255,107,61,0.06)')}`,
         borderRadius: 12,
         padding: '12px 16px 10px',
         marginBottom: 6,
@@ -1065,7 +1067,7 @@ function RightNowTaskCard({ task, index }) {
           <div style={{
             width: 32, height: 32, borderRadius: '50%',
             border: `2px solid ${agentColor}`,
-            overflow: 'hidden', flexShrink: 0, background: '#0A0F1E',
+            overflow: 'hidden', flexShrink: 0, background: isDaytime ? '#F1F5F9' : '#0A0F1E',
             boxShadow: `0 0 8px ${agentColor}44`,
           }}>
             <img
@@ -1095,7 +1097,7 @@ function RightNowTaskCard({ task, index }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 500, fontSize: 15,
-            color: task.done ? '#6B7280' : '#F0ECE6',
+            color: task.done ? '#6B7280' : (isDaytime ? '#1E293B' : '#F0ECE6'),
             lineHeight: 1.35,
             textDecoration: task.done ? 'line-through' : 'none',
             opacity: task.done ? 0.6 : 1,
@@ -1119,8 +1121,8 @@ function RightNowTaskCard({ task, index }) {
             fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 10,
             textTransform: 'uppercase', letterSpacing: '0.15em',
             color: color,
-            background: 'rgba(59,255,107,0.10)',
-            border: '1px solid rgba(59,255,107,0.25)',
+            background: 'rgba(255,107,61,0.10)',
+            border: '1px solid rgba(255,107,61,0.25)',
             borderRadius: 4, padding: '3px 8px',
             display: 'flex', alignItems: 'center', gap: 5,
             flexShrink: 0,
@@ -1139,7 +1141,7 @@ function RightNowTaskCard({ task, index }) {
         {/* Progress % */}
         <span style={{
           fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 13,
-          color: task.done ? '#4CAF50' : 'rgba(59,255,107,0.7)',
+          color: task.done ? '#4CAF50' : 'rgba(255,107,61,0.7)',
           flexShrink: 0, minWidth: 36, textAlign: 'right',
         }}>
           {task.progress}%
@@ -1150,7 +1152,7 @@ function RightNowTaskCard({ task, index }) {
       <div style={{
         marginTop: 8,
         height: 3,
-        background: 'rgba(59,255,107,0.08)',
+        background: 'rgba(255,107,61,0.08)',
         borderRadius: 2,
         overflow: 'hidden',
       }}>
@@ -1173,12 +1175,12 @@ function RightNowTaskCard({ task, index }) {
 }
 
 // ---- RIGHT NOW SECTION (pinned before Today) --------------------------------
-function RightNowSection({ tasks, isCollapsed, onToggle }) {
+function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime }) {
   if (!tasks || tasks.length === 0) return null
 
   const liveTasks = tasks.filter(t => t.isLive)
   const doneTasks = tasks.filter(t => t.done)
-  const color = '#3BFF6B'
+  const color = '#FF6B3D'
 
   return (
     <div style={{ marginBottom: 12 }}>
@@ -1192,7 +1194,7 @@ function RightNowSection({ tasks, isCollapsed, onToggle }) {
           textAlign: 'left',
         }}
       >
-        {isCollapsed ? <ChevronRight size={16} color="#6B7280" /> : <ChevronDown size={16} color="#6B7280" />}
+        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} />}
 
         <Zap size={20} color={color} style={{
           filter: `drop-shadow(0 0 8px ${color}AA)`,
@@ -1202,11 +1204,11 @@ function RightNowSection({ tasks, isCollapsed, onToggle }) {
         <span style={{
           fontFamily: "'Inter Tight', system-ui, sans-serif",
           fontSize: 22, fontWeight: 900,
-          color: '#EDF2FA',
+          color: isDaytime ? '#0F172A' : '#EDF2FA',
           textTransform: 'uppercase',
           letterSpacing: '-0.02em',
           flex: 1,
-          textShadow: `0 0 20px ${color}33`,
+          textShadow: isDaytime ? 'none' : `0 0 20px ${color}33`,
         }}>
           Right Now
         </span>
@@ -1235,6 +1237,7 @@ function RightNowSection({ tasks, isCollapsed, onToggle }) {
               key={`rightnow-${i}-${task.text?.slice(0,15)}`}
               task={task}
               index={i}
+              isDaytime={isDaytime}
             />
           ))}
         </AnimatePresence>
@@ -1348,6 +1351,15 @@ function EmptyState() {
 
 // ---- MAIN CHECKLIST MODE COMPONENT -----------------------------------------
 export default function ChecklistMode({ agentStatus, isMobile, data }) {
+  // Night mode detection: same 8pm threshold as GameHUD
+  const [isNightMode, setIsNightMode] = useState(() => new Date().getHours() >= 20)
+  useEffect(() => {
+    const check = () => setIsNightMode(new Date().getHours() >= 20)
+    const timer = setInterval(check, 60000)
+    return () => clearInterval(timer)
+  }, [])
+  const isDaytime = !isNightMode
+
   const [selectedProject, setSelectedProject] = useState(null)
   const [collapsedProjects, setCollapsedProjects] = useState({})
   // Persist checkbox state in localStorage until Supabase (C4)
@@ -1531,6 +1543,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 tasks={rightNowTasks}
                 isCollapsed={collapsedProjects['rightnow-live']}
                 onToggle={() => toggleCollapse('rightnow-live')}
+                isDaytime={isDaytime}
               />
             )}
 
