@@ -1,10 +1,7 @@
-// Corner: Game HUD v3 (Sims x Chaart x Indie Game)
-// FIXES from 8/10 review:
-//   1. Agent sprites 34px -> 42px with Sims plumbob diamond shape (not plain circle)
-//   2. Custom SVG diamond/shield edge shape - MEMORABLE silhouette like Sims green diamond
-//   3. Projects: flex-wrap two-row at 1440px instead of hidden off-screen
-//   4. Ambient animation: warm border shimmer, active agent pulse
-//   5. Chat input INTEGRATED into the HUD strip (right side, not hidden below)
+// Corner: Game HUD v4 (BLUE + LARGER + GAME FEEL)
+// Patrik directive: BLUE HUD. Cool blue glass panel. The warm office glows orange behind it.
+// The contrast makes both pop. LARGER on desktop. Game scale, not web app scale.
+// Chat + HUD = ONE unified element.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -20,27 +17,30 @@ import { AGENTS, GRID_SPEC } from './gridSpec.js'
 const PALETTE = GRID_SPEC.colorPalette
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
-// Warm HUD colors (connects to the game world's amber lighting)
+// BLUE HUD colors (cool blue glass panel contrasting the warm game world)
+// Think: Sims blue panel. Fresh, tech, game UI. Clean glass over warm pixel art.
 const HUD = {
-  panelBg: 'rgba(18, 14, 10, 0.94)',
-  panelBgSolid: '#120E0A',
-  panelBorder: 'rgba(255, 183, 77, 0.18)',
-  panelBorderHover: 'rgba(255, 183, 77, 0.3)',
-  panelInnerGlow: 'rgba(255, 183, 77, 0.05)',
-  panelShadow: '0 -8px 48px rgba(0,0,0,0.6), 0 -2px 0 rgba(255,183,77,0.1), inset 0 1px 0 rgba(255,183,77,0.06)',
-  divider: 'rgba(255, 183, 77, 0.08)',
-  textPrimary: '#F0ECE6',
-  textSecondary: '#A89A8C',
-  textMuted: '#6B5E52',
-  accent: '#E85D26',
-  accentGlow: 'rgba(232, 93, 38, 0.3)',
-  warmOverlay: 'linear-gradient(180deg, rgba(255,183,77,0.05) 0%, rgba(255,183,77,0.01) 50%, transparent 100%)',
+  panelBg: 'rgba(8, 16, 32, 0.92)',
+  panelBgSolid: '#081020',
+  panelBorder: 'rgba(100, 180, 255, 0.22)',
+  panelBorderHover: 'rgba(100, 180, 255, 0.38)',
+  panelInnerGlow: 'rgba(100, 180, 255, 0.06)',
+  panelShadow: '0 -8px 48px rgba(0,0,0,0.6), 0 -2px 0 rgba(100,180,255,0.12), inset 0 1px 0 rgba(100,180,255,0.08)',
+  divider: 'rgba(100, 180, 255, 0.10)',
+  textPrimary: '#EDF2FA',
+  textSecondary: '#8BA4C4',
+  textMuted: '#4A6080',
+  accent: '#3B9EFF',
+  accentGlow: 'rgba(59, 158, 255, 0.35)',
+  blueOverlay: 'linear-gradient(180deg, rgba(100,180,255,0.06) 0%, rgba(100,180,255,0.02) 50%, transparent 100%)',
+  accentBright: '#5BB8FF',
+  accentDeep: '#1E6FCC',
 }
 
 // ---- STATUS CONFIG ----------------------------------------------------------
 const STATUS_DOT = {
   WORKING:  { color: '#22C55E', glow: 'rgba(34,197,94,0.5)',  label: 'Active',   ring: '#22C55E' },
-  IDLE:     { color: '#6B5E52', glow: 'rgba(107,94,82,0.2)',  label: 'Idle',     ring: '#4A4038' },
+  IDLE:     { color: '#4A6080', glow: 'rgba(74,96,128,0.2)',   label: 'Idle',     ring: '#3A5070' },
   BLOCKED:  { color: '#EF4444', glow: 'rgba(239,68,68,0.5)',  label: 'Blocked',  ring: '#EF4444' },
   DONE:     { color: '#3B82F6', glow: 'rgba(59,130,246,0.4)', label: 'Done',     ring: '#3B82F6' },
   WAITING:  { color: '#F59E0B', glow: 'rgba(245,158,11,0.4)', label: 'Thinking', ring: '#F59E0B' },
@@ -64,13 +64,13 @@ function parsePunchList(markdown) {
       currentSection = trimmed.replace('## ', '').trim()
 
       if (currentSection.startsWith('TODAY')) {
-        currentProject = { name: 'Today', section: 'today', tasks: [], color: '#E85D26', icon: 'flame' }
+        currentProject = { name: 'Today', section: 'today', tasks: [], color: '#FF6B3D', icon: 'flame' }
       } else if (currentSection.startsWith('AMBITION')) {
         currentProject = { name: 'Ambition', section: 'ambition', tasks: [], color: '#F59E0B', icon: 'project' }
       } else if (currentSection.startsWith('AOM SITE') && currentSection.includes('PHASE 2')) {
-        currentProject = { name: 'Phase 2', section: 'aom-phase2', tasks: [], color: '#3B82F6', icon: 'project' }
+        currentProject = { name: 'Phase 2', section: 'aom-phase2', tasks: [], color: '#3B9EFF', icon: 'project' }
       } else if (currentSection.startsWith('AOM SITE')) {
-        currentProject = { name: 'AOM Site', section: 'aom-site', tasks: [], color: '#E85D26', icon: 'project' }
+        currentProject = { name: 'AOM Site', section: 'aom-site', tasks: [], color: '#5BB8FF', icon: 'project' }
       } else if (currentSection.startsWith('GO-TO-MARKET')) {
         currentProject = { name: 'Advisory', section: 'gtm', tasks: [], color: '#7C9A72', icon: 'project' }
       } else if (currentSection.startsWith('OUTREACH')) {
@@ -179,18 +179,14 @@ function usePunchListData() {
 }
 
 // ---- SIMS PLUMBOB SVG CLIP PATH (the iconic diamond shape) ------------------
-// This is THE silhouette. A pointed diamond/shield shape at the top,
-// rounded at the bottom. Instantly recognizable as "agent portrait."
 function PlumbobClipDef({ id, size }) {
-  // Shield/plumbob: pointed top, rounded bottom
   const w = size
   const h = size
   const cx = w / 2
-  const topPoint = h * 0.02       // sharp point at top
-  const shoulderY = h * 0.22      // where the diamond widens
-  const maxWidth = w * 0.48       // half-width at widest
-  const bottomRadius = w * 0.42   // round bottom arc radius
-  const bottomY = h * 0.72        // where the bottom curve starts
+  const topPoint = h * 0.02
+  const shoulderY = h * 0.22
+  const maxWidth = w * 0.48
+  const bottomY = h * 0.72
 
   return (
     <defs>
@@ -209,19 +205,18 @@ function PlumbobClipDef({ id, size }) {
   )
 }
 
-// ---- AGENT PORTRAIT (Sims plumbob shape, 42px, with status ring) ------------
+// ---- AGENT PORTRAIT (LARGER: 64px desktop, plumbob shape, blue idle ring) ---
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
-function AgentPortrait({ slug, size = 56, status = 'IDLE', onClick, showName = false, index = 0 }) {
+function AgentPortrait({ slug, size = 64, status = 'IDLE', onClick, showName = false, index = 0 }) {
   const agent = AGENTS.find(a => a.slug === slug)
   const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
-  const color = agent?.color || '#6B5E52'
+  const color = agent?.color || '#4A6080'
   const isActive = status === 'WORKING'
   const isBlocked = status === 'BLOCKED'
   const hasSpriteFile = slug && SPRITE_AGENTS.includes(slug)
   const clipId = `plumbob-clip-${slug}`
 
-  // For the plumbob outline path (matches clip but as stroke)
   const w = size
   const h = size
   const cx = w / 2
@@ -243,8 +238,8 @@ function AgentPortrait({ slug, size = 56, status = 'IDLE', onClick, showName = f
   return (
     <motion.div
       onClick={() => onClick?.(slug)}
-      whileHover={{ scale: 1.18, y: -4, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-      whileTap={{ scale: 0.9, y: 1, transition: { type: 'spring', stiffness: 600, damping: 20 } }}
+      whileHover={{ scale: 1.15, y: -5, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+      whileTap={{ scale: 0.88, y: 2, transition: { type: 'spring', stiffness: 600, damping: 20 } }}
       title={`${agent?.name || slug}: ${cfg.label}`}
       style={{
         position: 'relative',
@@ -254,10 +249,10 @@ function AgentPortrait({ slug, size = 56, status = 'IDLE', onClick, showName = f
         flexShrink: 0,
       }}
     >
-      {/* Active agent glow - pulses warm */}
+      {/* Active agent glow */}
       {isActive && (
         <div style={{
-          position: 'absolute', inset: -6,
+          position: 'absolute', inset: -8,
           background: `radial-gradient(ellipse at center, ${cfg.glow} 0%, transparent 70%)`,
           animation: 'hudActiveGlow 2s ease-in-out infinite',
           pointerEvents: 'none',
@@ -292,7 +287,7 @@ function AgentPortrait({ slug, size = 56, status = 'IDLE', onClick, showName = f
               fill={color}
               fontFamily="Space Grotesk, sans-serif"
               fontWeight="700"
-              fontSize={size * 0.38}
+              fontSize={size * 0.36}
             >
               {agent?.name?.charAt(0) || '?'}
             </text>
@@ -307,7 +302,7 @@ function AgentPortrait({ slug, size = 56, status = 'IDLE', onClick, showName = f
           strokeWidth={isActive ? 2.5 : 1.8}
           strokeLinejoin="round"
           style={{
-            filter: isActive ? `drop-shadow(0 0 5px ${cfg.glow})` : 'none',
+            filter: isActive ? `drop-shadow(0 0 6px ${cfg.glow})` : 'none',
             transition: 'all 300ms ease',
           }}
         />
@@ -316,7 +311,7 @@ function AgentPortrait({ slug, size = 56, status = 'IDLE', onClick, showName = f
         <path
           d={outlinePath}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="rgba(100,180,255,0.1)"
           strokeWidth={0.5}
           strokeLinejoin="round"
           transform={`translate(0.5, 0.5) scale(${(size - 1) / size})`}
@@ -326,31 +321,31 @@ function AgentPortrait({ slug, size = 56, status = 'IDLE', onClick, showName = f
 
       {/* Status dot at bottom center */}
       <div style={{
-        position: 'absolute', bottom: -2, left: '50%', transform: 'translateX(-50%)',
-        width: 8, height: 8, borderRadius: '50%',
+        position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)',
+        width: 10, height: 10, borderRadius: '50%',
         background: cfg.color,
-        border: '2px solid #120E0A',
-        boxShadow: `0 0 6px ${cfg.glow}`,
+        border: `2px solid ${HUD.panelBgSolid}`,
+        boxShadow: `0 0 8px ${cfg.glow}`,
         animation: isActive ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
       }} />
 
       {/* Blocked X badge */}
       {isBlocked && (
         <div style={{
-          position: 'absolute', top: -1, right: -1,
-          width: 13, height: 13, borderRadius: '50%',
-          background: '#EF4444', border: '2px solid #120E0A',
+          position: 'absolute', top: -2, right: -2,
+          width: 15, height: 15, borderRadius: '50%',
+          background: '#EF4444', border: `2px solid ${HUD.panelBgSolid}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 6px rgba(239,68,68,0.5)',
+          boxShadow: '0 0 8px rgba(239,68,68,0.5)',
         }}>
-          <X size={7} color="#FFF" strokeWidth={3} />
+          <X size={8} color="#FFF" strokeWidth={3} />
         </div>
       )}
     </motion.div>
   )
 }
 
-// ---- AGENT ROSTER (horizontal strip, plumbob portraits, stagger entrance) ----
+// ---- AGENT ROSTER (horizontal strip, LARGER portraits, game spacing) --------
 function AgentRoster({ agentStatus, onAgentClick }) {
   const sortedAgents = useMemo(() => {
     const statusPriority = { WORKING: 0, BLOCKED: 1, WAITING: 2, PAUSED: 3, DONE: 4, IDLE: 5 }
@@ -365,14 +360,14 @@ function AgentRoster({ agentStatus, onAgentClick }) {
 
   return (
     <div style={{
-      display: 'flex', gap: 4, alignItems: 'center',
-      padding: '0 2px',
+      display: 'flex', gap: 6, alignItems: 'center',
+      padding: '0 4px',
     }}>
       {sortedAgents.map((agent, i) => (
         <AgentPortrait
           key={agent.slug}
           slug={agent.slug}
-          size={56}
+          size={64}
           status={agentStatus?.[agent.slug]?.status || 'IDLE'}
           onClick={onAgentClick}
           index={i}
@@ -382,7 +377,7 @@ function AgentRoster({ agentStatus, onAgentClick }) {
   )
 }
 
-// ---- PROJECT CARD (game-style button, not a generic pill) -------------------
+// ---- PROJECT CARD (LARGER: 40px height, chunky game buttons) ----------------
 function ProjectCard({ project, isExpanded, onClick }) {
   const totalTasks = project.tasks.length
   const doneTasks = project.tasks.filter(t => t.done).length
@@ -397,15 +392,15 @@ function ProjectCard({ project, isExpanded, onClick }) {
       whileHover={{ scale: 1.06, y: -3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
       whileTap={{ scale: 0.93, y: 1, transition: { type: 'spring', stiffness: 600, damping: 20 } }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        height: 36, padding: '0 14px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        height: 40, padding: '0 16px',
         background: isExpanded
           ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
           : isToday
-            ? 'rgba(232, 93, 38, 0.06)'
-            : 'rgba(255,255,255,0.025)',
-        border: `1px solid ${isExpanded ? `${project.color}45` : isToday ? 'rgba(232, 93, 38, 0.15)' : 'rgba(255,183,77,0.06)'}`,
-        borderRadius: 6,
+            ? 'rgba(255, 107, 61, 0.08)'
+            : 'rgba(100,180,255,0.04)',
+        border: `1px solid ${isExpanded ? `${project.color}45` : isToday ? 'rgba(255, 107, 61, 0.18)' : 'rgba(100,180,255,0.08)'}`,
+        borderRadius: 8,
         cursor: 'pointer',
         flexShrink: 0,
         position: 'relative',
@@ -416,7 +411,7 @@ function ProjectCard({ project, isExpanded, onClick }) {
       {/* Bottom progress fill */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0,
-        width: `${progress}%`, height: 2,
+        width: `${progress}%`, height: 3,
         background: `linear-gradient(90deg, ${project.color}60, ${project.color})`,
         transition: 'width 500ms ease',
       }} />
@@ -424,10 +419,10 @@ function ProjectCard({ project, isExpanded, onClick }) {
       {/* Side accent for Today */}
       {isToday && (
         <div style={{
-          position: 'absolute', left: 0, top: 3, bottom: 3,
-          width: 2, borderRadius: 1,
+          position: 'absolute', left: 0, top: 4, bottom: 4,
+          width: 3, borderRadius: 2,
           background: project.color,
-          boxShadow: `0 0 6px ${project.color}66`,
+          boxShadow: `0 0 8px ${project.color}66`,
         }} />
       )}
 
@@ -436,18 +431,18 @@ function ProjectCard({ project, isExpanded, onClick }) {
         <Flame size={14} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}66)` }} />
       ) : (
         <div style={{
-          width: 7, height: 7, borderRadius: 2,
+          width: 8, height: 8, borderRadius: 3,
           background: allDone ? `${project.color}60` : project.color,
-          boxShadow: allDone ? 'none' : `0 0 6px ${project.color}44`,
+          boxShadow: allDone ? 'none' : `0 0 8px ${project.color}44`,
           flexShrink: 0,
         }} />
       )}
 
-      {/* Name */}
+      {/* Name - BIGGER font */}
       <span style={{
         fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
-        fontSize: 14, fontWeight: isToday ? 800 : 700,
-        color: isExpanded ? HUD.textPrimary : isToday ? '#F0ECE6' : HUD.textSecondary,
+        fontSize: 15, fontWeight: isToday ? 800 : 700,
+        color: isExpanded ? HUD.textPrimary : isToday ? '#EDF2FA' : HUD.textSecondary,
         whiteSpace: 'nowrap',
         letterSpacing: '-0.01em',
         textTransform: 'uppercase',
@@ -459,10 +454,10 @@ function ProjectCard({ project, isExpanded, onClick }) {
       {remaining > 0 && (
         <span style={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, fontWeight: 800,
+          fontSize: 12, fontWeight: 800,
           color: project.color,
           background: `${project.color}15`,
-          padding: '2px 7px', borderRadius: 4,
+          padding: '3px 8px', borderRadius: 5,
           letterSpacing: '0.02em',
           lineHeight: 1,
         }}>
@@ -471,13 +466,13 @@ function ProjectCard({ project, isExpanded, onClick }) {
       )}
 
       {allDone && (
-        <Check size={10} color={project.color} strokeWidth={3} style={{ flexShrink: 0, opacity: 0.6 }} />
+        <Check size={12} color={project.color} strokeWidth={3} style={{ flexShrink: 0, opacity: 0.6 }} />
       )}
     </motion.button>
   )
 }
 
-// ---- EXPANDED TASK PANEL (warm, game-styled) --------------------------------
+// ---- EXPANDED TASK PANEL (blue glass, game-styled) --------------------------
 function TaskPanel({ project, onClose }) {
   const totalTasks = project.tasks.length
   const doneTasks = project.tasks.filter(t => t.done).length
@@ -502,34 +497,34 @@ function TaskPanel({ project, onClose }) {
         backdropFilter: 'blur(24px)',
         border: `1px solid ${HUD.panelBorder}`,
         borderBottom: 'none',
-        borderRadius: '10px 10px 0 0',
+        borderRadius: '12px 12px 0 0',
         overflow: 'hidden',
-        maxHeight: 340,
-        boxShadow: '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,183,77,0.06)',
+        maxHeight: 380,
+        boxShadow: '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(100,180,255,0.08)',
       }}
     >
-      {/* Warm inner glow at top */}
+      {/* Blue inner glow at top */}
       <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 40,
-        background: 'linear-gradient(180deg, rgba(255,183,77,0.04) 0%, transparent 100%)',
+        position: 'absolute', top: 0, left: 0, right: 0, height: 50,
+        background: 'linear-gradient(180deg, rgba(100,180,255,0.05) 0%, transparent 100%)',
         pointerEvents: 'none',
       }} />
 
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 18px 10px',
+        padding: '16px 20px 12px',
         borderBottom: `1px solid ${HUD.divider}`,
         position: 'relative',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 10, height: 10, borderRadius: 3,
+            width: 12, height: 12, borderRadius: 4,
             background: project.color,
-            boxShadow: `0 0 10px ${project.color}44`,
+            boxShadow: `0 0 12px ${project.color}44`,
           }} />
           <span style={{
-            fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 800,
+            fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 800,
             color: HUD.textPrimary,
             textTransform: 'uppercase',
             letterSpacing: '-0.02em',
@@ -537,18 +532,18 @@ function TaskPanel({ project, onClose }) {
             {project.name}
           </span>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 600,
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 14, fontWeight: 600,
             color: HUD.textMuted,
           }}>
             {doneTasks}/{totalTasks}
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {/* Progress bar */}
           <div style={{
-            width: 80, height: 5, borderRadius: 3,
-            background: 'rgba(255,255,255,0.06)',
+            width: 100, height: 6, borderRadius: 3,
+            background: 'rgba(100,180,255,0.06)',
             overflow: 'hidden',
           }}>
             <div style={{
@@ -559,9 +554,9 @@ function TaskPanel({ project, onClose }) {
             }} />
           </div>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700,
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
             color: project.color,
-            minWidth: 28,
+            minWidth: 32,
           }}>
             {progress}%
           </span>
@@ -569,24 +564,24 @@ function TaskPanel({ project, onClose }) {
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.04)', border: `1px solid ${HUD.divider}`,
-              borderRadius: 4, cursor: 'pointer',
-              color: HUD.textMuted, padding: '3px 3px',
+              background: 'rgba(100,180,255,0.06)', border: `1px solid ${HUD.divider}`,
+              borderRadius: 6, cursor: 'pointer',
+              color: HUD.textMuted, padding: '4px 4px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 150ms ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = HUD.textSecondary }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = HUD.textMuted }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.12)'; e.currentTarget.style.color = HUD.textSecondary }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.06)'; e.currentTarget.style.color = HUD.textMuted }}
           >
-            <X size={14} />
+            <X size={16} />
           </button>
         </div>
       </div>
 
       {/* Task list */}
       <div style={{
-        padding: '6px 14px 14px',
-        overflowY: 'auto', maxHeight: 270,
+        padding: '8px 16px 16px',
+        overflowY: 'auto', maxHeight: 300,
       }} className="hud-scroll">
         {sortedTasks.map((task, i) => (
           <motion.div
@@ -595,8 +590,8 @@ function TaskPanel({ project, onClose }) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.03, duration: 0.15 }}
             style={{
-              display: 'flex', alignItems: 'flex-start', gap: 10,
-              padding: '8px 6px',
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              padding: '10px 8px',
               borderBottom: i < sortedTasks.length - 1 ? `1px solid ${HUD.divider}` : 'none',
               opacity: task.done ? 0.35 : 1,
               transition: 'opacity 200ms ease',
@@ -604,18 +599,18 @@ function TaskPanel({ project, onClose }) {
           >
             {/* Checkbox */}
             <div style={{
-              width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 1,
-              border: task.done ? 'none' : `1.5px solid rgba(255,183,77,0.15)`,
-              background: task.done ? project.color : 'rgba(255,255,255,0.02)',
+              width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
+              border: task.done ? 'none' : `1.5px solid rgba(100,180,255,0.18)`,
+              background: task.done ? project.color : 'rgba(100,180,255,0.03)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 150ms ease',
             }}>
-              {task.done && <Check size={11} color="#FFF" strokeWidth={3} />}
+              {task.done && <Check size={12} color="#FFF" strokeWidth={3} />}
             </div>
 
-            {/* Task text */}
+            {/* Task text - LARGER */}
             <span style={{
-              fontFamily: 'Space Grotesk, sans-serif', fontSize: 15, fontWeight: 400,
+              fontFamily: 'Space Grotesk, sans-serif', fontSize: 16, fontWeight: 400,
               color: task.done ? HUD.textMuted : HUD.textPrimary,
               lineHeight: 1.45,
               textDecoration: task.done ? 'line-through' : 'none',
@@ -630,27 +625,27 @@ function TaskPanel({ project, onClose }) {
               const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
               return (
                 <div style={{
-                  width: 22, height: 22, borderRadius: '50%',
-                  border: `1.5px solid ${a?.color || '#6B5E52'}`,
+                  width: 26, height: 26, borderRadius: '50%',
+                  border: `1.5px solid ${a?.color || '#4A6080'}`,
                   overflow: 'hidden', flexShrink: 0,
-                  background: `${a?.color || '#6B5E52'}15`,
+                  background: `${a?.color || '#4A6080'}15`,
                 }} title={a?.name || task.agent}>
                   {hasSpr ? (
                     <img
                       src={`/corner/sprites/${task.agent}-idle.png`}
                       alt=""
                       style={{
-                        width: 36, height: 36,
+                        width: 42, height: 42,
                         objectFit: 'cover', objectPosition: '20% 8%',
                         imageRendering: 'pixelated', display: 'block',
-                        marginLeft: -5, marginTop: -2,
+                        marginLeft: -6, marginTop: -3,
                       }}
                     />
                   ) : (
                     <div style={{
                       width: '100%', height: '100%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, fontWeight: 700, color: a?.color || '#6B5E52',
+                      fontSize: 10, fontWeight: 700, color: a?.color || '#4A6080',
                       fontFamily: 'Space Grotesk, sans-serif',
                     }}>
                       {a?.name?.charAt(0) || '?'}
@@ -666,7 +661,7 @@ function TaskPanel({ project, onClose }) {
   )
 }
 
-// ---- COMPACT STATS (inline, no box) -----------------------------------------
+// ---- COMPACT STATS (blue-themed, LARGER) ------------------------------------
 function CompactStats({ agentStatus, throughput, overallProgress }) {
   const working = throughput?.working || Object.values(agentStatus || {}).filter(a => a?.status === 'WORKING').length
   const blocked = throughput?.blocked || Object.values(agentStatus || {}).filter(a => a?.status === 'BLOCKED').length
@@ -674,23 +669,23 @@ function CompactStats({ agentStatus, throughput, overallProgress }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
-      fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
+      fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600,
       letterSpacing: '0.02em',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.5)' }} />
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.4)' }} />
         <span style={{ color: '#22C55E' }}>{working}</span>
       </div>
       {blocked > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 6px rgba(239,68,68,0.5)' }} />
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', boxShadow: '0 0 6px rgba(239,68,68,0.4)' }} />
           <span style={{ color: '#EF4444' }}>{blocked}</span>
         </div>
       )}
-      {/* Mini progress ring */}
+      {/* Mini progress ring - LARGER */}
       <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
         <svg width={36} height={36} viewBox="0 0 36 36">
-          <circle cx={18} cy={18} r={13} fill="none" stroke="rgba(255,183,77,0.06)" strokeWidth={3} />
+          <circle cx={18} cy={18} r={13} fill="none" stroke="rgba(100,180,255,0.08)" strokeWidth={3} />
           <circle
             cx={18} cy={18} r={13}
             fill="none" stroke={HUD.accent} strokeWidth={3}
@@ -703,7 +698,7 @@ function CompactStats({ agentStatus, throughput, overallProgress }) {
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 900, color: HUD.accent,
+          fontSize: 10, fontWeight: 800, color: HUD.accent,
         }}>
           {overallProgress}
         </div>
@@ -712,7 +707,7 @@ function CompactStats({ agentStatus, throughput, overallProgress }) {
   )
 }
 
-// ---- INLINE CHAT INPUT (integrated into HUD strip) --------------------------
+// ---- INLINE CHAT INPUT (LARGER, blue-themed, integrated into HUD strip) -----
 function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMobile }) {
   const [input, setInput] = useState('')
   const inputRef = useRef(null)
@@ -721,7 +716,7 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
     ? AGENTS.find(a => a.slug === chatAgent)
     : AGENTS.find(a => a.slug === 'elon')
   const agentSlug = currentAgent?.slug || 'elon'
-  const agentColor = currentAgent?.color || '#E85D26'
+  const agentColor = currentAgent?.color || HUD.accent
   const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
 
   const handleSubmit = (e) => {
@@ -732,52 +727,56 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
     onChatSubmit?.(agentSlug, text)
   }
 
+  const chatSize = isMobile ? 32 : 44
+
   return (
     <form onSubmit={handleSubmit} style={{
-      display: 'flex', alignItems: 'center', gap: 8,
+      display: 'flex', alignItems: 'center', gap: 10,
       flexShrink: 0,
-      minWidth: isMobile ? 0 : 260,
-      maxWidth: isMobile ? '100%' : 380,
+      minWidth: isMobile ? 0 : 280,
+      maxWidth: isMobile ? '100%' : 420,
     }}>
-      {/* Agent plumbob mini portrait */}
+      {/* Agent plumbob mini portrait - LARGER */}
       <div
         onClick={() => onExpandChat?.()}
         style={{
-          width: 38, height: 38, flexShrink: 0,
+          width: chatSize, height: chatSize, flexShrink: 0,
           cursor: 'pointer', position: 'relative',
         }}
         title={`Chat with ${currentAgent?.name}`}
       >
-        <svg width={38} height={38} viewBox="0 0 38 38">
-          <PlumbobClipDef id="chat-plumbob-clip" size={38} />
+        <svg width={chatSize} height={chatSize} viewBox={`0 0 ${chatSize} ${chatSize}`}>
+          <PlumbobClipDef id="chat-plumbob-clip" size={chatSize} />
           <path
-            d={`M 19 ${38*0.02} L ${19+38*0.48} ${38*0.22} L ${19+38*0.48} ${38*0.72} Q ${19+38*0.48} ${38*0.98}, 19 ${38*0.98} Q ${19-38*0.48} ${38*0.98}, ${19-38*0.48} ${38*0.72} L ${19-38*0.48} ${38*0.22} Z`}
+            d={`M ${chatSize/2} ${chatSize*0.02} L ${chatSize/2+chatSize*0.48} ${chatSize*0.22} L ${chatSize/2+chatSize*0.48} ${chatSize*0.72} Q ${chatSize/2+chatSize*0.48} ${chatSize*0.98}, ${chatSize/2} ${chatSize*0.98} Q ${chatSize/2-chatSize*0.48} ${chatSize*0.98}, ${chatSize/2-chatSize*0.48} ${chatSize*0.72} L ${chatSize/2-chatSize*0.48} ${chatSize*0.22} Z`}
             fill={`${agentColor}25`}
           />
           {hasSpriteFile ? (
             <image
               href={`/corner/sprites/${agentSlug}-idle.png`}
-              x={-5} y={-1}
-              width={50} height={50}
+              x={-chatSize * 0.12}
+              y={-chatSize * 0.04}
+              width={chatSize * 1.3}
+              height={chatSize * 1.3}
               clipPath="url(#chat-plumbob-clip)"
               style={{ imageRendering: 'pixelated' }}
               preserveAspectRatio="xMidYMin slice"
             />
           ) : (
-            <text x={19} y={22} textAnchor="middle" dominantBaseline="middle"
+            <text x={chatSize/2} y={chatSize*0.58} textAnchor="middle" dominantBaseline="middle"
               fill={agentColor} fontFamily="Space Grotesk, sans-serif"
-              fontWeight="700" fontSize={14}>
+              fontWeight="700" fontSize={chatSize * 0.38}>
               {currentAgent?.name?.charAt(0) || '?'}
             </text>
           )}
           <path
-            d={`M 19 ${38*0.02} L ${19+38*0.48} ${38*0.22} L ${19+38*0.48} ${38*0.72} Q ${19+38*0.48} ${38*0.98}, 19 ${38*0.98} Q ${19-38*0.48} ${38*0.98}, ${19-38*0.48} ${38*0.72} L ${19-38*0.48} ${38*0.22} Z`}
+            d={`M ${chatSize/2} ${chatSize*0.02} L ${chatSize/2+chatSize*0.48} ${chatSize*0.22} L ${chatSize/2+chatSize*0.48} ${chatSize*0.72} Q ${chatSize/2+chatSize*0.48} ${chatSize*0.98}, ${chatSize/2} ${chatSize*0.98} Q ${chatSize/2-chatSize*0.48} ${chatSize*0.98}, ${chatSize/2-chatSize*0.48} ${chatSize*0.72} L ${chatSize/2-chatSize*0.48} ${chatSize*0.22} Z`}
             fill="none" stroke={agentColor} strokeWidth={1.5} strokeLinejoin="round"
           />
         </svg>
       </div>
 
-      {/* Text input */}
+      {/* Text input - LARGER */}
       <input
         ref={inputRef}
         type="text"
@@ -786,37 +785,36 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
         placeholder={isMobile ? 'Message...' : `Message ${currentAgent?.name}...`}
         style={{
           flex: 1,
-          background: 'rgba(255,255,255,0.04)',
-          border: `1px solid rgba(255,183,77,0.08)`,
-          borderRadius: 8,
-          height: 40,
-          padding: '0 14px',
+          background: 'rgba(100,180,255,0.04)',
+          border: '1px solid rgba(100,180,255,0.10)',
+          borderRadius: 10,
+          height: isMobile ? 34 : 40,
+          padding: '0 16px',
           color: HUD.textPrimary,
-          fontSize: 15,
+          fontSize: isMobile ? 14 : 15,
           fontFamily: 'Space Grotesk, sans-serif',
-          fontWeight: 500,
           outline: 'none',
           transition: 'border-color 200ms ease, box-shadow 200ms ease',
           minWidth: 0,
         }}
         onFocus={e => {
           e.target.style.borderColor = `${agentColor}55`
-          e.target.style.boxShadow = `0 0 0 2px ${agentColor}12`
+          e.target.style.boxShadow = `0 0 0 3px ${agentColor}12`
         }}
         onBlur={e => {
-          e.target.style.borderColor = 'rgba(255,183,77,0.08)'
+          e.target.style.borderColor = 'rgba(100,180,255,0.10)'
           e.target.style.boxShadow = 'none'
         }}
       />
 
-      {/* Send button */}
+      {/* Send button - LARGER */}
       <button
         type="submit"
         disabled={!input.trim()}
         style={{
-          width: 36, height: 36, borderRadius: '50%',
-          background: input.trim() ? agentColor : 'rgba(255,255,255,0.04)',
-          color: input.trim() ? '#FDF6EC' : HUD.textMuted,
+          width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: '50%',
+          background: input.trim() ? agentColor : 'rgba(100,180,255,0.06)',
+          color: input.trim() ? '#EDF2FA' : HUD.textMuted,
           border: input.trim() ? 'none' : `1px solid ${HUD.divider}`,
           cursor: input.trim() ? 'pointer' : 'default',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -825,7 +823,7 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
           opacity: input.trim() ? 1 : 0.5,
         }}
       >
-        <Send size={15} style={{ marginLeft: 1 }} />
+        <Send size={isMobile ? 14 : 16} style={{ marginLeft: 1 }} />
       </button>
 
       {/* Expand chat button */}
@@ -834,21 +832,21 @@ function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMo
           type="button"
           onClick={() => onExpandChat?.()}
           style={{
-            width: 26, height: 26,
-            background: 'rgba(255,255,255,0.03)',
+            width: 32, height: 32,
+            background: 'rgba(100,180,255,0.04)',
             border: `1px solid ${HUD.divider}`,
-            borderRadius: 4,
+            borderRadius: 6,
             cursor: 'pointer',
             color: HUD.textMuted,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 150ms ease',
             flexShrink: 0,
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = HUD.textSecondary; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = HUD.textMuted; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+          onMouseEnter={e => { e.currentTarget.style.color = HUD.textSecondary; e.currentTarget.style.background = 'rgba(100,180,255,0.08)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = HUD.textMuted; e.currentTarget.style.background = 'rgba(100,180,255,0.04)' }}
           title="Expand chat"
         >
-          <ChevronUp size={13} />
+          <ChevronUp size={15} />
         </button>
       )}
     </form>
@@ -865,21 +863,7 @@ export default function GameHUD({
   const { data: punchData, loading } = usePunchListData()
   const hudRef = useRef(null)
 
-  // Sort projects by priority: Today first, then by incomplete task count (most active first)
-  const projects = useMemo(() => {
-    const raw = punchData?.projects || []
-    return [...raw].sort((a, b) => {
-      // Today always first
-      if (a.section === 'today') return -1
-      if (b.section === 'today') return 1
-      // Then by incomplete tasks (most = most active = first)
-      const aRemaining = a.tasks.filter(t => !t.done).length
-      const bRemaining = b.tasks.filter(t => !t.done).length
-      if (bRemaining !== aRemaining) return bRemaining - aRemaining
-      // Then by total tasks (more tasks = more active)
-      return b.tasks.length - a.tasks.length
-    })
-  }, [punchData])
+  const projects = punchData?.projects || []
 
   // Close panel on click outside
   useEffect(() => {
@@ -927,38 +911,38 @@ export default function GameHUD({
         )}
       </AnimatePresence>
 
-      {/* The HUD panel - distinctive Sims silhouette shape */}
+      {/* The HUD panel - BLUE GLASS game panel */}
       <div
         className="hud-panel-shimmer"
         style={{
           background: HUD.panelBg,
           backdropFilter: 'blur(24px)',
           borderTop: `1px solid ${HUD.panelBorder}`,
-          borderLeft: `1px solid rgba(255,183,77,0.04)`,
-          borderRight: `1px solid rgba(255,183,77,0.04)`,
-          // Distinctive tab shape: wider top corners like a Sims panel
-          borderRadius: isMobile ? 0 : '16px 16px 0 0',
+          borderLeft: '1px solid rgba(100,180,255,0.06)',
+          borderRight: '1px solid rgba(100,180,255,0.06)',
+          // Chunky game panel shape
+          borderRadius: isMobile ? 0 : '18px 18px 0 0',
           boxShadow: HUD.panelShadow,
-          padding: isMobile ? '4px 8px' : '0 20px',
-          margin: isMobile ? 0 : '0 8px',
+          padding: isMobile ? '4px 10px' : '0 20px',
+          margin: isMobile ? 0 : '0 12px',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
           overflow: 'visible',
         }}
       >
-        {/* Warm glow overlay at top edge */}
+        {/* Blue glow overlay */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: '100%',
-          background: HUD.warmOverlay,
+          background: HUD.blueOverlay,
           pointerEvents: 'none',
           borderRadius: 'inherit',
         }} />
 
-        {/* Ambient shimmer on top border */}
+        {/* Blue shimmer on top border */}
         <div className="hud-border-shimmer" style={{
-          position: 'absolute', top: -1, left: 20, right: 20, height: 2,
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255,183,77,0.3) 25%, rgba(255,220,150,0.5) 50%, rgba(255,183,77,0.3) 75%, transparent 100%)',
+          position: 'absolute', top: -1, left: 24, right: 24, height: 2,
+          background: 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.35) 25%, rgba(140,210,255,0.55) 50%, rgba(100,180,255,0.35) 75%, transparent 100%)',
           backgroundSize: '200% 100%',
           borderRadius: 1,
           pointerEvents: 'none',
@@ -966,21 +950,21 @@ export default function GameHUD({
 
         {/* Subtle noise texture */}
         <svg style={{ position: 'absolute', inset: 0, pointerEvents: 'none', borderRadius: 'inherit', overflow: 'hidden' }}>
-          <filter id="hudNoise3">
+          <filter id="hudNoise4">
             <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch" />
           </filter>
-          <rect width="100%" height="100%" filter="url(#hudNoise3)" opacity="0.015" style={{ mixBlendMode: 'overlay' }} />
+          <rect width="100%" height="100%" filter="url(#hudNoise4)" opacity="0.015" style={{ mixBlendMode: 'overlay' }} />
         </svg>
 
-        {/* Main row: Agents | Projects + Stats | Chat */}
+        {/* Main row: Agents | Projects + Stats | Chat -- LARGER min height */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? 6 : 12,
-          minHeight: isMobile ? 56 : 76,
+          gap: isMobile ? 6 : 14,
+          minHeight: isMobile ? 56 : 88,
           position: 'relative',
           zIndex: 1,
-          padding: isMobile ? 0 : '6px 0',
+          padding: isMobile ? 0 : '8px 0',
         }}>
           {/* Left: Agent plumbob portraits */}
           {!isMobile && (
@@ -989,30 +973,30 @@ export default function GameHUD({
 
           {/* Divider */}
           {!isMobile && (
-            <div style={{ width: 1, height: 28, background: HUD.divider, flexShrink: 0 }} />
+            <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
           )}
 
-          {/* Center: Project cards (flex-wrap for two rows at 1440px) */}
+          {/* Center: Project cards (flex-wrap for two rows) */}
           <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
             flexWrap: 'wrap',
             gap: 6,
-            padding: '4px 6px',
-            maxHeight: 78,
+            padding: '2px 4px',
+            maxHeight: 88,
             overflow: 'hidden',
             alignContent: 'center',
           }}>
             {loading ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px' }}>
-                <Loader2 size={14} style={{ color: HUD.textMuted, animation: 'spin 1s linear infinite' }} />
-                <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, color: HUD.textMuted }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
+                <Loader2 size={16} style={{ color: HUD.textMuted, animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 14, color: HUD.textMuted }}>
                   Loading...
                 </span>
               </div>
             ) : projects.length === 0 ? (
-              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 12, color: HUD.textMuted, padding: '0 8px' }}>
+              <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 14, color: HUD.textMuted, padding: '0 8px' }}>
                 No task data
               </span>
             ) : (
@@ -1041,7 +1025,7 @@ export default function GameHUD({
           )}
 
           {/* Divider before chat */}
-          <div style={{ width: 1, height: 28, background: HUD.divider, flexShrink: 0 }} />
+          <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
 
           {/* Right: Integrated chat input */}
           <HUDChatInput
@@ -1054,7 +1038,7 @@ export default function GameHUD({
         </div>
       </div>
 
-      {/* HUD animations */}
+      {/* HUD animations - BLUE themed */}
       <style>{`
         @keyframes hudActiveGlow {
           0%, 100% { opacity: 0.7; transform: scale(1); }
@@ -1075,12 +1059,12 @@ export default function GameHUD({
           transition: border-color 400ms ease;
         }
         .hud-panel-shimmer:hover {
-          border-top-color: rgba(255, 183, 77, 0.28);
+          border-top-color: rgba(100, 180, 255, 0.35);
         }
-        .hud-scroll::-webkit-scrollbar { width: 4px; }
+        .hud-scroll::-webkit-scrollbar { width: 5px; }
         .hud-scroll::-webkit-scrollbar-track { background: transparent; }
-        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(255,183,77,0.1); border-radius: 2px; }
-        .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,183,77,0.2); }
+        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(100,180,255,0.12); border-radius: 3px; }
+        .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(100,180,255,0.22); }
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
