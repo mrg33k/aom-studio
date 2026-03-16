@@ -1,9 +1,19 @@
 {
-  "generated": "2026-03-16T07:45:02.071Z",
+  "generated": "2026-03-16T07:54:17.398Z",
   "categories": [
     {
       "name": "Strategy",
       "items": [
+        {
+          "title": "CORNER Investor Pitch Brief",
+          "slug": "investor-pitch-brief",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Investor pitch brief for Corner. Market thesis, product vision, business model, competitive landscape, financial projections, team, capital needs, and use of funds. Not a slide deck. The strategic brief that a deck gets built from.",
+          "path": "/briefs/investor-pitch-brief",
+          "hasPage": true
+        },
         {
           "title": "Product Name Research v2",
           "slug": "product-name-research-v2",
@@ -370,6 +380,36 @@
           "hasPage": true
         },
         {
+          "title": "Corner C5 - Billing UI Visual Spec",
+          "slug": "c5-billing-ui",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Visual spec for the in-app billing settings UI. Plan management, subscription details, usage meters, invoice history, payment method management, plan change flow, cancellation flow.",
+          "path": "/briefs/c5-billing-ui",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C5 - Weekly Recap Animation Visual Spec",
+          "slug": "c5-weekly-recap",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Visual spec for the Monday morning weekly recap animation. 30-60 second choreographed sequence showing agent accomplishments, stats, streaks, and upcoming priorities. The 'was this worth it?' answer, delivered visually.",
+          "path": "/briefs/c5-weekly-recap",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C5 - XP & Leveling Visual Spec",
+          "slug": "c5-xp-visual",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Visual spec for XP system, level badges, streak indicators, progress bars, level-up celebration animation, leaderboard. Turns accumulated C3 data into a visible engagement loop.",
+          "path": "/briefs/c5-xp-visual",
+          "hasPage": true
+        },
+        {
           "title": "Corner Product Site - Landed in Heaven Visual Spec",
           "slug": "corner-product-site",
           "agent": "Steffen",
@@ -377,6 +417,36 @@
           "dateFormatted": "Mar 16",
           "summary": "Visual design for corner.app (or the Corner product section of aheadofmarket.com). Ultra clean, white, spacious. Apple keynote energy. The calm before the game storm. Bobby builds this.",
           "path": "/briefs/corner-product-site",
+          "hasPage": true
+        },
+        {
+          "title": "Corner Pricing Page Visual Design Spec",
+          "slug": "pricing-page-design",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Complete visual design spec for Corner's pricing page. 9 deliverables: plan cards (4 variations), comparison table, billing toggle, social proof bar, FAQ accordion, bottom CTA, mobile wireframes, OG image, responsive breakpoints. Bobby builds from this.",
+          "path": "/briefs/pricing-page-design",
+          "hasPage": true
+        },
+        {
+          "title": "Visual Target - Creative Director Notes",
+          "slug": "visual-target-notes",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "What makes the visual target work and how Bobby implements it. The gap analysis between current dashboard and the north star.",
+          "path": "/briefs/visual-target-notes",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER Product Website: The Heaven Spec",
+          "slug": "corner-website-spec",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Full design and content spec for corner.app, the Corner product website. 'Landed in heaven' design language. Ultra clean, white, spacious, calm. Every page spec'd with layout, copy, visual direction, and responsive behavior. The site that sells the operating system.",
+          "path": "/briefs/corner-website-spec",
           "hasPage": true
         },
         {
