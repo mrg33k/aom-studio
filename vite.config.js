@@ -371,6 +371,204 @@ function localDashboardPlugin() {
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({ notifications, timestamp: new Date().toISOString() }))
       })
+
+      // ---- SYSTEM QUEUE ENDPOINT (real-time system state for Checklist) --------
+      // Parses: launch-queue.md, active-missions.md, agent-notifications.md,
+      //         and projects/[agent]/latest-result.md
+      server.middlewares.use('/api/local/system-queue', (req, res) => {
+        // 1. Parse launch-queue.md for team tables
+        const launchQueueRaw = readLocalFile('context/launch-queue.md') || ''
+        const activeMissionsRaw = readLocalFile('context/active-missions.md') || ''
+        const notificationsRaw = readLocalFile('context/agent-notifications.md') || ''
+
+        // --- RUNNING NOW: merge active-missions "Running" + launch-queue tables ---
+        const runningNow = []
+
+        // From active-missions Running table
+        const runningRows = parseTable(activeMissionsRaw, '## Running')
+        for (const cols of runningRows) {
+          if (cols[0] === '(none' || cols[0].includes('none')) continue
+          const agentName = cols[0].replace(/\s*\d+$/, '').trim() // strip trailing numbers like "Bobby 2"
+          const agentSlug = AGENTS_LIST.find(a =>
+            a.name.toLowerCase() === agentName.toLowerCase() ||
+            cols[0].toLowerCase().startsWith(a.name.toLowerCase())
+          )?.slug || agentName.toLowerCase()
+          runningNow.push({
+            agent: cols[0].trim(),
+            agentSlug,
+            mission: cols[1] || '',
+            launched: cols[2] || '',
+            status: (cols[3] || 'Running').toUpperCase(),
+          })
+        }
+
+        // From launch-queue tables (WD-40 Product Team + Content Team)
+        const lqLines = launchQueueRaw.split('\n')
+        let inTable = false
+        let headerCols = null
+        for (const line of lqLines) {
+          if (line.startsWith('|') && !line.match(/^\|\s*-/)) {
+            const cols = line.split('|').map(s => s.trim()).filter(Boolean)
+            if (cols[0] === 'Agent') { headerCols = cols; inTable = true; continue }
+            if (!inTable || !headerCols) continue
+            if (cols.length < 2) continue
+            const agentRaw = cols[0].trim()
+            if (agentRaw === '(none' || agentRaw.includes('none')) continue
+            const agentName = agentRaw.replace(/\s*\d+$/, '').trim()
+            const agentSlug = AGENTS_LIST.find(a =>
+              a.name.toLowerCase() === agentName.toLowerCase() ||
+              agentRaw.toLowerCase().startsWith(a.name.toLowerCase())
+            )?.slug || agentName.toLowerCase()
+            const currentCol = cols[1] || ''
+            const nextCol = cols[2] || ''
+
+            // Derive status from "Current" column
+            let phase = 'IDLE'
+            const cur = currentCol.toUpperCase()
+            if (cur.includes('DONE')) phase = 'DONE'
+            else if (cur.includes('BUILDING') || cur.includes('SHIPPING') || cur.includes('ACTIVE')) phase = 'BUILDING'
+            else if (cur.includes('RESEARCH') || cur.includes('SCANNING')) phase = 'RESEARCHING'
+            else if (cur.includes('TESTING') || cur.includes('QA') || cur.includes('PLAYWRIGHT')) phase = 'TESTING'
+            else if (cur.includes('SPEC') || cur.includes('DESIGN')) phase = 'DESIGNING'
+            else if (cur.includes('COACH') || cur.includes('REVIEW')) phase = 'COACHING'
+            else if (currentCol.trim()) phase = 'WORKING'
+
+            // Only add if not already in runningNow from active-missions
+            const alreadyListed = runningNow.some(r =>
+              r.agentSlug === agentSlug && r.agent.toLowerCase() === agentRaw.toLowerCase()
+            )
+            if (!alreadyListed) {
+              // Extract a short mission summary from "Current" column
+              let missionSummary = currentCol
+                .replace(/^DONE[:\s]*/i, '')
+                .replace(/\.\s*$/, '')
+              // Truncate if too long
+              if (missionSummary.length > 120) missionSummary = missionSummary.slice(0, 117) + '...'
+
+              runningNow.push({
+                agent: agentRaw,
+                agentSlug,
+                mission: missionSummary,
+                nextWhenDone: nextCol,
+                status: phase,
+              })
+            }
+          } else if (!line.startsWith('|')) {
+            // Reset table state on non-table lines (new section)
+            if (inTable && line.trim() && !line.startsWith('#')) {
+              // Still in section text, keep going
+            }
+            if (line.startsWith('#')) {
+              inTable = false
+              headerCols = null
+            }
+          }
+        }
+
+        // 2. JUST COMPLETED: parse agent-notifications.md for TASK FINISHED entries (last 10)
+        const justCompleted = []
+        const notifLines = notificationsRaw.split('\n').filter(l => l.trim().startsWith('['))
+        // Reverse to get most recent first
+        const recentNotifs = notifLines.slice(-30).reverse()
+        for (const line of recentNotifs) {
+          if (justCompleted.length >= 10) break
+          const match = line.match(/^\[([^\]]+)\]\s*(.*)$/)
+          if (!match) continue
+          const timestamp = match[1]
+          const body = match[2]
+          if (!body.toUpperCase().includes('TASK FINISHED') && !body.toUpperCase().includes('MILESTONE')) continue
+
+          // Extract agent name after "TASK FINISHED:"
+          const agentMatch = body.match(/TASK FINISHED:\s*(\w+(?:\s*\d)?)\s*[-]?\s*(.*)/i)
+            || body.match(/MILESTONE:\s*(\w+(?:\s*\d)?)\s*[-]?\s*(.*)/i)
+          if (!agentMatch) continue
+          const agentRaw = agentMatch[1].trim()
+          const agentName = agentRaw.replace(/\s*\d+$/, '').trim()
+          const agentSlug = AGENTS_LIST.find(a =>
+            a.name.toLowerCase() === agentName.toLowerCase() ||
+            agentRaw.toLowerCase().startsWith(a.name.toLowerCase())
+          )?.slug || agentName.toLowerCase()
+
+          let summary = agentMatch[2].trim()
+          // Truncate at first period or 100 chars
+          const dotIdx = summary.indexOf('.')
+          if (dotIdx > 0 && dotIdx < 120) summary = summary.slice(0, dotIdx + 1)
+          else if (summary.length > 120) summary = summary.slice(0, 117) + '...'
+
+          justCompleted.push({
+            agent: agentRaw,
+            agentSlug,
+            summary,
+            timestamp,
+            type: body.toUpperCase().includes('MILESTONE') ? 'MILESTONE' : 'DONE',
+          })
+        }
+
+        // 3. UP NEXT: parse launch-queue "Next When Done" column
+        const upNext = []
+        // Re-parse the launch queue tables specifically for "Next When Done"
+        let inLQTable = false
+        let lqHeaderCols = null
+        for (const line of lqLines) {
+          if (line.startsWith('|') && !line.match(/^\|\s*-/)) {
+            const cols = line.split('|').map(s => s.trim()).filter(Boolean)
+            if (cols[0] === 'Agent') { lqHeaderCols = cols; inLQTable = true; continue }
+            if (!inLQTable || !lqHeaderCols) continue
+            if (cols.length < 3) continue
+            const agentRaw = cols[0].trim()
+            if (agentRaw === '(none' || agentRaw.includes('none')) continue
+            const agentName = agentRaw.replace(/\s*\d+$/, '').trim()
+            const agentSlug = AGENTS_LIST.find(a =>
+              a.name.toLowerCase() === agentName.toLowerCase() ||
+              agentRaw.toLowerCase().startsWith(a.name.toLowerCase())
+            )?.slug || agentName.toLowerCase()
+            const nextWhenDone = cols[2] || ''
+            if (!nextWhenDone.trim()) continue
+
+            // Extract the first actionable item from "Next When Done"
+            let nextTask = nextWhenDone
+              .replace(/Never stops\.\s*/i, '')
+              .replace(/Then:?\s*/i, '|')
+              .split('|')[0]
+              .trim()
+            if (nextTask.length > 100) nextTask = nextTask.slice(0, 97) + '...'
+            if (nextTask) {
+              upNext.push({
+                agent: agentRaw,
+                agentSlug,
+                task: nextTask,
+              })
+            }
+          } else if (line.startsWith('#')) {
+            inLQTable = false
+            lqHeaderCols = null
+          }
+        }
+
+        // 4. Grab latest-result summaries for each agent
+        const latestResults = {}
+        for (const agent of AGENTS_LIST) {
+          const folder = AGENT_FOLDERS[agent.slug]
+          if (!folder) continue
+          const result = readLocalFile(`projects/${folder}/latest-result.md`)
+          if (result) {
+            // Extract first line of content (skip frontmatter/header)
+            const lines = result.split('\n').filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('---'))
+            const firstLine = lines[0] || ''
+            latestResults[agent.slug] = firstLine.length > 120 ? firstLine.slice(0, 117) + '...' : firstLine
+          }
+        }
+
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({
+          runningNow,
+          justCompleted,
+          upNext,
+          latestResults,
+          timestamp: new Date().toISOString(),
+          source: 'local',
+        }))
+      })
     },
   }
 }
