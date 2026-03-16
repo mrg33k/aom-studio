@@ -8,12 +8,13 @@
 // TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
 // TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
 // TODO(patrik): KILL BOTTOM BAR ENTIRELY -- Dream HUD target says NO bottom bar. Layout = top bar + sidebar ONLY. Project pills move to top bar (scrollable). Minimap, agent portrait, notification icons all in top bar. Bottom bar is gone. Ref: Patrik directive lines 170-182.
+// DONE(bobby2): Bottom bar cleanup -- chat input + chat button REMOVED from bottom bar. Project pills now horizontally scrollable (no wrapping). Bottom bar = agent roster | scrollable project pills | compact stats | notification bell. No chat elements.
 // DONE(bobby2): Project pill category labels -- pills now show category text (CLIENT / PROJECT / OUTREACH) not color-status text. Color communicates status visually, text label tells you WHAT it is.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ChevronUp, ChevronDown, Check, Circle, AlertTriangle,
+  ChevronDown, Check, Circle, AlertTriangle,
   Activity, Pause, Eye, Clock, Zap, Users, FolderKanban,
   LayoutGrid, X, Loader2, CheckCircle2, Timer, Flame,
   Search,
@@ -1343,156 +1344,12 @@ function CompactStats({ agentStatus, throughput, overallProgress }) {
   )
 }
 
-// ---- INLINE CHAT INPUT (LARGER, blue-themed, integrated into HUD strip) -----
-function HUDChatInput({ chatAgent, agentStatus, onChatSubmit, onExpandChat, isMobile }) {
-  const [input, setInput] = useState('')
-  const inputRef = useRef(null)
-
-  const currentAgent = chatAgent
-    ? AGENTS.find(a => a.slug === chatAgent)
-    : AGENTS.find(a => a.slug === 'elon')
-  const agentSlug = currentAgent?.slug || 'elon'
-  const agentColor = currentAgent?.color || HUD.accent
-  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
-
-  const handleSubmit = (e) => {
-    e?.preventDefault()
-    const text = input.trim()
-    if (!text) return
-    setInput('')
-    onChatSubmit?.(agentSlug, text)
-  }
-
-  const chatSize = isMobile ? 32 : 44
-
-  return (
-    <form onSubmit={handleSubmit} style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      flexShrink: 0,
-      minWidth: isMobile ? 0 : 280,
-      maxWidth: isMobile ? '100%' : 420,
-    }}>
-      {/* Agent plumbob mini portrait - LARGER */}
-      <div
-        onClick={() => onExpandChat?.()}
-        style={{
-          width: chatSize, height: chatSize, flexShrink: 0,
-          cursor: 'pointer', position: 'relative',
-        }}
-        title={`Chat with ${currentAgent?.name}`}
-      >
-        <svg width={chatSize} height={chatSize} viewBox={`0 0 ${chatSize} ${chatSize}`}>
-          <PlumbobClipDef id="chat-plumbob-clip" size={chatSize} />
-          <path
-            d={`M ${chatSize/2} ${chatSize*0.02} L ${chatSize/2+chatSize*0.48} ${chatSize*0.22} L ${chatSize/2+chatSize*0.48} ${chatSize*0.72} Q ${chatSize/2+chatSize*0.48} ${chatSize*0.98}, ${chatSize/2} ${chatSize*0.98} Q ${chatSize/2-chatSize*0.48} ${chatSize*0.98}, ${chatSize/2-chatSize*0.48} ${chatSize*0.72} L ${chatSize/2-chatSize*0.48} ${chatSize*0.22} Z`}
-            fill={`${agentColor}25`}
-          />
-          {hasSpriteFile ? (
-            <image
-              href={`/corner/sprites/${agentSlug}-idle.png`}
-              x={-chatSize * 0.12}
-              y={-chatSize * 0.04}
-              width={chatSize * 1.3}
-              height={chatSize * 1.3}
-              clipPath="url(#chat-plumbob-clip)"
-              style={{ imageRendering: 'pixelated' }}
-              preserveAspectRatio="xMidYMin slice"
-            />
-          ) : (
-            <text x={chatSize/2} y={chatSize*0.58} textAnchor="middle" dominantBaseline="middle"
-              fill={agentColor} fontFamily="Inter, system-ui, sans-serif"
-              fontWeight="700" fontSize={chatSize * 0.38}>
-              {currentAgent?.name?.charAt(0) || '?'}
-            </text>
-          )}
-          <path
-            d={`M ${chatSize/2} ${chatSize*0.02} L ${chatSize/2+chatSize*0.48} ${chatSize*0.22} L ${chatSize/2+chatSize*0.48} ${chatSize*0.72} Q ${chatSize/2+chatSize*0.48} ${chatSize*0.98}, ${chatSize/2} ${chatSize*0.98} Q ${chatSize/2-chatSize*0.48} ${chatSize*0.98}, ${chatSize/2-chatSize*0.48} ${chatSize*0.72} L ${chatSize/2-chatSize*0.48} ${chatSize*0.22} Z`}
-            fill="none" stroke={agentColor} strokeWidth={1.5} strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-
-      {/* Text input - LARGER */}
-      <input
-        ref={inputRef}
-        type="text"
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        placeholder={isMobile ? 'Message...' : `Message ${currentAgent?.name}...`}
-        style={{
-          flex: 1,
-          background: 'rgba(100,180,255,0.04)',
-          border: '1px solid rgba(100,180,255,0.10)',
-          borderRadius: 10,
-          height: isMobile ? 36 : 44,
-          padding: '0 16px',
-          color: HUD.textPrimary,
-          fontSize: isMobile ? 15 : 18,
-          fontFamily: "'Inter', system-ui, sans-serif",
-          outline: 'none',
-          transition: 'border-color 200ms ease, box-shadow 200ms ease',
-          minWidth: 0,
-        }}
-        onFocus={e => {
-          e.target.style.borderColor = `${agentColor}77`
-          e.target.style.boxShadow = `0 0 0 3px ${agentColor}30, 0 0 16px ${agentColor}18`
-        }}
-        onBlur={e => {
-          e.target.style.borderColor = 'rgba(100,180,255,0.10)'
-          e.target.style.boxShadow = 'none'
-        }}
-      />
-
-      {/* Send button - LARGER */}
-      <button
-        type="submit"
-        disabled={!input.trim()}
-        style={{
-          width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: '50%',
-          background: input.trim() ? agentColor : 'rgba(100,180,255,0.06)',
-          color: input.trim() ? '#EDF2FA' : HUD.textMuted,
-          border: input.trim() ? 'none' : `1px solid ${HUD.divider}`,
-          cursor: input.trim() ? 'pointer' : 'default',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 150ms ease',
-          flexShrink: 0,
-          opacity: input.trim() ? 1 : 0.5,
-        }}
-      >
-        <Send size={isMobile ? 14 : 16} style={{ marginLeft: 1 }} />
-      </button>
-
-      {/* Expand chat button */}
-      {!isMobile && (
-        <button
-          type="button"
-          onClick={() => onExpandChat?.()}
-          style={{
-            width: 32, height: 32,
-            background: 'rgba(100,180,255,0.04)',
-            border: `1px solid ${HUD.divider}`,
-            borderRadius: 6,
-            cursor: 'pointer',
-            color: HUD.textMuted,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 150ms ease',
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = HUD.textSecondary; e.currentTarget.style.background = 'rgba(100,180,255,0.08)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = HUD.textMuted; e.currentTarget.style.background = 'rgba(100,180,255,0.04)' }}
-          title="Expand chat"
-        >
-          <ChevronUp size={15} />
-        </button>
-      )}
-    </form>
-  )
-}
-
 // ---- MAIN HUD ---------------------------------------------------------------
+// DONE(bobby2): Chat input REMOVED from bottom bar per Patrik directive. Chat lives ONLY in sidebar.
+// Bottom bar = agent roster | scrollable project pills | compact stats | notification bell
 export default function GameHUD({
   agentStatus, throughput, onAgentClick, isMobile,
-  // Chat integration props
+  // Chat integration props (onExpandChat still used for bell/notification click -> open sidebar)
   chatAgent, onChatSubmit, onExpandChat,
   // Context menu props
   onAgentContextMenu, onProjectContextMenu,
@@ -1656,18 +1513,19 @@ export default function GameHUD({
             <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
           )}
 
-          {/* Center: Search + Project cards (MOSTLY projects, agents are tiny) */}
+          {/* Center: Search + Project pills (scrollable, no wrapping) */}
           <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
-            flexWrap: 'wrap',
             gap: 8,
             padding: '4px 6px',
-            maxHeight: 108,
-            overflow: 'hidden',
-            alignContent: 'center',
-          }}>
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }} className="hud-pills-scroll">
             {/* Search toggle + input: filters projects in real-time */}
             {!isMobile && (
               <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
@@ -1760,35 +1618,6 @@ export default function GameHUD({
           {!isMobile && (
             <HUDBellButton onClick={onExpandChat} />
           )}
-
-          {/* Divider before chat shortcut */}
-          <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
-
-          {/* Right: Open sidebar chat button (chat input lives ONLY in sidebar per Patrik directive) */}
-          <button
-            type="button"
-            onClick={() => onExpandChat?.()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'rgba(100,180,255,0.06)',
-              border: `1px solid ${HUD.divider}`,
-              borderRadius: 10,
-              padding: isMobile ? '6px 10px' : '8px 16px',
-              cursor: 'pointer',
-              color: HUD.textSecondary,
-              fontSize: isMobile ? 14 : 16,
-              fontFamily: "'Inter', system-ui, sans-serif",
-              fontWeight: 500,
-              transition: 'all 150ms ease',
-              flexShrink: 0,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.12)'; e.currentTarget.style.borderColor = HUD.panelBorderHover }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.06)'; e.currentTarget.style.borderColor = HUD.divider }}
-            title="Open sidebar chat"
-          >
-            <MessageSquare size={isMobile ? 14 : 16} />
-            {!isMobile && <span>Chat</span>}
-          </button>
         </div>
       </div>
 
@@ -1819,6 +1648,8 @@ export default function GameHUD({
         .hud-scroll::-webkit-scrollbar-track { background: transparent; }
         .hud-scroll::-webkit-scrollbar-thumb { background: rgba(100,180,255,0.12); border-radius: 3px; }
         .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(100,180,255,0.22); }
+        .hud-pills-scroll::-webkit-scrollbar { display: none; }
+        .hud-pills-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
