@@ -637,7 +637,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
 
       {/* Project name */}
       <span style={{
-        fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+        fontFamily: "'Inter Tight', system-ui, sans-serif",
         fontSize: 20, fontWeight: 900,
         color: '#EDF2FA',
         textTransform: 'uppercase',
@@ -858,7 +858,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                         <div style={{ width: 16, height: 16, borderRadius: 4, background: project.color, boxShadow: `0 0 12px ${project.color}44` }} />
                       )}
                       <span style={{
-                        fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+                        fontFamily: "'Inter Tight', system-ui, sans-serif",
                         fontSize: 26, fontWeight: 900, color: '#EDF2FA',
                         textTransform: 'uppercase', letterSpacing: '-0.02em',
                       }}>
