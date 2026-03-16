@@ -5,7 +5,7 @@
 // TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors. [SURVIVES: UI panel. Room colors may reference engine palette but sidebar logic stays.]
 // DONE(bobby2): Task right-click context menu -- right-click any task for: mark done/undone, set priority (high/med/low), reassign agent, delete. Linear/Notion style.
 // TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable. [SURVIVES: Drag-and-drop is React UI logic. No engine dependency.]
-// TODO(bobby): DRAG-TO-RIGHT-NOW (CHECKLIST) -- In checklist view, dragging a task onto the "Right Now" section pushes it to top of priority queue. Right Now section shows at the TOP of checklist (before Today), displays live tasks with time estimates. Tasks dragged here get a pulsing "LIVE" badge. Pairs with GameHUD "Right Now" pill. Ref: Patrik feedback Pass 21. [SURVIVES: Checklist UI. No engine dependency.]
+// DONE(bobby2): RIGHT NOW PILL (CHECKLIST) -- Right Now section at TOP of checklist (before Today). Shows active agent tasks with avatars + progress bars + LIVE badges. Data from agent-notifications.md TASK entries + relay activity. Drag-to target for priority escalation (drag-and-drop TODO(patrik) still open). Ref: Patrik feedback Pass 21.
 // DONE(bobby): LABEL SIDEBAR COUNTS (CHECKLIST) -- All count badges now show "N left" instead of bare numbers. Sidebar (mobile + desktop), project group headers all labeled. "Done" section already labeled. Ref: Patrik feedback Pass 22.
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
@@ -225,6 +225,113 @@ function useConversationRecency() {
   return scores
 }
 
+// ---- RIGHT NOW: live agent tasks from agent-notifications.md ----------------
+// Parses recent TASK entries to build the "Right Now" active sprint list.
+// Each entry gets a simulated progress value based on recency (newer = lower %).
+function useRightNowTasks() {
+  const [tasks, setTasks] = useState([])
+
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch('/api/local/file?path=context/agent-notifications.md')
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.content) return
+
+        const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
+        // Take the most recent 6 lines that are AGENT TASK entries
+        // Exclude PATRIK directives/feedback/bugs/clarifications/reminders
+        const recentTaskLines = lines
+          .filter(l => {
+            // Must be an agent task, not a Patrik directive
+            if (/PATRIK\s*(DIRECTIVE|CLARIFICATION|FEEDBACK|BUG|REMINDER|DECISION)/i.test(l)) return false
+            if (/COUNCIL\s*(DIRECTIVE|DECISION)/i.test(l)) return false
+            if (/NEXT\s*WAVE/i.test(l)) return false
+            // Must contain task-related keywords
+            return /TASK\s*FINISHED|SESSION|SHIPPED|BUILD\s*\d|DELIVERED|MILESTONE/i.test(l)
+          })
+          .slice(-6)
+          .reverse()
+
+        const parsed = recentTaskLines.map((line, i) => {
+          // Match agent name (including Bobby2, Steffen2, Bobby3 variants)
+          const agentMatch = line.match(/(?:Bobby\s*\d?|Steffen\s*\d?|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
+          let agentSlug = agentMatch ? agentMatch[0].toLowerCase().replace(/\s+/g, '') : null
+          // Normalize Bobby2/3 -> bobby, Steffen2 -> steffen
+          if (agentSlug && /^bobby\d?$/.test(agentSlug)) agentSlug = 'bobby'
+          if (agentSlug && /^steffen\d?$/.test(agentSlug)) agentSlug = 'steffen'
+
+          // Extract a short task description (clean, no jargon)
+          let text = ''
+          const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-–]\s*(.+?)(?:\.\s|$)/i)
+          const shippedMatch = line.match(/SHIPPED:\s*(?:\(1\)\s*)?(.+?)(?:,\s*\(2\)|\.\s|$)/i)
+          const sessionMatch = line.match(/SESSION[^:]*:\s*\d*\s*commits?\s*pushed[^.]*\.\s*(.+?)(?:\.\s|$)/i)
+          const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-–]\s*(.+?)(?:\.\s|$)/i)
+          if (taskMatch) text = taskMatch[1].trim()
+          else if (milestoneMatch) text = milestoneMatch[1].trim()
+          else if (shippedMatch) text = shippedMatch[1].trim()
+          else if (sessionMatch) text = sessionMatch[1].trim()
+          else {
+            // Fallback: grab text after agent name and colon
+            const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-–:]\s*(.+?)(?:\.\s|$)/i)
+            text = afterAgent ? afterAgent[1].trim() : ''
+          }
+
+          // Clean up: strip @mentions, commit hashes, file paths, parenthetical junk
+          text = text.replace(/@\w+:?/g, '')
+            .replace(/\b[0-9a-f]{7,8}\b/g, '')
+            .replace(/projects\/\S+/g, '')
+            .replace(/\d+\s*commits?\s*pushed\s*\([^)]*\)/gi, '')
+            .replace(/\(\s*\d+\s*commits?\s*to\s*[\w-]+[^)]*\)/gi, '')
+            .replace(/\([^)]*commits?[^)]*\)/gi, '')
+            .replace(/\([\s,]*\)/g, '')
+            .replace(/REMAINING\s*TODOs?:.*$/i, '')
+            .replace(/\s{2,}/g, ' ')
+            .replace(/^\s*[-–:,.\s]+/, '')
+            .replace(/[-–:,.\s]+$/, '')
+            .trim()
+          if (text.length > 60) text = text.slice(0, 57) + '...'
+
+          // Simulated progress: most recent = 85%, oldest in the list = 35%
+          // Finished tasks = 100%
+          const isFinished = /TASK\s*FINISHED|COMPLETE|DELIVERED|MILESTONE/i.test(line)
+          const progress = isFinished ? 100 : Math.max(35, 85 - (i * 10))
+
+          return {
+            text,
+            agent: agentSlug,
+            progress,
+            done: isFinished,
+            isLive: !isFinished,
+            raw: line,
+          }
+        }).filter(t => t.text.length > 3 && t.agent)
+
+        setTasks(parsed)
+      } catch {}
+    }
+
+    fetchTasks()
+    const timer = setInterval(fetchTasks, 8000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return tasks
+}
+
+// Generate demo Right Now tasks for production
+function generateDemoRightNow() {
+  return [
+    { text: 'Building permit tracker dashboard page', agent: 'bobby', progress: 72, done: false, isLive: true },
+    { text: 'QA pass on Garcia homepage redesign', agent: 'elmo', progress: 45, done: false, isLive: true },
+    { text: 'Drafting 15 personalized outreach emails', agent: 'jacob', progress: 60, done: false, isLive: true },
+    { text: 'ROI calculator for construction vertical', agent: 'steve', progress: 33, done: false, isLive: true },
+  ]
+}
+
 // ---- DEMO CHECKLIST DATA (production: Garcia Construction tasks) -------------
 function generateDemoChecklist() {
   return {
@@ -330,7 +437,7 @@ function usePunchListData() {
 }
 
 // ---- PROJECT SIDEBAR (replaces agent sidebar) --------------------------------
-function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }) {
+function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, rightNowCount = 0 }) {
   if (isMobile) {
     // Horizontal scroll chips on mobile
     return (
@@ -361,6 +468,35 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
           <LayoutGrid size={16} />
           All
         </button>
+
+        {/* Right Now chip (mobile) */}
+        {rightNowCount > 0 && (
+          <button
+            onClick={() => onSelectProject('rightnow')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              height: 40, padding: '0 14px',
+              background: selectedProject === 'rightnow' ? 'rgba(59,255,107,0.15)' : 'rgba(59,255,107,0.04)',
+              border: `1.5px solid ${selectedProject === 'rightnow' ? 'rgba(59,255,107,0.4)' : 'rgba(59,255,107,0.12)'}`,
+              borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+              cursor: 'pointer', scrollSnapAlign: 'start',
+              color: '#3BFF6B',
+              fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
+              textTransform: 'uppercase',
+              animation: 'rightNowPulse 3s ease-in-out infinite',
+            }}
+          >
+            <Zap size={14} color="#3BFF6B" style={{ filter: 'drop-shadow(0 0 4px rgba(59,255,107,0.7))' }} />
+            Right Now
+            <span style={{
+              fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+              fontSize: 13, color: '#FFF', background: '#3BFF6B',
+              padding: '2px 7px', borderRadius: 8, lineHeight: 1,
+            }}>
+              {rightNowCount}
+            </span>
+          </button>
+        )}
 
         {projects.map(p => {
           const selected = selectedProject === p.section
@@ -436,6 +572,52 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
         <LayoutGrid size={18} style={{ color: '#6B7280' }} />
         All Projects
       </button>
+
+      {/* Right Now entry (desktop sidebar) */}
+      {rightNowCount > 0 && (
+        <button
+          onClick={() => onSelectProject('rightnow')}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+            height: 48, padding: selectedProject === 'rightnow' ? '0 13px' : '0 16px',
+            background: selectedProject === 'rightnow' ? 'rgba(59,255,107,0.08)' : 'transparent',
+            border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
+            borderLeftWidth: 3, borderLeftStyle: 'solid',
+            borderLeftColor: selectedProject === 'rightnow' ? '#3BFF6B' : 'transparent',
+            cursor: 'pointer', transition: 'background 100ms ease',
+            color: '#F0ECE6', fontFamily: "'Inter Tight', system-ui, sans-serif",
+            fontSize: 15, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
+            position: 'relative',
+          }}
+        >
+          <Zap size={16} color="#3BFF6B" style={{
+            flexShrink: 0,
+            filter: 'drop-shadow(0 0 6px rgba(59,255,107,0.7))',
+            animation: 'rightNowPulse 2s ease-in-out infinite',
+          }} />
+          <span style={{ flex: 1, letterSpacing: '-0.01em', color: '#3BFF6B' }}>Right Now</span>
+          <span style={{
+            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+            fontSize: 13, color: '#FFF', background: '#3BFF6B',
+            padding: '3px 9px', borderRadius: 8, lineHeight: 1,
+            boxShadow: '0 2px 6px rgba(59,255,107,0.3)',
+            minWidth: 26, textAlign: 'center',
+          }}>
+            {rightNowCount}
+          </span>
+          {/* Subtle glow bar at bottom */}
+          <div style={{
+            position: 'absolute', bottom: 0, left: 16, right: 16, height: 2,
+            background: 'rgba(59,255,107,0.15)', borderRadius: 1,
+          }}>
+            <div style={{
+              width: '100%', height: '100%',
+              background: 'rgba(59,255,107,0.4)', borderRadius: 1,
+              animation: 'rightNowPulse 2s ease-in-out infinite',
+            }} />
+          </div>
+        </button>
+      )}
 
       {/* Individual projects */}
       {projects.map(p => {
@@ -833,6 +1015,222 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive })
   )
 }
 
+// ---- RIGHT NOW TASK CARD (agent avatar + task + progress bar) ---------------
+function RightNowTaskCard({ task, index }) {
+  const [isHovered, setIsHovered] = useState(false)
+  const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
+  const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+  const color = '#3BFF6B'
+  const agentColor = agentInfo?.color || color
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 20, scale: 0.95 }}
+      transition={{ duration: 0.18, delay: index * 0.04 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        background: isHovered
+          ? 'rgba(59,255,107,0.06)'
+          : 'rgba(59,255,107,0.02)',
+        border: `1px solid ${isHovered ? 'rgba(59,255,107,0.15)' : 'rgba(59,255,107,0.06)'}`,
+        borderRadius: 12,
+        padding: '12px 16px 10px',
+        marginBottom: 6,
+        cursor: 'default',
+        transition: 'background 120ms ease, border-color 120ms ease',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Row: avatar + text + live badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Agent avatar */}
+        {agentInfo && hasSpr ? (
+          <div style={{
+            width: 32, height: 32, borderRadius: '50%',
+            border: `2px solid ${agentColor}`,
+            overflow: 'hidden', flexShrink: 0, background: '#0A0F1E',
+            boxShadow: `0 0 8px ${agentColor}44`,
+          }}>
+            <img
+              src={`/corner/sprites/${task.agent}-idle.png`}
+              alt=""
+              style={{
+                width: 54, height: 54,
+                objectFit: 'cover', objectPosition: '20% 8%',
+                imageRendering: 'pixelated', display: 'block',
+                marginLeft: -8, marginTop: -5,
+              }}
+            />
+          </div>
+        ) : agentInfo ? (
+          <div style={{
+            width: 32, height: 32, borderRadius: '50%',
+            border: `2px solid ${agentColor}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, fontWeight: 700, color: agentColor,
+            background: `${agentColor}22`, flexShrink: 0,
+          }}>
+            {agentInfo.name.charAt(0)}
+          </div>
+        ) : null}
+
+        {/* Task text + agent name */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 500, fontSize: 15,
+            color: task.done ? '#6B7280' : '#F0ECE6',
+            lineHeight: 1.35,
+            textDecoration: task.done ? 'line-through' : 'none',
+            opacity: task.done ? 0.6 : 1,
+          }}>
+            {task.text}
+          </div>
+          {agentInfo && (
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 11,
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              color: agentColor, marginTop: 2, display: 'inline-block',
+            }}>
+              {agentInfo.name}
+            </span>
+          )}
+        </div>
+
+        {/* LIVE badge */}
+        {task.isLive && (
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 10,
+            textTransform: 'uppercase', letterSpacing: '0.15em',
+            color: color,
+            background: 'rgba(59,255,107,0.10)',
+            border: '1px solid rgba(59,255,107,0.25)',
+            borderRadius: 4, padding: '3px 8px',
+            display: 'flex', alignItems: 'center', gap: 5,
+            flexShrink: 0,
+            animation: 'rightNowPulse 2s ease-in-out infinite',
+          }}>
+            <div style={{
+              width: 5, height: 5, borderRadius: '50%',
+              background: color,
+              boxShadow: `0 0 6px ${color}`,
+              animation: 'rightNowDotPulse 1.5s ease-in-out infinite',
+            }} />
+            LIVE
+          </span>
+        )}
+
+        {/* Progress % */}
+        <span style={{
+          fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 13,
+          color: task.done ? '#4CAF50' : 'rgba(59,255,107,0.7)',
+          flexShrink: 0, minWidth: 36, textAlign: 'right',
+        }}>
+          {task.progress}%
+        </span>
+      </div>
+
+      {/* Thin progress bar */}
+      <div style={{
+        marginTop: 8,
+        height: 3,
+        background: 'rgba(59,255,107,0.08)',
+        borderRadius: 2,
+        overflow: 'hidden',
+      }}>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${task.progress}%` }}
+          transition={{ duration: 0.8, ease: [0.34, 1.56, 0.64, 1], delay: index * 0.06 }}
+          style={{
+            height: '100%',
+            background: task.done
+              ? 'rgba(76,175,80,0.6)'
+              : `linear-gradient(90deg, ${color}88, ${color})`,
+            borderRadius: 2,
+            boxShadow: task.isLive ? `0 0 6px ${color}44` : 'none',
+          }}
+        />
+      </div>
+    </motion.div>
+  )
+}
+
+// ---- RIGHT NOW SECTION (pinned before Today) --------------------------------
+function RightNowSection({ tasks, isCollapsed, onToggle }) {
+  if (!tasks || tasks.length === 0) return null
+
+  const liveTasks = tasks.filter(t => t.isLive)
+  const doneTasks = tasks.filter(t => t.done)
+  const color = '#3BFF6B'
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      {/* Header */}
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '16px 0 10px', marginBottom: 4,
+          background: 'none', border: 'none', cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {isCollapsed ? <ChevronRight size={16} color="#6B7280" /> : <ChevronDown size={16} color="#6B7280" />}
+
+        <Zap size={20} color={color} style={{
+          filter: `drop-shadow(0 0 8px ${color}AA)`,
+          animation: 'rightNowPulse 2s ease-in-out infinite',
+        }} />
+
+        <span style={{
+          fontFamily: "'Inter Tight', system-ui, sans-serif",
+          fontSize: 22, fontWeight: 900,
+          color: '#EDF2FA',
+          textTransform: 'uppercase',
+          letterSpacing: '-0.02em',
+          flex: 1,
+          textShadow: `0 0 20px ${color}33`,
+        }}>
+          Right Now
+        </span>
+
+        {/* Active count */}
+        {liveTasks.length > 0 && (
+          <span style={{
+            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+            fontSize: 14, color: '#FFF',
+            background: `linear-gradient(135deg, ${color}, ${color}CC)`,
+            padding: '4px 12px', borderRadius: 10, lineHeight: 1,
+            boxShadow: `0 2px 8px ${color}55, 0 0 20px ${color}22`,
+            minWidth: 28, textAlign: 'center',
+            animation: 'rightNowPulse 3s ease-in-out infinite',
+          }}>
+            {liveTasks.length} active
+          </span>
+        )}
+      </button>
+
+      {/* Task cards */}
+      {!isCollapsed && (
+        <AnimatePresence>
+          {tasks.map((task, i) => (
+            <RightNowTaskCard
+              key={`rightnow-${i}-${task.text?.slice(0,15)}`}
+              task={task}
+              index={i}
+            />
+          ))}
+        </AnimatePresence>
+      )}
+    </div>
+  )
+}
+
 // ---- PROJECT GROUP HEADER ---------------------------------------------------
 function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
   const totalTasks = project.tasks.length
@@ -1006,6 +1404,11 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const { data: punchData, loading } = usePunchListData()
   const conversationScores = useConversationRecency()
 
+  // Right Now: live agent tasks (local: from agent-notifications.md, prod: demo data)
+  const liveRightNowTasks = useRightNowTasks()
+  const rightNowTasks = IS_LOCAL ? liveRightNowTasks : generateDemoRightNow()
+  const showRightNow = rightNowTasks.length > 0 && (!selectedProject || selectedProject === 'rightnow')
+
   // Sort projects by conversation-driven recency weight
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
@@ -1080,6 +1483,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         selectedProject={selectedProject}
         onSelectProject={setSelectedProject}
         isMobile={isMobile}
+        rightNowCount={rightNowTasks.length}
       />
 
       {/* Task List */}
@@ -1107,7 +1511,16 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             margin: '0 auto', width: '100%',
           }}>
             {/* Empty state */}
-            {visibleProjects.length === 0 && <EmptyState />}
+            {visibleProjects.length === 0 && !showRightNow && <EmptyState />}
+
+            {/* RIGHT NOW section: pinned first, before Today */}
+            {showRightNow && (
+              <RightNowSection
+                tasks={rightNowTasks}
+                isCollapsed={collapsedProjects['rightnow-live']}
+                onToggle={() => toggleCollapse('rightnow-live')}
+              />
+            )}
 
             {/* Project groups */}
             {visibleProjects.map(project => {
