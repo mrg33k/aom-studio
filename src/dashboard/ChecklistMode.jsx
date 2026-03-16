@@ -14,6 +14,11 @@
 // TODO(bobby2): LIVE TASK UPDATES IN CHECKLIST -- Tasks MUST update in real time. When an agent completes a task, the checklist reflects it IMMEDIATELY. Poll agent-notifications.md and relay for TASK FINISHED entries. Auto-check completed items. Auto-add new tasks from relay directives. Priority sort: Right Now items first, then Today, then by importance. "The proof is seeing it work on screen, not just code that exists in the codebase." Ref: Patrik feedback line 258-259, 263.
 // TODO(bobby2): RIGHT NOW CHECKLIST ITEMS WITH PROGRESS -- Each Right Now task row: agent avatar + task name + thin progress bar filling as agent works. Real time. Activity feed energy baked into the task list. Not a percentage number. A thin bar. SimCity build progress energy. Ref: Patrik clarification line 253.
 // ==========
+//
+// ========== PATRIK DIRECTIVES (Pass 26, lines 273-275) ==========
+// TODO(bobby2): RIGHT NOW CHECKLIST COLOR = ORANGE/FIRE -- Right Now section in checklist must use orange/fire color (not green). Matches HUD pill color change. Green = done/complete energy, not active sprint energy. Ref: Patrik feedback line 273.
+// TODO(bobby2): DAYTIME WHITE CHECKLIST RIGHT NOW -- Right Now section in checklist must be white/light during daytime. Everything flips to light at once. No dark Right Now on a white checklist. Ref: Patrik feedback line 274.
+// ==========
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
