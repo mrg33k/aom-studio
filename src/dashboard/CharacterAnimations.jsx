@@ -40,7 +40,7 @@ const AGENT_COLORS = {
   pixel: '#00BCD4',
 }
 
-// TODO(steffen): Add left/right direction support -- all characters face same way currently. Steffen's HOP-FRAMES.md has SE + NW directions specced. Needed for inter-room walking (Phase 2). [DIES_WITH_ENGINE_SWAP: Direction support will be handled natively by the 2D engine's sprite system. Re-implement as engine sprite flip/rotation.]
+// DEPRECATED(engine-swap): DIRECTION SUPPORT -- Was: CSS-based left/right sprite flip. REPLACED BY TODO(engine): SPRITE LAYER COMPOSITING (engine handles sprite flip/rotation natively). Council decision 2026-03-17. Do not build in React/CSS.
 // TODO(engine): 2D ENGINE -- SPRITE LAYER COMPOSITING -- Characters must render as engine-managed sprites with z-index layering. Each agent = sprite actor with idle/walk/work animation states. Engine handles draw order, occlusion, and direction flipping. Replace current CSS-animated div overlays with engine sprite nodes. Ref: Council engine-swap directive.
 
 // ---- SPRITE STATE MAPPING (mirrors GameDashboard) ----------------------------

@@ -2,7 +2,7 @@ import React from 'react'
 
 // Config-driven furniture renderer. Loads placement from grid spec.
 // Each furniture type maps to a reusable SVG component.
-// [DIES_WITH_ENGINE_SWAP: This entire file is replaced by engine sprite-based furniture rendering. See TODO(engine): FURNITURE RENDERER MIGRATION in GameDashboard.jsx.]
+// [DEPRECATED(engine-swap): This entire file is replaced by engine sprite-based furniture rendering. See TODO(engine): FURNITURE RENDERER MIGRATION in GameDashboard.jsx. Council decision 2026-03-17.]
 
 // Furniture type renderers - each returns SVG elements for its item
 const FURNITURE_RENDERERS = {

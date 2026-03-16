@@ -29,6 +29,43 @@ function renderMarkdown(text) {
   }
 }
 
+// ─── MESSAGE SANITIZER ──────────────────────────────────────────────────────
+// Strips watchdog preamble, system XML, and other noise from relay messages.
+// Returns cleaned text, or null if the entire message is system noise.
+function sanitizeRelayMessage(text) {
+  if (!text || typeof text !== 'string') return null
+
+  let cleaned = text
+
+  // 1. Filter system XML blocks: <task-notification>...</task-notification>, <system-reminder>...</system-reminder>, <available-deferred-tools>...</available-deferred-tools>
+  cleaned = cleaned.replace(/<task-notification>[\s\S]*?<\/task-notification>/g, '')
+  cleaned = cleaned.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
+  cleaned = cleaned.replace(/<available-deferred-tools>[\s\S]*?<\/available-deferred-tools>/g, '')
+
+  // 2. Strip watchdog preamble patterns
+  cleaned = cleaned.replace(/^Patrik sent this via Telegram:\s*/i, '')
+  cleaned = cleaned.replace(/^Patrik sent these messages via Telegram:\s*/i, '')
+  cleaned = cleaned.replace(/You have full project context from CLAUDE\.md\.\s*/g, '')
+  cleaned = cleaned.replace(/Respond naturally with the same detail you would on the desktop\.\s*/g, '')
+  cleaned = cleaned.replace(/Do not artificially shorten or condense your response\.\s*/g, '')
+  cleaned = cleaned.replace(/If the request needs calendar, email, file changes, or tool access,\s*do what you can and note any limitations\.\s*/g, '')
+  cleaned = cleaned.replace(/If any request needs calendar, email, file changes, or tool access,\s*do what you can and note any limitations\.\s*/g, '')
+  cleaned = cleaned.replace(/Do not use em dashes\.\s*Use bullet points over paragraphs\.\s*/g, '')
+  cleaned = cleaned.replace(/Address all messages in one response\.\s*/g, '')
+
+  // 3. Strip "Full transcript available at: /private/tmp/..." lines
+  cleaned = cleaned.replace(/Full transcript available at:\s*\/\S+/g, '')
+
+  // 4. Strip timestamped message list prefixes from watchdog batches (e.g., "- [2026-03-16T...] ")
+  cleaned = cleaned.replace(/^-\s*\[\d{4}-\d{2}-\d{2}T[^\]]*\]\s*/gm, '')
+
+  // Trim and check if anything meaningful remains
+  cleaned = cleaned.trim()
+  if (!cleaned || cleaned.length < 2) return null
+
+  return cleaned
+}
+
 // Extract agent name from [AGENT] prefix in relay messages (e.g., "[ELON] ..." -> "elon")
 function extractAgentSource(msg) {
   if (msg.agent) return msg.agent
@@ -267,12 +304,15 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [relayConnected, setRelayConnected] = useState(false)
+  const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
   const relayPollRef = useRef(null)
   const lastOutboxCheckRef = useRef(null)
   const chatTimeoutRef = useRef(null)
   const historyLoadedRef = useRef(false)
+  const isNearBottomRef = useRef(true)
 
   const status = statusData?.status || 'IDLE'
   const task = statusData?.currentTask || 'Standing by'
@@ -327,10 +367,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
           // Inbox: messages from dashboard or telegram are "user" messages
           for (const msg of inbox.messages) {
-            if (!msg.message?.trim()) continue
+            const cleaned = sanitizeRelayMessage(msg.message)
+            if (!cleaned) continue
             all.push({
               role: 'user',
-              content: msg.message,
+              content: cleaned,
               time: msg.timestamp,
               source: msg.source || 'unknown',
               id: msg.id,
@@ -345,9 +386,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             if (isDashboardOrigin) {
               // Only add if not already in inbox (avoid duplicates)
               if (!all.some(m => m.id === msg.id)) {
+                const cleaned = sanitizeRelayMessage(msg.message)
+                if (!cleaned) continue
                 all.push({
                   role: 'user',
-                  content: msg.message,
+                  content: cleaned,
                   time: msg.timestamp,
                   source: 'dashboard',
                   id: msg.id,
@@ -355,9 +398,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               }
               continue
             }
+            const cleaned = sanitizeRelayMessage(msg.message)
+            if (!cleaned) continue
             all.push({
               role: 'assistant',
-              content: msg.message,
+              content: cleaned,
               time: msg.timestamp,
               source: extractAgentSource(msg) || 'system',
               id: msg.id,
@@ -383,13 +428,17 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           const res = await fetch('/api/relay')
           if (res.ok) {
             const data = await res.json()
-            const all = (data.messages || []).map(msg => ({
-              role: msg.type === 'response' ? 'assistant' : 'user',
-              content: msg.message,
-              time: msg.timestamp,
-              source: msg.source || msg.agent || 'unknown',
-              id: msg.id,
-            })).slice(-30)
+            const all = (data.messages || []).map(msg => {
+              const cleaned = sanitizeRelayMessage(msg.message)
+              if (!cleaned) return null
+              return {
+                role: msg.type === 'response' ? 'assistant' : 'user',
+                content: cleaned,
+                time: msg.timestamp,
+                source: msg.source || msg.agent || 'unknown',
+                id: msg.id,
+              }
+            }).filter(Boolean).slice(-30)
             setMessages(all)
             setRelayConnected(true)
           }
@@ -403,10 +452,31 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     loadHistory()
   }, [])
 
-  // Auto-scroll to bottom
+  // Smart auto-scroll: only scroll to bottom if user is near the bottom already
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (isNearBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      setShowNewMsgIndicator(false)
+    } else if (messages.length > 0) {
+      setShowNewMsgIndicator(true)
+    }
   }, [messages])
+
+  // Track scroll position to determine if user is near bottom
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    const threshold = 80
+    isNearBottomRef.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
+    if (isNearBottomRef.current) setShowNewMsgIndicator(false)
+  }, [])
+
+  // Scroll to bottom when "new messages" indicator is clicked
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setShowNewMsgIndicator(false)
+    isNearBottomRef.current = true
+  }, [])
 
   // Focus input on open
   useEffect(() => {
@@ -474,13 +544,15 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                 const updated = [...prev]
                 for (const msg of newInbox) {
                   if (updated.some(m => m.id === msg.id)) continue
+                  const cleaned = sanitizeRelayMessage(msg.message)
+                  if (!cleaned) continue
                   let sourceLabel = msg.source || 'unknown'
                   if (sourceLabel === 'telegram') sourceLabel = 'via telegram'
                   else if (sourceLabel === 'terminal' || sourceLabel === 'cli') sourceLabel = 'via terminal'
                   else sourceLabel = `via ${sourceLabel}`
                   updated.push({
                     role: 'user',
-                    content: msg.message,
+                    content: cleaned,
                     time: msg.timestamp,
                     source: sourceLabel,
                     id: msg.id,
@@ -509,9 +581,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                 const updated = [...prev]
                 for (const msg of newOutbox) {
                   if (updated.some(m => m.id === msg.id)) continue
+                  const cleaned = sanitizeRelayMessage(msg.message)
+                  if (!cleaned) continue
                   updated.push({
                     role: 'assistant',
-                    content: msg.message,
+                    content: cleaned,
                     time: msg.timestamp || new Date().toISOString(),
                     source: extractAgentSource(msg) || 'system',
                     id: msg.id,
@@ -554,12 +628,13 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           )
           if (responses.length > 0) {
             const latest = responses[responses.length - 1]
+            const cleaned = sanitizeRelayMessage(latest.message) || latest.message
             setMessages(prev => {
               // Remove streaming placeholders, add real response, re-sort
               const filtered = prev.filter(m => !m.streaming)
               filtered.push({
                 role: 'assistant',
-                content: latest.message,
+                content: cleaned,
                 streaming: false,
                 time: latest.timestamp || new Date().toISOString(),
                 source: extractAgentSource(latest) || 'system',
@@ -719,7 +794,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 scroll-smooth chat-messages-area">
+      <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-5 space-y-5 scroll-smooth chat-messages-area relative">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-full bg-[#1A1A17] border-2 border-[#C026D3]/40 flex items-center justify-center mb-4">
@@ -802,12 +877,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                     )}
                     {sourceLabel && (
                       <span
-                        className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded border"
-                        style={{
-                          color: sourceLabel.color,
-                          borderColor: `${sourceLabel.color}40`,
-                          background: `${sourceLabel.color}10`,
-                        }}
+                        className="text-[9px] font-mono uppercase tracking-[0.08em] opacity-40"
+                        style={{ color: '#78716C' }}
                       >
                         {sourceLabel.text}
                       </span>
@@ -820,6 +891,22 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         })}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* New messages indicator */}
+      <AnimatePresence>
+        {showNewMsgIndicator && (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            onClick={scrollToBottom}
+            className="absolute left-1/2 -translate-x-1/2 z-10 bg-[#3B82F6] text-white text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20 hover:bg-[#2563EB] transition-colors cursor-pointer"
+            style={{ bottom: 72 }}
+          >
+            New messages
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Input */}
       <form onSubmit={sendMessage} className="shrink-0 px-4 py-3 border-t border-[#292524]/50 bg-[#0F0F0D]">

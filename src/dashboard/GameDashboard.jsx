@@ -20,6 +20,7 @@ import { createChatConnection, CONNECTION_TYPE } from './chatConnection.js'
 import { renderFurniture } from './FurnitureRenderer.jsx'
 import { useWebSocket, WS_STATE } from './useWebSocket.js'
 import { AnimatedAgentCharacter, CharacterAnimationStyles } from './CharacterAnimations.jsx'
+import CanvasRoom from './CanvasRoom.jsx'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -1111,10 +1112,10 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 
 
 // PATRIK DIRECTIVE (line 215): STOP ALL CATALOG/FURNITURE WORK. ALL agent energy goes to 3 things ONLY: (1) Game feel, (2) HUD clean, (3) Map interaction. No furniture, no new packs, no catalog growth until these 3 are SOLID.
-// TODO(bobby+steffen): LAYERED ROOM SYSTEM (ARCHITECTURAL SHIFT) -- Office is NOT a flat image with overlays. It's a LAYERED WORLD (Pixel Agents reference). Room backgrounds + individual furniture as separate React components at coordinates + characters as actors. Each catalog item is clickable, movable, swappable. Room = stage, furniture = set, characters = actors. This replaces the single-PNG approach. The 1,200 catalog items exist for THIS. Steffen + Bobby architect together. GAME FEEL priority, the foundation everything else builds on. Ref: Patrik vision lines 217-218. [DIES_WITH_ENGINE_SWAP: This entire approach (React component overlays on PNG) is replaced by the 2D engine. Re-implement as engine scene graph with tilemap layers + entity system.]
-// TODO(bobby): ROOM DEPTH + DOMINO WAVE -- Map breathing is wrong. Not a global float. Should be DEPTH into each room with a domino wave effect across rooms. Control down to desk-level elements inside rooms. Parallax layers per room, individual element control. Depth FIRST, catalog second. Ref: Patrik vision line 217. [DIES_WITH_ENGINE_SWAP: Parallax and depth become engine camera/layer features. Re-implement as engine parallax layers with per-room depth offsets and wave-triggered animations.]
+// DEPRECATED(engine-swap): LAYERED ROOM SYSTEM -- Was: React component overlays on PNG. REPLACED BY TODO(engine): 2D ENGINE INTEGRATION + LAYERED ROOM RENDERING. Council decision 2026-03-17: proper 2D engine (PixiJS/Phaser) owns the game canvas. Do not build in React/CSS.
+// DEPRECATED(engine-swap): ROOM DEPTH + DOMINO WAVE -- Was: CSS parallax per room. REPLACED BY TODO(engine): ENGINE CAMERA + ZOOM SYSTEM (per-room depth offsets + wave-triggered animations). Council decision 2026-03-17. Do not build in React/CSS.
 // DONE(bobby): SWAP HITBOX COORDINATES -- officeLayouts/default.js now uses Steffen's warm variant coordinates from room-hitbox-map.json. Ref: Patrik feedback line 212.
-// TODO(bobby): PLAYWRIGHT HITBOX VERIFICATION -- Coordinates swapped but are Steffen's manual estimates. Open localhost, click center of every room at both zoom levels (0.7 + 1.6), verify correct agent panel opens. Adjust any misses. See officeLayouts/default.js TODOs. MAP INTERACTION priority #1. [DIES_WITH_ENGINE_SWAP: Diamond clip-path hitboxes are replaced by engine collision/physics bodies or tilemap click detection. Re-implement as engine input manager with room entity click handlers.]
+// DEPRECATED(engine-swap): PLAYWRIGHT HITBOX VERIFICATION -- Was: Diamond clip-path coordinate testing. REPLACED BY TODO(engine): ENGINE INPUT MANAGER (engine collision bodies / tilemap click detection). Council decision 2026-03-17. Do not build in React/CSS.
 // DONE(bobby): MODULAR OFFICE FRAMEWORK -- Extracted to officeLayouts/default.js. Room targets, clip paths, zoom presets, wave order, and image paths in standalone config. Swap image + config = new office skin.
 // DONE(bobby): INVISIBLE HOTSPOT MAPPING (OVO approach) -- All diamond SVG outlines REMOVED. Click regions are invisible rectangles matching wall boundaries. Hover = subtle radial glow inside room space. No borders, no outlines, no drawn shapes. Art defines rooms.
 // DONE(bobby): ROOM INTERACTION STATES -- Invisible hitboxes (OVO approach), subtle inner glow on hover only. No drawn outlines. Office walls define rooms.
@@ -1392,6 +1393,44 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
             pointerEvents: 'none',
           }}
         />
+
+        {/* Canvas 2D layered room: Elon's server room (Phase 2 POC) */}
+        {/* Renders 6 composited PNG layers via HTML5 Canvas instead of flat image */}
+        {/* Canvas area is sized square to match 512x512 asset canvas, centered on room target */}
+        {(() => {
+          const elonTarget = IMAGE_ROOM_TARGETS['elon']
+          if (!elonTarget) return null
+          const elonStatus = agentStatus['elon']?.status || 'IDLE'
+          const elonIsActive = elonStatus === 'WORKING'
+          // Square canvas area: use the larger dimension to keep aspect ratio
+          // Center the square on the room target's center point
+          const canvasSize = Math.max(elonTarget.w, elonTarget.h) * 1.6
+          const centerX = elonTarget.x + elonTarget.w / 2
+          const centerY = elonTarget.y + elonTarget.h / 2
+          return (
+            <div
+              style={{
+                position: 'absolute',
+                left: `${centerX - canvasSize / 2}%`,
+                top: `${centerY - canvasSize / 2}%`,
+                width: `${canvasSize}%`,
+                height: `${canvasSize}%`,
+                zIndex: 3,
+                pointerEvents: 'none',
+              }}
+            >
+              <CanvasRoom
+                roomId="elon"
+                isActive={elonIsActive}
+                isHovered={hoveredRoom === 'elon'}
+                onClick={(id) => onRoomClick?.(id)}
+                onMouseEnter={() => setHoveredRoom('elon')}
+                onMouseLeave={() => setHoveredRoom(null)}
+                style={{ pointerEvents: 'auto' }}
+              />
+            </div>
+          )
+        })()}
 
         {/* Interactive room overlays - click targets, nameplates, status */}
         {/* C4: Wave animation on load, Crossy Road bounce on hover, isometric clip-path */}
