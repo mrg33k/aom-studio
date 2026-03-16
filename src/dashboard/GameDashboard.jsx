@@ -3096,6 +3096,21 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {/* INFO TAB */}
         {activeTab === 'info' && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+            {/* Latest Result */}
+            {agentStatus?.latestResult && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Latest Result</div>
+                <div style={{
+                  padding: '10px 14px', background: `${agentColor}08`, border: `1px solid ${agentColor}20`,
+                  borderRadius: 8,
+                }}>
+                  <div style={{ color: '#F0ECE6', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.5 }}>
+                    {agentStatus.latestResult}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Room info */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>

@@ -131,6 +131,76 @@ function parseNotifications(md) {
   }).filter(Boolean)
 }
 
+
+function parseClientProjects(md) {
+  if (!md) return []
+  const clients = []
+  const lines = md.split('\n')
+  let inActive = false
+  let inProposals = false
+
+  for (const line of lines) {
+    if (line.includes('Active Clients / Projects')) { inActive = true; inProposals = false; continue }
+    if (line.includes('Proposals Out / Promising')) { inActive = false; inProposals = true; continue }
+    if (line.includes('Dead / Didn')) { inActive = false; inProposals = false; continue }
+    if (line.startsWith('## ') && !line.includes('Active') && !line.includes('Proposals')) { inActive = false; inProposals = false; continue }
+
+    if ((inActive || inProposals) && line.startsWith('- **')) {
+      const nameMatch = line.match(/^- \*\*([^*]+)\*\*/)
+      if (!nameMatch) continue
+      const name = nameMatch[1].trim()
+
+      // Extract value/revenue info
+      let value = ''
+      const valueMatch = line.match(/\$(\d[\d,k/month]+[^.]*)/i)
+      if (valueMatch) value = '$' + valueMatch[1].trim()
+
+      // Determine status
+      let status = 'ACTIVE'
+      const upper = line.toUpperCase()
+      if (upper.includes('RED')) status = 'RED'
+      else if (upper.includes('GREEN')) status = 'GREEN'
+      else if (upper.includes('ORANGE')) status = 'ORANGE'
+      else if (upper.includes('ON HOLD')) status = 'ON_HOLD'
+      else if (upper.includes('WRAPPED')) status = 'DONE'
+      else if (upper.includes('PROMISING') || inProposals) status = 'PROPOSAL'
+
+      // Extract blocker if present
+      let blocker = ''
+      const blockerMatch = line.match(/(?:Blocker|blocking|needs|waiting)[:\s]*([^.]+)/i)
+      if (blockerMatch) blocker = blockerMatch[1].trim()
+
+      clients.push({ name, value, status, blocker, type: inActive ? 'active' : 'proposal' })
+    }
+  }
+  return clients
+}
+
+function parseLatestResults() {
+  const results = {}
+  for (const agent of AGENTS_LIST) {
+    const folder = AGENT_FOLDERS[agent.slug]
+    if (!folder) continue
+    const resultMd = readLocalFile(`projects/${folder}/latest-result.md`)
+    if (!resultMd) continue
+    // Get first meaningful line (skip frontmatter, headers, blank lines)
+    const lines = resultMd.split('\n')
+    let summary = ''
+    let inFrontmatter = false
+    for (const line of lines) {
+      if (line.trim() === '---') { inFrontmatter = !inFrontmatter; continue }
+      if (inFrontmatter) continue
+      if (line.startsWith('#')) continue
+      if (!line.trim()) continue
+      summary = line.trim()
+      if (summary.length > 150) summary = summary.slice(0, 147) + '...'
+      break
+    }
+    if (summary) results[agent.slug] = summary
+  }
+  return results
+}
+
 function localDashboardPlugin() {
   return {
     name: 'aom-local-dashboard',
@@ -177,9 +247,24 @@ function localDashboardPlugin() {
           commitHash: null, commitUrl: null, repo: 'local',
         }))
 
+        // Parse client projects from work.md
+        const workRaw = readLocalFile('context/work.md')
+        const clientProjects = parseClientProjects(workRaw)
+
+        // Parse latest results from agent folders
+        const latestResults = parseLatestResults()
+
+        // Enrich agents with latest results
+        for (const agent of agents) {
+          if (latestResults[agent.slug]) {
+            agent.latestResult = latestResults[agent.slug]
+          }
+        }
+
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({
           agents, throughput, blockers: blockers.slice(0, 10), pipelineFeed,
+          clientProjects, latestResults,
           lastUpdated: new Date().toISOString(), source: 'local',
         }))
       })
