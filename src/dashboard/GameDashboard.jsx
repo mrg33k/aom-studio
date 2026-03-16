@@ -6,7 +6,7 @@ import {
   Pause, Eye, Zap, GitCommit, Terminal, Maximize2, Minimize2,
   ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map,
   ZoomIn, ZoomOut, Home, LayoutDashboard, Gamepad2, Command,
-  ArrowRight, Coffee,
+  ArrowRight, Coffee, Play,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
 import { createChatConnection, CONNECTION_TYPE } from './chatConnection.js'
@@ -1057,7 +1057,8 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
 // Each room has an isometric hexagon clip-path for accurate click areas.
 // TODO(patrik): Diamond hitboxes for isometric rooms -- current rectangular/hexagon clip-paths don't align with where you visually click. Room shapes should be DIAMOND (rotated 45deg square) matching the isometric perspective. Click targets must match the visual room outlines exactly at all zoom levels.
-// TODO(patrik): Fixed zoom levels -- replace free scroll zoom with 1-2 preset snap levels (e.g., overview + detail). Fixed zoom = consistent click targets on desktop and mobile. No free scroll zoom. Snap to presets on scroll or button click.
+// DONE(bobby): Fixed zoom levels -- 2 preset snap levels: overview (0.7) and detail (1.6). Scroll/button snaps between them. No free zoom. Consistent click targets.
+const ZOOM_PRESETS = [0.7, 1.6] // overview, detail -- only two levels, snap between them
 const IMAGE_ROOM_TARGETS = {
   // Row 0: top row, 4 rooms (back wall of building, smaller due to perspective)
   patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
@@ -1143,18 +1144,31 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   const panState = useRef({ dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0, velX: 0, velY: 0 })
   const momentumRef = useRef(null)
 
-  // Scroll wheel zoom - SMOOTH, game-native feel
-  // Zoom toward cursor position for natural camera behavior
+  // Scroll wheel zoom - SNAP between preset levels (no free zoom)
+  // Scroll down = zoom out (overview), scroll up = zoom in (detail)
+  const scrollCooldownRef = useRef(false)
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     const handleWheel = (e) => {
       e.preventDefault()
-      // Smooth exponential zoom (feels like a game camera)
-      const zoomFactor = e.deltaY > 0 ? 0.92 : 1.08
+      // Debounce scroll to prevent rapid toggling
+      if (scrollCooldownRef.current) return
+      scrollCooldownRef.current = true
+      setTimeout(() => { scrollCooldownRef.current = false }, 300)
+
       onZoomChange?.(z => {
-        const newZ = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * zoomFactor))
-        return newZ
+        // Find current preset index
+        const currentIdx = ZOOM_PRESETS.findIndex(p => Math.abs(p - z) < 0.2)
+        if (e.deltaY > 0) {
+          // Scroll down = zoom out (go to lower preset)
+          const nextIdx = currentIdx > 0 ? currentIdx - 1 : 0
+          return ZOOM_PRESETS[nextIdx]
+        } else {
+          // Scroll up = zoom in (go to higher preset)
+          const nextIdx = currentIdx < ZOOM_PRESETS.length - 1 ? currentIdx + 1 : ZOOM_PRESETS.length - 1
+          return ZOOM_PRESETS[nextIdx]
+        }
       })
     }
     el.addEventListener('wheel', handleWheel, { passive: false })
@@ -3851,15 +3865,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 />
                 <button type="submit" disabled={!chatInput?.trim() || streaming} style={{
                   position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                  width: 40, height: 40, borderRadius: 12,
-                  background: chatInput?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.15)',
-                  color: '#FFF', border: 'none',
+                  width: 42, height: 42, borderRadius: '50%',
+                  background: chatInput?.trim() ? '#3B82F6' : 'rgba(59,130,246,0.12)',
+                  border: chatInput?.trim() ? '2px solid rgba(59,130,246,0.6)' : '2px solid rgba(59,130,246,0.2)',
+                  color: '#FFF',
                   cursor: chatInput?.trim() ? 'pointer' : 'default',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: chatInput?.trim() ? '0 0 12px rgba(59,130,246,0.4), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
+                  boxShadow: chatInput?.trim() ? '0 0 16px rgba(59,130,246,0.5), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
                   transition: 'all 150ms ease',
                 }}>
-                  {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} style={{ marginLeft: 1 }} />}
+                  {streaming ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} fill="currentColor" style={{ marginLeft: 2 }} />}
                 </button>
               </form>
             </div>
