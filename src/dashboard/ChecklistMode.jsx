@@ -1,11 +1,11 @@
 // Corner C3.1: Checklist Mode (GROUPED BY PROJECT)
 // Steve's coach fix: group by project, not agent. Reuses GameHUD's parsePunchList.
 // Working checkboxes wired. Apple Reminders meets Linear. Clean, typography-driven.
-// TODO(steffen-design): Checklist priority badges (TODAY, THIS WEEK) -- review color palette against brand. Current orange/red may clash with agent status colors. Ensure visual hierarchy: high-priority tasks pop, low-priority recede.
-// TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors.
+// TODO(steffen-design): Checklist priority badges (TODAY, THIS WEEK) -- review color palette against brand. Current orange/red may clash with agent status colors. Ensure visual hierarchy: high-priority tasks pop, low-priority recede. [SURVIVES: Pure UI styling. No engine dependency.]
+// TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors. [SURVIVES: UI panel. Room colors may reference engine palette but sidebar logic stays.]
 // DONE(bobby2): Task right-click context menu -- right-click any task for: mark done/undone, set priority (high/med/low), reassign agent, delete. Linear/Notion style.
-// TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable.
-// TODO(bobby): DRAG-TO-RIGHT-NOW (CHECKLIST) -- In checklist view, dragging a task onto the "Right Now" section pushes it to top of priority queue. Right Now section shows at the TOP of checklist (before Today), displays live tasks with time estimates. Tasks dragged here get a pulsing "LIVE" badge. Pairs with GameHUD "Right Now" pill. Ref: Patrik feedback Pass 21.
+// TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable. [SURVIVES: Drag-and-drop is React UI logic. No engine dependency.]
+// TODO(bobby): DRAG-TO-RIGHT-NOW (CHECKLIST) -- In checklist view, dragging a task onto the "Right Now" section pushes it to top of priority queue. Right Now section shows at the TOP of checklist (before Today), displays live tasks with time estimates. Tasks dragged here get a pulsing "LIVE" badge. Pairs with GameHUD "Right Now" pill. Ref: Patrik feedback Pass 21. [SURVIVES: Checklist UI. No engine dependency.]
 // DONE(bobby): LABEL SIDEBAR COUNTS (CHECKLIST) -- All count badges now show "N left" instead of bare numbers. Sidebar (mobile + desktop), project group headers all labeled. "Done" section already labeled. Ref: Patrik feedback Pass 22.
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'

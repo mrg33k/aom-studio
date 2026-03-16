@@ -4,19 +4,19 @@
 // Chat + HUD = ONE unified element.
 //
 // DONE(bobby2): Checkbox persistence -- clicking a task checkbox writes back to punch-list.md via /api/local/punch-toggle
-// TODO(patrik): Drag-to-reorder project pills in the HUD strip (Trello card energy)
-// TODO(bobby): DRAG-TO-RIGHT-NOW -- Drag any task from Today/project pills and drop it onto the "Right Now" pill to push it to the top of priority queue. Visual: Right Now pill glows as drop target when dragging. On drop, task moves to Right Now list and gets a time estimate badge. This is how Patrik says "do this NOW." Ref: Patrik feedback Pass 21.
-// TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
-// TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
-// TODO(patrik): KILL BOTTOM BAR ENTIRELY -- Dream HUD target says NO bottom bar. Layout = top bar + sidebar ONLY. Project pills move to top bar (scrollable). Minimap, agent portrait, notification icons all in top bar. Bottom bar is gone. Ref: Patrik directive lines 170-182.
-// TODO(bobby): "RIGHT NOW" PILL -- Add a "Right Now" pill NEXT TO "Today" pill. Right Now shows LIVE tasks (agents currently running), simplified with small time estimates (e.g. "Bobby: HUD polish ~15min"). Today = day's agenda (what you plan to do). Right Now = live sprint (what's happening THIS SECOND). Drag tasks FROM Today or any project pill TO the Right Now pill to push them to top of priority queue. Right Now is always pinned first (before Today). Visual: pulsing/glowing accent to show liveness. Data: pull from active-missions.md or agentStatus for running agents. Ref: Patrik feedback Pass 21.
+// TODO(patrik): Drag-to-reorder project pills in the HUD strip (Trello card energy) [SURVIVES: HUD overlay is React UI. Pills sit on top of engine canvas.]
+// TODO(bobby): DRAG-TO-RIGHT-NOW -- Drag any task from Today/project pills and drop it onto the "Right Now" pill to push it to the top of priority queue. Visual: Right Now pill glows as drop target when dragging. On drop, task moves to Right Now list and gets a time estimate badge. This is how Patrik says "do this NOW." Ref: Patrik feedback Pass 21. [SURVIVES: HUD interaction layer. Engine-independent.]
+// TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project [SURVIVES: UI overlay.]
+// TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel) [SURVIVES: Touch gesture on HUD overlay. Engine handles canvas, HUD handles UI.]
+// TODO(patrik): KILL BOTTOM BAR ENTIRELY -- Dream HUD target says NO bottom bar. Layout = top bar + sidebar ONLY. Project pills move to top bar (scrollable). Minimap, agent portrait, notification icons all in top bar. Bottom bar is gone. Ref: Patrik directive lines 170-182. [SURVIVES: HUD layout decision. Engine swap doesn't affect bar structure.]
+// TODO(bobby): "RIGHT NOW" PILL -- Add a "Right Now" pill NEXT TO "Today" pill. Right Now shows LIVE tasks (agents currently running), simplified with small time estimates (e.g. "Bobby: HUD polish ~15min"). Today = day's agenda (what you plan to do). Right Now = live sprint (what's happening THIS SECOND). Drag tasks FROM Today or any project pill TO the Right Now pill to push them to top of priority queue. Right Now is always pinned first (before Today). Visual: pulsing/glowing accent to show liveness. Data: pull from active-missions.md or agentStatus for running agents. Ref: Patrik feedback Pass 21. [SURVIVES: HUD data pill. Engine-independent.]
 // DONE(bobby2): Bottom bar cleanup -- chat input + chat button REMOVED from bottom bar. Project pills now horizontally scrollable (no wrapping). Bottom bar = agent roster | scrollable project pills | compact stats | notification bell. No chat elements.
 // DONE(bobby2): Project pill category labels -- pills now show category text (CLIENT / PROJECT / OUTREACH) not color-status text. Color communicates status visually, text label tells you WHAT it is.
 // DONE(bobby2): LABEL ALL COUNTERS -- Every bare number labeled. ProjectCard: "{remaining} tasks". CompactStats: "{working} active" / "{blocked} blocked". Progress ring: "{overallProgress}%". Ref: Patrik feedback Pass 22.
 // DONE(bobby2): DAYTIME BOTTOM HUD THEME -- Bottom HUD now accepts isNightMode prop. Daytime = white glass with vibrant blue accents (matches top bar). Night = dark blue glass. Both bars feel like the same system. Ref: Patrik feedback Pass 22.
 // DONE(bobby2): AGENT SELECTOR ICONS BIGGER -- Expanded agent dots bumped 24px -> 40px. Expand button 28px -> 36px. Sprite images proportionally scaled. Main plumbob stays 52px. Vegas energy = big, bold, readable. Ref: Patrik feedback Pass 22.
 // DONE(bobby2): SQUINT TEST (VEGAS RULE) -- CompactStats dots 7px -> 10px. Main agent status dot 10px -> 14px. Expand button 28px -> 36px. All secondary agents 24px -> 40px. Standing rule for all future elements. Ref: Patrik feedback Pass 22.
-// TODO(bobby): DAYTIME STAT PILL TEXT COLOR -- Patrik bug (line 219): stat pill labels are white text on white background in daytime mode. ProjectCard name uses HUD.textPrimary (#EDF2FA, near-white) regardless of isNightMode. Fix: pass isNightMode to ProjectCard, swap text color to dark (#0F172A) in daytime. Also check: tagStyle text colors, revenue badge text, remaining count text. All must be readable on light pills in daytime. HUD CLEAN priority.
+// DONE(bobby2): DAYTIME STAT PILL TEXT COLOR -- ProjectCard now receives isNightMode. Pill name text swaps to dark (#0F172A) in daytime. Pill backgrounds + borders + shadows all adjusted for light theme. Tag colors and revenue badge already use project.color so they remain readable. [SURVIVES: CSS/theme bug. Engine-independent.]
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -75,7 +75,7 @@ function parsePunchList(markdown) {
 
   // Section name -> project config mapping
   const SECTION_MAP = {
-    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#3BFF6B', icon: 'zap' },  // TODO(bobby): "RIGHT NOW" pill -- live sprint tasks, pulsing green, always pinned FIRST (before Today). Drag-to target.
+    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#3BFF6B', icon: 'zap' },  // TODO(bobby): "RIGHT NOW" pill -- live sprint tasks, pulsing green, always pinned FIRST (before Today). Drag-to target. [SURVIVES: HUD data pill.]
     'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -893,7 +893,8 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
 // ---- PROJECT CARD (VEGAS ENERGY: Trello thickness, physical objects) ---------
 // If you think it's big enough, DOUBLE IT. Slot machine buttons. Casino cards.
 // Drop shadows, bold rounded corners, chunky, grabbable, satisfying.
-function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
+function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode }) {
+  const isDaytime = isNightMode === false
   const totalTasks = project.tasks.length
   const doneTasks = project.tasks.filter(t => t.done).length
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
@@ -921,14 +922,24 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
       style={{
         display: 'flex', alignItems: 'center', gap: 14,
         height: 56, padding: '0 24px',
-        background: isExpanded
-          ? `linear-gradient(135deg, ${project.color}22, ${project.color}0C)`
-          : isClient
-            ? `linear-gradient(135deg, ${project.color}14, ${project.color}06)`
-            : isToday
-              ? 'linear-gradient(135deg, rgba(255, 107, 61, 0.14), rgba(255, 107, 61, 0.06))'
-              : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))',
-        border: `2px solid ${isExpanded ? `${project.color}55` : isClient ? `${project.color}30` : isToday ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
+        background: isDaytime
+          ? (isExpanded
+              ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
+              : isClient
+                ? `linear-gradient(135deg, ${project.color}0C, ${project.color}06)`
+                : isToday
+                  ? 'linear-gradient(135deg, rgba(255,107,61,0.08), rgba(255,107,61,0.03))'
+                  : 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02))')
+          : (isExpanded
+              ? `linear-gradient(135deg, ${project.color}22, ${project.color}0C)`
+              : isClient
+                ? `linear-gradient(135deg, ${project.color}14, ${project.color}06)`
+                : isToday
+                  ? 'linear-gradient(135deg, rgba(255, 107, 61, 0.14), rgba(255, 107, 61, 0.06))'
+                  : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))'),
+        border: isDaytime
+          ? `2px solid ${isExpanded ? `${project.color}40` : isClient ? `${project.color}25` : isToday ? 'rgba(255,107,61,0.2)' : 'rgba(59,130,246,0.15)'}`
+          : `2px solid ${isExpanded ? `${project.color}55` : isClient ? `${project.color}30` : isToday ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
         borderRadius: 16,
         cursor: 'pointer',
         flexShrink: 0,
@@ -936,13 +947,19 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
         overflow: 'hidden',
         transition: 'all 200ms ease',
         // VEGAS + CROSSY ROAD: Physical drop shadow. Chunky grabbable pills.
-        boxShadow: isExpanded
-          ? `0 6px 24px ${project.color}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
-          : isClient && project.statusTag === 'RED'
-            ? `0 4px 20px rgba(239,68,68,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)`
-            : isToday
-              ? '0 4px 20px rgba(255,107,61,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
-              : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
+        boxShadow: isDaytime
+          ? (isExpanded
+              ? `0 4px 16px ${project.color}20, 0 1px 4px rgba(0,0,0,0.08)`
+              : isClient && project.statusTag === 'RED'
+                ? '0 2px 12px rgba(239,68,68,0.12), 0 1px 3px rgba(0,0,0,0.06)'
+                : '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)')
+          : (isExpanded
+              ? `0 6px 24px ${project.color}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
+              : isClient && project.statusTag === 'RED'
+                ? `0 4px 20px rgba(239,68,68,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)`
+                : isToday
+                  ? '0 4px 20px rgba(255,107,61,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
+                  : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
       }}
     >
       {/* Bottom progress fill - THICKER */}
@@ -992,11 +1009,11 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
       <span style={{
         fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 20, fontWeight: 900,
-        color: isExpanded ? '#FFFFFF' : isToday ? '#EDF2FA' : HUD.textPrimary,
+        color: isExpanded ? '#FFFFFF' : isDaytime ? '#0F172A' : (isToday ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',
-        textShadow: isToday ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)',
+        textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.06)' : (isToday ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
       }}>
         {project.name}
       </span>
@@ -1398,7 +1415,7 @@ export default function GameHUD({
     const raw = punchData?.projects || []
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     // Right Now always first, Today always second
-    // TODO(bobby): RIGHT NOW PILL SORT -- Right Now pinned #1, Today pinned #2. Right Now shows live sprint (agents running). Drag-to-reorder: dragging a task onto Right Now pushes it to top of priority queue.
+    // TODO(bobby): RIGHT NOW PILL SORT -- Right Now pinned #1, Today pinned #2. Right Now shows live sprint (agents running). Drag-to-reorder: dragging a task onto Right Now pushes it to top of priority queue. [SURVIVES: Sort logic. Engine-independent.]
     return [...raw].sort((a, b) => {
       // Right Now is always first (live sprint)
       if (a.section === 'rightnow') return -1
@@ -1636,6 +1653,7 @@ export default function GameHUD({
                     )
                   }}
                   onContextMenu={onProjectContextMenu}
+                  isNightMode={isNightMode}
                 />
               ))
             )}

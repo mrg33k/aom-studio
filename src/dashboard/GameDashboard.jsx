@@ -1111,15 +1111,25 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 
 
 // PATRIK DIRECTIVE (line 215): STOP ALL CATALOG/FURNITURE WORK. ALL agent energy goes to 3 things ONLY: (1) Game feel, (2) HUD clean, (3) Map interaction. No furniture, no new packs, no catalog growth until these 3 are SOLID.
-// TODO(bobby+steffen): LAYERED ROOM SYSTEM (ARCHITECTURAL SHIFT) -- Office is NOT a flat image with overlays. It's a LAYERED WORLD (Pixel Agents reference). Room backgrounds + individual furniture as separate React components at coordinates + characters as actors. Each catalog item is clickable, movable, swappable. Room = stage, furniture = set, characters = actors. This replaces the single-PNG approach. The 1,200 catalog items exist for THIS. Steffen + Bobby architect together. GAME FEEL priority, the foundation everything else builds on. Ref: Patrik vision lines 217-218.
-// TODO(bobby): ROOM DEPTH + DOMINO WAVE -- Map breathing is wrong. Not a global float. Should be DEPTH into each room with a domino wave effect across rooms. Control down to desk-level elements inside rooms. Parallax layers per room, individual element control. Depth FIRST, catalog second. Ref: Patrik vision line 217.
+// TODO(bobby+steffen): LAYERED ROOM SYSTEM (ARCHITECTURAL SHIFT) -- Office is NOT a flat image with overlays. It's a LAYERED WORLD (Pixel Agents reference). Room backgrounds + individual furniture as separate React components at coordinates + characters as actors. Each catalog item is clickable, movable, swappable. Room = stage, furniture = set, characters = actors. This replaces the single-PNG approach. The 1,200 catalog items exist for THIS. Steffen + Bobby architect together. GAME FEEL priority, the foundation everything else builds on. Ref: Patrik vision lines 217-218. [DIES_WITH_ENGINE_SWAP: This entire approach (React component overlays on PNG) is replaced by the 2D engine. Re-implement as engine scene graph with tilemap layers + entity system.]
+// TODO(bobby): ROOM DEPTH + DOMINO WAVE -- Map breathing is wrong. Not a global float. Should be DEPTH into each room with a domino wave effect across rooms. Control down to desk-level elements inside rooms. Parallax layers per room, individual element control. Depth FIRST, catalog second. Ref: Patrik vision line 217. [DIES_WITH_ENGINE_SWAP: Parallax and depth become engine camera/layer features. Re-implement as engine parallax layers with per-room depth offsets and wave-triggered animations.]
 // DONE(bobby): SWAP HITBOX COORDINATES -- officeLayouts/default.js now uses Steffen's warm variant coordinates from room-hitbox-map.json. Ref: Patrik feedback line 212.
-// TODO(bobby): PLAYWRIGHT HITBOX VERIFICATION -- Coordinates swapped but are Steffen's manual estimates. Open localhost, click center of every room at both zoom levels (0.7 + 1.6), verify correct agent panel opens. Adjust any misses. See officeLayouts/default.js TODOs. MAP INTERACTION priority #1.
+// TODO(bobby): PLAYWRIGHT HITBOX VERIFICATION -- Coordinates swapped but are Steffen's manual estimates. Open localhost, click center of every room at both zoom levels (0.7 + 1.6), verify correct agent panel opens. Adjust any misses. See officeLayouts/default.js TODOs. MAP INTERACTION priority #1. [DIES_WITH_ENGINE_SWAP: Diamond clip-path hitboxes are replaced by engine collision/physics bodies or tilemap click detection. Re-implement as engine input manager with room entity click handlers.]
 // DONE(bobby): MODULAR OFFICE FRAMEWORK -- Extracted to officeLayouts/default.js. Room targets, clip paths, zoom presets, wave order, and image paths in standalone config. Swap image + config = new office skin.
 // DONE(bobby): INVISIBLE HOTSPOT MAPPING (OVO approach) -- All diamond SVG outlines REMOVED. Click regions are invisible rectangles matching wall boundaries. Hover = subtle radial glow inside room space. No borders, no outlines, no drawn shapes. Art defines rooms.
 // DONE(bobby): ROOM INTERACTION STATES -- Invisible hitboxes (OVO approach), subtle inner glow on hover only. No drawn outlines. Office walls define rooms.
 // DONE(bobby): Diamond outlines REMOVED. Invisible rectangular hotspots matching art boundaries. Hover = soft radial glow inside room space.
 // Room targets, clip paths, zoom presets, wave order imported from officeLayouts/default.js
+//
+// ========== NEW ARCHITECTURE TODOs: 2D ENGINE SWAP ==========
+// TODO(engine): 2D ENGINE INTEGRATION -- Replace the current React/CSS/SVG game viewport with a proper 2D engine (Phaser, PixiJS, or Excalibur). The engine owns the canvas: room rendering, character animation, camera control, zoom, pan, parallax, click detection. React owns the HUD/sidebar/chat overlays. Communication: engine emits events (roomClicked, agentHovered) that React listens to. React calls engine API (focusRoom, setZoom, spawnAgent). The 70/30 layout stays: engine canvas on the left, React sidebar on the right.
+// TODO(engine): LAYERED ROOM RENDERING -- Each room is a multi-layer tilemap or sprite composition: (1) floor layer, (2) wall layer, (3) furniture layer (individual items from the 501-asset catalog), (4) character/agent layer, (5) effects/particle layer. Layers have independent z-depth. Furniture items are engine sprites loaded from Steffen's catalog PNGs. Room config (officeLayouts/default.js) migrates to engine scene data format. Each room = engine scene or sub-scene.
+// TODO(engine): SPRITE LAYER COMPOSITING -- All 13 agent characters rendered as engine sprite entities with state-driven animation (idle, walking, working, speaking, done). Steffen's 52-sprite state sheets become engine sprite atlases. Direction support (SE + NW) handled natively by engine sprite flip. Z-ordering automatic via engine depth sort. Character accessories (hats, effects) as child sprites. Replace CharacterAnimations.jsx entirely.
+// TODO(engine): ENGINE CAMERA + ZOOM SYSTEM -- Replace CSS transform zoom with engine camera. Exponential zoom (current 0.7x to 1.6x range), pan with drag, room focus with smooth tween. Domino wave breathing effect = per-room tween sequence triggered by engine timer. Pan bounds enforced by engine camera limits. Mobile pinch-to-zoom maps to engine camera.
+// TODO(engine): ENGINE INPUT MANAGER -- Replace diamond clip-path hitboxes with engine-native input. Room entities have collision bodies matching their isometric footprint. Click/hover detection via engine physics or shape overlap. Hover glow = engine shader or sprite tint. Agent click = engine event -> React sidebar update. No more manual coordinate mapping.
+// TODO(engine): FURNITURE RENDERER MIGRATION -- FurnitureRenderer.jsx (SVG-based) dies entirely. All 501 catalog items become engine sprites with placement coordinates from room config. Clickable, movable, swappable via engine drag system. The IKEA + Etsy marketplace vision maps to an engine asset loader that pulls from the catalog.
+// TODO(engine): ENGINE <-> REACT BRIDGE -- Build a clean interface layer. Engine exposes: focusRoom(id), setZoom(level), getAgentPosition(id), on('roomClick', cb), on('agentHover', cb). React exposes: updateAgentStatus(id, status), showNotification(msg). Bridge lives in a dedicated module (e.g., engineBridge.js). GameDashboard mounts the engine canvas into a ref div and communicates only through the bridge.
+// ========== END ENGINE SWAP TODOs ==========
 // ---- SINGLE-IMAGE APPROACH: uses office-full.png (Crossy Road voxel, bright daytime) as DEFAULT ------
 // Night mode (office-full-night.png) activates at 9pm+. isNightMode is passed from parent GameDashboard.
 // C4: Building FILLS the viewport. No dead space. Crossy Road bounce energy.
@@ -3434,7 +3444,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 //
 // DONE(bobby): Chat timeout indicator -- countdown ring when waiting for agent response (60s). Shows elapsed time + animated SVG ring.
 // DONE(bobby): Agent activity log -- INFO tab now shows recent commits/completions per agent from pipeline feed. Filterable, with commit hashes and timestamps.
-// TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent
+// TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent [SURVIVES: Sidebar is React UI overlay. Engine-independent.]
 // DONE(bobby2): isNightMode passed to GameHUD. Bottom HUD flips to white/vibrant blue in daytime. Ref: Patrik feedback Pass 22.
 // DONE(bobby+bobby2): Sidebar seamless column -- sidebar is ONE continuous full-height column. Chat input at bottom of sidebar. ChatBar removed. GameHUD constrained to game viewport width.
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
@@ -3878,12 +3888,12 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     {isUser ? (
                       <div style={{
                         width: 36, height: 36, borderRadius: '50%',
-                        border: '3px solid #3B82F6',
-                        background: '#0F1B2D',
+                        border: '3px solid #F59E0B',
+                        background: '#F59E0B',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 14, fontWeight: 800, color: '#3B82F6',
+                        fontSize: 14, fontWeight: 800, color: '#FFFFFF',
                         flexShrink: 0,
-                        boxShadow: '0 0 12px rgba(59,130,246,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                        boxShadow: '0 0 12px rgba(245,158,11,0.4), 0 2px 4px rgba(0,0,0,0.2)',
                       }}>
                         P
                       </div>
@@ -3909,24 +3919,27 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           ? {
                               background: isNightMode
                                 ? 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)'
-                                : 'rgba(59,130,246,0.06)',
-                              border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '2px solid rgba(59,130,246,0.15)',
+                                : '#EDF2F7',
+                              border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '1px solid #E2E8F0',
                               color: isNightMode ? '#F1F5F9' : '#1E293B',
                               borderTopRightRadius: 4,
                               boxShadow: isNightMode
                                 ? '0 2px 8px rgba(0,0,0,0.2), 0 1px 2px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)'
-                                : '0 1px 4px rgba(0,0,0,0.08)',
+                                : '0 1px 3px rgba(0,0,0,0.06)',
                             }
                           : {
                               background: isNightMode
                                 ? `linear-gradient(180deg, ${agentColor}14 0%, ${agentColor}08 100%)`
-                                : `${agentColor}0A`,
-                              border: `2px solid ${msg.streaming ? agentColor + '35' : agentColor + (isNightMode ? '22' : '18')}`,
+                                : '#EDF2F7',
+                              border: isNightMode
+                                ? `2px solid ${msg.streaming ? agentColor + '35' : agentColor + '22'}`
+                                : `1px solid #E2E8F0`,
                               color: isNightMode ? '#F1F5F9' : '#1E293B',
                               borderTopLeftRadius: 4,
+                              borderLeft: isNightMode ? undefined : `3px solid ${agentColor}`,
                               boxShadow: isNightMode
                                 ? `0 2px 8px rgba(0,0,0,0.2), 0 1px 2px ${agentColor}10, inset 0 1px 0 rgba(255,255,255,0.04)`
-                                : '0 1px 4px rgba(0,0,0,0.08)',
+                                : '0 1px 3px rgba(0,0,0,0.06)',
                             }
                         ),
                       }}>
@@ -4606,10 +4619,10 @@ export default function GameDashboard() {
   // The relay is a unified conversation channel. Show everything so terminal,
   // Telegram, and dashboard messages all appear in the chat.
   // DONE(bobby): TERMINAL MESSAGES VERIFIED -- relay-hook.sh writes every UserPromptSubmit to relay-inbox.jsonl with source:"terminal" (lines 75-93). Vite middleware reads both App Support + repo inbox paths. Background inbox poll (500ms) picks up terminal messages with "via terminal" label. Code path confirmed correct. Terminal messages appear in dashboard chat alongside Telegram and dashboard messages.
-  // TODO(bobby): ONE CONVERSATION STREAM (COUNCIL MODEL) -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source or device. Two sides: Patrik (right) and agents (left), interleaved by timestamp. COUNCIL: all agents share one stream. User switches driving agent by saying "talk to [agent]" or clicking one. That agent steps forward in the SAME thread with full context. No separate per-agent chats. Everyone listens, only driving agent speaks. Add search over unified stream. Ref: Patrik directives lines 144, 186, 190.
+  // TODO(bobby): ONE CONVERSATION STREAM (COUNCIL MODEL) -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source or device. Two sides: Patrik (right) and agents (left), interleaved by timestamp. COUNCIL: all agents share one stream. User switches driving agent by saying "talk to [agent]" or clicking one. That agent steps forward in the SAME thread with full context. No separate per-agent chats. Everyone listens, only driving agent speaks. Add search over unified stream. Ref: Patrik directives lines 144, 186, 190. [SURVIVES: Relay/data architecture. Engine-independent.]
   // DONE(bobby): AMBIENT COUNCIL CHAT RENDERING -- Messages with ambient:true flag render as compact muted inline status updates (smaller font, italic, no avatar expansion, 20px mini avatar). Ambient flag carried through history loader and background outbox poll. REMAINING: agents need to actually WRITE ambient messages to relay-outbox with ambient:true flag. That's a relay-side change, not dashboard. Ref: Patrik feedback Pass 21.
-  // TODO(bobby): TYPING INDICATOR -- Show "[Agent] is typing..." with agent avatar + countdown ring while an agent is composing a response. iMessage dots energy. Shows WHICH agent (Bobby = purple dots, Elon = green). Write a "typing" signal to relay when agent starts generating. Dashboard picks up and shows animated dots. Council feels ALIVE. Ref: Patrik feedback lines 221-222.
-  // TODO(bobby): CHAT BUBBLE CONTRAST FIX -- Colored chat bubbles have hard-to-read text. Light-colored bubbles need DARK text (navy/#0F172A). Dark bubbles need white text. Compute contrast ratio from bubble background color and auto-pick text color. Each agent's color bubble IS the personality, but text must ALWAYS be readable. Also: agent messages need a chat bubble next to their name (not just system text). Ref: Patrik feedback lines 223-224.
+  // TODO(bobby): TYPING INDICATOR -- Show "[Agent] is typing..." with agent avatar + countdown ring while an agent is composing a response. iMessage dots energy. Shows WHICH agent (Bobby = purple dots, Elon = green). Write a "typing" signal to relay when agent starts generating. Dashboard picks up and shows animated dots. Council feels ALIVE. Ref: Patrik feedback lines 221-222. [SURVIVES: Chat UI animation. Engine-independent.]
+  // DONE(bobby2): CHAT BUBBLE CONTRAST FIX -- Daytime bubbles now solid warm gray (#EDF2F7) with dark text (#1E293B). Agent bubbles get colored left border (3px agent color). Patrik avatar now orange (#F59E0B) with white P per dream-hud-v1.png. Night mode unchanged (dark translucent). All text readable in both modes.
   const panelHistoryLoadedRef = useRef(false)
   useEffect(() => {
     if (!IS_LOCAL || panelHistoryLoadedRef.current) return
@@ -5019,7 +5032,7 @@ export default function GameDashboard() {
     return <PasswordGate onAuth={() => setAuthed(true)} />
   }
 
-  // TODO(bobby): DREAM HUD TARGET -- Steffen designing ONE definitive HUD visual target from ALL Patrik feedback. When delivered, pixel-match it exactly. Key specs: (1) NO bottom bar (top bar + sidebar ONLY), (2) sidebar full height, seamless column, chat input at bottom, (3) 70/30 layout (game/sidebar), (4) project pills scrollable in top bar, category labels (CLIENT/PROJECT/OUTREACH), (5) stat pills compact, (6) Vegas energy sidebar (blue glass, glow tabs), (7) chat matching chat-view-full.png (chronological, avatars, source labels), (8) top bar: Corner. logo + stat pills + search + notifications, NO mode switcher, (9) SimCity + Trello DNA, (10) daytime bright palette, (11) nothing hiding, everything visible. This is THE north star. No interpretation. Build the picture. Ref: Patrik directive lines 170-182.
+  // TODO(bobby): DREAM HUD TARGET -- Steffen designing ONE definitive HUD visual target from ALL Patrik feedback. When delivered, pixel-match it exactly. Key specs: (1) NO bottom bar (top bar + sidebar ONLY), (2) sidebar full height, seamless column, chat input at bottom, (3) 70/30 layout (game/sidebar), (4) project pills scrollable in top bar, category labels (CLIENT/PROJECT/OUTREACH), (5) stat pills compact, (6) Vegas energy sidebar (blue glass, glow tabs), (7) chat matching chat-view-full.png (chronological, avatars, source labels), (8) top bar: Corner. logo + stat pills + search + notifications, NO mode switcher, (9) SimCity + Trello DNA, (10) daytime bright palette, (11) nothing hiding, everything visible. This is THE north star. No interpretation. Build the picture. Ref: Patrik directive lines 170-182. [SURVIVES: HUD layout spec. The 70/30 split becomes engine-canvas/React-sidebar. Layout logic stays, game viewport becomes engine canvas.]
   // DONE(bobby): RELAY CHAT SPLIT-BRAIN FIX -- sender attribution fixed. Dashboard now reads from App Support outbox (where relay-respond.py writes). Messages from relay-inbox = role "user" (right side, P avatar). Messages from relay-outbox = role "assistant" (left side, agent avatar). extractAgent() for proper source names. Commit b7be6a7.
   // DONE: Viewport overflow -- 100vw lock on outer + inner containers (commit 637b79c). 70/30 flex split verified.
   // DONE: Elon commit 637b79c verified clean, no conflicts with Bobby's 9ec8b81 chain.
@@ -5157,8 +5170,8 @@ export default function GameDashboard() {
             </div>
 
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
-          {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. */}
-          {/* TODO(steffen-design): Mobile bottom-sheet drawer UX -- design the swipe-up drawer for mobile. Should show: agent name/status at peek height, chat on half-pull, full panel on full-pull. Reference Steffen's c3-mobile-layout-spec.md. The notification cards currently overlap the bottom bar on mobile. */}
+          {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. [SURVIVES: Responsive layout. Engine canvas auto-scales, sidebar logic stays.] */}
+          {/* TODO(steffen-design): Mobile bottom-sheet drawer UX -- design the swipe-up drawer for mobile. Should show: agent name/status at peek height, chat on half-pull, full panel on full-pull. Reference Steffen's c3-mobile-layout-spec.md. The notification cards currently overlap the bottom bar on mobile. [SURVIVES: Mobile UI design. Engine-independent.] */}
           {!isMobile && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
             <UnifiedPanel
               key={selectedRoom}

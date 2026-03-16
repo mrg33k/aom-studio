@@ -2,8 +2,8 @@
 // The power-user view. Party screen, quest log, mission feed.
 // Design: Steffen's c3-megaboard-mode-spec.md
 // Pokemon party screen meets business intelligence. Dark RPG theme.
-// TODO(steffen-design): Party card polish -- HP/XP bars need consistent sizing. Agent portraits should use Steffen's latest state sprites (idle, working, done). Level badge positioning varies across cards.
-// TODO(steffen-design): Quest log visual design -- entries are text-heavy. Consider adding agent color bars on the left edge of each quest entry for quick scanning. IN PROGRESS / DONE badges need more visual contrast.
+// TODO(steffen-design): Party card polish -- HP/XP bars need consistent sizing. Agent portraits should use Steffen's latest state sprites (idle, working, done). Level badge positioning varies across cards. [SURVIVES: Megaboard is a data/UI panel, not a rendered game view. Portrait sprites may come from engine atlas but layout logic stays.]
+// TODO(steffen-design): Quest log visual design -- entries are text-heavy. Consider adding agent color bars on the left edge of each quest entry for quick scanning. IN PROGRESS / DONE badges need more visual contrast. [SURVIVES: Pure UI/data panel. No engine dependency.]
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'

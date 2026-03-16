@@ -1,6 +1,6 @@
 // DONE(bobby2): Chat message markdown rendering -- agent responses render markdown (bold, lists, code blocks, links) via marked library
-// TODO(patrik): Chat message search -- filter past messages by keyword
-// TODO(patrik): Typing indicator from relay -- show real "agent is typing" state from relay pipeline
+// TODO(patrik): Chat message search -- filter past messages by keyword [SURVIVES: Chat is a data/UI layer. No engine dependency.]
+// TODO(patrik): Typing indicator from relay -- show real "agent is typing" state from relay pipeline [SURVIVES: Relay pipeline is independent of rendering engine.]
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
