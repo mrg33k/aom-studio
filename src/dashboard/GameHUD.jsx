@@ -433,10 +433,10 @@ function ProjectCard({ project, isExpanded, onClick }) {
 
       {/* Project indicator */}
       {isToday ? (
-        <Flame size={11} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 3px ${project.color}66)` }} />
+        <Flame size={14} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}66)` }} />
       ) : (
         <div style={{
-          width: 6, height: 6, borderRadius: 2,
+          width: 7, height: 7, borderRadius: 2,
           background: allDone ? `${project.color}60` : project.color,
           boxShadow: allDone ? 'none' : `0 0 6px ${project.color}44`,
           flexShrink: 0,
@@ -865,7 +865,21 @@ export default function GameHUD({
   const { data: punchData, loading } = usePunchListData()
   const hudRef = useRef(null)
 
-  const projects = punchData?.projects || []
+  // Sort projects by priority: Today first, then by incomplete task count (most active first)
+  const projects = useMemo(() => {
+    const raw = punchData?.projects || []
+    return [...raw].sort((a, b) => {
+      // Today always first
+      if (a.section === 'today') return -1
+      if (b.section === 'today') return 1
+      // Then by incomplete tasks (most = most active = first)
+      const aRemaining = a.tasks.filter(t => !t.done).length
+      const bRemaining = b.tasks.filter(t => !t.done).length
+      if (bRemaining !== aRemaining) return bRemaining - aRemaining
+      // Then by total tasks (more tasks = more active)
+      return b.tasks.length - a.tasks.length
+    })
+  }, [punchData])
 
   // Close panel on click outside
   useEffect(() => {
@@ -984,9 +998,9 @@ export default function GameHUD({
             display: 'flex',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: 4,
-            padding: '2px 4px',
-            maxHeight: 64,
+            gap: 6,
+            padding: '4px 6px',
+            maxHeight: 78,
             overflow: 'hidden',
             alignContent: 'center',
           }}>
