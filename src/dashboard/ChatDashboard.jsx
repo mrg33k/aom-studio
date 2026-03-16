@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MessageSquare, Send, X, ArrowLeft, ChevronRight,
+  MessageSquare, Send, X, ArrowLeft, ChevronRight, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, BarChart3, GitCommit, Terminal, Radio,
 } from 'lucide-react'
@@ -452,24 +452,39 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     loadHistory()
   }, [])
 
+  // Track whether new messages arrived while scrolled up (separate from scroll-up indicator)
+  const hasNewMessagesRef = useRef(false)
+
   // Smart auto-scroll: only scroll to bottom if user is near the bottom already
   useEffect(() => {
     if (isNearBottomRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      // Use requestAnimationFrame to ensure DOM has rendered before scrolling
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      })
       setShowNewMsgIndicator(false)
+      hasNewMessagesRef.current = false
     } else if (messages.length > 0) {
+      hasNewMessagesRef.current = true
       setShowNewMsgIndicator(true)
     }
   }, [messages])
 
   // Track scroll position to determine if user is near bottom
+  // Show "jump to latest" whenever user scrolls away from bottom
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current
     if (!el) return
     const threshold = 80
-    isNearBottomRef.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
-    if (isNearBottomRef.current) setShowNewMsgIndicator(false)
-  }, [])
+    const nearBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
+    isNearBottomRef.current = nearBottom
+    if (nearBottom) {
+      setShowNewMsgIndicator(false)
+      hasNewMessagesRef.current = false
+    } else if (messages.length > 0) {
+      setShowNewMsgIndicator(true)
+    }
+  }, [messages.length])
 
   // Scroll to bottom when "new messages" indicator is clicked
   const scrollToBottom = useCallback(() => {
@@ -892,7 +907,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* New messages indicator */}
+      {/* Jump to latest / New messages indicator */}
       <AnimatePresence>
         {showNewMsgIndicator && (
           <motion.button
@@ -900,10 +915,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             onClick={scrollToBottom}
-            className="absolute left-1/2 -translate-x-1/2 z-10 bg-[#3B82F6] text-white text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20 hover:bg-[#2563EB] transition-colors cursor-pointer"
+            className="absolute left-1/2 -translate-x-1/2 z-10 bg-[#3B82F6] text-white text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20 hover:bg-[#2563EB] transition-colors cursor-pointer flex items-center gap-1.5"
             style={{ bottom: 72 }}
           >
-            New messages
+            <ChevronDown size={14} strokeWidth={2.5} />
+            {hasNewMessagesRef.current ? 'New messages' : 'Jump to latest'}
           </motion.button>
         )}
       </AnimatePresence>

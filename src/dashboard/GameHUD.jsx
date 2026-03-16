@@ -388,6 +388,89 @@ function usePunchListData() {
   return { data, loading }
 }
 
+// ---- RIGHT NOW LIVE TASKS (polls agent-notifications.md for active agent work) ----
+// Mirrors ChecklistMode's useRightNowTasks but returns task count + summary for the HUD pill.
+// Updates every 8s so the Right Now pill reflects LIVE agent activity in real time.
+function useRightNowLiveTasks() {
+  const [tasks, setTasks] = useState([])
+
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    const fetchTasks = async () => {
+      try {
+        const res = await fetch('/api/local/file?path=context/agent-notifications.md')
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.content) return
+
+        const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
+        const recentTaskLines = lines
+          .filter(l => {
+            if (/PATRIK\s*(DIRECTIVE|CLARIFICATION|FEEDBACK|BUG|REMINDER|DECISION)/i.test(l)) return false
+            if (/COUNCIL\s*(DIRECTIVE|DECISION)/i.test(l)) return false
+            if (/NEXT\s*WAVE/i.test(l)) return false
+            return /TASK\s*FINISHED|SESSION|SHIPPED|BUILD\s*\d|DELIVERED|MILESTONE/i.test(l)
+          })
+          .slice(-6)
+          .reverse()
+
+        const parsed = recentTaskLines.map((line, i) => {
+          const agentMatch = line.match(/(?:Bobby\s*\d?|Steffen\s*\d?|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
+          let agentSlug = agentMatch ? agentMatch[0].toLowerCase().replace(/\s+/g, '') : null
+          if (agentSlug && /^bobby\d?$/.test(agentSlug)) agentSlug = 'bobby'
+          if (agentSlug && /^steffen\d?$/.test(agentSlug)) agentSlug = 'steffen'
+
+          let text = ''
+          const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
+          const shippedMatch = line.match(/SHIPPED:\s*(?:\(1\)\s*)?(.+?)(?:,\s*\(2\)|\.\s|$)/i)
+          const sessionMatch = line.match(/SESSION[^:]*:\s*\d*\s*commits?\s*pushed[^.]*\.\s*(.+?)(?:\.\s|$)/i)
+          const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
+          if (taskMatch) text = taskMatch[1].trim()
+          else if (milestoneMatch) text = milestoneMatch[1].trim()
+          else if (shippedMatch) text = shippedMatch[1].trim()
+          else if (sessionMatch) text = sessionMatch[1].trim()
+          else {
+            const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-\u2013:]\s*(.+?)(?:\.\s|$)/i)
+            text = afterAgent ? afterAgent[1].trim() : ''
+          }
+
+          text = text.replace(/@\w+:?/g, '')
+            .replace(/\b[0-9a-f]{7,8}\b/g, '')
+            .replace(/projects\/\S+/g, '')
+            .replace(/\d+\s*commits?\s*pushed\s*\([^)]*\)/gi, '')
+            .replace(/\(\s*\d+\s*commits?\s*to\s*[\w-]+[^)]*\)/gi, '')
+            .replace(/\([^)]*commits?[^)]*\)/gi, '')
+            .replace(/\([\s,]*\)/g, '')
+            .replace(/REMAINING\s*TODOs?:.*$/i, '')
+            .replace(/\s{2,}/g, ' ')
+            .replace(/^\s*[-\u2013:,.\s]+/, '')
+            .replace(/[-\u2013:,.\s]+$/, '')
+            .trim()
+          if (text.length > 60) text = text.slice(0, 57) + '...'
+
+          const isFinished = /TASK\s*FINISHED|COMPLETE|DELIVERED|MILESTONE/i.test(line)
+
+          return {
+            text,
+            agent: agentSlug,
+            done: isFinished,
+            isLive: !isFinished,
+          }
+        }).filter(t => t.text.length > 3 && t.agent)
+
+        setTasks(parsed)
+      } catch {}
+    }
+
+    fetchTasks()
+    const timer = setInterval(fetchTasks, 8000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return tasks
+}
+
 // ---- SIMS PLUMBOB SVG CLIP PATH (the iconic diamond shape) ------------------
 function PlumbobClipDef({ id, size }) {
   const w = size
@@ -909,6 +992,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
   const remaining = totalTasks - doneTasks
   const isToday = project.section === 'today'
+  const isRightNow = project.section === 'rightnow'
+  const hasLiveTasks = isRightNow && project.tasks.some(t => t.isLive)
   const isClient = project.isClient
   const allDone = remaining === 0 && totalTasks > 0
 
@@ -981,19 +1066,21 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         boxShadow: `0 0 8px ${project.color}44`,
       }} />
 
-      {/* Side accent for Today or RED clients - THICKER */}
-      {(isToday || (isClient && project.statusTag === 'RED')) && (
+      {/* Side accent for Right Now, Today, or RED clients - THICKER */}
+      {(isRightNow || isToday || (isClient && project.statusTag === 'RED')) && (
         <div style={{
           position: 'absolute', left: 0, top: 6, bottom: 6,
           width: 4, borderRadius: 2,
-          background: isToday ? project.color : '#EF4444',
-          boxShadow: `0 0 12px ${isToday ? project.color : 'rgba(239,68,68,0.6)'}88`,
-          animation: isClient && project.statusTag === 'RED' ? 'statusPulse 2s ease-in-out infinite' : 'none',
+          background: isRightNow ? project.color : isToday ? project.color : '#EF4444',
+          boxShadow: `0 0 12px ${(isRightNow || isToday) ? project.color : 'rgba(239,68,68,0.6)'}88`,
+          animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isClient && project.statusTag === 'RED') ? 'statusPulse 2s ease-in-out infinite' : 'none',
         }} />
       )}
 
-      {/* Project indicator - BIGGER. $ icon for clients */}
-      {isToday ? (
+      {/* Project indicator - BIGGER. $ icon for clients. Zap for Right Now. */}
+      {isRightNow ? (
+        <Zap size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+      ) : isToday ? (
         <Flame size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isClient ? (
         <div style={{
@@ -1028,6 +1115,31 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
       }}>
         {project.name}
       </span>
+
+      {/* LIVE badge for Right Now pill */}
+      {isRightNow && hasLiveTasks && (
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 11, fontWeight: 800,
+          color: '#3BFF6B',
+          background: 'rgba(59,255,107,0.12)',
+          padding: '3px 8px', borderRadius: 6,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          border: '1.5px solid rgba(59,255,107,0.3)',
+          whiteSpace: 'nowrap',
+          animation: 'statusPulse 2s ease-in-out infinite',
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#3BFF6B',
+            boxShadow: '0 0 6px rgba(59,255,107,0.6)',
+            animation: 'statusPulse 1.5s ease-in-out infinite',
+          }} />
+          LIVE
+        </span>
+      )}
 
       {/* Revenue badge for clients */}
       {isClient && project.revenue && (
@@ -1418,16 +1530,48 @@ export default function GameHUD({
   const { data: punchData, loading } = usePunchListData()
   const hudRef = useRef(null)
   const conversationScores = useConversationRecency()
+  const liveRightNowTasks = useRightNowLiveTasks()
 
   // Sort projects by CONVERSATION RECENCY first, then incomplete task count.
   // The system KNOWS what matters based on what you TALK ABOUT.
   // Uses live conversation parsing on localhost, falls back to defaults on production.
+  // Right Now pill is LIVE: merges agent-notifications.md tasks with punch-list.md "RIGHT NOW" section.
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
+
+    // Merge live agent tasks into the Right Now pill
+    // If punch-list has a "RIGHT NOW" section, merge live tasks into it
+    // If not, create a synthetic Right Now pill from live tasks alone
+    let merged = [...raw]
+    if (liveRightNowTasks.length > 0) {
+      const existingRightNow = merged.find(p => p.section === 'rightnow')
+      const liveTasks = liveRightNowTasks.map(t => ({
+        text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: ${t.text}`,
+        done: t.done,
+        agent: t.agent,
+        raw: '',
+        isLive: t.isLive,
+      }))
+      if (existingRightNow) {
+        // Merge: live tasks first, then existing punch-list tasks (deduped by agent+text similarity)
+        const existingTexts = new Set(existingRightNow.tasks.map(t => t.text.toLowerCase().slice(0, 30)))
+        const uniqueLive = liveTasks.filter(t => !existingTexts.has(t.text.toLowerCase().slice(0, 30)))
+        existingRightNow.tasks = [...uniqueLive, ...existingRightNow.tasks]
+      } else {
+        // Create a synthetic Right Now pill
+        merged.push({
+          name: 'Right Now',
+          section: 'rightnow',
+          color: '#3BFF6B',
+          icon: 'zap',
+          tasks: liveTasks,
+        })
+      }
+    }
+
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     // Right Now always first, Today always second
-    // TODO(bobby): RIGHT NOW PILL SORT -- Right Now pinned #1, Today pinned #2. Right Now shows live sprint (agents running). Drag-to-reorder: dragging a task onto Right Now pushes it to top of priority queue. [SURVIVES: Sort logic. Engine-independent.]
-    return [...raw].sort((a, b) => {
+    return [...merged].sort((a, b) => {
       // Right Now is always first (live sprint)
       if (a.section === 'rightnow') return -1
       if (b.section === 'rightnow') return 1
@@ -1445,7 +1589,7 @@ export default function GameHUD({
       // Tertiary: total tasks
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores])
+  }, [punchData, conversationScores, liveRightNowTasks])
 
   // Filter projects by search query
   const filteredProjects = useMemo(() => {
