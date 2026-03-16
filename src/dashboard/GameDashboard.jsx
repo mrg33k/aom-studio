@@ -214,8 +214,8 @@ function usePreloadSprites() {
 }
 
 // ---- AGENT CHARACTER (Pixel Art Sprite) ------------------------------------
-function AgentCharacter({ x, y, color, status, agentSlug }) {
-  const spriteState = getSpriteState(status)
+function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
+  const spriteState = getSpriteState(status, isSpeaking)
   const isWorking = status === 'WORKING'
   const isThinking = status === 'WAITING'
   const isDone = status === 'DONE'
