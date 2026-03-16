@@ -1600,9 +1600,9 @@ export default function GameHUD({
                   whileTap={{ scale: 0.9 }}
                   style={{
                     width: 32, height: 32, borderRadius: 8,
-                    background: searchOpen ? 'rgba(59,158,255,0.15)' : 'rgba(100,180,255,0.04)',
-                    border: `1px solid ${searchOpen ? HUD.accent + '44' : HUD.divider}`,
-                    color: searchOpen ? HUD.accent : HUD.textMuted,
+                    background: searchOpen ? `${hudAccent}22` : (isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(100,180,255,0.04)'),
+                    border: `1px solid ${searchOpen ? hudAccent + '44' : hudDivider}`,
+                    color: searchOpen ? hudAccent : hudTextMuted,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0, transition: 'all 150ms ease',
                   }}
@@ -1614,13 +1614,13 @@ export default function GameHUD({
 
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
-                <Loader2 size={16} style={{ color: HUD.textMuted, animation: 'spin 1s linear infinite' }} />
-                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: HUD.textMuted }}>
+                <Loader2 size={16} style={{ color: hudTextMuted, animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: hudTextMuted }}>
                   Loading...
                 </span>
               </div>
             ) : filteredProjects.length === 0 ? (
-              <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: HUD.textMuted, padding: '0 8px' }}>
+              <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: hudTextMuted, padding: '0 8px' }}>
                 {searchQuery ? 'No matches' : 'No task data'}
               </span>
             ) : (
@@ -1646,6 +1646,7 @@ export default function GameHUD({
               agentStatus={agentStatus}
               throughput={throughput}
               overallProgress={overallProgress}
+              isNightMode={isNightMode}
             />
           )}
 
