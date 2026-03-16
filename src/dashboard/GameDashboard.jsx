@@ -1414,6 +1414,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 damping: 16,
                 mass: 0.6,
               }}
+              style={{ position: 'absolute', inset: 0 }}
             >
               {/* NAMEPLATE PNG: Steffen's catalog asset, wall-mounted inside room */}
               {/* 128x64 transparent PNG at 2x, centered on back wall ~60% up */}
@@ -4605,6 +4606,8 @@ export default function GameDashboard() {
   // DONE(bobby): TERMINAL MESSAGES VERIFIED -- relay-hook.sh writes every UserPromptSubmit to relay-inbox.jsonl with source:"terminal" (lines 75-93). Vite middleware reads both App Support + repo inbox paths. Background inbox poll (500ms) picks up terminal messages with "via terminal" label. Code path confirmed correct. Terminal messages appear in dashboard chat alongside Telegram and dashboard messages.
   // TODO(bobby): ONE CONVERSATION STREAM (COUNCIL MODEL) -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source or device. Two sides: Patrik (right) and agents (left), interleaved by timestamp. COUNCIL: all agents share one stream. User switches driving agent by saying "talk to [agent]" or clicking one. That agent steps forward in the SAME thread with full context. No separate per-agent chats. Everyone listens, only driving agent speaks. Add search over unified stream. Ref: Patrik directives lines 144, 186, 190.
   // DONE(bobby): AMBIENT COUNCIL CHAT RENDERING -- Messages with ambient:true flag render as compact muted inline status updates (smaller font, italic, no avatar expansion, 20px mini avatar). Ambient flag carried through history loader and background outbox poll. REMAINING: agents need to actually WRITE ambient messages to relay-outbox with ambient:true flag. That's a relay-side change, not dashboard. Ref: Patrik feedback Pass 21.
+  // TODO(bobby): TYPING INDICATOR -- Show "[Agent] is typing..." with agent avatar + countdown ring while an agent is composing a response. iMessage dots energy. Shows WHICH agent (Bobby = purple dots, Elon = green). Write a "typing" signal to relay when agent starts generating. Dashboard picks up and shows animated dots. Council feels ALIVE. Ref: Patrik feedback lines 221-222.
+  // TODO(bobby): CHAT BUBBLE CONTRAST FIX -- Colored chat bubbles have hard-to-read text. Light-colored bubbles need DARK text (navy/#0F172A). Dark bubbles need white text. Compute contrast ratio from bubble background color and auto-pick text color. Each agent's color bubble IS the personality, but text must ALWAYS be readable. Also: agent messages need a chat bubble next to their name (not just system text). Ref: Patrik feedback lines 223-224.
   const panelHistoryLoadedRef = useRef(false)
   useEffect(() => {
     if (!IS_LOCAL || panelHistoryLoadedRef.current) return
