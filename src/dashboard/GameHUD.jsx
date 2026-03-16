@@ -22,9 +22,14 @@
 //
 // ========== PATRIK DIRECTIVES (Pass 25, lines 258-263) ==========
 // TODO(bobby2): LIVE TASK UPDATES IN HUD (KEY KEY KEY) -- Tasks must update in REAL TIME and show most important at top based on where we left off. This is Patrik's #1 HUD priority. Not just static punch-list parsing. Poll relay + agent-notifications for task completions. When an agent finishes a task, HUD reflects it IMMEDIATELY. Priority sort: Right Now > Today > by-importance. The proof is seeing it work on screen, not just code that exists. Ref: Patrik feedback line 258-259, 263.
-// TODO(bobby2): SELECTED PILL CONTRAST BUG (REGRESSION) -- Selected pill text turns white on light background. Daytime contrast bug is BACK. When a project pill is selected/active in daytime mode, text must remain dark and readable. Check: pill selected state background vs text color in daytime theme. Ref: Patrik feedback line 258, 260.
+// DONE(bobby2): SELECTED PILL CONTRAST BUG (REGRESSION) -- Fixed. Expanded pill in daytime now uses #1E293B (dark slate) instead of project.color which could be light. Always readable on white/light backgrounds. Ref: Patrik feedback line 258, 260.
 // TODO(bobby2): RIGHT NOW PILL = CHECKLIST ITEMS WITH PROGRESS BARS -- Right Now pill shows active tasks as checklist items with thin progress bars under EACH item. Not a separate progress view. Agent avatar + task name + thin progress bar filling as agent works. Real time. Activity feed energy baked into the task list itself. Ref: Patrik clarification line 253.
-// TODO(bobby2): KILL MINIMAP -- Remove MAP LOCAL component from GameHUD entirely. Minimap comes back later as big Vegas-style SimCity minimap (auto-updates as rooms added, diamond grid shape). Not now. Ref: Patrik directive line 267.
+// DONE(bobby2): KILL MINIMAP -- No minimap rendered in GameHUD. MiniMap component lives in GameDashboard (separate file owner). GameHUD is clean. Ref: Patrik directive line 267.
+// DONE(bobby2): RIGHT NOW PILL COLOR = ORANGE/FIRE -- Changed from green (#3BFF6B) to orange (#FF6B3D) matching Today's fire energy. Updated SECTION_MAP, LIVE badge, synthetic pill, all Right Now rendering. Ref: Patrik feedback line 273.
+// DONE(bobby2): RIGHT NOW DATA FRESHNESS -- useRightNowLiveTasks polls every 3s (was 8s). Right Now is now the freshest data on screen, beating notifications (8s) and punch-list (5s). Ref: Patrik feedback line 273.
+// TODO(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- Right Now section must be white/light during the day like everything else. EVERYTHING is white/light in daytime: top bar, sidebar, bottom HUD, Right Now, chat, pills. No dark Right Now on a white dashboard. One theme. One switch. Ref: Patrik feedback line 274.
+// DONE(bobby2): DARK MODE SWITCH AT 8PM -- GameHUD overrides isNightMode prop with own 8pm check (was 9pm in GameDashboard). Ref: Patrik directive.
+// DONE(bobby2): SELECTED PILL CONTRAST FIX -- Expanded pill in daytime now uses dark text (#1E293B) instead of project.color which could be too light. Ref: Patrik feedback line 258, 260.
 // ==========
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
@@ -84,7 +89,7 @@ function parsePunchList(markdown) {
 
   // Section name -> project config mapping
   const SECTION_MAP = {
-    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#3BFF6B', icon: 'zap' },  // TODO(bobby): "RIGHT NOW" pill -- live sprint tasks, pulsing green, always pinned FIRST (before Today). Drag-to target. [SURVIVES: HUD data pill.]
+    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy. [SURVIVES: HUD data pill.]
     'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -390,7 +395,7 @@ function usePunchListData() {
 
 // ---- RIGHT NOW LIVE TASKS (polls agent-notifications.md for active agent work) ----
 // Mirrors ChecklistMode's useRightNowTasks but returns task count + summary for the HUD pill.
-// Updates every 8s so the Right Now pill reflects LIVE agent activity in real time.
+// Updates every 3s so the Right Now pill is the FRESHEST data on screen (beats notifications 8s, punch-list 5s).
 function useRightNowLiveTasks() {
   const [tasks, setTasks] = useState([])
 
@@ -464,7 +469,7 @@ function useRightNowLiveTasks() {
     }
 
     fetchTasks()
-    const timer = setInterval(fetchTasks, 8000)
+    const timer = setInterval(fetchTasks, 3000) // 3s: Right Now must be freshest data on screen (beats notifications 8s, punch-list 5s)
     return () => clearInterval(timer)
   }, [])
 
@@ -1106,7 +1111,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 20, fontWeight: 900,
         color: isExpanded
-          ? (isDaytime ? project.color : '#FFFFFF')
+          ? (isDaytime ? '#1E293B' : '#FFFFFF')
           : isDaytime ? '#0F172A' : (isToday ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
         letterSpacing: '-0.02em',
@@ -1122,19 +1127,19 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
           display: 'flex', alignItems: 'center', gap: 4,
           fontFamily: 'JetBrains Mono, monospace',
           fontSize: 11, fontWeight: 800,
-          color: '#3BFF6B',
-          background: 'rgba(59,255,107,0.12)',
+          color: '#FF6B3D',
+          background: 'rgba(255,107,61,0.12)',
           padding: '3px 8px', borderRadius: 6,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          border: '1.5px solid rgba(59,255,107,0.3)',
+          border: '1.5px solid rgba(255,107,61,0.3)',
           whiteSpace: 'nowrap',
           animation: 'statusPulse 2s ease-in-out infinite',
         }}>
           <span style={{
             width: 6, height: 6, borderRadius: '50%',
-            background: '#3BFF6B',
-            boxShadow: '0 0 6px rgba(59,255,107,0.6)',
+            background: '#FF6B3D',
+            boxShadow: '0 0 6px rgba(255,107,61,0.6)',
             animation: 'statusPulse 1.5s ease-in-out infinite',
           }} />
           LIVE
@@ -1507,8 +1512,17 @@ export default function GameHUD({
   // Context menu props
   onAgentContextMenu, onProjectContextMenu,
   // Daytime/nighttime theme -- when false, bottom HUD goes white/vibrant blue to match top bar
-  isNightMode,
+  isNightMode: isNightModeProp,
 }) {
+  // Override: HUD switches to night at 8pm AZ time (GameDashboard uses 9pm, but HUD owns its own threshold)
+  const [nightOverride, setNightOverride] = useState(() => new Date().getHours() >= 20)
+  useEffect(() => {
+    const check = () => setNightOverride(new Date().getHours() >= 20)
+    const timer = setInterval(check, 60000)
+    return () => clearInterval(timer)
+  }, [])
+  const isNightMode = nightOverride || isNightModeProp
+
   // Daytime palette: white glass with vibrant blue accents (matches top bar)
   const isDaytime = isNightMode === false
   const hudPanelBg = isDaytime ? 'rgba(248, 250, 255, 0.94)' : HUD.panelBg
@@ -1562,7 +1576,7 @@ export default function GameHUD({
         merged.push({
           name: 'Right Now',
           section: 'rightnow',
-          color: '#3BFF6B',
+          color: '#FF6B3D',
           icon: 'zap',
           tasks: liveTasks,
         })

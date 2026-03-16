@@ -1144,7 +1144,7 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // No individual room tiles = no double walls. The north star IS the background.
 // Interactive click targets, nameplates, and status dots overlay on top.
 // C4: Crossy Road bounce energy, viewport-filling, wave animation on load.
-// DONE(bobby2): FULL DAYTIME THEME. office-full.png (bright Crossy Road, blue sky, green grass) is DEFAULT. office-full-night.png at 9pm+ only.
+// DONE(bobby2): FULL DAYTIME THEME. office-full.png (bright Crossy Road, blue sky, green grass) is DEFAULT. office-full-night.png at 8pm+ AZ only.
 // DONE(bobby2): Daytime palette: white glass HUD, light sidebar, #E8F0FA background. Night-only window glows. Matches Steffen's layout-daytime.png target.
 
 
@@ -1174,10 +1174,14 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // TODO(bobby): ELON WALKING AROUND ROOM = GATE TO SCALING -- Full checklist before adding room 2: (1) Room background right, (2) Furniture sprites right (reskin until style nailed), (3) Click perfect, (4) Hover feels right, (5) Depth looks right, (6) Character placed correctly, (7) Character WALKS AROUND the room. All 7 must pass. Ref: Patrik directive line 265.
 // ========== END Pass 25 ==========
 //
+// ========== PATRIK DIRECTIVES (Pass 26, lines 273-275) ==========
+// TODO(bobby): DESKTOP WEB LIVE CONNECTION -- Dashboard on desktop web must have persistent WebSocket connection for instant data updates. Right Now data must be the freshest feed on screen. 2s polling is too slow for "what's happening THIS SECOND." WebSocket push from relay for task completions, agent status changes, new messages. useWebSocket hook already imported. Wire it to Right Now data + HUD task updates. Ref: Patrik feedback line 273 (Right Now freshness) + line 274 (desktop live).
+// ========== END Pass 26 ==========
+//
 // FILE OWNER: Bobby (Canvas team) owns IsometricOffice + CanvasOffice integration. Bobby2 (HUD team) owns GameHUD, sidebar, chat, HUD components.
 //
 // ---- SINGLE-IMAGE APPROACH: uses office-full.png (Crossy Road voxel, bright daytime) as DEFAULT ------
-// Night mode (office-full-night.png) activates at 9pm+. isNightMode is passed from parent GameDashboard.
+// Night mode (office-full-night.png) activates at 8pm+ AZ time. isNightMode is passed from parent GameDashboard.
 // C4: Building FILLS the viewport. No dead space. Crossy Road bounce energy.
 function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations, streamingAgent, isNightMode }) {
   // FILL THE VIEWPORT: size based on container, not fixed pixels
@@ -4841,10 +4845,11 @@ export default function GameDashboard() {
   const [cameraZoom, setCameraZoom] = useState(0.7)
   const [isOverview, setIsOverview] = useState(true)
 
-  // Time-based theme: bright daytime default, night mode at 9pm+
-  const [isNightMode, setIsNightMode] = useState(() => new Date().getHours() >= 21)
+  // Time-based theme: bright daytime default, night mode at 8pm AZ (was 9pm)
+  // TODO(bobby): DARK MODE 8PM SWITCH -- Patrik directive: dark mode switches at 8PM Arizona time (updated from 9pm). The entire interface flips at once: top bar, sidebar, bottom HUD, Right Now, chat, pills. One switch. One time. 8pm AZ. Arizona does NOT observe DST so UTC-7 year-round. Ref: Patrik feedback line 274.
+  const [isNightMode, setIsNightMode] = useState(() => new Date().getHours() >= 20)
   useEffect(() => {
-    const check = () => setIsNightMode(new Date().getHours() >= 21)
+    const check = () => setIsNightMode(new Date().getHours() >= 20)
     const timer = setInterval(check, 60000)
     return () => clearInterval(timer)
   }, [])
@@ -5168,7 +5173,7 @@ export default function GameDashboard() {
     <div style={{
       position: 'fixed', inset: 0,
       width: '100vw', maxWidth: '100vw',
-      background: isNightMode ? PALETTE.background : '#E8F0FA',
+      background: currentMode === 'game' ? '#0A0D1A' : (isNightMode ? PALETTE.background : '#E8F0FA'),
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',
@@ -5228,64 +5233,21 @@ export default function GameDashboard() {
                 panelVisible={false}
               />
 
-              {/* Window light animation overlay - night only (daytime image has baked lighting) */}
-              {isNightMode && (
+              {/* Ambient vignette overlay for Elon room focus (dark bg, subtle server-green glow) */}
+              {currentMode === 'game' && (
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-                {/* Primary warm light */}
+                {/* Subtle green server glow */}
                 <div style={{
-                  position: 'absolute', top: '8%', left: '8%', width: 360, height: 360,
-                  background: 'radial-gradient(circle, rgba(255,183,77,0.12) 0%, rgba(255,160,50,0.04) 40%, transparent 65%)',
-                  borderRadius: '50%', animation: 'windowLight 30s ease-in-out infinite',
-                }} />
-                {/* Bobby's purple LED glow */}
-                <div style={{
-                  position: 'absolute', bottom: '30%', left: '12%', width: 200, height: 200,
-                  background: 'radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 60%)',
-                  borderRadius: '50%', animation: 'windowLight 22s ease-in-out infinite',
-                }} />
-                {/* Elon's green glow */}
-                <div style={{
-                  position: 'absolute', bottom: '18%', right: '25%', width: 180, height: 180,
-                  background: 'radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 60%)',
-                  borderRadius: '50%', animation: 'windowLight 26s ease-in-out infinite reverse',
-                }} />
-                {/* Secondary cool light */}
-                <div style={{
-                  position: 'absolute', bottom: '15%', right: '12%', width: 240, height: 240,
-                  background: 'radial-gradient(circle, rgba(100,150,255,0.04) 0%, transparent 60%)',
-                  borderRadius: '50%', animation: 'windowLight 25s ease-in-out infinite reverse',
-                }} />
-                {/* Steffen's golden arch window light */}
-                <div style={{
-                  position: 'absolute', top: '35%', left: '5%', width: 160, height: 200,
-                  background: 'radial-gradient(ellipse, rgba(255,216,122,0.07) 0%, transparent 60%)',
-                  borderRadius: '50%', animation: 'windowLight 35s ease-in-out infinite',
+                  position: 'absolute', top: '50%', left: '50%', width: 300, height: 300,
+                  transform: 'translate(-50%, -50%)',
+                  background: 'radial-gradient(circle, rgba(76,175,80,0.04) 0%, transparent 60%)',
+                  borderRadius: '50%', animation: 'windowLight 20s ease-in-out infinite',
                 }} />
                 {/* Vignette for depth */}
                 <div style={{
                   position: 'absolute', inset: 0,
-                  background: 'radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0,0,0,0.2) 100%)',
+                  background: 'radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(0,0,0,0.3) 100%)',
                 }} />
-                {/* Ambient particles */}
-                {[...Array(18)].map((_, i) => (
-                  <div key={`particle-${i}`} className="ambient-particle" style={{
-                    position: 'absolute',
-                    left: `${10 + Math.random() * 80}%`,
-                    top: `${10 + Math.random() * 80}%`,
-                    width: i % 3 === 0 ? 3 : 2,
-                    height: i % 3 === 0 ? 3 : 2,
-                    borderRadius: '50%',
-                    background: i % 4 === 0
-                      ? 'rgba(255, 183, 77, 0.25)'
-                      : i % 4 === 1
-                        ? 'rgba(156, 39, 176, 0.2)'
-                        : i % 4 === 2
-                          ? 'rgba(76, 175, 80, 0.18)'
-                          : 'rgba(255, 255, 255, 0.12)',
-                    boxShadow: i % 3 === 0 ? '0 0 4px rgba(255,183,77,0.15)' : 'none',
-                    animation: `particleFloat ${6 + (i % 5) * 2}s ease-in-out ${i * 0.7}s infinite`,
-                  }} />
-                ))}
               </div>
               )}
             </div>
