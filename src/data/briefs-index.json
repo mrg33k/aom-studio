@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T07:06:26.700Z",
+  "generated": "2026-03-16T07:13:51.380Z",
   "categories": [
     {
       "name": "Strategy",
@@ -217,6 +217,46 @@
           "dateFormatted": "Mar 16",
           "summary": "Bridge between C2.1 (SVG approximations) and C3 (Living Office). Integrates 77 generated pixel art assets, fixes visual gaps, polishes the isometric game to the point where Patrik says 'that's it.'",
           "path": "/briefs/c2-2-refinement-spec",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C2.2 Build Review - Steffen's Design QA",
+          "slug": "c2-3-review",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Design review of Bobby's C2.2 build (commit adef267). What shipped correctly, what diverged from spec, and what needs fixing in C2.3 before C3 starts.",
+          "path": "/briefs/c2-3-review",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 - Checklist Mode Visual Spec",
+          "slug": "c3-checklist-mode",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "The workhorse mode. Per-agent draggable task list. Simple, fast, useful every day. Full design spec for Bobby.",
+          "path": "/briefs/c3-checklist-mode",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 - Megaboard RPG Visual Spec",
+          "slug": "c3-megaboard-mode",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "The RPG tactical menu. Party screen, quest log, mission feed. Pokemon meets business intelligence. Dark theme, game typography, HP bars.",
+          "path": "/briefs/c3-megaboard-mode",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 - Mode Switcher Design Spec",
+          "slug": "c3-mode-switcher",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Visual spec for the three-mode switcher: Game, Checklist, Megaboard. Nav bar design, active states, keyboard shortcuts, mobile adaptation.",
+          "path": "/briefs/c3-mode-switcher",
           "hasPage": true
         },
         {
