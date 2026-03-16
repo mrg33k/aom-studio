@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/dashboard", "destination": "/index.html" },
     { "source": "/outreach-plan", "destination": "/outreach-plan.html" },
     { "source": "/growth-plan", "destination": "/growth-plan.html" },
     { "source": "/system", "destination": "/system.html" },
@@ -26,6 +26,7 @@
     { "source": "/roi-calculator", "destination": "/index.html" },
     { "source": "/book", "destination": "/index.html" },
     { "source": "/case-study", "destination": "/index.html" },
-    { "source": "/corner", "destination": "/index.html" }
+    { "source": "/corner", "destination": "/index.html" },
+    { "source": "/dashboard/agent/:slug", "destination": "/index.html" }
   ]
 }
