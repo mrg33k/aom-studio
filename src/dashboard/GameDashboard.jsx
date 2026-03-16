@@ -2148,7 +2148,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
 
         {/* Search */}
         {!isMobile && (
-          <input type="text" placeholder="Search agents..."
+          <input type="text" placeholder="Search... (Cmd+K)"
             style={{
               width: 200,
               background: 'rgba(59,130,246,0.06)',
@@ -2158,8 +2158,12 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
               fontFamily: "'Inter', system-ui, sans-serif",
               color: '#64748B', outline: 'none',
               flexShrink: 0,
+              cursor: 'pointer',
             }}
             readOnly
+            onClick={() => {
+              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))
+            }}
           />
         )}
 
@@ -2179,16 +2183,18 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <div style={{
-              position: 'absolute', top: -4, right: -4,
-              width: 18, height: 18, borderRadius: '50%',
-              background: '#EF4444',
-              color: 'white', fontSize: 12, fontWeight: 800,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '2px solid #0F1B2D',
-              boxShadow: '0 0 6px rgba(239,68,68,0.4)',
-              fontFamily: "'Inter', sans-serif",
-            }}>4</div>
+            {topBlockedCount > 0 && (
+              <div style={{
+                position: 'absolute', top: -4, right: -4,
+                width: 18, height: 18, borderRadius: '50%',
+                background: '#EF4444',
+                color: 'white', fontSize: 12, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '2px solid #0F1B2D',
+                boxShadow: '0 0 6px rgba(239,68,68,0.4)',
+                fontFamily: "'Inter', sans-serif",
+              }}>{topBlockedCount}</div>
+            )}
           </div>
         )}
 
@@ -3837,7 +3843,23 @@ export default function GameDashboard() {
   const [panelActiveTab, setPanelActiveTab] = useState('chat') // Sidebar active tab (lifted from UnifiedPanel)
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
-  const [panelMessages, setPanelMessages] = useState({}) // per-agent
+  // Demo chat messages for production (shows a sample conversation)
+  const demoChatMessages = useMemo(() => {
+    if (IS_LOCAL) return {}
+    const now = new Date()
+    const mAgo = (m) => new Date(now - m * 60000).toISOString()
+    return {
+      _all: [
+        { role: 'user', content: 'What\'s the status on the Garcia Construction homepage?', time: mAgo(45), source: 'via dashboard', targetAgent: 'bobby' },
+        { role: 'assistant', content: 'Garcia Construction homepage is LIVE. Deployed 30 minutes ago with Steffen\'s new brand assets. All pages responsive, Lighthouse score 94. Elmo QA passed with zero critical issues. The permit tracker page is next -- building that now for Ridgeline Homes.', time: mAgo(44), source: 'bobby' },
+        { role: 'user', content: 'Great work. How\'s the outreach pipeline looking?', time: mAgo(30), source: 'via dashboard', targetAgent: 'jacob' },
+        { role: 'assistant', content: '15 personalized emails sent to Phoenix-area GCs today. Response rate tracking at 12% (industry avg is 3%). Booked a discovery call with Ridgeline Homes for Thursday 2pm. Alex\'s 30-day plan targets 45 total contractors this month.', time: mAgo(29), source: 'jacob' },
+        { role: 'user', content: 'What did Elmo flag on the permit tracker?', time: mAgo(15), source: 'via dashboard', targetAgent: 'elmo' },
+        { role: 'assistant', content: 'QA found 3 issues: (1) Layout shift on mobile when permit list exceeds 10 items, (2) Date picker overlaps the header at 768px, (3) Missing loading skeleton on first page load. All non-critical. Routed to Bobby. Fix ETA: within the hour.', time: mAgo(14), source: 'elmo' },
+      ],
+    }
+  }, [])
+  const [panelMessages, setPanelMessages] = useState(IS_LOCAL ? {} : demoChatMessages)
   const [panelStreaming, setPanelStreaming] = useState(false)
   const panelRelayPollRef = useRef(null)
   // Background outbox polling state
