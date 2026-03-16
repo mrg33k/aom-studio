@@ -752,7 +752,9 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                 border: `2px solid ${cfg.ring}`,
                 overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
                 background: '#0A0F1E',
-                boxShadow: status === 'WORKING' ? `0 0 8px ${cfg.glow}` : 'none',
+                boxShadow: status === 'WORKING' ? `0 0 10px ${cfg.glow}` : status === 'BLOCKED' ? `0 0 8px rgba(239,68,68,0.4)` : 'none',
+                animation: status === 'WORKING' ? 'hudMiniDotPulse 2s ease-in-out infinite' : status === 'BLOCKED' ? 'hudMiniDotBlocked 1.5s ease-in-out infinite' : 'none',
+                opacity: status === 'IDLE' ? 0.6 : 1,
               }}
             >
               {hasSpr ? (
@@ -1755,6 +1757,14 @@ export default function GameHUD({
         @keyframes hudWaitingSpin {
           from { transform: translateX(-50%) rotate(0deg); }
           to { transform: translateX(-50%) rotate(360deg); }
+        }
+        @keyframes hudMiniDotPulse {
+          0%, 100% { box-shadow: 0 0 6px var(--agent-glow, rgba(34,197,94,0.4)); }
+          50% { box-shadow: 0 0 14px var(--agent-glow, rgba(34,197,94,0.6)); }
+        }
+        @keyframes hudMiniDotBlocked {
+          0%, 100% { opacity: 1; border-color: #EF4444; }
+          50% { opacity: 0.7; border-color: #FF6B6B; }
         }
       `}</style>
     </div>
