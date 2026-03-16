@@ -4568,7 +4568,7 @@ export default function GameDashboard() {
   // The relay is a unified conversation channel. Show everything so terminal,
   // Telegram, and dashboard messages all appear in the chat.
   // TODO(bobby): TERMINAL MESSAGES NOT APPEARING -- After split-brain fix (b7be6a7), terminal-sourced messages may not flow to dashboard. Verify that messages from the CLI session (this terminal) also get written to relay inbox so dashboard picks them up. Currently only dashboard-sent and Telegram messages may be flowing. Ref: Patrik feedback line 185.
-  // TODO(bobby): ONE CONVERSATION STREAM -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source. No separation by device. Two sides only: Patrik's messages (right) and agent responses (left), interleaved by timestamp. relay-inbox + relay-outbox combined and sorted = the conversation. Add search capability over this unified stream. Ref: Patrik directives lines 144, 186.
+  // TODO(bobby): ONE CONVERSATION STREAM (COUNCIL MODEL) -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source or device. Two sides: Patrik (right) and agents (left), interleaved by timestamp. COUNCIL: all agents share one stream. User switches driving agent by saying "talk to [agent]" or clicking one. That agent steps forward in the SAME thread with full context. No separate per-agent chats. Everyone listens, only driving agent speaks. Add search over unified stream. Ref: Patrik directives lines 144, 186, 190.
   const panelHistoryLoadedRef = useRef(false)
   useEffect(() => {
     if (!IS_LOCAL || panelHistoryLoadedRef.current) return
