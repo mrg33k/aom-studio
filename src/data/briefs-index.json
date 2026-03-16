@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T06:35:22.195Z",
+  "generated": "2026-03-16T06:42:14.875Z",
   "categories": [
     {
       "name": "Strategy",
@@ -1008,6 +1008,16 @@
     {
       "name": "Technical",
       "items": [
+        {
+          "title": "CORNER C3 Spec: The Living Office",
+          "slug": "c3-spec",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "C3 build spec. Full character movement, WebSocket real-time, Megaboard mode, Checklist mode, mode switching, room zoom, mobile PWA, mini-map, keyboard shortcuts. Everything that makes Corner feel alive.",
+          "path": "/briefs/c3-spec",
+          "hasPage": true
+        },
         {
           "title": "CORNER Product Spec",
           "slug": "product-spec-web",
