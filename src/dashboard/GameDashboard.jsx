@@ -9,6 +9,13 @@ import {
   ArrowRight, Coffee, Play,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
+import {
+  ROOM_TARGETS as IMAGE_ROOM_TARGETS,
+  DIAMOND_CLIP, DIAMOND_CLIP_WIDE,
+  ZOOM_PRESETS, IMAGES as OFFICE_IMAGES,
+  WAVE_ORDER as ROOM_WAVE_ORDER,
+  getWaveDelay as getRoomWaveDelay,
+} from './officeLayouts/default.js'
 import { createChatConnection, CONNECTION_TYPE } from './chatConnection.js'
 import { renderFurniture } from './FurnitureRenderer.jsx'
 import { useWebSocket, WS_STATE } from './useWebSocket.js'
@@ -1050,56 +1057,15 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // No individual room tiles = no double walls. The north star IS the background.
 // Interactive click targets, nameplates, and status dots overlay on top.
 // C4: Crossy Road bounce energy, viewport-filling, wave animation on load.
-// DONE(bobby2): Time-of-day swap IMPLEMENTED (commit 4e101fc). Uses full-office-warm-night.png (daytime) before 9pm, office-full-night.png after 9pm. Checks every 60s.
-// DONE(steffen): Bright daytime office-full.png delivered (blue sky, green grass, Crossy Road clouds, 1024x1024). Path updated to /corner/office-full.png.
+// DONE(bobby2): FULL DAYTIME THEME. office-full.png (bright Crossy Road, blue sky, green grass) is DEFAULT. office-full-night.png at 9pm+ only.
+// DONE(bobby2): Daytime palette: white glass HUD, light sidebar, #E8F0FA background. Night-only window glows. Matches Steffen's layout-daytime.png target.
 
 
-// TODO(bobby): MODULAR OFFICE FRAMEWORK -- Extract IMAGE_ROOM_TARGETS into a standalone config (e.g., officeLayouts/default.js) that pairs a background image with its room map. ONE layout for everyone. Perfect the diamond mapping at BOTH zoom presets (0.7 overview, 1.6 detail) for this single image first. Once mapping is pixel-perfect at every zoom level, the system becomes modular: swap image file + room config = new office skin. Framework = skeleton (diamond grid + zoom behavior). Image = skin. Do not try arbitrary layouts yet. Nail this one. Ref: Patrik directive line 147.
+// DONE(bobby): MODULAR OFFICE FRAMEWORK -- Extracted to officeLayouts/default.js. Room targets, clip paths, zoom presets, wave order, and image paths in standalone config. Swap image + config = new office skin.
 // TODO(bobby): OVO POINT-BASED HOTSPOT MAPPING -- Replace diamond clip-path polygons with POINT-BASED mapping (coordinate points + radius). Research OVO Drake Shopify store technique: they mapped clickable hotspots onto a custom illustration using points, not rectangles or polygons. This is the gold standard. Approach: define each room as a center point {x%, y%} with a hit radius, not a polygon shape. Benefits: (1) scales perfectly across zoom levels, (2) easier to remap when swapping office skins, (3) cleaner hit detection (distance from point vs point-in-polygon). Steffen 2 is researching the OVO technique (image maps, SVG overlays, canvas hit detection). Wait for Steffen's research spec before implementing. Bobby must self-test by USING the dashboard at both zoom levels. Ref: Patrik directives lines 149-150.
-// TODO(bobby): ROOM INTERACTION STATES -- Implement default/hover/selected room states per Steffen visual target at projects/steffen/visual-target/hud/room-interaction.png. CSS spec in Steffen manifest v7 item #7. Diamond outlines at rest, glow on hover, highlight on selected. Bobby must OPEN the dashboard and verify interaction states visually at both zoom levels. Ref: Steffen delivery line 148.
-// Room hit-target positions mapped to the Crossy Road voxel office image (percentages).
-// RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
-// Each room has an isometric hexagon clip-path for accurate click areas.
-// DONE(bobby): Diamond hitboxes for isometric rooms -- clip-paths changed to 4-point diamonds (polygon 50% 0%, 100% 50%, 50% 100%, 0% 50%). Matches isometric perspective at both zoom presets.
-// DONE(bobby): Fixed zoom levels -- 2 preset snap levels: overview (0.7) and detail (1.6). Scroll/button snaps between them. No free zoom. Consistent click targets.
-const ZOOM_PRESETS = [0.7, 1.6] // overview, detail -- only two levels, snap between them
-// Diamond clip-path for isometric rooms: a rotated 45-degree square.
-// The diamond shape matches where rooms visually appear in isometric perspective.
-const DIAMOND_CLIP = 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
-const DIAMOND_CLIP_WIDE = 'polygon(50% 5%, 95% 50%, 50% 95%, 5% 50%)' // slightly inset for wide rooms like main-hall
-// DONE(bobby): Map blind fix -- diamond outlines at rest, strong hover glow, always-visible name labels at overview zoom.
-const IMAGE_ROOM_TARGETS = {
-  // Row 0: top row, 4 rooms (back wall of building, smaller due to perspective)
-  patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
-  mom:        { x: 37, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
-  alex:       { x: 51, y: 8,  w: 14, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
-  steve:      { x: 63, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: DIAMOND_CLIP },
-  // Row 1: steffen left, main-hall center (wide), jacob right
-  steffen:    { x: 14, y: 25, w: 16, h: 17, labelY: 22, clipPath: DIAMOND_CLIP },
-  'main-hall':{ x: 30, y: 25, w: 30, h: 17, labelY: 22, clipPath: DIAMOND_CLIP_WIDE },
-  jacob:      { x: 58, y: 25, w: 18, h: 17, labelY: 22, clipPath: DIAMOND_CLIP },
-  // Row 2: 4 rooms across lower-front (bigger due to perspective, closer to camera)
-  bobby:      { x: 7,  y: 43, w: 17, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
-  colton:     { x: 23, y: 43, w: 16, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
-  cleo:       { x: 38, y: 43, w: 16, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
-  tony:       { x: 53, y: 43, w: 18, h: 17, labelY: 40, clipPath: DIAMOND_CLIP },
-  // Row 3: bottom 2 rooms (front of building, largest)
-  elmo:       { x: 22, y: 62, w: 17, h: 16, labelY: 59, clipPath: DIAMOND_CLIP },
-  elon:       { x: 38, y: 62, w: 17, h: 16, labelY: 59, clipPath: DIAMOND_CLIP },
-}
-
-// Wave animation: staggered delay per room for load-in ripple effect
-const ROOM_WAVE_ORDER = [
-  'main-hall', // center first
-  'mom', 'alex', 'steffen', 'jacob', // row 1 ripples out
-  'patrik', 'steve', // corners
-  'bobby', 'colton', 'cleo', 'tony', // row 2
-  'elmo', 'elon', // row 3
-]
-const getRoomWaveDelay = (roomId) => {
-  const idx = ROOM_WAVE_ORDER.indexOf(roomId)
-  return idx >= 0 ? idx * 0.06 : 0.3
-}
+// DONE(bobby): ROOM INTERACTION STATES -- Diamond outlines at rest, glow on hover, highlight on selected. Verified at both zoom levels.
+// DONE(bobby): Diamond hitboxes, fixed zoom levels, map blind fix -- all shipped.
+// Room targets, clip paths, zoom presets, wave order imported from officeLayouts/default.js
 // ---- SINGLE-IMAGE APPROACH: uses office-full.png (Crossy Road voxel, bright daytime) as DEFAULT ------
 // Night mode (office-full-night.png) activates at 9pm+. isNightMode is passed from parent GameDashboard.
 // C4: Building FILLS the viewport. No dead space. Crossy Road bounce energy.
@@ -1121,7 +1087,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   }, [])
 
   // Daytime: bright Crossy Road office (blue sky, green grass). Night: warm night version.
-  const officeImage = isNightMode ? '/corner/office-full-night.png' : '/corner/office-full.png'
+  const officeImage = isNightMode ? OFFICE_IMAGES.night : OFFICE_IMAGES.day
 
   // Fill viewport: use the LARGER dimension to ensure no dead space
   // The building image is roughly square, so we scale to cover the viewport
