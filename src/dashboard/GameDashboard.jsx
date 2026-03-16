@@ -3332,6 +3332,8 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 // TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent
 // TODO(patrik): Sidebar seamless column -- sidebar should be ONE continuous full-height column. Chat input sits at the bottom of the sidebar, not in a separate bottom bar. The collapsed chat bar at the bottom should merge into the sidebar panel so it looks like one piece. No separate bottom HUD for chat.
 // TODO(patrik): Chat visual + functional + chronological -- (1) pixel-match Steffen's chat-view-full.png, (2) send/receive relay loop must work end-to-end, (3) messages must display in chronological order (oldest first). Chat is the #1 priority.
+// TODO(patrik): Chat sidebar pixel-match gaps -- 7 issues vs Steffen's chat-view-full.png: (1) no agent responses showing (left side empty), (2) bottom bar disconnected from sidebar, (3) source labels too noisy on every message, (4) stat pills too spread/wide, (5) chat bubbles flat (need Trello depth/shadow), (6) massive empty space where responses should be, (7) agent avatars too small on system messages.
+// TODO(patrik): Kill bottom chat bar -- remove ChatBar from bottom HUD entirely. Chat ONLY lives in the sidebar. No message input in the bottom bar. Sidebar is the only place to chat.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
 function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange }) {
@@ -4979,7 +4981,20 @@ export default function GameDashboard() {
       )}
 
       {/* Game HUD (Sims x Chaart) - bottom strip with project pills + agent status */}
+      {/* Wrapped in a container that constrains fixed positioning to the game viewport only.
+          transform creates a new containing block, so GameHUD's position:fixed becomes relative to this container.
+          On desktop with sidebar visible: HUD only covers game area, not sidebar. */}
       {(
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: (!isMobile && selectedRoom && ROOM_MAP[selectedRoom]?.agent !== null) ? (panelExtended ? '65%' : '30%') : 0,
+          zIndex: 40,
+          transition: 'right 250ms ease',
+          pointerEvents: 'none',
+        }}>
+        <div style={{ position: 'relative', width: '100%', height: 0, transform: 'translateZ(0)', pointerEvents: 'auto' }}>
         <Suspense fallback={null}>
           <GameHUD
             agentStatus={agentStatus}
