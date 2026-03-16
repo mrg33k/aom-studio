@@ -411,6 +411,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
           // Inbox: messages from dashboard or telegram are "user" messages
           for (const msg of inbox.messages) {
+            // Skip watchdog ghost messages -- these are auto-responses from the daemon, not real user messages
+            if (msg.status === 'watchdog-responded') continue
             const cleaned = sanitizeRelayMessage(msg.message)
             if (!cleaned) continue
             all.push({
@@ -596,6 +598,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             const newInbox = allMsgs.filter(m =>
               m.timestamp && new Date(m.timestamp) > new Date(bgLastInboxCheck.current) &&
               m.source !== 'corner-dashboard' && m.source !== 'corner-websocket' &&
+              m.status !== 'watchdog-responded' &&
               m.message?.trim()
             )
             if (newInbox.length > 0) {
