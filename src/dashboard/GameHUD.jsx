@@ -205,10 +205,10 @@ function PlumbobClipDef({ id, size }) {
   )
 }
 
-// ---- AGENT PORTRAIT (LARGER: 64px desktop, plumbob shape, blue idle ring) ---
+// ---- AGENT PORTRAIT (LARGER: 52px desktop, plumbob shape, blue idle ring) ---
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
-function AgentPortrait({ slug, size = 64, status = 'IDLE', onClick, showName = false, index = 0 }) {
+function AgentPortrait({ slug, size = 52, status = 'IDLE', onClick, showName = false, index = 0 }) {
   const agent = AGENTS.find(a => a.slug === slug)
   const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
   const color = agent?.color || '#4A6080'
@@ -367,7 +367,7 @@ function AgentRoster({ agentStatus, onAgentClick }) {
         <AgentPortrait
           key={agent.slug}
           slug={agent.slug}
-          size={64}
+          size={52}
           status={agentStatus?.[agent.slug]?.status || 'IDLE'}
           onClick={onAgentClick}
           index={i}
@@ -863,7 +863,21 @@ export default function GameHUD({
   const { data: punchData, loading } = usePunchListData()
   const hudRef = useRef(null)
 
-  const projects = punchData?.projects || []
+  // Sort projects by priority: Today first, then by incomplete task count (most active first)
+  const projects = useMemo(() => {
+    const raw = punchData?.projects || []
+    return [...raw].sort((a, b) => {
+      // Today always first
+      if (a.section === 'today') return -1
+      if (b.section === 'today') return 1
+      // Then by incomplete tasks (most = most active = first)
+      const aRemaining = a.tasks.filter(t => !t.done).length
+      const bRemaining = b.tasks.filter(t => !t.done).length
+      if (bRemaining !== aRemaining) return bRemaining - aRemaining
+      // Then by total tasks (more tasks = more active)
+      return b.tasks.length - a.tasks.length
+    })
+  }, [punchData])
 
   // Close panel on click outside
   useEffect(() => {
