@@ -37,6 +37,7 @@ const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 import './index.css'
 
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
+const ChatDashboard = lazy(() => import('./dashboard/ChatDashboard.jsx'))
 
 function ConstructionRedirect() {
   const navigate = useNavigate()
@@ -98,8 +99,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/case-study" element={<CaseStudy />} />
           <Route path="/book" element={<BookAudit />} />
           <Route path="/corner" element={<Corner />} />
-          <Route path="/dashboard" element={<DashboardV2 />} />
-          <Route path="/dashboard/agent/:slug" element={<DashboardV2 />} />
+          <Route path="/dashboard" element={<ChatDashboard />} />
+          <Route path="/dashboard/agent/:slug" element={<ChatDashboard />} />
+          <Route path="/dashboard/v1" element={<DashboardV2 />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
