@@ -5,6 +5,7 @@ import {
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, GitCommit, Terminal, Maximize2, Minimize2,
   ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map,
+  ZoomIn, ZoomOut, Home,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
 import { createChatConnection } from './chatConnection.js'
@@ -13,6 +14,8 @@ import { renderFurniture } from './FurnitureRenderer.jsx'
 // ---- CONFIG ----------------------------------------------------------------
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
 const PALETTE = GRID_SPEC.colorPalette
+const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
 
 const STATUS_CONFIG = {
   WORKING:  { color: '#22C55E', bg: 'rgba(34,197,94,0.15)',  label: 'Active',   pulseColor: '#22C55E' },
@@ -21,6 +24,22 @@ const STATUS_CONFIG = {
   DONE:     { color: '#3B82F6', bg: 'rgba(59,130,246,0.15)', label: 'Done',     pulseColor: '#3B82F6' },
   WAITING:  { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', label: 'Thinking', pulseColor: '#F59E0B' },
   PAUSED:   { color: '#F97316', bg: 'rgba(249,115,22,0.15)', label: 'Paused',   pulseColor: '#F97316' },
+}
+
+// ---- CAMERA SYSTEM ---------------------------------------------------------
+// Room positions in SVG space (same as IsometricOffice calc)
+const CELL_SIZE = 80
+function getRoomCenter(roomId) {
+  const room = ROOM_MAP[roomId]
+  if (!room) return { x: 160, y: 160 }
+  const pixelX = (room.position.col / 2) * CELL_SIZE
+  const pixelY = room.position.row * CELL_SIZE
+  const roomW = CELL_SIZE * (room.size.cols / 2)
+  const roomH = CELL_SIZE * room.size.rows
+  return {
+    x: pixelX + roomW / 2,
+    y: pixelY + roomH / 2,
+  }
 }
 
 // ---- HOOKS -----------------------------------------------------------------
@@ -34,15 +53,19 @@ function useIsMobile(bp = 768) {
   return m
 }
 
-function useDashboardData(interval = 30000) {
+function useDashboardData(interval) {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const lastRaw = useRef(null)
 
+  // Local mode: 2s poll. Production: 30s poll.
+  const pollInterval = interval || (IS_LOCAL ? 2000 : 30000)
+  const endpoint = IS_LOCAL ? '/api/local/status' : '/api/dashboard/status'
+
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/dashboard/status')
+      const res = await fetch(endpoint)
       if (!res.ok) throw new Error(`${res.status}`)
       const text = await res.text()
       if (text !== lastRaw.current) {
@@ -55,18 +78,18 @@ function useDashboardData(interval = 30000) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [endpoint])
 
   useEffect(() => {
     fetchData()
-    const timer = setInterval(fetchData, interval)
+    const timer = setInterval(fetchData, pollInterval)
     return () => clearInterval(timer)
-  }, [fetchData, interval])
+  }, [fetchData, pollInterval])
 
   return { data, error, loading }
 }
 
-function useKeyboardShortcuts({ onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations }) {
+function useKeyboardShortcuts({ onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations, onZoomIn, onZoomOut, onOverview }) {
   useEffect(() => {
     const handler = (e) => {
       // Skip if user is typing in an input
@@ -81,6 +104,9 @@ function useKeyboardShortcuts({ onToggleHud, onToggleChat, onToggleMinimap, onEs
         case 'm': onToggleMinimap?.(); break
         case ' ': e.preventDefault(); onToggleAnimations?.(); break
         case '/': onToggleChat?.(); break
+        case '=': case '+': onZoomIn?.(); break
+        case '-': onZoomOut?.(); break
+        case 'o': onOverview?.(); break
         default:
           if (e.key >= '1' && e.key <= '9') {
             const idx = parseInt(e.key) - 1
@@ -91,7 +117,7 @@ function useKeyboardShortcuts({ onToggleHud, onToggleChat, onToggleMinimap, onEs
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations])
+  }, [onToggleHud, onToggleChat, onToggleMinimap, onEscape, onAgentSelect, onToggleAnimations, onZoomIn, onZoomOut, onOverview])
 }
 
 // ---- UTILITIES -------------------------------------------------------------
@@ -146,6 +172,11 @@ function PasswordGate({ onAuth }) {
         <button type="submit" style={{ width: '100%', marginTop: 12, background: '#E85D26', color: 'white', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 13, padding: '12px', border: 'none', cursor: 'pointer', borderRadius: 2 }}>
           Enter
         </button>
+        {IS_LOCAL && (
+          <div style={{ textAlign: 'center', marginTop: 12, color: '#4CAF50', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.1em' }}>
+            LOCAL MODE ACTIVE
+          </div>
+        )}
       </form>
     </div>
   )
@@ -339,10 +370,8 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
   )
 }
 
-// ---- ISOMETRIC OFFICE (main game view) -------------------------------------
-function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, zoom }) {
-  // Use grid spec cell size. Each room is 2 grid cells wide (128px in top-down)
-  const CELL_SIZE = 80 // px per grid cell pair (room unit)
+// ---- ISOMETRIC OFFICE (main game view) with CAMERA SYSTEM ------------------
+function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview }) {
   const GRID_COLS = 4  // 8 grid cols / 2 cols per room = 4 room columns
   const GRID_ROWS = 4  // max 4 rows
 
@@ -351,115 +380,130 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
 
   const rooms = GRID_SPEC.rooms
 
+  // Calculate camera translation to center the target room
+  // The isometric transform rotates the entire container, so we translate the SVG inside
+  // to position the target room at the center of the viewport
+  const targetCenter = getRoomCenter(cameraTarget || DEFAULT_AGENT)
+
+  // Center of the SVG world
+  const worldCenterX = svgW / 2 - 30
+  const worldCenterY = svgH / 2
+
+  // Offset to move target room to center (in SVG space, pre-isometric-transform)
+  const offsetX = worldCenterX - targetCenter.x
+  const offsetY = worldCenterY - targetCenter.y
+
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto', padding: 20 }}>
+    <div style={{
+      width: '100%', height: '100%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden', // HIDDEN not auto - camera controls what you see
+      position: 'relative',
+    }}>
       <div style={{
-        transform: `scale(${zoom}) rotateX(55deg) rotateZ(-45deg)`,
+        transform: `scale(${cameraZoom}) rotateX(55deg) rotateZ(-45deg)`,
         transformStyle: 'preserve-3d',
-        transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
         transformOrigin: 'center center',
         filter: 'drop-shadow(0 20px 60px rgba(255,216,122,0.06))',
       }}>
-        <svg width={svgW} height={svgH} viewBox={`-30 -30 ${svgW} ${svgH}`} style={{ overflow: 'visible' }}>
-          <defs>
-            <radialGradient id="buildingGlow" cx="50%" cy="50%" r="60%">
-              <stop offset="0%" stopColor="#FFD87A" stopOpacity="0.1" />
-              <stop offset="100%" stopColor="#FFD87A" stopOpacity="0" />
-            </radialGradient>
-          </defs>
+        <svg
+          width={svgW} height={svgH}
+          viewBox={`-30 -30 ${svgW} ${svgH}`}
+          style={{ overflow: 'visible' }}
+        >
+          {/* Inner translate group for camera panning */}
+          <g style={{
+            transform: isOverview ? 'translate(0, 0)' : `translate(${offsetX}px, ${offsetY}px)`,
+            transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}>
+            <defs>
+              <radialGradient id="buildingGlow" cx="50%" cy="50%" r="60%">
+                <stop offset="0%" stopColor="#FFD87A" stopOpacity="0.1" />
+                <stop offset="100%" stopColor="#FFD87A" stopOpacity="0" />
+              </radialGradient>
+            </defs>
 
-          {/* Ground plane shadow */}
-          <ellipse cx={svgW / 2 - 30} cy={svgH / 2 + 30} rx={svgW * 0.55} ry={svgH * 0.3}
-            fill={PALETTE.groundPlane} opacity={GRID_SPEC.rendering.shadowOpacity} />
+            {/* Ground plane shadow */}
+            <ellipse cx={svgW / 2 - 30} cy={svgH / 2 + 30} rx={svgW * 0.55} ry={svgH * 0.3}
+              fill={PALETTE.groundPlane} opacity={GRID_SPEC.rendering.shadowOpacity} />
 
-          {/* Ground glow */}
-          <rect x={-50} y={-50} width={svgW + 50} height={svgH + 50} fill="url(#buildingGlow)" />
+            {/* Ground glow */}
+            <rect x={-50} y={-50} width={svgW + 50} height={svgH + 50} fill="url(#buildingGlow)" />
 
-          {/* Render rooms - sorted by row then col for z-order */}
-          {rooms.map(room => {
-            // Convert grid position to pixel position
-            // Each room is 2 grid cols wide in Steffen's 8-col grid, but we use CELL_SIZE per 2 cols
-            const pixelX = (room.position.col / 2) * CELL_SIZE
-            const pixelY = room.position.row * CELL_SIZE
+            {/* Render rooms - sorted by row then col for z-order */}
+            {rooms.map(room => {
+              const pixelX = (room.position.col / 2) * CELL_SIZE
+              const pixelY = room.position.row * CELL_SIZE
+              const agent = AGENTS.find(a => a.slug === room.id)
 
-            const agent = AGENTS.find(a => a.slug === room.id)
+              return (
+                <g key={room.id}
+                  transform={`translate(${pixelX}, ${pixelY})`}
+                  onMouseEnter={() => setHoveredRoom(room.id)}
+                  onMouseLeave={() => setHoveredRoom(null)}
+                >
+                  {/* Nameplate above room */}
+                  <RoomNameplate
+                    room={room}
+                    agentStatus={agentStatus[room.id]}
+                    isHovered={hoveredRoom === room.id}
+                    cellSize={CELL_SIZE}
+                  />
 
-            return (
-              <g key={room.id}
-                transform={`translate(${pixelX}, ${pixelY})`}
-                onMouseEnter={() => setHoveredRoom(room.id)}
-                onMouseLeave={() => setHoveredRoom(null)}
-              >
-                {/* Nameplate above room */}
-                <RoomNameplate
-                  room={room}
-                  agentStatus={agentStatus[room.id]}
-                  isHovered={hoveredRoom === room.id}
-                  cellSize={CELL_SIZE}
-                />
+                  <IsometricRoom
+                    room={room}
+                    agent={agent}
+                    agentStatus={agentStatus[room.id]}
+                    isHovered={hoveredRoom === room.id}
+                    isSelected={selectedRoom === room.id}
+                    onClick={onRoomClick}
+                    cellSize={CELL_SIZE}
+                  />
+                </g>
+              )
+            })}
 
-                <IsometricRoom
-                  room={room}
-                  agent={agent}
-                  agentStatus={agentStatus[room.id]}
-                  isHovered={hoveredRoom === room.id}
-                  isSelected={selectedRoom === room.id}
-                  onClick={onRoomClick}
-                  cellSize={CELL_SIZE}
-                />
-              </g>
-            )
-          })}
+            {/* Exterior walls - thick border around building perimeter */}
+            <line x1={0} y1={0} x2={CELL_SIZE * 4} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            <line x1={CELL_SIZE * 4} y1={0} x2={CELL_SIZE * 4} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            <line x1={CELL_SIZE * 4} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 3} x2={0} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            <line x1={0} y1={CELL_SIZE * 3} x2={0} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
 
-          {/* Exterior walls - thick border around building perimeter */}
-          {/* Top (row 0): 4 rooms across */}
-          <line x1={0} y1={0} x2={CELL_SIZE * 4} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-          {/* Right side */}
-          <line x1={CELL_SIZE * 4} y1={0} x2={CELL_SIZE * 4} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-          {/* L-shape step */}
-          <line x1={CELL_SIZE * 4} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-          {/* Right side of south extension */}
-          <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 3} x2={CELL_SIZE * 3} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-          {/* Bottom of south extension */}
-          <line x1={CELL_SIZE * 3} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 4} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-          {/* Left side of south extension */}
-          <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 4} x2={CELL_SIZE * 1} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-          {/* Bottom left */}
-          <line x1={CELL_SIZE * 1} y1={CELL_SIZE * 3} x2={0} y2={CELL_SIZE * 3} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
-          {/* Left side */}
-          <line x1={0} y1={CELL_SIZE * 3} x2={0} y2={0} stroke={PALETTE.exteriorWalls} strokeWidth={GRID_SPEC.rendering.wallThicknessExterior} />
+            {/* CORNER entrance sign */}
+            <g transform={`translate(${CELL_SIZE * 2}, ${CELL_SIZE * 4 + 25})`}>
+              <rect x={-35} y={-10} width={70} height={22} fill={GRID_SPEC.entrance.awningColor} rx={3} stroke={PALETTE.exteriorWalls} strokeWidth={1} />
+              <text x={0} y={5} textAnchor="middle" fill={GRID_SPEC.entrance.signColor}
+                fontSize={GRID_SPEC.entrance.signFontSize} fontFamily={`${GRID_SPEC.entrance.signFont}, sans-serif`}
+                fontWeight={GRID_SPEC.entrance.signFontWeight} letterSpacing="0.05em">
+                {GRID_SPEC.entrance.sign}
+              </text>
+            </g>
 
-          {/* CORNER entrance sign */}
-          <g transform={`translate(${CELL_SIZE * 2}, ${CELL_SIZE * 4 + 25})`}>
-            <rect x={-35} y={-10} width={70} height={22} fill={GRID_SPEC.entrance.awningColor} rx={3} stroke={PALETTE.exteriorWalls} strokeWidth={1} />
-            <text x={0} y={5} textAnchor="middle" fill={GRID_SPEC.entrance.signColor}
-              fontSize={GRID_SPEC.entrance.signFontSize} fontFamily={`${GRID_SPEC.entrance.signFont}, sans-serif`}
-              fontWeight={GRID_SPEC.entrance.signFontWeight} letterSpacing="0.05em">
-              {GRID_SPEC.entrance.sign}
-            </text>
+            {/* Path to entrance */}
+            <rect x={CELL_SIZE * 1.7} y={CELL_SIZE * 4 + 2} width={CELL_SIZE * 0.6} height={18}
+              fill={PALETTE.groundPlaneEdge} rx={2} opacity={0.5} />
+
+            {/* Exterior bench */}
+            <rect x={-15} y={CELL_SIZE * 1.5} width={8} height={20} fill="#5D4037" rx={1} opacity={0.4} />
+
+            {/* Exterior tree */}
+            <circle cx={CELL_SIZE * 4 + 20} cy={CELL_SIZE * 0.8} r={12} fill="#2E7D32" opacity={0.3} />
+            <circle cx={CELL_SIZE * 4 + 20} cy={CELL_SIZE * 0.8} r={8} fill="#388E3C" opacity={0.25} />
+            <rect x={CELL_SIZE * 4 + 18} y={CELL_SIZE * 0.8 + 8} width={4} height={8} fill="#5D4037" opacity={0.3} rx={1} />
           </g>
-
-          {/* Path to entrance */}
-          <rect x={CELL_SIZE * 1.7} y={CELL_SIZE * 4 + 2} width={CELL_SIZE * 0.6} height={18}
-            fill={PALETTE.groundPlaneEdge} rx={2} opacity={0.5} />
-
-          {/* Exterior bench */}
-          <rect x={-15} y={CELL_SIZE * 1.5} width={8} height={20} fill="#5D4037" rx={1} opacity={0.4} />
-
-          {/* Exterior tree */}
-          <circle cx={CELL_SIZE * 4 + 20} cy={CELL_SIZE * 0.8} r={12} fill="#2E7D32" opacity={0.3} />
-          <circle cx={CELL_SIZE * 4 + 20} cy={CELL_SIZE * 0.8} r={8} fill="#388E3C" opacity={0.25} />
-          <rect x={CELL_SIZE * 4 + 18} y={CELL_SIZE * 0.8 + 8} width={4} height={8} fill="#5D4037" opacity={0.3} rx={1} />
         </svg>
       </div>
     </div>
   )
 }
 
-// ---- MINI-MAP (bottom-left, Steffen HUD spec) ------------------------------
-function MiniMap({ rooms, agentStatus, selectedRoom, zoom, onRoomClick }) {
-  if (zoom < 1.0) return null // Hidden at overview zoom
-
+// ---- MINI-MAP (bottom-left, Steffen HUD spec) with camera indicator --------
+function MiniMap({ rooms, agentStatus, selectedRoom, cameraTarget, cameraZoom, isOverview, onRoomClick }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -468,32 +512,51 @@ function MiniMap({ rooms, agentStatus, selectedRoom, zoom, onRoomClick }) {
       transition={{ duration: 0.2 }}
       style={{
         position: 'fixed', bottom: 80, left: 16, zIndex: 35,
-        width: 140, height: 100,
-        background: 'rgba(10, 15, 30, 0.85)',
+        width: 160, height: 120,
+        background: 'rgba(10, 15, 30, 0.9)',
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 6,
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-        padding: 6,
+        padding: 8,
       }}
     >
-      <svg width={128} height={88} viewBox="0 0 320 320">
+      {/* Title */}
+      <div style={{ fontSize: 8, fontFamily: 'JetBrains Mono, monospace', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>
+        MAP {IS_LOCAL && <span style={{ color: '#4CAF50' }}>LOCAL</span>}
+      </div>
+      <svg width={144} height={96} viewBox="0 0 320 320">
         {rooms.map(room => {
           const x = (room.position.col / 2) * 80
           const y = room.position.row * 80
           const w = (room.size.cols / 2) * 80
           const h = room.size.rows * 80
           const isActive = agentStatus[room.id]?.status === 'WORKING'
+          const isCameraHere = cameraTarget === room.id
           return (
-            <rect key={room.id}
-              x={x} y={y} width={w} height={h}
-              fill={room.agentColor || '#4A5568'}
-              opacity={isActive ? 0.6 : 0.3}
-              stroke={selectedRoom === room.id ? '#FDF6EC' : 'rgba(255,255,255,0.1)'}
-              strokeWidth={selectedRoom === room.id ? 2 : 0.5}
-              rx={2}
-              style={{ cursor: room.agent ? 'pointer' : 'default' }}
-              onClick={() => room.agent && onRoomClick(room.id)}
-            />
+            <g key={room.id}>
+              <rect
+                x={x} y={y} width={w} height={h}
+                fill={room.agentColor || '#4A5568'}
+                opacity={isActive ? 0.6 : 0.3}
+                stroke={isCameraHere ? '#FDF6EC' : (selectedRoom === room.id ? '#FDF6EC' : 'rgba(255,255,255,0.1)')}
+                strokeWidth={isCameraHere ? 3 : (selectedRoom === room.id ? 2 : 0.5)}
+                rx={2}
+                style={{ cursor: room.agent ? 'pointer' : 'default' }}
+                onClick={() => room.agent && onRoomClick(room.id)}
+              />
+              {/* Camera icon on current room */}
+              {isCameraHere && !isOverview && (
+                <circle cx={x + w / 2} cy={y + h / 2} r={4} fill="#FDF6EC" opacity={0.9}>
+                  <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
+                </circle>
+              )}
+              {/* Agent initial */}
+              {room.agent && (
+                <text x={x + w / 2} y={y + h / 2 + 3} textAnchor="middle" fill="#FDF6EC" fontSize={10} fontWeight={700} opacity={0.5}>
+                  {room.agent?.charAt(0)}
+                </text>
+              )}
+            </g>
           )
         })}
       </svg>
@@ -569,12 +632,20 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
       }}>
-        {/* Left: CORNER logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {/* Left: CORNER logo + mode badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 16, color: PALETTE.signText, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             CORNER
           </span>
           <span style={{ color: '#E85D26', fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 16 }}>.</span>
+          {IS_LOCAL && (
+            <span style={{
+              fontSize: 8, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+              color: '#4CAF50', background: 'rgba(76,175,80,0.1)',
+              padding: '2px 6px', borderRadius: 3, letterSpacing: '0.1em',
+              border: '1px solid rgba(76,175,80,0.2)',
+            }}>LOCAL</span>
+          )}
         </div>
 
         {/* Center: Tabs */}
@@ -845,6 +916,17 @@ function ChatBar({ activeAgent, onSelectAgent, agentStatus, isMobile }) {
     updateMessages(agentSlug, prev => [...prev, { role: 'user', content: text, time: new Date().toISOString() }])
     setStreaming(true)
     updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: new Date().toISOString() }])
+
+    // In local mode, also write to relay-outbox for the Telegram bridge
+    if (IS_LOCAL) {
+      try {
+        await fetch('/api/local/relay-send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent: agentSlug, message: text, source: 'corner-dashboard' }),
+        })
+      } catch {}
+    }
 
     // Disconnect previous connection
     connectionRef.current?.disconnect()
@@ -1192,6 +1274,17 @@ function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
         )}
       </div>
 
+      {/* Data source indicator */}
+      {IS_LOCAL && (
+        <div style={{ padding: '0 16px 12px' }}>
+          <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>Data Source</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4CAF50' }} />
+            <span style={{ color: '#4CAF50', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}>Local filesystem (2s poll)</span>
+          </div>
+        </div>
+      )}
+
       {/* Chat button */}
       <div style={{ padding: '12px 16px', marginTop: 'auto' }}>
         <button onClick={() => onChat(room?.id)} style={{
@@ -1208,6 +1301,86 @@ function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
   )
 }
 
+// ---- CAMERA CONTROLS (floating, right side) --------------------------------
+function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, cameraTarget, setCameraTarget, onHomeRoom }) {
+  return (
+    <div style={{
+      position: 'absolute', top: 16, right: 16, zIndex: 32,
+      display: 'flex', flexDirection: 'column', gap: 4,
+      background: 'rgba(10,15,30,0.85)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: 8,
+      padding: 4,
+    }}>
+      {/* Zoom in */}
+      <button onClick={() => setCameraZoom(z => Math.min(2.0, z + 0.15))}
+        title="Zoom in (+)"
+        style={{
+          width: 32, height: 32, background: 'transparent', border: 'none',
+          color: '#A0A0A0', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'color 150ms, background 150ms',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#FDF6EC'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.background = 'transparent' }}
+      >
+        <ZoomIn size={16} />
+      </button>
+
+      {/* Zoom level */}
+      <span style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', textAlign: 'center', padding: '2px 0' }}>
+        {Math.round(cameraZoom * 100)}%
+      </span>
+
+      {/* Zoom out */}
+      <button onClick={() => setCameraZoom(z => Math.max(0.5, z - 0.15))}
+        title="Zoom out (-)"
+        style={{
+          width: 32, height: 32, background: 'transparent', border: 'none',
+          color: '#A0A0A0', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'color 150ms, background 150ms',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#FDF6EC'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.background = 'transparent' }}
+      >
+        <ZoomOut size={16} />
+      </button>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '2px 4px' }} />
+
+      {/* Home / go to main agent */}
+      <button onClick={onHomeRoom}
+        title={`Go to ${DEFAULT_AGENT} (H)`}
+        style={{
+          width: 32, height: 32, background: 'transparent', border: 'none',
+          color: cameraTarget === DEFAULT_AGENT && !isOverview ? '#E85D26' : '#A0A0A0',
+          cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'color 150ms, background 150ms',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+      >
+        <Home size={16} />
+      </button>
+
+      {/* Overview toggle */}
+      <button onClick={() => setIsOverview(o => !o)}
+        title="Overview (O)"
+        style={{
+          width: 32, height: 32, background: isOverview ? 'rgba(232,93,38,0.15)' : 'transparent', border: 'none',
+          color: isOverview ? '#E85D26' : '#A0A0A0',
+          cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'color 150ms, background 150ms',
+        }}
+        onMouseEnter={e => { if (!isOverview) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseLeave={e => { if (!isOverview) e.currentTarget.style.background = 'transparent' }}
+      >
+        <Map size={16} />
+      </button>
+    </div>
+  )
+}
+
 // ---- MAIN GAME DASHBOARD ---------------------------------------------------
 export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
@@ -1215,10 +1388,15 @@ export default function GameDashboard() {
   const [selectedRoom, setSelectedRoom] = useState(null)
   const [hoveredRoom, setHoveredRoom] = useState(null)
   const [chatAgent, setChatAgent] = useState(null)
-  const [zoom, setZoom] = useState(0.85)
-  const [showMinimap, setShowMinimap] = useState(false)
+  const [showMinimap, setShowMinimap] = useState(true) // ON by default now (zoomed in needs minimap)
   const [notifications, setNotifications] = useState([])
-  const { data, error, loading } = useDashboardData(30000)
+
+  // CAMERA STATE: zoomed in on main agent by default
+  const [cameraTarget, setCameraTarget] = useState(DEFAULT_AGENT)
+  const [cameraZoom, setCameraZoom] = useState(1.6) // Zoomed in: room fills ~60% viewport
+  const [isOverview, setIsOverview] = useState(false) // false = zoomed in, true = see all
+
+  const { data, error, loading } = useDashboardData()
   const isMobile = useIsMobile()
 
   // URL-based agent selection
@@ -1229,6 +1407,7 @@ export default function GameDashboard() {
       const slug = match[1]
       setSelectedRoom(slug)
       setChatAgent(slug)
+      setCameraTarget(slug) // Camera moves to URL agent
     }
   }, [])
 
@@ -1249,10 +1428,25 @@ export default function GameDashboard() {
     return map
   }, [data])
 
+  // When overview mode changes, adjust zoom
+  useEffect(() => {
+    if (isOverview) {
+      setCameraZoom(0.7) // Zoomed out to see everything
+    } else {
+      setCameraZoom(1.6) // Zoomed in
+    }
+  }, [isOverview])
+
   const handleRoomClick = (roomId) => {
     const room = ROOM_MAP[roomId]
     if (!room || room.agent === null) return
+
+    // Always move camera to clicked room
+    setCameraTarget(roomId)
+    setIsOverview(false)
+
     if (roomId === selectedRoom) {
+      // Double click / already selected -> open chat
       setChatAgent(roomId)
     } else {
       setSelectedRoom(roomId)
@@ -1262,6 +1456,22 @@ export default function GameDashboard() {
   const handleChat = (roomId) => {
     setChatAgent(roomId)
     setSelectedRoom(roomId)
+    setCameraTarget(roomId)
+    setIsOverview(false)
+  }
+
+  const handleHomeRoom = () => {
+    setCameraTarget(DEFAULT_AGENT)
+    setIsOverview(false)
+    setCameraZoom(1.6)
+  }
+
+  // Mini-map room click -> move camera
+  const handleMinimapRoomClick = (roomId) => {
+    setCameraTarget(roomId)
+    setSelectedRoom(roomId)
+    setIsOverview(false)
+    setCameraZoom(1.6)
   }
 
   // Keyboard shortcuts
@@ -1277,8 +1487,13 @@ export default function GameDashboard() {
       if (idx < agentSlugs.length) {
         const slug = agentSlugs[idx]
         setSelectedRoom(slug)
+        setCameraTarget(slug)
+        setIsOverview(false)
       }
     },
+    onZoomIn: () => setCameraZoom(z => Math.min(2.0, z + 0.15)),
+    onZoomOut: () => setCameraZoom(z => Math.max(0.5, z - 0.15)),
+    onOverview: () => setIsOverview(o => !o),
   })
 
   if (!authed) {
@@ -1304,26 +1519,21 @@ export default function GameDashboard() {
           selectedRoom={selectedRoom}
           hoveredRoom={hoveredRoom}
           setHoveredRoom={setHoveredRoom}
-          zoom={zoom}
+          cameraTarget={cameraTarget}
+          cameraZoom={cameraZoom}
+          isOverview={isOverview}
         />
 
-        {/* Zoom controls (floating) */}
-        <div style={{
-          position: 'absolute', top: 16, right: 16, zIndex: 32,
-          display: 'flex', flexDirection: 'column', gap: 4,
-        }}>
-          <button onClick={() => setZoom(z => Math.min(1.5, z + 0.1))} style={{
-            width: 32, height: 32, background: 'rgba(10,15,30,0.85)', border: '1px solid rgba(255,255,255,0.08)',
-            color: '#6B7280', cursor: 'pointer', borderRadius: 6, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>+</button>
-          <span style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', textAlign: 'center' }}>
-            {Math.round(zoom * 100)}%
-          </span>
-          <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} style={{
-            width: 32, height: 32, background: 'rgba(10,15,30,0.85)', border: '1px solid rgba(255,255,255,0.08)',
-            color: '#6B7280', cursor: 'pointer', borderRadius: 6, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>-</button>
-        </div>
+        {/* Camera controls (floating) */}
+        <CameraControls
+          cameraZoom={cameraZoom}
+          setCameraZoom={setCameraZoom}
+          isOverview={isOverview}
+          setIsOverview={setIsOverview}
+          cameraTarget={cameraTarget}
+          setCameraTarget={setCameraTarget}
+          onHomeRoom={handleHomeRoom}
+        />
 
         {/* Room detail sidebar */}
         <AnimatePresence>
@@ -1349,19 +1559,21 @@ export default function GameDashboard() {
         </div>
       </div>
 
-      {/* Mini-map */}
+      {/* Mini-map - ON by default since we're zoomed in */}
       {showMinimap && (
         <MiniMap
           rooms={GRID_SPEC.rooms}
           agentStatus={agentStatus}
           selectedRoom={selectedRoom}
-          zoom={zoom}
-          onRoomClick={handleRoomClick}
+          cameraTarget={cameraTarget}
+          cameraZoom={cameraZoom}
+          isOverview={isOverview}
+          onRoomClick={handleMinimapRoomClick}
         />
       )}
 
       {/* Notification toasts */}
-      <NotificationToast notifications={notifications} onClickNotification={(n) => { setChatAgent(n.agentSlug); setSelectedRoom(n.agentSlug) }} />
+      <NotificationToast notifications={notifications} onClickNotification={(n) => { setChatAgent(n.agentSlug); setSelectedRoom(n.agentSlug); setCameraTarget(n.agentSlug) }} />
 
       {/* Chat bar (bottom) */}
       <ChatBar
@@ -1371,15 +1583,16 @@ export default function GameDashboard() {
         isMobile={isMobile}
       />
 
-      {/* Error indicator */}
+      {/* Error / connection indicator */}
       {error && (
         <div style={{
-          position: 'fixed', bottom: 80, left: 16,
+          position: 'fixed', bottom: 80, left: showMinimap ? 192 : 16,
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
           color: '#EF4444', fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
           padding: '6px 12px', borderRadius: 4, zIndex: 50,
+          transition: 'left 200ms ease',
         }}>
-          Status update failed. Showing cached data.
+          {IS_LOCAL ? 'Local file read failed. Is AOM-EA accessible?' : 'Status update failed. Showing cached data.'}
         </div>
       )}
 
@@ -1388,7 +1601,9 @@ export default function GameDashboard() {
         <div style={{ position: 'fixed', inset: 0, background: PALETTE.background, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             <Loader2 size={24} style={{ color: '#FFD87A', animation: 'spin 1s linear infinite' }} />
-            <span style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif' }}>Loading your office...</span>
+            <span style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif' }}>
+              {IS_LOCAL ? 'Loading from local files...' : 'Loading your office...'}
+            </span>
           </div>
         </div>
       )}
