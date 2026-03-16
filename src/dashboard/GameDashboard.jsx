@@ -1053,6 +1053,9 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // DONE(bobby2): Time-of-day swap IMPLEMENTED (commit 4e101fc). Uses full-office-warm-night.png (daytime) before 9pm, office-full-night.png after 9pm. Checks every 60s.
 // TODO(steffen): Create production-ready bright daytime office-full.png (blue sky, green grass, Crossy Road style). Current "daytime" uses full-office-warm-night.png as a stand-in. When true daytime asset is ready, update officeImage path in IsometricOffice.
 
+
+// TODO(bobby): MODULAR OFFICE FRAMEWORK -- Extract IMAGE_ROOM_TARGETS into a standalone config (e.g., officeLayouts/default.js) that pairs a background image with its room map. ONE layout for everyone. Perfect the diamond mapping at BOTH zoom presets (0.7 overview, 1.6 detail) for this single image first. Once mapping is pixel-perfect at every zoom level, the system becomes modular: swap image file + room config = new office skin. Framework = skeleton (diamond grid + zoom behavior). Image = skin. Do not try arbitrary layouts yet. Nail this one. Ref: Patrik directive line 147.
+// TODO(bobby): ROOM INTERACTION STATES -- Implement default/hover/selected room states per Steffen visual target at projects/steffen/visual-target/hud/room-interaction.png. CSS spec in Steffen manifest v7 item #7. Diamond outlines at rest, glow on hover, highlight on selected. Bobby must OPEN the dashboard and verify interaction states visually at both zoom levels. Ref: Steffen delivery line 148.
 // Room hit-target positions mapped to the Crossy Road voxel office image (percentages).
 // RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
 // Each room has an isometric hexagon clip-path for accurate click areas.
@@ -1096,9 +1099,10 @@ const getRoomWaveDelay = (roomId) => {
   const idx = ROOM_WAVE_ORDER.indexOf(roomId)
   return idx >= 0 ? idx * 0.06 : 0.3
 }
-// ---- SINGLE-IMAGE APPROACH: uses office-full-night.png (Crossy Road voxel) ------
+// ---- SINGLE-IMAGE APPROACH: uses office-full.png (Crossy Road voxel, bright daytime) as DEFAULT ------
+// Night mode (office-full-night.png) activates at 9pm+. isNightMode is passed from parent GameDashboard.
 // C4: Building FILLS the viewport. No dead space. Crossy Road bounce energy.
-function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations, streamingAgent }) {
+function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations, streamingAgent, isNightMode }) {
   // FILL THE VIEWPORT: size based on container, not fixed pixels
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 })
   const sizeRef = useRef(null)
@@ -1115,14 +1119,8 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
     return () => window.removeEventListener('resize', measure)
   }, [])
 
-  // Time-based theme: daytime (warm) before 9pm, night after 9pm
-  const [isNightMode, setIsNightMode] = useState(() => new Date().getHours() >= 21)
-  useEffect(() => {
-    const check = () => setIsNightMode(new Date().getHours() >= 21)
-    const timer = setInterval(check, 60000) // check every minute
-    return () => clearInterval(timer)
-  }, [])
-  const officeImage = isNightMode ? '/corner/office-full-night.png' : '/corner/full-office-warm-night.png'
+  // Daytime: bright Crossy Road office (blue sky, green grass). Night: warm night version.
+  const officeImage = isNightMode ? '/corner/office-full-night.png' : '/corner/office-full.png'
 
   // Fill viewport: use the LARGER dimension to ensure no dead space
   // The building image is roughly square, so we scale to cover the viewport
@@ -1320,15 +1318,19 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
       {/* Ground plane: subtle floor beneath the building for depth */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse at 50% 55%, rgba(30, 25, 18, 0.4) 0%, rgba(10, 15, 30, 0.1) 40%, transparent 65%)',
+        background: isNightMode
+          ? 'radial-gradient(ellipse at 50% 55%, rgba(30, 25, 18, 0.4) 0%, rgba(10, 15, 30, 0.1) 40%, transparent 65%)'
+          : 'radial-gradient(ellipse at 50% 55%, rgba(100, 160, 80, 0.15) 0%, rgba(120, 180, 100, 0.05) 40%, transparent 65%)',
         pointerEvents: 'none', zIndex: 0,
       }} />
-      {/* Window light spill on ground */}
+      {/* Window light spill on ground (night only, daytime image has its own lighting) */}
+      {isNightMode && (
       <div style={{
         position: 'absolute', left: '25%', top: '55%', width: '50%', height: '30%',
         background: 'radial-gradient(ellipse, rgba(255,183,77,0.04) 0%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0, filter: 'blur(40px)',
       }} />
+      )}
 
       {/* Building container: outer = zoom/pan, inner = breathing float + bounce */}
       <div style={{
@@ -2811,7 +2813,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
           }
         }
       } catch {}
-    }, IS_LOCAL ? 500 : 2000) // DONE(bobby2): Local 500ms for sub-second relay response display
+    }, 500) // Local + production: 500ms for real-time feel
   }
 
   // Start 60-second chat timeout. If no response arrives, show offline message.
@@ -4335,6 +4337,9 @@ export default function GameDashboard() {
 
     bgOutboxPollRef.current = setInterval(async () => {
       if (!lastBgOutboxCheckRef.current) return
+      // Skip when panelRelayPoll is handling a send response (prevents race condition
+      // where both polls pick up the same message and cause duplicate/misordered entries)
+      if (panelRelayPollRef.current) return
       try {
         const since = encodeURIComponent(lastBgOutboxCheckRef.current)
         const res = await fetch(`/api/local/relay-outbox?since=${since}`)
@@ -4347,14 +4352,13 @@ export default function GameDashboard() {
           const latest = newMsgs[newMsgs.length - 1]
           lastBgOutboxCheckRef.current = latest.timestamp
 
-          // Add new responses + remove streaming placeholders in ONE state update
-          // (prevents React state race where separate calls see stale data)
+          // Add new responses, keep streaming placeholders intact (panelRelayPoll handles those)
           setPanelMessages(prev => {
-            // Start with non-streaming messages only
-            const allMsgs = [...(prev._all || [])].filter(m => !m.streaming)
+            const allMsgs = [...(prev._all || [])]
             for (const msg of newMsgs) {
-              // Don't add duplicates
-              if (allMsgs.some(m => m.id === msg.id)) continue
+              // Dedup by id OR by matching content+time (for messages without id)
+              if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
+              if (!msg.id && allMsgs.some(m => m.content === msg.message && m.role === 'assistant')) continue
               allMsgs.push({
                 role: 'assistant',
                 content: msg.message,
@@ -4555,6 +4559,14 @@ export default function GameDashboard() {
   const [cameraTarget, setCameraTarget] = useState(DEFAULT_AGENT)
   const [cameraZoom, setCameraZoom] = useState(0.7)
   const [isOverview, setIsOverview] = useState(true)
+
+  // Time-based theme: bright daytime default, night mode at 9pm+
+  const [isNightMode, setIsNightMode] = useState(() => new Date().getHours() >= 21)
+  useEffect(() => {
+    const check = () => setIsNightMode(new Date().getHours() >= 21)
+    const timer = setInterval(check, 60000)
+    return () => clearInterval(timer)
+  }, [])
 
   // C3 Step 8: Agent death/error animation state
   // { [agentSlug]: { state: 'away'|'leaving'|'returning', label: 'Away'|'Reconnecting...', x, y } }
@@ -4864,13 +4876,14 @@ export default function GameDashboard() {
     <div style={{
       position: 'fixed', inset: 0,
       width: '100vw', maxWidth: '100vw',
-      background: PALETTE.background,
+      background: isNightMode ? PALETTE.background : '#E8F0FA',
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',
+      transition: 'background 500ms ease',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
@@ -4890,27 +4903,29 @@ export default function GameDashboard() {
                 onZoomChange={setCameraZoom}
                 agentAnimations={agentAnimations}
                 streamingAgent={streamingAgent}
+                isNightMode={isNightMode}
               />
 
               {/* SimCity floating stats overlay (bottom-left of game viewport) */}
               {!isMobile && (
                 <div style={{
                   position: 'absolute', bottom: 16, left: 16, zIndex: 10,
-                  background: 'rgba(15,27,45,0.8)',
-                  border: '1px solid rgba(59,130,246,0.15)',
+                  background: isNightMode ? 'rgba(15,27,45,0.8)' : 'rgba(255,255,255,0.85)',
+                  border: isNightMode ? '1px solid rgba(59,130,246,0.15)' : '1.5px solid rgba(59,130,246,0.2)',
                   borderRadius: 8,
                   padding: '6px 12px',
                   display: 'flex', gap: 12, alignItems: 'center',
                   backdropFilter: 'blur(8px)',
                   pointerEvents: 'none',
                   opacity: cameraZoom > 2.5 ? 0 : 1,
-                  transition: 'opacity 300ms ease',
+                  transition: 'opacity 300ms ease, background 500ms ease',
+                  boxShadow: isNightMode ? 'none' : '0 2px 8px rgba(0,0,0,0.06)',
                 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#22C55E', fontFamily: "'Inter', system-ui, sans-serif" }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#16A34A', fontFamily: "'Inter', system-ui, sans-serif" }}>
                     {Object.values(agentStatus).filter(a => a?.status === 'WORKING').length} Active
                   </span>
-                  <span style={{ color: 'rgba(59,130,246,0.3)' }}>|</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#EF4444', fontFamily: "'Inter', system-ui, sans-serif" }}>
+                  <span style={{ color: isNightMode ? 'rgba(59,130,246,0.3)' : '#CBD5E1' }}>|</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#DC2626', fontFamily: "'Inter', system-ui, sans-serif" }}>
                     {Object.values(agentStatus).filter(a => a?.status === 'BLOCKED').length} Blocked
                   </span>
                 </div>
@@ -4928,27 +4943,28 @@ export default function GameDashboard() {
                 panelVisible={false}
               />
 
-              {/* Window light animation overlay - enhanced depth (Steve action item: boost lighting) */}
+              {/* Window light animation overlay - night only (daytime image has baked lighting) */}
+              {isNightMode && (
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-                {/* Primary warm light (boosted from 0.05 to 0.12 per Steve's report) */}
+                {/* Primary warm light */}
                 <div style={{
                   position: 'absolute', top: '8%', left: '8%', width: 360, height: 360,
                   background: 'radial-gradient(circle, rgba(255,183,77,0.12) 0%, rgba(255,160,50,0.04) 40%, transparent 65%)',
                   borderRadius: '50%', animation: 'windowLight 30s ease-in-out infinite',
                 }} />
-                {/* Bobby's purple LED glow (boosted to 15-20%) */}
+                {/* Bobby's purple LED glow */}
                 <div style={{
                   position: 'absolute', bottom: '30%', left: '12%', width: 200, height: 200,
                   background: 'radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 60%)',
                   borderRadius: '50%', animation: 'windowLight 22s ease-in-out infinite',
                 }} />
-                {/* Elon's green glow (boosted to 12%) */}
+                {/* Elon's green glow */}
                 <div style={{
                   position: 'absolute', bottom: '18%', right: '25%', width: 180, height: 180,
                   background: 'radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 60%)',
                   borderRadius: '50%', animation: 'windowLight 26s ease-in-out infinite reverse',
                 }} />
-                {/* Secondary cool light (depth contrast) */}
+                {/* Secondary cool light */}
                 <div style={{
                   position: 'absolute', bottom: '15%', right: '12%', width: 240, height: 240,
                   background: 'radial-gradient(circle, rgba(100,150,255,0.04) 0%, transparent 60%)',
@@ -4960,13 +4976,12 @@ export default function GameDashboard() {
                   background: 'radial-gradient(ellipse, rgba(255,216,122,0.07) 0%, transparent 60%)',
                   borderRadius: '50%', animation: 'windowLight 35s ease-in-out infinite',
                 }} />
-                {/* Vignette for depth (subtle tighter) */}
+                {/* Vignette for depth */}
                 <div style={{
                   position: 'absolute', inset: 0,
                   background: 'radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0,0,0,0.2) 100%)',
                 }} />
-
-                {/* Ambient particles - floating dust motes for Three.js-like depth */}
+                {/* Ambient particles */}
                 {[...Array(18)].map((_, i) => (
                   <div key={`particle-${i}`} className="ambient-particle" style={{
                     position: 'absolute',
@@ -4987,6 +5002,7 @@ export default function GameDashboard() {
                   }} />
                 ))}
               </div>
+              )}
             </div>
 
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
@@ -5018,10 +5034,11 @@ export default function GameDashboard() {
                 if (!text || panelStreaming) return
                 setPanelChatInput('')
                 const sentTime = new Date().toISOString()
+                const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
                 // Single state update: user message sorted + streaming placeholder at end
                 // Prevents React batching race that groups messages by sender
                 setPanelMessages(prev => {
-                  const sorted = [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom }]
+                  const sorted = [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom, id: localId }]
                   sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
                   // Streaming placeholder always appended last (typing indicator)
                   sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
