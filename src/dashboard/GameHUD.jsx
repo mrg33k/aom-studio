@@ -644,7 +644,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
           color: expanded ? HUD.accent : HUD.textMuted,
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0, transition: 'all 150ms ease',
-          fontSize: 14, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 16, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace',
         }}
         title="Show all agents"
       >
@@ -682,7 +682,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                   width={40} height={40}
                   style={{ width: 40, height: 40, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -6, marginTop: -4 }} />
               ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: 'Space Grotesk, sans-serif' }}>
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: 'Space Grotesk, sans-serif' }}>
                   {agent.name?.charAt(0) || '?'}
                 </div>
               )}
@@ -723,9 +723,9 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                 placeholder="Search agents..."
                 autoFocus
                 style={{
-                  width: '100%', height: 32, background: 'rgba(100,180,255,0.06)',
-                  border: '1px solid rgba(100,180,255,0.12)', borderRadius: 8,
-                  padding: '0 10px', color: '#EDF2FA', fontSize: 13,
+                  width: '100%', height: 36, background: 'rgba(100,180,255,0.06)',
+                  border: '1.5px solid rgba(100,180,255,0.15)', borderRadius: 8,
+                  padding: '0 12px', color: '#EDF2FA', fontSize: 16,
                   fontFamily: 'Space Grotesk, sans-serif', outline: 'none',
                 }}
               />
@@ -766,7 +766,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                         <img src={`/corner/sprites/${agent.slug}-idle.png`} alt=""
                           style={{ width: 46, height: 46, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -7, marginTop: -5 }} />
                       ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: agent.color }}>
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: agent.color }}>
                           {agent.name?.charAt(0)}
                         </div>
                       )}
@@ -774,7 +774,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                     {/* Name + role */}
                     <div style={{ flex: 1, textAlign: 'left' }}>
                       <div style={{ color: '#EDF2FA', fontSize: 14, fontWeight: 700, fontFamily: "'Inter Tight', sans-serif" }}>{agent.name}</div>
-                      <div style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{agent.role}</div>
+                      <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{agent.role}</div>
                     </div>
                     {/* Status dot */}
                     <div style={{
@@ -851,10 +851,11 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
       {/* Bottom progress fill - THICKER */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0,
-        width: `${progress}%`, height: 4,
+        width: `${progress}%`, height: 6,
         background: `linear-gradient(90deg, ${project.color}70, ${project.color})`,
-        transition: 'width 500ms ease',
+        transition: 'width 500ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         borderRadius: '0 0 14px 14px',
+        boxShadow: `0 0 8px ${project.color}44`,
       }} />
 
       {/* Side accent for Today or RED clients - THICKER */}
@@ -878,7 +879,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
           boxShadow: `0 0 10px ${project.color}55`,
           flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 8, fontWeight: 900, color: '#FFF',
+          fontSize: 12, fontWeight: 900, color: '#FFF',
           fontFamily: "'Inter Tight', sans-serif",
         }}>$</div>
       ) : (
@@ -907,13 +908,13 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
       {isClient && project.revenue && (
         <span style={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, fontWeight: 700,
+          fontSize: 14, fontWeight: 700,
           color: project.color,
           background: `${project.color}15`,
-          padding: '2px 8px', borderRadius: 6,
+          padding: '3px 10px', borderRadius: 6,
           letterSpacing: '0.02em',
           whiteSpace: 'nowrap',
-          border: `1px solid ${project.color}25`,
+          border: `1.5px solid ${project.color}30`,
         }}>
           {project.revenue}
         </span>
@@ -923,15 +924,15 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
       {tagStyle && (
         <span style={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 9, fontWeight: 800,
+          fontSize: 12, fontWeight: 800,
           color: tagStyle.text,
           background: tagStyle.bg,
-          padding: '2px 6px', borderRadius: 4,
+          padding: '3px 8px', borderRadius: 5,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          border: `1px solid ${tagStyle.border}`,
+          border: `1.5px solid ${tagStyle.border}`,
           whiteSpace: 'nowrap',
-          boxShadow: tagStyle.glow !== 'none' ? `0 0 8px ${tagStyle.glow}` : 'none',
+          boxShadow: tagStyle.glow !== 'none' ? `0 0 10px ${tagStyle.glow}` : 'none',
           animation: project.statusTag === 'RED' ? 'statusPulse 2.5s ease-in-out infinite' : 'none',
         }}>
           {project.statusTag}
@@ -985,7 +986,7 @@ function TaskPanel({ project, onClose }) {
         position: 'absolute', bottom: '100%', left: 16, right: 16,
         background: HUD.panelBg,
         backdropFilter: 'blur(24px)',
-        border: `1px solid ${HUD.panelBorder}`,
+        border: `2px solid ${HUD.panelBorder}`,
         borderBottom: 'none',
         borderRadius: '12px 12px 0 0',
         overflow: 'hidden',
@@ -1135,7 +1136,7 @@ function TaskPanel({ project, onClose }) {
                     <div style={{
                       width: '100%', height: '100%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, fontWeight: 700, color: a?.color || '#4A6080',
+                      fontSize: 12, fontWeight: 700, color: a?.color || '#4A6080',
                       fontFamily: 'Space Grotesk, sans-serif',
                     }}>
                       {a?.name?.charAt(0) || '?'}
@@ -1188,7 +1189,7 @@ function CompactStats({ agentStatus, throughput, overallProgress }) {
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 800, color: HUD.accent,
+          fontSize: 14, fontWeight: 800, color: HUD.accent,
         }}>
           {overallProgress}
         </div>
@@ -1451,9 +1452,9 @@ export default function GameHUD({
         style={{
           background: HUD.panelBg,
           backdropFilter: 'blur(24px)',
-          borderTop: `1px solid ${HUD.panelBorder}`,
-          borderLeft: '1px solid rgba(100,180,255,0.06)',
-          borderRight: '1px solid rgba(100,180,255,0.06)',
+          borderTop: `2px solid ${HUD.panelBorder}`,
+          borderLeft: '2px solid rgba(100,180,255,0.08)',
+          borderRight: '2px solid rgba(100,180,255,0.08)',
           // Chunky game panel shape
           borderRadius: isMobile ? 0 : '18px 18px 0 0',
           boxShadow: HUD.panelShadow,
