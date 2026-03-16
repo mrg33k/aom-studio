@@ -12,6 +12,7 @@ import {
   Send, MessageSquare, Search,
 } from 'lucide-react'
 import { AGENTS, GRID_SPEC } from './gridSpec.js'
+import { HUDBellButton, HUDToasts, HUD_NOTIFICATION_STYLES } from './HUDNotifications.jsx'
 
 // ---- PALETTE ----------------------------------------------------------------
 const PALETTE = GRID_SPEC.colorPalette
@@ -1691,6 +1692,11 @@ export default function GameHUD({
             />
           )}
 
+          {/* Notification bell with badge */}
+          {!isMobile && (
+            <HUDBellButton onClick={onExpandChat} />
+          )}
+
           {/* Divider before chat */}
           <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
 
@@ -1766,7 +1772,11 @@ export default function GameHUD({
           0%, 100% { opacity: 1; border-color: #EF4444; }
           50% { opacity: 0.7; border-color: #FF6B6B; }
         }
+        ${HUD_NOTIFICATION_STYLES}
       `}</style>
+
+      {/* HUD toast notifications (slide in from right, above HUD strip) */}
+      <HUDToasts />
     </div>
   )
 }
