@@ -88,6 +88,42 @@ function extractAgentFromMessage(msg) {
   return known ? known.slug : null
 }
 
+// ---- MESSAGE SANITIZER (shared with ChatDashboard) --------------------------
+// Strips watchdog preamble, system XML, and other noise from relay messages.
+// Returns cleaned text, or null if the entire message is system noise.
+function sanitizeRelayMessage(text) {
+  if (!text || typeof text !== 'string') return null
+
+  let cleaned = text
+
+  // 1. Filter system XML blocks
+  cleaned = cleaned.replace(/<task-notification>[\s\S]*?<\/task-notification>/g, '')
+  cleaned = cleaned.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
+  cleaned = cleaned.replace(/<available-deferred-tools>[\s\S]*?<\/available-deferred-tools>/g, '')
+
+  // 2. Strip watchdog preamble patterns
+  cleaned = cleaned.replace(/^Patrik sent this via Telegram:\s*/i, '')
+  cleaned = cleaned.replace(/^Patrik sent these messages via Telegram:\s*/i, '')
+  cleaned = cleaned.replace(/You have full project context from CLAUDE\.md\.\s*/g, '')
+  cleaned = cleaned.replace(/Respond naturally with the same detail you would on the desktop\.\s*/g, '')
+  cleaned = cleaned.replace(/Do not artificially shorten or condense your response\.\s*/g, '')
+  cleaned = cleaned.replace(/If the request needs calendar, email, file changes, or tool access,\s*do what you can and note any limitations\.\s*/g, '')
+  cleaned = cleaned.replace(/If any request needs calendar, email, file changes, or tool access,\s*do what you can and note any limitations\.\s*/g, '')
+  cleaned = cleaned.replace(/Do not use em dashes\.\s*Use bullet points over paragraphs\.\s*/g, '')
+  cleaned = cleaned.replace(/Address all messages in one response\.\s*/g, '')
+
+  // 3. Strip "Full transcript available at: /private/tmp/..." lines
+  cleaned = cleaned.replace(/Full transcript available at:\s*\/\S+/g, '')
+
+  // 4. Strip timestamped message list prefixes from watchdog batches
+  cleaned = cleaned.replace(/^-\s*\[\d{4}-\d{2}-\d{2}T[^\]]*\]\s*/gm, '')
+
+  cleaned = cleaned.trim()
+  if (!cleaned || cleaned.length < 2) return null
+
+  return cleaned
+}
+
 // ---- DEMO DATA (production: thriving sample business for prospects) ---------
 // Garcia Construction -- believable Phoenix GC using Corner to run operations.
 // Shows a living office with active agents, recent commits, and real workflow.
@@ -3497,14 +3533,21 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const setActiveTab = onActiveTabChange || (() => {})
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
+  const isNearBottomRef = useRef(true)
+  const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
 
-  // Auto-scroll chat
+  // Smart auto-scroll: only scroll if user is near the bottom
   useEffect(() => {
     if (messagesContainerRef.current && activeTab === 'chat') {
-      messagesContainerRef.current.scrollTo({
-        top: messagesContainerRef.current.scrollHeight,
-        behavior: 'smooth',
-      })
+      if (isNearBottomRef.current) {
+        messagesContainerRef.current.scrollTo({
+          top: messagesContainerRef.current.scrollHeight,
+          behavior: 'smooth',
+        })
+        setShowNewMsgIndicator(false)
+      } else if (chatMessages && chatMessages.length > 0) {
+        setShowNewMsgIndicator(true)
+      }
     }
   }, [chatMessages, activeTab])
 
@@ -3813,9 +3856,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           <ChatErrorBoundary>
           <>
             {/* Messages area */}
-            <div ref={messagesContainerRef} style={{
+            <div ref={messagesContainerRef} onScroll={() => {
+              const el = messagesContainerRef.current
+              if (!el) return
+              const threshold = 80
+              isNearBottomRef.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
+              if (isNearBottomRef.current) setShowNewMsgIndicator(false)
+            }} style={{
               flex: 1, overflowY: 'auto', padding: '16px 20px',
               display: 'flex', flexDirection: 'column', gap: 14,
+              position: 'relative',
             }}>
               {(!chatMessages || chatMessages.length === 0) && (
                 <div style={{
@@ -4541,10 +4591,12 @@ export default function GameDashboard() {
               // Dedup by id OR by matching content+time (for messages without id)
               if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
               if (!msg.id && allMsgs.some(m => m.content === msg.message && m.role === 'assistant')) continue
+              const cleaned = sanitizeRelayMessage(msg.message)
+              if (!cleaned) continue
               const agentSlug = extractAgentFromMessage(msg)
               allMsgs.push({
                 role: 'assistant',
-                content: msg.message || '',
+                content: cleaned,
                 time: msg.timestamp || new Date().toISOString(),
                 source: agentSlug || 'system',
                 id: msg.id || `bg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
@@ -4616,13 +4668,15 @@ export default function GameDashboard() {
               for (const msg of externalMsgs) {
                 if (!msg.message) continue // skip empty messages
                 if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
+                const cleaned = sanitizeRelayMessage(msg.message)
+                if (!cleaned) continue
                 let sourceLabel = 'unknown'
                 if (msg.source === 'telegram') sourceLabel = 'via telegram'
                 else if (msg.source === 'terminal' || msg.source === 'cli') sourceLabel = 'via terminal'
                 else if (msg.source) sourceLabel = `via ${msg.source}`
                 allMsgs.push({
                   role: 'user',
-                  content: msg.message || '',
+                  content: cleaned,
                   time: msg.timestamp || new Date().toISOString(),
                   source: sourceLabel,
                   targetAgent: msg.agent || null,
@@ -4679,7 +4733,8 @@ export default function GameDashboard() {
         const all = []
         // Inbox: ALL user messages from any source (dashboard, telegram, terminal)
         for (const msg of inbox.messages) {
-          if (!msg.message?.trim()) continue
+          const cleaned = sanitizeRelayMessage(msg.message)
+          if (!cleaned) continue
           // Derive source label
           let sourceLabel = 'unknown'
           if (msg.source === 'corner-dashboard' || msg.source === 'corner-websocket') sourceLabel = 'via dashboard'
@@ -4688,7 +4743,7 @@ export default function GameDashboard() {
           else if (msg.source) sourceLabel = `via ${msg.source}`
           all.push({
             role: 'user',
-            content: msg.message,
+            content: cleaned,
             time: msg.timestamp,
             source: sourceLabel,
             targetAgent: msg.agent || null,
@@ -4700,10 +4755,12 @@ export default function GameDashboard() {
           if (!msg.message?.trim()) continue
           // Skip messages that are actually dashboard sends that leaked into outbox
           if (msg.source === 'corner-dashboard' || msg.source === 'corner-websocket') continue
+          const cleaned = sanitizeRelayMessage(msg.message)
+          if (!cleaned) continue
           const agentSlug = extractAgentFromMessage(msg)
           all.push({
             role: 'assistant',
-            content: msg.message,
+            content: cleaned,
             time: msg.timestamp,
             source: agentSlug || 'system',
             id: msg.id,
