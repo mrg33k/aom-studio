@@ -184,7 +184,9 @@ function PasswordGate({ onAuth }) {
 
 // ---- SPRITE STATE MAPPING --------------------------------------------------
 // Maps agent status to sprite file state name
-function getSpriteState(status) {
+// 'speaking' state used when agent is streaming a response in chat
+function getSpriteState(status, isSpeaking) {
+  if (isSpeaking) return 'speaking'
   switch (status) {
     case 'WORKING':  return 'thinking'
     case 'WAITING':  return 'thinking'

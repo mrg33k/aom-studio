@@ -36,9 +36,7 @@ for (const p of EA_PATHS) {
 }
 
 if (!EA_ROOT) {
-  console.warn('[briefs] AOM-EA repo not found. Writing empty index.');
-  const emptyIndex = { generated: new Date().toISOString(), categories: [] };
-  fs.writeFileSync(path.join(ROOT, 'src/data/briefs-index.json'), JSON.stringify(emptyIndex, null, 2));
+  console.warn('[briefs] AOM-EA repo not found. Keeping existing index (not overwriting).');
   process.exit(0);
 }
 

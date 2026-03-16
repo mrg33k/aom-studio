@@ -87,7 +87,7 @@ const FURNITURE_RENDERERS = {
           {[0, 1, 2, 3].map(book => (
             <rect key={book}
               x={x + 4 + book * 7} y={y + shelf * 12 + 2}
-              width={3 + Math.random() * 2} height={7 + shelf}
+              width={3 + [1.2, 0.8, 1.5, 0.6][book % 4]} height={7 + shelf}
               fill={['#3B82F6', '#EF4444', '#7C9A72', '#FDF6EC', '#8B6D4A'][book % 5]}
               opacity={0.7} rx={0.5}
             />
@@ -186,7 +186,7 @@ const FURNITURE_RENDERERS = {
       {[0, 1, 2].map(i => (
         <line key={i}
           x1={x + 4} y1={y + 6 + i * 6}
-          x2={x + 20 + Math.random() * 8} y2={y + 6 + i * 6}
+          x2={x + 20 + [4, 7, 2][i]} y2={y + 6 + i * 6}
           stroke={accentColor || '#3B82F6'} strokeWidth={1} opacity={0.4}
         />
       ))}
@@ -231,10 +231,10 @@ const FURNITURE_RENDERERS = {
           >
             {shouldAnimate !== false && (
               <animate attributeName="opacity"
-                values={`${0.3 + Math.random() * 0.3};${0.7 + Math.random() * 0.3};${0.3 + Math.random() * 0.3}`}
-                dur={`${1 + Math.random() * 2}s`}
+                values={`${0.3 + [0.1, 0.2, 0.15, 0.25, 0.05, 0.18, 0.12, 0.22][i]};${0.7 + [0.2, 0.1, 0.25, 0.15, 0.22, 0.08, 0.18, 0.12][i]};${0.3 + [0.15, 0.25, 0.1, 0.2, 0.18, 0.12, 0.22, 0.08][i]}`}
+                dur={`${1 + [1.2, 0.5, 1.8, 0.3, 1.5, 0.8, 1.1, 0.6][i]}s`}
                 repeatCount="indefinite"
-                begin={`${Math.random() * 2}s`}
+                begin={`${[0.2, 1.1, 0.5, 1.6, 0.8, 1.3, 0.1, 0.9][i]}s`}
               />
             )}
           </circle>

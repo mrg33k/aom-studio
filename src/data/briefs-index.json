@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T07:13:51.380Z",
+  "generated": "2026-03-16T07:20:19.694Z",
   "categories": [
     {
       "name": "Strategy",
@@ -240,6 +240,26 @@
           "hasPage": true
         },
         {
+          "title": "Corner C3 - Agent Death/Error Animation Spec",
+          "slug": "c3-death-animation",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "When an agent crashes, they don't show an error message. They walk away. Recovery = walk back. Humanizes errors.",
+          "path": "/briefs/c3-death-animation",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 - Handoff Animation Design Spec",
+          "slug": "c3-handoff-animation",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "When one agent hands work to another, you see it happen. Note icon, float path, pickup animation. The visual that sells transparency.",
+          "path": "/briefs/c3-handoff-animation",
+          "hasPage": true
+        },
+        {
           "title": "Corner C3 - Megaboard RPG Visual Spec",
           "slug": "c3-megaboard-mode",
           "agent": "Steffen",
@@ -257,6 +277,36 @@
           "dateFormatted": "Mar 16",
           "summary": "Visual spec for the three-mode switcher: Game, Checklist, Megaboard. Nav bar design, active states, keyboard shortcuts, mobile adaptation.",
           "path": "/briefs/c3-mode-switcher",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 - Notification Toast Design Spec",
+          "slug": "c3-notification-toast",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Toast notification design for real-time WebSocket events. 4 types, stacking, auto-dismiss, click-to-navigate.",
+          "path": "/briefs/c3-notification-toast",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 - Room Zoom Transition Spec",
+          "slug": "c3-room-zoom",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "How zooming into a room feels. Animation curves, HUD behavior during zoom, detail levels, mobile pinch-zoom.",
+          "path": "/briefs/c3-room-zoom",
+          "hasPage": true
+        },
+        {
+          "title": "Corner C3 - Walking Sprite Sheets Spec",
+          "slug": "c3-walking-sprites",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "4-directional walking animations for all agents. 6 frames per direction. Consistent with existing idle/thinking/speaking/done sprites.",
+          "path": "/briefs/c3-walking-sprites",
           "hasPage": true
         },
         {
@@ -1086,6 +1136,26 @@
           "dateFormatted": "Mar 16",
           "summary": "C5 forward-looking notes. Furniture marketplace, XP/points UI, neighbor offices, skills marketplace, App Store/PWA distribution, room editor, weekly recaps, self-service signup. Early thinking for the platform layer.",
           "path": "/briefs/c5-notes",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER C5 Spec: The Platform",
+          "slug": "c5-spec",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "C5 build spec. Self-service signup, XP/points UI, weekly recap animation, room editor, furniture marketplace, trend charts, ROI reports, skills marketplace, neighbor offices, push notifications, App Store listing. The stickiness layer.",
+          "path": "/briefs/c5-spec",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER C6 Notes: The Ecosystem",
+          "slug": "c6-notes",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "C6 forward-looking notes. White-label, multi-language, voice interface, Corner SDK, enterprise tier, third-party skill marketplace, API integrations, AI-to-AI collaboration, brand partnerships. Early thinking for the ecosystem layer.",
+          "path": "/briefs/c6-notes",
           "hasPage": true
         },
         {
