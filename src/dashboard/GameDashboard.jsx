@@ -4305,15 +4305,22 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
 export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
   const [hudOpen, setHudOpen] = useState(false)
-  const [selectedRoom, setSelectedRoom] = useState(DEFAULT_AGENT) // Show panel by default for main agent
+  // HMR state recovery: restore selected room + tab from sessionStorage if HMR just reloaded
+  const [selectedRoom, setSelectedRoom] = useState(() => {
+    const saved = sessionStorage.getItem('corner-selected-room')
+    return saved || DEFAULT_AGENT
+  })
   const [hoveredRoom, setHoveredRoom] = useState(null)
-  const [chatAgent, setChatAgent] = useState(DEFAULT_AGENT) // Default to main agent
+  const [chatAgent, setChatAgent] = useState(() => {
+    const saved = sessionStorage.getItem('corner-selected-room')
+    return saved || DEFAULT_AGENT
+  })
   const [showMinimap, setShowMinimap] = useState(true)
   const [notifications, setNotifications] = useState([])
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
-  const [panelActiveTab, setPanelActiveTab] = useState('chat') // Sidebar active tab (lifted from UnifiedPanel)
+  const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
   // Demo chat messages for production (shows a sample conversation)
@@ -4469,7 +4476,7 @@ export default function GameDashboard() {
   }, [panelVisible])
 
   // DONE(bobby2): RELAY MESSAGE CRASH FIX -- safePanelUpdate() wraps all setPanelMessages calls with try/catch + field validation. safeTimeSort() handles NaN timestamps. All relay message pushes validate .message exists and default .time/.id. Malformed relay data can no longer crash React render cycle.
-  // TODO(bobby): BATCH COMMITS TO AVOID HMR RELOAD -- Every git push to the aom-studio repo triggers Vite Hot Module Replacement, which reloads Patrik's dashboard mid-use. Bobby must either: (1) batch multiple changes into fewer commits, (2) time commits when Patrik isn't actively using the dashboard, or (3) configure Vite HMR to preserve state across reloads (module.hot.accept with state preservation). The page reload after sending a chat message was caused by a Bobby commit landing at the same moment. Ref: Patrik feedback line 154.
+  // DONE(bobby): HMR STATE PRESERVATION -- Key dashboard state (selectedRoom, panelActiveTab) persists to sessionStorage on change, restores on HMR reload. Auth already in sessionStorage. Mode already in localStorage. Chat messages reload from relay history on reconnect. Bobby commits no longer reset which agent Patrik was talking to.
 
   // Background INBOX polling: picks up new messages from terminal/telegram
   // so the dashboard shows messages sent from other interfaces in real-time
@@ -4643,6 +4650,15 @@ export default function GameDashboard() {
     const timer = setInterval(check, 60000)
     return () => clearInterval(timer)
   }, [])
+
+  // HMR state persistence: save key state so hot reloads from Bobby commits don't reset the UI
+  useEffect(() => {
+    sessionStorage.setItem('corner-selected-room', selectedRoom || '')
+  }, [selectedRoom])
+
+  useEffect(() => {
+    sessionStorage.setItem('corner-panel-tab', panelActiveTab || 'chat')
+  }, [panelActiveTab])
 
   // C3 Step 8: Agent death/error animation state
   // { [agentSlug]: { state: 'away'|'leaving'|'returning', label: 'Away'|'Reconnecting...', x, y } }
