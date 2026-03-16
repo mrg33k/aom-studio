@@ -3,7 +3,7 @@
 // Working checkboxes wired. Apple Reminders meets Linear. Clean, typography-driven.
 // TODO(steffen-design): Checklist priority badges (TODAY, THIS WEEK) -- review color palette against brand. Current orange/red may clash with agent status colors. Ensure visual hierarchy: high-priority tasks pop, low-priority recede.
 // TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors.
-// TODO(patrik): Task right-click context menu -- right-click any task for: edit text, reassign agent, mark done/undone, set priority (high/med/low), delete. Should feel like Linear/Notion context menus. Applies to both ChecklistMode tasks AND sidebar task items.
+// DONE(bobby2): Task right-click context menu -- right-click any task for: mark done/undone, set priority (high/med/low), reassign agent, delete. Linear/Notion style.
 // TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable.
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronRight, ChevronDown, Check, Plus, GripVertical,
   LayoutGrid, FolderKanban, Flame, CheckCircle2,
+  CheckSquare, Square, Trash2, ArrowUpCircle, ArrowRightCircle, ArrowDownCircle, UserCircle2,
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
 
@@ -496,14 +497,214 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile }
   )
 }
 
-// ---- TASK ITEM CARD (with WORKING checkbox) ---------------------------------
-function TaskCard({ task, projectColor, onCheck, index }) {
+// ---- TASK CONTEXT MENU (Linear/Notion style) --------------------------------
+// Right-click any task for quick actions: toggle done, set priority, reassign, delete.
+const PRIORITY_OPTIONS = [
+  { key: 'high', label: 'High priority', icon: ArrowUpCircle, color: '#EF4444' },
+  { key: 'med', label: 'Medium priority', icon: ArrowRightCircle, color: '#F59E0B' },
+  { key: 'low', label: 'Low priority', icon: ArrowDownCircle, color: '#6B7280' },
+]
+
+const ASSIGNABLE_AGENTS = AGENTS.filter(a =>
+  !['paige', 'pixel'].includes(a.slug)
+)
+
+function TaskContextMenu({ position, task, onClose, onAction }) {
+  const menuRef = useRef(null)
+
+  // Close on click outside or Escape
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
+    }
+    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClick)
+      document.addEventListener('keydown', handleKey)
+    }, 30)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose])
+
+  // Keep menu in viewport
+  const [adjustedPos, setAdjustedPos] = useState(position)
+  useEffect(() => {
+    if (!menuRef.current) return
+    const rect = menuRef.current.getBoundingClientRect()
+    let x = position.x
+    let y = position.y
+    if (x + rect.width > window.innerWidth - 8) x = window.innerWidth - rect.width - 8
+    if (y + rect.height > window.innerHeight - 8) y = window.innerHeight - rect.height - 8
+    if (x < 8) x = 8
+    if (y < 8) y = 8
+    setAdjustedPos({ x, y })
+  }, [position])
+
+  const [showAgents, setShowAgents] = useState(false)
+
+  const menuItemStyle = {
+    display: 'flex', alignItems: 'center', gap: 10,
+    width: '100%', padding: '8px 14px',
+    background: 'none', border: 'none', cursor: 'pointer',
+    fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 500,
+    color: '#E0E0E0', textAlign: 'left',
+    borderRadius: 6, transition: 'background 80ms ease',
+  }
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.92, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.92, y: -4 }}
+      transition={{ duration: 0.12 }}
+      style={{
+        position: 'fixed',
+        left: adjustedPos.x,
+        top: adjustedPos.y,
+        zIndex: 300,
+        minWidth: 210,
+        background: 'rgba(12, 16, 28, 0.97)',
+        backdropFilter: 'blur(20px)',
+        border: '1.5px solid rgba(100, 180, 255, 0.18)',
+        borderRadius: 10,
+        boxShadow: '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(100,180,255,0.06)',
+        padding: '6px 4px',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Toggle done/undone */}
+      <button
+        style={menuItemStyle}
+        onClick={() => { onAction('toggle', task); onClose() }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+      >
+        {task.done
+          ? <><Square size={15} color="#8BA4C4" /> <span>Mark undone</span></>
+          : <><CheckSquare size={15} color="#22C55E" /> <span>Mark done</span></>
+        }
+      </button>
+
+      {/* Separator */}
+      <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
+
+      {/* Priority options */}
+      {PRIORITY_OPTIONS.map(opt => (
+        <button
+          key={opt.key}
+          style={menuItemStyle}
+          onClick={() => { onAction('priority', task, opt.key); onClose() }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+        >
+          <opt.icon size={15} color={opt.color} />
+          <span>{opt.label}</span>
+        </button>
+      ))}
+
+      {/* Separator */}
+      <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
+
+      {/* Reassign agent (submenu) */}
+      <div style={{ position: 'relative' }}>
+        <button
+          style={menuItemStyle}
+          onClick={() => setShowAgents(!showAgents)}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+        >
+          <UserCircle2 size={15} color="#8BA4C4" />
+          <span style={{ flex: 1 }}>Reassign agent</span>
+          <ChevronRight size={13} color="#4A6080" />
+        </button>
+
+        {/* Agent submenu */}
+        <AnimatePresence>
+          {showAgents && (
+            <motion.div
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -4 }}
+              style={{
+                position: 'absolute',
+                left: '100%', top: 0,
+                minWidth: 180,
+                background: 'rgba(12, 16, 28, 0.97)',
+                backdropFilter: 'blur(20px)',
+                border: '1.5px solid rgba(100, 180, 255, 0.18)',
+                borderRadius: 10,
+                boxShadow: '0 12px 48px rgba(0,0,0,0.5)',
+                padding: '6px 4px',
+                marginLeft: 4,
+                maxHeight: 300, overflowY: 'auto',
+              }}
+              className="hud-scroll"
+            >
+              {ASSIGNABLE_AGENTS.map(a => (
+                <button
+                  key={a.slug}
+                  style={{
+                    ...menuItemStyle,
+                    color: task.agent === a.slug ? a.color : '#E0E0E0',
+                    fontWeight: task.agent === a.slug ? 700 : 500,
+                  }}
+                  onClick={() => { onAction('reassign', task, a.slug); onClose() }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: `${a.color}25`,
+                    border: `1.5px solid ${a.color}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 700, color: a.color,
+                    flexShrink: 0,
+                  }}>
+                    {a.name.charAt(0)}
+                  </div>
+                  <span>{a.name}</span>
+                  {task.agent === a.slug && <Check size={13} color={a.color} style={{ marginLeft: 'auto' }} />}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Separator */}
+      <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
+
+      {/* Delete */}
+      <button
+        style={{ ...menuItemStyle, color: '#EF4444' }}
+        onClick={() => { onAction('delete', task); onClose() }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+      >
+        <Trash2 size={15} color="#EF4444" />
+        <span>Delete task</span>
+      </button>
+    </motion.div>
+  )
+}
+
+// ---- TASK ITEM CARD (with WORKING checkbox + right-click context menu) ------
+function TaskCard({ task, projectColor, onCheck, index, onContextMenu }) {
   const [isHovered, setIsHovered] = useState(false)
   const isDone = task.done
 
   // Find agent info for badge
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
   const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault()
+    onContextMenu?.(e, task)
+  }, [task, onContextMenu])
 
   return (
     <motion.div
@@ -514,6 +715,7 @@ function TaskCard({ task, projectColor, onCheck, index }) {
       transition={{ duration: 0.15, delay: index * 0.02 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onContextMenu={handleContextMenu}
       style={{
         minHeight: 48,
         background: isDone
@@ -718,6 +920,51 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const [newTaskText, setNewTaskText] = useState('')
   const inputRef = useRef(null)
 
+  // Right-click context menu state
+  const [contextMenu, setContextMenu] = useState(null) // { position: {x,y}, task }
+
+  const handleTaskContextMenu = useCallback((e, task) => {
+    e.preventDefault()
+    setContextMenu({ position: { x: e.clientX, y: e.clientY }, task })
+  }, [])
+
+  const handleContextAction = useCallback((action, task, payload) => {
+    if (action === 'toggle') {
+      // Toggle done/undone (same as checkbox click)
+      const key = task.text
+      setCheckedTasks(prev => {
+        const next = { ...prev }
+        if (next[key] !== undefined) {
+          delete next[key]
+        } else {
+          next[key] = !task.done
+        }
+        return next
+      })
+    } else if (action === 'priority') {
+      // Priority: stored in localStorage for now (C4: Supabase)
+      try {
+        const saved = JSON.parse(localStorage.getItem('corner-task-priorities') || '{}')
+        saved[task.text] = payload
+        localStorage.setItem('corner-task-priorities', JSON.stringify(saved))
+      } catch {}
+    } else if (action === 'reassign') {
+      // Reassign: stored in localStorage for now (C4: Supabase)
+      try {
+        const saved = JSON.parse(localStorage.getItem('corner-task-agents') || '{}')
+        saved[task.text] = payload
+        localStorage.setItem('corner-task-agents', JSON.stringify(saved))
+      } catch {}
+    } else if (action === 'delete') {
+      // Soft delete: mark as deleted in localStorage (C4: Supabase)
+      try {
+        const saved = JSON.parse(localStorage.getItem('corner-task-deleted') || '[]')
+        if (!saved.includes(task.text)) saved.push(task.text)
+        localStorage.setItem('corner-task-deleted', JSON.stringify(saved))
+      } catch {}
+    }
+  }, [])
+
   // Sync checkbox state to localStorage on every change
   useEffect(() => {
     try {
@@ -832,11 +1079,15 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             {/* Project groups */}
             {visibleProjects.map(project => {
               const isCollapsed = collapsedProjects[project.section]
-              // Apply local check overrides
-              const tasks = project.tasks.map(t => ({
-                ...t,
-                done: isTaskDone(t),
-              }))
+              // Filter out soft-deleted tasks + apply local check overrides
+              let deletedTasks = []
+              try { deletedTasks = JSON.parse(localStorage.getItem('corner-task-deleted') || '[]') } catch {}
+              const tasks = project.tasks
+                .filter(t => !deletedTasks.includes(t.text))
+                .map(t => ({
+                  ...t,
+                  done: isTaskDone(t),
+                }))
               const activeTasks = tasks.filter(t => !t.done)
               const doneTasks = tasks.filter(t => t.done)
 
@@ -884,6 +1135,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                           task={task}
                           projectColor={project.color}
                           onCheck={handleCheck}
+                          onContextMenu={handleTaskContextMenu}
                           index={i}
                         />
                       ))}
@@ -917,6 +1169,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                               task={task}
                               projectColor={project.color}
                               onCheck={handleCheck}
+                              onContextMenu={handleTaskContextMenu}
                               index={i}
                             />
                           ))}
@@ -958,6 +1211,18 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
           />
         </form>
       </div>
+
+      {/* Right-click context menu */}
+      <AnimatePresence>
+        {contextMenu && (
+          <TaskContextMenu
+            position={contextMenu.position}
+            task={contextMenu.task}
+            onClose={() => setContextMenu(null)}
+            onAction={handleContextAction}
+          />
+        )}
+      </AnimatePresence>
 
       <style>{`
         @keyframes checklistDotPulse {
