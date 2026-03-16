@@ -1055,6 +1055,7 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 
 
 // TODO(bobby): MODULAR OFFICE FRAMEWORK -- Extract IMAGE_ROOM_TARGETS into a standalone config (e.g., officeLayouts/default.js) that pairs a background image with its room map. ONE layout for everyone. Perfect the diamond mapping at BOTH zoom presets (0.7 overview, 1.6 detail) for this single image first. Once mapping is pixel-perfect at every zoom level, the system becomes modular: swap image file + room config = new office skin. Framework = skeleton (diamond grid + zoom behavior). Image = skin. Do not try arbitrary layouts yet. Nail this one. Ref: Patrik directive line 147.
+// TODO(bobby): OVO POINT-BASED HOTSPOT MAPPING -- Replace diamond clip-path polygons with POINT-BASED mapping (coordinate points + radius). Research OVO Drake Shopify store technique: they mapped clickable hotspots onto a custom illustration using points, not rectangles or polygons. This is the gold standard. Approach: define each room as a center point {x%, y%} with a hit radius, not a polygon shape. Benefits: (1) scales perfectly across zoom levels, (2) easier to remap when swapping office skins, (3) cleaner hit detection (distance from point vs point-in-polygon). Steffen 2 is researching the OVO technique (image maps, SVG overlays, canvas hit detection). Wait for Steffen's research spec before implementing. Bobby must self-test by USING the dashboard at both zoom levels. Ref: Patrik directives lines 149-150.
 // TODO(bobby): ROOM INTERACTION STATES -- Implement default/hover/selected room states per Steffen visual target at projects/steffen/visual-target/hud/room-interaction.png. CSS spec in Steffen manifest v7 item #7. Diamond outlines at rest, glow on hover, highlight on selected. Bobby must OPEN the dashboard and verify interaction states visually at both zoom levels. Ref: Steffen delivery line 148.
 // Room hit-target positions mapped to the Crossy Road voxel office image (percentages).
 // RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
@@ -3454,7 +3455,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -3516,11 +3517,17 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         maxWidth: isExtended ? '65%' : '40%',
         flexShrink: 0,
         height: '100%',
-        background: 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)',
-        borderLeft: '2px solid rgba(59, 130, 246, 0.35)',
+        background: isNightMode
+          ? 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)'
+          : 'linear-gradient(180deg, rgba(248,250,255,0.98) 0%, rgba(240,245,255,0.97) 50%, rgba(248,250,255,0.98) 100%)',
+        borderLeft: isNightMode
+          ? '2px solid rgba(59, 130, 246, 0.35)'
+          : '2px solid rgba(59, 130, 246, 0.35)',
         display: 'flex', flexDirection: 'column',
-        boxShadow: '-6px 0 30px rgba(0,0,0,0.6), -1px 0 0 rgba(59,130,246,0.1)',
-        transition: 'width 250ms ease',
+        boxShadow: isNightMode
+          ? '-6px 0 30px rgba(0,0,0,0.6), -1px 0 0 rgba(59,130,246,0.1)'
+          : '-8px 0 32px rgba(0,0,0,0.06), -1px 0 0 rgba(59,130,246,0.08)',
+        transition: 'width 250ms ease, background 500ms ease',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -3529,15 +3536,19 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       <div style={{
         position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)',
         width: 300, height: 120,
-        background: 'radial-gradient(ellipse, rgba(59,130,246,0.08) 0%, transparent 70%)',
+        background: isNightMode
+          ? 'radial-gradient(ellipse, rgba(59,130,246,0.08) 0%, transparent 70%)'
+          : 'radial-gradient(ellipse, rgba(59,130,246,0.04) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
       {/* ---- AGENT CARD (chunky, game-scale, 64px avatar) ---- */}
       <div style={{
         padding: '20px 24px',
-        background: 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%)',
-        borderBottom: '2px solid rgba(59,130,246,0.15)',
+        background: isNightMode
+          ? 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%)'
+          : 'linear-gradient(180deg, rgba(59,130,246,0.04) 0%, transparent 100%)',
+        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.15)' : '2px solid rgba(59,130,246,0.12)',
         flexShrink: 0,
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
@@ -3555,14 +3566,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             position: 'absolute', bottom: 0, right: 0,
             width: 18, height: 18, borderRadius: '50%',
             background: cfg.color,
-            border: '3px solid #0F1B2D',
+            border: isNightMode ? '3px solid #0F1B2D' : '3px solid rgba(248,250,255,0.98)',
             boxShadow: `0 0 8px ${cfg.color}`,
           }} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            color: '#F1F5F9', fontSize: 22, fontWeight: 900,
+            color: isNightMode ? '#F1F5F9' : '#0F172A', fontSize: 22, fontWeight: 900,
             fontFamily: "'Inter', system-ui, sans-serif",
             letterSpacing: '0.01em', lineHeight: 1.1,
           }}>
@@ -3619,23 +3630,23 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       <div style={{
         display: 'flex', gap: 6, flexWrap: 'wrap',
         padding: '8px 24px',
-        borderBottom: '2px solid rgba(59,130,246,0.08)',
-        background: 'rgba(59,130,246,0.02)',
+        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.08)' : '2px solid rgba(59,130,246,0.1)',
+        background: isNightMode ? 'rgba(59,130,246,0.02)' : 'rgba(59,130,246,0.04)',
         flexShrink: 0,
       }}>
         {[
           { label: 'ACTIVE', value: workingCount, color: '#22C55E' },
           { label: 'BLOCKED', value: blockedCount, color: '#EF4444' },
           { label: 'DONE', value: doneCount, color: '#60A5FA' },
-          { label: `${overallProgress}%`, value: null, color: '#F1F5F9' },
+          { label: `${overallProgress}%`, value: null, color: isNightMode ? '#F1F5F9' : '#0F172A' },
         ].map(stat => (
           <div key={stat.label} style={{
-            background: '#162236',
-            border: '1px solid #1E3A5F',
+            background: isNightMode ? '#162236' : `${stat.color}0D`,
+            border: isNightMode ? '1px solid #1E3A5F' : `2px solid ${stat.color === '#0F172A' ? 'rgba(59,130,246,0.1)' : stat.color + '20'}`,
             borderRadius: 6,
             padding: '4px 10px',
             display: 'flex', alignItems: 'center', gap: 5,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+            boxShadow: isNightMode ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
           }}>
             {stat.value !== null && (
               <span style={{
@@ -3647,7 +3658,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               </span>
             )}
             <span style={{
-              fontSize: 11, fontWeight: 700, color: stat.value !== null ? '#64748B' : stat.color,
+              fontSize: 11, fontWeight: 700, color: stat.value !== null ? (isNightMode ? '#64748B' : '#64748B') : stat.color,
               textTransform: 'uppercase', letterSpacing: '0.06em',
               fontFamily: "'Inter', system-ui, sans-serif",
             }}>
@@ -3689,7 +3700,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 fontSize: 16, fontWeight: 900,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
-                color: active ? '#F1F5F9' : '#475569',
+                color: active ? (isNightMode ? '#F1F5F9' : '#2563EB') : (isNightMode ? '#475569' : '#94A3B8'),
                 cursor: 'pointer',
                 position: 'relative',
                 background: 'none', border: 'none',
@@ -3859,18 +3870,26 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         fontFamily: "'Inter', system-ui, sans-serif",
                         ...(isUser
                           ? {
-                              background: 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)',
-                              border: '2px solid rgba(59,130,246,0.25)',
-                              color: '#F1F5F9',
+                              background: isNightMode
+                                ? 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)'
+                                : 'rgba(59,130,246,0.06)',
+                              border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '2px solid rgba(59,130,246,0.15)',
+                              color: isNightMode ? '#F1F5F9' : '#1E293B',
                               borderTopRightRadius: 4,
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.2), 0 1px 2px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)',
+                              boxShadow: isNightMode
+                                ? '0 2px 8px rgba(0,0,0,0.2), 0 1px 2px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)'
+                                : '0 1px 4px rgba(0,0,0,0.08)',
                             }
                           : {
-                              background: `linear-gradient(180deg, ${agentColor}14 0%, ${agentColor}08 100%)`,
-                              border: `2px solid ${msg.streaming ? agentColor + '35' : agentColor + '22'}`,
-                              color: '#F1F5F9',
+                              background: isNightMode
+                                ? `linear-gradient(180deg, ${agentColor}14 0%, ${agentColor}08 100%)`
+                                : `${agentColor}0A`,
+                              border: `2px solid ${msg.streaming ? agentColor + '35' : agentColor + (isNightMode ? '22' : '18')}`,
+                              color: isNightMode ? '#F1F5F9' : '#1E293B',
                               borderTopLeftRadius: 4,
-                              boxShadow: `0 2px 8px rgba(0,0,0,0.2), 0 1px 2px ${agentColor}10, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                              boxShadow: isNightMode
+                                ? `0 2px 8px rgba(0,0,0,0.2), 0 1px 2px ${agentColor}10, inset 0 1px 0 rgba(255,255,255,0.04)`
+                                : '0 1px 4px rgba(0,0,0,0.08)',
                             }
                         ),
                       }}>
@@ -3938,11 +3957,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               )}
               <div ref={messagesEndRef} />
             </div>
-            {/* Chat input (matches vegas-sidebar-isolated.png) */}
+            {/* Chat input */}
             <div style={{
               padding: '16px 20px',
-              borderTop: '2px solid rgba(59,130,246,0.12)',
-              background: 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)',
+              borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.1)',
+              background: isNightMode
+                ? 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)'
+                : 'transparent',
               flexShrink: 0,
             }}>
               <form onSubmit={onSendMessage} style={{ position: 'relative' }}>
@@ -3950,13 +3971,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   placeholder={`Talk to ${agent?.name || 'agent'}...`} disabled={streaming}
                   style={{
                     width: '100%',
-                    background: 'rgba(59,130,246,0.06)',
-                    border: '2px solid rgba(59,130,246,0.2)',
+                    background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
+                    border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
                     borderRadius: 12,
                     padding: '14px 56px 14px 18px',
                     fontSize: 18, fontWeight: 400,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    color: '#F1F5F9',
+                    color: isNightMode ? '#F1F5F9' : '#1E293B',
                     outline: 'none',
                     transition: 'border-color 200ms ease, box-shadow 200ms ease',
                   }}
