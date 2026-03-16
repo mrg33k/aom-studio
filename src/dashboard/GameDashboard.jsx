@@ -1056,6 +1056,8 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 // Room hit-target positions mapped to the Crossy Road voxel office image (percentages).
 // RECALIBRATED for Crossy Road building geometry: wider rooms, isometric perspective.
 // Each room has an isometric hexagon clip-path for accurate click areas.
+// TODO(patrik): Diamond hitboxes for isometric rooms -- current rectangular/hexagon clip-paths don't align with where you visually click. Room shapes should be DIAMOND (rotated 45deg square) matching the isometric perspective. Click targets must match the visual room outlines exactly at all zoom levels.
+// TODO(patrik): Fixed zoom levels -- replace free scroll zoom with 1-2 preset snap levels (e.g., overview + detail). Fixed zoom = consistent click targets on desktop and mobile. No free scroll zoom. Snap to presets on scroll or button click.
 const IMAGE_ROOM_TARGETS = {
   // Row 0: top row, 4 rooms (back wall of building, smaller due to perspective)
   patrik:     { x: 22, y: 8,  w: 15, h: 15, labelY: 5,  clipPath: 'polygon(15% 0%, 85% 0%, 100% 30%, 100% 70%, 85% 100%, 15% 100%, 0% 70%, 0% 30%)' },
@@ -3326,8 +3328,10 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 // Chat: avatars on both sides, source label pills, system notification inline, typing dots.
 //
 // DONE(bobby): Chat timeout indicator -- countdown ring when waiting for agent response (60s). Shows elapsed time + animated SVG ring.
-// TODO(patrik): Agent activity log tab -- show recent commits, file changes, completions per agent
+// DONE(bobby): Agent activity log -- INFO tab now shows recent commits/completions per agent from pipeline feed. Filterable, with commit hashes and timestamps.
 // TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent
+// TODO(patrik): Sidebar seamless column -- sidebar should be ONE continuous full-height column. Chat input sits at the bottom of the sidebar, not in a separate bottom bar. The collapsed chat bar at the bottom should merge into the sidebar panel so it looks like one piece. No separate bottom HUD for chat.
+// TODO(patrik): Chat visual + functional + chronological -- (1) pixel-match Steffen's chat-view-full.png, (2) send/receive relay loop must work end-to-end, (3) messages must display in chronological order (oldest first). Chat is the #1 priority.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
 function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange }) {
@@ -3936,7 +3940,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
             {/* Status */}
             {agentStatus && (
-            <div>
+            <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: cfg.bg, borderRadius: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color }} />
@@ -3944,6 +3948,75 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               </div>
             </div>
             )}
+
+            {/* Recent Activity Log (filtered pipeline feed for this agent) */}
+            {(() => {
+              const feed = data?.pipelineFeed || []
+              const agentFeed = feed.filter(f => f.agent === room?.id).slice(0, 8)
+              if (agentFeed.length === 0) return null
+              return (
+                <div>
+                  <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Recent Activity</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {agentFeed.map((entry, idx) => {
+                      const desc = entry.description?.replace(/^[A-Za-z]+:\s*/, '') || ''
+                      const commitShort = entry.commitHash?.slice(0, 7) || ''
+                      return (
+                        <div key={idx} style={{
+                          padding: '8px 12px',
+                          background: 'rgba(100,180,255,0.03)',
+                          border: '1px solid rgba(100,180,255,0.06)',
+                          borderLeft: `3px solid ${agentColor}40`,
+                          borderRadius: 6,
+                          display: 'flex', flexDirection: 'column', gap: 4,
+                        }}>
+                          <div style={{
+                            color: '#D0D8E8', fontSize: 13,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            lineHeight: 1.4,
+                          }}>
+                            {desc}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {commitShort && (
+                              <span style={{
+                                fontSize: 12, fontWeight: 600,
+                                color: '#22C55E',
+                                fontFamily: "'JetBrains Mono', monospace",
+                                background: 'rgba(34,197,94,0.08)',
+                                border: '1px solid rgba(34,197,94,0.15)',
+                                borderRadius: 4, padding: '1px 6px',
+                                display: 'flex', alignItems: 'center', gap: 4,
+                              }}>
+                                <GitCommit size={10} />
+                                {commitShort}
+                              </span>
+                            )}
+                            {entry.repo && (
+                              <span style={{
+                                fontSize: 12, fontWeight: 600, color: '#64748B',
+                                fontFamily: "'JetBrains Mono', monospace",
+                              }}>
+                                {entry.repo}
+                              </span>
+                            )}
+                            {entry.time && (
+                              <span style={{
+                                fontSize: 12, fontWeight: 500, color: '#475569',
+                                fontFamily: "'Inter', sans-serif",
+                                marginLeft: 'auto',
+                              }}>
+                                {timeAgo(entry.time)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
 
