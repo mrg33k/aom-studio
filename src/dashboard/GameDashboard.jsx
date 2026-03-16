@@ -1983,11 +1983,6 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
           )}
         </div>
 
-        {/* Center: Mode Switcher (desktop) */}
-        {!isMobile && (
-          <ModeSwitcher currentMode={currentMode} onModeSwitch={onModeSwitch} isMobile={isMobile} />
-        )}
-
         {/* Right: Expand chevron (only if drawer is available) */}
         {showDrawer ? (
           <button onClick={onToggle}
@@ -2827,12 +2822,12 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
 // Patrik UX overhaul v2: Game is ALWAYS the main viewport.
 // Sidebar contains: Chat, Tasks, Info, Checklist, Megaboard as tabs.
 // "Extend" button widens sidebar to 65% for detailed views.
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const agentColor = room?.agentColor || agent?.color || '#6B7280'
-  const [activeTab, setActiveTab] = useState('chat')
+  const setActiveTab = onActiveTabChange || (() => {})
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
 
@@ -3319,6 +3314,7 @@ export default function GameDashboard() {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
+  const [panelActiveTab, setPanelActiveTab] = useState('chat') // Sidebar active tab (lifted from UnifiedPanel)
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
   const [panelMessages, setPanelMessages] = useState({}) // per-agent
@@ -3664,23 +3660,25 @@ export default function GameDashboard() {
   // Preload all idle sprites for instant display
   usePreloadSprites()
 
-  // Mode switching handler: modes now live in sidebar tabs
-  // Game is always the main viewport. Checklist/Megaboard open in the sidebar.
+  // Mode switching handler: modes live in sidebar tabs only.
+  // Game is always the main viewport. Keys 1/2/3 switch the sidebar tab.
   const handleModeSwitch = useCallback((mode) => {
-    setCurrentMode(mode)
-    localStorage.setItem('corner-mode', mode)
-    // Update URL
-    const modeConfig = MODES[mode]
-    if (modeConfig) {
-      window.history.replaceState(null, '', modeConfig.path)
-    }
-    // Close HUD drawer when switching modes
-    setHudOpen(false)
-    // Open sidebar and switch to corresponding tab for checklist/megaboard
-    if (mode === 'checklist' || mode === 'megaboard') {
+    if (mode === 'game') {
+      // Key 1: switch sidebar to chat tab
+      setPanelActiveTab('chat')
+    } else if (mode === 'checklist') {
+      // Key 2: switch sidebar to checklist tab, open + extend panel
+      setPanelActiveTab('checklist')
+      setPanelVisible(true)
+      setPanelExtended(true)
+    } else if (mode === 'megaboard') {
+      // Key 3: switch sidebar to megaboard tab, open + extend panel
+      setPanelActiveTab('megaboard')
       setPanelVisible(true)
       setPanelExtended(true)
     }
+    // Close HUD drawer
+    setHudOpen(false)
   }, [])
 
   // URL-based agent selection
@@ -3695,11 +3693,15 @@ export default function GameDashboard() {
     }
     const checklistMatch = path.match(/\/dashboard\/checklist\/(.+)/)
     if (checklistMatch) {
-      setCurrentMode('checklist')
+      setPanelActiveTab('checklist')
+      setPanelVisible(true)
+      setPanelExtended(true)
     }
     const megaMatch = path.match(/\/dashboard\/megaboard\/agent\/(.+)/)
     if (megaMatch) {
-      setCurrentMode('megaboard')
+      setPanelActiveTab('megaboard')
+      setPanelVisible(true)
+      setPanelExtended(true)
     }
   }, [])
 
@@ -3929,6 +3931,8 @@ export default function GameDashboard() {
                       onToggleExtend={() => setPanelExtended(e => !e)}
                       isMobile={isMobile}
                       data={data}
+                      activeTab={panelActiveTab}
+                      onActiveTabChange={setPanelActiveTab}
                       onSendMessage={(e) => {
                         e?.preventDefault()
                         const text = panelChatInput?.trim()
