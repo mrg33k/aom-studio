@@ -4393,6 +4393,9 @@ export default function GameDashboard() {
     }
   }, [panelVisible])
 
+  // TODO(bobby): RELAY MESSAGE CRASH (CRITICAL) -- Dashboard crashes/reloads when an incoming relay message arrives. The pipeline works (message reaches Telegram fine), but the frontend can't handle displaying new incoming messages without a page crash. Likely a state update in setPanelMessages that triggers a full React remount, or an unhandled error in the message render path (bad timestamp, missing field, or _all array mutation). Debug by: (1) adding error boundary around the chat render, (2) wrapping setPanelMessages in try/catch, (3) checking if newMsgs have valid .timestamp/.message fields before pushing, (4) logging the exact error before the crash. Bobby must reproduce this by sending a relay message from terminal and watching the dashboard. Ref: Patrik feedback line 155.
+  // TODO(bobby): BATCH COMMITS TO AVOID HMR RELOAD -- Every git push to the aom-studio repo triggers Vite Hot Module Replacement, which reloads Patrik's dashboard mid-use. Bobby must either: (1) batch multiple changes into fewer commits, (2) time commits when Patrik isn't actively using the dashboard, or (3) configure Vite HMR to preserve state across reloads (module.hot.accept with state preservation). The page reload after sending a chat message was caused by a Bobby commit landing at the same moment. Ref: Patrik feedback line 154.
+
   // Background INBOX polling: picks up new messages from terminal/telegram
   // so the dashboard shows messages sent from other interfaces in real-time
   const lastBgInboxCheckRef = useRef(null)
