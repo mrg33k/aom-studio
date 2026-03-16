@@ -296,6 +296,13 @@ function getSpriteState(status, isSpeaking) {
 // object-fit + object-position to crop to the first frame.
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
+// Room numbers for door signs (from Steffen's cr-doorsign catalog)
+const AGENT_ROOM_NUMBERS = {
+  patrik: '01', mom: '02', alex: '03', steve: '04', steffen: '05',
+  bobby: '06', colton: '07', cleo: '08', tony: '09', jacob: '10',
+  elmo: '11', elon: '12', pixel: '13',
+}
+
 // Preload idle sprites on mount
 function usePreloadSprites() {
   useEffect(() => {
@@ -312,6 +319,13 @@ function usePreloadSprites() {
         const img = new Image()
         img.src = `/corner/sprites/hop/${a}-hop-${frame}.png`
       })
+    })
+    // Preload nameplate + doorsign PNGs
+    SPRITE_AGENTS.forEach(a => {
+      const np = new Image()
+      np.src = `/corner/furniture/nameplates/nameplate-${a}.png`
+      const ds = new Image()
+      ds.src = `/corner/furniture/doorsigns/cr-doorsign-${a}.png`
     })
   }, [])
 }
@@ -2856,20 +2870,21 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         width: isExtended ? '65vw' : 380,
         maxWidth: isExtended ? '85vw' : '85vw',
         minWidth: 380,
-        background: 'rgba(10, 15, 30, 0.97)',
-        backdropFilter: 'blur(20px)',
-        borderLeft: '2px solid rgba(100, 180, 255, 0.15)',
+        background: 'linear-gradient(180deg, rgba(6, 12, 28, 0.98) 0%, rgba(8, 16, 36, 0.97) 50%, rgba(6, 12, 28, 0.98) 100%)',
+        backdropFilter: 'blur(24px)',
+        borderLeft: '2px solid rgba(59, 158, 255, 0.35)',
         display: 'flex', flexDirection: 'column',
         zIndex: 32,
-        boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
+        boxShadow: '-12px 0 60px rgba(0,0,0,0.5), -2px 0 20px rgba(59,158,255,0.08), inset 1px 0 0 rgba(100,180,255,0.06)',
         transition: 'width 250ms ease',
       }}
     >
       {/* ---- AGENT CARD + STATS (top section) ---- */}
       <div style={{
-        padding: '16px 20px 12px',
-        borderBottom: '1px solid rgba(100,180,255,0.08)',
+        padding: '18px 20px 14px',
+        borderBottom: '2px solid rgba(59,158,255,0.18)',
         flexShrink: 0,
+        background: 'linear-gradient(180deg, rgba(59,158,255,0.06) 0%, transparent 100%)',
       }}>
         {/* Agent identity row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -2926,14 +2941,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
         {/* Current task */}
         <div style={{
-          marginTop: 12, padding: '10px 14px',
-          background: 'rgba(100,180,255,0.04)',
-          border: '1px solid rgba(100,180,255,0.08)',
-          borderRadius: 8,
+          marginTop: 12, padding: '12px 16px',
+          background: 'linear-gradient(135deg, rgba(59,158,255,0.06) 0%, rgba(59,158,255,0.02) 100%)',
+          border: '2px solid rgba(59,158,255,0.15)',
+          borderRadius: 10,
+          boxShadow: 'inset 0 1px 0 rgba(100,180,255,0.06)',
         }}>
           <div style={{
-            color: '#F0ECE6', fontSize: 14, lineHeight: 1.45,
-            fontFamily: 'Space Grotesk, sans-serif',
+            color: '#F0ECE6', fontSize: 15, lineHeight: 1.45,
+            fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", fontWeight: 600,
           }}>
             {task}
           </div>
@@ -2941,8 +2957,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
         {/* Stats row */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 16, marginTop: 10,
-          fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: 16, marginTop: 12,
+          fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.4)' }} />
@@ -2963,40 +2979,91 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       </div>
 
       {/* ---- TAB SWITCHER (Chat / Tasks / Info / Checklist / Megaboard) ---- */}
+      {/* VEGAS ENERGY: bold, glowing, game-scale tabs with spring animation */}
       <div style={{
-        display: 'flex', borderBottom: '1px solid rgba(100,180,255,0.08)',
+        display: 'flex', borderBottom: '2px solid rgba(59,158,255,0.18)',
         flexShrink: 0, overflowX: 'auto',
+        background: 'rgba(8,16,36,0.6)',
+        padding: '0 4px',
       }}>
         {[
-          { id: 'chat', label: 'Chat', icon: MessageSquare },
+          { id: 'chat', label: 'Chat', icon: MessageSquare, key: '1' },
           { id: 'tasks', label: 'Tasks', icon: ListTodo },
           { id: 'info', label: 'Info', icon: Activity },
-          { id: 'checklist', label: 'Checklist', icon: ListTodo },
-          { id: 'megaboard', label: 'Board', icon: LayoutDashboard },
+          { id: 'checklist', label: 'Checklist', icon: ListTodo, key: '2' },
+          { id: 'megaboard', label: 'Board', icon: LayoutDashboard, key: '3' },
         ].map(tab => {
           const active = activeTab === tab.id
           const TabIcon = tab.icon
           return (
-            <button key={tab.id} onClick={() => {
-              setActiveTab(tab.id)
-              // Auto-extend for Checklist and Megaboard views
-              if ((tab.id === 'checklist' || tab.id === 'megaboard') && !isExtended) {
-                onToggleExtend?.()
-              }
-            }} style={{
-              flex: isExtended ? 'none' : 1,
-              padding: isExtended ? '0 16px' : 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              height: 40, background: 'none', border: 'none',
-              borderBottom: active ? `2px solid ${agentColor}` : '2px solid transparent',
-              cursor: 'pointer', color: active ? '#EDF2FA' : '#6B7280',
-              fontFamily: "'Inter Tight', sans-serif", fontSize: 12, fontWeight: active ? 700 : 500,
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-              transition: 'color 150ms ease', whiteSpace: 'nowrap',
-            }}>
-              <TabIcon size={13} />
+            <motion.button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id)
+                // Auto-extend for Checklist and Megaboard views
+                if ((tab.id === 'checklist' || tab.id === 'megaboard') && !isExtended) {
+                  onToggleExtend?.()
+                }
+              }}
+              whileHover={{
+                y: -2,
+                transition: { type: 'spring', stiffness: 500, damping: 12 }
+              }}
+              whileTap={{
+                scale: 0.92, y: 2,
+                transition: { type: 'spring', stiffness: 600, damping: 18 }
+              }}
+              style={{
+                flex: isExtended ? 'none' : 1,
+                padding: isExtended ? '0 18px' : '0 4px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                height: 48, background: active ? 'linear-gradient(180deg, rgba(59,158,255,0.12) 0%, rgba(59,158,255,0.04) 100%)' : 'none',
+                border: 'none', borderRadius: '8px 8px 0 0',
+                cursor: 'pointer',
+                color: active ? '#EDF2FA' : '#5A7A9A',
+                fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+                fontSize: 16, fontWeight: active ? 900 : 700,
+                textTransform: 'uppercase', letterSpacing: '0.05em',
+                position: 'relative',
+                transition: 'color 150ms ease',
+                whiteSpace: 'nowrap',
+                textShadow: active ? '0 0 12px rgba(59,158,255,0.4)' : 'none',
+              }}
+            >
+              {/* Active tab glow bar */}
+              {active && (
+                <motion.div
+                  layoutId="panel-tab-glow"
+                  style={{
+                    position: 'absolute', bottom: 0, left: 6, right: 6,
+                    height: 3, borderRadius: 2,
+                    background: '#3B9EFF',
+                    boxShadow: '0 0 12px rgba(59,158,255,0.5), 0 0 4px rgba(59,158,255,0.3)',
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                />
+              )}
+              <TabIcon size={16} style={{
+                color: active ? '#3B9EFF' : 'inherit',
+                filter: active ? 'drop-shadow(0 0 4px rgba(59,158,255,0.4))' : 'none',
+              }} />
               {tab.label}
-            </button>
+              {/* Keyboard shortcut badge */}
+              {tab.key && (
+                <span style={{
+                  marginLeft: 2,
+                  background: active ? 'rgba(59,158,255,0.15)' : 'rgba(100,180,255,0.06)',
+                  border: `1px solid ${active ? 'rgba(59,158,255,0.3)' : 'rgba(100,180,255,0.1)'}`,
+                  borderRadius: 4, padding: '1px 5px',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontWeight: 600, fontSize: 11,
+                  color: active ? '#3B9EFF' : '#4A6080',
+                  lineHeight: 1.3,
+                }}>
+                  {tab.key}
+                </span>
+              )}
+            </motion.button>
           )
         })}
       </div>
