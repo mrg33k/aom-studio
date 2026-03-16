@@ -1414,7 +1414,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 damping: 16,
                 mass: 0.6,
               }}
-              style={{ position: 'absolute', inset: 0 }}
+              style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
             >
               {/* NAMEPLATE PNG: Steffen's catalog asset, wall-mounted inside room */}
               {/* 128x64 transparent PNG at 2x, centered on back wall ~60% up */}
@@ -1544,9 +1544,9 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 </div>
               )}
 
-              {/* Click target overlay - INVISIBLE HITBOX, no clip-path, no borders */}
+              {/* Click target overlay - INVISIBLE HITBOX with diamond clip-path for isometric hit detection */}
               {/* OVO approach: invisible hotspots matching existing art boundaries */}
-              {/* Hover = subtle inner glow INSIDE the room space, not a border */}
+              {/* Diamond clip-path prevents overlapping rectangular hitboxes from stealing clicks */}
               <motion.div
                 data-room-id={room.id}
                 onClick={() => hasAgent && onRoomClick?.(room.id)}
@@ -1568,6 +1568,8 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   width: `${target.w}%`,
                   height: `${target.h}%`,
                   cursor: hasAgent ? 'pointer' : 'default',
+                  pointerEvents: 'auto',
+                  clipPath: target.clipPath,
                   zIndex: (isHovered || isSelected) ? 5 : 2,
                   borderRadius: 6,
                   background: (isHovered || isSelected) && hasAgent

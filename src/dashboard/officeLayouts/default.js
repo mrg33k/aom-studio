@@ -22,9 +22,6 @@ export const IMAGES = {
   night: '/corner/office-full-night.png',
 }
 
-// DONE(bobby): SWAP HITBOX COORDINATES -- Coordinates now from Steffen's room-hitbox-map.json (warm variant). Matches office-full.png daytime image.
-// TODO(bobby): PLAYWRIGHT HITBOX GROUND TRUTH -- Coordinates are Steffen's manual estimates. VERIFY by opening localhost in Playwright, clicking CENTER of each room at BOTH zoom levels (0.7 + 1.6), logging actual pixel coords, converting to percentages. If any room click opens the wrong agent panel, adjust coordinates. Real clicks = only truth. Ref: Patrik + Elon line 213.
-// TODO(bobby): NIGHT HITBOX VARIANT -- Current coordinates are for office-full.png (warm/daytime). Night image (office-full-night.png) has DIFFERENT building scale/position per Steffen's analysis. Need separate ROOM_TARGETS_NIGHT and switch based on isNightMode. See room-hitbox-map.json "night" section.
 // Room hit-target positions mapped to the Crossy Road voxel office image.
 // Coordinates from Steffen's room-hitbox-map.json (warm variant, matches office-full.png).
 // Diamond clip-paths match where rooms visually appear in isometric perspective.
