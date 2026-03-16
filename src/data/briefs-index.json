@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T06:42:14.875Z",
+  "generated": "2026-03-16T07:06:26.700Z",
   "categories": [
     {
       "name": "Strategy",
@@ -209,6 +209,16 @@
     {
       "name": "Design Specs",
       "items": [
+        {
+          "title": "Corner C2.2 - Pixel Art Integration + Visual Polish",
+          "slug": "c2-2-refinement-spec",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Bridge between C2.1 (SVG approximations) and C3 (Living Office). Integrates 77 generated pixel art assets, fixes visual gaps, polishes the isometric game to the point where Patrik says 'that's it.'",
+          "path": "/briefs/c2-2-refinement-spec",
+          "hasPage": true
+        },
         {
           "title": "Corner C2 - Furniture Starter Pack Spec",
           "slug": "c2-furniture-spec",
@@ -1016,6 +1026,26 @@
           "dateFormatted": "Mar 16",
           "summary": "C3 build spec. Full character movement, WebSocket real-time, Megaboard mode, Checklist mode, mode switching, room zoom, mobile PWA, mini-map, keyboard shortcuts. Everything that makes Corner feel alive.",
           "path": "/briefs/c3-spec",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER C4 Spec: The Hosted Platform",
+          "slug": "c4-hosted-spec",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "C4 build spec. Docker container per client, provisioning API, WebSocket bridge, OTA updates, admin panel, data isolation, relay bridge, onboarding flow, scaling path, cost model. The thing people pay for.",
+          "path": "/briefs/c4-hosted-spec",
+          "hasPage": true
+        },
+        {
+          "title": "CORNER C5 Notes: The Platform",
+          "slug": "c5-notes",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "C5 forward-looking notes. Furniture marketplace, XP/points UI, neighbor offices, skills marketplace, App Store/PWA distribution, room editor, weekly recaps, self-service signup. Early thinking for the platform layer.",
+          "path": "/briefs/c5-notes",
           "hasPage": true
         },
         {
