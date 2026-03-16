@@ -281,7 +281,7 @@ function PasswordGate({ onAuth }) {
 function getSpriteState(status, isSpeaking) {
   if (isSpeaking) return 'speaking'
   switch (status) {
-    case 'WORKING':  return 'thinking'
+    case 'WORKING':  return 'working'
     case 'WAITING':  return 'thinking'
     case 'DONE':     return 'done'
     case 'BLOCKED':  return 'idle'
@@ -299,9 +299,19 @@ const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton',
 // Preload idle sprites on mount
 function usePreloadSprites() {
   useEffect(() => {
+    const states = ['idle', 'working', 'thinking', 'done', 'speaking']
     SPRITE_AGENTS.forEach(a => {
-      const img = new Image()
-      img.src = `/corner/sprites/${a}-idle.png`
+      states.forEach(s => {
+        const img = new Image()
+        img.src = `/corner/sprites/${a}-${s}.png`
+      })
+    })
+    // Preload hop frames
+    SPRITE_AGENTS.forEach(a => {
+      ['ground', 'peak', 'landing'].forEach(frame => {
+        const img = new Image()
+        img.src = `/corner/sprites/hop/${a}-hop-${frame}.png`
+      })
     })
   }, [])
 }
@@ -334,12 +344,14 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
     <div style={{
       position: 'absolute', bottom: '8%', left: '50%', transform: 'translateX(-50%)',
       width: spriteSize, height: spriteSize, pointerEvents: 'none', zIndex: 2,
+      animation: isWorking ? 'crossyBounce 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite' : 'none',
     }}>
-      {/* Shadow beneath sprite */}
+      {/* Shadow beneath sprite - squashes on bounce */}
       <div style={{
         position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
         width: spriteSize * 0.7, height: spriteSize * 0.15,
         background: 'rgba(0,0,0,0.25)', borderRadius: '50%', filter: 'blur(3px)',
+        animation: isWorking ? 'crossyShadow 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite' : 'none',
       }} />
 
       {/* Sprite image - show first frame from 2x2 spritesheet (top-left quadrant)
@@ -460,10 +472,11 @@ function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
 }
 
 // ---- SPRITE AVATAR (HTML, for chat + sidebar) ------------------------------
-function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) {
+function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, status }) {
   const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
   const agent = AGENTS.find(a => a.slug === agentSlug)
   const color = borderColor || agent?.color || '#6B7280'
+  const spriteState = status ? getSpriteState(status, false) : 'idle'
 
   if (hasSpriteFile) {
     return (
@@ -473,7 +486,7 @@ function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) 
         ...extraStyle,
       }}>
         <img
-          src={`/corner/sprites/${agentSlug}-idle.png`}
+          src={`/corner/sprites/${agentSlug}-${spriteState}.png`}
           alt=""
           style={{
             width: size * 2,
@@ -4150,6 +4163,12 @@ export default function GameDashboard() {
           85% { transform: translateY(-1px) scale(1.001, 0.999); }
         }
         /* Crossy Road bounce energy: idle bob with squash/stretch */
+        @keyframes crossyShadow {
+          0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.25; }
+          30% { transform: translateX(-50%) scaleX(0.6); opacity: 0.15; }
+          50% { transform: translateX(-50%) scaleX(0.5); opacity: 0.1; }
+          85% { transform: translateX(-50%) scaleX(1.15); opacity: 0.3; }
+        }
         @keyframes crossyBounce {
           0%, 100% { transform: translateY(0) scale(1); }
           25% { transform: translateY(-3px) scale(1.003, 0.997); }
