@@ -417,8 +417,18 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMen
   )
 }
 
-// ---- AGENT ROSTER (COMPACT: tiny 24px dots, projects are the main event) ----
+// ---- AGENT ROSTER (Main agent prominent + expand + right-click revolver) ----
+// Patrik directive: Show the MAIN agent (Elon) prominently. Expand button to see all.
+// Right-click on an agent = paint board / revolver pop-out (fan out in arc).
+const DEFAULT_MAIN_AGENT = 'elon'
+
 function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
+  const [expanded, setExpanded] = useState(false)
+  const [revolverAgent, setRevolverAgent] = useState(null) // which agent triggered revolver
+  const [revolverPos, setRevolverPos] = useState({ x: 0, y: 0 })
+  const [searchFilter, setSearchFilter] = useState('')
+  const revolverRef = useRef(null)
+
   const sortedAgents = useMemo(() => {
     const statusPriority = { WORKING: 0, BLOCKED: 1, WAITING: 2, PAUSED: 3, DONE: 4, IDLE: 5 }
     return [...AGENTS]
@@ -430,55 +440,252 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
       })
   }, [agentStatus])
 
+  const mainAgent = AGENTS.find(a => a.slug === DEFAULT_MAIN_AGENT) || AGENTS[0]
+  const mainStatus = agentStatus?.[mainAgent?.slug]?.status || 'IDLE'
+  const mainCfg = STATUS_DOT[mainStatus] || STATUS_DOT.IDLE
+  const mainHasSpr = mainAgent && SPRITE_AGENTS.includes(mainAgent.slug)
+
+  // Close revolver on click outside
+  useEffect(() => {
+    if (!revolverAgent) return
+    const handler = (e) => {
+      if (revolverRef.current && !revolverRef.current.contains(e.target)) {
+        setRevolverAgent(null)
+        setSearchFilter('')
+      }
+    }
+    const keyHandler = (e) => {
+      if (e.key === 'Escape') { setRevolverAgent(null); setSearchFilter('') }
+    }
+    document.addEventListener('mousedown', handler)
+    document.addEventListener('keydown', keyHandler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('keydown', keyHandler)
+    }
+  }, [revolverAgent])
+
+  // Right-click handler for revolver pop-out
+  const handleRightClick = useCallback((e, slug) => {
+    e.preventDefault()
+    const rect = e.currentTarget.getBoundingClientRect()
+    setRevolverPos({ x: rect.left + rect.width / 2, y: rect.top })
+    setRevolverAgent(slug)
+    setSearchFilter('')
+  }, [])
+
+  const filteredAgents = useMemo(() => {
+    if (!searchFilter.trim()) return sortedAgents
+    const q = searchFilter.toLowerCase()
+    return sortedAgents.filter(a => a.name.toLowerCase().includes(q) || a.role.toLowerCase().includes(q))
+  }, [sortedAgents, searchFilter])
+
   return (
     <div style={{
-      display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap',
-      padding: '0 2px', maxWidth: 120,
+      display: 'flex', gap: 6, alignItems: 'center',
+      padding: '0 2px', position: 'relative',
     }}>
-      {sortedAgents.map((agent, i) => {
-        const status = agentStatus?.[agent.slug]?.status || 'IDLE'
-        const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
-        const hasSpr = SPRITE_AGENTS.includes(agent.slug)
-        return (
+      {/* MAIN agent: prominent, 52px plumbob */}
+      <motion.div
+        onClick={() => onAgentClick?.(mainAgent.slug)}
+        onContextMenu={(e) => handleRightClick(e, mainAgent.slug)}
+        whileHover={{ scale: 1.12, y: -4, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+        whileTap={{ scale: 0.9, y: 2 }}
+        title={`${mainAgent.name}: ${mainCfg.label}`}
+        style={{ cursor: 'pointer', position: 'relative', width: 52, height: 52, flexShrink: 0 }}
+      >
+        {mainStatus === 'WORKING' && (
+          <div style={{
+            position: 'absolute', inset: -6,
+            background: `radial-gradient(ellipse at center, ${mainCfg.glow} 0%, transparent 70%)`,
+            animation: 'hudActiveGlow 2s ease-in-out infinite', pointerEvents: 'none',
+          }} />
+        )}
+        <svg width={52} height={52} viewBox="0 0 52 52" style={{ position: 'absolute', inset: 0 }}>
+          <PlumbobClipDef id="main-agent-clip" size={52} />
+          <path d={`M 26 ${52*0.02} L ${26+52*0.48} ${52*0.22} L ${26+52*0.48} ${52*0.72} Q ${26+52*0.48} ${52*0.98}, 26 ${52*0.98} Q ${26-52*0.48} ${52*0.98}, ${26-52*0.48} ${52*0.72} L ${26-52*0.48} ${52*0.22} Z`} fill={`${mainAgent.color}20`} />
+          {mainHasSpr ? (
+            <image href={`/corner/sprites/${mainAgent.slug}-idle.png`} x={-52*0.15} y={-52*0.05} width={52*1.35} height={52*1.35} clipPath="url(#main-agent-clip)" style={{ imageRendering: 'pixelated' }} preserveAspectRatio="xMidYMin slice" />
+          ) : (
+            <text x={26} y={52*0.58} textAnchor="middle" dominantBaseline="middle" fill={mainAgent.color} fontFamily="Space Grotesk, sans-serif" fontWeight="700" fontSize={20}>{mainAgent.name?.charAt(0)}</text>
+          )}
+          <path d={`M 26 ${52*0.02} L ${26+52*0.48} ${52*0.22} L ${26+52*0.48} ${52*0.72} Q ${26+52*0.48} ${52*0.98}, 26 ${52*0.98} Q ${26-52*0.48} ${52*0.98}, ${26-52*0.48} ${52*0.72} L ${26-52*0.48} ${52*0.22} Z`} fill="none" stroke={mainCfg.ring} strokeWidth={2.5} strokeLinejoin="round" style={{ filter: mainStatus === 'WORKING' ? `drop-shadow(0 0 6px ${mainCfg.glow})` : 'none' }} />
+        </svg>
+        <div style={{
+          position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)',
+          width: 10, height: 10, borderRadius: '50%', background: mainCfg.color,
+          border: `2px solid ${HUD.panelBgSolid}`, boxShadow: `0 0 8px ${mainCfg.glow}`,
+          animation: mainStatus === 'WORKING' ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
+        }} />
+      </motion.div>
+
+      {/* Expand button to see all agents */}
+      <motion.button
+        onClick={() => setExpanded(!expanded)}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        style={{
+          width: 28, height: 28, borderRadius: '50%',
+          background: expanded ? 'rgba(59,158,255,0.15)' : 'rgba(100,180,255,0.06)',
+          border: `1.5px solid ${expanded ? HUD.accent + '44' : HUD.divider}`,
+          color: expanded ? HUD.accent : HUD.textMuted,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, transition: 'all 150ms ease',
+          fontSize: 14, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace',
+        }}
+        title="Show all agents"
+      >
+        <Users size={14} />
+      </motion.button>
+
+      {/* Expanded: small 24px dots for other agents */}
+      <AnimatePresence>
+        {expanded && (
           <motion.div
-            key={agent.slug}
-            onClick={() => onAgentClick?.(agent.slug)}
-            onContextMenu={(e) => onAgentContextMenu?.(e, agent.slug)}
-            whileHover={{ scale: 1.3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-            title={`${agent.name}: ${cfg.label}`}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 'auto', opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             style={{
-              width: 24, height: 24, borderRadius: '50%',
-              border: `2px solid ${cfg.ring}`,
-              overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
-              background: '#0A0F1E',
-              boxShadow: status === 'WORKING' ? `0 0 8px ${cfg.glow}` : 'none',
-              position: 'relative',
+              display: 'flex', gap: 3, alignItems: 'center', overflow: 'hidden',
             }}
           >
-            {hasSpr ? (
-              <img
-                src={`/corner/sprites/${agent.slug}-idle.png`}
-                alt=""
+            {sortedAgents.filter(a => a.slug !== mainAgent.slug).map((agent) => {
+              const status = agentStatus?.[agent.slug]?.status || 'IDLE'
+              const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
+              const hasSpr = SPRITE_AGENTS.includes(agent.slug)
+              return (
+                <motion.div
+                  key={agent.slug}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                  onClick={() => onAgentClick?.(agent.slug)}
+                  onContextMenu={(e) => handleRightClick(e, agent.slug)}
+                  whileHover={{ scale: 1.3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+                  title={`${agent.name}: ${cfg.label}`}
+                  style={{
+                    width: 24, height: 24, borderRadius: '50%',
+                    border: `2px solid ${cfg.ring}`,
+                    overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
+                    background: '#0A0F1E',
+                    boxShadow: status === 'WORKING' ? `0 0 8px ${cfg.glow}` : 'none',
+                  }}
+                >
+                  {hasSpr ? (
+                    <img src={`/corner/sprites/${agent.slug}-idle.png`} alt=""
+                      style={{ width: 40, height: 40, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -6, marginTop: -4 }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: 'Space Grotesk, sans-serif' }}>
+                      {agent.name?.charAt(0) || '?'}
+                    </div>
+                  )}
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* REVOLVER POP-OUT (right-click on any agent bubble) */}
+      <AnimatePresence>
+        {revolverAgent && (
+          <motion.div
+            ref={revolverRef}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            style={{
+              position: 'fixed',
+              left: Math.min(revolverPos.x - 120, window.innerWidth - 260),
+              top: revolverPos.y - 260,
+              width: 240,
+              background: 'rgba(12, 18, 35, 0.97)',
+              backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(100, 180, 255, 0.2)',
+              borderRadius: 14,
+              boxShadow: '0 16px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(100,180,255,0.08)',
+              zIndex: 200, overflow: 'hidden',
+              padding: '8px 0',
+            }}
+          >
+            {/* Search input */}
+            <div style={{ padding: '4px 12px 8px' }}>
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={e => setSearchFilter(e.target.value)}
+                placeholder="Search agents..."
+                autoFocus
                 style={{
-                  width: 40, height: 40,
-                  objectFit: 'cover', objectPosition: '15% 5%',
-                  imageRendering: 'pixelated', display: 'block',
-                  marginLeft: -6, marginTop: -4,
+                  width: '100%', height: 32, background: 'rgba(100,180,255,0.06)',
+                  border: '1px solid rgba(100,180,255,0.12)', borderRadius: 8,
+                  padding: '0 10px', color: '#EDF2FA', fontSize: 13,
+                  fontFamily: 'Space Grotesk, sans-serif', outline: 'none',
                 }}
               />
-            ) : (
-              <div style={{
-                width: '100%', height: '100%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 10, fontWeight: 700, color: agent.color || '#4A6080',
-                fontFamily: 'Space Grotesk, sans-serif',
-              }}>
-                {agent.name?.charAt(0) || '?'}
-              </div>
-            )}
+            </div>
+            {/* Agent list */}
+            <div style={{ maxHeight: 200, overflowY: 'auto', padding: '0 4px' }}>
+              {filteredAgents.map((agent, i) => {
+                const status = agentStatus?.[agent.slug]?.status || 'IDLE'
+                const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
+                const hasSpr = SPRITE_AGENTS.includes(agent.slug)
+                const isSelected = revolverAgent === agent.slug
+                return (
+                  <motion.button
+                    key={agent.slug}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    onClick={() => {
+                      onAgentClick?.(agent.slug)
+                      setRevolverAgent(null)
+                      setSearchFilter('')
+                    }}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '8px 10px', background: isSelected ? 'rgba(59,158,255,0.12)' : 'none',
+                      border: 'none', borderRadius: 8, cursor: 'pointer',
+                      transition: 'background 80ms ease',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.background = isSelected ? 'rgba(59,158,255,0.12)' : 'none'}
+                  >
+                    {/* Mini avatar */}
+                    <div style={{
+                      width: 28, height: 28, borderRadius: '50%', border: `2px solid ${cfg.ring}`,
+                      overflow: 'hidden', flexShrink: 0, background: '#0A0F1E',
+                    }}>
+                      {hasSpr ? (
+                        <img src={`/corner/sprites/${agent.slug}-idle.png`} alt=""
+                          style={{ width: 46, height: 46, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -7, marginTop: -5 }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: agent.color }}>
+                          {agent.name?.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    {/* Name + role */}
+                    <div style={{ flex: 1, textAlign: 'left' }}>
+                      <div style={{ color: '#EDF2FA', fontSize: 14, fontWeight: 700, fontFamily: "'Inter Tight', sans-serif" }}>{agent.name}</div>
+                      <div style={{ color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{agent.role}</div>
+                    </div>
+                    {/* Status dot */}
+                    <div style={{
+                      width: 8, height: 8, borderRadius: '50%', background: cfg.color,
+                      boxShadow: status === 'WORKING' ? `0 0 6px ${cfg.glow}` : 'none',
+                      animation: status === 'WORKING' ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
+                    }} />
+                  </motion.button>
+                )
+              })}
+            </div>
           </motion.div>
-        )
-      })}
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -554,7 +761,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
         }} />
       )}
 
-      {/* Name - VEGAS SIZE. DOUBLED. Slot machine buttons. Casino energy. */}
+      {/* Name - VEGAS SIZE. Font weight 900. Patrik directive. */}
       <span style={{
         fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
         fontSize: 20, fontWeight: 900,

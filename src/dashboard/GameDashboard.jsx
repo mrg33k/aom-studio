@@ -850,14 +850,19 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   const panState = useRef({ dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0, velX: 0, velY: 0 })
   const momentumRef = useRef(null)
 
-  // Scroll wheel zoom
+  // Scroll wheel zoom - SMOOTH, game-native feel
+  // Zoom toward cursor position for natural camera behavior
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     const handleWheel = (e) => {
       e.preventDefault()
-      const delta = e.deltaY > 0 ? -0.15 : 0.15
-      onZoomChange?.(z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z + delta)))
+      // Smooth exponential zoom (feels like a game camera)
+      const zoomFactor = e.deltaY > 0 ? 0.92 : 1.08
+      onZoomChange?.(z => {
+        const newZ = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * zoomFactor))
+        return newZ
+      })
     }
     el.addEventListener('wheel', handleWheel, { passive: false })
     return () => el.removeEventListener('wheel', handleWheel)
@@ -951,7 +956,10 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   }, [handleMouseUp])
 
   const detailLevel = getDetailLevel(cameraZoom)
-  const zoomTransition = detailLevel === 'overview' ? '0.5s cubic-bezier(0.4, 0.0, 0.2, 1.0)' : '0.4s cubic-bezier(0.2, 0.9, 0.3, 1.0)'
+  // Game-native zoom transitions: snappy but smooth, no janky web feel
+  const zoomTransition = detailLevel === 'overview'
+    ? '0.45s cubic-bezier(0.25, 0.1, 0.25, 1.0)'
+    : '0.3s cubic-bezier(0.16, 1, 0.3, 1)'
 
   // Camera offset centers on the target room using image-space coordinates
   const getRoomCenter = (roomId) => {
@@ -2705,110 +2713,327 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   )
 })
 
-// ---- ROOM DETAIL SIDEBAR ---------------------------------------------------
-function RoomDetailSidebar({ room, agent, agentStatus, onClose, onChat }) {
+// ---- UNIFIED RIGHT PANEL (Agent card + stats + chat + tasks) ----------------
+// Patrik UX overhaul: ONE cohesive panel. Right side. Shows by default.
+// Agent card + stats at TOP, chat below (always visible), tasks tabbed below.
+// The game is still visible. The panel doesn't murder the view.
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const agentColor = room?.agentColor || agent?.color || '#6B7280'
+  const [activeTab, setActiveTab] = useState('chat')
+  const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
+
+  // Auto-scroll chat
+  useEffect(() => {
+    if (messagesContainerRef.current && activeTab === 'chat') {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      })
+    }
+  }, [chatMessages, activeTab])
+
+  // Working agents count
+  const workingCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'WORKING').length
+  const blockedCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
 
   return (
     <motion.div
       initial={{ x: '100%', opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: '100%', opacity: 0 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+      transition={{ type: 'spring', damping: 28, stiffness: 220 }}
       style={{
-        position: 'absolute', top: 48, right: 0, bottom: 56, width: 400, maxWidth: '100%',
+        position: 'absolute', top: 0, right: 0, bottom: 0,
+        width: 380, maxWidth: '85vw',
         background: 'rgba(10, 15, 30, 0.97)',
-        backdropFilter: 'blur(16px)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(20px)',
+        borderLeft: '1px solid rgba(100, 180, 255, 0.12)',
         display: 'flex', flexDirection: 'column',
         zIndex: 32,
+        boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
       }}
     >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* ---- AGENT CARD + STATS (top section) ---- */}
+      <div style={{
+        padding: '16px 20px 12px',
+        borderBottom: '1px solid rgba(100,180,255,0.08)',
+        flexShrink: 0,
+      }}>
+        {/* Agent identity row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <SpriteAvatar agentSlug={room?.id} size={52} borderColor={agentColor} />
-          <div>
-            <div style={{ color: PALETTE.signText, fontSize: 24, fontWeight: 800, fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif", letterSpacing: '-0.02em' }}>{agent?.name || room?.agent}</div>
-            <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2 }}>
-              {agent?.role || room?.role || ''}
+          <SpriteAvatar agentSlug={room?.id} size={48} borderColor={agentColor} />
+          <div style={{ flex: 1 }}>
+            <div style={{
+              color: PALETTE.signText, fontSize: 22, fontWeight: 900,
+              fontFamily: "'Inter Tight', sans-serif", letterSpacing: '-0.02em',
+            }}>
+              {agent?.name || room?.agent}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+              <span style={{
+                color: '#6B7280', fontSize: 10, fontFamily: 'JetBrains Mono, monospace',
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+              }}>
+                {agent?.role || room?.role}
+              </span>
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 9,
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                color: cfg.color, background: cfg.bg,
+                padding: '2px 8px', borderRadius: 4,
+              }}>
+                {cfg.label}
+              </span>
             </div>
           </div>
+          <button onClick={onClose} style={{
+            background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
+            borderRadius: 6, cursor: 'pointer', color: '#6B7280', padding: 6,
+            transition: 'all 150ms ease',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
+          >
+            <X size={16} />
+          </button>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 6 }}>
-          <X size={20} />
-        </button>
-      </div>
 
-      {/* Status */}
-      <div style={{ padding: '16px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: cfg.bg, borderRadius: 6 }}>
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: cfg.color }} />
-          <span style={{ color: cfg.color, fontSize: 14, fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cfg.label}</span>
-        </div>
-      </div>
-
-      {/* Current task */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Current Task</div>
-        <div style={{ color: '#F0ECE6', fontSize: 16, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 500 }}>{task}</div>
-      </div>
-
-      {/* Last completion */}
-      {agentStatus?.lastCompletion && (
-        <div style={{ padding: '0 24px 16px' }}>
-          <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Last Completion</div>
-          <div style={{ color: '#A8A29E', fontSize: 15, lineHeight: 1.5, fontFamily: 'Space Grotesk, sans-serif' }}>{agentStatus.lastCompletion.description}</div>
-          <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 6 }}>{agentStatus.lastCompletion.date}</div>
-        </div>
-      )}
-
-      {/* Room info */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Room</div>
-        <div style={{ color: '#A8A29E', fontSize: 15, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
-        {room?.personality && (
-          <div style={{ color: '#6B7280', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
-        )}
-      </div>
-
-      {/* Data source indicator */}
-      {IS_LOCAL && (
-        <div style={{ padding: '0 24px 16px' }}>
-          <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Data Source</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
-            <span style={{ color: '#4CAF50', fontSize: 14, fontFamily: 'JetBrains Mono, monospace' }}>Local filesystem (2s poll)</span>
+        {/* Current task */}
+        <div style={{
+          marginTop: 12, padding: '10px 14px',
+          background: 'rgba(100,180,255,0.04)',
+          border: '1px solid rgba(100,180,255,0.08)',
+          borderRadius: 8,
+        }}>
+          <div style={{
+            color: '#F0ECE6', fontSize: 14, lineHeight: 1.45,
+            fontFamily: 'Space Grotesk, sans-serif',
+          }}>
+            {task}
           </div>
         </div>
-      )}
 
-      {/* Chat button */}
-      <div style={{ padding: '16px 24px', marginTop: 'auto' }}>
-        <button onClick={() => onChat(room?.id)} style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          background: agentColor, color: '#FFF', border: 'none',
-          padding: 16, fontSize: 16, fontWeight: 700, fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
-          cursor: 'pointer', borderRadius: 6,
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
+        {/* Stats row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 16, marginTop: 10,
+          fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600,
         }}>
-          <MessageSquare size={18} />
-          Chat with {agent?.name || room?.agent}
-        </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.4)' }} />
+            <span style={{ color: '#22C55E' }}>{workingCount} active</span>
+          </div>
+          {blockedCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444' }} />
+              <span style={{ color: '#EF4444' }}>{blockedCount} blocked</span>
+            </div>
+          )}
+          {agentStatus?.lastCompletion && (
+            <span style={{ color: '#6B7280', fontSize: 11, marginLeft: 'auto' }}>
+              Last: {agentStatus.lastCompletion.date}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ---- TAB SWITCHER (Chat / Tasks / Info) ---- */}
+      <div style={{
+        display: 'flex', borderBottom: '1px solid rgba(100,180,255,0.08)',
+        flexShrink: 0,
+      }}>
+        {[
+          { id: 'chat', label: 'Chat', icon: MessageSquare },
+          { id: 'tasks', label: 'Tasks', icon: ListTodo },
+          { id: 'info', label: 'Info', icon: Activity },
+        ].map(tab => {
+          const active = activeTab === tab.id
+          const TabIcon = tab.icon
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              height: 40, background: 'none', border: 'none',
+              borderBottom: active ? `2px solid ${agentColor}` : '2px solid transparent',
+              cursor: 'pointer', color: active ? '#EDF2FA' : '#6B7280',
+              fontFamily: "'Inter Tight', sans-serif", fontSize: 13, fontWeight: active ? 700 : 500,
+              textTransform: 'uppercase', letterSpacing: '0.04em',
+              transition: 'color 150ms ease',
+            }}>
+              <TabIcon size={14} />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ---- TAB CONTENT ---- */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* CHAT TAB */}
+        {activeTab === 'chat' && (
+          <>
+            {/* Messages */}
+            <div ref={messagesContainerRef} style={{
+              flex: 1, overflowY: 'auto', padding: '12px 16px',
+            }}>
+              {(!chatMessages || chatMessages.length === 0) && (
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', height: '100%', gap: 10, padding: '24px 0',
+                }}>
+                  <SpriteAvatar agentSlug={room?.id} size={44} borderColor={agentColor} />
+                  <div style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', textAlign: 'center' }}>
+                    Message {agent?.name || 'the agent'} to get started
+                  </div>
+                </div>
+              )}
+              {chatMessages && chatMessages.map((msg, i) => {
+                const isUser = msg.role === 'user'
+                return (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start',
+                    marginBottom: 10,
+                  }}>
+                    {!isUser && (
+                      <SpriteAvatar agentSlug={room?.id} size={22} borderColor={agentColor}
+                        style={{ marginRight: 8, marginBottom: 14, flexShrink: 0 }} />
+                    )}
+                    <div style={{ maxWidth: '80%' }}>
+                      <div style={{
+                        padding: '8px 12px', fontSize: 13,
+                        fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.5,
+                        ...(isUser
+                          ? { background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.20)', borderRadius: '12px 4px 12px 12px', color: '#F5F0EB' }
+                          : { background: 'rgba(100,180,255,0.06)', border: `1px solid ${msg.streaming ? agentColor + '30' : 'rgba(100,180,255,0.08)'}`, borderRadius: '4px 12px 12px 12px', color: '#F0ECE6' }
+                        ),
+                      }}>
+                        {msg.content && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
+                        {msg.streaming && !msg.content && (
+                          <div style={{ display: 'flex', gap: 5, padding: '4px 0' }}>
+                            {[0, 1, 2].map(j => (
+                              <div key={j} style={{ width: 6, height: 6, borderRadius: '50%', background: agentColor, animation: `chatTypingDot 1.2s ease-in-out ${j * 0.15}s infinite` }} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+            {/* Chat input */}
+            <form onSubmit={onSendMessage} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 14px', borderTop: '1px solid rgba(100,180,255,0.08)',
+              flexShrink: 0, background: 'rgba(0,0,0,0.15)',
+            }}>
+              <input type="text" value={chatInput || ''} onChange={e => onChatInputChange?.(e.target.value)}
+                placeholder={`Message ${agent?.name || 'agent'}...`} disabled={streaming}
+                style={{
+                  flex: 1, background: 'rgba(100,180,255,0.04)',
+                  border: '1px solid rgba(100,180,255,0.10)', borderRadius: 8,
+                  height: 36, padding: '0 12px', color: '#F5F0EB',
+                  fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', outline: 'none',
+                  transition: 'border-color 200ms ease',
+                }}
+                onFocus={e => e.target.style.borderColor = `${agentColor}66`}
+                onBlur={e => e.target.style.borderColor = 'rgba(100,180,255,0.10)'}
+              />
+              <button type="submit" disabled={!chatInput?.trim() || streaming} style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: chatInput?.trim() ? agentColor : 'rgba(100,180,255,0.06)',
+                color: '#FFF', border: 'none',
+                cursor: chatInput?.trim() ? 'pointer' : 'default',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: streaming ? 0.5 : chatInput?.trim() ? 1 : 0.3,
+                transition: 'all 150ms ease',
+              }}>
+                {streaming ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} style={{ marginLeft: 1 }} />}
+              </button>
+            </form>
+          </>
+        )}
+
+        {/* TASKS TAB */}
+        {activeTab === 'tasks' && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+            {/* Current task highlighted */}
+            <div style={{
+              padding: '12px 14px', marginBottom: 12,
+              background: `${agentColor}10`, border: `1px solid ${agentColor}25`,
+              borderRadius: 8,
+            }}>
+              <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Current Task</div>
+              <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.45 }}>{task}</div>
+            </div>
+
+            {/* Last completion */}
+            {agentStatus?.lastCompletion && (
+              <div style={{
+                padding: '10px 14px', marginBottom: 12,
+                background: 'rgba(100,180,255,0.04)', border: '1px solid rgba(100,180,255,0.08)',
+                borderRadius: 8,
+              }}>
+                <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
+                <div style={{ color: '#A8A29E', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
+                <div style={{ color: '#6B7280', fontSize: 11, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
+              </div>
+            )}
+
+            {/* No more tasks message */}
+            <div style={{ color: '#4A6080', fontSize: 12, fontFamily: 'Space Grotesk, sans-serif', textAlign: 'center', padding: '16px 0' }}>
+              Full task list in Checklist mode (press 2)
+            </div>
+          </div>
+        )}
+
+        {/* INFO TAB */}
+        {activeTab === 'info' && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+            {/* Room info */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
+              <div style={{ color: '#A8A29E', fontSize: 14, fontFamily: 'Space Grotesk, sans-serif' }}>{room?.name || 'Unknown'}</div>
+              {room?.personality && (
+                <div style={{ color: '#6B7280', fontSize: 13, fontFamily: 'Space Grotesk, sans-serif', marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
+              )}
+            </div>
+
+            {/* Data source */}
+            {IS_LOCAL && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Data Source</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
+                  <span style={{ color: '#4CAF50', fontSize: 13, fontFamily: 'JetBrains Mono, monospace' }}>Local (2s poll)</span>
+                </div>
+              </div>
+            )}
+
+            {/* Status */}
+            <div>
+              <div style={{ color: '#6B7280', fontSize: 9, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: cfg.bg, borderRadius: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color }} />
+                <span style={{ color: cfg.color, fontSize: 13, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>{cfg.label}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )
 }
 
 // ---- CAMERA CONTROLS (floating, right side) --------------------------------
-function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, cameraTarget, setCameraTarget, onHomeRoom }) {
+function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, cameraTarget, setCameraTarget, onHomeRoom, panelVisible }) {
   return (
     <div style={{
-      position: 'absolute', top: 16, right: 16, zIndex: 32,
+      position: 'absolute', top: 16, right: panelVisible ? 396 : 16, zIndex: 32,
+      transition: 'right 300ms ease',
       display: 'flex', flexDirection: 'column', gap: 4,
       background: 'rgba(10,15,30,0.85)',
       border: '1px solid rgba(255,255,255,0.08)',
@@ -2888,12 +3113,23 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
 export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
   const [hudOpen, setHudOpen] = useState(false)
-  const [selectedRoom, setSelectedRoom] = useState(null)
+  const [selectedRoom, setSelectedRoom] = useState(DEFAULT_AGENT) // Show panel by default for main agent
   const [hoveredRoom, setHoveredRoom] = useState(null)
-  const [chatAgent, setChatAgent] = useState(null)
+  const [chatAgent, setChatAgent] = useState(DEFAULT_AGENT) // Default to main agent
   const [showMinimap, setShowMinimap] = useState(true)
   const [notifications, setNotifications] = useState([])
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
+  // Panel chat state (for unified panel inline chat)
+  const [panelChatInput, setPanelChatInput] = useState('')
+  const [panelMessages, setPanelMessages] = useState({}) // per-agent
+  const [panelStreaming, setPanelStreaming] = useState(false)
+  const panelRelayPollRef = useRef(null)
+
+  // Cleanup panel relay poll on unmount
+  useEffect(() => {
+    return () => { if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current) }
+  }, [])
 
   // Right-click context menu state
   const [contextMenu, setContextMenu] = useState(null) // { type, data, position: {x, y} }
@@ -3053,11 +3289,12 @@ export default function GameDashboard() {
     setCameraTarget(roomId)
     setIsOverview(false)
 
-    // Steve fix #1: Room-click ALWAYS switches chat agent. ONE LINE.
+    // Always switch chat agent and show the panel
     setChatAgent(roomId)
+    setPanelVisible(true)
 
     if (roomId === selectedRoom) {
-      // Already selected: zoom to Level 3 (detail) and open chat
+      // Already selected: zoom to Level 3 (detail)
       setCameraZoom(ZOOM_MAX)
     } else {
       // First click: zoom to Level 2 (neighborhood)
@@ -3071,13 +3308,15 @@ export default function GameDashboard() {
     setSelectedRoom(roomId)
     setCameraTarget(roomId)
     setIsOverview(false)
+    setPanelVisible(true)
   }
 
   const handleHomeRoom = () => {
     setCameraTarget(DEFAULT_AGENT)
     setIsOverview(false)
     setCameraZoom(1.6)
-    setSelectedRoom(null)
+    setSelectedRoom(DEFAULT_AGENT)
+    setPanelVisible(true)
   }
 
   // Right-click context menu on rooms
@@ -3096,8 +3335,8 @@ export default function GameDashboard() {
   const handleContextAction = useCallback((actionId, data) => {
     switch (actionId) {
       case 'chat':
-        if (data?.roomId) handleChat(data.roomId)
-        else if (data?.slug) handleChat(data.slug)
+        if (data?.roomId) { handleChat(data.roomId); setPanelVisible(true) }
+        else if (data?.slug) { handleChat(data.slug); setPanelVisible(true) }
         break
       case 'zoom':
         if (data?.roomId) {
@@ -3157,7 +3396,7 @@ export default function GameDashboard() {
     onToggleMinimap: () => setShowMinimap(m => !m),
     onEscape: () => {
       if (showShortcuts) { setShowShortcuts(false); return }
-      if (chatAgent) { setChatAgent(null); return }
+      if (panelVisible) { setPanelVisible(false); return }
       if (cameraZoom > 2.0) { setCameraZoom(1.6); return }
       if (selectedRoom) { setSelectedRoom(null); setIsOverview(true); return }
       setHudOpen(false)
@@ -3224,19 +3463,93 @@ export default function GameDashboard() {
                 cameraTarget={cameraTarget}
                 setCameraTarget={setCameraTarget}
                 onHomeRoom={handleHomeRoom}
+                panelVisible={panelVisible && selectedRoom && !isMobile}
               />
 
-              {/* Room detail sidebar (desktop) */}
+              {/* Unified RIGHT panel (agent card + stats + chat + tasks) */}
+              {/* Patrik UX overhaul: ONE cohesive panel, RIGHT side, shown by default */}
               {!isMobile && (
                 <AnimatePresence>
-                  {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
-                    <RoomDetailSidebar
+                  {panelVisible && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+                    <UnifiedPanel
                       key={selectedRoom}
                       room={ROOM_MAP[selectedRoom]}
                       agent={AGENTS.find(a => a.slug === selectedRoom)}
                       agentStatus={agentStatus[selectedRoom]}
-                      onClose={() => setSelectedRoom(null)}
+                      allAgentStatus={agentStatus}
+                      onClose={() => setPanelVisible(false)}
                       onChat={handleChat}
+                      chatMessages={panelMessages[selectedRoom] || []}
+                      chatInput={panelChatInput}
+                      onChatInputChange={setPanelChatInput}
+                      streaming={panelStreaming}
+                      agentSlug={selectedRoom}
+                      onSendMessage={(e) => {
+                        e?.preventDefault()
+                        const text = panelChatInput?.trim()
+                        if (!text || panelStreaming) return
+                        setPanelChatInput('')
+                        const sentTime = new Date().toISOString()
+                        // Add user message
+                        setPanelMessages(prev => ({
+                          ...prev,
+                          [selectedRoom]: [...(prev[selectedRoom] || []), { role: 'user', content: text, time: sentTime }],
+                        }))
+                        setPanelStreaming(true)
+                        // Add placeholder assistant message
+                        setPanelMessages(prev => ({
+                          ...prev,
+                          [selectedRoom]: [...(prev[selectedRoom] || []), { role: 'assistant', content: '', streaming: true, time: sentTime }],
+                        }))
+                        // Send via relay (local mode)
+                        if (IS_LOCAL) {
+                          fetch('/api/local/relay-send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
+                          }).then(() => {
+                            // Start polling for response
+                            if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current)
+                            const lastCheck = { ts: sentTime }
+                            panelRelayPollRef.current = setInterval(async () => {
+                              try {
+                                const since = encodeURIComponent(lastCheck.ts)
+                                const res = await fetch(`/api/local/relay-outbox?since=${since}`)
+                                if (!res.ok) return
+                                const data = await res.json()
+                                if (data.messages?.length > 0) {
+                                  const responses = data.messages.filter(m => m.message && m.source !== 'corner-dashboard')
+                                  if (responses.length > 0) {
+                                    const latest = responses[responses.length - 1]
+                                    setPanelMessages(prev => {
+                                      const msgs = [...(prev[selectedRoom] || [])]
+                                      const lastMsg = msgs[msgs.length - 1]
+                                      if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
+                                        msgs[msgs.length - 1] = { ...lastMsg, content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString() }
+                                      } else {
+                                        msgs.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString() })
+                                      }
+                                      return { ...prev, [selectedRoom]: msgs }
+                                    })
+                                    setPanelStreaming(false)
+                                    lastCheck.ts = latest.timestamp
+                                    clearInterval(panelRelayPollRef.current)
+                                    panelRelayPollRef.current = null
+                                  }
+                                }
+                              } catch {}
+                            }, 2000)
+                          }).catch(err => {
+                            setPanelMessages(prev => {
+                              const msgs = [...(prev[selectedRoom] || [])]
+                              const last = msgs[msgs.length - 1]
+                              if (last) msgs[msgs.length - 1] = { ...last, content: `Failed: ${err.message}`, streaming: false }
+                              return { ...prev, [selectedRoom]: msgs }
+                            })
+                            setPanelStreaming(false)
+                          })
+                        }
+                      }}
                     />
                   )}
                 </AnimatePresence>
@@ -3339,7 +3652,7 @@ export default function GameDashboard() {
       </div>
 
       {/* Mini-map - only in Game mode, ON by default */}
-      {showMinimap && currentMode === 'game' && (
+      {showMinimap && currentMode === 'game' && !isMobile && (
         <MiniMap
           rooms={GRID_SPEC.rooms}
           agentStatus={agentStatus}
