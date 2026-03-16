@@ -43,7 +43,7 @@ function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) 
     <div style={{
       width: size, height: size, borderRadius: '50%', border: `2px solid ${color}`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: Math.max(8, size * 0.35), fontWeight: 700, color, background: `${color}33`,
+      fontSize: Math.max(12, size * 0.35), fontWeight: 700, color, background: `${color}33`,
       flexShrink: 0, ...extraStyle,
     }}>
       {agent?.name?.charAt(0) || '?'}
@@ -93,7 +93,7 @@ function HPBar({ percent, label = 'HP' }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
       <span style={{
-        fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 8,
+        fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 12,
         color: MB.textMuted, textTransform: 'uppercase', letterSpacing: '0.15em',
         width: 20, flexShrink: 0,
       }}>
@@ -121,7 +121,7 @@ function HPBar({ percent, label = 'HP' }) {
         </motion.div>
       </div>
       <span style={{
-        fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 11,
+        fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 12,
         color, width: 32, textAlign: 'right', flexShrink: 0,
       }}>
         {percent}%
@@ -173,7 +173,7 @@ function AgentCard({ agent, status, onClick, isMobile }) {
             {agent.name}
           </div>
           <div style={{
-            fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 10,
+            fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 12,
             color: MB.textSecondary, textTransform: 'uppercase', letterSpacing: '0.12em',
           }}>
             {agent.role}
@@ -181,7 +181,7 @@ function AgentCard({ agent, status, onClick, isMobile }) {
         </div>
         {/* Level badge (placeholder) */}
         <span style={{
-          fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 11,
+          fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 12,
           color: MB.gold, background: `${MB.gold}1A`,
           border: `1px solid ${MB.gold}33`,
           borderRadius: 4, padding: '2px 6px', flexShrink: 0,
@@ -256,14 +256,14 @@ function QuestItem({ quest, onClick }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 9,
+            fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 12,
             textTransform: 'uppercase', letterSpacing: '0.12em',
             color: agent?.color || '#6B7280',
           }}>
             {agent?.name || quest.agent}
           </span>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 9,
+            fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
             textTransform: 'uppercase',
             color: status.text, background: status.bg,
             padding: '1px 6px', borderRadius: 3,
@@ -272,7 +272,7 @@ function QuestItem({ quest, onClick }) {
           </span>
           {quest.time && (
             <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 400, fontSize: 9,
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 400, fontSize: 12,
               color: MB.textMuted,
             }}>
               {timeAgo(quest.time)}
@@ -317,7 +317,7 @@ function FeedEvent({ event }) {
         {event.description || event.message}
       </span>
       <span style={{
-        fontFamily: 'JetBrains Mono, monospace', fontWeight: 400, fontSize: 9,
+        fontFamily: 'JetBrains Mono, monospace', fontWeight: 400, fontSize: 12,
         color: MB.textMuted, flexShrink: 0,
       }}>
         {timeAgo(event.time || event.timestamp)}
@@ -364,7 +364,7 @@ function AgentDeepDive({ agent, status, onBack }) {
               {agent.name}
             </span>
             <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 11,
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 12,
               color: MB.gold, background: `${MB.gold}1A`,
               border: `1px solid ${MB.gold}33`,
               borderRadius: 4, padding: '2px 6px',
@@ -373,7 +373,7 @@ function AgentDeepDive({ agent, status, onBack }) {
             </span>
           </div>
           <div style={{
-            fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 11,
+            fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 12,
             color: MB.textSecondary, textTransform: 'uppercase', letterSpacing: '0.12em',
           }}>
             {agent.role}
@@ -402,7 +402,7 @@ function AgentDeepDive({ agent, status, onBack }) {
           {status?.currentTask || 'Idle'}
         </div>
         <div style={{
-          fontFamily: 'JetBrains Mono, monospace', fontWeight: 400, fontSize: 10,
+          fontFamily: 'JetBrains Mono, monospace', fontWeight: 400, fontSize: 12,
           color: MB.textMuted,
         }}>
           Status: {status?.status || 'IDLE'}
@@ -431,7 +431,7 @@ function AgentDeepDive({ agent, status, onBack }) {
           ].map(stat => (
             <div key={stat.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{
-                fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 10,
+                fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 12,
                 color: MB.textMuted, textTransform: 'uppercase',
               }}>
                 {stat.label}
@@ -463,7 +463,7 @@ function AgentDeepDive({ agent, status, onBack }) {
             <CheckCircle2 size={14} color={MB.hpGreen} />
             <span style={{ textDecoration: 'line-through' }}>{status.lastCompletion.description}</span>
             <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: MB.textMuted, marginLeft: 'auto',
+              fontFamily: 'JetBrains Mono, monospace', fontSize: 12, color: MB.textMuted, marginLeft: 'auto',
             }}>
               {timeAgo(status.lastCompletion.date)}
             </span>
@@ -582,7 +582,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
               PARTY
             </span>
             <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 10,
+              fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 12,
               color: MB.textMuted,
             }}>
               -- XP
@@ -646,7 +646,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
                 animation: 'megaDotPulse 1.5s ease-in-out infinite',
               }} />
               <span style={{
-                fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 8,
+                fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
                 color: MB.hpGreen, textTransform: 'uppercase',
               }}>
                 LIVE
@@ -703,7 +703,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
                   background: questFilter === f ? `${MB.gold}1A` : 'transparent',
                   border: `1px solid ${questFilter === f ? `${MB.gold}33` : MB.borderSubtle}`,
                   color: questFilter === f ? MB.gold : MB.textSecondary,
-                  fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 9,
+                  fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, fontSize: 12,
                   textTransform: 'uppercase', cursor: 'pointer',
                   transition: 'all 150ms ease',
                 }}

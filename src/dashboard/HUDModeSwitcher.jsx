@@ -180,7 +180,7 @@ export function HUDMobileModeBar({ currentMode, onModeSwitch }) {
           >
             <Icon size={20} />
             <span style={{
-              fontSize: 10, fontWeight: active ? 800 : 600,
+              fontSize: 12, fontWeight: active ? 800 : 600,
               fontFamily: "'Inter Tight', sans-serif",
               textTransform: 'uppercase', letterSpacing: '0.06em',
             }}>

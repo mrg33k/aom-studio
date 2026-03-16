@@ -166,7 +166,7 @@ export function NotificationBadge({ count, style }) {
       }}
     >
       <span style={{
-        fontSize: 10, fontWeight: 800, color: '#FFF',
+        fontSize: 12, fontWeight: 800, color: '#FFF',
         fontFamily: "'Inter Tight', sans-serif",
         lineHeight: 1, letterSpacing: '-0.02em',
       }}>
