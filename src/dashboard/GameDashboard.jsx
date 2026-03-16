@@ -2903,9 +2903,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   return (
     <div
       style={{
-        width: isExtended ? '65vw' : 380,
-        maxWidth: isExtended ? '85vw' : '85vw',
-        minWidth: 380,
+        flex: isExtended ? '0 0 65vw' : '0 0 30%',
+        width: isExtended ? '65vw' : '30%',
+        minWidth: 320,
         flexShrink: 0,
         height: '100%',
         background: 'linear-gradient(180deg, rgba(6, 12, 28, 0.98) 0%, rgba(8, 16, 36, 0.97) 50%, rgba(6, 12, 28, 0.98) 100%)',
@@ -3503,6 +3503,8 @@ export default function GameDashboard() {
                 id: msg.id,
               })
             }
+            // Sort chronologically so user+agent messages interleave by timestamp
+            allMsgs.sort((a, b) => new Date(a.time) - new Date(b.time))
             return { ...prev, _all: allMsgs }
           })
 
@@ -3999,8 +4001,8 @@ export default function GameDashboard() {
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for ChatBar (56px) + GameHUD (58px) stacked */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
-          {/* GAME VIEWPORT: takes remaining space, sidebar sits beside it */}
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          {/* GAME VIEWPORT: 70% width, sidebar gets 30% */}
+            <div style={{ flex: '0 0 70%', width: '70%', position: 'relative', overflow: 'hidden' }}>
               <IsometricOffice
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}
@@ -4116,10 +4118,11 @@ export default function GameDashboard() {
                 if (!text || panelStreaming) return
                 setPanelChatInput('')
                 const sentTime = new Date().toISOString()
-                setPanelMessages(prev => ({
-                  ...prev,
-                  _all: [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom }],
-                }))
+                setPanelMessages(prev => {
+                  const msgs = [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom }]
+                  msgs.sort((a, b) => new Date(a.time) - new Date(b.time))
+                  return { ...prev, _all: msgs }
+                })
                 setPanelStreaming(true)
                 setPanelMessages(prev => ({
                   ...prev,
@@ -4149,6 +4152,8 @@ export default function GameDashboard() {
                               if (!filtered.some(m => m.id === latest.id)) {
                                 filtered.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString(), source: latest.agent || 'system', id: latest.id })
                               }
+                              // Sort chronologically so messages interleave by timestamp
+                              filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
                               return { ...prev, _all: filtered }
                             })
                             setPanelStreaming(false)
