@@ -5,9 +5,11 @@
 //
 // DONE(bobby2): Checkbox persistence -- clicking a task checkbox writes back to punch-list.md via /api/local/punch-toggle
 // TODO(patrik): Drag-to-reorder project pills in the HUD strip (Trello card energy)
+// TODO(bobby): DRAG-TO-RIGHT-NOW -- Drag any task from Today/project pills and drop it onto the "Right Now" pill to push it to the top of priority queue. Visual: Right Now pill glows as drop target when dragging. On drop, task moves to Right Now list and gets a time estimate badge. This is how Patrik says "do this NOW." Ref: Patrik feedback Pass 21.
 // TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project
 // TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel)
 // TODO(patrik): KILL BOTTOM BAR ENTIRELY -- Dream HUD target says NO bottom bar. Layout = top bar + sidebar ONLY. Project pills move to top bar (scrollable). Minimap, agent portrait, notification icons all in top bar. Bottom bar is gone. Ref: Patrik directive lines 170-182.
+// TODO(bobby): "RIGHT NOW" PILL -- Add a "Right Now" pill NEXT TO "Today" pill. Right Now shows LIVE tasks (agents currently running), simplified with small time estimates (e.g. "Bobby: HUD polish ~15min"). Today = day's agenda (what you plan to do). Right Now = live sprint (what's happening THIS SECOND). Drag tasks FROM Today or any project pill TO the Right Now pill to push them to top of priority queue. Right Now is always pinned first (before Today). Visual: pulsing/glowing accent to show liveness. Data: pull from active-missions.md or agentStatus for running agents. Ref: Patrik feedback Pass 21.
 // DONE(bobby2): Bottom bar cleanup -- chat input + chat button REMOVED from bottom bar. Project pills now horizontally scrollable (no wrapping). Bottom bar = agent roster | scrollable project pills | compact stats | notification bell. No chat elements.
 // DONE(bobby2): Project pill category labels -- pills now show category text (CLIENT / PROJECT / OUTREACH) not color-status text. Color communicates status visually, text label tells you WHAT it is.
 
@@ -68,6 +70,7 @@ function parsePunchList(markdown) {
 
   // Section name -> project config mapping
   const SECTION_MAP = {
+    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#3BFF6B', icon: 'zap' },  // TODO(bobby): "RIGHT NOW" pill -- live sprint tasks, pulsing green, always pinned FIRST (before Today). Drag-to target.
     'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -1368,9 +1371,13 @@ export default function GameHUD({
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
-    // Today always stays pinned at top
+    // Right Now always first, Today always second
+    // TODO(bobby): RIGHT NOW PILL SORT -- Right Now pinned #1, Today pinned #2. Right Now shows live sprint (agents running). Drag-to-reorder: dragging a task onto Right Now pushes it to top of priority queue.
     return [...raw].sort((a, b) => {
-      // Today is always first
+      // Right Now is always first (live sprint)
+      if (a.section === 'rightnow') return -1
+      if (b.section === 'rightnow') return 1
+      // Today is always second (day's agenda)
       if (a.section === 'today') return -1
       if (b.section === 'today') return 1
       // Primary: conversation-driven weight (higher = first)

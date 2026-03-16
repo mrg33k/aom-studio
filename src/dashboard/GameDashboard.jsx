@@ -3555,11 +3555,31 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {agent?.name || room?.agent}
           </div>
           <div style={{
-            color: agentColor, fontSize: 16, fontWeight: 600,
+            color: agentColor, fontSize: 13, fontWeight: 700,
             fontFamily: "'Inter', system-ui, sans-serif",
+            textTransform: 'uppercase', letterSpacing: '0.06em',
             marginTop: 2,
           }}>
             {agent?.role || room?.role}
+          </div>
+          {/* Status badge pill */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            marginTop: 6,
+            fontSize: 11, fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            borderRadius: 4, padding: '2px 8px',
+            ...(status === 'WORKING' ? { color: '#16A34A', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }
+              : status === 'BLOCKED' ? { color: '#DC2626', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }
+              : status === 'DONE' ? { color: '#2563EB', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }
+              : { color: '#6B7280', background: 'rgba(107,114,128,0.1)', border: '1px solid rgba(107,114,128,0.2)' }),
+          }}>
+            <span style={{
+              width: 5, height: 5, borderRadius: '50%',
+              background: status === 'WORKING' ? '#16A34A' : status === 'BLOCKED' ? '#DC2626' : status === 'DONE' ? '#2563EB' : '#6B7280',
+              flexShrink: 0,
+            }} />
+            {status === 'WORKING' ? 'ACTIVE' : status || 'IDLE'}
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
             <span style={{
@@ -3601,10 +3621,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         </button>
       </div>
 
-      {/* ---- QUICK STATS PILLS (compact row per Steffen target) ---- */}
+      {/* ---- QUICK STATS PILLS (4-column boxed grid per dream-sidebar-v1.png) ---- */}
       <div style={{
-        display: 'flex', gap: 6, flexWrap: 'wrap',
-        padding: '8px 24px',
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8,
+        padding: '10px 24px',
         borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.08)' : '2px solid rgba(59,130,246,0.1)',
         background: isNightMode ? 'rgba(59,130,246,0.02)' : 'rgba(59,130,246,0.04)',
         flexShrink: 0,
@@ -3613,29 +3633,29 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           { label: 'ACTIVE', value: workingCount, color: '#22C55E' },
           { label: 'BLOCKED', value: blockedCount, color: '#EF4444' },
           { label: 'DONE', value: doneCount, color: '#60A5FA' },
-          { label: `${overallProgress}%`, value: null, color: isNightMode ? '#F1F5F9' : '#0F172A' },
+          { label: 'PROGRESS', value: `${overallProgress}%`, color: isNightMode ? '#F1F5F9' : '#0F172A' },
         ].map(stat => (
           <div key={stat.label} style={{
-            background: isNightMode ? '#162236' : `${stat.color}0D`,
-            border: isNightMode ? '1px solid #1E3A5F' : `2px solid ${stat.color === '#0F172A' ? 'rgba(59,130,246,0.1)' : stat.color + '20'}`,
-            borderRadius: 6,
-            padding: '4px 10px',
-            display: 'flex', alignItems: 'center', gap: 5,
+            background: isNightMode ? '#162236' : `${stat.color}0F`,
+            border: isNightMode ? '1px solid #1E3A5F' : `2px solid ${stat.color === '#0F172A' ? 'rgba(59,130,246,0.1)' : stat.color + '33'}`,
+            borderRadius: 8,
+            padding: '8px 4px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            minHeight: 48,
             boxShadow: isNightMode ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
           }}>
-            {stat.value !== null && (
-              <span style={{
-                fontSize: 16, fontWeight: 900, color: stat.color,
-                fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-                fontFamily: "'Inter', system-ui, sans-serif",
-              }}>
-                {stat.value}
-              </span>
-            )}
             <span style={{
-              fontSize: 11, fontWeight: 700, color: stat.value !== null ? (isNightMode ? '#64748B' : '#64748B') : stat.color,
+              fontSize: 18, fontWeight: 900, color: stat.color,
+              fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}>
+              {stat.value}
+            </span>
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: isNightMode ? '#64748B' : '#64748B',
               textTransform: 'uppercase', letterSpacing: '0.06em',
               fontFamily: "'Inter', system-ui, sans-serif",
+              marginTop: 4,
             }}>
               {stat.label}
             </span>
@@ -4529,6 +4549,7 @@ export default function GameDashboard() {
   // Telegram, and dashboard messages all appear in the chat.
   // TODO(bobby): TERMINAL MESSAGES NOT APPEARING -- After split-brain fix (b7be6a7), terminal-sourced messages may not flow to dashboard. Verify that messages from the CLI session (this terminal) also get written to relay inbox so dashboard picks them up. Currently only dashboard-sent and Telegram messages may be flowing. Ref: Patrik feedback line 185.
   // TODO(bobby): ONE CONVERSATION STREAM (COUNCIL MODEL) -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source or device. Two sides: Patrik (right) and agents (left), interleaved by timestamp. COUNCIL: all agents share one stream. User switches driving agent by saying "talk to [agent]" or clicking one. That agent steps forward in the SAME thread with full context. No separate per-agent chats. Everyone listens, only driving agent speaks. Add search over unified stream. Ref: Patrik directives lines 144, 186, 190.
+  // TODO(bobby): AMBIENT COUNCIL CHAT -- Agents chime in the chat WITHOUT stopping their work. While an agent is running a task, it can post short ambient messages to the relay stream ("Bobby: pushed HUD commit, testing now", "Steffen: rendering daytime target, 2 min"). These appear in the unified chat as smaller/muted messages (not full responses). Think Slack channel energy: agents working in the background occasionally post status updates. Patrik sees live activity without asking. Implementation: agents write to relay-outbox with a flag like "ambient: true". Dashboard renders ambient messages with a compact style (smaller font, muted color, no avatar expansion). Ref: Patrik feedback Pass 21.
   const panelHistoryLoadedRef = useRef(false)
   useEffect(() => {
     if (!IS_LOCAL || panelHistoryLoadedRef.current) return

@@ -5,6 +5,7 @@
 // TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors.
 // DONE(bobby2): Task right-click context menu -- right-click any task for: mark done/undone, set priority (high/med/low), reassign agent, delete. Linear/Notion style.
 // TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable.
+// TODO(bobby): DRAG-TO-RIGHT-NOW (CHECKLIST) -- In checklist view, dragging a task onto the "Right Now" section pushes it to top of priority queue. Right Now section shows at the TOP of checklist (before Today), displays live tasks with time estimates. Tasks dragged here get a pulsing "LIVE" badge. Pairs with GameHUD "Right Now" pill. Ref: Patrik feedback Pass 21.
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
