@@ -16,6 +16,7 @@
 // DONE(bobby2): DAYTIME BOTTOM HUD THEME -- Bottom HUD now accepts isNightMode prop. Daytime = white glass with vibrant blue accents (matches top bar). Night = dark blue glass. Both bars feel like the same system. Ref: Patrik feedback Pass 22.
 // DONE(bobby2): AGENT SELECTOR ICONS BIGGER -- Expanded agent dots bumped 24px -> 40px. Expand button 28px -> 36px. Sprite images proportionally scaled. Main plumbob stays 52px. Vegas energy = big, bold, readable. Ref: Patrik feedback Pass 22.
 // DONE(bobby2): SQUINT TEST (VEGAS RULE) -- CompactStats dots 7px -> 10px. Main agent status dot 10px -> 14px. Expand button 28px -> 36px. All secondary agents 24px -> 40px. Standing rule for all future elements. Ref: Patrik feedback Pass 22.
+// TODO(bobby): DAYTIME STAT PILL TEXT COLOR -- Patrik bug (line 219): stat pill labels are white text on white background in daytime mode. ProjectCard name uses HUD.textPrimary (#EDF2FA, near-white) regardless of isNightMode. Fix: pass isNightMode to ProjectCard, swap text color to dark (#0F172A) in daytime. Also check: tagStyle text colors, revenue badge text, remaining count text. All must be readable on light pills in daytime. HUD CLEAN priority.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'

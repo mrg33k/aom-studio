@@ -1111,6 +1111,8 @@ function RoomNameplate({ room, agentStatus, isHovered, cellSize }) {
 
 
 // PATRIK DIRECTIVE (line 215): STOP ALL CATALOG/FURNITURE WORK. ALL agent energy goes to 3 things ONLY: (1) Game feel, (2) HUD clean, (3) Map interaction. No furniture, no new packs, no catalog growth until these 3 are SOLID.
+// TODO(bobby+steffen): LAYERED ROOM SYSTEM (ARCHITECTURAL SHIFT) -- Office is NOT a flat image with overlays. It's a LAYERED WORLD (Pixel Agents reference). Room backgrounds + individual furniture as separate React components at coordinates + characters as actors. Each catalog item is clickable, movable, swappable. Room = stage, furniture = set, characters = actors. This replaces the single-PNG approach. The 1,200 catalog items exist for THIS. Steffen + Bobby architect together. GAME FEEL priority, the foundation everything else builds on. Ref: Patrik vision lines 217-218.
+// TODO(bobby): ROOM DEPTH + DOMINO WAVE -- Map breathing is wrong. Not a global float. Should be DEPTH into each room with a domino wave effect across rooms. Control down to desk-level elements inside rooms. Parallax layers per room, individual element control. Depth FIRST, catalog second. Ref: Patrik vision line 217.
 // DONE(bobby): SWAP HITBOX COORDINATES -- officeLayouts/default.js now uses Steffen's warm variant coordinates from room-hitbox-map.json. Ref: Patrik feedback line 212.
 // TODO(bobby): PLAYWRIGHT HITBOX VERIFICATION -- Coordinates swapped but are Steffen's manual estimates. Open localhost, click center of every room at both zoom levels (0.7 + 1.6), verify correct agent panel opens. Adjust any misses. See officeLayouts/default.js TODOs. MAP INTERACTION priority #1.
 // DONE(bobby): MODULAR OFFICE FRAMEWORK -- Extracted to officeLayouts/default.js. Room targets, clip paths, zoom presets, wave order, and image paths in standalone config. Swap image + config = new office skin.
@@ -1545,6 +1547,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
               {/* OVO approach: invisible hotspots matching existing art boundaries */}
               {/* Hover = subtle inner glow INSIDE the room space, not a border */}
               <motion.div
+                data-room-id={room.id}
                 onClick={() => hasAgent && onRoomClick?.(room.id)}
                 onContextMenu={(e) => hasAgent && onRoomContextMenu?.(e, room.id)}
                 onMouseEnter={() => setHoveredRoom(room.id)}
