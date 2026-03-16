@@ -3029,6 +3029,111 @@ function PanelSkeleton({ agentColor }) {
   )
 }
 
+// ---- CHAT TIMEOUT RING (countdown indicator while waiting for agent response) --
+// 60-second SVG ring that fills as time passes. Shows elapsed seconds.
+// Turns orange at 30s, red at 50s. Pulses gently to feel alive.
+function ChatTimeoutRing({ streaming, agentColor, agentName }) {
+  const [elapsed, setElapsed] = useState(0)
+  const startRef = useRef(null)
+  const TIMEOUT = 60 // seconds
+
+  useEffect(() => {
+    if (!streaming) {
+      setElapsed(0)
+      startRef.current = null
+      return
+    }
+    startRef.current = Date.now()
+    const tick = setInterval(() => {
+      if (!startRef.current) return
+      const s = Math.floor((Date.now() - startRef.current) / 1000)
+      setElapsed(s)
+    }, 1000)
+    return () => clearInterval(tick)
+  }, [streaming])
+
+  if (!streaming) return null
+
+  const progress = Math.min(elapsed / TIMEOUT, 1)
+  const radius = 18
+  const circumference = 2 * Math.PI * radius
+  const dashOffset = circumference * (1 - progress)
+
+  // Color shifts: blue -> orange (30s) -> red (50s)
+  const ringColor = elapsed >= 50 ? '#EF4444' : elapsed >= 30 ? '#F59E0B' : (agentColor || '#3B82F6')
+  const label = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed / 60)}m${elapsed % 60}s`
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '8px 14px',
+      background: `${ringColor}08`,
+      border: `1px solid ${ringColor}20`,
+      borderRadius: 10,
+      animation: 'chatTimeoutPulse 3s ease-in-out infinite',
+    }}>
+      {/* SVG ring */}
+      <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
+        <svg width={44} height={44} viewBox="0 0 44 44" style={{ transform: 'rotate(-90deg)' }}>
+          {/* Track */}
+          <circle cx={22} cy={22} r={radius} fill="none" stroke="rgba(100,180,255,0.08)" strokeWidth={3} />
+          {/* Progress ring */}
+          <circle
+            cx={22} cy={22} r={radius}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            style={{ transition: 'stroke-dashoffset 1s linear, stroke 500ms ease' }}
+          />
+        </svg>
+        {/* Elapsed label centered */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, fontWeight: 700, color: ringColor,
+          fontFamily: "'JetBrains Mono', monospace",
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          {label}
+        </div>
+      </div>
+
+      {/* Status text */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{
+          fontSize: 13, fontWeight: 600, color: '#94A3B8',
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          Waiting for {agentName || 'agent'}...
+        </span>
+        {elapsed >= 30 && (
+          <span style={{
+            fontSize: 12, fontWeight: 500, color: elapsed >= 50 ? '#EF4444' : '#F59E0B',
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            {elapsed >= 50 ? 'Response may be delayed' : 'Still processing'}
+          </span>
+        )}
+      </div>
+
+      {/* Bouncing dots */}
+      <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
+        {[0, 1, 2].map(j => (
+          <div key={j} style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: ringColor,
+            opacity: j === 0 ? 0.9 : j === 1 ? 0.55 : 0.25,
+            animation: `vegasTypingBounce 1.4s ease-in-out ${j * 0.2}s infinite`,
+          }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ---- UNIFIED RIGHT PANEL (Vegas sidebar - Steffen visual target match) ------
 // Matches: vegas-sidebar-isolated.png, chat-view-full.png
 // Blue glass sidebar. 64px avatar, status dot, quick stats pills, tab bar with glow.
@@ -3484,34 +3589,19 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   </div>
                 )
               })}
-              {/* Typing indicator row */}
+              {/* Timeout ring + typing indicator */}
               {streaming && (
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '4px 0' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '4px 0' }}>
                   <SpriteAvatar agentSlug={room?.id} size={36} borderColor={agentColor}
-                    style={{ flexShrink: 0, boxShadow: `0 0 8px ${agentColor}33` }} />
-                  <div style={{
-                    display: 'flex', gap: 5, alignItems: 'center',
-                    background: `${agentColor}08`,
-                    border: `2px solid ${agentColor}15`,
-                    borderRadius: 12, padding: '12px 18px',
-                    borderTopLeftRadius: 4,
-                  }}>
-                    {[0, 1, 2].map(j => (
-                      <div key={j} style={{
-                        width: 8, height: 8, borderRadius: '50%',
-                        background: agentColor,
-                        opacity: j === 0 ? 0.9 : j === 1 ? 0.55 : 0.25,
-                        animation: `vegasTypingBounce 1.4s ease-in-out ${j * 0.2}s infinite`,
-                      }} />
-                    ))}
+                    status={status}
+                    style={{ flexShrink: 0, boxShadow: `0 0 8px ${agentColor}33`, marginTop: 4 }} />
+                  <div style={{ flex: 1 }}>
+                    <ChatTimeoutRing
+                      streaming={streaming}
+                      agentColor={agentColor}
+                      agentName={agent?.name}
+                    />
                   </div>
-                  <span style={{
-                    fontSize: 13, fontWeight: 600, color: '#64748B',
-                    fontFamily: "'Inter', sans-serif", marginLeft: 4,
-                    fontStyle: 'italic',
-                  }}>
-                    {agent?.name} is typing...
-                  </span>
                 </div>
               )}
               <div ref={messagesEndRef} />
@@ -4900,6 +4990,10 @@ export default function GameDashboard() {
         @keyframes chatCursorBlink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
+        }
+        @keyframes chatTimeoutPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.85; }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { overflow: hidden; }
