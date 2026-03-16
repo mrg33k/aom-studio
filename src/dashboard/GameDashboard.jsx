@@ -814,7 +814,7 @@ const getRoomWaveDelay = (roomId) => {
 }
 // ---- SINGLE-IMAGE APPROACH: uses full-office-warm-night.png ------
 // C4: Building FILLS the viewport. No dead space. Crossy Road bounce energy.
-function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations, streamingAgent }) {
+function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selectedRoom, hoveredRoom, setHoveredRoom, cameraTarget, cameraZoom, isOverview, onZoomChange, agentAnimations, streamingAgent }) {
   // FILL THE VIEWPORT: size based on container, not fixed pixels
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 })
   const sizeRef = useRef(null)
@@ -1060,57 +1060,56 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
                 mass: 0.8,
               }}
             >
-              {/* Nameplate above room */}
+              {/* IN-ROOM nameplate: wall-mounted office sign, like reading someone's name on their door */}
               {showNameplate && hasAgent && (
                 <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.9 }}
-                  animate={hasLoaded ? { opacity: 1, y: 0, scale: 1 } : {}}
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={hasLoaded ? { opacity: 1, scale: 1 } : {}}
                   transition={{ delay: waveDelay + 0.15, type: 'spring', stiffness: 300, damping: 20 }}
                   style={{
                     position: 'absolute',
-                    left: `${target.x + target.w / 2}%`,
-                    top: `${target.labelY}%`,
-                    transform: 'translateX(-50%)',
-                    display: 'flex', alignItems: 'center', gap: 7,
-                    background: PALETTE.nameplate.background,
-                    border: `1px solid ${isHovered ? `${agentColor}4D` : PALETTE.nameplate.border}`,
-                    borderRadius: 8, padding: '5px 14px',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
+                    left: `${target.x + target.w * 0.12}%`,
+                    top: `${target.y + target.h * 0.08}%`,
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    // Gold/silver nameplate on the wall inside the room
+                    background: isActive
+                      ? 'linear-gradient(135deg, rgba(255,216,122,0.25) 0%, rgba(200,170,100,0.18) 50%, rgba(255,216,122,0.22) 100%)'
+                      : 'linear-gradient(135deg, rgba(180,190,210,0.18) 0%, rgba(140,155,180,0.12) 50%, rgba(180,190,210,0.16) 100%)',
+                    border: `1px solid ${isActive ? 'rgba(255,216,122,0.35)' : 'rgba(180,190,210,0.25)'}`,
+                    borderRadius: 4, padding: '3px 10px 3px 8px',
+                    boxShadow: isActive
+                      ? '0 2px 8px rgba(0,0,0,0.5), 0 0 12px rgba(255,216,122,0.15), inset 0 1px 0 rgba(255,255,255,0.15)'
+                      : '0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1)',
                     whiteSpace: 'nowrap', zIndex: 10,
                     pointerEvents: 'none',
                   }}
                 >
-                  {SPRITE_AGENTS.includes(room.id) && (
-                    <div style={{ width: 20, height: 20, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
-                      <img src={`/corner/sprites/${room.id}-idle.png`} alt=""
-                        style={{ width: 40, height: 40, objectFit: 'cover', objectPosition: '0 0', imageRendering: 'pixelated' }} />
-                    </div>
-                  )}
+                  {/* Status dot - compact, on the nameplate */}
                   <div style={{
-                    width: 7, height: 7, borderRadius: '50%',
+                    width: 6, height: 6, borderRadius: '50%',
                     background: isActive ? cfg.color : (room.statusColors?.[status === 'IDLE' ? 'idle' : 'active'] || cfg.color),
                     flexShrink: 0,
+                    boxShadow: isActive ? `0 0 6px ${cfg.color}` : 'none',
                     animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
                   }} />
+                  {/* Name - clean, bold, like an office door sign */}
                   <span style={{
-                    color: PALETTE.nameplate.text,
-                    fontSize: 14, fontWeight: isHovered ? 800 : 700,
+                    color: isActive ? '#FFE4A8' : '#D0D8E8',
+                    fontSize: 11, fontWeight: 800,
                     fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
-                    letterSpacing: '-0.01em',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    textShadow: isActive ? '0 1px 2px rgba(0,0,0,0.4)' : '0 1px 1px rgba(0,0,0,0.3)',
                   }}>
                     {room.agent}
                   </span>
-                  {isHovered && agentStatus[room.id]?.currentTask && (
-                    <span style={{ color: '#8A847C', fontSize: 9, fontFamily: 'Space Grotesk, sans-serif', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {agentStatus[room.id].currentTask.length > 22 ? agentStatus[room.id].currentTask.slice(0, 22) + '...' : agentStatus[room.id].currentTask}
-                    </span>
-                  )}
                 </motion.div>
               )}
 
               {/* Click target overlay - isometric clip-path, Crossy Road bounce */}
               <motion.div
                 onClick={() => hasAgent && onRoomClick?.(room.id)}
+                onContextMenu={(e) => hasAgent && onRoomContextMenu?.(e, room.id)}
                 onMouseEnter={() => setHoveredRoom(room.id)}
                 onMouseLeave={() => setHoveredRoom(null)}
                 whileHover={hasAgent ? {
@@ -1222,6 +1221,149 @@ function IsometricOffice({ agentStatus, onRoomClick, selectedRoom, hoveredRoom, 
       </div>
       </div>
     </div>
+  )
+}
+
+// ---- RIGHT-CLICK CONTEXT MENU (Figma/VS Code style) -----------------------
+// Clean, simple, no modals. Appears at cursor, disappears on click-away.
+// Types: 'room', 'task', 'agent', 'project'
+function ContextMenu({ type, data, position, onClose, onAction }) {
+  const menuRef = useRef(null)
+
+  // Close on click outside or Escape
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
+    }
+    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose])
+
+  // Prevent going off-screen
+  const [adjusted, setAdjusted] = useState(position)
+  useEffect(() => {
+    if (menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect()
+      const newPos = { ...position }
+      if (rect.right > window.innerWidth - 8) newPos.x = window.innerWidth - rect.width - 8
+      if (rect.bottom > window.innerHeight - 8) newPos.y = window.innerHeight - rect.height - 8
+      if (newPos.x < 8) newPos.x = 8
+      if (newPos.y < 8) newPos.y = 8
+      setAdjusted(newPos)
+    }
+  }, [position])
+
+  const menuItems = useMemo(() => {
+    switch (type) {
+      case 'room':
+        return [
+          { id: 'chat', label: `Chat with ${data?.agent || 'Agent'}`, icon: MessageSquare, accent: true },
+          { id: 'zoom', label: 'Zoom In', icon: ZoomIn },
+          { id: 'tasks', label: 'View Tasks', icon: ListTodo },
+          { divider: true },
+          { id: 'activity', label: 'Recent Activity', icon: Activity },
+          { id: 'assign', label: 'Assign Task', icon: Plus },
+        ]
+      case 'task':
+        return [
+          { id: 'done', label: data?.done ? 'Mark Incomplete' : 'Mark Done', icon: CheckCircle2, accent: !data?.done },
+          { divider: true },
+          { id: 'move', label: 'Move to Project...', icon: FolderKanban },
+          { id: 'reassign', label: 'Reassign Agent...', icon: ArrowRight },
+          { id: 'priority', label: 'Set Priority', icon: Zap },
+          { divider: true },
+          { id: 'delete', label: 'Delete Task', icon: X, danger: true },
+        ]
+      case 'agent':
+        return [
+          { id: 'chat', label: `Chat with ${data?.name || 'Agent'}`, icon: MessageSquare, accent: true },
+          { id: 'assign', label: 'Assign Task', icon: Plus },
+          { id: 'status', label: 'View Status', icon: Activity },
+          { divider: true },
+          { id: 'tasks', label: 'View All Tasks', icon: ListTodo },
+          { id: 'completions', label: 'Recent Completions', icon: GitCommit },
+        ]
+      case 'project':
+        return [
+          { id: 'expand', label: 'View Tasks', icon: ListTodo, accent: true },
+          { id: 'add', label: 'Add Task', icon: Plus },
+          { divider: true },
+          { id: 'timeline', label: 'Timeline', icon: Calendar },
+          { id: 'archive', label: 'Archive Project', icon: ArrowRight },
+        ]
+      default:
+        return []
+    }
+  }, [type, data])
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.92, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.12, ease: [0.2, 0.9, 0.3, 1] }}
+      style={{
+        position: 'fixed',
+        left: adjusted.x,
+        top: adjusted.y,
+        zIndex: 200,
+        minWidth: 200,
+        background: 'rgba(12, 18, 35, 0.96)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(100, 180, 255, 0.18)',
+        borderRadius: 10,
+        padding: '6px 0',
+        boxShadow: '0 12px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(100,180,255,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Type header */}
+      {data?.label && (
+        <div style={{
+          padding: '6px 14px 8px',
+          fontSize: 10, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+          color: '#4A6080', textTransform: 'uppercase', letterSpacing: '0.12em',
+          borderBottom: '1px solid rgba(100,180,255,0.08)',
+          marginBottom: 2,
+        }}>
+          {data.label}
+        </div>
+      )}
+
+      {menuItems.map((item, i) => {
+        if (item.divider) {
+          return <div key={`div-${i}`} style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
+        }
+        const Icon = item.icon
+        return (
+          <button
+            key={item.id}
+            onClick={() => { onAction(item.id, data); onClose() }}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+              padding: '9px 14px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: item.danger ? '#EF4444' : item.accent ? '#5BB8FF' : '#D0D8E8',
+              fontSize: 14, fontWeight: 500,
+              fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
+              transition: 'background 80ms ease',
+              textAlign: 'left',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = item.danger ? 'rgba(239,68,68,0.1)' : 'rgba(100,180,255,0.08)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          >
+            <Icon size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+            {item.label}
+          </button>
+        )
+      })}
+    </motion.div>
   )
 }
 
@@ -2753,6 +2895,9 @@ export default function GameDashboard() {
   const [notifications, setNotifications] = useState([])
   const [showShortcuts, setShowShortcuts] = useState(false)
 
+  // Right-click context menu state
+  const [contextMenu, setContextMenu] = useState(null) // { type, data, position: {x, y} }
+
   // C3: MODE STATE
   const [currentMode, setCurrentMode] = useState(() => {
     // Check URL first, then localStorage, then default to 'game'
@@ -2908,10 +3053,12 @@ export default function GameDashboard() {
     setCameraTarget(roomId)
     setIsOverview(false)
 
+    // Steve fix #1: Room-click ALWAYS switches chat agent. ONE LINE.
+    setChatAgent(roomId)
+
     if (roomId === selectedRoom) {
       // Already selected: zoom to Level 3 (detail) and open chat
       setCameraZoom(ZOOM_MAX)
-      setChatAgent(roomId)
     } else {
       // First click: zoom to Level 2 (neighborhood)
       setCameraZoom(1.6)
@@ -2932,6 +3079,57 @@ export default function GameDashboard() {
     setCameraZoom(1.6)
     setSelectedRoom(null)
   }
+
+  // Right-click context menu on rooms
+  const handleRoomContextMenu = useCallback((e, roomId) => {
+    e.preventDefault()
+    const room = ROOM_MAP[roomId]
+    if (!room || room.agent === null) return
+    setContextMenu({
+      type: 'room',
+      data: { roomId, agent: room.agent, label: `${room.agent}'s Room` },
+      position: { x: e.clientX, y: e.clientY },
+    })
+  }, [])
+
+  // Context menu action dispatcher
+  const handleContextAction = useCallback((actionId, data) => {
+    switch (actionId) {
+      case 'chat':
+        if (data?.roomId) handleChat(data.roomId)
+        else if (data?.slug) handleChat(data.slug)
+        break
+      case 'zoom':
+        if (data?.roomId) {
+          setCameraTarget(data.roomId)
+          setSelectedRoom(data.roomId)
+          setCameraZoom(ZOOM_MAX)
+          setIsOverview(false)
+        }
+        break
+      case 'tasks':
+        handleModeSwitch('checklist')
+        break
+      case 'activity':
+      case 'status':
+      case 'completions':
+        if (data?.roomId) {
+          setSelectedRoom(data.roomId)
+          setCameraTarget(data.roomId)
+          setIsOverview(false)
+        }
+        break
+      case 'assign':
+      case 'add':
+        // C4: Will integrate with Supabase task creation
+        break
+      case 'expand':
+        handleModeSwitch('checklist')
+        break
+      default:
+        break
+    }
+  }, [handleModeSwitch])
 
   // Mini-map room click -> move camera
   const handleMinimapRoomClick = (roomId) => {
@@ -3005,6 +3203,7 @@ export default function GameDashboard() {
               <IsometricOffice
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}
+                onRoomContextMenu={handleRoomContextMenu}
                 selectedRoom={selectedRoom}
                 hoveredRoom={hoveredRoom}
                 setHoveredRoom={setHoveredRoom}
@@ -3165,6 +3364,23 @@ export default function GameDashboard() {
               setIsOverview(false)
               setCameraZoom(1.6)
             }}
+            onAgentContextMenu={(e, slug) => {
+              e.preventDefault()
+              const agent = AGENTS.find(a => a.slug === slug)
+              setContextMenu({
+                type: 'agent',
+                data: { slug, name: agent?.name, label: agent?.name || slug },
+                position: { x: e.clientX, y: e.clientY },
+              })
+            }}
+            onProjectContextMenu={(e, project) => {
+              e.preventDefault()
+              setContextMenu({
+                type: 'project',
+                data: { ...project, label: project.name },
+                position: { x: e.clientX, y: e.clientY },
+              })
+            }}
             isMobile={isMobile}
             chatAgent={chatAgent}
             onChatSubmit={(slug, text) => {
@@ -3230,6 +3446,20 @@ export default function GameDashboard() {
           else if (streamingAgent === slug) setStreamingAgent(null)
         }}
       />
+
+      {/* Right-click context menu */}
+      <AnimatePresence>
+        {contextMenu && (
+          <ContextMenu
+            key={`ctx-${contextMenu.position.x}-${contextMenu.position.y}`}
+            type={contextMenu.type}
+            data={contextMenu.data}
+            position={contextMenu.position}
+            onClose={() => setContextMenu(null)}
+            onAction={handleContextAction}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Keyboard shortcuts overlay */}
       <AnimatePresence>

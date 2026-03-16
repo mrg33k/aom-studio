@@ -171,10 +171,10 @@ function parsePunchList(markdown) {
   }
 }
 
-// ---- RECENCY WEIGHTS (CORNER should be #1 because that's what Patrik works on) --
-// Hard-coded recency weights until we have git log / activity timestamps.
-// The system KNOWS what matters based on what you talk about.
-const PROJECT_RECENCY_WEIGHTS = {
+// ---- RECENCY WEIGHTS (CONVERSATION-DRIVEN) ----------------------------------
+// Projects ranked by what you TALK ABOUT, not static order.
+// Fallback weights used when conversation data isn't available.
+const DEFAULT_RECENCY_WEIGHTS = {
   'today':      100,  // Always first
   'corner':     95,   // #1 project right now
   'aom-site':   85,   // Active site work
@@ -190,6 +190,28 @@ const PROJECT_RECENCY_WEIGHTS = {
   'deadlines':  35,
   'infra':      30,
   'week':       25,
+}
+
+// Hook to fetch live conversation-driven recency scores
+function useConversationRecency() {
+  const [scores, setScores] = useState(null)
+
+  useEffect(() => {
+    if (!IS_LOCAL) return // Only works on localhost
+    const fetchScores = async () => {
+      try {
+        const res = await fetch('/api/local/project-recency')
+        if (!res.ok) return
+        const json = await res.json()
+        if (json.scores) setScores(json.scores)
+      } catch {}
+    }
+    fetchScores()
+    const timer = setInterval(fetchScores, 30000) // Refresh every 30s
+    return () => clearInterval(timer)
+  }, [])
+
+  return scores
 }
 
 // ---- DATA HOOK --------------------------------------------------------------
@@ -257,7 +279,7 @@ function PlumbobClipDef({ id, size }) {
 // ---- AGENT PORTRAIT (LARGER: 52px desktop, plumbob shape, blue idle ring) ---
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
-function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, showName = false, index = 0 }) {
+function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMenu, showName = false, index = 0 }) {
   const agent = AGENTS.find(a => a.slug === slug)
   const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
   const color = agent?.color || '#4A6080'
@@ -287,6 +309,7 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, showName = f
   return (
     <motion.div
       onClick={() => onClick?.(slug)}
+      onContextMenu={(e) => onContextMenu?.(e, slug)}
       whileHover={{ scale: 1.15, y: -5, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
       whileTap={{ scale: 0.88, y: 2, transition: { type: 'spring', stiffness: 600, damping: 20 } }}
       title={`${agent?.name || slug}: ${cfg.label}`}
@@ -395,7 +418,7 @@ function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, showName = f
 }
 
 // ---- AGENT ROSTER (horizontal strip, LARGER portraits, game spacing) --------
-function AgentRoster({ agentStatus, onAgentClick }) {
+function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
   const sortedAgents = useMemo(() => {
     const statusPriority = { WORKING: 0, BLOCKED: 1, WAITING: 2, PAUSED: 3, DONE: 4, IDLE: 5 }
     return [...AGENTS]
@@ -419,6 +442,7 @@ function AgentRoster({ agentStatus, onAgentClick }) {
           size={58}
           status={agentStatus?.[agent.slug]?.status || 'IDLE'}
           onClick={onAgentClick}
+          onContextMenu={onAgentContextMenu}
           index={i}
         />
       ))}
@@ -429,7 +453,7 @@ function AgentRoster({ agentStatus, onAgentClick }) {
 // ---- PROJECT CARD (VEGAS ENERGY: Trello thickness, physical objects) ---------
 // If you think it's big enough, DOUBLE IT. Slot machine buttons. Casino cards.
 // Drop shadows, bold rounded corners, chunky, grabbable, satisfying.
-function ProjectCard({ project, isExpanded, onClick }) {
+function ProjectCard({ project, isExpanded, onClick, onContextMenu }) {
   const totalTasks = project.tasks.length
   const doneTasks = project.tasks.filter(t => t.done).length
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
@@ -440,6 +464,7 @@ function ProjectCard({ project, isExpanded, onClick }) {
   return (
     <motion.button
       onClick={onClick}
+      onContextMenu={(e) => onContextMenu?.(e, project)}
       whileHover={{ scale: 1.08, y: -5, transition: { type: 'spring', stiffness: 450, damping: 10 } }}
       whileTap={{ scale: 0.90, y: 3, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
@@ -496,31 +521,31 @@ function ProjectCard({ project, isExpanded, onClick }) {
         }} />
       )}
 
-      {/* Name - VEGAS SIZE. Bold. Chunky. Impossible to miss. */}
+      {/* Name - VEGAS SIZE. DOUBLED. Slot machine buttons. Casino energy. */}
       <span style={{
         fontFamily: "'Inter Tight', 'Space Grotesk', sans-serif",
-        fontSize: 18, fontWeight: 900,
+        fontSize: 20, fontWeight: 900,
         color: isExpanded ? '#FFFFFF' : isToday ? '#EDF2FA' : HUD.textPrimary,
         whiteSpace: 'nowrap',
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',
-        textShadow: isToday ? '0 1px 4px rgba(255,107,61,0.3)' : 'none',
+        textShadow: isToday ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)',
       }}>
         {project.name}
       </span>
 
-      {/* Task count badge - BIGGER, bolder */}
+      {/* Task count badge - VEGAS. Oversized. Casino chip energy. */}
       {remaining > 0 && (
         <span style={{
           fontFamily: "'Inter Tight', JetBrains Mono, monospace",
-          fontSize: 16, fontWeight: 900,
+          fontSize: 18, fontWeight: 900,
           color: '#FFF',
-          background: project.color,
-          padding: '4px 12px', borderRadius: 10,
+          background: `linear-gradient(135deg, ${project.color}, ${project.color}DD)`,
+          padding: '5px 14px', borderRadius: 12,
           letterSpacing: '-0.01em',
           lineHeight: 1,
-          boxShadow: `0 2px 8px ${project.color}55`,
-          minWidth: 28, textAlign: 'center',
+          boxShadow: `0 3px 12px ${project.color}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
+          minWidth: 32, textAlign: 'center',
         }}>
           {remaining}
         </span>
@@ -919,20 +944,28 @@ export default function GameHUD({
   agentStatus, throughput, onAgentClick, isMobile,
   // Chat integration props
   chatAgent, onChatSubmit, onExpandChat,
+  // Context menu props
+  onAgentContextMenu, onProjectContextMenu,
 }) {
   const [expandedProject, setExpandedProject] = useState(null)
   const { data: punchData, loading } = usePunchListData()
   const hudRef = useRef(null)
+  const conversationScores = useConversationRecency()
 
-  // Sort projects by RECENCY WEIGHT first, then incomplete task count.
-  // CORNER is #1 because that's what Patrik has been doing.
-  // The system KNOWS what matters based on conversation frequency.
+  // Sort projects by CONVERSATION RECENCY first, then incomplete task count.
+  // The system KNOWS what matters based on what you TALK ABOUT.
+  // Uses live conversation parsing on localhost, falls back to defaults on production.
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
+    const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
+    // Today always stays pinned at top
     return [...raw].sort((a, b) => {
-      const aWeight = PROJECT_RECENCY_WEIGHTS[a.section] || 10
-      const bWeight = PROJECT_RECENCY_WEIGHTS[b.section] || 10
-      // Primary: recency weight (higher = first)
+      // Today is always first
+      if (a.section === 'today') return -1
+      if (b.section === 'today') return 1
+      // Primary: conversation-driven weight (higher = first)
+      const aWeight = weights[a.section] || 10
+      const bWeight = weights[b.section] || 10
       if (aWeight !== bWeight) return bWeight - aWeight
       // Secondary: incomplete tasks (more = first)
       const aRemaining = a.tasks.filter(t => !t.done).length
@@ -941,7 +974,7 @@ export default function GameHUD({
       // Tertiary: total tasks
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData])
+  }, [punchData, conversationScores])
 
   // Close panel on click outside
   useEffect(() => {
@@ -1046,7 +1079,7 @@ export default function GameHUD({
         }}>
           {/* Left: Agent plumbob portraits */}
           {!isMobile && (
-            <AgentRoster agentStatus={agentStatus} onAgentClick={onAgentClick} />
+            <AgentRoster agentStatus={agentStatus} onAgentClick={onAgentClick} onAgentContextMenu={onAgentContextMenu} />
           )}
 
           {/* Divider */}
@@ -1088,6 +1121,7 @@ export default function GameHUD({
                       expandedProject?.section === project.section ? null : project
                     )
                   }}
+                  onContextMenu={onProjectContextMenu}
                 />
               ))
             )}

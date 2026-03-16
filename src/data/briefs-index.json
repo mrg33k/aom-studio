@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T08:57:47.921Z",
+  "generated": "2026-03-16T09:18:40.026Z",
   "categories": [
     {
       "name": "Strategy",
@@ -275,8 +275,18 @@
           "agent": "Steffen",
           "date": "2026-03-16",
           "dateFormatted": "Mar 16",
-          "summary": "Steffen 1 + Steffen 2 coordination document. Avatar system decisions, style direction, character proportions, color palette consistency.",
+          "summary": "Steffen 1 + Steffen 2 coordination document. Avatar system decisions, style direction, character proportions, color palette, BLUE HUD pivot, full Crossy Road character set.",
           "path": "/briefs/avatar-system-decisions",
+          "hasPage": true
+        },
+        {
+          "title": "Build Review: Steve B+ Fixes + Vegas Energy + Zoom (bebc327)",
+          "slug": "build-review-bebc327",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Bobby shipped Steve's 4 exact code fixes plus Vegas energy overhaul. 9/10. The checklist grouped by project is the right call. Font sizes finally respect the 18px minimum. Two items need polish.",
+          "path": "/briefs/build-review-bebc327",
           "hasPage": true
         },
         {
@@ -480,6 +490,16 @@
           "hasPage": true
         },
         {
+          "title": "Construction HQ Style Pack",
+          "slug": "construction-hq-pack",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "5 furniture items for the construction company office. Hard hats, blueprints, safety cones, toolboxes, tape measures. AOM's target vertical in the game.",
+          "path": "/briefs/construction-hq-pack",
+          "hasPage": true
+        },
+        {
           "title": "Crossy Road Office Style Pack",
           "slug": "crossy-road-office-pack",
           "agent": "Steffen",
@@ -487,6 +507,36 @@
           "dateFormatted": "Mar 16",
           "summary": "15 furniture items in chunky voxel Crossy Road style. First style pack for the Corner catalog marketplace. Tests whether alternate art styles work alongside the default pixel-warm.",
           "path": "/briefs/crossy-road-office-pack",
+          "hasPage": true
+        },
+        {
+          "title": "Nameplate Collection",
+          "slug": "nameplate-collection",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "39 in-room nameplate assets. 13 agents x 3 styles (gold, silver, modern). Wall-mounted office nameplates that replace floating text labels with real office decor.",
+          "path": "/briefs/nameplate-collection",
+          "hasPage": true
+        },
+        {
+          "title": "Tech Startup Style Pack",
+          "slug": "tech-startup-pack",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "5 furniture items for the tech startup office. Mechanical keyboards, energy drinks, RGB strips, drones, streaming mics. Late-night coding energy.",
+          "path": "/briefs/tech-startup-pack",
+          "hasPage": true
+        },
+        {
+          "title": "Universal Bonus Pack",
+          "slug": "universal-bonus-pack",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "5 furniture items that work in any office. Wall clock, fire extinguisher, vending machine, kanban board, pizza stack. Every office has these.",
+          "path": "/briefs/universal-bonus-pack",
           "hasPage": true
         },
         {
@@ -507,6 +557,16 @@
           "dateFormatted": "Mar 16",
           "summary": "Visual design for corner.app (or the Corner product section of aheadofmarket.com). Ultra clean, white, spacious. Apple keynote energy. The calm before the game storm. Bobby builds this.",
           "path": "/briefs/corner-product-site",
+          "hasPage": true
+        },
+        {
+          "title": "HUD Blue Spec - The Real Direction",
+          "slug": "hud-blue-spec",
+          "agent": "Steffen",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "BLUE HUD. Not warm amber. VEGAS oversized energy. Trello thickness. Crossy Road bounce. 18-20px minimum. This replaces all previous HUD color direction.",
+          "path": "/briefs/hud-blue-spec",
           "hasPage": true
         },
         {

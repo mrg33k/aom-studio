@@ -291,6 +291,79 @@ function localDashboardPlugin() {
         res.end(JSON.stringify({ messages, timestamp: new Date().toISOString() }))
       })
 
+      // Conversation-driven project ranking: parse session-log + relay for project mentions
+      // Projects ranked by what you TALK ABOUT, not task count.
+      server.middlewares.use('/api/local/project-recency', (req, res) => {
+        const sessionLog = readLocalFile('context/session-log.md') || ''
+        const relayInbox = readLocalFile('context/relay-inbox.jsonl') || ''
+
+        // Project keywords to detect in conversation text
+        const PROJECT_KEYWORDS = {
+          'corner':     ['corner', 'dashboard', 'product', 'game ui', 'hud', 'isometric', 'rpg menu'],
+          'ambition':   ['ambition', 'ambition mechanical', 'ambitionac'],
+          'outreach':   ['outreach', 'cold email', 'jacob', 'cpa', 'prospect'],
+          'aom-site':   ['aom site', '/v2', 'aheadofmarket', 'website redesign'],
+          'aom-phase2': ['phase 2', 'phase two'],
+          'gtm':        ['advisory', 'ai audit', 'go to market', 'steve'],
+          'cleo':       ['cleo', 'video edit', 'crown', 'content agent', 'footage'],
+          'content':    ['content', 'filming', 'edit'],
+          'kohrs':      ['kohrs', 'leigh', 'demolition'],
+          'isa':        ['isa', 'isa energy', 'brand video'],
+          'skylar':     ['skylar', 'music video'],
+          'infra':      ['infrastructure', 'elon', 'relay', 'bfg', 'system'],
+          'today':      ['today', 'asap', 'urgent', 'right now'],
+        }
+
+        // Weight: more recent lines count more
+        const scores = {}
+        for (const key of Object.keys(PROJECT_KEYWORDS)) scores[key] = 0
+
+        // Parse session log lines (most recent = highest weight)
+        const logLines = sessionLog.split('\n').filter(l => l.trim().startsWith('['))
+        const totalLogLines = logLines.length
+        logLines.forEach((line, idx) => {
+          const weight = 1 + (idx / Math.max(totalLogLines, 1)) * 4 // 1-5 scale, later = heavier
+          const lower = line.toLowerCase()
+          for (const [project, keywords] of Object.entries(PROJECT_KEYWORDS)) {
+            for (const kw of keywords) {
+              if (lower.includes(kw)) {
+                scores[project] += weight
+                break // one match per project per line
+              }
+            }
+          }
+        })
+
+        // Parse relay inbox (last 50 messages, recent = heavier)
+        const relayLines = relayInbox.split('\n').filter(l => l.trim()).slice(-50)
+        const totalRelayLines = relayLines.length
+        relayLines.forEach((line, idx) => {
+          try {
+            const msg = JSON.parse(line)
+            const text = (msg.message || '').toLowerCase()
+            const weight = 2 + (idx / Math.max(totalRelayLines, 1)) * 6 // relay weighs more (2-8)
+            for (const [project, keywords] of Object.entries(PROJECT_KEYWORDS)) {
+              for (const kw of keywords) {
+                if (text.includes(kw)) {
+                  scores[project] += weight
+                  break
+                }
+              }
+            }
+          } catch {}
+        })
+
+        // Normalize: highest score = 100
+        const maxScore = Math.max(...Object.values(scores), 1)
+        const normalized = {}
+        for (const [key, score] of Object.entries(scores)) {
+          normalized[key] = Math.round((score / maxScore) * 100)
+        }
+
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ scores: normalized, raw: scores, timestamp: new Date().toISOString() }))
+      })
+
       // Notifications endpoint
       server.middlewares.use('/api/local/notifications', (req, res) => {
         const content = readLocalFile('context/agent-notifications.md')
