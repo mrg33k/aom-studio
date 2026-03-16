@@ -25,6 +25,43 @@ const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
 const GameHUD = lazy(() => import('./GameHUD.jsx'))
 
+// ---- ERROR BOUNDARY (prevents relay message crashes from killing the dashboard) ----
+class ChatErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, info) {
+    console.warn('[Corner] Chat render error caught:', error, info?.componentStack?.slice(0, 200))
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          padding: 20, textAlign: 'center', color: '#94A3B8',
+          fontFamily: "'Inter', sans-serif", fontSize: 14,
+        }}>
+          <div style={{ marginBottom: 8, color: '#EF4444', fontWeight: 700 }}>Chat render error</div>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            style={{
+              background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)',
+              borderRadius: 8, padding: '8px 16px', color: '#60A5FA',
+              cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontWeight: 600,
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 // ---- MODE CONFIG -----------------------------------------------------------
 const MODES = {
   game: { id: 'game', label: 'GAME', icon: Map, key: '1', path: '/dashboard' },
@@ -3722,6 +3759,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* CHAT TAB (matches chat-view-full.png) */}
         {activeTab === 'chat' && (
+          <ChatErrorBoundary>
           <>
             {/* Messages area */}
             <div ref={messagesContainerRef} style={{
@@ -4294,6 +4332,41 @@ export default function GameDashboard() {
   }, [])
   const [panelMessages, setPanelMessages] = useState(IS_LOCAL ? {} : demoChatMessages)
   const [panelStreaming, setPanelStreaming] = useState(false)
+
+  // Safe sort for messages: handles missing/invalid timestamps without NaN crashes
+  const safeTimeSort = useCallback((a, b) => {
+    const ta = a?.time ? new Date(a.time).getTime() : 0
+    const tb = b?.time ? new Date(b.time).getTime() : 0
+    // If either is NaN (invalid date), push it to the end
+    if (isNaN(ta) && isNaN(tb)) return 0
+    if (isNaN(ta)) return 1
+    if (isNaN(tb)) return -1
+    return ta - tb
+  }, [])
+
+  // Safe setPanelMessages wrapper: validates messages before updating state
+  // Prevents React crash from malformed relay data (missing fields, bad timestamps)
+  const safePanelUpdate = useCallback((updater) => {
+    try {
+      setPanelMessages(prev => {
+        try {
+          const result = updater(prev)
+          // Validate _all array: every item must have role + content
+          if (result?._all) {
+            result._all = result._all.filter(m =>
+              m && typeof m.role === 'string' && (typeof m.content === 'string' || m.streaming)
+            )
+          }
+          return result
+        } catch (err) {
+          console.warn('[Corner] Panel message update failed:', err)
+          return prev // Return unchanged state on error
+        }
+      })
+    } catch (err) {
+      console.warn('[Corner] setPanelMessages failed:', err)
+    }
+  }, [])
   const panelRelayPollRef = useRef(null)
   // Background outbox polling state
   const [unreadCount, setUnreadCount] = useState(0)
@@ -4351,22 +4424,22 @@ export default function GameDashboard() {
           lastBgOutboxCheckRef.current = latest.timestamp
 
           // Add new responses, keep streaming placeholders intact (panelRelayPoll handles those)
-          setPanelMessages(prev => {
+          safePanelUpdate(prev => {
             const allMsgs = [...(prev._all || [])]
             for (const msg of newMsgs) {
+              if (!msg.message) continue // skip empty messages
               // Dedup by id OR by matching content+time (for messages without id)
               if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
               if (!msg.id && allMsgs.some(m => m.content === msg.message && m.role === 'assistant')) continue
               allMsgs.push({
                 role: 'assistant',
-                content: msg.message,
+                content: msg.message || '',
                 time: msg.timestamp || new Date().toISOString(),
                 source: msg.agent ? `${msg.agent}` : 'system',
-                id: msg.id,
+                id: msg.id || `bg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
               })
             }
-            // Sort chronologically so user+agent messages interleave by timestamp
-            allMsgs.sort((a, b) => new Date(a.time) - new Date(b.time))
+            allMsgs.sort(safeTimeSort)
             return { ...prev, _all: allMsgs }
           })
 
@@ -4393,7 +4466,7 @@ export default function GameDashboard() {
     }
   }, [panelVisible])
 
-  // TODO(bobby): RELAY MESSAGE CRASH (CRITICAL) -- Dashboard crashes/reloads when an incoming relay message arrives. The pipeline works (message reaches Telegram fine), but the frontend can't handle displaying new incoming messages without a page crash. Likely a state update in setPanelMessages that triggers a full React remount, or an unhandled error in the message render path (bad timestamp, missing field, or _all array mutation). Debug by: (1) adding error boundary around the chat render, (2) wrapping setPanelMessages in try/catch, (3) checking if newMsgs have valid .timestamp/.message fields before pushing, (4) logging the exact error before the crash. Bobby must reproduce this by sending a relay message from terminal and watching the dashboard. Ref: Patrik feedback line 155.
+  // DONE(bobby2): RELAY MESSAGE CRASH FIX -- safePanelUpdate() wraps all setPanelMessages calls with try/catch + field validation. safeTimeSort() handles NaN timestamps. All relay message pushes validate .message exists and default .time/.id. Malformed relay data can no longer crash React render cycle.
   // TODO(bobby): BATCH COMMITS TO AVOID HMR RELOAD -- Every git push to the aom-studio repo triggers Vite Hot Module Replacement, which reloads Patrik's dashboard mid-use. Bobby must either: (1) batch multiple changes into fewer commits, (2) time commits when Patrik isn't actively using the dashboard, or (3) configure Vite HMR to preserve state across reloads (module.hot.accept with state preservation). The page reload after sending a chat message was caused by a Bobby commit landing at the same moment. Ref: Patrik feedback line 154.
 
   // Background INBOX polling: picks up new messages from terminal/telegram
@@ -4426,25 +4499,25 @@ export default function GameDashboard() {
             m.source !== 'corner-dashboard' && m.source !== 'corner-websocket' && m.message?.trim()
           )
           if (externalMsgs.length > 0) {
-            setPanelMessages(prev => {
+            safePanelUpdate(prev => {
               const allMsgs = [...(prev._all || [])]
               for (const msg of externalMsgs) {
-                if (allMsgs.some(m => m.id === msg.id)) continue
+                if (!msg.message) continue // skip empty messages
+                if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
                 let sourceLabel = 'unknown'
                 if (msg.source === 'telegram') sourceLabel = 'via telegram'
                 else if (msg.source === 'terminal' || msg.source === 'cli') sourceLabel = 'via terminal'
                 else if (msg.source) sourceLabel = `via ${msg.source}`
                 allMsgs.push({
                   role: 'user',
-                  content: msg.message,
-                  time: msg.timestamp,
+                  content: msg.message || '',
+                  time: msg.timestamp || new Date().toISOString(),
                   source: sourceLabel,
                   targetAgent: msg.agent || null,
-                  id: msg.id,
+                  id: msg.id || `inbox-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
                 })
               }
-              // Re-sort by time
-              allMsgs.sort((a, b) => new Date(a.time) - new Date(b.time))
+              allMsgs.sort(safeTimeSort)
               return { ...prev, _all: allMsgs }
             })
           }
@@ -4521,12 +4594,12 @@ export default function GameDashboard() {
         }
 
         // Sort by timestamp and take last 50
-        all.sort((a, b) => new Date(a.time) - new Date(b.time))
+        all.sort(safeTimeSort)
         const recent = all.slice(-50)
 
         if (recent.length > 0) {
           // Store under a global key '_all' for the unified conversation view
-          setPanelMessages(prev => ({
+          safePanelUpdate(prev => ({
             ...prev,
             _all: recent,
           }))
@@ -5039,9 +5112,9 @@ export default function GameDashboard() {
                 const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
                 // Single state update: user message sorted + streaming placeholder at end
                 // Prevents React batching race that groups messages by sender
-                setPanelMessages(prev => {
+                safePanelUpdate(prev => {
                   const sorted = [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom, id: localId }]
-                  sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
+                  sorted.sort(safeTimeSort)
                   // Streaming placeholder always appended last (typing indicator)
                   sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
                   return { ...prev, _all: sorted }
@@ -5065,13 +5138,13 @@ export default function GameDashboard() {
                           const responses = data.messages.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
                           if (responses.length > 0) {
                             const latest = responses[responses.length - 1]
-                            setPanelMessages(prev => {
+                            safePanelUpdate(prev => {
                               // Remove streaming, add real response, sort in one pass
                               const filtered = [...(prev._all || [])].filter(m => !m.streaming)
                               if (!filtered.some(m => m.id === latest.id)) {
-                                filtered.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString(), source: latest.agent || 'system', id: latest.id })
+                                filtered.push({ role: 'assistant', content: latest.message || '', streaming: false, time: latest.timestamp || new Date().toISOString(), source: latest.agent || 'system', id: latest.id || `resp-${Date.now()}` })
                               }
-                              filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
+                              filtered.sort(safeTimeSort)
                               return { ...prev, _all: filtered }
                             })
                             setPanelStreaming(false)
@@ -5084,10 +5157,10 @@ export default function GameDashboard() {
                       } catch {}
                     }, 500) // Local: 500ms for near-instant response display
                   }).catch(err => {
-                    setPanelMessages(prev => {
+                    safePanelUpdate(prev => {
                       const msgs = [...(prev._all || [])]
                       const last = msgs[msgs.length - 1]
-                      if (last) msgs[msgs.length - 1] = { ...last, content: `Failed: ${err.message}`, streaming: false }
+                      if (last) msgs[msgs.length - 1] = { ...last, content: `Failed: ${err?.message || 'unknown error'}`, streaming: false }
                       return { ...prev, _all: msgs }
                     })
                     setPanelStreaming(false)
