@@ -3426,7 +3426,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 // DONE(bobby): Chat timeout indicator -- countdown ring when waiting for agent response (60s). Shows elapsed time + animated SVG ring.
 // DONE(bobby): Agent activity log -- INFO tab now shows recent commits/completions per agent from pipeline feed. Filterable, with commit hashes and timestamps.
 // TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent
-// TODO(bobby): PASS isNightMode TO GAMEHUD -- GameDashboard has isNightMode state but does NOT pass it to <GameHUD>. Bottom HUD renders dark always. Add isNightMode prop to the <GameHUD ... /> call (~line 5268) and accept it in GameHUD's export default function. Then use it to swap the bottom bar palette for daytime. Ref: Patrik feedback Pass 22 (daytime bottom HUD = white or vibrant blue).
+// DONE(bobby2): isNightMode passed to GameHUD. Bottom HUD flips to white/vibrant blue in daytime. Ref: Patrik feedback Pass 22.
 // DONE(bobby+bobby2): Sidebar seamless column -- sidebar is ONE continuous full-height column. Chat input at bottom of sidebar. ChatBar removed. GameHUD constrained to game viewport width.
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
@@ -5308,6 +5308,7 @@ export default function GameDashboard() {
               // Focus sidebar chat
               setPanelActiveTab('chat')
             }}
+            isNightMode={isNightMode}
           />
         </Suspense>
         </div>
