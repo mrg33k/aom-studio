@@ -1704,17 +1704,34 @@ export default function GameHUD({
             <HUDBellButton onClick={onExpandChat} />
           )}
 
-          {/* Divider before chat */}
+          {/* Divider before chat shortcut */}
           <div style={{ width: 1, height: 36, background: HUD.divider, flexShrink: 0 }} />
 
-          {/* Right: Integrated chat input */}
-          <HUDChatInput
-            chatAgent={chatAgent}
-            agentStatus={agentStatus}
-            onChatSubmit={onChatSubmit}
-            onExpandChat={onExpandChat}
-            isMobile={isMobile}
-          />
+          {/* Right: Open sidebar chat button (chat input lives ONLY in sidebar per Patrik directive) */}
+          <button
+            type="button"
+            onClick={() => onExpandChat?.()}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'rgba(100,180,255,0.06)',
+              border: `1px solid ${HUD.divider}`,
+              borderRadius: 10,
+              padding: isMobile ? '6px 10px' : '8px 16px',
+              cursor: 'pointer',
+              color: HUD.textSecondary,
+              fontSize: isMobile ? 14 : 16,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              fontWeight: 500,
+              transition: 'all 150ms ease',
+              flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.12)'; e.currentTarget.style.borderColor = HUD.panelBorderHover }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.06)'; e.currentTarget.style.borderColor = HUD.divider }}
+            title="Open sidebar chat"
+          >
+            <MessageSquare size={isMobile ? 14 : 16} />
+            {!isMobile && <span>Chat</span>}
+          </button>
         </div>
       </div>
 
