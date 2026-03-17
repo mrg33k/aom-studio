@@ -6709,7 +6709,7 @@ export default function GameDashboard() {
   }, [])
   // Per-agent chat history: { agentSlug: { _all: [...messages] } }
   // VERSION 2: force clear on upgrade to fix cross-agent contamination
-  const CHAT_VERSION = 'v3'
+  const CHAT_VERSION = 'v4'
   const [agentChats, setAgentChats] = useState(() => {
     if (!IS_LOCAL) return { _demo: demoChatMessages }
     try {
