@@ -337,11 +337,11 @@ export default function CanvasOffice({
     // Layer 2: CHARACTER -- SKIPPED. Little fairy Elon stays (baked into room shell).
     // Big bobble removed per Patrik. Will revisit character system for room 2.
 
-    // Layer 3: GLOW (atmosphere overlay, screen blend, low alpha)
+    // Layer 3: GLOW -- reduced to 15% to stop washing out the room/character
     if (layerCategories.glowLayer) {
       ctx.save()
       ctx.globalCompositeOperation = 'screen'
-      ctx.globalAlpha = 0.4
+      ctx.globalAlpha = 0.15
       ctx.drawImage(layerCategories.glowLayer.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
       ctx.restore()
     }
