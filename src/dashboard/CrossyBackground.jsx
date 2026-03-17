@@ -1,14 +1,73 @@
 import React, { useRef, useEffect } from 'react'
 import * as THREE from 'three'
 
-// CrossyBackground: Three.js city park scene with day/night cycle
+// CrossyBackground: Three.js city park scene with REAL TIME day/night cycle
 // Features: stars, sun/moon orb, lumpy grass ground, city skyline with glowing windows,
 // animated trees, volumetric fog, mouse-parallax camera
 //
 // Renders BEHIND CanvasOffice (lower z-index). CanvasOffice sits on top with transparent bg.
-// Accepts isNightMode prop for external control but also runs its own 30s day/night cycle internally.
+// Uses real Arizona time (America/Phoenix, no DST) to determine day/night.
+// Accepts isNightMode prop for external override:
+//   true = force night, false = force day, undefined/null = use real time.
 
-const CYCLE_DURATION = 30 // seconds for a full day/night cycle
+/**
+ * Get current dayRatio (0 = full night, 1 = full day) based on Arizona time.
+ *
+ * Schedule:
+ *   6:00 AM - 8:00 AM  -> sunrise (0 -> 1 smooth)
+ *   8:00 AM - 6:00 PM  -> full day (1)
+ *   6:00 PM - 8:00 PM  -> sunset (1 -> 0 smooth)
+ *   8:00 PM - 6:00 AM  -> full night (0)
+ *
+ * Transitions use a smoothstep for natural-feeling light changes.
+ */
+function getArizonaDayRatio() {
+  // Get current time in Arizona (America/Phoenix never observes DST = UTC-7 year-round)
+  const now = new Date()
+  const azString = now.toLocaleString('en-US', { timeZone: 'America/Phoenix' })
+  const azDate = new Date(azString)
+  const hour = azDate.getHours() + azDate.getMinutes() / 60
+
+  // Smoothstep helper: smooth transition from 0 to 1 between edge0 and edge1
+  function smoothstep(edge0, edge1, x) {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)))
+    return t * t * (3 - 2 * t)
+  }
+
+  if (hour >= 8 && hour < 18) {
+    // Full day: 8am to 6pm
+    return 1
+  } else if (hour >= 6 && hour < 8) {
+    // Sunrise: 6am to 8am, smooth 0->1
+    return smoothstep(6, 8, hour)
+  } else if (hour >= 18 && hour < 20) {
+    // Sunset: 6pm to 8pm, smooth 1->0
+    return 1 - smoothstep(18, 20, hour)
+  } else {
+    // Full night: 8pm to 6am
+    return 0
+  }
+}
+
+/**
+ * Get the sun/moon arc angle based on Arizona time.
+ * Maps 24 hours to a full circle. The orb rises in the east (left),
+ * peaks at noon, and sets in the west (right).
+ *
+ * 6am = horizon (angle 0), noon = top (angle PI/2), 6pm = horizon (angle PI),
+ * midnight = bottom (angle 3PI/2 i.e. -PI/2).
+ */
+function getArizonaOrbAngle() {
+  const now = new Date()
+  const azString = now.toLocaleString('en-US', { timeZone: 'America/Phoenix' })
+  const azDate = new Date(azString)
+  const hour = azDate.getHours() + azDate.getMinutes() / 60 + azDate.getSeconds() / 3600
+
+  // Map 24h to full circle. 6am = -PI/2 (horizon), noon = 0 (top), 6pm = PI/2, midnight = PI
+  // We shift so that hour 6 maps to angle -PI/2
+  const fraction = (hour - 6) / 24 // 0 at 6am, 1 at 6am next day
+  return fraction * Math.PI * 2 - Math.PI / 2
+}
 
 export default function CrossyBackground({ isNightMode }) {
   const containerRef = useRef(null)
@@ -189,15 +248,20 @@ export default function CrossyBackground({ isNightMode }) {
 
     // Temp colors for lerp (avoid allocating in the loop)
     const tempColor1 = new THREE.Color()
-    const tempColor2 = new THREE.Color()
 
     function animate() {
       animFrameId = requestAnimationFrame(animate)
       const elapsed = clock.getElapsedTime()
 
-      // Day/night cycle
-      const cycleProgress = (elapsed % CYCLE_DURATION) / CYCLE_DURATION
-      const dayRatio = (Math.sin(cycleProgress * Math.PI * 2 - Math.PI / 2) + 1) / 2
+      // Day/night ratio from real Arizona time (or prop override)
+      let dayRatio
+      if (isNightMode === true) {
+        dayRatio = 0 // Force night
+      } else if (isNightMode === false) {
+        dayRatio = 1 // Force day
+      } else {
+        dayRatio = getArizonaDayRatio() // Real time
+      }
 
       // Sky and fog color transitions
       scene.background.lerpColors(colors.nightSky, colors.daySky, dayRatio)
@@ -209,8 +273,18 @@ export default function CrossyBackground({ isNightMode }) {
       ambientLight.intensity = 0.15 + dayRatio * 0.6
       celestialLight.intensity = 0.3 + dayRatio * 1.2
 
-      // Sun/moon orb arc
-      const angle = cycleProgress * Math.PI * 2 - Math.PI / 2
+      // Sun/moon orb arc based on real time (or prop override)
+      let angle
+      if (isNightMode === true) {
+        // Force night: put orb below horizon (midnight position)
+        angle = Math.PI * 1.5 - Math.PI / 2 // = PI, bottom of arc
+      } else if (isNightMode === false) {
+        // Force day: put orb at noon position (top of arc)
+        angle = 0 // top
+      } else {
+        angle = getArizonaOrbAngle() // Real time position
+      }
+
       const dist = 250
       orb.position.x = Math.cos(angle) * dist
       orb.position.y = Math.sin(angle) * dist
@@ -299,7 +373,7 @@ export default function CrossyBackground({ isNightMode }) {
         container.removeChild(renderer.domElement)
       }
     }
-  }, []) // Run once on mount. isNightMode prop available but cycle is internal.
+  }, []) // Run once on mount. isNightMode available as override but real time is default.
 
   return (
     <div
