@@ -394,8 +394,9 @@ export default function CanvasOffice({
       ctx.fill()
       ctx.restore()
 
-      // Character sprite
+      // Character sprite -- FULL OPACITY, no transparency
       ctx.save()
+      ctx.globalAlpha = 1.0
       ctx.imageSmoothingEnabled = false
       if (facingLeft) {
         ctx.translate(charX + charSize, charY)
