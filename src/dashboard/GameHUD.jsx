@@ -322,8 +322,10 @@ function parsePunchList(markdown) {
 // Projects ranked by what you TALK ABOUT, not static order.
 // Fallback weights used when conversation data isn't available.
 const DEFAULT_RECENCY_WEIGHTS = {
-  'today':          100,  // Always first
-  'your-todos':     98,   // Patrik's personal TODOs -- right after Today
+  'today':          100,  // Always fourth (Patrik directive: Right Now > Checking In > Your TODOs > Today)
+  'completed-feed': 99,   // Right after Right Now
+  'checking-in':    98.5, // Second (Patrik directive)
+  'your-todos':     98,   // Third (Patrik directive)
   'ih':             92,   // $9k payment pending -- RED
   'isa-client':     90,   // Apr 10 deadline -- RED
   'kohrs-client':   88,   // Behind on 10 videos -- RED
@@ -405,9 +407,9 @@ function usePunchListData() {
   return { data, loading }
 }
 
-// ---- RIGHT NOW LIVE TASKS (polls agent-notifications.md for active agent work) ----
-// Mirrors ChecklistMode's useRightNowTasks but returns task count + summary for the HUD pill.
-// Updates every 3s so the Right Now pill is the FRESHEST data on screen (beats notifications 8s, punch-list 5s).
+// ---- RIGHT NOW LIVE TASKS (polls active-missions.md for RUNNING agents) ----
+// PATRIK CORRECTION: Right Now = ONLY agents that are RUNNING right now. Not finished tasks.
+// One line per running agent: avatar + agent name + current task. If nothing running: empty.
 function useRightNowLiveTasks() {
   const [tasks, setTasks] = useState([])
 
@@ -416,23 +418,85 @@ function useRightNowLiveTasks() {
 
     const fetchTasks = async () => {
       try {
+        const res = await fetch('/api/local/file?path=context/active-missions.md')
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.content) return
+
+        // Parse the "## Running" table for active agents
+        const content = json.content
+        const runningSection = content.split(/^## Running/m)[1]
+        if (!runningSection) { setTasks([]); return }
+        // Stop at next section header
+        const runningContent = runningSection.split(/^## /m)[0]
+
+        // Parse table rows (skip header + separator)
+        const rows = runningContent.trim().split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('Agent'))
+        const parsed = rows.map(row => {
+          const cells = row.split('|').map(c => c.trim()).filter(Boolean)
+          if (cells.length < 3) return null
+          const agentRaw = cells[0]
+          const mission = cells[1]
+          // Normalize agent slug
+          let agentSlug = agentRaw.toLowerCase().replace(/\s+\d+$/, '').trim()
+          if (/^bobby/.test(agentSlug)) agentSlug = 'bobby'
+          if (/^steffen/.test(agentSlug)) agentSlug = 'steffen'
+
+          // Clean mission text to a short description
+          let text = mission
+            .replace(/^Relaunched:\s*/i, '')
+            .replace(/\([^)]*\)/g, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim()
+          if (text.length > 55) text = text.slice(0, 52) + '...'
+
+          return {
+            text,
+            agent: agentSlug,
+            done: false,
+            isLive: true,
+          }
+        }).filter(t => t && t.text.length > 3 && t.agent)
+
+        setTasks(parsed)
+      } catch {}
+    }
+
+    fetchTasks()
+    const timer = setInterval(fetchTasks, 3000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return tasks
+}
+
+// ---- COMPLETED FEED (polls agent-notifications.md for recent completions) ----
+// Simplified activity feed: "Bobby shipped chat cleanup" + timestamp. Last 8 max.
+function useCompletedFeed() {
+  const [completions, setCompletions] = useState([])
+
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    const fetchCompletions = async () => {
+      try {
         const res = await fetch('/api/local/file?path=context/agent-notifications.md')
         if (!res.ok) return
         const json = await res.json()
         if (!json.content) return
 
         const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
-        const recentTaskLines = lines
+        const completionLines = lines
           .filter(l => {
             if (/PATRIK\s*(DIRECTIVE|CLARIFICATION|FEEDBACK|BUG|REMINDER|DECISION)/i.test(l)) return false
             if (/COUNCIL\s*(DIRECTIVE|DECISION)/i.test(l)) return false
             if (/NEXT\s*WAVE/i.test(l)) return false
-            return /TASK\s*FINISHED|SESSION|SHIPPED|BUILD\s*\d|DELIVERED|MILESTONE/i.test(l)
+            return /TASK\s*FINISHED|SHIPPED|DELIVERED|MILESTONE/i.test(l)
           })
-          .slice(-6)
+          .slice(-8)
           .reverse()
 
-        const parsed = recentTaskLines.map((line, i) => {
+        const parsed = completionLines.map((line) => {
           const agentMatch = line.match(/(?:Bobby\s*\d?|Steffen\s*\d?|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
           let agentSlug = agentMatch ? agentMatch[0].toLowerCase().replace(/\s+/g, '') : null
           if (agentSlug && /^bobby\d?$/.test(agentSlug)) agentSlug = 'bobby'
@@ -441,12 +505,10 @@ function useRightNowLiveTasks() {
           let text = ''
           const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
           const shippedMatch = line.match(/SHIPPED:\s*(?:\(1\)\s*)?(.+?)(?:,\s*\(2\)|\.\s|$)/i)
-          const sessionMatch = line.match(/SESSION[^:]*:\s*\d*\s*commits?\s*pushed[^.]*\.\s*(.+?)(?:\.\s|$)/i)
           const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
           if (taskMatch) text = taskMatch[1].trim()
           else if (milestoneMatch) text = milestoneMatch[1].trim()
           else if (shippedMatch) text = shippedMatch[1].trim()
-          else if (sessionMatch) text = sessionMatch[1].trim()
           else {
             const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-\u2013:]\s*(.+?)(?:\.\s|$)/i)
             text = afterAgent ? afterAgent[1].trim() : ''
@@ -464,28 +526,31 @@ function useRightNowLiveTasks() {
             .replace(/^\s*[-\u2013:,.\s]+/, '')
             .replace(/[-\u2013:,.\s]+$/, '')
             .trim()
-          if (text.length > 60) text = text.slice(0, 57) + '...'
+          if (text.length > 55) text = text.slice(0, 52) + '...'
 
-          const isFinished = /TASK\s*FINISHED|COMPLETE|DELIVERED|MILESTONE/i.test(line)
+          // Extract date from [YYYY-MM-DD]
+          const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\]/)
+          const timestamp = dateMatch ? dateMatch[1] : ''
 
           return {
             text,
             agent: agentSlug,
-            done: isFinished,
-            isLive: !isFinished,
+            timestamp,
+            done: true,
+            isLive: false,
           }
         }).filter(t => t.text.length > 3 && t.agent)
 
-        setTasks(parsed)
+        setCompletions(parsed)
       } catch {}
     }
 
-    fetchTasks()
-    const timer = setInterval(fetchTasks, 3000) // 3s: Right Now must be freshest data on screen (beats notifications 8s, punch-list 5s)
+    fetchCompletions()
+    const timer = setInterval(fetchCompletions, 8000)
     return () => clearInterval(timer)
   }, [])
 
-  return tasks
+  return completions
 }
 
 // ---- LIVE TASK AUTO-CHECK (polls notifications for TASK FINISHED, auto-checks matching punch-list items) ----
@@ -1780,6 +1845,7 @@ export default function GameHUD({
   const hudRef = useRef(null)
   const conversationScores = useConversationRecency()
   const liveRightNowTasks = useRightNowLiveTasks()
+  const completedFeed = useCompletedFeed()
   const isAutoChecked = useAutoCheckFromNotifications()
   const patrikTodos = usePatrikTodos(punchData)
   const checkingInTasks = useCheckingInTasks(punchData)
@@ -1787,44 +1853,53 @@ export default function GameHUD({
   // Sort projects by CONVERSATION RECENCY first, then incomplete task count.
   // The system KNOWS what matters based on what you TALK ABOUT.
   // Uses live conversation parsing on localhost, falls back to defaults on production.
-  // Right Now pill is LIVE: merges agent-notifications.md tasks with punch-list.md "RIGHT NOW" section.
+  // PATRIK CORRECTION: Right Now = ONLY running agents. Completed feed = separate activity log beneath.
   // Your TODOs pill: Patrik's personal blocked items (things only he can unblock).
   // Checking In pill: stale tasks that haven't had movement in 24+ hours.
+  // Section order (Patrik directive): Right Now > Checking In > Your TODOs > Today
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
 
-    // Merge live agent tasks into the Right Now pill
-    // If punch-list has a "RIGHT NOW" section, merge live tasks into it
-    // If not, create a synthetic Right Now pill from live tasks alone
-    let merged = [...raw]
+    // Remove any punch-list "RIGHT NOW" section (we replace it with live running agents)
+    let merged = raw.filter(p => p.section !== 'rightnow')
+
+    // RIGHT NOW = ONLY currently running agents from active-missions.md
     if (liveRightNowTasks.length > 0) {
-      const existingRightNow = merged.find(p => p.section === 'rightnow')
-      const liveTasks = liveRightNowTasks.map(t => ({
-        text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: ${t.text}`,
-        done: t.done,
-        agent: t.agent,
-        raw: '',
-        isLive: t.isLive,
-      }))
-      if (existingRightNow) {
-        // Merge: live tasks first, then existing punch-list tasks (deduped by agent+text similarity)
-        const existingTexts = new Set(existingRightNow.tasks.map(t => t.text.toLowerCase().slice(0, 30)))
-        const uniqueLive = liveTasks.filter(t => !existingTexts.has(t.text.toLowerCase().slice(0, 30)))
-        existingRightNow.tasks = [...uniqueLive, ...existingRightNow.tasks]
-      } else {
-        // Create a synthetic Right Now pill
-        merged.push({
-          name: 'Right Now',
-          section: 'rightnow',
-          color: '#FF6B3D',
-          icon: 'zap',
-          tasks: liveTasks,
-        })
-      }
+      merged.push({
+        name: 'Right Now',
+        section: 'rightnow',
+        color: '#FF6B3D',
+        icon: 'zap',
+        tasks: liveRightNowTasks.map(t => ({
+          text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: ${t.text}`,
+          done: false,
+          agent: t.agent,
+          raw: '',
+          isLive: true,
+        })),
+      })
+    }
+
+    // COMPLETED FEED = simplified activity feed of recent task completions
+    if (completedFeed.length > 0) {
+      merged.push({
+        name: 'Completed',
+        section: 'completed-feed',
+        color: '#22C55E',
+        icon: 'check-circle',
+        tasks: completedFeed.map(t => ({
+          text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)} shipped ${t.text}`,
+          done: true,
+          agent: t.agent,
+          raw: '',
+          isLive: false,
+          timestamp: t.timestamp,
+        })),
+        isCompletedFeed: true,
+      })
     }
 
     // YOUR TODOS: Patrik's personal blocked items (things only he can unblock)
-    // Creates a synthetic "Your TODOs" pill from punch-list tasks tagged [Patrik]
     if (patrikTodos.length > 0) {
       const existingTodos = merged.find(p => p.section === 'your-todos')
       if (!existingTodos) {
@@ -1847,7 +1922,6 @@ export default function GameHUD({
     }
 
     // CHECKING IN: Stale tasks that haven't had movement
-    // Subtle nudge for tasks that need attention
     if (checkingInTasks.length > 0) {
       const existingStale = merged.find(p => p.section === 'checking-in')
       if (!existingStale) {
@@ -1871,31 +1945,33 @@ export default function GameHUD({
     }
 
     // LIVE TASK AUTO-CHECK: mark tasks as done if they match TASK FINISHED notifications
-    // This is optimistic UI: the checkbox appears checked before punch-list.md is updated on disk.
     for (const project of merged) {
       for (const task of project.tasks) {
         if (!task.done && isAutoChecked(task.text)) {
           task.done = true
-          task.autoChecked = true // Flag so we can style it differently (e.g., subtle glow)
+          task.autoChecked = true
         }
       }
     }
 
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
-    // Sort order: Right Now > Your TODOs > Today > rest by recency weight
+    // Sort order (Patrik directive): Right Now > Completed > Checking In > Your TODOs > Today > rest
     return [...merged].sort((a, b) => {
-      // Right Now is always first (live sprint)
+      // Right Now is always first (running agents)
       if (a.section === 'rightnow') return -1
       if (b.section === 'rightnow') return 1
-      // Your TODOs always second (Patrik's personal blocked items)
+      // Completed feed right after Right Now
+      if (a.section === 'completed-feed') return -1
+      if (b.section === 'completed-feed') return 1
+      // Checking In second (Patrik directive)
+      if (a.section === 'checking-in' && b.section !== 'checking-in') return -1
+      if (b.section === 'checking-in' && a.section !== 'checking-in') return 1
+      // Your TODOs third
       if (a.section === 'your-todos') return -1
       if (b.section === 'your-todos') return 1
-      // Today always third (day's agenda)
+      // Today fourth
       if (a.section === 'today') return -1
       if (b.section === 'today') return 1
-      // Checking In always last among priority pills (stale nudges)
-      if (a.section === 'checking-in' && b.section !== 'checking-in') return 1
-      if (b.section === 'checking-in' && a.section !== 'checking-in') return -1
       // Primary: conversation-driven weight (higher = first)
       const aWeight = weights[a.section] || 10
       const bWeight = weights[b.section] || 10
@@ -1904,10 +1980,9 @@ export default function GameHUD({
       const aRemaining = a.tasks.filter(t => !t.done).length
       const bRemaining = b.tasks.filter(t => !t.done).length
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
-      // Tertiary: total tasks
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, liveRightNowTasks, isAutoChecked, patrikTodos, checkingInTasks])
+  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks])
 
   // Filter projects by search query
   const filteredProjects = useMemo(() => {

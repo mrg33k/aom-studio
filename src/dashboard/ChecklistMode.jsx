@@ -207,9 +207,11 @@ function parsePunchList(markdown) {
 
 // Default recency weights (fallback when conversation data unavailable)
 const DEFAULT_RECENCY_WEIGHTS = {
-  'rightnow':   110,
-  'your-todos': 105,
-  'today':      100,
+  'rightnow':       110,
+  'completed-feed': 108,
+  'checking-in':    106,
+  'your-todos':     105,
+  'today':          100,
   'corner':     95,
   'aom-site':   85,
   'aom-phase2': 80,
@@ -248,9 +250,9 @@ function useConversationRecency() {
   return scores
 }
 
-// ---- RIGHT NOW: live agent tasks from agent-notifications.md ----------------
-// Parses recent TASK entries to build the "Right Now" active sprint list.
-// Each entry gets a simulated progress value based on recency (newer = lower %).
+// ---- RIGHT NOW: RUNNING agents from active-missions.md ----------------
+// PATRIK CORRECTION: Right Now = ONLY agents that are RUNNING. Not finished tasks.
+// One line per running agent: avatar + agent name + current task.
 function useRightNowTasks() {
   const [tasks, setTasks] = useState([])
 
@@ -259,51 +261,100 @@ function useRightNowTasks() {
 
     const fetchTasks = async () => {
       try {
+        const res = await fetch('/api/local/file?path=context/active-missions.md')
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.content) return
+
+        // Parse the "## Running" table
+        const content = json.content
+        const runningSection = content.split(/^## Running/m)[1]
+        if (!runningSection) { setTasks([]); return }
+        const runningContent = runningSection.split(/^## /m)[0]
+
+        // Parse table rows (skip header + separator)
+        const rows = runningContent.trim().split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('Agent'))
+        const parsed = rows.map(row => {
+          const cells = row.split('|').map(c => c.trim()).filter(Boolean)
+          if (cells.length < 3) return null
+          const agentRaw = cells[0]
+          const mission = cells[1]
+          let agentSlug = agentRaw.toLowerCase().replace(/\s+\d+$/, '').trim()
+          if (/^bobby/.test(agentSlug)) agentSlug = 'bobby'
+          if (/^steffen/.test(agentSlug)) agentSlug = 'steffen'
+
+          let text = mission
+            .replace(/^Relaunched:\s*/i, '')
+            .replace(/\([^)]*\)/g, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim()
+          if (text.length > 55) text = text.slice(0, 52) + '...'
+
+          return {
+            text,
+            agent: agentSlug,
+            progress: 50, // Running = in progress
+            done: false,
+            isLive: true,
+          }
+        }).filter(t => t && t.text.length > 3 && t.agent)
+
+        setTasks(parsed)
+      } catch {}
+    }
+
+    fetchTasks()
+    const timer = setInterval(fetchTasks, 3000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return tasks
+}
+
+// ---- COMPLETED FEED (polls agent-notifications.md for recent task completions) ----
+// Simplified: "Bobby shipped chat cleanup" + timestamp. Last 8 max.
+function useCompletedFeed() {
+  const [completions, setCompletions] = useState([])
+
+  useEffect(() => {
+    if (!IS_LOCAL) return
+
+    const fetchCompletions = async () => {
+      try {
         const res = await fetch('/api/local/file?path=context/agent-notifications.md')
         if (!res.ok) return
         const json = await res.json()
         if (!json.content) return
 
         const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
-        // Take the most recent 6 lines that are AGENT TASK entries
-        // Exclude PATRIK directives/feedback/bugs/clarifications/reminders
-        const recentTaskLines = lines
+        const completionLines = lines
           .filter(l => {
-            // Must be an agent task, not a Patrik directive
             if (/PATRIK\s*(DIRECTIVE|CLARIFICATION|FEEDBACK|BUG|REMINDER|DECISION)/i.test(l)) return false
             if (/COUNCIL\s*(DIRECTIVE|DECISION)/i.test(l)) return false
             if (/NEXT\s*WAVE/i.test(l)) return false
-            // Must contain task-related keywords
-            return /TASK\s*FINISHED|SESSION|SHIPPED|BUILD\s*\d|DELIVERED|MILESTONE/i.test(l)
+            return /TASK\s*FINISHED|SHIPPED|DELIVERED|MILESTONE/i.test(l)
           })
-          .slice(-6)
+          .slice(-8)
           .reverse()
 
-        const parsed = recentTaskLines.map((line, i) => {
-          // Match agent name (including Bobby2, Steffen2, Bobby3 variants)
+        const parsed = completionLines.map((line) => {
           const agentMatch = line.match(/(?:Bobby\s*\d?|Steffen\s*\d?|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
           let agentSlug = agentMatch ? agentMatch[0].toLowerCase().replace(/\s+/g, '') : null
-          // Normalize Bobby2/3 -> bobby, Steffen2 -> steffen
           if (agentSlug && /^bobby\d?$/.test(agentSlug)) agentSlug = 'bobby'
           if (agentSlug && /^steffen\d?$/.test(agentSlug)) agentSlug = 'steffen'
 
-          // Extract a short task description (clean, no jargon)
           let text = ''
-          const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-–]\s*(.+?)(?:\.\s|$)/i)
+          const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
           const shippedMatch = line.match(/SHIPPED:\s*(?:\(1\)\s*)?(.+?)(?:,\s*\(2\)|\.\s|$)/i)
-          const sessionMatch = line.match(/SESSION[^:]*:\s*\d*\s*commits?\s*pushed[^.]*\.\s*(.+?)(?:\.\s|$)/i)
-          const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-–]\s*(.+?)(?:\.\s|$)/i)
+          const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
           if (taskMatch) text = taskMatch[1].trim()
           else if (milestoneMatch) text = milestoneMatch[1].trim()
           else if (shippedMatch) text = shippedMatch[1].trim()
-          else if (sessionMatch) text = sessionMatch[1].trim()
           else {
-            // Fallback: grab text after agent name and colon
-            const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-–:]\s*(.+?)(?:\.\s|$)/i)
+            const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-\u2013:]\s*(.+?)(?:\.\s|$)/i)
             text = afterAgent ? afterAgent[1].trim() : ''
           }
 
-          // Clean up: strip @mentions, commit hashes, file paths, parenthetical junk
           text = text.replace(/@\w+:?/g, '')
             .replace(/\b[0-9a-f]{7,8}\b/g, '')
             .replace(/projects\/\S+/g, '')
@@ -313,45 +364,51 @@ function useRightNowTasks() {
             .replace(/\([\s,]*\)/g, '')
             .replace(/REMAINING\s*TODOs?:.*$/i, '')
             .replace(/\s{2,}/g, ' ')
-            .replace(/^\s*[-–:,.\s]+/, '')
-            .replace(/[-–:,.\s]+$/, '')
+            .replace(/^\s*[-\u2013:,.\s]+/, '')
+            .replace(/[-\u2013:,.\s]+$/, '')
             .trim()
-          if (text.length > 60) text = text.slice(0, 57) + '...'
+          if (text.length > 55) text = text.slice(0, 52) + '...'
 
-          // Simulated progress: most recent = 85%, oldest in the list = 35%
-          // Finished tasks = 100%
-          const isFinished = /TASK\s*FINISHED|COMPLETE|DELIVERED|MILESTONE/i.test(line)
-          const progress = isFinished ? 100 : Math.max(35, 85 - (i * 10))
+          const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\]/)
+          const timestamp = dateMatch ? dateMatch[1] : ''
 
           return {
             text,
             agent: agentSlug,
-            progress,
-            done: isFinished,
-            isLive: !isFinished,
-            raw: line,
+            progress: 100,
+            done: true,
+            isLive: false,
+            timestamp,
           }
         }).filter(t => t.text.length > 3 && t.agent)
 
-        setTasks(parsed)
+        setCompletions(parsed)
       } catch {}
     }
 
-    fetchTasks()
-    const timer = setInterval(fetchTasks, 8000)
+    fetchCompletions()
+    const timer = setInterval(fetchCompletions, 8000)
     return () => clearInterval(timer)
   }, [])
 
-  return tasks
+  return completions
 }
 
 // Generate demo Right Now tasks for production
 function generateDemoRightNow() {
   return [
-    { text: 'Building permit tracker dashboard page', agent: 'bobby', progress: 72, done: false, isLive: true },
-    { text: 'QA pass on Garcia homepage redesign', agent: 'elmo', progress: 45, done: false, isLive: true },
-    { text: 'Drafting 15 personalized outreach emails', agent: 'jacob', progress: 60, done: false, isLive: true },
-    { text: 'ROI calculator for construction vertical', agent: 'steve', progress: 33, done: false, isLive: true },
+    { text: 'Building permit tracker dashboard page', agent: 'bobby', progress: 50, done: false, isLive: true },
+    { text: 'QA pass on Garcia homepage redesign', agent: 'elmo', progress: 50, done: false, isLive: true },
+  ]
+}
+
+// Generate demo completed feed for production
+function generateDemoCompleted() {
+  return [
+    { text: 'Bobby shipped permit tracker v1', agent: 'bobby', progress: 100, done: true, isLive: false, timestamp: '2026-03-17' },
+    { text: 'Steve shipped coach report pass 9', agent: 'steve', progress: 100, done: true, isLive: false, timestamp: '2026-03-17' },
+    { text: 'Steffen shipped 501 catalog assets', agent: 'steffen', progress: 100, done: true, isLive: false, timestamp: '2026-03-16' },
+    { text: 'Jacob shipped 51 outreach emails', agent: 'jacob', progress: 100, done: true, isLive: false, timestamp: '2026-03-16' },
   ]
 }
 
@@ -592,7 +649,7 @@ function usePunchListData() {
 }
 
 // ---- PROJECT SIDEBAR (replaces agent sidebar) --------------------------------
-function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, rightNowCount = 0, todosCount = 0, checkingInCount = 0 }) {
+function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, rightNowCount = 0, completedCount = 0, todosCount = 0, checkingInCount = 0 }) {
   if (isMobile) {
     // Horizontal scroll chips on mobile
     return (
@@ -653,6 +710,34 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           </button>
         )}
 
+        {/* Checking In chip (mobile) -- Patrik directive: before Your TODOs */}
+        {checkingInCount > 0 && (
+          <button
+            onClick={() => onSelectProject('checking-in')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              height: 40, padding: '0 14px',
+              background: selectedProject === 'checking-in' ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.04)',
+              border: `1.5px solid ${selectedProject === 'checking-in' ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.1)'}`,
+              borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+              cursor: 'pointer', scrollSnapAlign: 'start',
+              color: '#94A3B8',
+              fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
+              textTransform: 'uppercase',
+            }}
+          >
+            <History size={14} color="#94A3B8" />
+            Check In
+            <span style={{
+              fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+              fontSize: 13, color: '#FFF', background: '#94A3B8',
+              padding: '2px 7px', borderRadius: 8, lineHeight: 1,
+            }}>
+              {checkingInCount}
+            </span>
+          </button>
+        )}
+
         {/* Your TODOs chip (mobile) */}
         {todosCount > 0 && (
           <button
@@ -677,34 +762,6 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               padding: '2px 7px', borderRadius: 8, lineHeight: 1,
             }}>
               {todosCount}
-            </span>
-          </button>
-        )}
-
-        {/* Checking In chip (mobile) */}
-        {checkingInCount > 0 && (
-          <button
-            onClick={() => onSelectProject('checking-in')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              height: 40, padding: '0 14px',
-              background: selectedProject === 'checking-in' ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.04)',
-              border: `1.5px solid ${selectedProject === 'checking-in' ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.1)'}`,
-              borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
-              cursor: 'pointer', scrollSnapAlign: 'start',
-              color: '#94A3B8',
-              fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
-              textTransform: 'uppercase',
-            }}
-          >
-            <History size={14} color="#94A3B8" />
-            Check In
-            <span style={{
-              fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-              fontSize: 13, color: '#FFF', background: '#94A3B8',
-              padding: '2px 7px', borderRadius: 8, lineHeight: 1,
-            }}>
-              {checkingInCount}
             </span>
           </button>
         )}
@@ -830,6 +887,38 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
         </button>
       )}
 
+      {/* Checking In entry (desktop sidebar) -- Patrik directive: before Your TODOs */}
+      {checkingInCount > 0 && (
+        <button
+          onClick={() => onSelectProject('checking-in')}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+            height: 44, padding: selectedProject === 'checking-in' ? '0 13px' : '0 16px',
+            background: selectedProject === 'checking-in' ? 'rgba(148,163,184,0.06)' : 'transparent',
+            border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
+            borderLeftWidth: 3, borderLeftStyle: 'solid',
+            borderLeftColor: selectedProject === 'checking-in' ? '#94A3B8' : 'transparent',
+            cursor: 'pointer', transition: 'background 100ms ease',
+            color: '#8BA4C4', fontFamily: "'Inter Tight', system-ui, sans-serif",
+            fontSize: 14, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
+            opacity: 0.75,
+          }}
+        >
+          <History size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, letterSpacing: '-0.01em' }}>Checking In</span>
+          <span style={{
+            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
+            fontSize: 12, color: '#94A3B8',
+            background: 'rgba(148,163,184,0.10)',
+            padding: '3px 9px', borderRadius: 8, lineHeight: 1,
+            border: '1px solid rgba(148,163,184,0.15)',
+            minWidth: 26, textAlign: 'center',
+          }}>
+            {checkingInCount}
+          </span>
+        </button>
+      )}
+
       {/* Your TODOs entry (desktop sidebar) */}
       {todosCount > 0 && (
         <button
@@ -861,38 +950,6 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
             minWidth: 26, textAlign: 'center',
           }}>
             {todosCount}
-          </span>
-        </button>
-      )}
-
-      {/* Checking In entry (desktop sidebar) */}
-      {checkingInCount > 0 && (
-        <button
-          onClick={() => onSelectProject('checking-in')}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-            height: 44, padding: selectedProject === 'checking-in' ? '0 13px' : '0 16px',
-            background: selectedProject === 'checking-in' ? 'rgba(148,163,184,0.06)' : 'transparent',
-            border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
-            borderLeftWidth: 3, borderLeftStyle: 'solid',
-            borderLeftColor: selectedProject === 'checking-in' ? '#94A3B8' : 'transparent',
-            cursor: 'pointer', transition: 'background 100ms ease',
-            color: '#8BA4C4', fontFamily: "'Inter Tight', system-ui, sans-serif",
-            fontSize: 14, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
-            opacity: 0.75,
-          }}
-        >
-          <History size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, letterSpacing: '-0.01em' }}>Checking In</span>
-          <span style={{
-            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
-            fontSize: 12, color: '#94A3B8',
-            background: 'rgba(148,163,184,0.10)',
-            padding: '3px 9px', borderRadius: 8, lineHeight: 1,
-            border: '1px solid rgba(148,163,184,0.15)',
-            minWidth: 26, textAlign: 'center',
-          }}>
-            {checkingInCount}
           </span>
         </button>
       )}
@@ -1404,49 +1461,67 @@ function RightNowTaskCard({ task, index, isDaytime }) {
           </span>
         )}
 
-        {/* Progress % */}
-        <span style={{
-          fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 13,
-          color: task.done ? '#4CAF50' : 'rgba(255,107,61,0.7)',
-          flexShrink: 0, minWidth: 36, textAlign: 'right',
-        }}>
-          {task.progress}%
-        </span>
+        {/* Progress % removed -- running agents don't have real progress, LIVE badge is sufficient */}
       </div>
 
-      {/* Thin progress bar */}
-      <div style={{
-        marginTop: 8,
-        height: 3,
-        background: 'rgba(255,107,61,0.08)',
-        borderRadius: 2,
-        overflow: 'hidden',
-      }}>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${task.progress}%` }}
-          transition={{ duration: 0.8, ease: [0.34, 1.56, 0.64, 1], delay: index * 0.06 }}
-          style={{
-            height: '100%',
-            background: task.done
-              ? 'rgba(76,175,80,0.6)'
-              : `linear-gradient(90deg, ${color}88, ${color})`,
-            borderRadius: 2,
-            boxShadow: task.isLive ? `0 0 6px ${color}44` : 'none',
-          }}
-        />
-      </div>
+      {/* Live pulse bar (replaces fake progress %) */}
+      {task.isLive && (
+        <div style={{
+          marginTop: 8,
+          height: 2,
+          background: 'rgba(255,107,61,0.08)',
+          borderRadius: 1,
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            width: '100%', height: '100%',
+            background: `linear-gradient(90deg, transparent, ${color}66, transparent)`,
+            borderRadius: 1,
+            animation: 'rightNowPulse 2s ease-in-out infinite',
+          }} />
+        </div>
+      )}
     </motion.div>
   )
 }
 
-// ---- RIGHT NOW SECTION (pinned before Today) --------------------------------
+// ---- RIGHT NOW SECTION (ONLY running agents, dead simple) -------------------
+// PATRIK CORRECTION: "it should just link to what agents are running and what the task is"
 function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime }) {
-  if (!tasks || tasks.length === 0) return null
-
-  const liveTasks = tasks.filter(t => t.isLive)
-  const doneTasks = tasks.filter(t => t.done)
   const color = '#FF6B3D'
+
+  // If no running agents, show "All clear"
+  if (!tasks || tasks.length === 0) {
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '16px 0 10px',
+        }}>
+          <Zap size={20} color={color} style={{
+            filter: `drop-shadow(0 0 8px ${color}AA)`,
+            opacity: 0.5,
+          }} />
+          <span style={{
+            fontFamily: "'Inter Tight', system-ui, sans-serif",
+            fontSize: 22, fontWeight: 900,
+            color: isDaytime ? '#0F172A' : '#EDF2FA',
+            textTransform: 'uppercase',
+            letterSpacing: '-0.02em',
+          }}>
+            Right Now
+          </span>
+          <span style={{
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: 14, fontWeight: 500,
+            color: isDaytime ? '#94A3B8' : '#6B7280',
+          }}>
+            All clear
+          </span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ marginBottom: 12 }}>
@@ -1479,23 +1554,21 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime }) {
           Right Now
         </span>
 
-        {/* Active count */}
-        {liveTasks.length > 0 && (
-          <span style={{
-            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-            fontSize: 14, color: '#FFF',
-            background: `linear-gradient(135deg, ${color}, ${color}CC)`,
-            padding: '4px 12px', borderRadius: 10, lineHeight: 1,
-            boxShadow: `0 2px 8px ${color}55, 0 0 20px ${color}22`,
-            minWidth: 28, textAlign: 'center',
-            animation: 'rightNowPulse 3s ease-in-out infinite',
-          }}>
-            {liveTasks.length} active
-          </span>
-        )}
+        {/* Running count */}
+        <span style={{
+          fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+          fontSize: 14, color: '#FFF',
+          background: `linear-gradient(135deg, ${color}, ${color}CC)`,
+          padding: '4px 12px', borderRadius: 10, lineHeight: 1,
+          boxShadow: `0 2px 8px ${color}55, 0 0 20px ${color}22`,
+          minWidth: 28, textAlign: 'center',
+          animation: 'rightNowPulse 3s ease-in-out infinite',
+        }}>
+          {tasks.length} running
+        </span>
       </button>
 
-      {/* Task cards */}
+      {/* Running agent cards */}
       {!isCollapsed && (
         <AnimatePresence>
           {tasks.map((task, i) => (
@@ -1775,6 +1848,134 @@ function CheckingInTaskCard({ task, index, isDaytime }) {
   )
 }
 
+// ---- COMPLETED FEED SECTION (simplified activity feed of task completions) ---
+// PATRIK CORRECTION: "completed task beneath is as live as the activity feed.
+// but a simplified task based version." Clean one-liners, last 8 max.
+function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
+  if (!tasks || tasks.length === 0) return null
+
+  return (
+    <div style={{ marginBottom: 12, opacity: 0.9 }}>
+      {/* Header */}
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 0 8px', marginBottom: 4,
+          background: 'none', border: 'none', cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {isCollapsed ? <ChevronRight size={14} color={isDaytime ? '#94A3B8' : '#6B7280'} /> : <ChevronDown size={14} color={isDaytime ? '#94A3B8' : '#6B7280'} />}
+
+        <CheckCircle2 size={16} color="#22C55E" style={{
+          filter: 'drop-shadow(0 0 4px rgba(34,197,94,0.3))',
+        }} />
+
+        <span style={{
+          fontFamily: "'Inter Tight', system-ui, sans-serif",
+          fontSize: 16, fontWeight: 700,
+          color: isDaytime ? '#64748B' : '#8BA4C4',
+          textTransform: 'uppercase',
+          letterSpacing: '-0.01em',
+          flex: 1,
+        }}>
+          Completed
+        </span>
+
+        <span style={{
+          fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 700,
+          fontSize: 12, color: '#22C55E',
+          background: 'rgba(34,197,94,0.08)',
+          padding: '3px 10px', borderRadius: 8, lineHeight: 1,
+          border: '1px solid rgba(34,197,94,0.15)',
+          minWidth: 24, textAlign: 'center',
+        }}>
+          {tasks.length}
+        </span>
+      </button>
+
+      {/* Compact completion entries */}
+      {!isCollapsed && (
+        <div style={{ paddingLeft: 8 }}>
+          {tasks.map((task, i) => {
+            const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
+            const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+            const agentColor = agentInfo?.color || '#22C55E'
+
+            return (
+              <motion.div
+                key={`completed-${i}-${task.text?.slice(0,15)}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.15, delay: i * 0.03 }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '6px 12px',
+                  marginBottom: 2,
+                  borderRadius: 8,
+                  background: isDaytime ? 'rgba(34,197,94,0.02)' : 'rgba(34,197,94,0.01)',
+                }}
+              >
+                {/* Small agent avatar */}
+                {agentInfo && hasSpr ? (
+                  <div style={{
+                    width: 22, height: 22, borderRadius: '50%',
+                    border: `1.5px solid ${agentColor}44`,
+                    overflow: 'hidden', flexShrink: 0, background: isDaytime ? '#F1F5F9' : '#0A0F1E',
+                  }}>
+                    <img
+                      src={`/corner/sprites/${task.agent}-idle.png`}
+                      alt=""
+                      style={{
+                        width: 38, height: 38,
+                        objectFit: 'cover', objectPosition: '20% 8%',
+                        imageRendering: 'pixelated', display: 'block',
+                        marginLeft: -6, marginTop: -4,
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{
+                    width: 22, height: 22, borderRadius: '50%',
+                    border: `1.5px solid ${agentColor}44`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 700, color: `${agentColor}88`,
+                    background: `${agentColor}11`, flexShrink: 0,
+                  }}>
+                    {agentInfo ? agentInfo.name.charAt(0) : '?'}
+                  </div>
+                )}
+
+                {/* One-liner: "Bobby shipped chat cleanup" */}
+                <span style={{
+                  fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 13,
+                  color: isDaytime ? '#64748B' : '#8BA4C4',
+                  lineHeight: 1.3, flex: 1, minWidth: 0,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {task.text}
+                </span>
+
+                {/* Timestamp */}
+                {task.timestamp && (
+                  <span style={{
+                    fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 10,
+                    color: isDaytime ? '#94A3B8' : '#4A6080',
+                    flexShrink: 0,
+                  }}>
+                    {task.timestamp}
+                  </span>
+                )}
+              </motion.div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---- CHECKING IN SECTION (stale tasks, muted nudge) -------------------------
 function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime }) {
   if (!tasks || tasks.length === 0) return null
@@ -2023,10 +2224,15 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const conversationScores = useConversationRecency()
   const isAutoChecked = useAutoCheckFromNotifications()
 
-  // Right Now: live agent tasks (local: from agent-notifications.md, prod: demo data)
+  // Right Now: ONLY running agents (local: from active-missions.md, prod: demo data)
   const liveRightNowTasks = useRightNowTasks()
   const rightNowTasks = IS_LOCAL ? liveRightNowTasks : generateDemoRightNow()
   const showRightNow = rightNowTasks.length > 0 && (!selectedProject || selectedProject === 'rightnow')
+
+  // Completed feed: recent task completions (simplified activity feed)
+  const liveCompletedFeed = useCompletedFeed()
+  const completedFeedTasks = IS_LOCAL ? liveCompletedFeed : generateDemoCompleted()
+  const showCompleted = completedFeedTasks.length > 0 && (!selectedProject || selectedProject === 'completed-feed')
 
   // Your TODOs: Patrik's personal blocked items
   const patrikTodos = usePatrikTodos(punchData)
@@ -2037,6 +2243,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const showCheckingIn = checkingInTasks.length > 0 && (!selectedProject || selectedProject === 'checking-in')
 
   // Sort projects by conversation-driven recency weight
+  // Section order (Patrik directive): Right Now > Checking In > Your TODOs > Today
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
 
@@ -2052,18 +2259,18 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
 
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     return [...raw].sort((a, b) => {
-      // Right Now always first (live sprint)
+      // Right Now always first (running agents)
       if (a.section === 'rightnow') return -1
       if (b.section === 'rightnow') return 1
-      // Your TODOs always second (Patrik's blocked items)
+      // Checking In second (Patrik directive)
+      if (a.section === 'checking-in') return -1
+      if (b.section === 'checking-in') return 1
+      // Your TODOs third
       if (a.section === 'your-todos') return -1
       if (b.section === 'your-todos') return 1
-      // Today always third (day's agenda)
+      // Today fourth
       if (a.section === 'today') return -1
       if (b.section === 'today') return 1
-      // Checking In always last among priority pills
-      if (a.section === 'checking-in' && b.section !== 'checking-in') return 1
-      if (b.section === 'checking-in' && a.section !== 'checking-in') return -1
       const aWeight = weights[a.section] || 10
       const bWeight = weights[b.section] || 10
       if (aWeight !== bWeight) return bWeight - aWeight
@@ -2128,6 +2335,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         onSelectProject={setSelectedProject}
         isMobile={isMobile}
         rightNowCount={rightNowTasks.length}
+        completedCount={completedFeedTasks.length}
         todosCount={patrikTodos.length}
         checkingInCount={checkingInTasks.length}
       />
@@ -2157,9 +2365,11 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             margin: '0 auto', width: '100%',
           }}>
             {/* Empty state */}
-            {visibleProjects.length === 0 && !showRightNow && !showTodos && !showCheckingIn && <EmptyState />}
+            {visibleProjects.length === 0 && !showRightNow && !showCompleted && !showTodos && !showCheckingIn && <EmptyState />}
 
-            {/* RIGHT NOW section: pinned first, before Today */}
+            {/* Section order (Patrik directive): Right Now > Completed > Checking In > Your TODOs > Today */}
+
+            {/* 1. RIGHT NOW section: ONLY running agents */}
             {showRightNow && (
               <RightNowSection
                 tasks={rightNowTasks}
@@ -2169,7 +2379,27 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
               />
             )}
 
-            {/* YOUR TODOS section: Patrik's personal blocked items */}
+            {/* 2. COMPLETED FEED: simplified activity feed of task completions */}
+            {showCompleted && (
+              <CompletedFeedSection
+                tasks={completedFeedTasks}
+                isCollapsed={collapsedProjects['completed-feed']}
+                onToggle={() => toggleCollapse('completed-feed')}
+                isDaytime={isDaytime}
+              />
+            )}
+
+            {/* 3. CHECKING IN section: stale tasks */}
+            {showCheckingIn && (
+              <CheckingInSection
+                tasks={checkingInTasks}
+                isCollapsed={collapsedProjects['checking-in-live']}
+                onToggle={() => toggleCollapse('checking-in-live')}
+                isDaytime={isDaytime}
+              />
+            )}
+
+            {/* 4. YOUR TODOS section: Patrik's personal blocked items */}
             {showTodos && (
               <YourTodosSection
                 tasks={patrikTodos}
@@ -2180,7 +2410,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
               />
             )}
 
-            {/* Project groups */}
+            {/* 5. Project groups (Today + rest) */}
             {visibleProjects.map(project => {
               const isCollapsed = collapsedProjects[project.section]
               // Filter out soft-deleted tasks + apply local check overrides
@@ -2288,15 +2518,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
               )
             })}
 
-            {/* CHECKING IN section: stale tasks (at the bottom, muted nudge) */}
-            {showCheckingIn && (
-              <CheckingInSection
-                tasks={checkingInTasks}
-                isCollapsed={collapsedProjects['checking-in-live']}
-                onToggle={() => toggleCollapse('checking-in-live')}
-                isDaytime={isDaytime}
-              />
-            )}
+            {/* Checking In already rendered above in correct section order */}
           </div>
         )}
 
