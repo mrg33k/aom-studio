@@ -12,7 +12,7 @@
 //
 // ========== PATRIK DIRECTIVES (Pass 25, lines 258-263) ==========
 // DONE(bobby2): LIVE TASK UPDATES IN CHECKLIST -- useAutoCheckFromNotifications() polls agent-notifications.md every 3s, extracts TASK FINISHED/SHIPPED/DELIVERED descriptions, fuzzy-matches against task text (2+ keyword overlap), auto-checks matching items. Priority sort: Right Now > Today > by-importance. Ref: Patrik feedback line 258-259, 263.
-// TODO(bobby2): RIGHT NOW CHECKLIST ITEMS WITH PROGRESS -- Each Right Now task row: agent avatar + task name + thin progress bar filling as agent works. Real time. Activity feed energy baked into the task list. Not a percentage number. A thin bar. SimCity build progress energy. Ref: Patrik clarification line 253.
+// DONE(bobby2): RIGHT NOW REDESIGNED -- Per Patrik correction: Right Now = ONLY running agents. Fake progress % removed. Live pulse bar (CSS animation) replaces static progress. Completed tasks separated into their own "Completed" feed section. Ref: Patrik correction overriding line 253.
 // ==========
 //
 // ========== PATRIK DIRECTIVES (Pass 26, lines 273-275) ==========
@@ -24,8 +24,15 @@
 // DONE(bobby2): THREE-TIER TASK LIFECYCLE in checklist view.
 // (1) RIGHT NOW = Real-time active tasks (existing, enhanced). Orange/fire energy, LIVE badges, progress bars.
 // (2) YOUR TODOS = Patrik's personal TODO list. Tasks tagged [Patrik] from punch-list. Red accent, "NEEDS YOU" badge, checkbox energy.
-// (3) CHECKING IN = Stale tasks (blocked/overdue keywords). Gray/amber, muted "STALE" badge, nudge to reassign or close.
-// Sidebar: Right Now > Your TODOs > Checking In > projects. Each with count badge and appropriate styling.
+// (3) FINISH THESE = Stale tasks (was "Checking In"). Gray/amber, muted "STALE" badge, nudge to reassign or close.
+// Sidebar order: Right Now > Your TODOs > Schedule > projects > Finish These (last).
+// ==========
+//
+// ========== PATRIK DIRECTIVES (Pass 28, latest feedback) ==========
+// TODO(patrik): SCHEDULE = GOOGLE CALENDAR CHECKLIST -- Schedule section pulls Google Calendar events as a task list sorted by time. When event time passes, auto-check it off. Day-by-day navigation (arrows, not month view). Add new event inline (day, time, invitees) writes directly to Google Calendar MCP. Data sources: patrikmatheson@gmail.com + hello@aom-inhouse.com calendars. Ref: bobby/last-conversation.md Schedule section.
+// TODO(patrik): PILL DRAG-TO-REORDER + PERSIST -- Pills are drag-to-reorder and the custom order persists in localStorage. Current pill rendering has no drag support. Ref: bobby/last-conversation.md section order.
+// TODO(patrik): ARCHIVE PILL (CHECKLIST) -- Completed tasks go to Archive pill with accordion by month/day/year. Small "Archive" link at bottom of each pill task list. Searchable. If task existed at any point, it's in the archive. Ref: bobby/last-conversation.md item 16.
+// TODO(patrik): RIGHT-CLICK CONTEXT MENU (CHECKLIST) -- Extend existing TaskContextMenu with: Add to Right Now, Move to Project (submenu), Add Context (inline note). Unify with GameDashboard ContextMenu into shared component at src/dashboard/components/TaskContextMenu.jsx. Full spec: projects/steffen/right-click-menu-spec.md. Ref: bobby/last-conversation.md.
 // ==========
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
@@ -254,6 +261,7 @@ function useConversationRecency() {
   return scores
 }
 
+// TODO(steve): DUPLICATED HOOKS -- useRightNowTasks and useCompletedFeed are nearly identical copies in ChecklistMode.jsx and GameHUD.jsx (useRightNowLiveTasks / useCompletedFeed). Both parse active-missions.md and agent-notifications.md the same way. Extract to a shared hooks file (e.g., src/dashboard/hooks/useAgentData.js). Current state: 2 copies of ~60 lines each, 4 copies total across 2 hooks.
 // ---- RIGHT NOW: RUNNING agents from active-missions.md ----------------
 // PATRIK CORRECTION: Right Now = ONLY agents that are RUNNING. Not finished tasks.
 // One line per running agent: avatar + agent name + current task.

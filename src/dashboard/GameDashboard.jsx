@@ -90,6 +90,7 @@ function extractAgentFromMessage(msg) {
 }
 
 // ---- MESSAGE SANITIZER (shared with ChatDashboard) --------------------------
+// TODO(steve): DUPLICATED SANITIZER -- This function is a copy-paste of ChatDashboard.jsx:sanitizeRelayMessage. They've drifted slightly in the past. Extract to a shared module (e.g., src/dashboard/utils/sanitize.js) so both files import the same function. One source of truth for message cleaning.
 // Strips watchdog preamble, system XML, and other noise from relay messages.
 // Returns cleaned text, or null if the entire message is system noise.
 function sanitizeRelayMessage(text) {
@@ -101,7 +102,8 @@ function sanitizeRelayMessage(text) {
   cleaned = cleaned.replace(/<task-notification>[\s\S]*?<\/task-notification>/g, '')
   cleaned = cleaned.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
   cleaned = cleaned.replace(/<available-deferred-tools>[\s\S]*?<\/available-deferred-tools>/g, '')
-  cleaned = cleaned.replace(/<[a-z_-]+>[\s\S]*?<\/[a-z_-]+>/g, '')
+  // DONE(bobby2): XML REGEX FIXED -- Only strip SPECIFIC system tags, not all lowercase XML. Users can type <b>hello</b> etc. safely now.
+  // No generic catch-all. Only these three system tags get stripped (already handled above individually).
 
   // 2. Strip watchdog preamble patterns (all known variations)
   cleaned = cleaned.replace(/^Patrik sent this via Telegram:\s*/i, '')
@@ -3427,7 +3429,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     if (!agentSlug) return
     const agentName = agent?.name?.toLowerCase() || agentSlug
     try {
-      // Check briefs-index for entries by this agent
+      // TODO(steve): WRONG FETCH PATH -- '/src/data/briefs-index.json' is a source-tree path, not a public path. Vite serves files from /public, not /src. This fetch will 404 in production (and probably localhost too). Should be '/data/briefs-index.json' (if in public/) or use an import statement. Related briefs will silently never load.
       fetch('/src/data/briefs-index.json').then(r => r.ok ? r.json() : null).then(index => {
         if (!index?.categories) return
         const matches = []
@@ -3828,6 +3830,9 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 // Box 2: YOUR TODOS (Patrik action items count)
 // Box 3: CALENDAR (iOS Calendar icon, next event)
 // Box 4: PROJECT PROGRESS (cycle through projects with arrows)
+// TODO(patrik): CALENDAR BOX REAL DATA -- Box 3 currently shows hardcoded "No events". Wire to Google Calendar MCP (patrikmatheson@gmail.com + hello@aom-inhouse.com). Show NEXT EVENT with time + title. Click expands Schedule section with day-by-day nav. Events auto-check when time passes. Ref: bobby/last-conversation.md Schedule section spec.
+// TODO(patrik): PROGRESS BORDER CLOCKWISE FILL -- The LIVE box border should fill clockwise like a SimCity build-progress bar. Current SVG stroke-dashoffset is close but needs clockwise fill direction starting from top-center. When all agents idle, border static. When active, continuous clockwise animation. Ref: Patrik "progress border" directive.
+// TODO(steve): RANDOM PROGRESS BUG -- Line ~3858: `Math.random() * 40 + 30` generates NEW random progress percentages on every re-render. This causes the project progress bar to jump randomly. Progress should be derived from real data (task completion ratio) or memoized per agent slug so it stays stable between renders.
 function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgress, isNightMode, isDaytime, data }) {
   const [glowBox, setGlowBox] = useState(null) // which box is glowing
   const [expandedBox, setExpandedBox] = useState(null) // which box's section is expanded
@@ -4308,6 +4313,12 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
 // DONE(bobby): Chat timeout indicator -- countdown ring when waiting for agent response (60s). Shows elapsed time + animated SVG ring.
 // DONE(bobby): Agent activity log -- INFO tab now shows recent commits/completions per agent from pipeline feed. Filterable, with commit hashes and timestamps.
 // TODO(patrik): Client projects in HUD -- sidebar should show client project status for the selected agent [SURVIVES: Sidebar is React UI overlay. Engine-independent.]
+// TODO(patrik): PILL ARCHITECTURE -- Below the 4 top squares, project pills auto-populate from context (Ambition, Corner, ISA, KOHRS, etc). System routes tasks to the right project bucket. Pills overflow with LEFT/RIGHT ARROWS to scroll (not wrap). SEARCH BAR at top = instant pill add. Project pills are the PROJECT level. The 4 top squares are the WORKFLOW level. Ref: bobby/last-conversation.md item 15.
+// TODO(patrik): TASKS IN MULTIPLE PILLS -- A task like "Bobby: chat cleanup" can appear in BOTH "Corner" project pill AND "Right Now" org pill simultaneously. Tasks aren't exclusive to one bucket. They exist wherever they're relevant. Ref: bobby/last-conversation.md item 15b.
+// TODO(patrik): ARCHIVE PILL -- Completed tasks don't show inline in each category. Instead: small "Archive" link at bottom of each pill's task list. "Archived" is its own PILL with an accordion organized by month, day, and year. Simple expandable sections. If you can't find your task, search it. Ref: bobby/last-conversation.md item 16.
+// TODO(patrik): RIGHT-CLICK CONTEXT MENU ON SIDEBAR TASKS -- Right-click any task in sidebar for: mark done, assign agent, add to Right Now, move to project, set priority, add context note, delete. Full spec at projects/steffen/right-click-menu-spec.md. Unify ChecklistMode TaskContextMenu + GameDashboard ContextMenu into shared component. Day/night mode, keyboard nav, submenu slide-left. Ref: bobby/last-conversation.md.
+// TODO(patrik): DATA SYNC RULE -- ALL data syncs to proper place automatically. Pills are LIVE VIEWS: task completed removes from Right Now + adds to completed feed + updates project pill progress. TODO checked off drops Your TODOs count + archives it. Calendar event passes auto-checks in Schedule. Agent starts/finishes updates LIVE box. 3s polling keeps everything fresh. No data in only one place. Ref: bobby/last-conversation.md Data Sync Rule.
+// TODO(patrik): CHAT VISUAL TARGET -- Chat design target is NOT the sidebar spec mockup. The approved targets are: projects/steffen/visual-target/hud/dream-chat-v1.png and projects/steffen/visual-target/chat-view-full.png. Bobby should match THOSE, not generic bubbles. Ref: bobby/last-conversation.md Chat Design Note.
 // DONE(bobby2): isNightMode passed to GameHUD. Bottom HUD flips to white/vibrant blue in daytime. Ref: Patrik feedback Pass 22.
 // DONE(bobby+bobby2): Sidebar seamless column -- sidebar is ONE continuous full-height column. Chat input at bottom of sidebar. ChatBar removed. GameHUD constrained to game viewport width.
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
@@ -4817,7 +4828,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         }}>
                           {msg.time && (
                             <span style={{
-                              fontSize: 10, fontWeight: 500, color: isDaytime ? '#94A3B8' : '#94A3B8',
+                              fontSize: 10, fontWeight: 500, color: isDaytime ? '#64748B' : '#94A3B8',
                               fontFamily: "'JetBrains Mono', monospace",
                             }}>
                               {formatChatTime(msg.time)}
@@ -4825,7 +4836,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           )}
                           {sourceLabel && (
                             <span style={{
-                              fontSize: 9, fontWeight: 500, color: isDaytime ? '#94A3B8' : '#94A3B8',
+                              fontSize: 9, fontWeight: 500, color: isDaytime ? '#64748B' : '#94A3B8',
                               letterSpacing: '0.06em',
                               fontFamily: "'JetBrains Mono', monospace",
                               opacity: isDaytime ? 0.6 : 0.4,
@@ -5479,8 +5490,8 @@ export default function GameDashboard() {
   // TODO(bobby): ONE CONVERSATION STREAM (COUNCIL MODEL) -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source or device. Two sides: Patrik (right) and agents (left), interleaved by timestamp. COUNCIL: all agents share one stream. User switches driving agent by saying "talk to [agent]" or clicking one. That agent steps forward in the SAME thread with full context. No separate per-agent chats. Everyone listens, only driving agent speaks. Add search over unified stream. Ref: Patrik directives lines 144, 186, 190. [SURVIVES: Relay/data architecture. Engine-independent.]
   // DONE(bobby): AMBIENT COUNCIL CHAT RENDERING -- Messages with ambient:true flag render as compact muted inline status updates (smaller font, italic, no avatar expansion, 20px mini avatar). Ambient flag carried through history loader and background outbox poll. REMAINING: agents need to actually WRITE ambient messages to relay-outbox with ambient:true flag. That's a relay-side change, not dashboard. Ref: Patrik feedback Pass 21.
   // TODO(bobby): TYPING INDICATOR -- Show "[Agent] is typing..." with agent avatar + countdown ring while an agent is composing a response. iMessage dots energy. Shows WHICH agent (Bobby = purple dots, Elon = green). Write a "typing" signal to relay when agent starts generating. Dashboard picks up and shows animated dots. Council feels ALIVE. Ref: Patrik feedback lines 221-222. [SURVIVES: Chat UI animation. Engine-independent.]
-  // TODO(bobby2): CHAT SCROLL STAY AT BOTTOM -- Default behavior: chat stays pinned to bottom. When user scrolls up, show a "jump to latest" button (already partially implemented via showNewMsgIndicator). NEVER auto-yank the view when scrolled up. No reloading. Chill. Verify isNearBottomRef threshold works correctly. Ref: Patrik feedback line 248, 261.
-  // TODO(bobby2): JANKY CHAT CLEANUP -- (1) Watchdog system prompt leaking into chat as user message. Only the ACTUAL message should show, not routing instructions ("You have full project context..."). Filter: strip everything before actual user text in relay messages. (2) Typing indicator + timer showing simultaneously with messages, cluttering the view. (3) Source labels still too prominent. Chat should be CLEAN like iMessage. Just messages. No system cruft. Ref: Patrik feedback line 249.
+  // TODO(bobby2): CHAT SCROLL STAY AT BOTTOM (SIDEBAR) -- PARTIALLY FIXED in ChatDashboard.jsx (408afba) but NOT in GameDashboard sidebar chat. Sidebar chat still uses simple isNearBottomRef without isUserTypingRef/userJustSentRef guards. When user types in sidebar chat, page can still auto-scroll. Port the ChatDashboard fix (isUserTypingRef, userJustSentRef, prevMessageCountRef) to this sidebar chat. Ref: Patrik feedback line 248, 261.
+  // DONE(bobby2): JANKY CHAT CLEANUP -- (1) Watchdog system prompt stripped by expanded sanitizeRelayMessage (7 new regex patterns). Ghost messages filtered by watchdog-responded status. (2) Typing indicator separated into standalone block with animated dots. (3) Source labels muted to 9px/#78716C/25% opacity. Deduplication added for relay echo messages. Ref: Patrik feedback line 249. REMAINING: see TODO(steve) about overly aggressive XML regex that may eat user content.
   // DONE(bobby2): CHAT BUBBLE CONTRAST FIX -- Daytime bubbles now solid warm gray (#EDF2F7) with dark text (#1E293B). Agent bubbles get colored left border (3px agent color). Patrik avatar now orange (#F59E0B) with white P per dream-hud-v1.png. Night mode unchanged (dark translucent). All text readable in both modes.
   const panelHistoryLoadedRef = useRef(false)
   useEffect(() => {

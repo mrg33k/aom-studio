@@ -9,7 +9,7 @@
 // TODO(patrik): Project pill context menu -- right-click to jump to checklist filtered by project [SURVIVES: UI overlay.]
 // TODO(patrik): Mobile HUD swipe-up gesture to expand task panel (game feel) [SURVIVES: Touch gesture on HUD overlay. Engine handles canvas, HUD handles UI.]
 // TODO(patrik): KILL BOTTOM BAR ENTIRELY -- Dream HUD target says NO bottom bar. Layout = top bar + sidebar ONLY. Project pills move to top bar (scrollable). Minimap, agent portrait, notification icons all in top bar. Bottom bar is gone. Ref: Patrik directive lines 170-182. [SURVIVES: HUD layout decision. Engine swap doesn't affect bar structure.]
-// TODO(bobby): "RIGHT NOW" PILL -- Add a "Right Now" pill NEXT TO "Today" pill. Right Now shows LIVE tasks (agents currently running), simplified with small time estimates (e.g. "Bobby: HUD polish ~15min"). Today = day's agenda (what you plan to do). Right Now = live sprint (what's happening THIS SECOND). Drag tasks FROM Today or any project pill TO the Right Now pill to push them to top of priority queue. Right Now is always pinned first (before Today). Visual: pulsing/glowing accent to show liveness. Data: pull from active-missions.md or agentStatus for running agents. Ref: Patrik feedback Pass 21. [SURVIVES: HUD data pill. Engine-independent.]
+// DONE(bobby): "RIGHT NOW" PILL -- Right Now pill LIVE. Pulls running agents from active-missions.md (3s poll). Pinned first. Orange/fire color. Pulsing glow. REMAINING: drag-to-right-now (see TODO(bobby) DRAG-TO-RIGHT-NOW below), time estimates per task.
 // DONE(bobby2): Bottom bar cleanup -- chat input + chat button REMOVED from bottom bar. Project pills now horizontally scrollable (no wrapping). Bottom bar = agent roster | scrollable project pills | compact stats | notification bell. No chat elements.
 // DONE(bobby2): Project pill category labels -- pills now show category text (CLIENT / PROJECT / OUTREACH) not color-status text. Color communicates status visually, text label tells you WHAT it is.
 // DONE(bobby2): LABEL ALL COUNTERS -- Every bare number labeled. ProjectCard: "{remaining} tasks". CompactStats: "{working} active" / "{blocked} blocked". Progress ring: "{overallProgress}%". Ref: Patrik feedback Pass 22.
@@ -23,7 +23,7 @@
 // ========== PATRIK DIRECTIVES (Pass 25, lines 258-263) ==========
 // DONE(bobby2): LIVE TASK UPDATES IN HUD (KEY KEY KEY) -- useAutoCheckFromNotifications() polls agent-notifications.md every 3s, extracts TASK FINISHED/SHIPPED/DELIVERED descriptions, fuzzy-matches against punch-list task text (2+ keyword overlap), and auto-checks matching items in the UI (optimistic). Priority sort: Right Now > Today > by-importance. Auto-checked items get autoChecked flag for distinct styling. Ref: Patrik feedback line 258-259, 263.
 // DONE(bobby2): SELECTED PILL CONTRAST BUG (REGRESSION) -- Fixed. Expanded pill in daytime now uses #1E293B (dark slate) instead of project.color which could be light. Always readable on white/light backgrounds. Ref: Patrik feedback line 258, 260.
-// TODO(bobby2): RIGHT NOW PILL = CHECKLIST ITEMS WITH PROGRESS BARS -- Right Now pill shows active tasks as checklist items with thin progress bars under EACH item. Not a separate progress view. Agent avatar + task name + thin progress bar filling as agent works. Real time. Activity feed energy baked into the task list itself. Ref: Patrik clarification line 253.
+// DONE(bobby2): RIGHT NOW PILL REDESIGNED -- Per Patrik correction: Right Now = ONLY running agents, not progress bars. Fake percentages removed. Live pulse bar replaces progress bar. Agent avatar + task name + LIVE badge. Completed tasks moved to separate "Completed" feed section below. Ref: Patrik correction overriding line 253.
 // DONE(bobby2): KILL MINIMAP -- No minimap rendered in GameHUD. MiniMap component lives in GameDashboard (separate file owner). GameHUD is clean. Ref: Patrik directive line 267.
 // DONE(bobby2): RIGHT NOW PILL COLOR = ORANGE/FIRE -- Changed from green (#3BFF6B) to orange (#FF6B3D) matching Today's fire energy. Updated SECTION_MAP, LIVE badge, synthetic pill, all Right Now rendering. Ref: Patrik feedback line 273.
 // DONE(bobby2): RIGHT NOW DATA FRESHNESS -- useRightNowLiveTasks polls every 3s (was 8s). Right Now is now the freshest data on screen, beating notifications (8s) and punch-list (5s). Ref: Patrik feedback line 273.
@@ -33,12 +33,17 @@
 // ==========
 //
 // ========== TASK LIFECYCLE (Pass 27) ==========
-// DONE(bobby2): THREE-TIER TASK LIFECYCLE -- Right Now (live), Your TODOs (blocked/Patrik), Checking In (stale).
+// DONE(bobby2): THREE-TIER TASK LIFECYCLE -- Right Now (live), Your TODOs (blocked/Patrik), Finish These (stale).
 // (1) RIGHT NOW = Real-time active tasks. Agents doing work THIS SECOND. Orange/fire energy, LIVE badges, progress bars. Polls 3s.
 // (2) YOUR TODOS = Patrik's personal TODO list. Tasks tagged [Patrik] from punch-list. Red accent, checkbox energy, NEEDS YOU badge.
-// (3) CHECKING IN = Stale tasks (24+ hours, blocked keywords). Gray/amber, muted, STALE badge. Nudge to reassign or close.
+// (3) FINISH THESE = Stale tasks (was "Checking In"). Gray/amber, muted, STALE badge. Nudge to reassign or close.
 // usePatrikTodos() scans punch-list for [Patrik] tagged items. useCheckingInTasks() finds stale blocked items.
-// Sort order: Right Now > Your TODOs > Today > rest by recency > Checking In last.
+// Sort order: Right Now > Your TODOs > Schedule > rest by recency > Finish These last.
+// ==========
+//
+// ========== PATRIK DIRECTIVES (Pass 28, latest feedback) ==========
+// TODO(patrik): PILL ARCHITECTURE (HUD) -- Below the 4 top squares, project pills auto-populate from context. Overflow with LEFT/RIGHT ARROWS to scroll. SEARCH BAR = instant pill add. Tasks can live in MULTIPLE pills simultaneously (e.g., "Bobby: chat cleanup" in both "Corner" and "Right Now"). Ref: bobby/last-conversation.md items 15 + 15b.
+// TODO(patrik): DATA SYNC RULE (HUD) -- All data syncs to proper place. Pills are LIVE VIEWS. Task completed = Right Now removes + completed feed gets + project pill updates. 3s poll keeps fresh. No data in only one place. Ref: bobby/last-conversation.md Data Sync Rule.
 // ==========
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
