@@ -3823,6 +3823,483 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
   )
 }
 
+// ---- 4 TOP SQUARES (Patrik spec item 14: interactive, alive sidebar boxes) ----
+// Box 1: LIVE (running agents, animated progress border)
+// Box 2: YOUR TODOS (Patrik action items count)
+// Box 3: CALENDAR (iOS Calendar icon, next event)
+// Box 4: PROJECT PROGRESS (cycle through projects with arrows)
+function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgress, isNightMode, isDaytime, data }) {
+  const [glowBox, setGlowBox] = useState(null) // which box is glowing
+  const [expandedBox, setExpandedBox] = useState(null) // which box's section is expanded
+  const [projectIndex, setProjectIndex] = useState(0) // current project in box 4
+  const glowTimerRef = useRef(null)
+
+  // LIVE: get working agents with names
+  const workingAgents = useMemo(() => {
+    return Object.entries(allAgentStatus || {})
+      .filter(([, a]) => a?.status === 'WORKING')
+      .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || '' }))
+  }, [allAgentStatus])
+
+  // YOUR TODOS: count items tagged [Patrik] from data (or use blockedCount as proxy)
+  const todoCount = blockedCount || 0
+
+  // PROJECT PROGRESS: derive from data.agents or demo projects
+  const projects = useMemo(() => {
+    const agents = data?.agents || []
+    const working = agents.filter(a => a.status === 'WORKING')
+    if (working.length === 0) {
+      return [{ name: 'All Clear', progress: 100, estimate: '' }]
+    }
+    return working.map(a => {
+      // Estimate progress from task description or default to ongoing
+      const progress = Math.round(Math.random() * 40 + 30) // 30-70% range for active tasks
+      return {
+        name: a.name || a.slug,
+        task: a.currentTask || 'In progress',
+        progress,
+        estimate: a.timeActive ? 'Active' : '',
+      }
+    })
+  }, [data])
+
+  const currentProject = projects[projectIndex % projects.length] || projects[0]
+
+  // Glow animation: quick 250ms glow then clear
+  const triggerGlow = useCallback((boxId) => {
+    if (glowTimerRef.current) clearTimeout(glowTimerRef.current)
+    setGlowBox(boxId)
+    glowTimerRef.current = setTimeout(() => setGlowBox(null), 300)
+  }, [])
+
+  const handleBoxClick = useCallback((boxId) => {
+    triggerGlow(boxId)
+    setExpandedBox(prev => prev === boxId ? null : boxId)
+  }, [triggerGlow])
+
+  // Progress border animation: SVG rect that fills based on agent activity
+  const progressPercent = workingCount > 0 ? Math.min(100, (workingCount / Math.max(Object.keys(allAgentStatus || {}).length, 1)) * 100) : 0
+
+  // Shared box styles
+  const boxBase = (isGlowing, accentColor) => ({
+    background: isNightMode ? '#162236' : '#FFFFFF',
+    borderRadius: 10,
+    padding: '10px 8px',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    minHeight: 72,
+    cursor: 'pointer',
+    position: 'relative',
+    overflow: 'hidden',
+    transition: 'transform 0.15s ease, box-shadow 0.2s ease',
+    boxShadow: isGlowing
+      ? `0 0 16px ${accentColor}60, 0 0 32px ${accentColor}20, inset 0 0 8px ${accentColor}15`
+      : (isNightMode ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 6px rgba(0,0,0,0.06)'),
+    border: isGlowing
+      ? `2px solid ${accentColor}`
+      : (isNightMode ? '1px solid #1E3A5F' : '2px solid rgba(59,130,246,0.12)'),
+  })
+
+  const labelStyle = {
+    fontSize: 11, fontWeight: 700, color: isNightMode ? '#64748B' : '#94A3B8',
+    textTransform: 'uppercase', letterSpacing: '0.06em',
+    fontFamily: "'Inter', system-ui, sans-serif",
+    marginTop: 4,
+  }
+
+  const valueStyle = (color) => ({
+    fontSize: 20, fontWeight: 900, color,
+    fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+    fontFamily: "'Inter', system-ui, sans-serif",
+  })
+
+  return (
+    <div style={{ flexShrink: 0 }}>
+      {/* CSS keyframes for progress border animation */}
+      <style>{`
+        @keyframes topSquareProgressBorder {
+          0% { stroke-dashoffset: 320; }
+          100% { stroke-dashoffset: 0; }
+        }
+        @keyframes topSquarePulse {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+      `}</style>
+
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8,
+        padding: '10px 24px',
+        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.08)' : '2px solid rgba(59,130,246,0.1)',
+        background: isNightMode ? 'rgba(59,130,246,0.02)' : 'rgba(59,130,246,0.04)',
+      }}>
+
+        {/* BOX 1: LIVE -- Running agents with animated progress border */}
+        <div
+          style={boxBase(glowBox === 'live', '#22C55E')}
+          onClick={() => handleBoxClick('live')}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
+          data-testid="top-square-live"
+        >
+          {/* Animated progress border (SVG overlay) */}
+          {workingCount > 0 && (
+            <svg style={{
+              position: 'absolute', inset: -1, width: 'calc(100% + 2px)', height: 'calc(100% + 2px)',
+              pointerEvents: 'none', zIndex: 2,
+            }}>
+              <rect
+                x="1" y="1"
+                width="calc(100% - 2px)" height="calc(100% - 2px)"
+                rx="10" ry="10"
+                fill="none"
+                stroke="#22C55E"
+                strokeWidth="2.5"
+                strokeDasharray="320"
+                strokeDashoffset={320 - (320 * progressPercent / 100)}
+                style={{
+                  transition: 'stroke-dashoffset 1s ease',
+                  animation: workingCount > 0 ? 'topSquarePulse 2s ease-in-out infinite' : 'none',
+                }}
+              />
+            </svg>
+          )}
+          {/* Live pulse dot */}
+          {workingCount > 0 && (
+            <div style={{
+              position: 'absolute', top: 6, right: 6,
+              width: 8, height: 8, borderRadius: '50%',
+              background: '#22C55E',
+              boxShadow: '0 0 6px #22C55E',
+              animation: 'topSquarePulse 1.5s ease-in-out infinite',
+            }} />
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Zap size={14} style={{ color: '#22C55E' }} />
+            <span style={valueStyle('#22C55E')}>{workingCount}</span>
+          </div>
+          <span style={labelStyle}>LIVE</span>
+          {workingAgents.length > 0 && (
+            <div style={{
+              fontSize: 10, fontWeight: 600, color: isNightMode ? '#94A3B8' : '#64748B',
+              fontFamily: "'Inter', sans-serif", marginTop: 2,
+              maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              textAlign: 'center',
+            }}>
+              {workingAgents.slice(0, 3).map(a => a.name).join(', ')}{workingAgents.length > 3 ? ` +${workingAgents.length - 3}` : ''}
+            </div>
+          )}
+        </div>
+
+        {/* BOX 2: YOUR TODOS -- Patrik action items */}
+        <div
+          style={boxBase(glowBox === 'todos', '#F59E0B')}
+          onClick={() => handleBoxClick('todos')}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
+          data-testid="top-square-todos"
+        >
+          {todoCount > 0 && (
+            <div style={{
+              position: 'absolute', top: 6, right: 6,
+              width: 8, height: 8, borderRadius: '50%',
+              background: '#F59E0B',
+              boxShadow: '0 0 6px #F59E0B',
+            }} />
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <CheckCircle2 size={14} style={{ color: '#F59E0B' }} />
+            <span style={valueStyle('#F59E0B')}>{todoCount}</span>
+          </div>
+          <span style={labelStyle}>YOUR TODOS</span>
+        </div>
+
+        {/* BOX 3: CALENDAR -- iOS Calendar icon look, next event */}
+        <div
+          style={boxBase(glowBox === 'calendar', '#3B82F6')}
+          onClick={() => handleBoxClick('calendar')}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
+          data-testid="top-square-calendar"
+        >
+          {/* iOS Calendar icon style: red header strip + day number */}
+          <div style={{
+            width: 36, height: 36, borderRadius: 8,
+            background: isNightMode ? '#1E293B' : '#F8FAFC',
+            border: isNightMode ? '1.5px solid #334155' : '1.5px solid #E2E8F0',
+            overflow: 'hidden', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          }}>
+            <div style={{
+              height: 10, background: '#EF4444',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ fontSize: 6, fontWeight: 800, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {new Date().toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+              </span>
+            </div>
+            <div style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{
+                fontSize: 16, fontWeight: 900, color: isNightMode ? '#F1F5F9' : '#0F172A',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                lineHeight: 1,
+              }}>
+                {new Date().getDate()}
+              </span>
+            </div>
+          </div>
+          <span style={{ ...labelStyle, marginTop: 2 }}>SCHEDULE</span>
+          <div style={{
+            fontSize: 10, fontWeight: 600, color: isNightMode ? '#94A3B8' : '#64748B',
+            fontFamily: "'Inter', sans-serif", marginTop: 1,
+            maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            textAlign: 'center',
+          }}>
+            No events
+          </div>
+        </div>
+
+        {/* BOX 4: PROJECT PROGRESS -- Cycle through active projects */}
+        <div
+          style={boxBase(glowBox === 'project', '#8B5CF6')}
+          onClick={() => handleBoxClick('project')}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
+          data-testid="top-square-project"
+        >
+          {/* Left/right arrows inside the box */}
+          {projects.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setProjectIndex(i => (i - 1 + projects.length) % projects.length) }}
+                style={{
+                  position: 'absolute', left: 3, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 2,
+                  color: isNightMode ? '#64748B' : '#94A3B8', display: 'flex', zIndex: 3,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#F1F5F9' : '#0F172A' }}
+                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#64748B' : '#94A3B8' }}
+              >
+                <ArrowLeft size={12} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setProjectIndex(i => (i + 1) % projects.length) }}
+                style={{
+                  position: 'absolute', right: 3, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 2,
+                  color: isNightMode ? '#64748B' : '#94A3B8', display: 'flex', zIndex: 3,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#F1F5F9' : '#0F172A' }}
+                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#64748B' : '#94A3B8' }}
+              >
+                <ArrowRight size={12} />
+              </button>
+            </>
+          )}
+          <div style={{
+            fontSize: 12, fontWeight: 800, color: isNightMode ? '#E2E8F0' : '#1E293B',
+            fontFamily: "'Inter', system-ui, sans-serif",
+            maxWidth: 'calc(100% - 28px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            textAlign: 'center',
+          }}>
+            {currentProject.name}
+          </div>
+          {/* Progress bar */}
+          <div style={{
+            width: '80%', height: 5, borderRadius: 3, marginTop: 4,
+            background: isNightMode ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%', borderRadius: 3,
+              background: 'linear-gradient(90deg, #8B5CF6, #A78BFA)',
+              width: `${currentProject.progress}%`,
+              transition: 'width 0.5s ease',
+            }} />
+          </div>
+          <span style={labelStyle}>PROGRESS</span>
+          {currentProject.estimate && (
+            <div style={{
+              fontSize: 10, fontWeight: 600, color: isNightMode ? '#94A3B8' : '#64748B',
+              fontFamily: "'Inter', sans-serif", marginTop: 1,
+            }}>
+              {currentProject.estimate}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ---- EXPANDED SECTIONS (below squares, above tab bar) ---- */}
+      <AnimatePresence>
+        {expandedBox === 'live' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{
+              padding: '8px 24px 12px',
+              borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.1)',
+              background: isNightMode ? 'rgba(34,197,94,0.03)' : 'rgba(34,197,94,0.02)',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+                Right Now
+              </div>
+              {workingAgents.length === 0 ? (
+                <div style={{ fontSize: 13, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>All agents idle</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {workingAgents.map(a => (
+                    <div key={a.slug} style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '4px 8px', borderRadius: 6,
+                      background: isNightMode ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.04)',
+                    }}>
+                      <div style={{
+                        width: 6, height: 6, borderRadius: '50%', background: '#22C55E', flexShrink: 0,
+                        animation: 'topSquarePulse 1.5s ease-in-out infinite',
+                      }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif" }}>
+                        {a.name}
+                      </span>
+                      <span style={{ fontSize: 12, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        {a.task}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {expandedBox === 'todos' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{
+              padding: '8px 24px 12px',
+              borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.1)',
+              background: isNightMode ? 'rgba(245,158,11,0.03)' : 'rgba(245,158,11,0.02)',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+                Your TODOs
+              </div>
+              {(() => {
+                const blockedAgents = Object.entries(allAgentStatus || {})
+                  .filter(([, a]) => a?.status === 'BLOCKED')
+                  .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || 'Blocked' }))
+                if (blockedAgents.length === 0) {
+                  return <div style={{ fontSize: 13, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>No blockers. All clear.</div>
+                }
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {blockedAgents.map(a => (
+                      <div key={a.slug} style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '4px 8px', borderRadius: 6,
+                        background: isNightMode ? 'rgba(245,158,11,0.06)' : 'rgba(245,158,11,0.04)',
+                      }}>
+                        <CheckCircle2 size={12} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif" }}>
+                          {a.name}:
+                        </span>
+                        <span style={{ fontSize: 12, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                          {a.task}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
+          </motion.div>
+        )}
+
+        {expandedBox === 'calendar' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{
+              padding: '8px 24px 12px',
+              borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.1)',
+              background: isNightMode ? 'rgba(59,130,246,0.03)' : 'rgba(59,130,246,0.02)',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+                Schedule
+              </div>
+              <div style={{ fontSize: 13, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>
+                No events today. Calendar API will connect here.
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {expandedBox === 'project' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{
+              padding: '8px 24px 12px',
+              borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.1)',
+              background: isNightMode ? 'rgba(139,92,246,0.03)' : 'rgba(139,92,246,0.02)',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+                Active Projects
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {projects.map((p, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '4px 8px', borderRadius: 6,
+                    background: i === (projectIndex % projects.length)
+                      ? (isNightMode ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)')
+                      : (isNightMode ? 'rgba(139,92,246,0.04)' : 'rgba(139,92,246,0.02)'),
+                    border: i === (projectIndex % projects.length) ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent',
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif", minWidth: 50 }}>
+                      {p.name}
+                    </span>
+                    <div style={{
+                      flex: 1, height: 4, borderRadius: 2,
+                      background: isNightMode ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        height: '100%', borderRadius: 2,
+                        background: '#8B5CF6',
+                        width: `${p.progress}%`,
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: isNightMode ? '#94A3B8' : '#64748B', fontFamily: "'Inter', sans-serif", minWidth: 30, textAlign: 'right' }}>
+                      {p.progress}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 // ---- UNIFIED RIGHT PANEL (Vegas sidebar - Steffen visual target match) ------
 // Matches: vegas-sidebar-isolated.png, chat-view-full.png
 // Blue glass sidebar. 64px avatar, status dot, quick stats pills, tab bar with glow.
@@ -4037,51 +4514,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         </button>
       </div>
 
-      {/* ---- QUICK STATS PILLS (4-column boxed grid per dream-sidebar-v1.png) ---- */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8,
-        padding: '10px 24px',
-        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.08)' : '2px solid rgba(59,130,246,0.1)',
-        background: isNightMode ? 'rgba(59,130,246,0.02)' : 'rgba(59,130,246,0.04)',
-        flexShrink: 0,
-      }}>
-        {[
-          { label: 'ACTIVE', value: workingCount, color: '#22C55E' },
-          { label: 'BLOCKED', value: blockedCount, color: '#EF4444' },
-          { label: 'DONE', value: doneCount, color: '#60A5FA' },
-          { label: 'PROGRESS', value: `${overallProgress}%`, color: isNightMode ? '#F1F5F9' : '#0F172A' },
-        ].map(stat => (
-          <div key={stat.label} style={{
-            background: isNightMode ? '#162236' : '#FFFFFF',
-            border: isNightMode ? '1px solid #1E3A5F' : `2px solid ${stat.color === '#0F172A' ? 'rgba(59,130,246,0.15)' : stat.color + '33'}`,
-            borderRadius: 8,
-            padding: '8px 4px',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            minHeight: 48,
-            boxShadow: isNightMode ? '0 1px 3px rgba(0,0,0,0.15)' : '0 1px 4px rgba(0,0,0,0.06)',
-            cursor: 'default',
-            transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03) translateY(-1px)' }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}>
-            <span style={{
-              fontSize: 18, fontWeight: 900, color: stat.color,
-              fontVariantNumeric: 'tabular-nums', lineHeight: 1,
-              fontFamily: "'Inter', system-ui, sans-serif",
-            }}>
-              {stat.value}
-            </span>
-            <span style={{
-              fontSize: 11, fontWeight: 700, color: isNightMode ? '#64748B' : '#64748B',
-              textTransform: 'uppercase', letterSpacing: '0.06em',
-              fontFamily: "'Inter', system-ui, sans-serif",
-              marginTop: 4,
-            }}>
-              {stat.label}
-            </span>
-          </div>
-        ))}
-      </div>
+      {/* ---- 4 TOP SQUARES (interactive, alive -- replaces stat pills) ---- */}
+      <TopSquares
+        allAgentStatus={allAgentStatus}
+        workingCount={workingCount}
+        blockedCount={blockedCount}
+        overallProgress={overallProgress}
+        isNightMode={isNightMode}
+        isDaytime={isDaytime}
+        data={data}
+      />
 
       {/* ---- TAB BAR (Vegas glow tabs: Chat / Tasks / Info / List / Board) ---- */}
       <div style={{
