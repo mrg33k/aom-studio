@@ -7154,8 +7154,8 @@ export default function GameDashboard() {
         .then(data => {
           if (!data?.messages?.length) return
           setAgentChats(prev => {
-            const currentCount = (prev[selectedRoom]?._all || []).length
-            if (data.messages.length === currentCount) return prev // no change
+            const currentMsgs = (prev[selectedRoom]?._all || []).filter(m => !m.streaming)
+            if (data.messages.length === currentMsgs.length) return prev // no change
             const msgs = data.messages.map(m => ({
               role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
               content: m.text || '',
@@ -7163,6 +7163,8 @@ export default function GameDashboard() {
               source: m.source || 'file',
               id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
             })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+            // New messages arrived - clear streaming/thinking indicator
+            if (msgs.length > currentMsgs.length) setPanelStreaming(false)
             return { ...prev, [selectedRoom]: { _all: msgs } }
           })
         })
@@ -7638,15 +7640,19 @@ export default function GameDashboard() {
                 setPanelChatInput('')
                 const sentTime = new Date().toISOString()
                 const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-                // Show user message immediately in the chat
+                // Show user message + thinking indicator immediately
                 setAgentChats(prev => {
                   const current = prev[selectedRoom] || { _all: [] }
                   const msgs = [...(current._all || []), {
                     role: 'user', content: text, time: sentTime,
                     source: 'via dashboard', id: localId,
+                  }, {
+                    role: 'assistant', content: '', streaming: true,
+                    time: sentTime, id: `thinking-${localId}`,
                   }]
                   return { ...prev, [selectedRoom]: { _all: msgs } }
                 })
+                setPanelStreaming(true)
                 // Send to server (writes to conversation file + relay inbox)
                 if (IS_LOCAL) {
                   fetch('/api/local/relay-send', {
