@@ -22,6 +22,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // GHOST KILL: AnimatedAgentCharacter, CharacterAnimationStyles, CanvasRoom all REMOVED
 // Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
+import CrossyBackground from './CrossyBackground.jsx'
 import briefsIndex from '../data/briefs-index.json'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
@@ -5964,6 +5965,8 @@ export default function GameDashboard() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
+              {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
+              {currentMode === 'game' && <CrossyBackground isNightMode={isNightMode} />}
               <CanvasOffice
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}
