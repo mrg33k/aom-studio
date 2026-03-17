@@ -35,6 +35,28 @@ Object.entries(ROOM_STATES).forEach(([state, src]) => {
   stateImages[state] = img
 })
 
+// MULTI-ROOM: Additional agent rooms
+const AGENT_ROOMS = [
+  { id: 'elon', name: 'ELON', color: '#4CAF50', x: 0, y: 0 },
+  { id: 'bobby', name: 'BOBBY', color: '#E91E90', x: 1, y: 0 },
+  { id: 'steffen', name: 'STEFFEN', color: '#FFD700', x: 0.5, y: 0.5 },
+]
+
+// Preload other room images
+const otherRoomImages = {}
+const otherRooms = [
+  { id: 'bobby-working', src: '/corner/bobby-room/room-shell-working.png' },
+  { id: 'bobby-idle', src: '/corner/bobby-room/room-shell-idle.png' },
+  { id: 'steffen-working', src: '/corner/steffen-room/room-shell-working.png' },
+  { id: 'steffen-idle', src: '/corner/steffen-room/room-shell-idle.png' },
+]
+otherRooms.forEach(({ id, src }) => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = src
+  otherRoomImages[id] = img
+})
+
 // Walk cycle waypoints (% of room size)
 const WALKABLE_POINTS = [
   { x: 0.35, y: 0.72, label: 'desk' },
@@ -395,74 +417,82 @@ export default function CanvasOffice({
 
     ctx.imageSmoothingEnabled = false
 
-    // ---- CLIP TO ISOMETRIC HEXAGON ----
-    // The room is an isometric cube (hexagonal shape). Clip to match the actual
-    // room edges so no square background leaks. The hex shape has 6 points:
-    // top-center, top-right, bottom-right, bottom-center, bottom-left, top-left
-    ctx.save()
-    ctx.beginPath()
-    const S = ROOM_SIZE
-    ctx.moveTo(S * 0.50, S * 0.05)  // top center (roof peak)
-    ctx.lineTo(S * 0.95, S * 0.28)  // top right
-    ctx.lineTo(S * 0.95, S * 0.75)  // bottom right
-    ctx.lineTo(S * 0.50, S * 0.95)  // bottom center
-    ctx.lineTo(S * 0.05, S * 0.75)  // bottom left
-    ctx.lineTo(S * 0.05, S * 0.28)  // top left
-    ctx.closePath()
-    ctx.clip()
-
-    // ---- ROOM STATE RENDER (crossfade between states) ----
-    // Each state is a complete scene (room + character baked in).
-    // Smooth stop-motion: fade between state images on status change.
-
-    // Smooth blend: draw working at (1-alpha), idle at (alpha). No flash.
-    const workingImg = stateImages['working']
-    const idleImg = stateImages['idle']
-    if (workingImg?.complete && idleImg?.complete) {
+    // ---- HELPER: Draw one room with hex clip ----
+    function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, alpha, nameText, nameColor) {
       ctx.save()
-      ctx.globalAlpha = 1 - blendAlpha
-      ctx.drawImage(workingImg, 0, 0, ROOM_SIZE, ROOM_SIZE)
-      ctx.restore()
-      ctx.save()
-      ctx.globalAlpha = blendAlpha
-      ctx.drawImage(idleImg, 0, 0, ROOM_SIZE, ROOM_SIZE)
-      ctx.restore()
-    } else if (layerCategories.roomShell) {
-      ctx.drawImage(layerCategories.roomShell.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
-    }
+      ctx.translate(offsetX, offsetY)
 
-    // Little Elon walking in a square circle
-    if (layerCategories.charLayer) {
-      const cl = layerCategories.charLayer
-      const charSize = ROOM_SIZE * 0.15  // Small -- 15% of room
-      const charX = elonPos.x * ROOM_SIZE - charSize / 2
-      let charY = elonPos.y * ROOM_SIZE - charSize * 0.7
-      // Subtle hop
-      if (hopFrame === 'peak') charY -= 6
-      if (hopFrame === 'landing') charY += 2
-
-      // Shadow
-      ctx.save()
-      ctx.globalAlpha = 0.2
+      // Hex clip
       ctx.beginPath()
-      ctx.ellipse(elonPos.x * ROOM_SIZE, elonPos.y * ROOM_SIZE + charSize * 0.1, charSize * 0.3, charSize * 0.06, 0, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'
+      const S = ROOM_SIZE
+      ctx.moveTo(S * 0.50, S * 0.05)
+      ctx.lineTo(S * 0.95, S * 0.28)
+      ctx.lineTo(S * 0.95, S * 0.75)
+      ctx.lineTo(S * 0.50, S * 0.95)
+      ctx.lineTo(S * 0.05, S * 0.75)
+      ctx.lineTo(S * 0.05, S * 0.28)
+      ctx.closePath()
+      ctx.clip()
+
+      // Crossfade blend
+      if (workImg?.complete && idleImg?.complete) {
+        ctx.save()
+        ctx.globalAlpha = 1 - alpha
+        ctx.drawImage(workImg, 0, 0, S, S)
+        ctx.restore()
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.drawImage(idleImg, 0, 0, S, S)
+        ctx.restore()
+      } else if (workImg?.complete) {
+        ctx.drawImage(workImg, 0, 0, S, S)
+      }
+
+      // Nameplate
+      ctx.save()
+      ctx.font = '600 14px Inter, system-ui, sans-serif'
+      const tw = ctx.measureText(nameText).width
+      const npX = S * 0.5 - tw / 2 - 8
+      const npY = S * 0.88
+      ctx.fillStyle = 'rgba(10, 15, 30, 0.85)'
+      ctx.beginPath()
+      ctx.roundRect(npX - 2, npY - 10, tw + 20, 24, 4)
       ctx.fill()
+      ctx.strokeStyle = `${nameColor}55`
+      ctx.lineWidth = 1
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.arc(npX + 6, npY + 2, 4, 0, Math.PI * 2)
+      ctx.fillStyle = nameColor
+      ctx.fill()
+      ctx.fillStyle = '#EDF2FA'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(nameText, npX + 14, npY + 2)
       ctx.restore()
 
-      // Draw character
-      ctx.save()
-      ctx.globalAlpha = 1.0
-      ctx.imageSmoothingEnabled = false
-      if (facingLeft) {
-        ctx.translate(charX + charSize, charY)
-        ctx.scale(-1, 1)
-        ctx.drawImage(cl.img, 0, 0, charSize, charSize)
-      } else {
-        ctx.drawImage(cl.img, charX, charY, charSize, charSize)
-      }
-      ctx.restore()
+      ctx.restore() // undo translate + clip
     }
+
+    // ---- RENDER ALL ROOMS ----
+    // Isometric grid: each room offset by half-width right + quarter-height down
+    const GRID_OFFSET_X = ROOM_SIZE * 0.52  // horizontal spacing
+    const GRID_OFFSET_Y = ROOM_SIZE * 0.26  // vertical spacing (isometric)
+
+    // Room 1: ELON (center-top)
+    const elonX = ROOM_SIZE * 0.5
+    const elonY = 0
+    drawRoom(ctx, elonX, elonY, stateImages['working'], stateImages['idle'], blendAlpha, 'ELON', ELON_COLOR)
+
+    // Room 2: BOBBY (left-bottom)
+    const bobbyX = elonX - GRID_OFFSET_X
+    const bobbyY = elonY + GRID_OFFSET_Y * 2
+    drawRoom(ctx, bobbyX, bobbyY, otherRoomImages['bobby-working'], otherRoomImages['bobby-idle'], blendAlpha, 'BOBBY', '#E91E90')
+
+    // Room 3: STEFFEN (right-bottom)
+    const steffenX = elonX + GRID_OFFSET_X
+    const steffenY = elonY + GRID_OFFSET_Y * 2
+    drawRoom(ctx, steffenX, steffenY, otherRoomImages['steffen-working'], otherRoomImages['steffen-idle'], blendAlpha, 'STEFFEN', '#FFD700')
 
     // Subtle glow overlay (15% screen blend)
     if (layerCategories.glowLayer) {
