@@ -2757,7 +2757,9 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             return (
               <div key={projectKey} ref={el => { projectPillRefs.current[projectKey] = el }} style={{ position: 'relative', flexShrink: 0 }}>
                 <button
-                  onClick={() => setActiveProjectDropdown(isDropdownOpen ? null : projectKey)}
+                  onClick={() => {
+                    setActiveProjectDropdown(isDropdownOpen ? null : projectKey)
+                  }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     background: isDropdownOpen
@@ -6709,7 +6711,7 @@ export default function GameDashboard() {
   }, [])
   // Per-agent chat history: { agentSlug: { _all: [...messages] } }
   // VERSION 2: force clear on upgrade to fix cross-agent contamination
-  const CHAT_VERSION = 'v4'
+  const CHAT_VERSION = 'v5'
   const [agentChats, setAgentChats] = useState(() => {
     if (!IS_LOCAL) return { _demo: demoChatMessages }
     try {
