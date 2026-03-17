@@ -44,6 +44,7 @@ import {
   Zap, AlertCircle, History,
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
+import { useDataPipe } from './hooks/useDataPipe.js'
 
 // Sprite avatar (duplicated here to avoid circular imports, small component)
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
@@ -261,208 +262,9 @@ function useConversationRecency() {
   return scores
 }
 
-// TODO(steve): DUPLICATED HOOKS -- useRightNowTasks and useCompletedFeed are nearly identical copies in ChecklistMode.jsx and GameHUD.jsx (useRightNowLiveTasks / useCompletedFeed). Both parse active-missions.md and agent-notifications.md the same way. Extract to a shared hooks file (e.g., src/dashboard/hooks/useAgentData.js). Current state: 2 copies of ~60 lines each, 4 copies total across 2 hooks.
-// ---- RIGHT NOW: RUNNING agents from active-missions.md + agent-notifications.md ----
-// DONE(bobby2): DATA SYNC -- Right Now count = agents with TASK STARTED but no TASK FINISHED
-// in agent-notifications.md, merged with active-missions.md "## Running" table.
-function useRightNowTasks() {
-  const [tasks, setTasks] = useState([])
-
-  useEffect(() => {
-    if (!IS_LOCAL) return
-
-    const fetchTasks = async () => {
-      try {
-        const missionTasks = []
-
-        // Source 1: active-missions.md "## Running" table
-        try {
-          const res = await fetch('/api/local/file?path=context/active-missions.md')
-          if (res.ok) {
-            const json = await res.json()
-            if (json.content) {
-              const runningSection = json.content.split(/^## Running/m)[1]
-              if (runningSection) {
-                const runningContent = runningSection.split(/^## /m)[0]
-                const rows = runningContent.trim().split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('Agent'))
-                for (const row of rows) {
-                  const cells = row.split('|').map(c => c.trim()).filter(Boolean)
-                  if (cells.length < 3) continue
-                  let agentSlug = cells[0].toLowerCase().replace(/\s+\d+$/, '').trim()
-                  if (/^bobby/.test(agentSlug)) agentSlug = 'bobby'
-                  if (/^steffen/.test(agentSlug)) agentSlug = 'steffen'
-                  let text = cells[1].replace(/^Relaunched:\s*/i, '').replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
-                  if (text.length > 55) text = text.slice(0, 52) + '...'
-                  if (text.length > 3 && agentSlug) {
-                    missionTasks.push({ text, agent: agentSlug, progress: 50, done: false, isLive: true })
-                  }
-                }
-              }
-            }
-          }
-        } catch {}
-
-        // Source 2: agent-notifications.md TASK STARTED without matching TASK FINISHED
-        try {
-          const res2 = await fetch('/api/local/file?path=context/agent-notifications.md')
-          if (res2.ok) {
-            const json2 = await res2.json()
-            if (json2.content) {
-              const lines = json2.content.trim().split('\n').filter(l => l.startsWith('['))
-              const started = new Map()
-              const finished = new Set()
-
-              for (const line of lines) {
-                const startMatch = line.match(/TASK STARTED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]\s*(.+?)$/i)
-                if (startMatch) {
-                  let slug = startMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
-                  if (/^bobby/.test(slug)) slug = 'bobby'
-                  if (/^steffen/.test(slug)) slug = 'steffen'
-                  let text = startMatch[2].replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
-                  if (text.length > 55) text = text.slice(0, 52) + '...'
-                  started.set(slug, { text, agent: slug, progress: 50, done: false, isLive: true })
-                  finished.delete(slug)
-                }
-                const finishMatch = line.match(/TASK FINISHED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]/i)
-                if (finishMatch) {
-                  let slug = finishMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
-                  if (/^bobby/.test(slug)) slug = 'bobby'
-                  if (/^steffen/.test(slug)) slug = 'steffen'
-                  finished.add(slug)
-                }
-              }
-
-              const missionAgents = new Set(missionTasks.map(t => t.agent))
-              for (const [slug, taskInfo] of started) {
-                if (!finished.has(slug) && !missionAgents.has(slug)) {
-                  missionTasks.push(taskInfo)
-                }
-              }
-            }
-          }
-        } catch {}
-
-        setTasks(missionTasks)
-      } catch {}
-    }
-
-    fetchTasks()
-    const timer = setInterval(fetchTasks, 3000)
-    return () => clearInterval(timer)
-  }, [])
-
-  return tasks
-}
-
-// ---- RELATIVE TIME FORMATTER ------------------------------------------------
-function formatRelativeTime(dateStr) {
-  if (!dateStr) return ''
-  try {
-    const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return dateStr
-    const now = new Date()
-    const diffMs = now - date
-    const diffMin = Math.floor(diffMs / 60000)
-    const diffHr = Math.floor(diffMs / 3600000)
-    const diffDay = Math.floor(diffMs / 86400000)
-
-    if (diffMin < 1) return 'just now'
-    if (diffMin < 60) return `${diffMin}m ago`
-    if (diffHr < 24) return `${diffHr}h ago`
-    if (diffDay === 1) return 'yesterday'
-    if (diffDay < 7) return `${diffDay}d ago`
-    return dateStr.split('T')[0]
-  } catch {
-    return dateStr
-  }
-}
-
-// ---- COMPLETED FEED (polls agent-notifications.md for recent task completions) ----
-// DONE(bobby2): Cleaned up. Format: "Agent shipped description" + relative timestamp ("2m ago").
-// Max 8 items. No raw notification text. Agent name + short description only.
-function useCompletedFeed() {
-  const [completions, setCompletions] = useState([])
-
-  useEffect(() => {
-    if (!IS_LOCAL) return
-
-    const fetchCompletions = async () => {
-      try {
-        const res = await fetch('/api/local/file?path=context/agent-notifications.md')
-        if (!res.ok) return
-        const json = await res.json()
-        if (!json.content) return
-
-        const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
-        const completionLines = lines
-          .filter(l => {
-            if (/PATRIK\s*(DIRECTIVE|CLARIFICATION|FEEDBACK|BUG|REMINDER|DECISION)/i.test(l)) return false
-            if (/COUNCIL\s*(DIRECTIVE|DECISION)/i.test(l)) return false
-            if (/NEXT\s*WAVE/i.test(l)) return false
-            return /TASK\s*FINISHED|SHIPPED|DELIVERED|MILESTONE/i.test(l)
-          })
-          .slice(-8)
-          .reverse()
-
-        const parsed = completionLines.map((line) => {
-          const agentMatch = line.match(/(?:Bobby\s*\d?|Steffen\s*\d?|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
-          let agentSlug = agentMatch ? agentMatch[0].toLowerCase().replace(/\s+/g, '') : null
-          if (agentSlug && /^bobby\d?$/.test(agentSlug)) agentSlug = 'bobby'
-          if (agentSlug && /^steffen\d?$/.test(agentSlug)) agentSlug = 'steffen'
-
-          let text = ''
-          const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-          const shippedMatch = line.match(/SHIPPED:\s*(?:\(1\)\s*)?(.+?)(?:,\s*\(2\)|\.\s|$)/i)
-          const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-          if (taskMatch) text = taskMatch[1].trim()
-          else if (milestoneMatch) text = milestoneMatch[1].trim()
-          else if (shippedMatch) text = shippedMatch[1].trim()
-          else {
-            const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-\u2013:]\s*(.+?)(?:\.\s|$)/i)
-            text = afterAgent ? afterAgent[1].trim() : ''
-          }
-
-          text = text.replace(/@\w+:?/g, '')
-            .replace(/\b[0-9a-f]{7,8}\b/g, '')
-            .replace(/projects\/\S+/g, '')
-            .replace(/\d+\s*commits?\s*pushed\s*\([^)]*\)/gi, '')
-            .replace(/\(\s*\d+\s*commits?\s*to\s*[\w-]+[^)]*\)/gi, '')
-            .replace(/\([^)]*commits?[^)]*\)/gi, '')
-            .replace(/\([\s,]*\)/g, '')
-            .replace(/REMAINING\s*TODOs?:.*$/i, '')
-            .replace(/\s{2,}/g, ' ')
-            .replace(/^\s*[-\u2013:,.\s]+/, '')
-            .replace(/[-\u2013:,.\s]+$/, '')
-            .trim()
-          if (text.length > 55) text = text.slice(0, 52) + '...'
-
-          // Extract timestamp: prefer ISO [YYYY-MM-DDTHH:MM:SSZ], fallback to [YYYY-MM-DD]
-          const isoMatch = line.match(/\[(\d{4}-\d{2}-\d{2}T[^\]]+)\]/)
-          const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\]/)
-          const rawTimestamp = isoMatch ? isoMatch[1] : (dateMatch ? dateMatch[1] : '')
-          const relativeTime = formatRelativeTime(rawTimestamp)
-
-          return {
-            text,
-            agent: agentSlug,
-            progress: 100,
-            done: true,
-            isLive: false,
-            timestamp: relativeTime,
-          }
-        }).filter(t => t.text.length > 3 && t.agent)
-
-        setCompletions(parsed)
-      } catch {}
-    }
-
-    fetchCompletions()
-    const timer = setInterval(fetchCompletions, 8000)
-    return () => clearInterval(timer)
-  }, [])
-
-  return completions
-}
+// ---- DATA HOOKS REPLACED BY useDataPipe (hooks/useDataPipe.js) ---------------
+// Bobby2: All polling consolidated into ONE hook. See useDataPipe.js.
+// DONE(steve TODO): Duplicated hooks eliminated. One shared hook now.
 
 // Generate demo Right Now tasks for production
 function generateDemoRightNow() {
@@ -549,173 +351,6 @@ function generateDemoChecklist() {
       { text: 'Check permit tracker page after Bobby fix', done: false, agent: 'elmo', project: 'Schedule' },
     ],
   }
-}
-
-// ---- LIVE TASK AUTO-CHECK (polls notifications for TASK FINISHED, auto-checks matching checklist items) ----
-// DONE(bobby2): LIVE TASK UPDATES IN CHECKLIST -- Same logic as GameHUD's useAutoCheckFromNotifications.
-// Polls agent-notifications.md every 3s, fuzzy-matches completed descriptions against task text.
-function useAutoCheckFromNotifications() {
-  const [autoChecked, setAutoChecked] = useState(new Set())
-
-  useEffect(() => {
-    if (!IS_LOCAL) return
-
-    const fetchCompletions = async () => {
-      try {
-        const res = await fetch('/api/local/file?path=context/agent-notifications.md')
-        if (!res.ok) return
-        const json = await res.json()
-        if (!json.content) return
-
-        const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
-        const completionLines = lines.filter(l =>
-          /TASK\s*FINISHED|COMPLETE|DELIVERED|SHIPPED/i.test(l)
-        )
-
-        const completedDescriptions = []
-        for (const line of completionLines) {
-          const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-          const shippedMatch = line.match(/SHIPPED:\s*(?:\(\d+\)\s*)?(.+?)(?:,\s*\(\d+\)|\.\s|$)/i)
-          if (taskMatch) completedDescriptions.push(taskMatch[1].trim().toLowerCase())
-          if (shippedMatch) completedDescriptions.push(shippedMatch[1].trim().toLowerCase())
-          const numberedItems = line.matchAll(/\((\d+)\)\s*([^,(]+)/g)
-          for (const match of numberedItems) {
-            completedDescriptions.push(match[2].trim().toLowerCase())
-          }
-        }
-
-        const completedKeywords = new Set()
-        for (const desc of completedDescriptions) {
-          const tokens = desc
-            .replace(/[*_`#\[\]()]/g, '')
-            .replace(/\b(the|a|an|for|to|in|on|at|by|is|was|with|and|or|all|from|of)\b/gi, '')
-            .split(/\s+/)
-            .filter(t => t.length > 3)
-          for (let i = 0; i < tokens.length; i++) {
-            completedKeywords.add(tokens[i])
-            if (i + 1 < tokens.length) completedKeywords.add(`${tokens[i]} ${tokens[i+1]}`)
-            if (i + 2 < tokens.length) completedKeywords.add(`${tokens[i]} ${tokens[i+1]} ${tokens[i+2]}`)
-          }
-        }
-
-        setAutoChecked(completedKeywords)
-      } catch {}
-    }
-
-    fetchCompletions()
-    const timer = setInterval(fetchCompletions, 3000)
-    return () => clearInterval(timer)
-  }, [])
-
-  const isAutoChecked = useCallback((taskText) => {
-    if (autoChecked.size === 0) return false
-    const normalized = taskText.toLowerCase()
-      .replace(/[*_`#\[\]()]/g, '')
-      .replace(/\b(the|a|an|for|to|in|on|at|by|is|was|with|and|or|all|from|of)\b/gi, '')
-    const tokens = normalized.split(/\s+/).filter(t => t.length > 3)
-    let matchCount = 0
-    for (const token of tokens) {
-      if (autoChecked.has(token)) matchCount++
-    }
-    for (let i = 0; i + 1 < tokens.length; i++) {
-      if (autoChecked.has(`${tokens[i]} ${tokens[i+1]}`)) matchCount += 2
-    }
-    return matchCount >= 2
-  }, [autoChecked])
-
-  return isAutoChecked
-}
-
-// ---- YOUR TODOS: Patrik's personal blocked items from punch-list.md ---------
-function usePatrikTodos(punchData) {
-  return useMemo(() => {
-    if (!punchData?.projects) return []
-    const todos = []
-    for (const project of punchData.projects) {
-      for (const task of project.tasks) {
-        if (task.done) continue
-        const isPatrik = task.agent === 'patrik' ||
-          /\[Patrik\b/i.test(task.raw || '') ||
-          /\bPatrik\s*[-\u2013]/i.test(task.raw || '')
-        if (isPatrik) {
-          todos.push({
-            text: task.text,
-            agent: 'patrik',
-            project: project.name,
-            projectColor: project.color,
-            raw: task.raw,
-            done: false,
-          })
-        }
-      }
-    }
-    return todos
-  }, [punchData])
-}
-
-// ---- FINISH THESE: Stale tasks needing attention ----------------------------
-function useCheckingInTasks(punchData) {
-  return useMemo(() => {
-    if (!punchData?.projects) return []
-    const stale = []
-    const activeSections = new Set(['rightnow', 'schedule', 'today', 'your-todos', 'finish-these', 'checking-in'])
-    for (const project of punchData.projects) {
-      if (activeSections.has(project.section)) continue
-      for (const task of project.tasks) {
-        if (task.done) continue
-        const hasBlockedKeyword = /blocked|overdue|behind|zero|waiting|red|urgent/i.test(task.raw || '')
-        const hasRecentKeyword = /shipped|done|live|active|relaunched/i.test(task.raw || '')
-        if (hasRecentKeyword) continue
-        if (hasBlockedKeyword) {
-          stale.push({
-            text: task.text,
-            agent: task.agent,
-            project: project.name,
-            projectColor: project.color,
-            raw: task.raw,
-            done: false,
-            isStale: true,
-          })
-        }
-      }
-    }
-    return stale.slice(0, 6)
-  }, [punchData])
-}
-
-// ---- DATA HOOK for punch-list.md --------------------------------------------
-function usePunchListData() {
-  // Production: demo checklist data. Local: fetch from punch-list.md.
-  const demoData = IS_LOCAL ? null : generateDemoChecklist()
-  const [data, setData] = useState(demoData)
-  const [loading, setLoading] = useState(IS_LOCAL)
-
-  const fetchData = useCallback(async () => {
-    if (!IS_LOCAL) return // Production uses demo data
-    try {
-      const res = await fetch('/api/local/file?path=punch-list.md')
-      if (!res.ok) throw new Error(`${res.status}`)
-      const json = await res.json()
-      if (json.content) {
-        setData(parsePunchList(json.content))
-      } else {
-        setData(null)
-      }
-    } catch {
-      setData(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!IS_LOCAL) return
-    fetchData()
-    const timer = setInterval(fetchData, 5000)
-    return () => clearInterval(timer)
-  }, [fetchData])
-
-  return { data, loading, refetch: fetchData }
 }
 
 // ---- PROJECT SIDEBAR (replaces agent sidebar) --------------------------------
@@ -2289,27 +1924,30 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     } catch { /* quota exceeded or private browsing - ignore */ }
   }, [checkedTasks])
 
-  // Fetch punch-list data (grouped by project)
-  const { data: punchData, loading } = usePunchListData()
+  // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
+  const {
+    rightNow: liveRightNowTasks,
+    completedFeed: liveCompletedFeed,
+    yourTodos: patrikTodos,
+    finishThese: checkingInTasks,
+    isAutoChecked,
+    punchData,
+    punchLoading: loading,
+  } = useDataPipe(parsePunchList)
   const conversationScores = useConversationRecency()
-  const isAutoChecked = useAutoCheckFromNotifications()
 
   // Right Now: ONLY running agents (local: from active-missions.md, prod: demo data)
-  const liveRightNowTasks = useRightNowTasks()
   const rightNowTasks = IS_LOCAL ? liveRightNowTasks : generateDemoRightNow()
   const showRightNow = rightNowTasks.length > 0 && (!selectedProject || selectedProject === 'rightnow')
 
   // Completed feed: recent task completions (simplified activity feed)
-  const liveCompletedFeed = useCompletedFeed()
   const completedFeedTasks = IS_LOCAL ? liveCompletedFeed : generateDemoCompleted()
   const showCompleted = completedFeedTasks.length > 0 && (!selectedProject || selectedProject === 'completed-feed')
 
   // Your TODOs: Patrik's personal blocked items
-  const patrikTodos = usePatrikTodos(punchData)
   const showTodos = patrikTodos.length > 0 && (!selectedProject || selectedProject === 'your-todos')
 
   // Checking In: stale tasks needing attention
-  const checkingInTasks = useCheckingInTasks(punchData)
   const showCheckingIn = checkingInTasks.length > 0 && (!selectedProject || selectedProject === 'finish-these' || selectedProject === 'checking-in')
 
   // Sort projects by conversation-driven recency weight
