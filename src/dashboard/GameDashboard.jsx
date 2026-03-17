@@ -7137,14 +7137,14 @@ export default function GameDashboard() {
 
   // Reset streaming state when switching agents so stale typing indicators don't persist
   // e.g., if agent A was streaming and user clicks agent B, the typing indicator clears
-  // Also strip any stale streaming placeholder messages from the chat array
+  // On agent switch: reset streaming, clean stale messages, load conversation from server
   useEffect(() => {
     setPanelStreaming(false)
     if (panelRelayPollRef.current) {
       clearInterval(panelRelayPollRef.current)
       panelRelayPollRef.current = null
     }
-    // Clean stale streaming messages from chat
+    // Clean stale streaming messages
     safePanelUpdate(prev => {
       const filtered = [...(prev._all || [])].filter(m => !m.streaming)
       if (filtered.length !== (prev._all || []).length) {
@@ -7152,6 +7152,28 @@ export default function GameDashboard() {
       }
       return prev
     })
+    // Load conversation history from server files (conversations/agents/{slug}.jsonl)
+    if (IS_LOCAL && selectedRoom) {
+      fetch(`/api/local/conversations?target=${selectedRoom}&type=agent&limit=50`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (!data?.messages?.length) return
+          setAgentChats(prev => {
+            const existing = prev[selectedRoom]?._all || []
+            // Only load if we have no messages yet (don't overwrite active session)
+            if (existing.length > 0) return prev
+            const loaded = data.messages.map(m => ({
+              role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
+              content: m.text || '',
+              time: m.timestamp || '',
+              source: m.source || 'file',
+              id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+            })).filter(m => m.content)
+            return { ...prev, [selectedRoom]: { _all: loaded } }
+          })
+        })
+        .catch(() => {})
+    }
   }, [selectedRoom])
 
   useEffect(() => {
