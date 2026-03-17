@@ -471,6 +471,11 @@ function localDashboardPlugin() {
                 fs.mkdirSync(convSubDir, { recursive: true })
                 fs.appendFileSync(resolve(convDir, 'main.jsonl'), convLine)
                 fs.appendFileSync(resolve(convSubDir, `${convFileName}.jsonl`), convLine)
+                // Also write to AOM master chat (all messages flow here)
+                if (convFileName !== 'aom-internal') {
+                  const aomChat = resolve(convDir, 'projects', 'aom-internal.jsonl')
+                  fs.appendFileSync(aomChat, convLine)
+                }
               } catch (err) {
                 console.log(`[Relay] Conv log write failed: ${err.message}`)
               }
