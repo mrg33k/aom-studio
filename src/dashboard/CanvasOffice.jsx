@@ -406,17 +406,10 @@ export default function CanvasOffice({
     // When the new character-final.png layer exists (Gemini/Steffen art),
     // draw it ONCE and skip the old walk sprite system to prevent double-character.
     // When no character layer exists, fall back to the old walk sprite system.
-    if (layerCategories.charLayer) {
-      // New layered character art -- draw from the character-final.png
-      const cl = layerCategories.charLayer
-      const cm = cl.meta
-      const isCharFullCanvas = cl.img.naturalWidth === ROOM_SIZE && cl.img.naturalHeight === ROOM_SIZE
-      if (isCharFullCanvas) {
-        ctx.drawImage(cl.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
-      } else {
-        ctx.drawImage(cl.img, cm.x || 0, cm.y || 0, cm.width || cl.img.naturalWidth, cm.height || cl.img.naturalHeight)
-      }
-    } else {
+    // ALWAYS use the old walk sprite system for the character.
+    // The Gemini character-final.png is too large (fills 512x512 canvas = giant head).
+    // The walk sprites are properly sized and animated. Character layer is SKIPPED.
+    {
       // Old walk sprite system (fallback when no character layer PNG exists)
       const charSize = 80
       const charX = elonPos.x * ROOM_SIZE - charSize / 2
