@@ -1482,15 +1482,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 pointerEvents: 'none',
               }}
             >
-              <CanvasRoom
-                roomId="elon"
-                isActive={elonIsActive}
-                isHovered={hoveredRoom === 'elon'}
-                onClick={(id) => onRoomClick?.(id)}
-                onMouseEnter={() => setHoveredRoom('elon')}
-                onMouseLeave={() => setHoveredRoom(null)}
-                style={{ pointerEvents: 'auto' }}
-              />
+              {/* OLD CanvasRoom KILLED -- CanvasOffice 3-layer system is the only renderer now */}
             </div>
           )
         })()}
