@@ -1,0 +1,118 @@
+{
+  "pass": 10,
+  "commit": "67ee8e2",
+  "workingTreeClean": false,
+  "tests": [
+    {
+      "test": "T0-LOGIN",
+      "status": "PASS",
+      "detail": "Authenticated via password gate"
+    },
+    {
+      "test": "T1-BUILDING",
+      "status": "PASS",
+      "detail": "Building 1008x1161px [/corner/office-full-night.png]"
+    },
+    {
+      "test": "T2a-PANEL",
+      "status": "PASS",
+      "detail": "Right panel: 380x900px, 0px from right"
+    },
+    {
+      "test": "T2b-CONTENT",
+      "status": "PASS",
+      "detail": "Agent=true, Chat=true, Tabs=true, Status=true (4/4)"
+    },
+    {
+      "test": "T3-NO-LEFT",
+      "status": "PASS",
+      "detail": "No left sidebar"
+    },
+    {
+      "test": "T4a-PAN-LEFT",
+      "status": "PASS",
+      "detail": "After 1600px left pan: visible=true, left=816, right=1824"
+    },
+    {
+      "test": "T4b-PAN-RIGHT",
+      "status": "PASS",
+      "detail": "After 1600px right pan: visible=true, left=-249, right=759"
+    },
+    {
+      "test": "T4c-PAN-UP",
+      "status": "PASS",
+      "detail": "After 1600px up pan: visible=true, top=497, bottom=1655"
+    },
+    {
+      "test": "T4d-PAN-DOWN",
+      "status": "PASS",
+      "detail": "After 1600px down pan: visible=true, top=-255, bottom=905"
+    },
+    {
+      "test": "T4-PAN-BOUNDS",
+      "status": "PASS",
+      "detail": "Pan bounds all 4 directions: ALL CLAMPED (L=true R=true U=true D=true)"
+    },
+    {
+      "test": "T5-ZOOM",
+      "status": "PASS",
+      "detail": "before=\"matrix(0.7, 0, 0, 0.7, -567.757, -170.91\" after=\"matrix(1.02853, 0, 0, 1.02853, -567.757,\""
+    },
+    {
+      "test": "T6a-PILLS",
+      "status": "PASS",
+      "detail": "15 pills: Advisory6 | $KOHRS$2kRED | $NABI$25kRED | $LBX$6kHOLD | AOM Site | Today10"
+    },
+    {
+      "test": "T6b-TODAY",
+      "status": "FAIL",
+      "detail": "First pill: \"Advisory6\" (expected: Today)"
+    },
+    {
+      "test": "T6c-CORNER",
+      "status": "PASS",
+      "detail": "Corner at position 11"
+    },
+    {
+      "test": "T6d-WEIGHT",
+      "status": "FAIL",
+      "detail": "Pill font weight: 400 (target: 900)"
+    },
+    {
+      "test": "T7-CLIENTS",
+      "status": "PASS",
+      "detail": "Client projects: ISA Energy, Ambition, KOHRS, Brandon Wiley, Skylar (5/6)"
+    },
+    {
+      "test": "RUNTIME",
+      "status": "FAIL",
+      "detail": "elementHandle.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, ena"
+    }
+  ],
+  "summary": {
+    "total": 17,
+    "pass": 14,
+    "fail": 3,
+    "warn": 0,
+    "info": 0
+  },
+  "tier0": {
+    "Auth (Supabase)": false,
+    "Chat responds": false,
+    "Client projects": true,
+    "Checkbox persist": false,
+    "Chat timeout": false,
+    "Pan bounds": true,
+    "Demo data": false
+  },
+  "tier0Done": 2,
+  "fourFixes": {
+    "panBounds": true,
+    "chatTimeout": false,
+    "checkboxPersist": false,
+    "expandDots": false,
+    "count": 1
+  },
+  "grade": "D",
+  "timestamp": "2026-03-16T15:35:05.445Z"
+}

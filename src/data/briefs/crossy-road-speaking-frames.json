@@ -1,0 +1,12 @@
+{
+  "title": "Crossy Road Speaking Animation Frames",
+  "slug": "crossy-road-speaking-frames",
+  "category": "Design Specs",
+  "agent": "Steffen",
+  "date": "2026-03-17",
+  "dateFormatted": "Mar 17",
+  "updated": null,
+  "summary": "26 speaking animation frames. 13 agents x 2 mouth states (open, closed). Simple talk cycle.",
+  "tags": [],
+  "content": "<h1>Crossy Road Speaking Animation Frames</h1>\n<p>13 agents x 2 mouth positions (open, closed) = 26 sprites at 128x128 transparent PNG.</p>\n<p>Simple talk cycle: alternate between open and closed. Character faces camera.</p>\n<h2>Mouth States</h2>\n<h3>Open</h3>\n<ul>\n<li>Mouth: 10px wide, 8px tall, dark interior with lip border</li>\n<li>Eyes: wide open (7x7px)</li>\n<li>Speech bubble visible with dots</li>\n<li>Body tilted back +2deg (speaking pose)</li>\n<li>One arm in gesture position</li>\n<li>File: <code>{agent}-mouth-open.png</code></li>\n</ul>\n<h3>Closed</h3>\n<ul>\n<li>Mouth: 10px wide, 3px tall, flat line</li>\n<li>Eyes: wide open (same as open)</li>\n<li>No speech bubble</li>\n<li>Same body pose</li>\n<li>File: <code>{agent}-mouth-closed.png</code></li>\n</ul>\n<h2>Animation Timing</h2>\n<pre><code>Open (150ms) -&gt; Closed (150ms) -&gt; repeat\nFull cycle: 300ms\nCycles per sentence: 3-5\n</code></pre>\n<h2>File Map (26 total)</h2>\n<pre><code>speaking/\n  patrik-mouth-open.png     patrik-mouth-open.json\n  patrik-mouth-closed.png   patrik-mouth-closed.json\n  mom-mouth-open.png        mom-mouth-open.json\n  mom-mouth-closed.png      mom-mouth-closed.json\n  ... (all 13 agents)\n</code></pre>\n<h2>Bobby Integration</h2>\n<pre><code class=\"language-jsx\">function animateSpeaking(agentId) {\n  const frames = [&#39;open&#39;, &#39;closed&#39;];\n  let currentFrame = 0;\n\n  const interval = setInterval(() =&gt; {\n    setSprite(`/assets/characters/crossy-road/speaking/${agentId}-mouth-${frames[currentFrame]}.png`);\n    currentFrame = (currentFrame + 1) % 2;\n  }, 150);\n\n  return () =&gt; clearInterval(interval); // cleanup\n}\n\n// Trigger\nif (agent.isSpeaking || agent.state === &#39;SPEAKING&#39;) {\n  const stop = animateSpeaking(agent.id);\n  // Call stop() when agent stops speaking\n}\n</code></pre>\n<h3>Transition</h3>\n<ul>\n<li>150ms crossfade from idle to speaking pose</li>\n<li>150ms crossfade back to idle when done</li>\n<li>Pair with speech bubble effect from effects/speech-bubble.png (CSS scale 0-&gt;1, 200ms)</li>\n</ul>\n<h2>Render Script</h2>\n<p><code>scripts/render-speaking-frames.js</code></p>\n"
+}

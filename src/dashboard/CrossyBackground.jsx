@@ -34,17 +34,11 @@ function getArizonaDayRatio() {
     return t * t * (3 - 2 * t)
   }
 
-  if (hour >= 8 && hour < 18) {
-    // Full day: 8am to 6pm
+  if (hour >= 6 && hour < 18) {
+    // Full day: 6am to 6pm
     return 1
-  } else if (hour >= 6 && hour < 8) {
-    // Sunrise: 6am to 8am, smooth 0->1
-    return smoothstep(6, 8, hour)
-  } else if (hour >= 18 && hour < 20) {
-    // Sunset: 6pm to 8pm, smooth 1->0
-    return 1 - smoothstep(18, 20, hour)
   } else {
-    // Full night: 8pm to 6am
+    // Full night: 6pm to 6am
     return 0
   }
 }
@@ -79,11 +73,11 @@ export default function CrossyBackground({ isNightMode }) {
 
     // ---- COLOR PALETTE ----
     const colors = {
-      nightSky: new THREE.Color(0x020408),
+      nightSky: new THREE.Color(0x1a2a4a),
       daySky: new THREE.Color(0x40a4df),
-      nightFog: new THREE.Color(0x020408),
+      nightFog: new THREE.Color(0x1a2a4a),
       dayFog: new THREE.Color(0x8ecae6),
-      nightLight: new THREE.Color(0x1a2a44),
+      nightLight: new THREE.Color(0x3a5580),
       dayLight: new THREE.Color(0xffffff),
       sunLight: new THREE.Color(0xfff1b5),
       moonLight: new THREE.Color(0x94b9ff),
@@ -93,7 +87,7 @@ export default function CrossyBackground({ isNightMode }) {
     // ---- RENDERER ----
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(
-      60,
+      75,
       container.clientWidth / container.clientHeight,
       0.1,
       1000
@@ -105,7 +99,7 @@ export default function CrossyBackground({ isNightMode }) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     container.appendChild(renderer.domElement)
 
-    scene.fog = new THREE.FogExp2(colors.nightFog.clone(), 0.004)
+    scene.fog = new THREE.FogExp2(colors.nightFog.clone(), 0.0025)
     scene.background = colors.nightSky.clone()
 
     // ---- LIGHTS ----
@@ -159,7 +153,7 @@ export default function CrossyBackground({ isNightMode }) {
       pos.setZ(i, wave + Math.random() * 0.5)
     }
     groundGeometry.computeVertexNormals()
-    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x142b10, roughness: 0.9 })
+    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1e3d1a, roughness: 0.9 })
     const ground = new THREE.Mesh(groundGeometry, groundMaterial)
     ground.rotation.x = -Math.PI / 2
     ground.receiveShadow = true
@@ -214,8 +208,9 @@ export default function CrossyBackground({ isNightMode }) {
     const trunkGeo = new THREE.CylinderGeometry(0.4, 0.8, 5)
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2d1b0c })
     const leafGeo = new THREE.SphereGeometry(4, 8, 8)
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x0a2208 })
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x1a4a18 })
 
+    // Background trees (behind rooms)
     for (let i = 0; i < 120; i++) {
       const tree = new THREE.Group()
       const trunk = new THREE.Mesh(trunkGeo, trunkMat)
@@ -240,7 +235,47 @@ export default function CrossyBackground({ isNightMode }) {
         tree.castShadow = true
       }
     }
+
+    // Foreground trees (in front of camera, closer/larger, frame the scene)
+    for (let i = 0; i < 25; i++) {
+      const tree = new THREE.Group()
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat)
+      trunk.position.y = 2.5
+      const leaves = new THREE.Mesh(leafGeo, leafMat)
+      leaves.position.y = 7
+      leaves.scale.set(1.2, 1.4 + Math.random() * 0.5, 1.2)
+
+      tree.add(trunk)
+      tree.add(leaves)
+      // Place in foreground: z = 15 to 45 (behind/beside the camera at z~35)
+      // Spread wide on x so they frame the edges, not block the center
+      const xPos = (Math.random() - 0.5) * 200
+      if (Math.abs(xPos) > 25) { // Keep center clear for rooms
+        tree.position.set(xPos, 0, 15 + Math.random() * 30)
+        tree.rotation.y = Math.random() * Math.PI
+        tree.userData.phase = Math.random() * Math.PI * 2
+        treeGroup.add(tree)
+        trees.push(tree)
+        tree.castShadow = true
+      }
+    }
+
     scene.add(treeGroup)
+
+    // ---- FOREGROUND LIGHT (park lamp right on the trees) ----
+    const fgLight = new THREE.PointLight(0xffeedd, 14.0, 180, 1.0)
+    fgLight.position.set(0, 10, 32) // Right on the foreground trees
+    scene.add(fgLight)
+
+    // Second fill light spread wider for the edges
+    const fgLight2 = new THREE.PointLight(0xddeeff, 7.0, 150, 1.2)
+    fgLight2.position.set(-30, 8, 38)
+    scene.add(fgLight2)
+
+    // Third fill light for right side
+    const fgLight3 = new THREE.PointLight(0xddeeff, 7.0, 150, 1.2)
+    fgLight3.position.set(30, 8, 38)
+    scene.add(fgLight3)
 
     // ---- ANIMATION ----
     const clock = new THREE.Clock()
@@ -270,8 +305,8 @@ export default function CrossyBackground({ isNightMode }) {
       celestialLight.color.lerpColors(colors.moonLight, colors.sunLight, dayRatio)
 
       // Light intensities
-      ambientLight.intensity = 0.15 + dayRatio * 0.6
-      celestialLight.intensity = 0.3 + dayRatio * 1.2
+      ambientLight.intensity = 0.65 + dayRatio * 0.35
+      celestialLight.intensity = 0.5 + dayRatio * 1.0
 
       // Sun/moon orb arc based on real time (or prop override)
       let angle
@@ -316,13 +351,13 @@ export default function CrossyBackground({ isNightMode }) {
 
       // Camera with mouse parallax
       const targetX = mouseRef.current.x * 5
-      const targetY = 6 + mouseRef.current.y * 2 + Math.sin(elapsed * 0.4) * 0.5
+      const targetY = 28 + mouseRef.current.y * 2 + Math.sin(elapsed * 0.4) * 0.5
 
       camera.position.x += (targetX - camera.position.x) * 0.02
       camera.position.y += (targetY - camera.position.y) * 0.02
       camera.position.z = 35 + Math.cos(elapsed * 0.2) * 2
 
-      camera.lookAt(0, 15, -100)
+      camera.lookAt(0, 35, -100)
 
       renderer.render(scene, camera)
     }

@@ -97,10 +97,10 @@ function deduplicateMessages(messages) {
     const existing = seen.get(normalized)
     if (existing) {
       // Keep the earlier message (original), skip the echo
-      // If timestamps are within 30 seconds, it's a duplicate
+      // If timestamps are within 2 seconds, it's a duplicate (prefer corner-dashboard source)
       const existingTime = new Date(existing.time).getTime()
       const thisTime = new Date(msg.time).getTime()
-      if (Math.abs(existingTime - thisTime) < 30000) {
+      if (Math.abs(existingTime - thisTime) < 2000) {
         continue // skip duplicate
       }
     }
@@ -504,49 +504,19 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     loadHistory()
   }, [])
 
-  // Track whether new messages arrived while scrolled up (separate from scroll-up indicator)
+  // Track whether new messages arrived (for "new messages" indicator button only)
   const hasNewMessagesRef = useRef(false)
 
-  // Smart auto-scroll: only scroll to bottom when:
-  // 1. User is near the bottom AND not actively typing
-  // 2. A genuinely NEW message arrived (not just a re-render)
-  // 3. User just sent their own message (scroll to show it, then stop)
-  // NEVER yank scroll while user is typing or reading up.
+  // NO auto-scroll. Chat stays exactly where user scrolled.
+  // Only the manual "scroll to bottom" button triggers any scroll.
+  // Track new message arrivals to show the indicator button.
   useEffect(() => {
     const newCount = messages.length
     const prevCount = prevMessageCountRef.current
     const isNewMessage = newCount > prevCount
     prevMessageCountRef.current = newCount
 
-    // If user just sent a message, scroll to show it then clear the flag
-    if (userJustSentRef.current) {
-      userJustSentRef.current = false
-      requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      })
-      setShowNewMsgIndicator(false)
-      hasNewMessagesRef.current = false
-      return
-    }
-
-    // If user is actively typing, NEVER auto-scroll
-    if (isUserTypingRef.current) {
-      if (isNewMessage && !isNearBottomRef.current) {
-        hasNewMessagesRef.current = true
-        setShowNewMsgIndicator(true)
-      }
-      return
-    }
-
-    // Only scroll for new messages when user is at bottom
-    if (isNewMessage && isNearBottomRef.current) {
-      requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      })
-      setShowNewMsgIndicator(false)
-      hasNewMessagesRef.current = false
-    } else if (isNewMessage && !isNearBottomRef.current) {
-      // New message but user scrolled up: show indicator, don't yank
+    if (isNewMessage && !isNearBottomRef.current) {
       hasNewMessagesRef.current = true
       setShowNewMsgIndicator(true)
     }
@@ -849,10 +819,9 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
     const sentTime = new Date().toISOString()
     setInput('')
-    // Clear typing state and flag that user just sent (so we scroll to show their message)
+    // Clear typing state (no auto-scroll -- user controls scroll position)
     isUserTypingRef.current = false
     if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
-    userJustSentRef.current = true
     // Single state update: user message sorted + streaming placeholder at end
     // Prevents React batching race that groups messages by sender
     setMessages(prev => {

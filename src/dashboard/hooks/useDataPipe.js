@@ -378,6 +378,15 @@ export function useDataPipe(parsePunchList) {
     finishThese: finishThese.length,
   }
 
+  // Build agents status map for CanvasOffice room states
+  const ALL_AGENT_SLUGS = ['elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
+  const activeAgentSlugs = new Set(rightNow.filter(t => t.isLive).map(t => t.agent))
+  const agents = ALL_AGENT_SLUGS.map(slug => ({
+    slug,
+    name: slug.charAt(0).toUpperCase() + slug.slice(1),
+    status: activeAgentSlugs.has(slug) ? 'WORKING' : 'IDLE',
+  }))
+
   return {
     rightNow,
     completedFeed,
@@ -390,6 +399,7 @@ export function useDataPipe(parsePunchList) {
     punchData,
     punchLoading,
     lastUpdated,
+    agents,
     refetch: fetchAll,
   }
 }

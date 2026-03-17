@@ -330,8 +330,8 @@ const WALK_HOP_PX = 2
 const WALK_HOP_FREQ = 3.5
 
 // ---- VISIT CONFIG ----
-const VISIT_MIN_INTERVAL = 30  // min seconds between visit attempts
-const VISIT_MAX_INTERVAL = 60  // max seconds between visit attempts
+const VISIT_MIN_INTERVAL = 999999  // min seconds between visit attempts
+const VISIT_MAX_INTERVAL = 999999  // max seconds between visit attempts
 const VISIT_DURATION_MIN = 10  // min seconds spent in neighbor room
 const VISIT_DURATION_MAX = 20  // max seconds spent in neighbor room
 const VISIT_HUSTLE_MULTIPLIER = 1.6 // speed boost when recalled
@@ -1313,7 +1313,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
     // Position on the right wall, pulled left and up, rotated to match isometric angle
     const wallAngle = 27 * (Math.PI / 180) // right wall angle in radians
-    const wallX = S * 0.65 // pulled more left
+    const wallX = S * 0.72 // pulled more left
     const wallY = S * 0.28 // pulled more up
 
     ctx.save()

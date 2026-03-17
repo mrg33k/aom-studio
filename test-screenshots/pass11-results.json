@@ -1,0 +1,195 @@
+{
+  "pass": 11,
+  "commit": "92112e6",
+  "workingTreeClean": false,
+  "tests": [
+    {
+      "test": "T0-LOGIN",
+      "status": "PASS",
+      "detail": "Authenticated via password gate"
+    },
+    {
+      "test": "T1-BUILDING-VISIBLE",
+      "status": "PASS",
+      "detail": "Building: 1008x1161px at (216,-107) [/corner/office-full-night.png]"
+    },
+    {
+      "test": "T2a-PANEL",
+      "status": "PASS",
+      "detail": "Right panel: 380x900px"
+    },
+    {
+      "test": "T2b-TABS",
+      "status": "PASS",
+      "detail": "Tabs: Chat=true Tasks=true Info=true Checklist=true Board=true (5/5) [direct: CHAT,TASKS,INFO,CHECKLIST,BOARD]"
+    },
+    {
+      "test": "T2c-AGENT",
+      "status": "PASS",
+      "detail": "Agent name in panel: true"
+    },
+    {
+      "test": "T2d-CHAT-INPUT",
+      "status": "PASS",
+      "detail": "Chat input in panel: true"
+    },
+    {
+      "test": "T2e-STATUS",
+      "status": "PASS",
+      "detail": "Status indicator: true"
+    },
+    {
+      "test": "T3-COEXIST",
+      "status": "PASS",
+      "detail": "Game=true (1008px) + Panel=true (380px). Both visible: true"
+    },
+    {
+      "test": "T4a-RELAY-API",
+      "status": "PASS",
+      "detail": "relay-send API: OK ({\"ok\":true,\"id\":\"a9e20ba2-c7a4-4eeb-a40d-f27f96ea53e9\"})"
+    },
+    {
+      "test": "T4b-MSG-SENT",
+      "status": "PASS",
+      "detail": "User message visible in chat: true"
+    },
+    {
+      "test": "T4c-STREAMING",
+      "status": "PASS",
+      "detail": "Streaming indicator (typing dots): true"
+    },
+    {
+      "test": "T4d-SOURCE-LABELS",
+      "status": "PASS",
+      "detail": "Source labels (via terminal/dashboard/telegram): true"
+    },
+    {
+      "test": "T4e-OUTBOX-POLL",
+      "status": "PASS",
+      "detail": "Outbox polling: 13 calls to relay-outbox detected"
+    },
+    {
+      "test": "T4f-CHAT-AFTER-7S",
+      "status": "INFO",
+      "detail": "After 7s: response/offline=false, stillStreaming=true"
+    },
+    {
+      "test": "T5a-CHECKLIST-GAME",
+      "status": "PASS",
+      "detail": "Game visible while Checklist tab active: true"
+    },
+    {
+      "test": "T5b-CHECKLIST-CONTENT",
+      "status": "WARN",
+      "detail": "Checklist content in sidebar: false"
+    },
+    {
+      "test": "T5c-CHECKLIST-BOXES",
+      "status": "PASS",
+      "detail": "Checkboxes: 0 native + 12 styled"
+    },
+    {
+      "test": "T5d-AUTO-EXTEND",
+      "status": "PASS",
+      "detail": "Panel auto-extended for Checklist: true (width: 1440px)"
+    },
+    {
+      "test": "T6a-MEGA-GAME",
+      "status": "PASS",
+      "detail": "Game visible while Megaboard tab active: true"
+    },
+    {
+      "test": "T6b-MEGA-CONTENT",
+      "status": "PASS",
+      "detail": "Megaboard content: Party=true Mission=true Agents=true"
+    },
+    {
+      "test": "T7-EXTEND",
+      "status": "WARN",
+      "detail": "Extend button: clicked=true, before=1440px, after=1440px, changed=false"
+    },
+    {
+      "test": "T8-FONTS",
+      "status": "WARN",
+      "detail": "Font check: 10 violations below 12px out of 164 elements. Smallest: \"P\" at 10px, \"M\" at 10px, \"A\" at 10px, \"S\" at 10px, \"S\" at 10px, \"J\" at 10px, \"B\" at 10px, \"C\" at 10px, \"C\" at 10px, \"T\" at 10px"
+    },
+    {
+      "test": "T9-SPRITES",
+      "status": "PASS",
+      "detail": "Sprites: 16 img + 0 bg = 16. Files: elon-idle.png(44x96), elon-idle.png(18x44), elon-idle.png(18x44), elon-idle.png(18x44), elon-idle.png(18x44), elon-idle.png(18x44), elon-idle.png(20x48), elon-idle.png(20x48)"
+    },
+    {
+      "test": "T10a-PAN-LEFT",
+      "status": "PASS",
+      "detail": "After aggressive left pan: visible=true"
+    },
+    {
+      "test": "T10b-PAN-RIGHT",
+      "status": "PASS",
+      "detail": "After aggressive right pan: visible=true"
+    },
+    {
+      "test": "T11-CHECKBOX",
+      "status": "PASS",
+      "detail": "Checkbox clicked \"70%\". localStorage keys: corner-mode"
+    },
+    {
+      "test": "T12-PILLS",
+      "status": "WARN",
+      "detail": "Only 3 pills found in HUD area"
+    },
+    {
+      "test": "T13-CLIENTS",
+      "status": "PASS",
+      "detail": "Client projects: ISA, Ambition, KOHRS, Brandon, Skylar (5/6)"
+    },
+    {
+      "test": "T14-NO-LEFT",
+      "status": "PASS",
+      "detail": "No left sidebar"
+    },
+    {
+      "test": "T15-ZOOM",
+      "status": "PASS",
+      "detail": "Zoom: before=\"matrix(1.6, 0, 0, 1.6, 92.736, -529.92)\" after=\"matrix(2.35092, 0, 0, 2.35092, 136.26, -\""
+    },
+    {
+      "test": "T16-ERRORS",
+      "status": "PASS",
+      "detail": "Console errors: 0"
+    },
+    {
+      "test": "T17-5SEC",
+      "status": "PASS",
+      "detail": "5-second test: 6/6 (building=true, panel=true, clients=true, biz=true, chat=true)"
+    }
+  ],
+  "summary": {
+    "total": 32,
+    "pass": 27,
+    "fail": 0,
+    "warn": 4,
+    "info": 1
+  },
+  "hotfixes": {
+    "Hotfix 1 (3ad0fe2) - Chat response loop": true,
+    "Hotfix 2 (ad10a8f) - Game always visible": true,
+    "Hotfix 2 (ad10a8f) - Modes in sidebar": true,
+    "Hotfix 2 (ad10a8f) - Extend button": false,
+    "Hotfix 3 (92112e6) - Source labels (1:1 parity)": true
+  },
+  "hotfixPassed": 4,
+  "tier0": {
+    "Auth (Supabase)": false,
+    "Chat responds (relay loop)": true,
+    "Client projects visible": true,
+    "Checkbox persistence": true,
+    "Chat timeout (60s)": true,
+    "Pan bounds": true,
+    "Demo data (prod)": false
+  },
+  "tier0Done": 5,
+  "gameAlwaysVisible": true,
+  "grade": "B-",
+  "timestamp": "2026-03-16T16:41:43.560Z"
+}

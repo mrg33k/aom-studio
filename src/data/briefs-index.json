@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T10:11:53.792Z",
+  "generated": "2026-03-16T23:10:20.857Z",
   "categories": [
     {
       "name": "Strategy",
@@ -269,6 +269,66 @@
     {
       "name": "Design Specs",
       "items": [
+        {
+          "title": "Crossy Road Celebration Frames",
+          "slug": "crossy-road-celebration-frames",
+          "agent": "Steffen",
+          "date": "2026-03-17",
+          "dateFormatted": "Mar 17",
+          "summary": "13 celebration jump-peak sprites. Arms up, airborne, stars + confetti + checkmark.",
+          "path": "/briefs/crossy-road-celebration-frames",
+          "hasPage": true
+        },
+        {
+          "title": "Crossy Road Directional Hop Frames",
+          "slug": "crossy-road-hop-directional",
+          "agent": "Steffen",
+          "date": "2026-03-17",
+          "dateFormatted": "Mar 17",
+          "summary": "156 directional hop frames for all 13 agents. 4 directions x 3 frames each. Full movement coverage.",
+          "path": "/briefs/crossy-road-hop-directional",
+          "hasPage": true
+        },
+        {
+          "title": "Crossy Road Movement Effects",
+          "slug": "crossy-road-movement-effects",
+          "agent": "Steffen",
+          "date": "2026-03-17",
+          "dateFormatted": "Mar 17",
+          "summary": "7 particle effect sprites. Dust puff (3 frames), confetti burst (3 frames), speech bubble (1 frame).",
+          "path": "/briefs/crossy-road-movement-effects",
+          "hasPage": true
+        },
+        {
+          "title": "Crossy Road Speaking Animation Frames",
+          "slug": "crossy-road-speaking-frames",
+          "agent": "Steffen",
+          "date": "2026-03-17",
+          "dateFormatted": "Mar 17",
+          "summary": "26 speaking animation frames. 13 agents x 2 mouth states (open, closed). Simple talk cycle.",
+          "path": "/briefs/crossy-road-speaking-frames",
+          "hasPage": true
+        },
+        {
+          "title": "Elon Walking System - Canvas 2D Spec",
+          "slug": "elon-walking-spec",
+          "agent": "Steffen",
+          "date": "2026-03-17",
+          "dateFormatted": "Mar 17",
+          "summary": "Complete Canvas 2D walking system for Elon's character. Walk sprites, walkable area, pathfinding, animation. The proof-of-concept that scales to all 13 agents.",
+          "path": "/briefs/elon-walking-spec",
+          "hasPage": true
+        },
+        {
+          "title": "HUD TODO Manifest: Visual Target Gaps",
+          "slug": "hud-todo-manifest",
+          "agent": "Steffen",
+          "date": "2026-03-17",
+          "dateFormatted": "Mar 17",
+          "summary": "Line-by-line gap analysis between visual targets and current code. Bobby reads this directly. Updated v9: Invisible hotspot spec replaces diamond overlays. Council chat spec (one stream, all agents). Dream HUD implementation checklist. Priority order v10.",
+          "path": "/briefs/hud-todo-manifest",
+          "hasPage": true
+        },
         {
           "title": "Avatar System Decisions",
           "slug": "avatar-system-decisions",
@@ -1609,12 +1669,22 @@
           "hasPage": true
         },
         {
-          "title": "Steve Coach Report - Pass 9 (c75dc5b)",
+          "title": "Steve Coach Report - Pass 10",
+          "slug": "coach-report-pass10",
+          "agent": "Steve",
+          "date": "2026-03-16",
+          "dateFormatted": "Mar 16",
+          "summary": "Bobby's Tier 0 commit 67ee8e2: 4/4 fixes verified (pan bounds, chat timeout, checkbox persist, expand dots). Grade C+ with path to B-. Live chat is the new #1 priority.",
+          "path": "/briefs/coach-report-pass10",
+          "hasPage": true
+        },
+        {
+          "title": "Steve Coach Report - Pass 9 (e8eabcf)",
           "slug": "coach-report-pass9",
           "agent": "Steve",
           "date": "2026-03-16",
           "dateFormatted": "Mar 16",
-          "summary": "Pass 9 against Bobby's UX overhaul (c75dc5b). Recalibrated to D+. Tested with Playwright. 14 PASS / 4 FAIL / 2 WARN. Grade: C+ (upgraded from D+, not yet B). The UX overhaul is real progress. Still not demo-ready for a GC.",
+          "summary": "Pass 9 against recalibrated standard. 22 tests, 17 PASS / 4 FAIL / 1 WARN. ChecklistMode revert COMMITTED (e8eabcf). Client projects now in HUD (4/6). Grade: C (up from D+/C-). Tier 0: 2/7 complete.",
           "path": "/briefs/coach-report-pass9",
           "hasPage": true
         },
