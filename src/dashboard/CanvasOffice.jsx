@@ -439,31 +439,29 @@ export default function CanvasOffice({
       const shadowH = charSize * 0.12
       const shadowX = elonPos.x * ROOM_SIZE - shadowW / 2
       const shadowY = elonPos.y * ROOM_SIZE + charSize * 0.15
+      ctx.beginPath()
+      ctx.ellipse(shadowX + shadowW / 2, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'
+      ctx.fill()
+      ctx.restore()
 
-        ctx.beginPath()
-        ctx.ellipse(shadowX + shadowW / 2, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'
-        ctx.fill()
-        ctx.restore()
-
-        // Dust on landing
-        if (hopFrame === 'landing') {
-          ctx.save()
-          ctx.globalAlpha = 0.3
-          for (let i = 0; i < 4; i++) {
-            const dx = (Math.random() - 0.5) * 20
-            const dy = Math.random() * 5
-            ctx.beginPath()
-            ctx.arc(
-              elonPos.x * ROOM_SIZE + dx,
-              elonPos.y * ROOM_SIZE + charSize * 0.35 + dy,
-              2 + Math.random() * 2, 0, Math.PI * 2
-            )
-            ctx.fillStyle = 'rgba(160,180,200,0.4)'
-            ctx.fill()
-          }
-          ctx.restore()
+      // Dust on landing
+      if (hopFrame === 'landing') {
+        ctx.save()
+        ctx.globalAlpha = 0.3
+        for (let i = 0; i < 4; i++) {
+          const dx = (Math.random() - 0.5) * 20
+          const dy = Math.random() * 5
+          ctx.beginPath()
+          ctx.arc(
+            elonPos.x * ROOM_SIZE + dx,
+            elonPos.y * ROOM_SIZE + charSize * 0.35 + dy,
+            2 + Math.random() * 2, 0, Math.PI * 2
+          )
+          ctx.fillStyle = 'rgba(160,180,200,0.4)'
+          ctx.fill()
         }
+        ctx.restore()
       }
     }
 
