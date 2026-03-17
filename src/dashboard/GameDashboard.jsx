@@ -22,7 +22,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // GHOST KILL: AnimatedAgentCharacter, CharacterAnimationStyles, CanvasRoom all REMOVED
 // Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
-import CrossyBackground from './CrossyBackground.jsx'
+import IslandBackground from './IslandBackground.jsx'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import briefsIndex from '../data/briefs-index.json'
@@ -7483,7 +7483,7 @@ export default function GameDashboard() {
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
-              {currentMode === 'game' && <CrossyBackground isNightMode={isNightMode} />}
+              {currentMode === 'game' && <IslandBackground isNightMode={isNightMode} />}
               <CanvasOffice
                 ref={canvasOfficeRef}
                 agentStatus={agentStatus}
