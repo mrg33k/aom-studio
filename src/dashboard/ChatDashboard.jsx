@@ -659,8 +659,68 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       } catch {}
     }, 500) // Local: 500ms for near-instant relay display
 
+    // BACKFILL: Every 30s, do a full re-read of inbox + outbox and fill any gaps.
+    // This catches messages missed during polling gaps, page stalls, or out-of-order timestamps.
+    const backfillRef = { current: null }
+    backfillRef.current = setInterval(async () => {
+      try {
+        const [inRes, outRes] = await Promise.all([
+          fetch('/api/local/relay-inbox'),
+          fetch('/api/local/relay-outbox'),
+        ])
+        if (!inRes.ok || !outRes.ok) return
+        const inbox = await inRes.json()
+        const outbox = await outRes.json()
+
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id).filter(Boolean))
+          let added = 0
+          const updated = [...prev]
+
+          // Check inbox for missing messages
+          for (const msg of (inbox.messages || [])) {
+            if (msg.status === 'watchdog-responded') continue
+            if (existingIds.has(msg.id)) continue
+            const cleaned = sanitizeRelayMessage(msg.message)
+            if (!cleaned) continue
+            updated.push({
+              role: 'user',
+              content: cleaned,
+              time: msg.timestamp,
+              source: msg.source || 'unknown',
+              id: msg.id,
+            })
+            added++
+          }
+
+          // Check outbox for missing messages
+          for (const msg of (outbox.messages || [])) {
+            if (!msg.message?.trim()) continue
+            const isDashboardOrigin = msg.source === 'corner-dashboard' || msg.source === 'corner-websocket'
+            if (isDashboardOrigin) continue
+            if (existingIds.has(msg.id)) continue
+            const cleaned = sanitizeRelayMessage(msg.message)
+            if (!cleaned) continue
+            updated.push({
+              role: 'assistant',
+              content: cleaned,
+              time: msg.timestamp || new Date().toISOString(),
+              source: extractAgentSource(msg) || 'system',
+              id: msg.id,
+            })
+            added++
+          }
+
+          if (added === 0) return prev // No changes, skip re-render
+          updated.sort((a, b) => new Date(a.time) - new Date(b.time))
+          return deduplicateMessages(updated.slice(-50)) // Keep last 50
+        })
+      } catch {}
+    }, 30000) // Every 30 seconds
+
     return () => {
       if (bgPollRef.current) clearInterval(bgPollRef.current)
+      if (backfillRef.current) clearInterval(backfillRef.current)
     }
   }, [])
 
