@@ -446,78 +446,30 @@ function localDashboardPlugin() {
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ ok: true, id }))
 
-            // Auto-respond: spawn claude -p in background for corner-dashboard messages
+            // Write to conversation log files (file-backed chat history)
             if (source === 'corner-dashboard' && data.message) {
-              const agentName = data.agent || 'assistant'
-              const agentFolder = AGENT_FOLDERS[agentName]
-              const agentMd = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/AGENT.md`) : null
-              const lastConvo = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/last-conversation.md`) : null
-
-              let agentContext = ''
-              try { if (agentMd && fs.existsSync(agentMd)) agentContext += '\n\nAgent context:\n' + fs.readFileSync(agentMd, 'utf-8').slice(0, 2000) } catch {}
-              try { if (lastConvo && fs.existsSync(lastConvo)) agentContext += '\n\nLast conversation:\n' + fs.readFileSync(lastConvo, 'utf-8').slice(0, 1500) } catch {}
-
-              const prompt = `You are ${agentName}, an AI agent on the Corner dashboard. Patrik (the owner) sent this message from the dashboard:\n\n"${data.message}"\n\nRespond naturally as ${agentName}. Be concise. No em dashes. Bullet points over paragraphs.${agentContext}`
-
-              // Find claude CLI
-              const claudePaths = [
-                '/opt/homebrew/bin/claude',
-                resolve(os.homedir(), '.claude/local/claude'),
-                '/usr/local/bin/claude',
-                resolve(os.homedir(), '.nvm/versions/node/v22.14.0/bin/claude'),
-              ]
-              const claudeCli = claudePaths.find(p => { try { return fs.existsSync(p) } catch { return false } })
-
-              if (claudeCli) {
-                console.log(`[Relay] Spawning claude -p for ${agentName} (msg: ${id})`)
-                const child = spawn(claudeCli, ['-p', '--model', 'haiku', '--no-session-persistence'], {
-                  cwd: AOM_EA_ROOT,
-                  timeout: 45000,
-                  env: { ...process.env },
-                  shell: true,
-                  stdio: ['pipe', 'pipe', 'pipe'],
-                })
-                let stdout = ''
-                let stderr = ''
-                child.stdout.on('data', (chunk) => { stdout += chunk.toString() })
-                child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
-                child.on('close', (code) => {
-                  const response = stdout.trim()
-                  if (code !== 0 || !response) {
-                    console.log(`[Relay] claude -p failed (exit ${code}): ${stderr.slice(0, 200)}`)
-                    const fallback = {
-                      id: crypto.randomUUID(),
-                      reply_to: id,
-                      timestamp: new Date().toISOString(),
-                      message: `[${agentName}] Message received. Agent is currently offline.`,
-                      status: 'pending',
-                      agent: agentName,
-                    }
-                    withFileLock(RELAY_OUTBOX_PATH, () => {
-                      fs.appendFileSync(RELAY_OUTBOX_PATH, JSON.stringify(fallback) + '\n')
-                    })
-                    return
-                  }
-                  const respEntry = {
-                    id: crypto.randomUUID(),
-                    reply_to: id,
-                    timestamp: new Date().toISOString(),
-                    message: response.length > 4000 ? response.slice(0, 3950) + '\n\n[Truncated]' : response,
-                    status: 'pending',
-                    agent: agentName,
-                  }
-                  withFileLock(RELAY_OUTBOX_PATH, () => {
-                    fs.appendFileSync(RELAY_OUTBOX_PATH, JSON.stringify(respEntry) + '\n')
-                  })
-                  console.log(`[Relay] ${agentName} responded (${response.length} chars, reply_to: ${id})`)
-                })
-                child.on('error', (err) => {
-                  console.log(`[Relay] spawn error: ${err.message}`)
-                })
-                child.stdin.write(prompt)
-                child.stdin.end()
-              } else {
-                console.log('[Relay] Claude CLI not found, skipping auto-respond')
+              const agentName = data.agent || 'elon'
+              const convEntry = {
+                id,
+                timestamp: new Date().toISOString(),
+                sender: 'patrik',
+                target_type: 'agent',
+                target: agentName,
+                resolved_recipients: [agentName],
+                project_context: null,
+                source: 'dashboard',
+                text: data.message,
+              }
+              const convLine = JSON.stringify(convEntry) + '\n'
+              // Write to main log + agent-specific log
+              const convDir = resolve(AOM_EA_ROOT, 'conversations')
+              const agentConvDir = resolve(convDir, 'agents')
+              try {
+                fs.mkdirSync(agentConvDir, { recursive: true })
+                fs.appendFileSync(resolve(convDir, 'main.jsonl'), convLine)
+                fs.appendFileSync(resolve(agentConvDir, `${agentName}.jsonl`), convLine)
+              } catch (err) {
+                console.log(`[Relay] Conv log write failed: ${err.message}`)
               }
             }
           } catch (err) {
@@ -570,6 +522,32 @@ function localDashboardPlugin() {
         res.setHeader('Content-Type', 'application/json')
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         res.end(JSON.stringify({ messages, timestamp: new Date().toISOString() }))
+      })
+
+      // Conversation history: load per-agent or per-project chat history
+      server.middlewares.use('/api/local/conversations', (req, res) => {
+        const url = new URL(req.url, 'http://localhost')
+        const target = url.searchParams.get('target') // agent slug or project name
+        const type = url.searchParams.get('type') || 'agent' // 'agent' or 'project'
+        const limit = parseInt(url.searchParams.get('limit') || '20')
+        const convDir = resolve(AOM_EA_ROOT, 'conversations')
+        const filePath = type === 'project'
+          ? resolve(convDir, 'projects', `${target}.jsonl`)
+          : resolve(convDir, 'agents', `${target}.jsonl`)
+        const messages = []
+        try {
+          if (fs.existsSync(filePath)) {
+            const lines = fs.readFileSync(filePath, 'utf-8').split('\n').filter(l => l.trim())
+            // Take last N messages
+            const recent = lines.slice(-limit)
+            for (const line of recent) {
+              try { messages.push(JSON.parse(line)) } catch {}
+            }
+          }
+        } catch {}
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        res.end(JSON.stringify({ messages, target, type }))
       })
 
       // Conversation-driven project ranking: parse session-log + relay for project mentions

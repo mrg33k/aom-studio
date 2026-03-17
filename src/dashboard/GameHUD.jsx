@@ -1170,7 +1170,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask }) {
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (white glass, blue accents)
   const tpBg = isDaytime ? 'rgba(248, 250, 255, 0.96)' : HUD.panelBg
@@ -1450,11 +1450,10 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03, duration: 0.15 }}
               onContextMenu={(e) => {
-                if (task.isManual) {
-                  e.preventDefault()
-                  // Manual tasks: right-click to delete
-                  onDeleteManualTask?.(task.manualId)
-                }
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('[Corner] Task right-click:', task.text?.slice(0, 30), 'handler:', !!onTaskContextMenu)
+                onTaskContextMenu?.(e, task, project)
               }}
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12,
@@ -1556,9 +1555,20 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
           )
         })}
       </div>
+
     </motion.div>
   )
 }
+
+// Shared style for HUD context menu buttons
+const hudCtxBtn = (isNight) => ({
+  display: 'block', width: '100%', textAlign: 'left',
+  padding: '8px 14px', background: 'none', border: 'none',
+  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  color: isNight ? '#E2E8F0' : '#1E293B',
+  fontFamily: "'Inter', sans-serif",
+  transition: 'background 100ms',
+})
 
 // ---- COMPACT STATS (blue-themed, LARGER) ------------------------------------
 function CompactStats({ agentStatus, throughput, overallProgress, isNightMode }) {
@@ -1630,6 +1640,15 @@ export default function GameHUD({
     return () => clearInterval(timer)
   }, [])
   const isNightMode = nightOverride || isNightModeProp
+
+  // Task right-click context menu (lifted from TaskPanel so it renders outside overflow containers)
+  const [hudTaskCtx, setHudTaskCtx] = useState(null)
+  useEffect(() => {
+    if (!hudTaskCtx) return
+    const handler = () => setHudTaskCtx(null)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [hudTaskCtx])
 
   // Daytime palette: white glass with vibrant blue accents (matches top bar)
   const isDaytime = isNightMode === false
@@ -1902,6 +1921,12 @@ export default function GameHUD({
             onAddManualTask={addManualTask}
             onToggleManualTask={toggleManualTask}
             onDeleteManualTask={deleteManualTask}
+            allProjects={projects}
+            onTaskContextMenu={(e, task, proj) => {
+              const menuHeight = 300
+              const y = Math.min(e.clientY, window.innerHeight - menuHeight - 20)
+              setHudTaskCtx({ task, project: proj, x: e.clientX, y })
+            }}
           />
         )}
       </AnimatePresence>
@@ -1974,7 +1999,26 @@ export default function GameHUD({
             <div style={{ width: 1, height: 36, background: hudDivider, flexShrink: 0 }} />
           )}
 
-          {/* Center: Search + Project pills (scrollable, no wrapping) */}
+          {/* Center: Scroll arrows + Project pills (scrollable, no wrapping) */}
+          {/* Left scroll arrow */}
+          <button
+            onClick={() => {
+              const el = document.querySelector('.hud-pills-scroll')
+              if (el) el.scrollBy({ left: -200, behavior: 'smooth' })
+            }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: isDaytime ? '#94A3B8' : '#475569',
+              padding: '4px 2px', flexShrink: 0, display: 'flex', alignItems: 'center',
+              transition: 'color 100ms',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#3B82F6' : '#60A5FA'}
+            onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#94A3B8' : '#475569'}
+          >
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
           <div style={{
             flex: 1,
             display: 'flex',
@@ -2066,6 +2110,25 @@ export default function GameHUD({
               ))
             )}
           </div>
+          {/* Right scroll arrow */}
+          <button
+            onClick={() => {
+              const el = document.querySelector('.hud-pills-scroll')
+              if (el) el.scrollBy({ left: 200, behavior: 'smooth' })
+            }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: isDaytime ? '#94A3B8' : '#475569',
+              padding: '4px 2px', flexShrink: 0, display: 'flex', alignItems: 'center',
+              transition: 'color 100ms',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#3B82F6' : '#60A5FA'}
+            onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#94A3B8' : '#475569'}
+          >
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
 
           {/* Compact stats */}
           {!isMobile && (
@@ -2152,6 +2215,71 @@ export default function GameHUD({
 
       {/* HUD toast notifications (slide in from right, above HUD strip) */}
       <HUDToasts />
+
+      {/* Task right-click context menu (rendered outside all overflow containers) */}
+      {hudTaskCtx && (
+        <div style={{
+          position: 'fixed', left: hudTaskCtx.x, top: hudTaskCtx.y, zIndex: 9999,
+          background: isNightMode
+            ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)'
+            : 'rgba(255,255,255,0.98)',
+          border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '1px solid rgba(59,130,246,0.2)',
+          borderRadius: 10, padding: '6px 0', minWidth: 200,
+          boxShadow: isNightMode
+            ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
+            : '0 8px 32px rgba(0,0,0,0.15)',
+          backdropFilter: 'blur(20px)',
+        }}>
+          <button onClick={() => {
+            if (hudTaskCtx.task.isManual) toggleManualTask?.(hudTaskCtx.task.manualId)
+            setHudTaskCtx(null)
+          }} style={hudCtxBtn(isNightMode)}>
+            {hudTaskCtx.task.done ? 'Mark Undone' : 'Mark Done'}
+          </button>
+
+          <button onClick={() => {
+            try {
+              const saved = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
+              if (!saved.some(t => t.text === hudTaskCtx.task.text)) {
+                saved.push({ id: Date.now(), text: hudTaskCtx.task.text, agent: hudTaskCtx.task.agent || 'patrik', addedAt: new Date().toISOString() })
+                localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved))
+              }
+            } catch {}
+            setHudTaskCtx(null)
+          }} style={{ ...hudCtxBtn(isNightMode), color: '#FF6B3D', fontWeight: 700 }}>
+            Send to Right Now
+          </button>
+
+          <div style={{ height: 1, background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(0,0,0,0.06)', margin: '4px 0' }} />
+
+          <div style={{
+            padding: '5px 14px', fontSize: 10, fontWeight: 700,
+            color: isNightMode ? '#475569' : '#94A3B8',
+            fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.08em',
+          }}>Move to pill</div>
+          {(projects || []).filter(p => p.name !== hudTaskCtx.project?.name).slice(0, 5).map(p => (
+            <button key={p.name} onClick={() => setHudTaskCtx(null)}
+              style={hudCtxBtn(isNightMode)}
+              onMouseEnter={e => e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >{p.name}</button>
+          ))}
+
+          <div style={{ height: 1, background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(0,0,0,0.06)', margin: '4px 0' }} />
+
+          {hudTaskCtx.task.isManual && (
+            <button onClick={() => {
+              deleteManualTask?.(hudTaskCtx.task.manualId)
+              setHudTaskCtx(null)
+            }} style={{ ...hudCtxBtn(isNightMode), color: '#EF4444' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

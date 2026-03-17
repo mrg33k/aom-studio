@@ -81,6 +81,33 @@ const PALETTE = GRID_SPEC.colorPalette
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
 
+// ---- PROJECT CONFIG (from corner-config.json, inlined for zero-fetch) ----
+const PROJECT_CONFIG = {
+  'ambition-mechanical': {
+    name: 'Ambition Mechanical', team: ['bobby', 'alex', 'ash'], lead: 'bobby',
+    contextFiles: ['projects/ambition-mechanical/AGENT.md'],
+  },
+  'corner': {
+    name: 'Corner', team: ['bobby', 'elon', 'steve', 'steffen'], lead: 'elon',
+    contextFiles: ['projects/corner/messaging-architecture.md'],
+  },
+  'aom-internal': {
+    name: 'AOM Internal', team: ['all'], lead: 'elon',
+    contextFiles: ['context/current-priorities.md'],
+  },
+  'isa-energy': {
+    name: 'ISA Energy', team: ['patrik'], lead: 'patrik',
+    contextFiles: [],
+  },
+}
+
+// Map agents to their projects
+function getAgentProjects(slug) {
+  return Object.entries(PROJECT_CONFIG)
+    .filter(([, p]) => p.team.includes(slug) || p.team.includes('all'))
+    .map(([key, p]) => ({ key, ...p }))
+}
+
 // Extract agent name from [AGENT] prefix in relay messages (e.g., "[ELON] ..." -> "elon")
 // relay-respond.py doesn't set an `agent` field, but agents prefix their messages with [NAME].
 function extractAgentFromMessage(msg) {
@@ -2331,16 +2358,31 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
   })
   const [editingName, setEditingName] = useState(false)
   const teamRef = useRef(null)
+  const [cornerConfig, setCornerConfig] = useState(null)
+  const [activeProjectDropdown, setActiveProjectDropdown] = useState(null)
+  const projectPillRefs = useRef({})
+
+  // Fetch corner config for project teams
+  useEffect(() => {
+    fetch('/api/local/file?path=context/corner-config.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setCornerConfig(data) })
+      .catch(() => {})
+  }, [])
 
   // Close team popout on outside click
   useEffect(() => {
-    if (!teamOpen) return
+    if (!teamOpen && !activeProjectDropdown) return
     const handler = (e) => {
-      if (teamRef.current && !teamRef.current.contains(e.target)) setTeamOpen(false)
+      if (teamOpen && teamRef.current && !teamRef.current.contains(e.target)) setTeamOpen(false)
+      if (activeProjectDropdown) {
+        const ref = projectPillRefs.current[activeProjectDropdown]
+        if (ref && !ref.contains(e.target)) setActiveProjectDropdown(null)
+      }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [teamOpen])
+  }, [teamOpen, activeProjectDropdown])
 
   // Save team name
   useEffect(() => {
@@ -2526,6 +2568,69 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   </svg>
                 </button>
 
+                {/* Add Agent + Team Settings buttons */}
+                <div style={{
+                  display: 'flex', gap: 6, padding: '4px 16px 6px',
+                }}>
+                  <button
+                    onClick={() => {
+                      console.log('Add Agent clicked')
+                      alert('Add Agent coming soon')
+                    }}
+                    style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      padding: '6px 10px', borderRadius: 6,
+                      background: isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)',
+                      border: isNightMode ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(59,130,246,0.12)',
+                      cursor: 'pointer', transition: 'all 120ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)' }}
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
+                      stroke={isNightMode ? '#60A5FA' : '#3B82F6'} strokeWidth={2.5}
+                      strokeLinecap="round" strokeLinejoin="round"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: isNightMode ? '#60A5FA' : '#3B82F6',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>Add Agent</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (onSelectAgent) onSelectAgent('patrik')
+                      onOpenSettings?.()
+                      setTeamOpen(false)
+                    }}
+                    style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      padding: '6px 10px', borderRadius: 6,
+                      background: isNightMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                      border: isNightMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
+                      cursor: 'pointer', transition: 'all 120ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
+                      stroke={isNightMode ? '#94A3B8' : '#64748B'} strokeWidth={2}
+                      strokeLinecap="round" strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: isNightMode ? '#94A3B8' : '#64748B',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>Team Settings</span>
+                  </button>
+                </div>
+
                 {/* Divider + team header */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8,
@@ -2634,6 +2739,207 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             )}
           </AnimatePresence>
         </div>
+
+        {/* Project team pills from corner config */}
+        {cornerConfig?.projects && Object.entries(cornerConfig.projects)
+          .filter(([key]) => key !== 'aom-internal') // skip meta-project
+          .map(([projectKey, project]) => {
+            const displayName = projectKey.split('-').map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ')
+            const isDropdownOpen = activeProjectDropdown === projectKey
+            const projectAgents = (project.team || [])
+              .filter(t => t !== 'all')
+              .map(slug => AGENTS.find(a => a.slug === slug))
+              .filter(Boolean)
+            return (
+              <div key={projectKey} ref={el => { projectPillRefs.current[projectKey] = el }} style={{ position: 'relative', flexShrink: 0 }}>
+                <button
+                  onClick={() => setActiveProjectDropdown(isDropdownOpen ? null : projectKey)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: isDropdownOpen
+                      ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.08)')
+                      : 'transparent',
+                    border: isNightMode ? '1.5px solid rgba(59,130,246,0.15)' : '1.5px solid rgba(59,130,246,0.15)',
+                    borderRadius: 10, padding: '6px 12px',
+                    cursor: 'pointer',
+                    transition: 'all 150ms ease',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isDropdownOpen) e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)'
+                  }}
+                  onMouseLeave={e => {
+                    if (!isDropdownOpen) e.currentTarget.style.background = 'transparent'
+                  }}
+                >
+                  <span style={{
+                    fontSize: 13, fontWeight: 700,
+                    color: isNightMode ? '#94A3B8' : '#64748B',
+                    fontFamily: "'Inter', sans-serif",
+                    letterSpacing: '0.02em',
+                  }}>
+                    {displayName}
+                  </span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600,
+                    color: isNightMode ? '#475569' : '#94A3B8',
+                    fontFamily: "'Inter', sans-serif",
+                  }}>
+                    {projectAgents.length}
+                  </span>
+                </button>
+
+                {/* Project team dropdown */}
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                      transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                      style={{
+                        position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+                        minWidth: 220,
+                        background: isNightMode
+                          ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.95) 100%)'
+                          : 'rgba(255,255,255,0.98)',
+                        backdropFilter: 'blur(20px)',
+                        border: isNightMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(0,0,0,0.1)',
+                        borderRadius: 12,
+                        boxShadow: isNightMode
+                          ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
+                          : '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+                        padding: '8px 0',
+                        zIndex: 100,
+                      }}
+                    >
+                      {/* Project header */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '6px 16px 8px',
+                      }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 800,
+                          color: isNightMode ? '#475569' : '#94A3B8',
+                          fontFamily: "'Inter', sans-serif",
+                          textTransform: 'uppercase', letterSpacing: '0.08em',
+                        }}>
+                          {displayName}
+                        </span>
+                        {project.lead && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 600,
+                            color: isNightMode ? '#334155' : '#CBD5E1',
+                            fontFamily: "'Inter', sans-serif",
+                          }}>
+                            Lead: {project.lead}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Project agent list */}
+                      {projectAgents.map(agent => {
+                        const status = getAgentStatus(agent.slug)
+                        const dotCol = statusDotColor[status] || '#6B7280'
+                        return (
+                          <button
+                            key={agent.slug}
+                            onClick={() => {
+                              if (onSelectAgent) onSelectAgent(agent.slug)
+                              setActiveProjectDropdown(null)
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              width: '100%', padding: '8px 16px',
+                              background: selectedAgent === agent.slug
+                                ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
+                                : 'transparent',
+                              border: 'none', cursor: 'pointer',
+                              transition: 'background 100ms ease',
+                            }}
+                            onMouseEnter={e => {
+                              if (selectedAgent !== agent.slug) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
+                            }}
+                            onMouseLeave={e => {
+                              if (selectedAgent !== agent.slug) e.currentTarget.style.background = 'transparent'
+                            }}
+                          >
+                            <SpriteAvatar agentSlug={agent.slug} size={28} borderColor={agent.color} />
+                            <div style={{ flex: 1, textAlign: 'left' }}>
+                              <div style={{
+                                fontSize: 13, fontWeight: 700,
+                                color: isNightMode ? '#E2E8F0' : '#1E293B',
+                                fontFamily: "'Inter', sans-serif",
+                              }}>
+                                {agent.name}
+                              </div>
+                              <div style={{
+                                fontSize: 11, fontWeight: 500,
+                                color: isNightMode ? '#64748B' : '#94A3B8',
+                                fontFamily: "'Inter', sans-serif",
+                              }}>
+                                {agent.role}
+                              </div>
+                            </div>
+                            <div style={{
+                              width: 7, height: 7, borderRadius: '50%',
+                              background: dotCol,
+                              boxShadow: status === 'WORKING' ? `0 0 6px ${dotCol}` : 'none',
+                              flexShrink: 0,
+                            }} />
+                          </button>
+                        )
+                      })}
+
+                      {/* Non-agent team members (like ash) */}
+                      {(project.team || [])
+                        .filter(t => t !== 'all' && !AGENTS.find(a => a.slug === t))
+                        .map(memberName => (
+                          <div
+                            key={memberName}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              padding: '8px 16px',
+                            }}
+                          >
+                            <div style={{
+                              width: 28, height: 28, borderRadius: '50%',
+                              background: isNightMode
+                                ? 'linear-gradient(135deg, #475569, #64748B)'
+                                : 'linear-gradient(135deg, #94A3B8, #CBD5E1)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 12, fontWeight: 800, color: '#FFFFFF',
+                              fontFamily: "'Inter', sans-serif",
+                              flexShrink: 0,
+                            }}>
+                              {memberName[0]?.toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1, textAlign: 'left' }}>
+                              <div style={{
+                                fontSize: 13, fontWeight: 700,
+                                color: isNightMode ? '#E2E8F0' : '#1E293B',
+                                fontFamily: "'Inter', sans-serif",
+                                textTransform: 'capitalize',
+                              }}>
+                                {memberName}
+                              </div>
+                              <div style={{
+                                fontSize: 11, fontWeight: 500,
+                                color: isNightMode ? '#64748B' : '#94A3B8',
+                                fontFamily: "'Inter', sans-serif",
+                              }}>
+                                Team Member
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      }
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )
+          })
+        }
 
         {/* + New Team button (next to team pill) */}
         <button
@@ -5024,7 +5330,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -5244,6 +5550,47 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         pipeData={pipeData}
         rightNowTasksProp={rightNowTasks}
       />
+
+      {/* ---- "TALKING TO" INDICATOR (subtle channel context above tabs) ---- */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '6px 24px',
+        borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.06)',
+        flexShrink: 0,
+      }}>
+        <MessageSquare size={12} style={{ color: isDaytime ? '#94A3B8' : '#475569', flexShrink: 0 }} />
+        <span style={{
+          fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+          textTransform: 'uppercase', letterSpacing: '0.1em',
+          color: isDaytime ? '#94A3B8' : '#475569',
+        }}>
+          Talking to:
+        </span>
+        <span style={{
+          fontSize: 11, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+          textTransform: 'uppercase', letterSpacing: '0.08em',
+          color: agentColor,
+        }}>
+          {agent?.name || room?.agent || agentSlug}
+        </span>
+        {/* Show project badges if agent belongs to any */}
+        {(() => {
+          const projects = getAgentProjects(agentSlug)
+          if (!projects.length) return null
+          return projects.slice(0, 2).map(p => (
+            <span key={p.key} style={{
+              fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+              color: isDaytime ? '#64748B' : '#475569',
+              background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)',
+              border: isDaytime ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(100,180,255,0.08)',
+              borderRadius: 3, padding: '1px 5px',
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+            }}>
+              {p.name}
+            </span>
+          ))
+        })()}
+      </div>
 
       {/* ---- TAB BAR (Vegas glow tabs: Chat / Tasks / Info / List / Board) ---- */}
       <div style={{
@@ -5652,14 +5999,120 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 isUserTypingRef.current = false
                 onSendMessage(e)
               }} style={{ position: 'relative' }}>
+                {/* @ autocomplete dropdown (floats above input) */}
+                {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
+                  <div style={{
+                    position: 'absolute', bottom: '100%', left: 0, right: 0,
+                    marginBottom: 6,
+                    background: isNightMode ? '#1A2744' : '#FFFFFF',
+                    border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
+                    borderRadius: 12,
+                    boxShadow: isNightMode
+                      ? '0 -8px 32px rgba(0,0,0,0.5), 0 -2px 8px rgba(59,130,246,0.15)'
+                      : '0 -8px 32px rgba(0,0,0,0.1), 0 -2px 8px rgba(59,130,246,0.08)',
+                    maxHeight: 240, overflowY: 'auto',
+                    zIndex: 100,
+                    padding: '6px 0',
+                  }}>
+                    <div style={{
+                      padding: '4px 14px 8px',
+                      fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#94A3B8',
+                      textTransform: 'uppercase', letterSpacing: '0.08em',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
+                      Switch to...
+                    </div>
+                    {filteredAtOptions.map((opt, i) => (
+                      <div
+                        key={opt.slug}
+                        onMouseDown={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
+                        onMouseEnter={() => {}}
+                        style={{
+                          padding: '10px 14px',
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          cursor: 'pointer',
+                          background: i === atMenuIndex
+                            ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
+                            : 'transparent',
+                          transition: 'background 100ms ease',
+                        }}
+                      >
+                        {/* Color dot */}
+                        <div style={{
+                          width: 10, height: 10, borderRadius: '50%',
+                          background: opt.color,
+                          boxShadow: `0 0 6px ${opt.color}40`,
+                          flexShrink: 0,
+                        }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            fontSize: 15, fontWeight: 800,
+                            color: isNightMode ? '#F1F5F9' : '#0F172A',
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                          }}>
+                            {opt.name}
+                            {opt.type === 'project' && (
+                              <span style={{
+                                marginLeft: 8, fontSize: 11, fontWeight: 600,
+                                color: '#F59E0B', background: 'rgba(245,158,11,0.1)',
+                                border: '1px solid rgba(245,158,11,0.2)',
+                                borderRadius: 4, padding: '1px 6px',
+                              }}>
+                                PROJECT
+                              </span>
+                            )}
+                          </div>
+                          <div style={{
+                            fontSize: 12, fontWeight: 600,
+                            color: isNightMode ? '#64748B' : '#94A3B8',
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            marginTop: 1,
+                          }}>
+                            {opt.role}
+                          </div>
+                        </div>
+                        <span style={{
+                          fontSize: 12, fontWeight: 600,
+                          color: isNightMode ? '#475569' : '#CBD5E1',
+                          fontFamily: "'JetBrains Mono', monospace",
+                        }}>
+                          @{opt.slug}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <input type="text" value={chatInput || ''} onChange={e => {
                     isUserTypingRef.current = true
                     onChatInputChange?.(e.target.value)
                   }}
                   onKeyDown={e => {
+                    // @ autocomplete keyboard navigation
+                    if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault()
+                        onAtKeyDown?.('down')
+                        return
+                      }
+                      if (e.key === 'ArrowUp') {
+                        e.preventDefault()
+                        onAtKeyDown?.('up')
+                        return
+                      }
+                      if (e.key === 'Enter' || e.key === 'Tab') {
+                        e.preventDefault()
+                        onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0])
+                        return
+                      }
+                      if (e.key === 'Escape') {
+                        e.preventDefault()
+                        onAtKeyDown?.('escape')
+                        return
+                      }
+                    }
                     if (e.key === 'Enter') isUserTypingRef.current = false
                   }}
-                  placeholder={`Talk to ${agent?.name || 'agent'}...`} disabled={streaming}
+                  placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`} disabled={streaming}
                   style={{
                     width: '100%',
                     background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
@@ -5857,6 +6310,70 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </div>
               )
             })()}
+
+            {/* Projects this agent belongs to */}
+            {(() => {
+              const projects = getAgentProjects(agentSlug)
+              if (!projects.length) return null
+              return (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Projects</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {projects.map(p => {
+                      const leadAgent = AGENTS.find(a => a.slug === p.lead)
+                      return (
+                        <div key={p.key} style={{
+                          padding: '10px 12px',
+                          background: isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(100,180,255,0.03)',
+                          border: isDaytime ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(100,180,255,0.06)',
+                          borderRadius: 8,
+                        }}>
+                          <div style={{
+                            color: isDaytime ? '#0F172A' : '#F1F5F9', fontSize: 14, fontWeight: 800,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            marginBottom: 6,
+                          }}>
+                            {p.name}
+                          </div>
+                          {/* Lead */}
+                          {leadAgent && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: isDaytime ? '#94A3B8' : '#475569', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.08em' }}>Lead:</span>
+                              <SpriteAvatar agentSlug={p.lead} size={18} borderColor={leadAgent.color} />
+                              <span style={{ fontSize: 12, fontWeight: 700, color: leadAgent.color, fontFamily: "'Inter', sans-serif" }}>{leadAgent.name}</span>
+                            </div>
+                          )}
+                          {/* Team */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: isDaytime ? '#94A3B8' : '#475569', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.08em', marginRight: 2 }}>Team:</span>
+                            {p.team.filter(t => t !== 'all').map(slug => {
+                              const ta = AGENTS.find(a => a.slug === slug)
+                              if (!ta) return <span key={slug} style={{ fontSize: 11, color: isDaytime ? '#64748B' : '#475569', fontFamily: "'Inter', sans-serif" }}>{slug}</span>
+                              return <SpriteAvatar key={slug} agentSlug={slug} size={20} borderColor={ta.color} />
+                            })}
+                            {p.team.includes('all') && <span style={{ fontSize: 11, color: isDaytime ? '#64748B' : '#475569', fontFamily: "'Inter', sans-serif", fontWeight: 600 }}>All agents</span>}
+                          </div>
+                          {/* Context files */}
+                          {p.contextFiles.length > 0 && (
+                            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              {p.contextFiles.map(f => (
+                                <span key={f} style={{
+                                  fontSize: 11, fontWeight: 600, color: isDaytime ? '#3B82F6' : '#60A5FA',
+                                  fontFamily: "'JetBrains Mono', monospace",
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                }}>
+                                  {f}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
 
@@ -6011,6 +6528,117 @@ export default function GameDashboard() {
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
+  // @ routing: corner config + autocomplete state
+  const [cornerConfig, setCornerConfig] = useState(null)
+  const [atMenuOpen, setAtMenuOpen] = useState(false)
+  const [atMenuFilter, setAtMenuFilter] = useState('')
+  const [atMenuIndex, setAtMenuIndex] = useState(0)
+  // Fetch corner config for @ routing
+  useEffect(() => {
+    if (!IS_LOCAL) {
+      setCornerConfig({
+        active_agents: ['elon', 'bobby', 'steve', 'steffen', 'alex', 'jacob', 'cleo'],
+        agents: {
+          elon: { role: 'Systems Lead' }, bobby: { role: 'Web Dev' }, steve: { role: 'AI Advisory Lead' },
+          steffen: { role: 'Creative Director' }, alex: { role: 'Strategy' }, jacob: { role: 'Outreach' },
+          cleo: { role: 'Content' }, tony: { role: 'Social Media' }, paige: { role: 'Client Tracking' },
+        },
+        projects: {},
+      })
+      return
+    }
+    fetch('/api/local/file?path=context/corner-config.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setCornerConfig(data) })
+      .catch(() => {})
+  }, [])
+
+  // Build @ autocomplete options from cornerConfig
+  const atOptions = useMemo(() => {
+    if (!cornerConfig) return []
+    const opts = []
+    const agentEntries = cornerConfig.agents || {}
+    for (const [slug, info] of Object.entries(agentEntries)) {
+      const matchAgent = AGENTS.find(a => a.slug === slug)
+      opts.push({
+        type: 'agent',
+        slug,
+        name: matchAgent?.name || slug.charAt(0).toUpperCase() + slug.slice(1),
+        role: info.role || matchAgent?.role || '',
+        color: matchAgent?.color || '#6B7280',
+        aliases: info.aliases || [`@${slug}`],
+      })
+    }
+    const projectEntries = cornerConfig.projects || {}
+    for (const [key, info] of Object.entries(projectEntries)) {
+      opts.push({
+        type: 'project',
+        slug: key,
+        name: key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        role: `Team: ${(info.team || []).join(', ')}`,
+        color: '#F59E0B',
+        aliases: info.aliases || [`@${key}`],
+        team: info.team || [],
+        lead: info.lead || null,
+      })
+    }
+    return opts
+  }, [cornerConfig])
+
+  // Filter @ options based on typed text after @
+  const filteredAtOptions = useMemo(() => {
+    if (!atMenuOpen || !atOptions.length) return []
+    const q = atMenuFilter.toLowerCase()
+    if (!q) return atOptions
+    return atOptions.filter(opt =>
+      opt.slug.includes(q) ||
+      opt.name.toLowerCase().includes(q) ||
+      opt.aliases.some(a => a.replace('@', '').includes(q))
+    )
+  }, [atMenuOpen, atMenuFilter, atOptions])
+
+  // Handle @ input parsing
+  const handleAtInputChange = useCallback((value) => {
+    setPanelChatInput(value)
+    const atMatch = value.match(/@(\S*)$/)
+    if (atMatch) {
+      setAtMenuOpen(true)
+      setAtMenuFilter(atMatch[1])
+      setAtMenuIndex(0)
+    } else {
+      setAtMenuOpen(false)
+      setAtMenuFilter('')
+    }
+  }, [])
+
+  // Handle @ autocomplete selection
+  const handleAtSelect = useCallback((option) => {
+    const targetSlug = option.type === 'project' ? (option.lead || option.slug) : option.slug
+    const targetRoom = ROOM_MAP[targetSlug]
+    if (targetRoom && targetRoom.agent !== null) {
+      setSelectedRoom(targetSlug)
+      setCameraTarget(targetSlug)
+      setIsOverview(false)
+      setPanelVisible(true)
+      setPanelActiveTab('chat')
+    }
+    const cleaned = panelChatInput.replace(/@\S*$/, '').trim()
+    setPanelChatInput(cleaned)
+    setAtMenuOpen(false)
+    setAtMenuFilter('')
+  }, [panelChatInput])
+
+  // Handle @ menu keyboard navigation
+  const handleAtKeyDown = useCallback((direction) => {
+    if (direction === 'down') {
+      setAtMenuIndex(prev => Math.min(prev + 1, (filteredAtOptions?.length || 1) - 1))
+    } else if (direction === 'up') {
+      setAtMenuIndex(prev => Math.max(prev - 1, 0))
+    } else if (direction === 'escape') {
+      setAtMenuOpen(false)
+      setAtMenuFilter('')
+    }
+  }, [filteredAtOptions])
   // Demo chat messages for production (shows a sample conversation)
   const demoChatMessages = useMemo(() => {
     if (IS_LOCAL) return {}
@@ -6879,12 +7507,18 @@ export default function GameDashboard() {
               onChat={handleChat}
               chatMessages={panelMessages._all || []}
               chatInput={panelChatInput}
-              onChatInputChange={setPanelChatInput}
+              onChatInputChange={handleAtInputChange}
               streaming={panelStreaming}
               agentSlug={selectedRoom}
               isExtended={panelExtended}
               onToggleExtend={() => setPanelExtended(e => !e)}
               isMobile={isMobile}
+              atMenuOpen={atMenuOpen}
+              filteredAtOptions={filteredAtOptions}
+              atMenuIndex={atMenuIndex}
+              onAtSelect={handleAtSelect}
+              onAtKeyDown={handleAtKeyDown}
+              cornerConfig={cornerConfig}
               data={data}
               activeTab={panelActiveTab}
               onActiveTabChange={setPanelActiveTab}
@@ -6893,8 +7527,40 @@ export default function GameDashboard() {
               rightNowTasks={rightNowTasks}
               onSendMessage={(e) => {
                 e?.preventDefault()
-                const text = panelChatInput?.trim()
+                // Close @ menu if open
+                setAtMenuOpen(false)
+                setAtMenuFilter('')
+                let text = panelChatInput?.trim()
                 if (!text || panelStreaming) return
+                // @ prefix routing: "@bobby fix the nav" switches to Bobby, sends "fix the nav"
+                const atPrefixMatch = text.match(/^@(\S+)\s*(.*)$/)
+                if (atPrefixMatch) {
+                  const atTarget = atPrefixMatch[1].toLowerCase()
+                  const remainingText = atPrefixMatch[2]?.trim() || ''
+                  // Find matching agent or project
+                  const matchedOption = atOptions.find(opt =>
+                    opt.slug === atTarget ||
+                    opt.name.toLowerCase() === atTarget ||
+                    opt.aliases.some(a => a.replace('@', '') === atTarget)
+                  )
+                  if (matchedOption) {
+                    const targetSlug = matchedOption.type === 'project' ? (matchedOption.lead || matchedOption.slug) : matchedOption.slug
+                    const targetRoom = ROOM_MAP[targetSlug]
+                    if (targetRoom && targetRoom.agent !== null && targetSlug !== selectedRoom) {
+                      // Switch room, then send the remaining text
+                      setSelectedRoom(targetSlug)
+                      setCameraTarget(targetSlug)
+                      setIsOverview(false)
+                      setPanelActiveTab('chat')
+                    }
+                    text = remainingText
+                    if (!text) {
+                      // Just a channel switch, no message to send
+                      setPanelChatInput('')
+                      return
+                    }
+                  }
+                }
                 setPanelChatInput('')
                 const sentTime = new Date().toISOString()
                 const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
