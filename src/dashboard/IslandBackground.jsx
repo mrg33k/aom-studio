@@ -141,35 +141,127 @@ function createCloud(x, y, z, scale = 1) {
 }
 
 // ---- WATERFALL PARTICLE SYSTEM ----
-function createWaterfall(x, y, z, count = 40) {
+function createWaterfall(x, y, z, count = 40, dropHeight = 55) {
   const geo = new THREE.BufferGeometry()
   const positions = new Float32Array(count * 3)
   const velocities = []
 
   for (let i = 0; i < count; i++) {
-    positions[i * 3] = x + (Math.random() - 0.5) * 3
-    positions[i * 3 + 1] = y - Math.random() * 30
-    positions[i * 3 + 2] = z + (Math.random() - 0.5) * 3
+    positions[i * 3] = x + (Math.random() - 0.5) * 4
+    positions[i * 3 + 1] = y - Math.random() * dropHeight
+    positions[i * 3 + 2] = z + (Math.random() - 0.5) * 4
     velocities.push({
-      vy: -0.15 - Math.random() * 0.1,
+      vy: -0.18 - Math.random() * 0.12,
       resetY: y,
-      bottomY: y - 35,
+      bottomY: y - dropHeight - 10,
     })
   }
 
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
   const mat = new THREE.PointsMaterial({
-    color: 0x4488CC,
-    size: 1.2,
+    color: 0x5599DD,
+    size: 1.6,
     transparent: true,
-    opacity: 0.7,
+    opacity: 0.8,
   })
 
   const points = new THREE.Points(geo, mat)
   points.userData.velocities = velocities
   points.userData.particleCount = count
   return points
+}
+
+// ---- CITY BUILDING BUILDER (with lit windows) ----
+function createCityBuilding(x, z, w, h, d, colorHex) {
+  const group = new THREE.Group()
+
+  // Main building body
+  const bodyGeo = new THREE.BoxGeometry(w, h, d)
+  const bodyMat = voxelMat(colorHex)
+  const body = new THREE.Mesh(bodyGeo, bodyMat)
+  body.position.set(0, h / 2 - 30, 0)
+  group.add(body)
+
+  // Roof cap (darker)
+  const roofH = h * 0.06
+  const roofGeo = new THREE.BoxGeometry(w + 2, roofH, d + 2)
+  const roofMat = voxelMat(0x2A3A4A)
+  const roof = new THREE.Mesh(roofGeo, roofMat)
+  roof.position.set(0, h - 30 + roofH / 2, 0)
+  group.add(roof)
+
+  // Windows on front face (z + d/2)
+  const windowLit = new THREE.MeshLambertMaterial({
+    color: 0xFFE4A0,
+    emissive: 0xFFE4A0,
+    emissiveIntensity: 0.6,
+    flatShading: true,
+  })
+  const windowDark = voxelMat(0x1A2030)
+  const winW = 3
+  const winH = 2.5
+  const winSpacingX = winW + 2.5
+  const winSpacingY = winH + 3
+  const cols = Math.floor((w - 6) / winSpacingX)
+  const rows = Math.floor((h - 10) / winSpacingY)
+  const startX = -(cols - 1) * winSpacingX / 2
+  const startY = -30 + 8
+
+  // Seed windows deterministically based on position
+  const seed = Math.abs(x * 13 + z * 7)
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const winGeo = new THREE.BoxGeometry(winW, winH, 0.5)
+      const isLit = ((seed + row * 7 + col * 3) % 5) !== 0 // ~80% lit
+      const win = new THREE.Mesh(winGeo, isLit ? windowLit : windowDark)
+      win.position.set(
+        startX + col * winSpacingX,
+        startY + row * winSpacingY,
+        d / 2 + 0.3
+      )
+      if (isLit) win.userData.isWindow = true
+      group.add(win)
+    }
+  }
+
+  // Windows on right side face (x + w/2)
+  const sideCols = Math.floor((d - 6) / winSpacingX)
+  const sideStartX = -(sideCols - 1) * winSpacingX / 2
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < sideCols; col++) {
+      const winGeo = new THREE.BoxGeometry(0.5, winH, winW)
+      const isLit = ((seed + row * 11 + col * 5 + 1) % 4) !== 0
+      const win = new THREE.Mesh(winGeo, isLit ? windowLit : windowDark)
+      win.position.set(
+        w / 2 + 0.3,
+        startY + row * winSpacingY,
+        sideStartX + col * winSpacingX
+      )
+      if (isLit) win.userData.isWindow = true
+      group.add(win)
+    }
+  }
+
+  // Windows on left side face (x - w/2)
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < sideCols; col++) {
+      const winGeo = new THREE.BoxGeometry(0.5, winH, winW)
+      const isLit = ((seed + row * 9 + col * 4 + 2) % 5) !== 0
+      const win = new THREE.Mesh(winGeo, isLit ? windowLit : windowDark)
+      win.position.set(
+        -w / 2 - 0.3,
+        startY + row * winSpacingY,
+        sideStartX + col * winSpacingX
+      )
+      if (isLit) win.userData.isWindow = true
+      group.add(win)
+    }
+  }
+
+  group.position.set(x, 0, z)
+  return group
 }
 
 export default function IslandBackground({ isNightMode }) {
@@ -195,10 +287,10 @@ export default function IslandBackground({ isNightMode }) {
     // ---- RENDERER ----
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(
-      60,
+      55,  // V2: slightly narrower FOV for pulled-back feel
       container.clientWidth / container.clientHeight,
       0.1,
-      1200
+      1500
     )
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
     renderer.setSize(container.clientWidth, container.clientHeight)
@@ -207,7 +299,7 @@ export default function IslandBackground({ isNightMode }) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     container.appendChild(renderer.domElement)
 
-    scene.fog = new THREE.FogExp2(colors.nightFog.clone(), 0.0015)
+    scene.fog = new THREE.FogExp2(colors.nightFog.clone(), 0.0012)  // V2: less dense fog for wider view
     scene.background = colors.nightSky.clone()
 
     // ---- LIGHTS ----
@@ -259,11 +351,12 @@ export default function IslandBackground({ isNightMode }) {
     const islandGroup = new THREE.Group()
 
     // Island dimensions - sized to frame the room grid area
+    // V2: Chunkier Minecraft floating island, thicker layers, dramatic taper
     const islandW = 110  // width (x)
     const islandD = 80   // depth (z)
-    const grassThick = 4
-    const dirtThick = 10
-    const rockThick = 14
+    const grassThick = 6
+    const dirtThick = 16
+    const rockThick = 22
 
     // ---- GRASS LAYER (top) ----
     const grassTopGeo = new THREE.BoxGeometry(islandW, grassThick, islandD)
@@ -275,29 +368,43 @@ export default function IslandBackground({ isNightMode }) {
     grassTop.castShadow = true
     islandGroup.add(grassTop)
 
-    // Grass edge trim (slightly overlapping to create a lip)
+    // Grass edge trim (thick lip like reference image)
     const grassEdgeMat = voxelMat(0x5EA040)
+    const edgeThick = 4  // V2: thicker grass edge
     // Front edge
-    const frontEdgeGeo = new THREE.BoxGeometry(islandW + 2, 2, 2)
+    const frontEdgeGeo = new THREE.BoxGeometry(islandW + 4, edgeThick, 3)
     const frontEdge = new THREE.Mesh(frontEdgeGeo, grassEdgeMat)
-    frontEdge.position.set(0, -1, islandD / 2)
+    frontEdge.position.set(0, -edgeThick / 2 + 0.5, islandD / 2 + 0.5)
     islandGroup.add(frontEdge)
     // Back edge
     const backEdge = new THREE.Mesh(frontEdgeGeo, grassEdgeMat)
-    backEdge.position.set(0, -1, -islandD / 2)
+    backEdge.position.set(0, -edgeThick / 2 + 0.5, -islandD / 2 - 0.5)
     islandGroup.add(backEdge)
     // Left edge
-    const sideEdgeGeo = new THREE.BoxGeometry(2, 2, islandD + 2)
+    const sideEdgeGeo = new THREE.BoxGeometry(3, edgeThick, islandD + 4)
     const leftEdge = new THREE.Mesh(sideEdgeGeo, grassEdgeMat)
-    leftEdge.position.set(-islandW / 2, -1, 0)
+    leftEdge.position.set(-islandW / 2 - 0.5, -edgeThick / 2 + 0.5, 0)
     islandGroup.add(leftEdge)
     // Right edge
     const rightEdge = new THREE.Mesh(sideEdgeGeo, grassEdgeMat)
-    rightEdge.position.set(islandW / 2, -1, 0)
+    rightEdge.position.set(islandW / 2 + 0.5, -edgeThick / 2 + 0.5, 0)
     islandGroup.add(rightEdge)
+    // Corner blocks for chunky look
+    const cornerGeo = new THREE.BoxGeometry(4, edgeThick, 4)
+    const corners = [
+      [-islandW / 2, islandD / 2],
+      [islandW / 2, islandD / 2],
+      [-islandW / 2, -islandD / 2],
+      [islandW / 2, -islandD / 2],
+    ]
+    corners.forEach(([cx, cz]) => {
+      const corner = new THREE.Mesh(cornerGeo, grassEdgeMat)
+      corner.position.set(cx, -edgeThick / 2 + 0.5, cz)
+      islandGroup.add(corner)
+    })
 
-    // ---- DIRT LAYER (middle, slightly tapered) ----
-    const dirtTaper = 4
+    // ---- DIRT LAYER (middle, tapered like reference) ----
+    const dirtTaper = 8  // V2: more visible taper
     const dirtW = islandW - dirtTaper
     const dirtD = islandD - dirtTaper
     const dirtGeo = new THREE.BoxGeometry(dirtW, dirtThick, dirtD)
@@ -307,17 +414,28 @@ export default function IslandBackground({ isNightMode }) {
     dirt.castShadow = true
     islandGroup.add(dirt)
 
+    // Secondary dirt layer (more taper, visible step)
+    const dirt2W = dirtW - 6
+    const dirt2D = dirtD - 6
+    const dirt2Thick = 4
+    const dirt2Geo = new THREE.BoxGeometry(dirt2W, dirt2Thick, dirt2D)
+    const dirtMat2 = voxelMat(0x7A5A38)
+    const dirt2 = new THREE.Mesh(dirt2Geo, dirtMat2)
+    dirt2.position.set(0, -(grassThick / 2 + dirtThick + dirt2Thick / 2), 0)
+    dirt2.castShadow = true
+    islandGroup.add(dirt2)
+
     // Dirt side accents (darker brown strips)
     const dirtDarkMat = voxelMat(0x6B4E32)
-    // Random dirt chunks on sides for texture
-    for (let i = 0; i < 12; i++) {
-      const chunkW = 3 + Math.random() * 8
-      const chunkH = 2 + Math.random() * 4
-      const chunkD = 3 + Math.random() * 8
+    // V2: More dirt chunks for chunkier texture (20 instead of 12)
+    for (let i = 0; i < 20; i++) {
+      const chunkW = 4 + Math.random() * 10
+      const chunkH = 3 + Math.random() * 6
+      const chunkD = 4 + Math.random() * 10
       const chunkGeo = new THREE.BoxGeometry(chunkW, chunkH, chunkD)
       const chunk = new THREE.Mesh(chunkGeo, Math.random() > 0.5 ? dirtDarkMat : dirtMat)
       const side = Math.floor(Math.random() * 4)
-      const yPos = -(grassThick / 2 + Math.random() * dirtThick)
+      const yPos = -(grassThick / 2 + Math.random() * (dirtThick + dirt2Thick))
       if (side === 0) chunk.position.set((Math.random() - 0.5) * dirtW, yPos, dirtD / 2 + chunkD / 4)
       else if (side === 1) chunk.position.set((Math.random() - 0.5) * dirtW, yPos, -dirtD / 2 - chunkD / 4)
       else if (side === 2) chunk.position.set(-dirtW / 2 - chunkW / 4, yPos, (Math.random() - 0.5) * dirtD)
@@ -326,49 +444,87 @@ export default function IslandBackground({ isNightMode }) {
       islandGroup.add(chunk)
     }
 
-    // ---- ROCK LAYER (bottom, more tapered, stalactites) ----
-    const rockTaper = 16
+    // ---- ROCK LAYER (bottom, dramatically tapered like reference) ----
+    const rockTaper = 28  // V2: much more taper for dramatic underside
     const rockW = islandW - dirtTaper - rockTaper
     const rockD = islandD - dirtTaper - rockTaper
     const rockGeo = new THREE.BoxGeometry(rockW, rockThick, rockD)
     const rockMat = voxelMat(0x6B6B7B)
     const rock = new THREE.Mesh(rockGeo, rockMat)
-    rock.position.set(0, -(grassThick / 2 + dirtThick + rockThick / 2), 0)
+    rock.position.set(0, -(grassThick / 2 + dirtThick + dirt2Thick + rockThick / 2), 0)
     rock.castShadow = true
     islandGroup.add(rock)
 
-    // Stalactites (random boxes hanging down)
+    // V2: Second rock tier (even more tapered)
+    const rock2W = rockW - 20
+    const rock2D = rockD - 16
+    const rock2Thick = 12
+    const rock2Geo = new THREE.BoxGeometry(rock2W, rock2Thick, rock2D)
+    const rockMat2 = voxelMat(0x5A5A6A)
+    const rock2 = new THREE.Mesh(rock2Geo, rockMat2)
+    rock2.position.set(0, -(grassThick / 2 + dirtThick + dirt2Thick + rockThick + rock2Thick / 2), 0)
+    rock2.castShadow = true
+    islandGroup.add(rock2)
+
+    // V2: Third rock tier (narrowest, the "point")
+    const rock3W = rock2W - 16
+    const rock3D = rock2D - 12
+    const rock3Thick = 8
+    const rock3Geo = new THREE.BoxGeometry(rock3W, rock3Thick, rock3D)
+    const rockMat3 = voxelMat(0x4A4A5A)
+    const rock3 = new THREE.Mesh(rock3Geo, rockMat3)
+    rock3.position.set(0, -(grassThick / 2 + dirtThick + dirt2Thick + rockThick + rock2Thick + rock3Thick / 2), 0)
+    rock3.castShadow = true
+    islandGroup.add(rock3)
+
+    // Stalactites (V2: more, longer, dramatic hanging chunks)
     const stalactiteMat = voxelMat(0x4A4A5A)
-    const rockBottomY = -(grassThick / 2 + dirtThick + rockThick)
-    for (let i = 0; i < 18; i++) {
-      const sw = 2 + Math.random() * 4
-      const sh = 4 + Math.random() * 10
-      const sd = 2 + Math.random() * 4
+    const rockBottomY = -(grassThick / 2 + dirtThick + dirt2Thick + rockThick + rock2Thick + rock3Thick)
+    // Large stalactites
+    for (let i = 0; i < 12; i++) {
+      const sw = 3 + Math.random() * 6
+      const sh = 8 + Math.random() * 18
+      const sd = 3 + Math.random() * 6
       const stalGeo = new THREE.BoxGeometry(sw, sh, sd)
-      const stal = new THREE.Mesh(stalGeo, Math.random() > 0.4 ? stalactiteMat : rockMat)
+      const stal = new THREE.Mesh(stalGeo, Math.random() > 0.4 ? stalactiteMat : rockMat2)
       stal.position.set(
-        (Math.random() - 0.5) * rockW * 0.8,
+        (Math.random() - 0.5) * rock2W * 0.7,
+        rockBottomY - sh / 2 + 8,
+        (Math.random() - 0.5) * rock2D * 0.7
+      )
+      stal.castShadow = true
+      islandGroup.add(stal)
+    }
+    // Small stalactite tips
+    for (let i = 0; i < 16; i++) {
+      const sw = 1.5 + Math.random() * 3
+      const sh = 4 + Math.random() * 12
+      const sd = 1.5 + Math.random() * 3
+      const stalGeo = new THREE.BoxGeometry(sw, sh, sd)
+      const stal = new THREE.Mesh(stalGeo, stalactiteMat)
+      stal.position.set(
+        (Math.random() - 0.5) * rock3W * 1.2,
         rockBottomY - sh / 2,
-        (Math.random() - 0.5) * rockD * 0.8
+        (Math.random() - 0.5) * rock3D * 1.2
       )
       stal.castShadow = true
       islandGroup.add(stal)
     }
 
-    // Tapered transition chunks (dirt to rock)
-    for (let i = 0; i < 8; i++) {
-      const tw = 4 + Math.random() * 6
-      const th = 3 + Math.random() * 5
-      const td = 4 + Math.random() * 6
+    // Tapered transition chunks (dirt to rock, V2: more chunks)
+    for (let i = 0; i < 14; i++) {
+      const tw = 5 + Math.random() * 8
+      const th = 4 + Math.random() * 7
+      const td = 5 + Math.random() * 8
       const transGeo = new THREE.BoxGeometry(tw, th, td)
       const transMat = Math.random() > 0.5 ? dirtDarkMat : rockMat
       const trans = new THREE.Mesh(transGeo, transMat)
-      const angle = Math.random() * Math.PI * 2
+      const tAngle = Math.random() * Math.PI * 2
       const radius = (rockW / 2) + Math.random() * (dirtTaper + rockTaper / 2)
       trans.position.set(
-        Math.cos(angle) * radius * 0.6,
-        -(grassThick / 2 + dirtThick + Math.random() * rockThick * 0.5),
-        Math.sin(angle) * radius * 0.6
+        Math.cos(tAngle) * radius * 0.55,
+        -(grassThick / 2 + dirtThick + dirt2Thick + Math.random() * rockThick * 0.5),
+        Math.sin(tAngle) * radius * 0.55
       )
       islandGroup.add(trans)
     }
@@ -472,22 +628,48 @@ export default function IslandBackground({ isNightMode }) {
     islandGroup.position.set(0, 0, -25)
     scene.add(islandGroup)
 
-    // ---- WATERFALLS (left and right edges) ----
-    const waterfallLeft = createWaterfall(-islandW / 2, -2, -25, 50)
+    // ---- WATERFALLS (V2: more waterfalls, more particles, longer drop) ----
+    const waterfalls = []
+    // Left edge waterfall
+    const waterfallLeft = createWaterfall(-islandW / 2, -2, -25, 80, 70)
     scene.add(waterfallLeft)
-    const waterfallRight = createWaterfall(islandW / 2, -2, -25, 50)
+    waterfalls.push(waterfallLeft)
+    // Right edge waterfall
+    const waterfallRight = createWaterfall(islandW / 2, -2, -25, 80, 70)
     scene.add(waterfallRight)
+    waterfalls.push(waterfallRight)
+    // Front face waterfall (visible from camera)
+    const waterfallFront = createWaterfall(15, -2, -25 + islandD / 2, 60, 65)
+    scene.add(waterfallFront)
+    waterfalls.push(waterfallFront)
+    // Back left waterfall
+    const waterfallBackLeft = createWaterfall(-30, -2, -25 - islandD / 2 + 5, 50, 60)
+    scene.add(waterfallBackLeft)
+    waterfalls.push(waterfallBackLeft)
 
-    // ---- CLOUDS ----
+    // ---- CLOUDS (V2: 18 clouds, fill the sky) ----
     const clouds = []
     const cloudConfigs = [
+      // Original positions (adjusted for zoomed-out view)
       [-70, -10, -60, 1.2],
       [80, -5, -50, 0.9],
-      [-50, 35, -80, 1.0],
-      [60, 40, -70, 0.7],
+      [-50, 55, -80, 1.0],
+      [60, 60, -70, 0.7],
       [0, -20, -30, 0.8],
-      [-90, 15, -45, 1.1],
-      [100, 20, -55, 0.6],
+      [-90, 25, -45, 1.1],
+      [100, 30, -55, 0.6],
+      // V2: Additional clouds at varying heights
+      [-130, 45, -90, 1.4],      // Far left, large
+      [140, 50, -85, 1.3],       // Far right, large
+      [-20, 70, -100, 0.9],      // High center-left
+      [30, 75, -110, 0.8],       // High center-right
+      [-100, -15, -40, 0.7],     // Low left
+      [110, -12, -35, 0.6],      // Low right
+      [0, 85, -120, 1.1],        // Very high center
+      [-60, 35, -55, 0.5],       // Small, mid-left
+      [70, 40, -65, 0.5],        // Small, mid-right
+      [-140, 65, -75, 1.0],      // Far upper left
+      [150, 60, -80, 0.8],       // Far upper right
     ]
     cloudConfigs.forEach(([cx, cy, cz, cs]) => {
       const cloud = createCloud(cx, cy, cz, cs)
@@ -495,43 +677,32 @@ export default function IslandBackground({ isNightMode }) {
       clouds.push(cloud)
     })
 
-    // ---- DISTANT MOUNTAINS (background, very simple) ----
-    const mountainGroup = new THREE.Group()
-    const mountainMat = voxelMat(0x4A6A8A)
-    const mountainMat2 = voxelMat(0x3A5A7A)
-    const snowMat = voxelMat(0xE8E8F0)
+    // ---- DISTANT CITY BUILDINGS (background, with lit windows) ----
+    const buildingGroup = new THREE.Group()
+    const buildingWindowMeshes = []  // Track for day/night window toggling
 
-    const mountainConfigs = [
-      { x: -120, z: -200, w: 60, h: 50, d: 40 },
-      { x: -40, z: -220, w: 80, h: 70, d: 50 },
-      { x: 50, z: -210, w: 50, h: 45, d: 35 },
-      { x: 130, z: -190, w: 70, h: 55, d: 45 },
-      { x: -80, z: -240, w: 50, h: 40, d: 30 },
-      { x: 100, z: -230, w: 60, h: 60, d: 40 },
+    const buildingConfigs = [
+      { x: -140, z: -200, w: 35, h: 80, d: 30, color: 0x3A4A5A },
+      { x: -90, z: -220, w: 45, h: 110, d: 35, color: 0x4A5A6A },
+      { x: -40, z: -210, w: 30, h: 65, d: 25, color: 0x3A5A7A },
+      { x: 10, z: -230, w: 50, h: 130, d: 40, color: 0x4A6A8A },
+      { x: 60, z: -215, w: 35, h: 90, d: 30, color: 0x3A4A5A },
+      { x: 110, z: -200, w: 40, h: 75, d: 35, color: 0x4A5A6A },
+      { x: 150, z: -225, w: 30, h: 100, d: 28, color: 0x3A5A7A },
+      { x: -170, z: -240, w: 40, h: 60, d: 32, color: 0x4A6A8A },
+      { x: 180, z: -210, w: 35, h: 55, d: 28, color: 0x3A4A5A },
     ]
-    mountainConfigs.forEach((mc, idx) => {
-      // Main mountain body
-      const mGeo = new THREE.BoxGeometry(mc.w, mc.h, mc.d)
-      const m = new THREE.Mesh(mGeo, idx % 2 === 0 ? mountainMat : mountainMat2)
-      m.position.set(mc.x, mc.h / 2 - 30, mc.z)
-      mountainGroup.add(m)
-
-      // Peak (smaller box on top)
-      const peakW = mc.w * 0.5
-      const peakH = mc.h * 0.4
-      const peakGeo = new THREE.BoxGeometry(peakW, peakH, mc.d * 0.5)
-      const peak = new THREE.Mesh(peakGeo, idx % 2 === 0 ? mountainMat2 : mountainMat)
-      peak.position.set(mc.x, mc.h - 30 + peakH / 2, mc.z)
-      mountainGroup.add(peak)
-
-      // Snow cap
-      const snowH = mc.h * 0.15
-      const snowGeo = new THREE.BoxGeometry(peakW * 0.7, snowH, mc.d * 0.4)
-      const snow = new THREE.Mesh(snowGeo, snowMat)
-      snow.position.set(mc.x, mc.h - 30 + peakH + snowH / 2, mc.z)
-      mountainGroup.add(snow)
+    buildingConfigs.forEach((bc) => {
+      const building = createCityBuilding(bc.x, bc.z, bc.w, bc.h, bc.d, bc.color)
+      // Collect window meshes for animation
+      building.traverse((child) => {
+        if (child.userData.isWindow) {
+          buildingWindowMeshes.push(child)
+        }
+      })
+      buildingGroup.add(building)
     })
-    scene.add(mountainGroup)
+    scene.add(buildingGroup)
 
     // ---- ANIMATION ----
     const clock = new THREE.Clock()
@@ -615,8 +786,8 @@ export default function IslandBackground({ isNightMode }) {
         cloud.position.y += Math.sin(elapsed * 0.2 + cloud.userData.startX) * 0.003
       })
 
-      // Waterfall particles
-      ;[waterfallLeft, waterfallRight].forEach((wf) => {
+      // Waterfall particles (V2: all waterfalls)
+      waterfalls.forEach((wf) => {
         const pos = wf.geometry.attributes.position
         const vels = wf.userData.velocities
         for (let i = 0; i < wf.userData.particleCount; i++) {
@@ -635,16 +806,24 @@ export default function IslandBackground({ isNightMode }) {
         pos.needsUpdate = true
       })
 
-      // Camera with mouse parallax
-      const targetX = mouseRef.current.x * 4
-      const targetY = 50 + mouseRef.current.y * 2 + Math.sin(elapsed * 0.3) * 0.3
-      const targetZ = 65 + Math.cos(elapsed * 0.15) * 1.5
+      // Camera with mouse parallax (V2: zoomed out ~40% for more sky)
+      const targetX = mouseRef.current.x * 6
+      const targetY = 75 + mouseRef.current.y * 3 + Math.sin(elapsed * 0.3) * 0.3
+      const targetZ = 95 + Math.cos(elapsed * 0.15) * 1.5
 
       camera.position.x += (targetX - camera.position.x) * 0.02
       camera.position.y += (targetY - camera.position.y) * 0.02
       camera.position.z += (targetZ - camera.position.z) * 0.02
 
-      camera.lookAt(0, 5, -30)
+      camera.lookAt(0, 0, -35)
+
+      // V2: Building window glow intensity based on day/night
+      const windowGlow = 0.2 + (1 - dayRatio) * 0.8
+      buildingWindowMeshes.forEach((win) => {
+        if (win.material && win.material.emissiveIntensity !== undefined) {
+          win.material.emissiveIntensity = windowGlow
+        }
+      })
 
       renderer.render(scene, camera)
     }
