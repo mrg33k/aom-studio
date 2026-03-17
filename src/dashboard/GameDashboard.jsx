@@ -6855,17 +6855,20 @@ export default function GameDashboard() {
           const latest = newMsgs[newMsgs.length - 1]
           lastBgOutboxCheckRef.current = latest.timestamp
 
-          // Add new responses, keep streaming placeholders intact (panelRelayPoll handles those)
-          safePanelUpdate(prev => {
-            const allMsgs = [...(prev._all || [])]
+          // Route each response to the CORRECT agent's chat, not just the currently selected one
+          setAgentChats(prev => {
+            const updated = { ...prev }
             for (const msg of newMsgs) {
-              if (!msg.message) continue // skip empty messages
-              // Dedup by id OR by matching content+time (for messages without id)
-              if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
-              if (!msg.id && allMsgs.some(m => m.content === msg.message && m.role === 'assistant')) continue
+              if (!msg.message) continue
               const cleaned = sanitizeRelayMessage(msg.message)
               if (!cleaned) continue
-              const agentSlug = extractAgentFromMessage(msg)
+              const agentSlug = extractAgentFromMessage(msg) || selectedRoom || '_default'
+              const agentKey = agentSlug
+              const current = updated[agentKey] || { _all: [] }
+              const allMsgs = [...(current._all || [])]
+              // Dedup
+              if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
+              if (!msg.id && allMsgs.some(m => m.content === msg.message && m.role === 'assistant')) continue
               allMsgs.push({
                 role: 'assistant',
                 content: cleaned,
@@ -6874,9 +6877,10 @@ export default function GameDashboard() {
                 id: msg.id || `bg-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
                 ambient: msg.ambient === true || msg.ambient === 'true',
               })
+              allMsgs.sort(safeTimeSort)
+              updated[agentKey] = { ...current, _all: deduplicateMessages(allMsgs) }
             }
-            allMsgs.sort(safeTimeSort)
-            return { ...prev, _all: deduplicateMessages(allMsgs) }
+            return updated
           })
 
           // Count unread if panel is closed
