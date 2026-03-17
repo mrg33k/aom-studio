@@ -8,10 +8,14 @@ import React, { useRef, useEffect, useState, useCallback } from 'react'
 // Wave effect: each room crossfades between working/idle at a staggered time offset.
 // Drag-and-drop: rooms can be repositioned, positions saved to localStorage.
 // Right-click context menu: Regenerate Room, Reset Position, View Agent.
+//
+// CAMERA: Two-view system (Overview + Focus). No free pan/scroll zoom.
+//   View 1 (Overview): All 13 rooms visible, centered.
+//   View 2 (Focus): Click room -> smooth 400ms zoom to fill ~60% viewport.
+//   Escape or click empty space -> back to Overview.
 
 // ---- ROOM CONFIG ----
 const ROOM_SIZE = 512        // Base room size (px, scales with zoom)
-const BG_COLOR = '#0A0D1A'   // Dark night background
 
 // Wave timing
 const CYCLE_TIME = 10        // Full working+idle cycle in seconds
@@ -20,6 +24,9 @@ const WAVE_OFFSET = 1.2      // Stagger between consecutive rooms in seconds
 
 // Drag threshold (px) - less than this = click, more = drag
 const DRAG_THRESHOLD = 5
+
+// Camera transition duration (ms)
+const CAMERA_TRANSITION_MS = 400
 
 // localStorage key for custom room positions
 const POSITIONS_KEY = 'corner-room-positions'
@@ -178,6 +185,12 @@ function savePositions(positions) {
   }
 }
 
+// ---- EASE-OUT CUBIC ----
+// Smooth deceleration for camera transitions
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3)
+}
+
 // ---- COMPONENT ----
 export default function CanvasOffice({
   agentStatus = {},
@@ -193,13 +206,12 @@ export default function CanvasOffice({
   const [hover, setHover] = useState(null) // hovered room id
   const [loaded, setLoaded] = useState(false)
 
-  // Pan + zoom
-  const [pan, setPan] = useState({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1.0)
-  const panRef = useRef({ dragging: false, sx: 0, sy: 0, lx: 0, ly: 0, vx: 0, vy: 0, didDrag: false })
-  const momRef = useRef(null)
-  const ZOOM_MIN = 0.3
-  const ZOOM_MAX = 3.0
+  // Camera state: current pan/zoom values driven by animation
+  const cameraRef = useRef({ x: 0, y: 0, zoom: 1.0 })
+  // Camera transition animation ref
+  const cameraAnimRef = useRef(null) // { from, to, startTime, duration }
+  // Focused room id (null = overview)
+  const [focusedRoom, setFocusedRoom] = useState(null)
 
   // Custom room positions (drag-and-drop overrides hex layout)
   const [roomPositions, setRoomPositions] = useState(loadSavedPositions)
@@ -214,6 +226,8 @@ export default function CanvasOffice({
     startClientY: 0,
     totalMovement: 0,
   })
+  // Track if a mousedown started a potential drag (to distinguish click vs drag)
+  const mouseDownRef = useRef({ active: false, didDrag: false, startX: 0, startY: 0 })
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState(null) // { x, y, roomId, roomName }
@@ -258,28 +272,7 @@ export default function CanvasOffice({
     return () => window.removeEventListener('resize', measure)
   }, [])
 
-  // Center the grid on mount
-  useEffect(() => {
-    if (size.w > 0 && size.h > 0) {
-      // Find bounding box of all rooms (using custom positions if saved)
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
-      ALL_ROOMS.forEach((room) => {
-        const pos = roomPositions[room.id] || hexPosition(room.row, room.col, 0, 0)
-        minX = Math.min(minX, pos.x)
-        maxX = Math.max(maxX, pos.x + ROOM_SIZE)
-        minY = Math.min(minY, pos.y)
-        maxY = Math.max(maxY, pos.y + ROOM_SIZE)
-      })
-      const gridW = maxX - minX
-      const gridH = maxY - minY
-      // Center the grid, accounting for zoom
-      const cx = (size.w - gridW * zoom) / 2 - minX * zoom
-      const cy = (size.h - gridH * zoom) / 2 - minY * zoom
-      setPan({ x: cx, y: cy })
-    }
-  }, [size.w, size.h]) // eslint-disable-line
-
-  // Origin for hex layout (will be adjusted by centering)
+  // Origin for hex layout
   const ORIGIN_X = ROOM_SIZE * 1.5
   const ORIGIN_Y = ROOM_SIZE * 0.1
 
@@ -289,6 +282,81 @@ export default function CanvasOffice({
     return hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
   }, [roomPositions, ORIGIN_X, ORIGIN_Y])
 
+  // ---- COMPUTE GRID BOUNDING BOX ----
+  const getGridBounds = useCallback(() => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+    ALL_ROOMS.forEach((room) => {
+      const pos = getRoomPos(room)
+      minX = Math.min(minX, pos.x)
+      maxX = Math.max(maxX, pos.x + ROOM_SIZE)
+      minY = Math.min(minY, pos.y)
+      maxY = Math.max(maxY, pos.y + ROOM_SIZE)
+    })
+    return { minX, maxX, minY, maxY, w: maxX - minX, h: maxY - minY }
+  }, [getRoomPos])
+
+  // ---- COMPUTE OVERVIEW CAMERA (all rooms centered, fit in viewport) ----
+  const getOverviewCamera = useCallback((viewW, viewH) => {
+    const bounds = getGridBounds()
+    // Add some padding (10% on each side)
+    const padX = bounds.w * 0.10
+    const padY = bounds.h * 0.10
+    const totalW = bounds.w + padX * 2
+    const totalH = bounds.h + padY * 2
+    // Zoom to fit: pick the smaller scale so everything fits
+    const zoomFit = Math.min(viewW / totalW, viewH / totalH)
+    // Center the grid
+    const cx = (viewW - bounds.w * zoomFit) / 2 - bounds.minX * zoomFit
+    const cy = (viewH - bounds.h * zoomFit) / 2 - bounds.minY * zoomFit
+    return { x: cx, y: cy, zoom: zoomFit }
+  }, [getGridBounds])
+
+  // ---- COMPUTE FOCUS CAMERA (center on room, fill ~60% viewport) ----
+  const getFocusCamera = useCallback((roomId, viewW, viewH) => {
+    const room = ALL_ROOMS.find(r => r.id === roomId)
+    if (!room) return getOverviewCamera(viewW, viewH)
+    const pos = getRoomPos(room)
+    // Room center in world space
+    const roomCX = pos.x + ROOM_SIZE / 2
+    const roomCY = pos.y + ROOM_SIZE / 2
+    // We want the room to fill ~60% of the viewport
+    // Room visible size is ~ROOM_SIZE * 0.90 (the hex clipped region)
+    const visibleRoomSize = ROOM_SIZE * 0.90
+    const targetScreenSize = Math.min(viewW, viewH) * 0.60
+    const zoomFocus = targetScreenSize / visibleRoomSize
+    // Pan so room center is at viewport center
+    const panX = viewW / 2 - roomCX * zoomFocus
+    const panY = viewH / 2 - roomCY * zoomFocus
+    return { x: panX, y: panY, zoom: zoomFocus }
+  }, [getRoomPos, getOverviewCamera])
+
+  // ---- ANIMATE CAMERA TRANSITION ----
+  const animateCamera = useCallback((targetCamera) => {
+    const from = { ...cameraRef.current }
+    const to = targetCamera
+    const startTime = performance.now()
+    cameraAnimRef.current = { from, to, startTime, duration: CAMERA_TRANSITION_MS }
+  }, [])
+
+  // ---- SET INITIAL CAMERA on mount ----
+  useEffect(() => {
+    if (size.w > 0 && size.h > 0) {
+      const overview = getOverviewCamera(size.w, size.h)
+      cameraRef.current = { x: overview.x, y: overview.y, zoom: overview.zoom }
+      cameraAnimRef.current = null // no animation, just snap
+    }
+  }, [size.w, size.h, getOverviewCamera])
+
+  // ---- RECALCULATE CAMERA when focused room changes or viewport resizes ----
+  useEffect(() => {
+    if (size.w <= 0 || size.h <= 0) return
+    if (focusedRoom) {
+      animateCamera(getFocusCamera(focusedRoom, size.w, size.h))
+    } else {
+      animateCamera(getOverviewCamera(size.w, size.h))
+    }
+  }, [focusedRoom, size.w, size.h, animateCamera, getFocusCamera, getOverviewCamera])
+
   // ---- DRAW ----
   const draw = useCallback(() => {
     const canvas = canvasRef.current
@@ -296,6 +364,21 @@ export default function CanvasOffice({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Advance camera animation
+    const anim = cameraAnimRef.current
+    if (anim) {
+      const elapsed = performance.now() - anim.startTime
+      const t = Math.min(1, elapsed / anim.duration)
+      const e = easeOutCubic(t)
+      cameraRef.current = {
+        x: anim.from.x + (anim.to.x - anim.from.x) * e,
+        y: anim.from.y + (anim.to.y - anim.from.y) * e,
+        zoom: anim.from.zoom + (anim.to.zoom - anim.from.zoom) * e,
+      }
+      if (t >= 1) cameraAnimRef.current = null
+    }
+
+    const cam = cameraRef.current
     const dpr = window.devicePixelRatio || 1
     canvas.width = size.w * dpr
     canvas.height = size.h * dpr
@@ -307,14 +390,12 @@ export default function CanvasOffice({
     ctx.clearRect(0, 0, size.w, size.h)
 
     ctx.save()
-    ctx.translate(pan.x, pan.y)
-    ctx.scale(zoom, zoom)
+    ctx.translate(cam.x, cam.y)
+    ctx.scale(cam.zoom, cam.zoom)
 
     ctx.imageSmoothingEnabled = false
 
     const elapsed = (performance.now() - startTimeRef.current) / 1000
-
-    // No backdrop - rooms float directly on the Three.js scene
 
     // ---- RENDER ALL ROOMS ----
     // Draw dragged room last so it renders on top
@@ -324,7 +405,8 @@ export default function CanvasOffice({
       const pos = getRoomPos(room)
       const imgs = roomImages[room.id]
       const alpha = getWaveBlend(elapsed, idx)
-      drawRoom(ctx, pos.x, pos.y, imgs.working, imgs.idle, alpha, room.name, room.color, room.id === hover || room.id === selectedRoom)
+      const isHL = room.id === hover || room.id === selectedRoom || room.id === focusedRoom
+      drawRoom(ctx, pos.x, pos.y, imgs.working, imgs.idle, alpha, room.name, room.color, isHL, cam.zoom)
     })
 
     // Draw dragged room on top with slight transparency
@@ -337,17 +419,17 @@ export default function CanvasOffice({
         const alpha = getWaveBlend(elapsed, dragIdx)
         ctx.save()
         ctx.globalAlpha = 0.9
-        drawRoom(ctx, pos.x, pos.y, imgs.working, imgs.idle, alpha, dragRoom.name, dragRoom.color, true)
+        drawRoom(ctx, pos.x, pos.y, imgs.working, imgs.idle, alpha, dragRoom.name, dragRoom.color, true, cam.zoom)
         ctx.restore()
       }
     }
 
     ctx.restore() // undo pan/zoom
 
-  }, [size, pan, zoom, hover, selectedRoom, ORIGIN_X, ORIGIN_Y, getRoomPos])
+  }, [size, hover, selectedRoom, focusedRoom, getRoomPos])
 
-  // ---- HELPER: Draw one room with hex clip ----
-  function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, alpha, nameText, nameColor, isHighlighted) {
+  // ---- HELPER: Draw one room with hex clip + BIGGER name badge BELOW hex ----
+  function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, alpha, nameText, nameColor, isHighlighted, currentZoom) {
     ctx.save()
     ctx.translate(offsetX, offsetY)
 
@@ -365,12 +447,10 @@ export default function CanvasOffice({
 
     // Crossfade blend between working and idle
     if (workImg?.complete && idleImg?.complete) {
-      // Draw working state
       ctx.save()
       ctx.globalAlpha = 1 - alpha
       ctx.drawImage(workImg, 0, 0, S, S)
       ctx.restore()
-      // Draw idle state on top
       ctx.save()
       ctx.globalAlpha = alpha
       ctx.drawImage(idleImg, 0, 0, S, S)
@@ -381,7 +461,7 @@ export default function CanvasOffice({
       ctx.drawImage(idleImg, 0, 0, S, S)
     }
 
-    // Highlight glow for hovered/selected rooms
+    // Highlight glow for hovered/selected/focused rooms
     if (isHighlighted) {
       ctx.fillStyle = `${nameColor}15`
       ctx.beginPath()
@@ -395,29 +475,60 @@ export default function CanvasOffice({
       ctx.fill()
     }
 
-    // Nameplate
+    ctx.restore() // undo hex clip so badge renders OUTSIDE/BELOW the hex
+
+    // ---- NAME BADGE (below the hex, not clipped) ----
     ctx.save()
-    ctx.font = '600 14px Inter, system-ui, sans-serif'
+    ctx.translate(offsetX, offsetY)
+
+    // Scale font inversely with zoom so badges stay readable at overview zoom
+    // At zoom ~0.3 (overview), font renders at ~16/0.3 = 53px world-space -> 16px screen
+    // At zoom ~1.0 (focus), font renders at 16px world-space -> 16px screen
+    // We clamp so it doesn't get absurdly large or small
+    const baseFontSize = 17
+    const invZoomScale = Math.min(3.0, Math.max(1.0, 1.0 / (currentZoom || 1)))
+    const fontSize = baseFontSize * invZoomScale
+    const dotSize = 7 * invZoomScale
+    const pillPadH = 10 * invZoomScale
+    const pillPadV = 6 * invZoomScale
+    const pillRadius = 6 * invZoomScale
+
+    ctx.font = `800 ${fontSize}px Inter, system-ui, sans-serif`
     const tw = ctx.measureText(nameText).width
-    const npX = S * 0.5 - tw / 2 - 8
-    const npY = S * 0.88
-    ctx.fillStyle = 'rgba(10, 15, 30, 0.85)'
+    const badgeW = tw + dotSize + pillPadH * 3 + 4 * invZoomScale
+    const badgeH = fontSize + pillPadV * 2
+
+    // Position: centered below the hex bottom point (S * 0.50, S * 0.95)
+    const badgeX = S * 0.50 - badgeW / 2
+    const badgeY = S * 0.97 + 2 * invZoomScale
+
+    // Dark pill background
+    ctx.fillStyle = 'rgba(8, 12, 24, 0.92)'
     ctx.beginPath()
-    ctx.roundRect(npX - 2, npY - 10, tw + 20, 24, 4)
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, pillRadius)
     ctx.fill()
-    // Status dot
+
+    // Subtle border
+    ctx.strokeStyle = `${nameColor}40`
+    ctx.lineWidth = 1.2 * invZoomScale
     ctx.beginPath()
-    ctx.arc(npX + 6, npY + 2, 4, 0, Math.PI * 2)
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, pillRadius)
+    ctx.stroke()
+
+    // Status dot
+    const dotCX = badgeX + pillPadH + dotSize / 2
+    const dotCY = badgeY + badgeH / 2
+    ctx.beginPath()
+    ctx.arc(dotCX, dotCY, dotSize / 2, 0, Math.PI * 2)
     ctx.fillStyle = nameColor
     ctx.fill()
+
     // Name text
     ctx.fillStyle = '#EDF2FA'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(nameText, npX + 14, npY + 2)
+    ctx.fillText(nameText, dotCX + dotSize / 2 + 4 * invZoomScale, dotCY)
     ctx.restore()
-
-    ctx.restore() // undo translate + clip
   }
 
   // Render loop
@@ -432,73 +543,59 @@ export default function CanvasOffice({
     return () => cancelAnimationFrame(raf)
   }, [draw, loaded])
 
-  // ---- WHEEL ZOOM ----
+  // Block mousewheel zoom (killed)
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const handler = (e) => {
-      e.preventDefault()
-      const rect = el.getBoundingClientRect()
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
-      const factor = e.deltaY > 0 ? 0.92 : 1.08
-      setZoom(z => {
-        const nz = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z * factor))
-        const ratio = nz / z
-        setPan(p => ({
-          x: mx - (mx - p.x) * ratio,
-          y: my - (my - p.y) * ratio,
-        }))
-        return nz
-      })
-    }
+    const handler = (e) => { e.preventDefault() }
     el.addEventListener('wheel', handler, { passive: false })
     return () => el.removeEventListener('wheel', handler)
-  }, []) // eslint-disable-line
+  }, [])
 
-  // ---- MOUSE DOWN: Start pan or room drag ----
+  // ---- MOUSE DOWN: Start potential room drag ----
   const onDown = useCallback((e) => {
-    // Close context menu on any mousedown
     setContextMenu(null)
 
-    if (momRef.current) cancelAnimationFrame(momRef.current)
-
-    // Check if mouse is on a room (for room drag)
     const rect = containerRef.current?.getBoundingClientRect()
-    if (rect) {
-      const cx = (e.clientX - rect.left - pan.x) / zoom
-      const cy = (e.clientY - rect.top - pan.y) / zoom
-      const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
-      if (hitRoom) {
-        const room = ALL_ROOMS.find(r => r.id === hitRoom)
-        if (room) {
-          const pos = roomPositions[hitRoom] || hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
-          roomDragRef.current = {
-            active: false, // becomes true after threshold
-            roomId: hitRoom,
-            offsetX: cx - pos.x,
-            offsetY: cy - pos.y,
-            startClientX: e.clientX,
-            startClientY: e.clientY,
-            totalMovement: 0,
-          }
+    if (!rect) return
+
+    const cam = cameraRef.current
+    const cx = (e.clientX - rect.left - cam.x) / cam.zoom
+    const cy = (e.clientY - rect.top - cam.y) / cam.zoom
+    const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
+
+    mouseDownRef.current = {
+      active: true,
+      didDrag: false,
+      startX: e.clientX,
+      startY: e.clientY,
+    }
+
+    if (hitRoom) {
+      const room = ALL_ROOMS.find(r => r.id === hitRoom)
+      if (room) {
+        const pos = roomPositions[hitRoom] || hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
+        roomDragRef.current = {
+          active: false,
+          roomId: hitRoom,
+          offsetX: cx - pos.x,
+          offsetY: cy - pos.y,
+          startClientX: e.clientX,
+          startClientY: e.clientY,
+          totalMovement: 0,
         }
       }
     }
+  }, [ORIGIN_X, ORIGIN_Y, roomPositions])
 
-    panRef.current = {
-      dragging: true, sx: e.clientX - pan.x, sy: e.clientY - pan.y,
-      lx: e.clientX, ly: e.clientY, vx: 0, vy: 0, didDrag: false,
-    }
-  }, [pan, zoom, ORIGIN_X, ORIGIN_Y, roomPositions])
-
-  // ---- MOUSE MOVE: Pan canvas or drag room ----
+  // ---- MOUSE MOVE: Hover + room drag only (no viewport pan) ----
   const onMove = useCallback((e) => {
     // Hover detection
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
-      const cx = (e.clientX - rect.left - pan.x) / zoom
-      const cy = (e.clientY - rect.top - pan.y) / zoom
+      const cam = cameraRef.current
+      const cx = (e.clientX - rect.left - cam.x) / cam.zoom
+      const cy = (e.clientY - rect.top - cam.y) / cam.zoom
       const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
       if (hitRoom !== hover) {
         setHover(hitRoom)
@@ -506,7 +603,7 @@ export default function CanvasOffice({
       }
     }
 
-    if (!panRef.current.dragging) return
+    if (!mouseDownRef.current.active) return
 
     // Check if we should start a room drag (past threshold)
     const rd = roomDragRef.current
@@ -516,7 +613,7 @@ export default function CanvasOffice({
       rd.totalMovement = Math.sqrt(dx * dx + dy * dy)
       if (rd.totalMovement >= DRAG_THRESHOLD) {
         rd.active = true
-        panRef.current.didDrag = true // prevent click-select
+        mouseDownRef.current.didDrag = true
       }
     }
 
@@ -524,31 +621,18 @@ export default function CanvasOffice({
     if (rd.active && rd.roomId) {
       const rect = containerRef.current?.getBoundingClientRect()
       if (rect) {
-        const cx = (e.clientX - rect.left - pan.x) / zoom
-        const cy = (e.clientY - rect.top - pan.y) / zoom
+        const cam = cameraRef.current
+        const cx = (e.clientX - rect.left - cam.x) / cam.zoom
+        const cy = (e.clientY - rect.top - cam.y) / cam.zoom
         const newX = cx - rd.offsetX
         const newY = cy - rd.offsetY
         setRoomPositions(prev => ({ ...prev, [rd.roomId]: { x: newX, y: newY } }))
       }
-      return // don't pan while room dragging
     }
+  }, [hover, setExtHover, ORIGIN_X, ORIGIN_Y, roomPositions])
 
-    // Regular canvas pan
-    const nx = e.clientX - panRef.current.sx
-    const ny = e.clientY - panRef.current.sy
-    panRef.current.vx = e.clientX - panRef.current.lx
-    panRef.current.vy = e.clientY - panRef.current.ly
-    panRef.current.lx = e.clientX
-    panRef.current.ly = e.clientY
-    if (Math.abs(panRef.current.vx) > 1 || Math.abs(panRef.current.vy) > 1) {
-      panRef.current.didDrag = true
-    }
-    setPan({ x: nx, y: ny })
-  }, [pan, zoom, hover, setExtHover, ORIGIN_X, ORIGIN_Y, roomPositions])
-
-  // ---- MOUSE UP: End pan or room drag ----
+  // ---- MOUSE UP: End room drag ----
   const onUp = useCallback(() => {
-    // If room was being dragged, save positions to localStorage
     const rd = roomDragRef.current
     if (rd.active && rd.roomId) {
       setRoomPositions(prev => {
@@ -560,49 +644,52 @@ export default function CanvasOffice({
     } else {
       rd.roomId = null
     }
-
-    if (!panRef.current.dragging) return
-    panRef.current.dragging = false
-
-    // Momentum drift
-    let vx = panRef.current.vx
-    let vy = panRef.current.vy
-    const drift = () => {
-      if (Math.abs(vx) < 0.4 && Math.abs(vy) < 0.4) return
-      vx *= 0.91
-      vy *= 0.91
-      setPan(p => ({ x: p.x + vx, y: p.y + vy }))
-      momRef.current = requestAnimationFrame(drift)
-    }
-    if (Math.abs(vx) > 1 || Math.abs(vy) > 1) {
-      momRef.current = requestAnimationFrame(drift)
-    }
+    mouseDownRef.current.active = false
   }, [])
 
-  // ---- CLICK: Select room (if not dragged) ----
+  // ---- CLICK: Focus/unfocus room ----
   const onClick = useCallback((e) => {
-    if (panRef.current.didDrag) {
-      panRef.current.didDrag = false
+    if (mouseDownRef.current.didDrag) {
+      mouseDownRef.current.didDrag = false
       return
     }
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      const cx = (e.clientX - rect.left - pan.x) / zoom
-      const cy = (e.clientY - rect.top - pan.y) / zoom
-      const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
-      if (hitRoom) {
-        onRoomClick?.(hitRoom)
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const cam = cameraRef.current
+    const cx = (e.clientX - rect.left - cam.x) / cam.zoom
+    const cy = (e.clientY - rect.top - cam.y) / cam.zoom
+    const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
+
+    if (hitRoom) {
+      // Focus on the clicked room (or switch to a different room)
+      setFocusedRoom(hitRoom)
+      onRoomClick?.(hitRoom)
+    } else {
+      // Clicked empty space: back to overview
+      setFocusedRoom(null)
+    }
+  }, [onRoomClick, ORIGIN_X, ORIGIN_Y, roomPositions])
+
+  // ---- ESCAPE: back to overview ----
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') {
+        setFocusedRoom(null)
+        setContextMenu(null)
       }
     }
-  }, [pan, zoom, onRoomClick, ORIGIN_X, ORIGIN_Y, roomPositions])
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   // ---- RIGHT-CLICK: Context menu on rooms ----
   const onContextMenu = useCallback((e) => {
     e.preventDefault()
     if (!containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
-    const cx = (e.clientX - rect.left - pan.x) / zoom
-    const cy = (e.clientY - rect.top - pan.y) / zoom
+    const cam = cameraRef.current
+    const cx = (e.clientX - rect.left - cam.x) / cam.zoom
+    const cy = (e.clientY - rect.top - cam.y) / cam.zoom
     const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
     if (hitRoom) {
       const room = ALL_ROOMS.find(r => r.id === hitRoom)
@@ -615,16 +702,7 @@ export default function CanvasOffice({
     } else {
       setContextMenu(null)
     }
-  }, [pan, zoom, ORIGIN_X, ORIGIN_Y, roomPositions])
-
-  // Close context menu on Escape
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key === 'Escape') setContextMenu(null)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
+  }, [ORIGIN_X, ORIGIN_Y, roomPositions])
 
   // Show toast notification
   const showToast = useCallback((msg) => {
@@ -652,6 +730,7 @@ export default function CanvasOffice({
   }, [showToast])
 
   const handleViewAgent = useCallback((roomId) => {
+    setFocusedRoom(roomId)
     onRoomClick?.(roomId)
     setContextMenu(null)
   }, [onRoomClick])
@@ -661,13 +740,12 @@ export default function CanvasOffice({
     setContextMenu(null)
     if (e.touches.length === 1) {
       const t = e.touches[0]
-      if (momRef.current) cancelAnimationFrame(momRef.current)
 
-      // Check for room hit (for touch drag)
       const rect = containerRef.current?.getBoundingClientRect()
       if (rect) {
-        const cx = (t.clientX - rect.left - pan.x) / zoom
-        const cy = (t.clientY - rect.top - pan.y) / zoom
+        const cam = cameraRef.current
+        const cx = (t.clientX - rect.left - cam.x) / cam.zoom
+        const cy = (t.clientY - rect.top - cam.y) / cam.zoom
         const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
         if (hitRoom) {
           const room = ALL_ROOMS.find(r => r.id === hitRoom)
@@ -686,18 +764,19 @@ export default function CanvasOffice({
         }
       }
 
-      panRef.current = {
-        dragging: true, sx: t.clientX - pan.x, sy: t.clientY - pan.y,
-        lx: t.clientX, ly: t.clientY, vx: 0, vy: 0, didDrag: false,
+      mouseDownRef.current = {
+        active: true,
+        didDrag: false,
+        startX: t.clientX,
+        startY: t.clientY,
       }
     }
-  }, [pan, zoom, ORIGIN_X, ORIGIN_Y, roomPositions])
+  }, [ORIGIN_X, ORIGIN_Y, roomPositions])
 
   const onTouchMove = useCallback((e) => {
-    if (!panRef.current.dragging || e.touches.length !== 1) return
+    if (!mouseDownRef.current.active || e.touches.length !== 1) return
     const t = e.touches[0]
 
-    // Check room drag threshold
     const rd = roomDragRef.current
     if (rd.roomId && !rd.active) {
       const dx = t.clientX - rd.startClientX
@@ -705,41 +784,25 @@ export default function CanvasOffice({
       rd.totalMovement = Math.sqrt(dx * dx + dy * dy)
       if (rd.totalMovement >= DRAG_THRESHOLD) {
         rd.active = true
-        panRef.current.didDrag = true
+        mouseDownRef.current.didDrag = true
       }
     }
 
-    // Room drag
     if (rd.active && rd.roomId) {
       const rect = containerRef.current?.getBoundingClientRect()
       if (rect) {
-        const cx = (t.clientX - rect.left - pan.x) / zoom
-        const cy = (t.clientY - rect.top - pan.y) / zoom
+        const cam = cameraRef.current
+        const cx = (t.clientX - rect.left - cam.x) / cam.zoom
+        const cy = (t.clientY - rect.top - cam.y) / cam.zoom
         const newX = cx - rd.offsetX
         const newY = cy - rd.offsetY
         setRoomPositions(prev => ({ ...prev, [rd.roomId]: { x: newX, y: newY } }))
       }
-      panRef.current.lx = t.clientX
-      panRef.current.ly = t.clientY
-      return
     }
-
-    // Canvas pan
-    const nx = t.clientX - panRef.current.sx
-    const ny = t.clientY - panRef.current.sy
-    panRef.current.vx = t.clientX - panRef.current.lx
-    panRef.current.vy = t.clientY - panRef.current.ly
-    panRef.current.lx = t.clientX
-    panRef.current.ly = t.clientY
-    if (Math.abs(panRef.current.vx) > 1 || Math.abs(panRef.current.vy) > 1) {
-      panRef.current.didDrag = true
-    }
-    setPan({ x: nx, y: ny })
-  }, [pan, zoom])
+  }, [])
 
   const onTouchEnd = useCallback((e) => {
     if (e.touches.length === 0) {
-      // Save room drag
       const rd = roomDragRef.current
       if (rd.active && rd.roomId) {
         setRoomPositions(prev => {
@@ -752,27 +815,30 @@ export default function CanvasOffice({
         rd.roomId = null
       }
 
-      if (!panRef.current.didDrag) {
+      if (!mouseDownRef.current.didDrag) {
         const rect = containerRef.current?.getBoundingClientRect()
         if (rect) {
-          const cx = (panRef.current.lx - rect.left - pan.x) / zoom
-          const cy = (panRef.current.ly - rect.top - pan.y) / zoom
+          const cam = cameraRef.current
+          const lx = mouseDownRef.current.startX
+          const ly = mouseDownRef.current.startY
+          const cx = (lx - rect.left - cam.x) / cam.zoom
+          const cy = (ly - rect.top - cam.y) / cam.zoom
           const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
           if (hitRoom) {
+            setFocusedRoom(hitRoom)
             onRoomClick?.(hitRoom)
+          } else {
+            setFocusedRoom(null)
           }
         }
       }
-      panRef.current.didDrag = false
-      onUp()
+      mouseDownRef.current = { active: false, didDrag: false, startX: 0, startY: 0 }
     }
-  }, [pan, zoom, onRoomClick, onUp, ORIGIN_X, ORIGIN_Y, roomPositions])
+  }, [onRoomClick, ORIGIN_X, ORIGIN_Y, roomPositions])
 
   const cursor = roomDragRef.current.active
     ? 'grabbing'
-    : panRef.current.dragging
-      ? 'grabbing'
-      : (hover ? 'pointer' : 'grab')
+    : (hover ? 'pointer' : 'default')
 
   return (
     <div
