@@ -379,10 +379,19 @@ export default function CanvasOffice({
     }
 
     // ---- LAYER 2: FURNITURE LAYERS (desk, server-rack, chair) ----
-    // Draw at their JSON-specified positions, sorted by z
+    // Some furniture PNGs are pre-positioned on 512x512 canvas (draw full).
+    // Others are actual-size sprites that need JSON x/y positioning.
+    // Detect by comparing image natural size to canvas size.
     for (const layer of layerCategories.furniture) {
       const m = layer.meta
-      ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || 64, m.height || 64)
+      const isFullCanvas = layer.img.naturalWidth === ROOM_SIZE && layer.img.naturalHeight === ROOM_SIZE
+      if (isFullCanvas) {
+        // Pre-composited on 512x512 canvas -- draw as full overlay
+        ctx.drawImage(layer.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
+      } else {
+        // Actual-size sprite -- position from JSON sidecar
+        ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || layer.img.naturalWidth, m.height || layer.img.naturalHeight)
+      }
     }
 
     // ---- LAYER 3: CHARACTER (walk system, z ~15) ----
@@ -454,18 +463,16 @@ export default function CanvasOffice({
     }
 
     // ---- LAYER 4: OVERLAY LAYERS (lights, glow) ----
+    // Both use screen blend mode. Lights at 0.6 alpha, glow at 0.4 alpha.
+    // Prevents green wash while keeping ambient lighting feel.
     for (const layer of layerCategories.overlays) {
       const m = layer.meta
       ctx.save()
-      // Glow layer uses screen blend for ambient lighting feel
-      if (layer.id === 'glow') {
-        ctx.globalAlpha = 0.6
-        ctx.globalCompositeOperation = 'screen'
-      }
-      // Lights layer uses lighter blend
+      ctx.globalCompositeOperation = 'screen'
       if (layer.id === 'lights') {
-        ctx.globalAlpha = 0.7
-        ctx.globalCompositeOperation = 'screen'
+        ctx.globalAlpha = 0.6
+      } else if (layer.id === 'glow') {
+        ctx.globalAlpha = 0.4
       }
       ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || ROOM_SIZE, m.height || ROOM_SIZE)
       ctx.restore()
