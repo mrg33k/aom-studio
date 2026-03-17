@@ -406,50 +406,39 @@ export default function CanvasOffice({
     // When the new character-final.png layer exists (Gemini/Steffen art),
     // draw it ONCE and skip the old walk sprite system to prevent double-character.
     // When no character layer exists, fall back to the old walk sprite system.
-    // ALWAYS use the old walk sprite system for the character.
-    // The Gemini character-final.png is too large (fills 512x512 canvas = giant head).
-    // The walk sprites are properly sized and animated. Character layer is SKIPPED.
-    {
-      // Old walk sprite system (fallback when no character layer PNG exists)
-      const charSize = 80
+    // BIG BOBBLE CHARACTER from Gemini layers -- scaled to fit room properly.
+    // Draws character-final.png at ~25% of room size, positioned at walk system coords.
+    // Old floating walk sprites are KILLED. The bobble IS the character now.
+    if (layerCategories.charLayer) {
+      const cl = layerCategories.charLayer
+      const charSize = ROOM_SIZE * 0.25  // 25% of room = ~128px in a 512 room
       const charX = elonPos.x * ROOM_SIZE - charSize / 2
-      let charY = elonPos.y * ROOM_SIZE - charSize / 2
+      let charY = elonPos.y * ROOM_SIZE - charSize * 0.7  // offset up so feet touch ground
 
       // Hop frame Y offset
       let hopOffsetY = 0
-      if (hopFrame === 'peak') hopOffsetY = -12
-      if (hopFrame === 'landing') hopOffsetY = 3
+      if (hopFrame === 'peak') hopOffsetY = -16
+      if (hopFrame === 'landing') hopOffsetY = 4
       charY += hopOffsetY
 
-      // Determine sprite
-      let spriteKey = 'elon-idle'
-      if (walkState === 'walking') spriteKey = 'elon-idle'
-      if (isElonWorking && walkState === 'idle') spriteKey = 'elon-working'
-      if (hopFrame === 'ground') spriteKey = 'elon-hop-ground'
-      if (hopFrame === 'peak') spriteKey = 'elon-hop-peak'
-      if (hopFrame === 'landing') spriteKey = 'elon-hop-landing'
+      ctx.save()
+      ctx.imageSmoothingEnabled = false
+      if (facingLeft) {
+        ctx.translate(charX + charSize, charY)
+        ctx.scale(-1, 1)
+        ctx.drawImage(cl.img, 0, 0, charSize, charSize)
+      } else {
+        ctx.drawImage(cl.img, charX, charY, charSize, charSize)
+      }
+      ctx.restore()
 
-      const spriteImg = sprites[spriteKey]
-      if (spriteImg) {
-        ctx.save()
-        ctx.imageSmoothingEnabled = false
-
-        if (facingLeft) {
-          ctx.translate(charX + charSize, charY)
-          ctx.scale(-1, 1)
-          ctx.drawImage(spriteImg, 0, 0, charSize, charSize)
-        } else {
-          ctx.drawImage(spriteImg, charX, charY, charSize, charSize)
-        }
-        ctx.restore()
-
-        // Shadow under character
-        ctx.save()
-        ctx.globalAlpha = hopFrame === 'peak' ? 0.12 : 0.25
-        const shadowW = charSize * 0.6
-        const shadowH = charSize * 0.12
-        const shadowX = elonPos.x * ROOM_SIZE - shadowW / 2
-        const shadowY = elonPos.y * ROOM_SIZE + charSize * 0.35
+      // Shadow under character
+      ctx.save()
+      ctx.globalAlpha = hopFrame === 'peak' ? 0.12 : 0.25
+      const shadowW = charSize * 0.6
+      const shadowH = charSize * 0.12
+      const shadowX = elonPos.x * ROOM_SIZE - shadowW / 2
+      const shadowY = elonPos.y * ROOM_SIZE + charSize * 0.15
 
         ctx.beginPath()
         ctx.ellipse(shadowX + shadowW / 2, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
