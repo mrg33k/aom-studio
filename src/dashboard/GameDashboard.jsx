@@ -3630,11 +3630,14 @@ function SkeletonLine({ width = '100%', height = 14, style: extraStyle }) {
   )
 }
 
+// FIX(bobby2): Removed Math.random() which caused visual chaos every 3s re-render.
+// Stable widths per line index: 92%, 88%, 60% pattern.
+const SKELETON_WIDTHS = ['92%', '88%', '95%', '85%', '90%', '87%', '93%', '86%']
 function SkeletonBlock({ lines = 3, style: extraStyle }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, ...extraStyle }}>
       {Array.from({ length: lines }).map((_, i) => (
-        <SkeletonLine key={i} width={i === lines - 1 ? '60%' : `${85 + Math.random() * 15}%`} />
+        <SkeletonLine key={i} width={i === lines - 1 ? '60%' : (SKELETON_WIDTHS[i % SKELETON_WIDTHS.length])} />
       ))}
     </div>
   )
@@ -3781,7 +3784,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 // Box 4: PROJECT PROGRESS (purple, cycle arrows, crossfade)
 // TODO(patrik): CALENDAR BOX REAL DATA -- Wire to Google Calendar MCP. Show NEXT EVENT with time + title.
 // TODO(patrik): PROGRESS BORDER CLOCKWISE FILL -- SVG stroke-dashoffset clockwise from top-center.
-function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgress, isNightMode, isDaytime, data }) {
+function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgress, isNightMode, isDaytime, data, pipeData }) {
   const [glowBox, setGlowBox] = useState(null)
   const [expandedBox, setExpandedBox] = useState(null)
   const [projectIndex, setProjectIndex] = useState(0)
@@ -3798,37 +3801,55 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
     }
   }, [])
 
-  // LIVE: get working agents with names
+  // LIVE: use useDataPipe rightNow (real running agents from TASK STARTED/FINISHED + active-missions)
+  // Falls back to allAgentStatus for demo/production mode
+  const liveAgents = pipeData?.rightNow || []
   const workingAgents = useMemo(() => {
+    if (liveAgents.length > 0) {
+      return liveAgents.map(t => ({
+        slug: t.agent,
+        name: (t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1),
+        task: t.text || '',
+      }))
+    }
     return Object.entries(allAgentStatus || {})
       .filter(([, a]) => a?.status === 'WORKING')
       .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || '' }))
-  }, [allAgentStatus])
+  }, [liveAgents, allAgentStatus])
 
-  // YOUR TODOS: count items tagged [Patrik] from data (or use blockedCount as proxy)
-  const todoCount = blockedCount || 0
+  // LIVE count: prefer useDataPipe count (same source as bottom HUD pills)
+  const liveCount = pipeData?.pillCounts?.rightNow ?? workingCount
 
-  // PROJECT PROGRESS: stable progress derived from agent slug hash (FIX: no more Math.random)
+  // YOUR TODOS: real count from useDataPipe (punch-list [Patrik] tags), not blocked agents
+  const todoCount = pipeData?.pillCounts?.yourTodos ?? blockedCount ?? 0
+  const realPatrikTodos = pipeData?.yourTodos || []
+
+  // PROJECT PROGRESS: stable progress from useDataPipe projectProgress (real punch-list data)
   const projects = useMemo(() => {
-    const agents = data?.agents || []
-    const working = agents.filter(a => a.status === 'WORKING')
-    if (working.length === 0) {
-      return [{ name: 'All Clear', progress: 100, estimate: '' }]
-    }
-    return working.map(a => {
-      // Stable hash from agent name: sum char codes, mod to get 30-70 range
-      const name = a.name || a.slug || 'unknown'
-      let hash = 0
-      for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0
-      const progress = 30 + Math.abs(hash % 41) // 30-70 range, stable per agent
-      return {
-        name: name,
-        task: a.currentTask || 'In progress',
-        progress,
-        estimate: a.timeActive ? 'Active' : '',
+    const pp = pipeData?.projectProgress || {}
+    const entries = Object.entries(pp).filter(([, v]) => v.total > 0)
+    if (entries.length === 0) {
+      // Fallback: use demo data agents
+      const agents = data?.agents || []
+      const working = agents.filter(a => a.status === 'WORKING')
+      if (working.length === 0) {
+        return [{ name: 'All Clear', progress: 100, estimate: '' }]
       }
-    })
-  }, [data])
+      return working.map(a => {
+        const name = a.name || a.slug || 'unknown'
+        let hash = 0
+        for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0
+        const progress = 30 + Math.abs(hash % 41)
+        return { name, task: a.currentTask || 'In progress', progress, estimate: a.timeActive ? 'Active' : '' }
+      })
+    }
+    return entries.map(([section, v]) => {
+      const progress = v.total > 0 ? Math.round((v.done / v.total) * 100) : 0
+      // Pretty-print section name
+      const name = section.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      return { name, progress, estimate: `${v.done}/${v.total} done`, task: `${v.remaining} remaining` }
+    }).sort((a, b) => a.progress - b.progress).slice(0, 8)
+  }, [pipeData?.projectProgress, data])
 
   const currentProject = projects[projectIndex % projects.length] || projects[0]
 
@@ -3844,9 +3865,9 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
     setExpandedBox(prev => prev === boxId ? null : boxId)
   }, [triggerGlow])
 
-  // Progress border: ratio of working agents to total
+  // Progress border: ratio of live agents to total
   const totalAgents = Math.max(Object.keys(allAgentStatus || {}).length, 1)
-  const progressPercent = workingCount > 0 ? Math.min(100, (workingCount / totalAgents) * 100) : 0
+  const progressPercent = liveCount > 0 ? Math.min(100, (liveCount / totalAgents) * 100) : 0
 
   // Day/night accent colors (Steffen spec: darkened accents for white bg contrast)
   const ACCENTS = {
@@ -3925,7 +3946,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
           ref={liveBoxRef}
           role="button"
           tabIndex={0}
-          aria-label={`Live agents: ${workingCount} running`}
+          aria-label={`Live agents: ${liveCount} running`}
           style={tileBase(glowBox === 'live', accent('live'))}
           onClick={() => handleBoxClick('live')}
           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBoxClick('live') } }}
@@ -3934,7 +3955,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
           data-testid="top-square-live"
         >
           {/* SVG progress-bar border (Steffen spec: strokeLinecap round, drop-shadow, perimeter from ref) */}
-          {workingCount > 0 && (
+          {liveCount > 0 && (
             <svg style={{
               position: 'absolute', inset: -1, width: 'calc(100% + 2px)', height: 'calc(100% + 2px)',
               pointerEvents: 'none', zIndex: 2,
@@ -3960,7 +3981,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
             </svg>
           )}
           {/* Live pulse dot (10px, Steffen spec) */}
-          {workingCount > 0 && (
+          {liveCount > 0 && (
             <div style={{
               position: 'absolute', top: 8, right: 8,
               width: 10, height: 10, borderRadius: '50%',
@@ -3971,9 +3992,9 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Zap size={16} style={{ color: accent('live') }} />
-            <span style={valueStyle(workingCount > 0 ? accent('live') : mutedColor)}>{workingCount}</span>
+            <span style={valueStyle(liveCount > 0 ? accent('live') : mutedColor)}>{liveCount}</span>
           </div>
-          <span style={labelStyle(workingCount > 0 ? accent('live') : (isNightMode ? '#475569' : '#94A3B8'))}>LIVE</span>
+          <span style={labelStyle(liveCount > 0 ? accent('live') : (isNightMode ? '#475569' : '#94A3B8'))}>LIVE</span>
           {workingAgents.length > 0 ? (
             <div style={{
               fontSize: 11, fontWeight: 600, color: subtextColor,
@@ -4235,33 +4256,29 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               <div style={{ fontSize: 12, fontWeight: 800, color: accent('todos'), textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
                 Your TODOs
               </div>
-              {(() => {
-                const blockedAgents = Object.entries(allAgentStatus || {})
-                  .filter(([, a]) => a?.status === 'BLOCKED')
-                  .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || 'Blocked' }))
-                if (blockedAgents.length === 0) {
-                  return <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>No blockers. All clear.</div>
-                }
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {blockedAgents.map(a => (
-                      <div key={a.slug} style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '6px 10px', borderRadius: 8,
-                        background: isNightMode ? 'rgba(245,158,11,0.05)' : 'rgba(245,158,11,0.03)',
-                      }}>
-                        <CheckCircle2 size={14} style={{ color: accent('todos'), flexShrink: 0 }} />
-                        <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif" }}>
-                          {a.name}:
-                        </span>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                          {a.task}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })()}
+              {realPatrikTodos.length === 0 ? (
+                <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>No Patrik TODOs. All clear.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {realPatrikTodos.slice(0, 8).map((t, i) => (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '6px 10px', borderRadius: 8,
+                      background: isNightMode ? 'rgba(245,158,11,0.05)' : 'rgba(245,158,11,0.03)',
+                    }}>
+                      <CheckCircle2 size={14} style={{ color: accent('todos'), flexShrink: 0 }} />
+                      {t.projectColor && (
+                        <span style={{
+                          width: 6, height: 6, borderRadius: '50%', background: t.projectColor, flexShrink: 0,
+                        }} />
+                      )}
+                      <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        {t.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -4343,6 +4360,82 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
   )
 }
 
+// ---- SIDEBAR PUNCH-LIST PARSER (lightweight, for useDataPipe in sidebar) ----
+// Bobby2: The sidebar needs a real parser so useDataPipe can compute yourTodos, projectProgress,
+// and finishThese from the same punch-list.md data that GameHUD uses. This ensures one source of truth.
+// Simpler than GameHUD's parsePunchList (no CLIENT_SUBSECTION_MAP needed for sidebar counts).
+function parsePunchListSidebar(markdown) {
+  if (!markdown) return { projects: [], todayTasks: [] }
+  const lines = markdown.split('\n')
+  const projects = []
+  const todayTasks = []
+  let currentSection = ''
+  let currentProject = null
+
+  const SECTION_MAP = {
+    'RIGHT NOW':     { name: 'Right Now', section: 'rightnow',     color: '#FF6B3D' },
+    'YOUR TODOS':    { name: 'Your TODOs', section: 'your-todos', color: '#EF4444' },
+    'FINISH THESE':  { name: 'Finish These', section: 'finish-these', color: '#94A3B8' },
+    'CHECKING IN':   { name: 'Finish These', section: 'finish-these', color: '#94A3B8' },
+    'SCHEDULE':      { name: 'Schedule',  section: 'schedule',    color: '#FF6B3D' },
+    'TODAY':         { name: 'Schedule',  section: 'schedule',    color: '#FF6B3D' },
+    'CORNER':        { name: 'Corner',    section: 'corner',      color: '#3B9EFF' },
+    'PRODUCT':       { name: 'Corner',    section: 'corner',      color: '#3B9EFF' },
+    'DASHBOARD':     { name: 'Corner',    section: 'corner',      color: '#3B9EFF' },
+    'AMBITION':      { name: 'Ambition',  section: 'ambition',    color: '#F59E0B' },
+    'AOM SITE':      { name: 'AOM Site',  section: 'aom-site',    color: '#5BB8FF' },
+    'GO-TO-MARKET':  { name: 'Advisory',  section: 'gtm',         color: '#7C9A72' },
+    'OUTREACH':      { name: 'Outreach',  section: 'outreach',    color: '#EF4444' },
+    'CLIENT DEADLINE':{ name: 'Deadlines', section: 'deadlines',  color: '#F97316' },
+    'INFRASTRUCTURE':{ name: 'Infra',     section: 'infra',       color: '#4CAF50' },
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('## ')) {
+      currentSection = trimmed.replace('## ', '').trim()
+      const sectionUpper = currentSection.toUpperCase()
+      if (sectionUpper.startsWith('CLIENT') || sectionUpper.startsWith('AGENTS')) {
+        currentProject = null
+        continue
+      }
+      let matched = null
+      for (const [key, config] of Object.entries(SECTION_MAP)) {
+        if (sectionUpper.startsWith(key)) { matched = config; break }
+      }
+      if (matched) {
+        const existing = projects.find(p => p.section === matched.section)
+        if (existing) { currentProject = existing }
+        else { currentProject = { ...matched, tasks: [] }; projects.push(currentProject) }
+      } else { currentProject = null }
+      continue
+    }
+    if (currentProject && trimmed.startsWith('- [')) {
+      const isDone = trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]')
+      const lastBracket = trimmed.match(/\[([A-Za-z]+)\][\s]*$/)
+      let agent = null
+      if (lastBracket) {
+        const name = lastBracket[1].toLowerCase()
+        if (name === 'patrik') agent = 'patrik'
+        else if (name === 'ash') agent = 'ash'
+        else {
+          const found = AGENTS.find(a => a.name.toLowerCase() === name || a.slug === name)
+          if (found) agent = found.slug
+        }
+      }
+      let text = trimmed.replace(/^- \[[ xX]\]\s*/, '').replace(/~~([^~]+)~~/, '$1')
+        .replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\[([A-Za-z]+(?:\s*(?:--|[+])\s*[^\]]*)?)\]\s*$/, '').trim()
+      if (text.length > 80) text = text.slice(0, 77) + '...'
+      const task = { text, done: isDone, agent, raw: trimmed }
+      currentProject.tasks.push(task)
+      if (currentProject.section === 'schedule' && !isDone) {
+        todayTasks.push({ ...task, project: 'Schedule' })
+      }
+    }
+  }
+  return { projects: projects.filter(p => p.tasks.length > 0), todayTasks }
+}
+
 // ---- UNIFIED RIGHT PANEL (Vegas sidebar - Steffen visual target match) ------
 // Matches: vegas-sidebar-isolated.png, chat-view-full.png
 // Blue glass sidebar. 64px avatar, status dot, quick stats pills, tab bar with glow.
@@ -4373,25 +4466,53 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const isNearBottomRef = useRef(true)
+  const isUserTypingRef = useRef(false)
+  const userJustSentRef = useRef(false)
+  const prevMessageCountRef = useRef(0)
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
 
-  // Smart auto-scroll: only scroll if user is near the bottom
+  // Smart auto-scroll (ported from ChatDashboard 408afba):
+  // 1. User just sent a message -> always scroll to show it
+  // 2. User is typing -> NEVER yank scroll
+  // 3. New message + near bottom -> auto-scroll
+  // 4. New message + scrolled up -> show indicator
   useEffect(() => {
-    if (messagesContainerRef.current && activeTab === 'chat') {
-      if (isNearBottomRef.current) {
-        messagesContainerRef.current.scrollTo({
-          top: messagesContainerRef.current.scrollHeight,
-          behavior: 'smooth',
-        })
-        setShowNewMsgIndicator(false)
-      } else if (chatMessages && chatMessages.length > 0) {
+    if (!messagesContainerRef.current || activeTab !== 'chat') return
+    const newCount = chatMessages?.length || 0
+    const prevCount = prevMessageCountRef.current
+    const isNewMessage = newCount > prevCount
+    prevMessageCountRef.current = newCount
+
+    if (userJustSentRef.current) {
+      userJustSentRef.current = false
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      })
+      setShowNewMsgIndicator(false)
+      return
+    }
+
+    if (isUserTypingRef.current) {
+      if (isNewMessage && !isNearBottomRef.current) {
         setShowNewMsgIndicator(true)
       }
+      return
+    }
+
+    if (isNewMessage && isNearBottomRef.current) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      })
+      setShowNewMsgIndicator(false)
+    } else if (isNewMessage && !isNearBottomRef.current) {
+      setShowNewMsgIndicator(true)
     }
   }, [chatMessages, activeTab])
 
   // Working agents count -- use REAL data from useDataPipe (agent-notifications.md TASK STARTED/FINISHED)
-  const { rightNow: liveAgents, pillCounts: pipeCounts } = useDataPipe(() => ({}))
+  // Bobby2: Full pipeData passed to TopSquares so sidebar uses same persistent truth as HUD pills
+  const pipeData = useDataPipe(parsePunchListSidebar)
+  const { rightNow: liveAgents, pillCounts: pipeCounts } = pipeData
   const workingCount = liveAgents?.length || Object.values(allAgentStatus || {}).filter(a => a?.status === 'WORKING').length
   const blockedCount = pipeCounts?.yourTodos || Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
   const doneCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'DONE').length
@@ -4573,6 +4694,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         isNightMode={isNightMode}
         isDaytime={isDaytime}
         data={data}
+        pipeData={pipeData}
       />
 
       {/* ---- TAB BAR (Vegas glow tabs: Chat / Tasks / Info / List / Board) ---- */}
@@ -4955,8 +5077,18 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 : 'transparent',
               flexShrink: 0,
             }}>
-              <form onSubmit={onSendMessage} style={{ position: 'relative' }}>
-                <input type="text" value={chatInput || ''} onChange={e => onChatInputChange?.(e.target.value)}
+              <form onSubmit={(e) => {
+                isUserTypingRef.current = false
+                userJustSentRef.current = true
+                onSendMessage(e)
+              }} style={{ position: 'relative' }}>
+                <input type="text" value={chatInput || ''} onChange={e => {
+                    isUserTypingRef.current = true
+                    onChatInputChange?.(e.target.value)
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') isUserTypingRef.current = false
+                  }}
                   placeholder={`Talk to ${agent?.name || 'agent'}...`} disabled={streaming}
                   style={{
                     width: '100%',
@@ -4971,10 +5103,12 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     transition: 'border-color 200ms ease, box-shadow 200ms ease',
                   }}
                   onFocus={e => {
-                    e.target.style.borderColor = `rgba(59,130,246,0.45)`
+                    isUserTypingRef.current = true
+                    e.target.style.borderColor = 'rgba(59,130,246,0.45)'
                     e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)'
                   }}
                   onBlur={e => {
+                    setTimeout(() => { isUserTypingRef.current = false }, 300)
                     e.target.style.borderColor = 'rgba(59,130,246,0.2)'
                     e.target.style.boxShadow = 'none'
                   }}
@@ -5529,7 +5663,7 @@ export default function GameDashboard() {
   // TODO(bobby): ONE CONVERSATION STREAM (COUNCIL MODEL) -- Relay is THE source of truth. ALL messages from Patrik (terminal, dashboard, telegram) + ALL agent responses = ONE chronological list. No separation by source or device. Two sides: Patrik (right) and agents (left), interleaved by timestamp. COUNCIL: all agents share one stream. User switches driving agent by saying "talk to [agent]" or clicking one. That agent steps forward in the SAME thread with full context. No separate per-agent chats. Everyone listens, only driving agent speaks. Add search over unified stream. Ref: Patrik directives lines 144, 186, 190. [SURVIVES: Relay/data architecture. Engine-independent.]
   // DONE(bobby): AMBIENT COUNCIL CHAT RENDERING -- Messages with ambient:true flag render as compact muted inline status updates (smaller font, italic, no avatar expansion, 20px mini avatar). Ambient flag carried through history loader and background outbox poll. REMAINING: agents need to actually WRITE ambient messages to relay-outbox with ambient:true flag. That's a relay-side change, not dashboard. Ref: Patrik feedback Pass 21.
   // TODO(bobby): TYPING INDICATOR -- Show "[Agent] is typing..." with agent avatar + countdown ring while an agent is composing a response. iMessage dots energy. Shows WHICH agent (Bobby = purple dots, Elon = green). Write a "typing" signal to relay when agent starts generating. Dashboard picks up and shows animated dots. Council feels ALIVE. Ref: Patrik feedback lines 221-222. [SURVIVES: Chat UI animation. Engine-independent.]
-  // TODO(bobby2): CHAT SCROLL STAY AT BOTTOM (SIDEBAR) -- PARTIALLY FIXED in ChatDashboard.jsx (408afba) but NOT in GameDashboard sidebar chat. Sidebar chat still uses simple isNearBottomRef without isUserTypingRef/userJustSentRef guards. When user types in sidebar chat, page can still auto-scroll. Port the ChatDashboard fix (isUserTypingRef, userJustSentRef, prevMessageCountRef) to this sidebar chat. Ref: Patrik feedback line 248, 261.
+  // DONE(bobby2): CHAT SCROLL STAY AT BOTTOM (SIDEBAR) -- Ported ChatDashboard fix (isUserTypingRef, userJustSentRef, prevMessageCountRef) to sidebar chat. No more scroll yanking while user types. Ref: Patrik feedback line 248, 261.
   // DONE(bobby2): JANKY CHAT CLEANUP -- (1) Watchdog system prompt stripped by expanded sanitizeRelayMessage (7 new regex patterns). Ghost messages filtered by watchdog-responded status. (2) Typing indicator separated into standalone block with animated dots. (3) Source labels muted to 9px/#78716C/25% opacity. Deduplication added for relay echo messages. Ref: Patrik feedback line 249. REMAINING: see TODO(steve) about overly aggressive XML regex that may eat user content.
   // DONE(bobby2): CHAT BUBBLE CONTRAST FIX -- Daytime bubbles now solid warm gray (#EDF2F7) with dark text (#1E293B). Agent bubbles get colored left border (3px agent color). Patrik avatar now orange (#F59E0B) with white P per dream-hud-v1.png. Night mode unchanged (dark translucent). All text readable in both modes.
   const panelHistoryLoadedRef = useRef(false)
