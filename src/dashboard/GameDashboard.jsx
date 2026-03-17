@@ -7155,15 +7155,13 @@ export default function GameDashboard() {
       return prev
     })
     // Load conversation history from server files (conversations/agents/{slug}.jsonl)
+    // ALWAYS load from server files. Server conversation files are the source of truth.
     if (IS_LOCAL && selectedRoom) {
       fetch(`/api/local/conversations?target=${selectedRoom}&type=agent&limit=50`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (!data?.messages?.length) return
           setAgentChats(prev => {
-            const existing = prev[selectedRoom]?._all || []
-            // Only load if we have no messages yet (don't overwrite active session)
-            if (existing.length > 0) return prev
             const loaded = data.messages.map(m => ({
               role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
               content: m.text || '',
