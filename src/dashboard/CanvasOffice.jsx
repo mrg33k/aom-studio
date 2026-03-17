@@ -374,7 +374,7 @@ export default function CanvasOffice({
     // Layer 2: CHARACTER (bobble head Elon, scaled to 25% of room, positioned at walk coords)
     if (layerCategories.charLayer) {
       const cl = layerCategories.charLayer
-      const charSize = ROOM_SIZE * 0.25
+      const charSize = ROOM_SIZE * 0.40  // 40% of room (~200px) -- Patrik wants bigger bobble
       const charX = elonPos.x * ROOM_SIZE - charSize / 2
       let charY = elonPos.y * ROOM_SIZE - charSize * 0.7
 
