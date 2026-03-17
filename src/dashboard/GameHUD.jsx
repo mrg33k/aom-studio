@@ -100,8 +100,10 @@ function parsePunchList(markdown) {
   const SECTION_MAP = {
     'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy. [SURVIVES: HUD data pill.]
     'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },  // Patrik's personal blocked items
-    'CHECKING IN':       { name: 'Checking In', section: 'checking-in', color: '#94A3B8', icon: 'history' },  // Stale tasks needing attention
-    'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
+    'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#94A3B8', icon: 'history' },  // Stale tasks needing attention (was "Checking In")
+    'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#94A3B8', icon: 'history' },  // Legacy alias
+    'SCHEDULE':          { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },
+    'TODAY':             { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },  // Legacy alias
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'DASHBOARD':         { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -271,8 +273,8 @@ function parsePunchList(markdown) {
         const task = { text, done: isDone, agent, raw: trimmed }
         currentProject.tasks.push(task)
 
-        if (currentProject.section === 'today' && !isDone) {
-          todayTasks.push({ ...task, project: 'Today' })
+        if (currentProject.section === 'schedule' && !isDone) {
+          todayTasks.push({ ...task, project: 'Schedule' })
         }
       }
 
@@ -322,10 +324,12 @@ function parsePunchList(markdown) {
 // Projects ranked by what you TALK ABOUT, not static order.
 // Fallback weights used when conversation data isn't available.
 const DEFAULT_RECENCY_WEIGHTS = {
-  'today':          100,  // Always fourth (Patrik directive: Right Now > Checking In > Your TODOs > Today)
+  'schedule':       100,  // Third (Patrik directive: Right Now > Your TODOs > Schedule > Finish These)
+  'today':          100,  // Legacy alias for schedule
   'completed-feed': 99,   // Right after Right Now
-  'checking-in':    98.5, // Second (Patrik directive)
-  'your-todos':     98,   // Third (Patrik directive)
+  'your-todos':     98,   // Second (Patrik directive)
+  'finish-these':   50,   // Last (Patrik directive) -- stale tasks
+  'checking-in':    50,   // Legacy alias for finish-these
   'ih':             92,   // $9k payment pending -- RED
   'isa-client':     90,   // Apr 10 deadline -- RED
   'kohrs-client':   88,   // Behind on 10 videos -- RED
@@ -674,16 +678,16 @@ function usePatrikTodos(punchData) {
   }, [punchData])
 }
 
-// ---- CHECKING IN: Stale tasks with no recent activity -----------------------
+// ---- FINISH THESE: Stale tasks with no recent activity ----------------------
 // Tasks that haven't had movement in a while. Nudge to reassign or close.
 // Uses notification timestamps to detect staleness (24+ hours without updates).
 function useCheckingInTasks(punchData) {
   return useMemo(() => {
     if (!punchData?.projects) return []
     const stale = []
-    // Tasks from "THIS WEEK" or other non-today sections that aren't done
-    // and are not in "rightnow" or "today" (those are active by definition)
-    const activeSections = new Set(['rightnow', 'today', 'your-todos', 'checking-in'])
+    // Tasks from non-active sections that aren't done
+    // and are not in "rightnow" or "schedule" (those are active by definition)
+    const activeSections = new Set(['rightnow', 'schedule', 'today', 'your-todos', 'finish-these', 'checking-in'])
     for (const project of punchData.projects) {
       if (activeSections.has(project.section)) continue
       for (const task of project.tasks) {
@@ -1231,10 +1235,10 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
   const doneTasks = project.tasks.filter(t => t.done).length
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
   const remaining = totalTasks - doneTasks
-  const isToday = project.section === 'today'
+  const isSchedule = project.section === 'schedule' || project.section === 'today'
   const isRightNow = project.section === 'rightnow'
   const isTodoList = project.section === 'your-todos'
-  const isCheckingIn = project.section === 'checking-in'
+  const isFinishThese = project.section === 'finish-these' || project.section === 'checking-in'
   const hasLiveTasks = isRightNow && project.tasks.some(t => t.isLive)
   const isClient = project.isClient
   const allDone = remaining === 0 && totalTasks > 0
@@ -1263,19 +1267,19 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
               ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
               : isClient
                 ? `linear-gradient(135deg, ${project.color}0C, ${project.color}06)`
-                : isToday
+                : isSchedule
                   ? 'linear-gradient(135deg, rgba(255,107,61,0.08), rgba(255,107,61,0.03))'
                   : 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02))')
           : (isExpanded
               ? `linear-gradient(135deg, ${project.color}22, ${project.color}0C)`
               : isClient
                 ? `linear-gradient(135deg, ${project.color}14, ${project.color}06)`
-                : isToday
+                : isSchedule
                   ? 'linear-gradient(135deg, rgba(255, 107, 61, 0.14), rgba(255, 107, 61, 0.06))'
                   : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))'),
         border: isDaytime
-          ? `2px solid ${isExpanded ? `${project.color}40` : isClient ? `${project.color}25` : isToday ? 'rgba(255,107,61,0.2)' : 'rgba(59,130,246,0.15)'}`
-          : `2px solid ${isExpanded ? `${project.color}55` : isClient ? `${project.color}30` : isToday ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
+          ? `2px solid ${isExpanded ? `${project.color}40` : isClient ? `${project.color}25` : isSchedule ? 'rgba(255,107,61,0.2)' : 'rgba(59,130,246,0.15)'}`
+          : `2px solid ${isExpanded ? `${project.color}55` : isClient ? `${project.color}30` : isSchedule ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
         borderRadius: 16,
         cursor: 'pointer',
         flexShrink: 0,
@@ -1293,7 +1297,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
               ? `0 6px 24px ${project.color}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
               : isClient && project.statusTag === 'RED'
                 ? `0 4px 20px rgba(239,68,68,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)`
-                : isToday
+                : isSchedule
                   ? '0 4px 20px rgba(255,107,61,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
                   : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
       }}
@@ -1308,13 +1312,13 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         boxShadow: `0 0 8px ${project.color}44`,
       }} />
 
-      {/* Side accent for Right Now, Today, Your TODOs, or RED clients - THICKER */}
-      {(isRightNow || isToday || isTodoList || (isClient && project.statusTag === 'RED')) && (
+      {/* Side accent for Right Now, Schedule, Your TODOs, or RED clients - THICKER */}
+      {(isRightNow || isSchedule || isTodoList || (isClient && project.statusTag === 'RED')) && (
         <div style={{
           position: 'absolute', left: 0, top: 6, bottom: 6,
           width: 4, borderRadius: 2,
-          background: isTodoList ? '#EF4444' : isRightNow ? project.color : isToday ? project.color : '#EF4444',
-          boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isToday) ? project.color : 'rgba(239,68,68,0.6)'}88`,
+          background: isTodoList ? '#EF4444' : isRightNow ? project.color : isSchedule ? project.color : '#EF4444',
+          boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isSchedule) ? project.color : 'rgba(239,68,68,0.6)'}88`,
           animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
         }} />
       )}
@@ -1324,9 +1328,9 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         <Zap size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
       ) : isTodoList ? (
         <AlertCircle size={18} color="#EF4444" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.6))' }} />
-      ) : isCheckingIn ? (
+      ) : isFinishThese ? (
         <History size={18} color="#94A3B8" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.4))' }} />
-      ) : isToday ? (
+      ) : isSchedule ? (
         <Flame size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isClient ? (
         <div style={{
@@ -1353,11 +1357,11 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         fontSize: 20, fontWeight: 900,
         color: isExpanded
           ? (isDaytime ? '#1E293B' : '#FFFFFF')
-          : isDaytime ? '#0F172A' : (isToday ? '#EDF2FA' : HUD.textPrimary),
+          : isDaytime ? '#0F172A' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',
-        textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.06)' : (isToday ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
+        textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.06)' : (isSchedule ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
       }}>
         {project.name}
       </span>
@@ -1407,8 +1411,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         </span>
       )}
 
-      {/* STALE badge for Checking In pill */}
-      {isCheckingIn && remaining > 0 && (
+      {/* STALE badge for Finish These pill */}
+      {isFinishThese && remaining > 0 && (
         <span style={{
           display: 'flex', alignItems: 'center', gap: 4,
           fontFamily: 'JetBrains Mono, monospace',
@@ -1855,8 +1859,8 @@ export default function GameHUD({
   // Uses live conversation parsing on localhost, falls back to defaults on production.
   // PATRIK CORRECTION: Right Now = ONLY running agents. Completed feed = separate activity log beneath.
   // Your TODOs pill: Patrik's personal blocked items (things only he can unblock).
-  // Checking In pill: stale tasks that haven't had movement in 24+ hours.
-  // Section order (Patrik directive): Right Now > Checking In > Your TODOs > Today
+  // Finish These pill: stale tasks that haven't had movement in 24+ hours.
+  // Section order (Patrik directive): Right Now > Your TODOs > Schedule > Finish These
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
 
@@ -1921,13 +1925,13 @@ export default function GameHUD({
       }
     }
 
-    // CHECKING IN: Stale tasks that haven't had movement
+    // FINISH THESE: Stale tasks that haven't had movement
     if (checkingInTasks.length > 0) {
-      const existingStale = merged.find(p => p.section === 'checking-in')
+      const existingStale = merged.find(p => p.section === 'finish-these')
       if (!existingStale) {
         merged.push({
-          name: 'Checking In',
-          section: 'checking-in',
+          name: 'Finish These',
+          section: 'finish-these',
           color: '#94A3B8',
           icon: 'history',
           tasks: checkingInTasks.map(t => ({
@@ -1939,7 +1943,7 @@ export default function GameHUD({
             projectColor: t.projectColor,
             isStale: true,
           })),
-          isCheckingIn: true,
+          isFinishThese: true,
         })
       }
     }
@@ -1955,23 +1959,23 @@ export default function GameHUD({
     }
 
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
-    // Sort order (Patrik directive): Right Now > Completed > Checking In > Your TODOs > Today > rest
+    // Sort order (Patrik directive): Right Now > Your TODOs > Schedule > Finish These > rest
     return [...merged].sort((a, b) => {
       // Right Now is always first (running agents)
       if (a.section === 'rightnow') return -1
       if (b.section === 'rightnow') return 1
-      // Completed feed right after Right Now
-      if (a.section === 'completed-feed') return -1
-      if (b.section === 'completed-feed') return 1
-      // Checking In second (Patrik directive)
-      if (a.section === 'checking-in' && b.section !== 'checking-in') return -1
-      if (b.section === 'checking-in' && a.section !== 'checking-in') return 1
-      // Your TODOs third
+      // Your TODOs second
       if (a.section === 'your-todos') return -1
       if (b.section === 'your-todos') return 1
-      // Today fourth
-      if (a.section === 'today') return -1
-      if (b.section === 'today') return 1
+      // Schedule third (was Today)
+      if (a.section === 'schedule' || a.section === 'today') return -1
+      if (b.section === 'schedule' || b.section === 'today') return 1
+      // Finish These fourth (was Checking In) -- least urgent, stale stuff
+      if (a.section === 'finish-these' || a.section === 'checking-in') return -1
+      if (b.section === 'finish-these' || b.section === 'checking-in') return 1
+      // Completed feed after the org bins
+      if (a.section === 'completed-feed') return -1
+      if (b.section === 'completed-feed') return 1
       // Primary: conversation-driven weight (higher = first)
       const aWeight = weights[a.section] || 10
       const bWeight = weights[b.section] || 10

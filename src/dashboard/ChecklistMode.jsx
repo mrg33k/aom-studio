@@ -96,8 +96,10 @@ function parsePunchList(markdown) {
   const SECTION_MAP = {
     'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy
     'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },
-    'CHECKING IN':       { name: 'Checking In', section: 'checking-in', color: '#94A3B8', icon: 'history' },
-    'TODAY':             { name: 'Today',     section: 'today',      color: '#FF6B3D', icon: 'flame' },
+    'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#94A3B8', icon: 'history' },  // Was "Checking In"
+    'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#94A3B8', icon: 'history' },  // Legacy alias
+    'SCHEDULE':          { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },
+    'TODAY':             { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },  // Legacy alias
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
     'DASHBOARD':         { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -183,8 +185,8 @@ function parsePunchList(markdown) {
 
         currentProject.tasks.push({ text, done: isDone, agent, raw: trimmed })
 
-        if (currentProject.section === 'today' && !isDone) {
-          todayTasks.push({ text, done: isDone, agent, project: 'Today' })
+        if (currentProject.section === 'schedule' && !isDone) {
+          todayTasks.push({ text, done: isDone, agent, project: 'Schedule' })
         }
       }
 
@@ -208,10 +210,12 @@ function parsePunchList(markdown) {
 // Default recency weights (fallback when conversation data unavailable)
 const DEFAULT_RECENCY_WEIGHTS = {
   'rightnow':       110,
-  'completed-feed': 108,
-  'checking-in':    106,
-  'your-todos':     105,
-  'today':          100,
+  'your-todos':     108,
+  'schedule':       105,
+  'today':          105,   // Legacy alias for schedule
+  'completed-feed': 100,
+  'finish-these':   50,   // Last -- stale tasks (was checking-in)
+  'checking-in':    50,   // Legacy alias for finish-these
   'corner':     95,
   'aom-site':   85,
   'aom-phase2': 80,
@@ -417,7 +421,7 @@ function generateDemoChecklist() {
   return {
     projects: [
       {
-        name: 'Today', section: 'today', color: '#FF6B3D', icon: 'flame',
+        name: 'Schedule', section: 'schedule', color: '#FF6B3D', icon: 'flame',
         tasks: [
           { text: 'Review Garcia Construction homepage final proof', done: false, agent: 'patrik' },
           { text: 'Confirm Ridgeline Homes proposal sent ($8.5k)', done: true, agent: 'patrik' },
@@ -474,9 +478,9 @@ function generateDemoChecklist() {
       },
     ],
     todayTasks: [
-      { text: 'Review Garcia Construction homepage final proof', done: false, agent: 'patrik', project: 'Today' },
-      { text: 'Reply to Mesa Commercial Group inquiry', done: false, agent: 'patrik', project: 'Today' },
-      { text: 'Check permit tracker page after Bobby fix', done: false, agent: 'elmo', project: 'Today' },
+      { text: 'Review Garcia Construction homepage final proof', done: false, agent: 'patrik', project: 'Schedule' },
+      { text: 'Reply to Mesa Commercial Group inquiry', done: false, agent: 'patrik', project: 'Schedule' },
+      { text: 'Check permit tracker page after Bobby fix', done: false, agent: 'elmo', project: 'Schedule' },
     ],
   }
 }
@@ -583,12 +587,12 @@ function usePatrikTodos(punchData) {
   }, [punchData])
 }
 
-// ---- CHECKING IN: Stale tasks needing attention -----------------------------
+// ---- FINISH THESE: Stale tasks needing attention ----------------------------
 function useCheckingInTasks(punchData) {
   return useMemo(() => {
     if (!punchData?.projects) return []
     const stale = []
-    const activeSections = new Set(['rightnow', 'today', 'your-todos', 'checking-in'])
+    const activeSections = new Set(['rightnow', 'schedule', 'today', 'your-todos', 'finish-these', 'checking-in'])
     for (const project of punchData.projects) {
       if (activeSections.has(project.section)) continue
       for (const task of project.tasks) {
@@ -710,34 +714,6 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           </button>
         )}
 
-        {/* Checking In chip (mobile) -- Patrik directive: before Your TODOs */}
-        {checkingInCount > 0 && (
-          <button
-            onClick={() => onSelectProject('checking-in')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              height: 40, padding: '0 14px',
-              background: selectedProject === 'checking-in' ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.04)',
-              border: `1.5px solid ${selectedProject === 'checking-in' ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.1)'}`,
-              borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
-              cursor: 'pointer', scrollSnapAlign: 'start',
-              color: '#94A3B8',
-              fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
-              textTransform: 'uppercase',
-            }}
-          >
-            <History size={14} color="#94A3B8" />
-            Check In
-            <span style={{
-              fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-              fontSize: 13, color: '#FFF', background: '#94A3B8',
-              padding: '2px 7px', borderRadius: 8, lineHeight: 1,
-            }}>
-              {checkingInCount}
-            </span>
-          </button>
-        )}
-
         {/* Your TODOs chip (mobile) */}
         {todosCount > 0 && (
           <button
@@ -785,7 +761,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
                 textTransform: 'uppercase',
               }}
             >
-              {p.section === 'rightnow' ? <Zap size={14} color={p.color} style={{ filter: `drop-shadow(0 0 4px ${p.color}AA)` }} /> : p.section === 'today' ? <Flame size={14} color={p.color} /> : (
+              {p.section === 'rightnow' ? <Zap size={14} color={p.color} style={{ filter: `drop-shadow(0 0 4px ${p.color}AA)` }} /> : (p.section === 'schedule' || p.section === 'today') ? <Flame size={14} color={p.color} /> : (
                 <div style={{ width: 10, height: 10, borderRadius: 3, background: p.color, flexShrink: 0 }} />
               )}
               {p.name}
@@ -801,6 +777,34 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
             </button>
           )
         })}
+
+        {/* Finish These chip (mobile) -- last */}
+        {checkingInCount > 0 && (
+          <button
+            onClick={() => onSelectProject('finish-these')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              height: 40, padding: '0 14px',
+              background: selectedProject === 'finish-these' ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.04)',
+              border: `1.5px solid ${selectedProject === 'finish-these' ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.1)'}`,
+              borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+              cursor: 'pointer', scrollSnapAlign: 'start',
+              color: '#94A3B8',
+              fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
+              textTransform: 'uppercase',
+            }}
+          >
+            <History size={14} color="#94A3B8" />
+            Finish These
+            <span style={{
+              fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+              fontSize: 13, color: '#FFF', background: '#94A3B8',
+              padding: '2px 7px', borderRadius: 8, lineHeight: 1,
+            }}>
+              {checkingInCount}
+            </span>
+          </button>
+        )}
       </div>
     )
   }
@@ -887,38 +891,6 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
         </button>
       )}
 
-      {/* Checking In entry (desktop sidebar) -- Patrik directive: before Your TODOs */}
-      {checkingInCount > 0 && (
-        <button
-          onClick={() => onSelectProject('checking-in')}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-            height: 44, padding: selectedProject === 'checking-in' ? '0 13px' : '0 16px',
-            background: selectedProject === 'checking-in' ? 'rgba(148,163,184,0.06)' : 'transparent',
-            border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
-            borderLeftWidth: 3, borderLeftStyle: 'solid',
-            borderLeftColor: selectedProject === 'checking-in' ? '#94A3B8' : 'transparent',
-            cursor: 'pointer', transition: 'background 100ms ease',
-            color: '#8BA4C4', fontFamily: "'Inter Tight', system-ui, sans-serif",
-            fontSize: 14, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
-            opacity: 0.75,
-          }}
-        >
-          <History size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, letterSpacing: '-0.01em' }}>Checking In</span>
-          <span style={{
-            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
-            fontSize: 12, color: '#94A3B8',
-            background: 'rgba(148,163,184,0.10)',
-            padding: '3px 9px', borderRadius: 8, lineHeight: 1,
-            border: '1px solid rgba(148,163,184,0.15)',
-            minWidth: 26, textAlign: 'center',
-          }}>
-            {checkingInCount}
-          </span>
-        </button>
-      )}
-
       {/* Your TODOs entry (desktop sidebar) */}
       {todosCount > 0 && (
         <button
@@ -961,7 +933,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
         const totalTasks = p.tasks.length
         const doneTasks = totalTasks - remaining
         const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
-        const isToday = p.section === 'today'
+        const isSchedule = p.section === 'schedule' || p.section === 'today'
 
         return (
           <button
@@ -982,7 +954,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           >
             {p.section === 'rightnow' ? (
               <Zap size={16} color={p.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${p.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
-            ) : isToday ? (
+            ) : isSchedule ? (
               <Flame size={16} color={p.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${p.color}66)` }} />
             ) : (
               <div style={{ width: 12, height: 12, borderRadius: 4, background: p.color, flexShrink: 0, boxShadow: `0 0 8px ${p.color}33` }} />
@@ -1017,6 +989,38 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           </button>
         )
       })}
+
+      {/* Finish These entry (desktop sidebar) -- last */}
+      {checkingInCount > 0 && (
+        <button
+          onClick={() => onSelectProject('finish-these')}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+            height: 44, padding: selectedProject === 'finish-these' ? '0 13px' : '0 16px',
+            background: selectedProject === 'finish-these' ? 'rgba(148,163,184,0.06)' : 'transparent',
+            border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
+            borderLeftWidth: 3, borderLeftStyle: 'solid',
+            borderLeftColor: selectedProject === 'finish-these' ? '#94A3B8' : 'transparent',
+            cursor: 'pointer', transition: 'background 100ms ease',
+            color: '#8BA4C4', fontFamily: "'Inter Tight', system-ui, sans-serif",
+            fontSize: 14, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
+            opacity: 0.75,
+          }}
+        >
+          <History size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, letterSpacing: '-0.01em' }}>Finish These</span>
+          <span style={{
+            fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
+            fontSize: 12, color: '#94A3B8',
+            background: 'rgba(148,163,184,0.10)',
+            padding: '3px 9px', borderRadius: 8, lineHeight: 1,
+            border: '1px solid rgba(148,163,184,0.15)',
+            minWidth: 26, textAlign: 'center',
+          }}>
+            {checkingInCount}
+          </span>
+        </button>
+      )}
     </div>
   )
 }
@@ -1744,7 +1748,7 @@ function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck }) 
   )
 }
 
-// ---- CHECKING IN TASK CARD (muted gray/amber, timestamp, stale nudge) -------
+// ---- FINISH THESE TASK CARD (muted gray/amber, timestamp, stale nudge) ------
 function CheckingInTaskCard({ task, index, isDaytime }) {
   const [isHovered, setIsHovered] = useState(false)
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
@@ -1976,7 +1980,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
   )
 }
 
-// ---- CHECKING IN SECTION (stale tasks, muted nudge) -------------------------
+// ---- FINISH THESE SECTION (stale tasks, muted nudge -- was "Checking In") ----
 function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime }) {
   if (!tasks || tasks.length === 0) return null
 
@@ -2006,7 +2010,7 @@ function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime }) {
           letterSpacing: '-0.01em',
           flex: 1,
         }}>
-          Checking In
+          Finish These
         </span>
 
         {/* Count badge - muted */}
@@ -2047,7 +2051,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
   const doneTasks = project.tasks.filter(t => t.done).length
   const remaining = totalTasks - doneTasks
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
-  const isToday = project.section === 'today'
+  const isSchedule = project.section === 'schedule' || project.section === 'today'
   const isRightNow = project.section === 'rightnow'
   const allDone = remaining === 0 && totalTasks > 0
 
@@ -2067,7 +2071,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
       {/* Project icon */}
       {isRightNow ? (
         <Zap size={18} color={project.color} style={{ filter: `drop-shadow(0 0 6px ${project.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
-      ) : isToday ? (
+      ) : isSchedule ? (
         <Flame size={18} color={project.color} style={{ filter: `drop-shadow(0 0 4px ${project.color}66)` }} />
       ) : (
         <div style={{
@@ -2240,10 +2244,10 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
 
   // Checking In: stale tasks needing attention
   const checkingInTasks = useCheckingInTasks(punchData)
-  const showCheckingIn = checkingInTasks.length > 0 && (!selectedProject || selectedProject === 'checking-in')
+  const showCheckingIn = checkingInTasks.length > 0 && (!selectedProject || selectedProject === 'finish-these' || selectedProject === 'checking-in')
 
   // Sort projects by conversation-driven recency weight
-  // Section order (Patrik directive): Right Now > Checking In > Your TODOs > Today
+  // Section order (Patrik directive): Right Now > Your TODOs > Schedule > Finish These
   const projects = useMemo(() => {
     const raw = punchData?.projects || []
 
@@ -2262,15 +2266,15 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
       // Right Now always first (running agents)
       if (a.section === 'rightnow') return -1
       if (b.section === 'rightnow') return 1
-      // Checking In second (Patrik directive)
-      if (a.section === 'checking-in') return -1
-      if (b.section === 'checking-in') return 1
-      // Your TODOs third
+      // Your TODOs second
       if (a.section === 'your-todos') return -1
       if (b.section === 'your-todos') return 1
-      // Today fourth
-      if (a.section === 'today') return -1
-      if (b.section === 'today') return 1
+      // Schedule third (was Today)
+      if (a.section === 'schedule' || a.section === 'today') return -1
+      if (b.section === 'schedule' || b.section === 'today') return 1
+      // Finish These fourth (was Checking In) -- least urgent, stale
+      if (a.section === 'finish-these' || a.section === 'checking-in') return -1
+      if (b.section === 'finish-these' || b.section === 'checking-in') return 1
       const aWeight = weights[a.section] || 10
       const bWeight = weights[b.section] || 10
       if (aWeight !== bWeight) return bWeight - aWeight
@@ -2367,7 +2371,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             {/* Empty state */}
             {visibleProjects.length === 0 && !showRightNow && !showCompleted && !showTodos && !showCheckingIn && <EmptyState />}
 
-            {/* Section order (Patrik directive): Right Now > Completed > Checking In > Your TODOs > Today */}
+            {/* Section order (Patrik directive): Right Now > Your TODOs > Schedule > Finish These */}
 
             {/* 1. RIGHT NOW section: ONLY running agents */}
             {showRightNow && (
@@ -2379,27 +2383,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
               />
             )}
 
-            {/* 2. COMPLETED FEED: simplified activity feed of task completions */}
-            {showCompleted && (
-              <CompletedFeedSection
-                tasks={completedFeedTasks}
-                isCollapsed={collapsedProjects['completed-feed']}
-                onToggle={() => toggleCollapse('completed-feed')}
-                isDaytime={isDaytime}
-              />
-            )}
-
-            {/* 3. CHECKING IN section: stale tasks */}
-            {showCheckingIn && (
-              <CheckingInSection
-                tasks={checkingInTasks}
-                isCollapsed={collapsedProjects['checking-in-live']}
-                onToggle={() => toggleCollapse('checking-in-live')}
-                isDaytime={isDaytime}
-              />
-            )}
-
-            {/* 4. YOUR TODOS section: Patrik's personal blocked items */}
+            {/* 2. YOUR TODOS section: Patrik's personal blocked items */}
             {showTodos && (
               <YourTodosSection
                 tasks={patrikTodos}
@@ -2410,7 +2394,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
               />
             )}
 
-            {/* 5. Project groups (Today + rest) */}
+            {/* 3. Project groups (Schedule + rest) */}
             {visibleProjects.map(project => {
               const isCollapsed = collapsedProjects[project.section]
               // Filter out soft-deleted tasks + apply local check overrides
@@ -2441,7 +2425,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                       {project.section === 'rightnow' ? (
                         <Zap size={24} color={project.color} style={{ filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
-                      ) : project.section === 'today' ? (
+                      ) : (project.section === 'schedule' || project.section === 'today') ? (
                         <Flame size={24} color={project.color} style={{ filter: `drop-shadow(0 0 6px ${project.color}66)` }} />
                       ) : (
                         <div style={{ width: 16, height: 16, borderRadius: 4, background: project.color, boxShadow: `0 0 12px ${project.color}44` }} />
@@ -2518,7 +2502,25 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
               )
             })}
 
-            {/* Checking In already rendered above in correct section order */}
+            {/* 4. COMPLETED FEED: simplified activity feed */}
+            {showCompleted && (
+              <CompletedFeedSection
+                tasks={completedFeedTasks}
+                isCollapsed={collapsedProjects['completed-feed']}
+                onToggle={() => toggleCollapse('completed-feed')}
+                isDaytime={isDaytime}
+              />
+            )}
+
+            {/* 5. FINISH THESE section: stale tasks (was Checking In) */}
+            {showCheckingIn && (
+              <CheckingInSection
+                tasks={checkingInTasks}
+                isCollapsed={collapsedProjects['finish-these-live']}
+                onToggle={() => toggleCollapse('finish-these-live')}
+                isDaytime={isDaytime}
+              />
+            )}
           </div>
         )}
 

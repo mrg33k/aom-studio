@@ -361,6 +361,10 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const chatTimeoutRef = useRef(null)
   const historyLoadedRef = useRef(false)
   const isNearBottomRef = useRef(true)
+  const isUserTypingRef = useRef(false)
+  const userTypingTimeoutRef = useRef(null)
+  const prevMessageCountRef = useRef(0)
+  const userJustSentRef = useRef(false)
 
   const status = statusData?.status || 'IDLE'
   const task = statusData?.currentTask || 'Standing by'
@@ -502,16 +506,46 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   // Track whether new messages arrived while scrolled up (separate from scroll-up indicator)
   const hasNewMessagesRef = useRef(false)
 
-  // Smart auto-scroll: only scroll to bottom if user is near the bottom already
+  // Smart auto-scroll: only scroll to bottom when:
+  // 1. User is near the bottom AND not actively typing
+  // 2. A genuinely NEW message arrived (not just a re-render)
+  // 3. User just sent their own message (scroll to show it, then stop)
+  // NEVER yank scroll while user is typing or reading up.
   useEffect(() => {
-    if (isNearBottomRef.current) {
-      // Use requestAnimationFrame to ensure DOM has rendered before scrolling
+    const newCount = messages.length
+    const prevCount = prevMessageCountRef.current
+    const isNewMessage = newCount > prevCount
+    prevMessageCountRef.current = newCount
+
+    // If user just sent a message, scroll to show it then clear the flag
+    if (userJustSentRef.current) {
+      userJustSentRef.current = false
       requestAnimationFrame(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
       })
       setShowNewMsgIndicator(false)
       hasNewMessagesRef.current = false
-    } else if (messages.length > 0) {
+      return
+    }
+
+    // If user is actively typing, NEVER auto-scroll
+    if (isUserTypingRef.current) {
+      if (isNewMessage && !isNearBottomRef.current) {
+        hasNewMessagesRef.current = true
+        setShowNewMsgIndicator(true)
+      }
+      return
+    }
+
+    // Only scroll for new messages when user is at bottom
+    if (isNewMessage && isNearBottomRef.current) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      })
+      setShowNewMsgIndicator(false)
+      hasNewMessagesRef.current = false
+    } else if (isNewMessage && !isNearBottomRef.current) {
+      // New message but user scrolled up: show indicator, don't yank
       hasNewMessagesRef.current = true
       setShowNewMsgIndicator(true)
     }
@@ -522,16 +556,15 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current
     if (!el) return
-    const threshold = 80
+    const threshold = 120 // Generous threshold so small scroll jitters don't break it
     const nearBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
     isNearBottomRef.current = nearBottom
     if (nearBottom) {
       setShowNewMsgIndicator(false)
       hasNewMessagesRef.current = false
-    } else if (messages.length > 0) {
-      setShowNewMsgIndicator(true)
     }
-  }, [messages.length])
+    // Don't set showNewMsgIndicator on every scroll event -- only on new message arrival
+  }, [])
 
   // Scroll to bottom when "new messages" indicator is clicked
   const scrollToBottom = useCallback(() => {
@@ -552,6 +585,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       if (relayPollRef.current) clearInterval(relayPollRef.current)
       if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
       if (bgPollRef.current) clearInterval(bgPollRef.current)
+      if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
     }
   }, [])
 
@@ -814,6 +848,10 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
     const sentTime = new Date().toISOString()
     setInput('')
+    // Clear typing state and flag that user just sent (so we scroll to show their message)
+    isUserTypingRef.current = false
+    if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
+    userJustSentRef.current = true
     // Single state update: user message sorted + streaming placeholder at end
     // Prevents React batching race that groups messages by sender
     setMessages(prev => {
@@ -1097,7 +1135,20 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             ref={inputRef}
             type="text"
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => {
+              setInput(e.target.value)
+              // Mark user as typing -- suppresses auto-scroll
+              isUserTypingRef.current = true
+              if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
+              userTypingTimeoutRef.current = setTimeout(() => {
+                isUserTypingRef.current = false
+              }, 2000) // Clear typing state after 2s of inactivity
+            }}
+            onFocus={() => { isUserTypingRef.current = true }}
+            onBlur={() => {
+              // Delay clearing so send doesn't race with blur
+              setTimeout(() => { isUserTypingRef.current = false }, 300)
+            }}
             placeholder={streaming ? 'Waiting for response...' : `Talk to ${agent.name}...`}
             disabled={streaming}
             className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60 disabled:opacity-50"
