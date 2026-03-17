@@ -85,7 +85,7 @@ function createCityBuilding(x, z, w, h, d, colorHex) {
   const bodyGeo = new THREE.BoxGeometry(w, h, d)
   const bodyMat = voxelMat(colorHex)
   const body = new THREE.Mesh(bodyGeo, bodyMat)
-  body.position.set(0, h / 2 - 30, 0)
+  body.position.set(0, h / 2 - 95, 0)
   group.add(body)
 
   // Roof cap (darker)
@@ -93,7 +93,7 @@ function createCityBuilding(x, z, w, h, d, colorHex) {
   const roofGeo = new THREE.BoxGeometry(w + 2, roofH, d + 2)
   const roofMat = voxelMat(0x2A3A4A)
   const roof = new THREE.Mesh(roofGeo, roofMat)
-  roof.position.set(0, h - 30 + roofH / 2, 0)
+  roof.position.set(0, h - 95 + roofH / 2, 0)
   group.add(roof)
 
   // Windows on front face (z + d/2)
@@ -111,7 +111,7 @@ function createCityBuilding(x, z, w, h, d, colorHex) {
   const cols = Math.floor((w - 6) / winSpacingX)
   const rows = Math.floor((h - 10) / winSpacingY)
   const startX = -(cols - 1) * winSpacingX / 2
-  const startY = -30 + 8
+  const startY = -95 + 8
 
   // Seed windows deterministically based on position
   const seed = Math.abs(x * 13 + z * 7)
@@ -362,7 +362,7 @@ export default function IslandBackground({ isNightMode }) {
     const roadGeo = new THREE.BoxGeometry(600, 2, 160)
     const roadMat = voxelMat(0x2A2A35)
     const road = new THREE.Mesh(roadGeo, roadMat)
-    road.position.set(10, -31, -230)
+    road.position.set(10, -96, -230)
     road.receiveShadow = true
     groundGroup.add(road)
 
@@ -370,12 +370,12 @@ export default function IslandBackground({ isNightMode }) {
     const sidewalkGeo = new THREE.BoxGeometry(600, 2.5, 6)
     const sidewalkMat = voxelMat(0x4A4A55)
     const sidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat)
-    sidewalk.position.set(10, -30.5, -158)
+    sidewalk.position.set(10, -95.5, -158)
     groundGroup.add(sidewalk)
 
     // Secondary sidewalk along back
     const sidewalk2 = new THREE.Mesh(sidewalkGeo, sidewalkMat)
-    sidewalk2.position.set(10, -30.5, -300)
+    sidewalk2.position.set(10, -95.5, -300)
     groundGroup.add(sidewalk2)
 
     scene.add(groundGroup)
@@ -416,11 +416,11 @@ export default function IslandBackground({ isNightMode }) {
 
     // Place cars on the streets near the city buildings
     const carConfigs = [
-      { x: -60,  y: -30, z: -165, color: 0xCC4444, rot: 0 },          // muted red, on front road
-      { x: -10,  y: -30, z: -168, color: 0x4466AA, rot: Math.PI },    // muted blue, parked slightly off
-      { x: 50,   y: -30, z: -163, color: 0xCCAA44, rot: 0.1 },       // muted yellow, slight angle (parked)
-      { x: 120,  y: -30, z: -167, color: 0xCCCCCC, rot: Math.PI },   // white, on the road
-      { x: -120, y: -30, z: -162, color: 0x885533, rot: 0.3 },       // brown, parked at angle
+      { x: -60,  y: -95, z: -165, color: 0xCC4444, rot: 0 },          // muted red, on front road
+      { x: -10,  y: -95, z: -168, color: 0x4466AA, rot: Math.PI },    // muted blue, parked slightly off
+      { x: 50,   y: -95, z: -163, color: 0xCCAA44, rot: 0.1 },       // muted yellow, slight angle (parked)
+      { x: 120,  y: -95, z: -167, color: 0xCCCCCC, rot: Math.PI },   // white, on the road
+      { x: -120, y: -95, z: -162, color: 0x885533, rot: 0.3 },       // brown, parked at angle
     ]
     carConfigs.forEach((cc) => {
       const car = createVoxelCar(cc.x, cc.y, cc.z, cc.color, cc.rot)
