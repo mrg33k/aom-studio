@@ -385,9 +385,8 @@ export default function CanvasOffice({
     canvas.style.height = `${size.h}px`
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    // Dark background
-    ctx.fillStyle = BG_COLOR
-    ctx.fillRect(0, 0, size.w, size.h)
+    // Clear to transparent so Crossy Road background shows through
+    ctx.clearRect(0, 0, size.w, size.h)
 
     ctx.save()
     ctx.translate(pan.x, pan.y)
