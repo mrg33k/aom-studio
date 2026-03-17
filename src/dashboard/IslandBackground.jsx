@@ -111,6 +111,116 @@ function createLamppost(x, y, z) {
   return group
 }
 
+// ---- MINI FLOATING ISLAND BUILDER (background depth) ----
+function createMiniIsland(x, y, z, scale = 0.5, extras = 'none') {
+  const group = new THREE.Group()
+
+  // Grass top
+  const grassW = 22 * scale
+  const grassD = 16 * scale
+  const grassH = 3 * scale
+  const grassGeo = new THREE.BoxGeometry(grassW, grassH, grassD)
+  const grass = new THREE.Mesh(grassGeo, voxelMat(0x7EC850))
+  grass.position.set(0, 0, 0)
+  group.add(grass)
+
+  // Grass edge lip
+  const edgeGeo = new THREE.BoxGeometry(grassW + 2 * scale, 2 * scale, grassD + 2 * scale)
+  const edge = new THREE.Mesh(edgeGeo, voxelMat(0x5EA040))
+  edge.position.set(0, -1 * scale, 0)
+  group.add(edge)
+
+  // Dirt layer (tapered)
+  const dirtW = grassW - 4 * scale
+  const dirtD = grassD - 4 * scale
+  const dirtH = 6 * scale
+  const dirtGeo = new THREE.BoxGeometry(dirtW, dirtH, dirtD)
+  const dirt = new THREE.Mesh(dirtGeo, voxelMat(0x8B6842))
+  dirt.position.set(0, -(grassH / 2 + dirtH / 2), 0)
+  group.add(dirt)
+
+  // Rock underside (more tapered)
+  const rockW = dirtW - 6 * scale
+  const rockD = dirtD - 4 * scale
+  const rockH = 8 * scale
+  const rockGeo = new THREE.BoxGeometry(rockW, rockH, rockD)
+  const rock = new THREE.Mesh(rockGeo, voxelMat(0x6B6B7B))
+  rock.position.set(0, -(grassH / 2 + dirtH + rockH / 2), 0)
+  group.add(rock)
+
+  // Rock tip (narrowest)
+  const tipW = rockW - 4 * scale
+  const tipD = rockD - 3 * scale
+  const tipH = 4 * scale
+  const tipGeo = new THREE.BoxGeometry(tipW, tipH, tipD)
+  const tip = new THREE.Mesh(tipGeo, voxelMat(0x5A5A6A))
+  tip.position.set(0, -(grassH / 2 + dirtH + rockH + tipH / 2), 0)
+  group.add(tip)
+
+  // 1-2 stalactites
+  for (let i = 0; i < 2; i++) {
+    const sw = (1 + Math.random() * 2) * scale
+    const sh = (3 + Math.random() * 5) * scale
+    const sd = (1 + Math.random() * 2) * scale
+    const stalGeo = new THREE.BoxGeometry(sw, sh, sd)
+    const stal = new THREE.Mesh(stalGeo, voxelMat(0x4A4A5A))
+    stal.position.set(
+      (Math.random() - 0.5) * rockW * 0.5,
+      -(grassH / 2 + dirtH + rockH + tipH + sh / 2 - 2 * scale),
+      (Math.random() - 0.5) * rockD * 0.5
+    )
+    group.add(stal)
+  }
+
+  // Extras: trees or house on the surface
+  if (extras === 'trees') {
+    // 1-2 tiny trees
+    const t1 = createVoxelTree(-3 * scale, grassH / 2, -1 * scale, 0.35 * scale / 0.5)
+    group.add(t1)
+    if (scale > 0.35) {
+      const t2 = createVoxelTree(4 * scale, grassH / 2, 2 * scale, 0.25 * scale / 0.5)
+      group.add(t2)
+    }
+  } else if (extras === 'house') {
+    // Tiny voxel house
+    const houseScale = scale * 1.8
+    const houseGroup = new THREE.Group()
+    // Walls
+    const wallGeo = new THREE.BoxGeometry(5 * houseScale, 4 * houseScale, 4 * houseScale)
+    const wall = new THREE.Mesh(wallGeo, voxelMat(0xD4C4A0))
+    wall.position.set(0, 2 * houseScale, 0)
+    houseGroup.add(wall)
+    // Roof
+    const roofGeo = new THREE.BoxGeometry(6 * houseScale, 2 * houseScale, 5 * houseScale)
+    const roof = new THREE.Mesh(roofGeo, voxelMat(0xA04030))
+    roof.position.set(0, 4.5 * houseScale, 0)
+    houseGroup.add(roof)
+    // Door
+    const doorGeo = new THREE.BoxGeometry(1.2 * houseScale, 2 * houseScale, 0.3 * houseScale)
+    const door = new THREE.Mesh(doorGeo, voxelMat(0x6B4E32))
+    door.position.set(0, 1.2 * houseScale, 2.1 * houseScale)
+    houseGroup.add(door)
+
+    houseGroup.position.set(0, grassH / 2, 0)
+    group.add(houseGroup)
+  }
+
+  // A couple grass tufts
+  for (let i = 0; i < 3; i++) {
+    const tuftGeo = new THREE.BoxGeometry(1 * scale, 1 * scale, 1 * scale)
+    const tuft = new THREE.Mesh(tuftGeo, voxelMat(0x6DB840))
+    tuft.position.set(
+      (Math.random() - 0.5) * grassW * 0.7,
+      grassH / 2 + 0.3 * scale,
+      (Math.random() - 0.5) * grassD * 0.7
+    )
+    group.add(tuft)
+  }
+
+  group.position.set(x, y, z)
+  return group
+}
+
 // ---- CLOUD BUILDER ----
 function createCloud(x, y, z, scale = 1) {
   const group = new THREE.Group()
@@ -628,6 +738,29 @@ export default function IslandBackground({ isNightMode }) {
     islandGroup.position.set(0, 0, -25)
     scene.add(islandGroup)
 
+    // ---- FLOATING MINI ISLANDS (background archipelago for depth) ----
+    const miniIslandConfigs = [
+      // [x, y, z, scale, extras]
+      // Far back, scattered left to right
+      { x: -100, y: -10, z: -120, scale: 0.45, extras: 'trees' },
+      { x: 90,   y: 15,  z: -140, scale: 0.55, extras: 'trees' },
+      { x: -50,  y: 30,  z: -180, scale: 0.35, extras: 'none' },
+      { x: 60,   y: -25, z: -100, scale: 0.5,  extras: 'house' },
+      { x: -120, y: 20,  z: -160, scale: 0.3,  extras: 'none' },
+      { x: 110,  y: 40,  z: -190, scale: 0.4,  extras: 'trees' },
+      { x: 0,    y: -20, z: -200, scale: 0.6,  extras: 'none' },
+    ]
+    const miniIslands = []
+    miniIslandConfigs.forEach((cfg) => {
+      const island = createMiniIsland(cfg.x, cfg.y, cfg.z, cfg.scale, cfg.extras)
+      island.userData.floatPhase = Math.random() * Math.PI * 2
+      island.userData.floatSpeed = 0.3 + Math.random() * 0.4
+      island.userData.floatAmp = 0.8 + Math.random() * 1.2
+      island.userData.baseY = cfg.y
+      scene.add(island)
+      miniIslands.push(island)
+    })
+
     // ---- WATERFALLS (V2: more waterfalls, more particles, longer drop) ----
     const waterfalls = []
     // Left edge waterfall
@@ -784,6 +917,12 @@ export default function IslandBackground({ isNightMode }) {
         const drift = Math.sin(elapsed * 0.1 * Math.abs(cloud.userData.driftSpeed)) * cloud.userData.driftRange
         cloud.position.x = cloud.userData.startX + drift
         cloud.position.y += Math.sin(elapsed * 0.2 + cloud.userData.startX) * 0.003
+      })
+
+      // Mini islands gentle float
+      miniIslands.forEach((mi) => {
+        mi.position.y = mi.userData.baseY + Math.sin(elapsed * mi.userData.floatSpeed + mi.userData.floatPhase) * mi.userData.floatAmp
+        mi.rotation.y = Math.sin(elapsed * 0.1 + mi.userData.floatPhase) * 0.03
       })
 
       // Waterfall particles (V2: all waterfalls)
