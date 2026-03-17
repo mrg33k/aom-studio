@@ -33,7 +33,7 @@ const ROOM_SIZE = 512        // Base room size (px, scales with zoom)
 const SRC_CROP_X = 80
 const SRC_CROP_Y = 160
 const SRC_CROP_W = 864
-const SRC_CROP_H = 704
+const SRC_CROP_H = 680
 
 // Wave timing
 const CYCLE_TIME = 10        // Full working+idle cycle in seconds
@@ -171,8 +171,8 @@ const VIS_W = ROOM_SIZE * 0.94
 const VIS_H = ROOM_SIZE * 0.94
 
 function hexPosition(row, col, originX, originY) {
-  const x = originX + col * (VIS_W * 0.45)
-  const y = originY + row * (VIS_H * 0.55)
+  const x = originX + col * (VIS_W * 0.48)
+  const y = originY + row * (VIS_H * 0.58)
   return { x, y }
 }
 
