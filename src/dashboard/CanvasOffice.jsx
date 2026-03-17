@@ -334,57 +334,8 @@ export default function CanvasOffice({
       ctx.drawImage(layerCategories.roomShell.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
     }
 
-    // Layer 2: CHARACTER (bobble head Elon, scaled to 25% of room, positioned at walk coords)
-    if (layerCategories.charLayer) {
-      const cl = layerCategories.charLayer
-      const charSize = ROOM_SIZE * 0.40  // 40% of room (~200px) -- Patrik wants bigger bobble
-      const charX = elonPos.x * ROOM_SIZE - charSize / 2
-      let charY = elonPos.y * ROOM_SIZE - charSize * 0.7
-
-      let hopOffsetY = 0
-      if (hopFrame === 'peak') hopOffsetY = -16
-      if (hopFrame === 'landing') hopOffsetY = 4
-      charY += hopOffsetY
-
-      // Shadow
-      ctx.save()
-      ctx.globalAlpha = hopFrame === 'peak' ? 0.12 : 0.25
-      const shadowW = charSize * 0.6
-      const shadowH = charSize * 0.12
-      ctx.beginPath()
-      ctx.ellipse(elonPos.x * ROOM_SIZE, elonPos.y * ROOM_SIZE + charSize * 0.15, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'
-      ctx.fill()
-      ctx.restore()
-
-      // Character sprite -- FULL OPACITY, no transparency
-      ctx.save()
-      ctx.globalAlpha = 1.0
-      ctx.imageSmoothingEnabled = false
-      if (facingLeft) {
-        ctx.translate(charX + charSize, charY)
-        ctx.scale(-1, 1)
-        ctx.drawImage(cl.img, 0, 0, charSize, charSize)
-      } else {
-        ctx.drawImage(cl.img, charX, charY, charSize, charSize)
-      }
-      ctx.restore()
-
-      // Dust on landing
-      if (hopFrame === 'landing') {
-        ctx.save()
-        ctx.globalAlpha = 0.3
-        for (let i = 0; i < 4; i++) {
-          const dx = (Math.random() - 0.5) * 20
-          const dy = Math.random() * 5
-          ctx.beginPath()
-          ctx.arc(elonPos.x * ROOM_SIZE + dx, elonPos.y * ROOM_SIZE + charSize * 0.35 + dy, 2 + Math.random() * 2, 0, Math.PI * 2)
-          ctx.fillStyle = 'rgba(160,180,200,0.4)'
-          ctx.fill()
-        }
-        ctx.restore()
-      }
-    }
+    // Layer 2: CHARACTER -- SKIPPED. Little fairy Elon stays (baked into room shell).
+    // Big bobble removed per Patrik. Will revisit character system for room 2.
 
     // Layer 3: GLOW (atmosphere overlay, screen blend, low alpha)
     if (layerCategories.glowLayer) {
