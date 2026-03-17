@@ -284,34 +284,43 @@ export default function CanvasOffice({
     return { roomShell, charLayer, glowLayer }
   }, [layers])
 
-  // PARTY MODE: cycle through all states every 3 seconds
-  const ALL_STATES = ['working', 'idle', 'celebrating', 'blocked', 'sleeping']
-  const [partyIdx, setPartyIdx] = useState(0)
+  // SMOOTH PULSE: fade between working (green) and idle (blue) over 5-8 seconds
+  // Creates a breathing progress feeling. No flash, just smooth.
+  const roomState = 'working' // always working for now
+  const [pulseState, setPulseState] = useState('working')
   useEffect(() => {
     const timer = setInterval(() => {
-      setPartyIdx(prev => (prev + 1) % ALL_STATES.length)
-    }, 3000)
+      setPulseState(prev => prev === 'working' ? 'idle' : 'working')
+    }, 6000) // swap every 6 seconds
     return () => clearInterval(timer)
   }, [])
-  const roomState = ALL_STATES[partyIdx]
 
-  // Crossfade between states
-  const [fadeAlpha, setFadeAlpha] = useState(1)
-  const [displayState, setDisplayState] = useState('working')
-  const prevStateRef = useRef('working')
+  // Smooth crossfade: draw BOTH states, animate alpha between them
+  // No flash. Both images render simultaneously with opposing alphas.
+  const [blendAlpha, setBlendAlpha] = useState(0) // 0 = fully working, 1 = fully idle
+  const blendRef = useRef(0)
+  const blendTargetRef = useRef(0)
+  const displayState = 'working' // base state
 
   useEffect(() => {
-    if (roomState !== prevStateRef.current) {
-      // Fade out, swap, fade in
-      setFadeAlpha(0)
-      const timer = setTimeout(() => {
-        setDisplayState(roomState)
-        prevStateRef.current = roomState
-        setFadeAlpha(1)
-      }, 300) // 300ms crossfade
-      return () => clearTimeout(timer)
+    blendTargetRef.current = pulseState === 'idle' ? 1 : 0
+  }, [pulseState])
+
+  // Animate blend smoothly
+  useEffect(() => {
+    let raf
+    const animate = () => {
+      const target = blendTargetRef.current
+      const diff = target - blendRef.current
+      if (Math.abs(diff) > 0.005) {
+        blendRef.current += diff * 0.02 // slow smooth lerp
+        setBlendAlpha(blendRef.current)
+      }
+      raf = requestAnimationFrame(animate)
     }
-  }, [roomState])
+    raf = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   // Measure container
   useEffect(() => {
@@ -378,16 +387,53 @@ export default function CanvasOffice({
     // Each state is a complete scene (room + character baked in).
     // Smooth stop-motion: fade between state images on status change.
 
-    // Draw the current state image
-    const stateImg = stateImages[displayState]
-    if (stateImg && stateImg.complete) {
+    // Smooth blend: draw working at (1-alpha), idle at (alpha). No flash.
+    const workingImg = stateImages['working']
+    const idleImg = stateImages['idle']
+    if (workingImg?.complete && idleImg?.complete) {
       ctx.save()
-      ctx.globalAlpha = fadeAlpha
-      ctx.drawImage(stateImg, 0, 0, ROOM_SIZE, ROOM_SIZE)
+      ctx.globalAlpha = 1 - blendAlpha
+      ctx.drawImage(workingImg, 0, 0, ROOM_SIZE, ROOM_SIZE)
+      ctx.restore()
+      ctx.save()
+      ctx.globalAlpha = blendAlpha
+      ctx.drawImage(idleImg, 0, 0, ROOM_SIZE, ROOM_SIZE)
       ctx.restore()
     } else if (layerCategories.roomShell) {
-      // Fallback to manifest room-shell if state images not loaded
       ctx.drawImage(layerCategories.roomShell.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
+    }
+
+    // Little Elon walking in a square circle
+    if (layerCategories.charLayer) {
+      const cl = layerCategories.charLayer
+      const charSize = ROOM_SIZE * 0.15  // Small -- 15% of room
+      const charX = elonPos.x * ROOM_SIZE - charSize / 2
+      let charY = elonPos.y * ROOM_SIZE - charSize * 0.7
+      // Subtle hop
+      if (hopFrame === 'peak') charY -= 6
+      if (hopFrame === 'landing') charY += 2
+
+      // Shadow
+      ctx.save()
+      ctx.globalAlpha = 0.2
+      ctx.beginPath()
+      ctx.ellipse(elonPos.x * ROOM_SIZE, elonPos.y * ROOM_SIZE + charSize * 0.1, charSize * 0.3, charSize * 0.06, 0, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'
+      ctx.fill()
+      ctx.restore()
+
+      // Draw character
+      ctx.save()
+      ctx.globalAlpha = 1.0
+      ctx.imageSmoothingEnabled = false
+      if (facingLeft) {
+        ctx.translate(charX + charSize, charY)
+        ctx.scale(-1, 1)
+        ctx.drawImage(cl.img, 0, 0, charSize, charSize)
+      } else {
+        ctx.drawImage(cl.img, charX, charY, charSize, charSize)
+      }
+      ctx.restore()
     }
 
     // Subtle glow overlay (15% screen blend)
