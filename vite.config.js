@@ -473,9 +473,33 @@ function localDashboardPlugin() {
               }
             }
 
-            // Auto-respond: spawn claude -p so dashboard always gets a response
-            // even when no terminal is open
+            // Auto-respond: spawn claude -p as fallback when no terminal is active
+            // If a terminal session exists, the relay hook handles it (better context).
+            // Auto-responder only fires after a delay, giving the terminal time to pick it up.
             if (source === 'corner-dashboard' && data.message) {
+              // Wait 5s. If terminal responds in that time, skip auto-responder.
+              const msgId = id
+              setTimeout(() => {
+                // Check if a response already appeared in the conversation file
+                const convFile = resolve(AOM_EA_ROOT, 'conversations', 'agents', `${agentName}.jsonl`)
+                try {
+                  if (fs.existsSync(convFile)) {
+                    const lines = fs.readFileSync(convFile, 'utf-8').split('\n').filter(l => l.trim())
+                    const last = lines.length > 0 ? JSON.parse(lines[lines.length - 1]) : null
+                    if (last && last.role === 'assistant' && last.reply_to === msgId) {
+                      return // Terminal already responded, skip auto-responder
+                    }
+                    // Also check if any assistant message arrived after our user message
+                    const lastAssistant = [...lines].reverse().find(l => {
+                      try { return JSON.parse(l).role === 'assistant' } catch { return false }
+                    })
+                    if (lastAssistant) {
+                      const assistantTs = JSON.parse(lastAssistant).timestamp || ''
+                      if (assistantTs > entry.timestamp) return // Terminal responded
+                    }
+                  }
+                } catch {}
+                // No terminal response after 5s. Auto-respond.
               const agentFolder = AGENT_FOLDERS[agentName]
               const agentMd = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/AGENT.md`) : null
               const lastConvo = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/last-conversation.md`) : null
@@ -526,6 +550,7 @@ function localDashboardPlugin() {
                 child.stdin.write(prompt)
                 child.stdin.end()
               }
+              }, 5000) // 5s delay before auto-responding
             }
           } catch (err) {
             res.statusCode = 500
