@@ -2411,7 +2411,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         transition: 'background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)'
-          : 'rgba(20, 30, 48, 0.95)',
+          : 'rgba(18, 42, 75, 0.96)',
         backdropFilter: 'blur(12px)',
         borderBottom: isNightMode
           ? '1px solid rgba(59,130,246,0.15)'
@@ -4241,7 +4241,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       {taskCtx && (
         <div style={{
           position: 'fixed', left: taskCtx.x, top: taskCtx.y, zIndex: 200,
-          background: isDaytime ? '#1E2A3A' : 'rgba(15,23,42,0.98)',
+          background: isDaytime ? '#162D52' : 'rgba(15,23,42,0.98)',
           border: isDaytime ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
           borderRadius: 8, padding: '4px 0', minWidth: 180,
           boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
@@ -4599,7 +4599,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
   const tileBase = (isGlowing, accentColor, hasActiveBorder = false) => ({
     background: isNightMode
       ? 'linear-gradient(180deg, #162236 0%, #131F30 100%)'
-      : '#1E2A3A',
+      : 'linear-gradient(180deg, #1A3358 0%, #172E50 100%)',
     borderRadius: 10,
     padding: '8px 6px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -5254,7 +5254,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
       {ctxMenu && (
         <div style={{
           position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 200,
-          background: isDaytime ? '#1E2A3A' : 'rgba(15,23,42,0.98)',
+          background: isDaytime ? '#162D52' : 'rgba(15,23,42,0.98)',
           border: isDaytime ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
           borderRadius: 8, padding: '4px 0', minWidth: 160,
           boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
@@ -5438,7 +5438,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         height: '100%',
         background: isNightMode
           ? 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)'
-          : 'linear-gradient(180deg, rgba(26,35,50,0.98) 0%, rgba(30,42,58,0.97) 50%, rgba(26,35,50,0.98) 100%)',
+          : 'linear-gradient(180deg, rgba(20,40,70,0.97) 0%, rgba(24,48,82,0.96) 50%, rgba(20,40,70,0.97) 100%)',
         borderLeft: isNightMode
           ? '2px solid rgba(59, 130, 246, 0.35)'
           : '2px solid rgba(59, 130, 246, 0.35)',
@@ -5457,7 +5457,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         width: 300, height: 120,
         background: isNightMode
           ? 'radial-gradient(ellipse, rgba(59,130,246,0.08) 0%, transparent 70%)'
-          : 'radial-gradient(ellipse, rgba(59,130,246,0.04) 0%, transparent 70%)',
+          : 'radial-gradient(ellipse, rgba(59,130,246,0.12) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
@@ -5466,8 +5466,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         padding: '20px 24px',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%)'
-          : 'linear-gradient(180deg, rgba(59,130,246,0.08) 0%, transparent 100%)',
-        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.15)' : '2px solid rgba(59,130,246,0.2)',
+          : 'linear-gradient(180deg, rgba(59,130,246,0.12) 0%, transparent 100%)',
+        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.15)' : '2px solid rgba(59,130,246,0.25)',
         flexShrink: 0,
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
@@ -5485,7 +5485,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             position: 'absolute', bottom: 0, right: 0,
             width: 18, height: 18, borderRadius: '50%',
             background: cfg.color,
-            border: isNightMode ? '3px solid #0F1B2D' : '3px solid #1A2332',
+            border: isNightMode ? '3px solid #0F1B2D' : '3px solid #142846',
             boxShadow: `0 0 8px ${cfg.color}`,
           }} />
         </div>
@@ -5664,7 +5664,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 fontSize: 16, fontWeight: 900,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
-                color: active ? (isNightMode ? '#F1F5F9' : '#2563EB') : (isNightMode ? '#475569' : '#94A3B8'),
+                color: active ? (isNightMode ? '#F1F5F9' : '#60A5FA') : (isNightMode ? '#475569' : '#6B8AB0'),
                 cursor: 'pointer',
                 position: 'relative',
                 background: 'none', border: 'none',
@@ -5882,27 +5882,23 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           ? {
                               background: isNightMode
                                 ? 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)'
-                                : '#EDF2F7',
-                              border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '1px solid rgba(59,130,246,0.2)',
-                              color: isNightMode ? '#F1F5F9' : '#E2E8F0',
+                                : 'linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0.10) 100%)',
+                              border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '2px solid rgba(59,130,246,0.25)',
+                              color: '#F1F5F9',
                               borderTopRightRadius: 4,
-                              boxShadow: isNightMode
-                                ? '0 2px 8px rgba(0,0,0,0.2), 0 1px 2px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)'
-                                : '0 1px 3px rgba(0,0,0,0.06)',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.2), 0 1px 2px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)',
                             }
                           : {
                               background: isNightMode
                                 ? `linear-gradient(180deg, ${agentColor}14 0%, ${agentColor}08 100%)`
-                                : '#EDF2F7',
+                                : `linear-gradient(180deg, ${agentColor}18 0%, ${agentColor}0A 100%)`,
                               border: isNightMode
                                 ? `2px solid ${msg.streaming ? agentColor + '35' : agentColor + '22'}`
-                                : `1px solid #E2E8F0`,
-                              color: isNightMode ? '#F1F5F9' : '#E2E8F0',
+                                : `2px solid ${msg.streaming ? agentColor + '30' : agentColor + '20'}`,
+                              color: '#F1F5F9',
                               borderTopLeftRadius: 4,
-                              borderLeft: isNightMode ? undefined : `3px solid ${agentColor}`,
-                              boxShadow: isNightMode
-                                ? `0 2px 8px rgba(0,0,0,0.2), 0 1px 2px ${agentColor}10, inset 0 1px 0 rgba(255,255,255,0.04)`
-                                : '0 1px 3px rgba(0,0,0,0.06)',
+                              borderLeft: `3px solid ${agentColor}`,
+                              boxShadow: `0 2px 8px rgba(0,0,0,0.2), 0 1px 2px ${agentColor}10, inset 0 1px 0 rgba(255,255,255,0.04)`,
                             }
                         ),
                       }}>
@@ -7607,112 +7603,25 @@ export default function GameDashboard() {
                 setPanelChatInput('')
                 const sentTime = new Date().toISOString()
                 const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-                // Single state update: user message sorted + streaming placeholder at end
-                // Prevents React batching race that groups messages by sender
-                safePanelUpdate(prev => {
-                  const sorted = [...(prev._all || []), { role: 'user', content: text, time: sentTime, source: 'via dashboard', targetAgent: selectedRoom, id: localId }]
-                  sorted.sort(safeTimeSort)
-                  // Streaming placeholder always appended last (typing indicator)
-                  sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
-                  return { ...prev, _all: sorted }
+                // Show user message immediately in the chat
+                setAgentChats(prev => {
+                  const current = prev[selectedRoom] || { _all: [] }
+                  const msgs = [...(current._all || []), {
+                    role: 'user', content: text, time: sentTime,
+                    source: 'via dashboard', id: localId,
+                  }]
+                  return { ...prev, [selectedRoom]: { _all: msgs } }
                 })
-                setPanelStreaming(true)
-                // Phased timeout: 10s = "processing", 30s = "may be busy", 60s = give up
-                const streamingPhaseRef = { current: 'typing' }
-                const phase1 = setTimeout(() => {
-                  streamingPhaseRef.current = 'processing'
-                  safePanelUpdate(prev => {
-                    const msgs = [...(prev._all || [])]
-                    const streamMsg = msgs.find(m => m.streaming)
-                    if (streamMsg) streamMsg.streamPhase = 'processing'
-                    return { ...prev, _all: msgs }
-                  })
-                }, 10000)
-                const phase2 = setTimeout(() => {
-                  streamingPhaseRef.current = 'busy'
-                  safePanelUpdate(prev => {
-                    const msgs = [...(prev._all || [])]
-                    const streamMsg = msgs.find(m => m.streaming)
-                    if (streamMsg) streamMsg.streamPhase = 'busy'
-                    return { ...prev, _all: msgs }
-                  })
-                }, 30000)
-                const streamingTimeout = setTimeout(() => {
-                  setPanelStreaming(false)
-                  safePanelUpdate(prev => {
-                    const filtered = [...(prev._all || [])].filter(m => !m.streaming)
-                    return { ...prev, _all: filtered }
-                  })
-                  if (panelRelayPollRef.current) {
-                    clearInterval(panelRelayPollRef.current)
-                    panelRelayPollRef.current = null
-                  }
-                }, 60000)
-                const clearAllTimeouts = () => {
-                  clearTimeout(phase1)
-                  clearTimeout(phase2)
-                  clearTimeout(streamingTimeout)
-                }
+                // Send to server (writes to conversation file + relay inbox)
                 if (IS_LOCAL) {
                   fetch('/api/local/relay-send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
-                  }).then(async (sendRes) => {
-                    // Get the message ID for correlation
-                    const sendData = await sendRes.json().catch(() => ({}))
-                    const sentMsgId = sendData.id || null
-                    if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current)
-                    const lastCheck = { ts: sentTime }
-                    panelRelayPollRef.current = setInterval(async () => {
-                      try {
-                        const since = encodeURIComponent(lastCheck.ts)
-                        // Use correlation ID if available, fall back to timestamp-based
-                        const replyParam = sentMsgId ? `&reply_to=${encodeURIComponent(sentMsgId)}` : ''
-                        const res = await fetch(`/api/local/relay-outbox?since=${since}${replyParam}`)
-                        if (!res.ok) return
-                        const data = await res.json()
-                        // If no reply_to match, fall back to any new non-dashboard message
-                        let responses = data.messages?.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket') || []
-                        if (responses.length === 0 && sentMsgId) {
-                          // Retry without reply_to filter (agent might not have set it)
-                          const fallbackRes = await fetch(`/api/local/relay-outbox?since=${since}`)
-                          if (fallbackRes.ok) {
-                            const fallbackData = await fallbackRes.json()
-                            responses = fallbackData.messages?.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket') || []
-                          }
-                        }
-                        if (responses.length > 0) {
-                          const latest = responses[responses.length - 1]
-                          const cleanedResp = sanitizeRelayMessage(latest.message) || latest.message || ''
-                          safePanelUpdate(prev => {
-                            // Remove streaming, add real response, sort in one pass
-                            const filtered = [...(prev._all || [])].filter(m => !m.streaming)
-                            if (!filtered.some(m => m.id === latest.id)) {
-                              filtered.push({ role: 'assistant', content: cleanedResp, streaming: false, time: latest.timestamp || new Date().toISOString(), source: extractAgentFromMessage(latest) || 'system', id: latest.id || `resp-${Date.now()}` })
-                            }
-                            filtered.sort(safeTimeSort)
-                            return { ...prev, _all: filtered }
-                          })
-                          setPanelStreaming(false)
-                          clearAllTimeouts()
-                          lastCheck.ts = latest.timestamp
-                          lastBgOutboxCheckRef.current = latest.timestamp
-                          clearInterval(panelRelayPollRef.current)
-                          panelRelayPollRef.current = null
-                        }
-                      } catch {}
-                    }, 500) // Local: 500ms for near-instant response display
-                  }).catch(err => {
-                    safePanelUpdate(prev => {
-                      const msgs = [...(prev._all || [])]
-                      const last = msgs[msgs.length - 1]
-                      if (last) msgs[msgs.length - 1] = { ...last, content: `Failed: ${err?.message || 'unknown error'}`, streaming: false }
-                      return { ...prev, _all: msgs }
-                    })
-                    setPanelStreaming(false)
-                    clearAllTimeouts()
-                  })
+                  }).catch(() => {})
+                  // No polling. No streaming. No timeout.
+                  // Agent responds from terminal -> Stop hook writes to conversation file.
+                  // User clicks agent again or refreshes -> loads response from server.
                 }
               }}
             />
