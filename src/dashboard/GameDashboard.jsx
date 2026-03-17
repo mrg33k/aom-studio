@@ -3813,8 +3813,9 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
     }
   }, [])
 
-  // LIVE: use useDataPipe rightNow (real running agents from TASK STARTED/FINISHED + active-missions)
-  // Falls back to allAgentStatus for demo/production mode
+  // LIVE: use useDataPipe rightNow (real running agents from TASK STARTED/FINISHED)
+  // On localhost: useDataPipe is source of truth. Zero running = zero shown.
+  // On production: falls back to allAgentStatus demo data.
   const liveAgents = pipeData?.rightNow || []
   const workingAgents = useMemo(() => {
     if (liveAgents.length > 0) {
@@ -3824,6 +3825,8 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
         task: t.text || '',
       }))
     }
+    // On localhost, trust useDataPipe: 0 running = 0 shown. No fallback.
+    if (IS_LOCAL) return []
     return Object.entries(allAgentStatus || {})
       .filter(([, a]) => a?.status === 'WORKING')
       .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || '' }))
@@ -4543,8 +4546,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   // Bobby2: Full pipeData passed to TopSquares so sidebar uses same persistent truth as HUD pills
   const pipeData = useDataPipe(parsePunchListSidebar)
   const { rightNow: liveAgents, pillCounts: pipeCounts } = pipeData
-  const workingCount = liveAgents?.length || Object.values(allAgentStatus || {}).filter(a => a?.status === 'WORKING').length
-  const blockedCount = pipeCounts?.yourTodos || Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
+  // Use nullish coalescing (??) not OR (||) so 0 stays 0 instead of falling through to demo data
+  const workingCount = IS_LOCAL ? (liveAgents?.length ?? 0) : Object.values(allAgentStatus || {}).filter(a => a?.status === 'WORKING').length
+  const blockedCount = IS_LOCAL ? (pipeCounts?.yourTodos ?? 0) : Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
   const doneCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'DONE').length
   const totalAgents = Object.keys(allAgentStatus || {}).length || 13
   const overallProgress = totalAgents > 0 ? Math.round(((workingCount + doneCount) / totalAgents) * 100) : 0
@@ -6324,18 +6328,7 @@ export default function GameDashboard() {
           )}
       </div>
 
-      {/* Mini-map - always visible (game is always the viewport) */}
-      {showMinimap && !isMobile && (
-        <MiniMap
-          rooms={GRID_SPEC.rooms}
-          agentStatus={agentStatus}
-          selectedRoom={selectedRoom}
-          cameraTarget={cameraTarget}
-          cameraZoom={cameraZoom}
-          isOverview={isOverview}
-          onRoomClick={handleMinimapRoomClick}
-        />
-      )}
+      {/* Mini-map removed - camera lock makes it unnecessary */}
 
       {/* Game HUD (Sims x Chaart) - bottom strip with project pills + agent status */}
       {/* Wrapped in a container that constrains fixed positioning to the game viewport only.

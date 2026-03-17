@@ -40,11 +40,54 @@ export function formatRelativeTime(dateStr) {
   }
 }
 
-// ---- PARSE RIGHT NOW from active-missions.md + notifications ----------------
+// ---- PARSE RIGHT NOW from notifications (agent-notifications.md is source of truth) ----
+// For EACH agent, find their MOST RECENT entry (TASK STARTED or TASK FINISHED).
+// If most recent = TASK STARTED, agent is ACTIVE (shows in Right Now).
+// If most recent = TASK FINISHED, agent is DONE (excluded from Right Now).
+// active-missions.md is a FALLBACK only for agents with zero notification entries.
 function parseRightNow(missionsContent, notifContent) {
-  const missionTasks = []
+  // Step 1: Build per-agent most-recent-state from notifications (source of truth)
+  // Walk lines top-to-bottom so later entries overwrite earlier ones = most recent wins.
+  const agentState = new Map() // slug -> { state: 'started'|'finished', text }
 
-  // Source 1: active-missions.md "## Running" table
+  if (notifContent) {
+    const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
+
+    for (const line of lines) {
+      const startMatch = line.match(/TASK STARTED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]\s*(.+?)$/i)
+      if (startMatch) {
+        let slug = startMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
+        if (/^bobby/.test(slug)) slug = 'bobby'
+        if (/^steffen/.test(slug)) slug = 'steffen'
+        let text = startMatch[2].replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
+        if (text.length > 55) text = text.slice(0, 52) + '...'
+        agentState.set(slug, { state: 'started', text, agent: slug })
+      }
+      // Match standard "TASK FINISHED: Agent -" and non-standard variants like
+      // "TASK FINISHED Agent:", "TASK FINISHED] Bobby:", "**TASK FINISHED** | Bobby"
+      const finishMatch = line.match(/TASK FINISHED[:\s|]*\s*(\w[\w\s]*?\d?)\s*[-\u2013:|]/i)
+      if (finishMatch) {
+        let slug = finishMatch[1].toLowerCase().replace(/\s+\d+$/, '').replace(/\s*\(.*$/, '').trim()
+        if (/^bobby/.test(slug)) slug = 'bobby'
+        if (/^steffen/.test(slug)) slug = 'steffen'
+        agentState.set(slug, { state: 'finished', text: '', agent: slug })
+      }
+    }
+  }
+
+  // Step 2: Collect agents whose most recent notification is TASK STARTED
+  const activeTasks = []
+  const agentsFromNotifs = new Set()
+
+  for (const [slug, info] of agentState) {
+    agentsFromNotifs.add(slug)
+    if (info.state === 'started') {
+      activeTasks.push({ text: info.text, agent: slug, done: false, isLive: true })
+    }
+  }
+
+  // Step 3: FALLBACK -- agents in active-missions.md "Running" table that have
+  // zero notification entries get included (they haven't reported in yet).
   if (missionsContent) {
     const runningSection = missionsContent.split(/^## Running/m)[1]
     if (runningSection) {
@@ -56,50 +99,18 @@ function parseRightNow(missionsContent, notifContent) {
         let agentSlug = cells[0].toLowerCase().replace(/\s+\d+$/, '').trim()
         if (/^bobby/.test(agentSlug)) agentSlug = 'bobby'
         if (/^steffen/.test(agentSlug)) agentSlug = 'steffen'
+        // Only include if this agent has NO notification entries at all
+        if (agentsFromNotifs.has(agentSlug)) continue
         let text = cells[1].replace(/^Relaunched:\s*/i, '').replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
         if (text.length > 55) text = text.slice(0, 52) + '...'
         if (text.length > 3 && agentSlug) {
-          missionTasks.push({ text, agent: agentSlug, done: false, isLive: true })
+          activeTasks.push({ text, agent: agentSlug, done: false, isLive: true })
         }
       }
     }
   }
 
-  // Source 2: agent-notifications.md TASK STARTED without matching TASK FINISHED
-  if (notifContent) {
-    const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
-    const started = new Map()
-    const finished = new Set()
-
-    for (const line of lines) {
-      const startMatch = line.match(/TASK STARTED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]\s*(.+?)$/i)
-      if (startMatch) {
-        let slug = startMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
-        if (/^bobby/.test(slug)) slug = 'bobby'
-        if (/^steffen/.test(slug)) slug = 'steffen'
-        let text = startMatch[2].replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
-        if (text.length > 55) text = text.slice(0, 52) + '...'
-        started.set(slug, { text, agent: slug, done: false, isLive: true })
-        finished.delete(slug)
-      }
-      const finishMatch = line.match(/TASK FINISHED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]/i)
-      if (finishMatch) {
-        let slug = finishMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
-        if (/^bobby/.test(slug)) slug = 'bobby'
-        if (/^steffen/.test(slug)) slug = 'steffen'
-        finished.add(slug)
-      }
-    }
-
-    const missionAgents = new Set(missionTasks.map(t => t.agent))
-    for (const [slug, taskInfo] of started) {
-      if (!finished.has(slug) && !missionAgents.has(slug)) {
-        missionTasks.push(taskInfo)
-      }
-    }
-  }
-
-  return missionTasks
+  return activeTasks
 }
 
 // ---- PARSE COMPLETED FEED from notifications --------------------------------
@@ -204,25 +215,25 @@ function buildAutoCheckKeywords(notifContent) {
 }
 
 // ---- DERIVE YOUR TODOS from parsed punch data --------------------------------
+// Your TODOs = BLOCKERS that only Patrik can unblock.
+// Source: ONLY the "## YOUR TODOS [Patrik]" section (section key 'your-todos').
+// Not a scan of every [Patrik] tag across the entire punch-list (that double-counts).
 function derivePatrikTodos(punchData) {
   if (!punchData?.projects) return []
   const todos = []
   for (const project of punchData.projects) {
+    // Only pull from the your-todos section (blocker items needing Patrik's action)
+    if (project.section !== 'your-todos') continue
     for (const task of project.tasks) {
       if (task.done) continue
-      const isPatrik = task.agent === 'patrik' ||
-        /\[Patrik\b/i.test(task.raw || '') ||
-        /\bPatrik\s*[-\u2013]/i.test(task.raw || '')
-      if (isPatrik) {
-        todos.push({
-          text: task.text,
-          agent: 'patrik',
-          project: project.name,
-          projectColor: project.color,
-          raw: task.raw,
-          done: false,
-        })
-      }
+      todos.push({
+        text: task.text,
+        agent: 'patrik',
+        project: project.name,
+        projectColor: project.color,
+        raw: task.raw,
+        done: false,
+      })
     }
   }
   return todos
