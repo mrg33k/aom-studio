@@ -3651,7 +3651,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                   {brief.summary}
                 </div>
               )}
-              <div style={{ color: isNightMode ? '#475569' : '#CBD5E1', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
+              <div style={{ color: isNightMode ? '#475569' : '#94A3B8', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
                 {brief.dateFormatted} -- {brief.agent}
               </div>
             </a>
@@ -3842,6 +3842,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const agentColor = room?.agentColor || agent?.color || '#6B7280'
   const setActiveTab = onActiveTabChange || (() => {})
+  // Sidebar day/night palette (matches HUD pattern from GameHUD.jsx)
+  const isDaytime = isNightMode === false
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const isNearBottomRef = useRef(true)
@@ -3996,7 +3998,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
             <span style={{
-              fontSize: 14, fontWeight: 700, color: '#94A3B8',
+              fontSize: 14, fontWeight: 700, color: isDaytime ? '#64748B' : '#94A3B8',
               fontFamily: "'Inter', system-ui, sans-serif",
               display: 'flex', alignItems: 'center', gap: 4,
             }}>
@@ -4006,7 +4008,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               builds
             </span>
             <span style={{
-              fontSize: 14, fontWeight: 700, color: '#94A3B8',
+              fontSize: 14, fontWeight: 700, color: isDaytime ? '#64748B' : '#94A3B8',
               fontFamily: "'Inter', system-ui, sans-serif",
               display: 'flex', alignItems: 'center', gap: 4,
             }}>
@@ -4021,14 +4023,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {/* Extend/collapse */}
         <button onClick={onToggleExtend} title={isExtended ? 'Collapse panel' : 'Expand panel'}
           style={{
-            background: 'rgba(100,180,255,0.06)', border: '1px solid rgba(100,180,255,0.1)',
-            borderRadius: 8, cursor: 'pointer', color: isExtended ? '#E85D26' : '#6B7280',
+            background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)',
+            border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.1)',
+            borderRadius: 8, cursor: 'pointer', color: isExtended ? '#E85D26' : (isDaytime ? '#94A3B8' : '#6B7280'),
             width: 32, height: 32,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 150ms ease', flexShrink: 0,
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#EDF2FA'; e.currentTarget.style.background = 'rgba(100,180,255,0.12)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : '#6B7280'; e.currentTarget.style.background = 'rgba(100,180,255,0.06)' }}
+          onMouseEnter={e => { e.currentTarget.style.color = isDaytime ? '#1E293B' : '#EDF2FA'; e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.12)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : (isDaytime ? '#94A3B8' : '#6B7280'); e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)' }}
         >
           {isExtended ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
         </button>
@@ -4141,14 +4144,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 {tab.label}
                 {tab.key && (
                   <span style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: isDaytime ? 'rgba(15,23,42,0.05)' : 'rgba(255,255,255,0.06)',
+                    border: isDaytime ? '1px solid rgba(15,23,42,0.1)' : '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 3,
                     padding: '1px 4px',
                     fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 12,
                     fontWeight: 600,
-                    color: '#475569',
+                    color: isDaytime ? '#94A3B8' : '#475569',
                     lineHeight: 1.2,
                   }}>
                     {tab.key}
@@ -4184,10 +4187,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   justifyContent: 'center', height: '100%', gap: 10, padding: '24px 0',
                 }}>
                   <SpriteAvatar agentSlug={room?.id} size={48} borderColor={agentColor} />
-                  <div style={{ color: '#F1F5F9', fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
+                  <div style={{ color: isDaytime ? '#0F172A' : '#F1F5F9', fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
                     {agent?.name || 'Agent'}
                   </div>
-                  <div style={{ color: '#64748B', fontSize: 14, fontFamily: "'Inter', sans-serif", textAlign: 'center' }}>
+                  <div style={{ color: isDaytime ? '#94A3B8' : '#64748B', fontSize: 14, fontFamily: "'Inter', sans-serif", textAlign: 'center' }}>
                     Real relay chat. Terminal + Telegram + Dashboard.
                   </div>
                 </div>
@@ -4198,13 +4201,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   display: 'flex', alignItems: 'center', gap: 12,
                   margin: '4px 0 8px',
                 }}>
-                  <div style={{ flex: 1, height: 1, background: 'rgba(100,180,255,0.1)' }} />
+                  <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.1)' }} />
                   <span style={{
-                    fontSize: 11, fontWeight: 700, color: '#475569',
+                    fontSize: 11, fontWeight: 700, color: isDaytime ? '#94A3B8' : '#475569',
                     textTransform: 'uppercase', letterSpacing: '0.12em',
                     fontFamily: "'JetBrains Mono', monospace",
                   }}>TODAY</span>
-                  <div style={{ flex: 1, height: 1, background: 'rgba(100,180,255,0.1)' }} />
+                  <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.1)' }} />
                 </div>
               )}
               {chatMessages && chatMessages.map((msg, i) => {
@@ -4221,13 +4224,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   return (
                     <div key={msg.id || i} style={{
                       margin: '4px 0',
-                      background: 'linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.04) 100%)',
-                      border: '1px solid rgba(34,197,94,0.18)',
+                      background: isDaytime
+                        ? 'linear-gradient(180deg, rgba(34,197,94,0.06) 0%, rgba(34,197,94,0.02) 100%)'
+                        : 'linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.04) 100%)',
+                      border: isDaytime ? '1px solid rgba(34,197,94,0.22)' : '1px solid rgba(34,197,94,0.18)',
                       borderLeft: '3px solid #22C55E',
                       borderRadius: 10,
                       padding: '10px 14px',
                       display: 'flex', alignItems: 'center', gap: 10,
-                      boxShadow: '0 2px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(34,197,94,0.08)',
+                      boxShadow: isDaytime ? '0 1px 3px rgba(0,0,0,0.04)' : '0 2px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(34,197,94,0.08)',
                     }}>
                       <div style={{
                         width: 8, height: 8, borderRadius: '50%',
@@ -4235,13 +4240,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         flexShrink: 0,
                       }} />
                       <span style={{
-                        fontSize: 14, fontWeight: 600, color: '#94A3B8',
+                        fontSize: 14, fontWeight: 600, color: isDaytime ? '#475569' : '#94A3B8',
                         fontFamily: "'Inter', sans-serif", flex: 1,
                       }}>
                         <strong style={{ color: agentColor, fontWeight: 800 }}>{agent?.name || 'Agent'}</strong> {msg.content}
                       </span>
                       {msg.time && (
-                        <span style={{ fontSize: 12, color: '#475569', whiteSpace: 'nowrap', fontFamily: "'Inter', sans-serif" }}>
+                        <span style={{ fontSize: 12, color: isDaytime ? '#94A3B8' : '#475569', whiteSpace: 'nowrap', fontFamily: "'Inter', sans-serif" }}>
                           {formatChatTime(msg.time)}
                         </span>
                       )}
@@ -4263,7 +4268,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     }}>
                       <SpriteAvatar agentSlug={ambientAgent?.slug || msg.source} size={20} borderColor={ambientColor} />
                       <span style={{
-                        fontSize: 13, fontWeight: 500, color: '#94A3B8',
+                        fontSize: 13, fontWeight: 500, color: isDaytime ? '#64748B' : '#94A3B8',
                         fontFamily: "'Inter', sans-serif", flex: 1,
                         fontStyle: 'italic',
                       }}>
@@ -4271,7 +4276,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         {msg.content}
                       </span>
                       {msg.time && (
-                        <span style={{ fontSize: 10, color: '#475569', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" }}>
+                        <span style={{ fontSize: 10, color: isDaytime ? '#94A3B8' : '#475569', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" }}>
                           {formatChatTime(msg.time)}
                         </span>
                       )}
@@ -4366,7 +4371,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         }}>
                           {msg.time && (
                             <span style={{
-                              fontSize: 10, fontWeight: 500, color: '#94A3B8',
+                              fontSize: 10, fontWeight: 500, color: isDaytime ? '#94A3B8' : '#94A3B8',
                               fontFamily: "'JetBrains Mono', monospace",
                             }}>
                               {formatChatTime(msg.time)}
@@ -4374,10 +4379,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           )}
                           {sourceLabel && (
                             <span style={{
-                              fontSize: 9, fontWeight: 500, color: '#94A3B8',
+                              fontSize: 9, fontWeight: 500, color: isDaytime ? '#94A3B8' : '#94A3B8',
                               letterSpacing: '0.06em',
                               fontFamily: "'JetBrains Mono', monospace",
-                              opacity: 0.4,
+                              opacity: isDaytime ? 0.6 : 0.4,
                               textTransform: 'lowercase',
                             }}>
                               {sourceLabel.toLowerCase()}
@@ -4407,7 +4412,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         ))}
                       </div>
                       <span style={{
-                        fontSize: 13, color: '#94A3B8', fontStyle: 'italic', fontWeight: 500,
+                        fontSize: 13, color: isDaytime ? '#64748B' : '#94A3B8', fontStyle: 'italic', fontWeight: 500,
                         fontFamily: "'Inter', system-ui, sans-serif",
                       }}>
                         {agent?.name || 'Agent'} is typing...
@@ -4517,7 +4522,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <SkeletonLine width={100} height={12} style={{ marginBottom: 10 }} />
-                  <div style={{ padding: '10px 14px', background: 'rgba(100,180,255,0.04)', borderRadius: 8, border: '1px solid rgba(100,180,255,0.08)' }}>
+                  <div style={{ padding: '10px 14px', background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(100,180,255,0.04)', borderRadius: 8, border: isDaytime ? '2px solid rgba(59,130,246,0.08)' : '1px solid rgba(100,180,255,0.08)' }}>
                     <SkeletonBlock lines={3} />
                   </div>
                 </div>
@@ -4536,12 +4541,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Latest Result */}
             {agentStatus && agentStatus?.latestResult && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Latest Result</div>
+                <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Latest Result</div>
                 <div style={{
-                  padding: '10px 14px', background: `${agentColor}08`, border: `1px solid ${agentColor}20`,
+                  padding: '10px 14px',
+                  background: isDaytime ? `${agentColor}08` : `${agentColor}08`,
+                  border: isDaytime ? `2px solid ${agentColor}20` : `1px solid ${agentColor}20`,
                   borderRadius: 8,
                 }}>
-                  <div style={{ color: '#F0ECE6', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+                  <div style={{ color: isDaytime ? '#1E293B' : '#F0ECE6', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
                     {agentStatus.latestResult}
                   </div>
                 </div>
@@ -4551,10 +4558,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Room info */}
             {agentStatus && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
-              <div style={{ color: '#A8A29E', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif" }}>{room?.name || 'Unknown'}</div>
+              <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
+              <div style={{ color: isDaytime ? '#334155' : '#A8A29E', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif" }}>{room?.name || 'Unknown'}</div>
               {room?.personality && (
-                <div style={{ color: '#6B7280', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
+                <div style={{ color: isDaytime ? '#64748B' : '#6B7280', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
               )}
             </div>
             )}
@@ -4562,7 +4569,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Data source */}
             {IS_LOCAL && agentStatus && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Data Source</div>
+                <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Data Source</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
                   <span style={{ color: '#4CAF50', fontSize: 13, fontFamily: 'JetBrains Mono, monospace' }}>Local (2s poll)</span>
@@ -4573,7 +4580,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Status */}
             {agentStatus && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
+              <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: cfg.bg, borderRadius: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color }} />
                 <span style={{ color: cfg.color, fontSize: 13, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>{cfg.label}</span>
@@ -4588,7 +4595,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               if (agentFeed.length === 0) return null
               return (
                 <div>
-                  <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Recent Activity</div>
+                  <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Recent Activity</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {agentFeed.map((entry, idx) => {
                       const desc = entry.description?.replace(/^[A-Za-z]+:\s*/, '') || ''
@@ -4596,14 +4603,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       return (
                         <div key={idx} style={{
                           padding: '8px 12px',
-                          background: 'rgba(100,180,255,0.03)',
-                          border: '1px solid rgba(100,180,255,0.06)',
+                          background: isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(100,180,255,0.03)',
+                          border: isDaytime ? '2px solid rgba(59,130,246,0.08)' : '1px solid rgba(100,180,255,0.06)',
                           borderLeft: `3px solid ${agentColor}40`,
                           borderRadius: 6,
                           display: 'flex', flexDirection: 'column', gap: 4,
                         }}>
                           <div style={{
-                            color: '#D0D8E8', fontSize: 13,
+                            color: isDaytime ? '#334155' : '#D0D8E8', fontSize: 13,
                             fontFamily: "'Inter', system-ui, sans-serif",
                             lineHeight: 1.4,
                           }}>
@@ -4615,8 +4622,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                                 fontSize: 12, fontWeight: 600,
                                 color: '#22C55E',
                                 fontFamily: "'JetBrains Mono', monospace",
-                                background: 'rgba(34,197,94,0.08)',
-                                border: '1px solid rgba(34,197,94,0.15)',
+                                background: isDaytime ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.08)',
+                                border: isDaytime ? '1px solid rgba(34,197,94,0.18)' : '1px solid rgba(34,197,94,0.15)',
                                 borderRadius: 4, padding: '1px 6px',
                                 display: 'flex', alignItems: 'center', gap: 4,
                               }}>
@@ -4626,7 +4633,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             )}
                             {entry.repo && (
                               <span style={{
-                                fontSize: 12, fontWeight: 600, color: '#64748B',
+                                fontSize: 12, fontWeight: 600, color: isDaytime ? '#94A3B8' : '#64748B',
                                 fontFamily: "'JetBrains Mono', monospace",
                               }}>
                                 {entry.repo}
@@ -4634,7 +4641,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             )}
                             {entry.time && (
                               <span style={{
-                                fontSize: 12, fontWeight: 500, color: '#475569',
+                                fontSize: 12, fontWeight: 500, color: isDaytime ? '#94A3B8' : '#475569',
                                 fontFamily: "'Inter', sans-serif",
                                 marginLeft: 'auto',
                               }}>
