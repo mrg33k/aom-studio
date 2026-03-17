@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 import fs from 'fs'
 import os from 'os'
+import { execFile, spawn } from 'child_process'
 import { WebSocketServer } from 'ws'
 import { watch } from 'chokidar'
 
@@ -22,6 +23,57 @@ const RELAY_OUTBOX_PATH = fs.existsSync(APPDATA_OUTBOX) ? APPDATA_OUTBOX : resol
 // Also keep repo paths for fallback writes (write to BOTH so hooks pick up from either)
 const REPO_INBOX_PATH = resolve(AOM_EA_ROOT, 'context/relay-inbox.jsonl')
 const REPO_OUTBOX_PATH = resolve(AOM_EA_ROOT, 'context/relay-outbox.jsonl')
+
+// ---- RELAY BULLETPROOFING ----
+
+// Write lock: prevents concurrent writes from corrupting JSONL files
+const LOCK_TIMEOUT = 3000 // 3s max wait
+function withFileLock(filePath, fn) {
+  const lockPath = filePath + '.lock'
+  const start = Date.now()
+  while (fs.existsSync(lockPath)) {
+    if (Date.now() - start > LOCK_TIMEOUT) {
+      // Stale lock, force remove
+      try { fs.unlinkSync(lockPath) } catch {}
+      break
+    }
+    // Spin wait 10ms
+    const end = Date.now() + 10
+    while (Date.now() < end) {}
+  }
+  try {
+    fs.writeFileSync(lockPath, String(process.pid))
+    return fn()
+  } finally {
+    try { fs.unlinkSync(lockPath) } catch {}
+  }
+}
+
+// Message TTL: prune messages older than 24h from a JSONL file
+const MESSAGE_TTL_MS = 24 * 60 * 60 * 1000
+function pruneOldMessages(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return
+    const cutoff = new Date(Date.now() - MESSAGE_TTL_MS).toISOString()
+    const lines = fs.readFileSync(filePath, 'utf-8').split('\n').filter(l => l.trim())
+    // Only prune if file has 200+ lines (don't thrash small files)
+    if (lines.length < 200) return
+    const kept = lines.filter(line => {
+      try {
+        const msg = JSON.parse(line)
+        // Keep pending/unread messages regardless of age
+        if (msg.status === 'pending' || msg.status === 'deferred') return true
+        return msg.timestamp && msg.timestamp >= cutoff
+      } catch { return true }
+    })
+    if (kept.length < lines.length) {
+      fs.writeFileSync(filePath, kept.join('\n') + '\n')
+    }
+  } catch {}
+}
+
+// Outbox file size tracking for optimistic reads
+let lastOutboxSizes = new Map()
 
 // Agent folder mapping (slug -> project folder name)
 const AGENT_FOLDERS = {
@@ -365,23 +417,109 @@ function localDashboardPlugin() {
           try {
             const data = JSON.parse(body)
             const id = crypto.randomUUID()
+            const source = data.source || 'corner-dashboard'
             const entry = {
               id,
               timestamp: new Date().toISOString(),
-              source: data.source || 'corner-dashboard',
+              source,
               message: data.message,
-              status: 'pending',
+              // Corner-dashboard messages are already displayed in the UI,
+              // so mark as 'read' to prevent them piling up as 'pending'.
+              // Only Telegram messages (which need async processing) should be 'pending'.
+              status: source === 'corner-dashboard' ? 'read' : 'pending',
               chat_id: null,
               agent: data.agent || null,
             }
             const line = JSON.stringify(entry) + '\n'
-            // Write to both paths so the hook picks it up regardless of which it reads
-            fs.appendFileSync(RELAY_INBOX_PATH, line)
-            if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) {
-              fs.appendFileSync(REPO_INBOX_PATH, line)
+            // Write with lock to prevent concurrent corruption
+            withFileLock(RELAY_INBOX_PATH, () => {
+              fs.appendFileSync(RELAY_INBOX_PATH, line)
+              if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) {
+                fs.appendFileSync(REPO_INBOX_PATH, line)
+              }
+            })
+            // Prune old messages periodically (every ~50 writes)
+            if (Math.random() < 0.02) {
+              pruneOldMessages(RELAY_INBOX_PATH)
+              if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) pruneOldMessages(REPO_INBOX_PATH)
             }
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ ok: true, id }))
+
+            // Auto-respond: spawn claude -p in background for corner-dashboard messages
+            if (source === 'corner-dashboard' && data.message) {
+              const agentName = data.agent || 'assistant'
+              const agentFolder = AGENT_FOLDERS[agentName]
+              const agentMd = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/AGENT.md`) : null
+              const lastConvo = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/last-conversation.md`) : null
+
+              let agentContext = ''
+              try { if (agentMd && fs.existsSync(agentMd)) agentContext += '\n\nAgent context:\n' + fs.readFileSync(agentMd, 'utf-8').slice(0, 2000) } catch {}
+              try { if (lastConvo && fs.existsSync(lastConvo)) agentContext += '\n\nLast conversation:\n' + fs.readFileSync(lastConvo, 'utf-8').slice(0, 1500) } catch {}
+
+              const prompt = `You are ${agentName}, an AI agent on the Corner dashboard. Patrik (the owner) sent this message from the dashboard:\n\n"${data.message}"\n\nRespond naturally as ${agentName}. Be concise. No em dashes. Bullet points over paragraphs.${agentContext}`
+
+              // Find claude CLI
+              const claudePaths = [
+                '/opt/homebrew/bin/claude',
+                resolve(os.homedir(), '.claude/local/claude'),
+                '/usr/local/bin/claude',
+                resolve(os.homedir(), '.nvm/versions/node/v22.14.0/bin/claude'),
+              ]
+              const claudeCli = claudePaths.find(p => { try { return fs.existsSync(p) } catch { return false } })
+
+              if (claudeCli) {
+                console.log(`[Relay] Spawning claude -p for ${agentName} (msg: ${id})`)
+                const child = spawn(claudeCli, ['-p', '--model', 'haiku', '--no-session-persistence'], {
+                  cwd: AOM_EA_ROOT,
+                  timeout: 45000,
+                  env: { ...process.env },
+                  shell: true,
+                  stdio: ['pipe', 'pipe', 'pipe'],
+                })
+                let stdout = ''
+                let stderr = ''
+                child.stdout.on('data', (chunk) => { stdout += chunk.toString() })
+                child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
+                child.on('close', (code) => {
+                  const response = stdout.trim()
+                  if (code !== 0 || !response) {
+                    console.log(`[Relay] claude -p failed (exit ${code}): ${stderr.slice(0, 200)}`)
+                    const fallback = {
+                      id: crypto.randomUUID(),
+                      reply_to: id,
+                      timestamp: new Date().toISOString(),
+                      message: `[${agentName}] Message received. Agent is currently offline.`,
+                      status: 'pending',
+                      agent: agentName,
+                    }
+                    withFileLock(RELAY_OUTBOX_PATH, () => {
+                      fs.appendFileSync(RELAY_OUTBOX_PATH, JSON.stringify(fallback) + '\n')
+                    })
+                    return
+                  }
+                  const respEntry = {
+                    id: crypto.randomUUID(),
+                    reply_to: id,
+                    timestamp: new Date().toISOString(),
+                    message: response.length > 4000 ? response.slice(0, 3950) + '\n\n[Truncated]' : response,
+                    status: 'pending',
+                    agent: agentName,
+                  }
+                  withFileLock(RELAY_OUTBOX_PATH, () => {
+                    fs.appendFileSync(RELAY_OUTBOX_PATH, JSON.stringify(respEntry) + '\n')
+                  })
+                  console.log(`[Relay] ${agentName} responded (${response.length} chars, reply_to: ${id})`)
+                })
+                child.on('error', (err) => {
+                  console.log(`[Relay] spawn error: ${err.message}`)
+                })
+                child.stdin.write(prompt)
+                child.stdin.end()
+              } else {
+                console.log('[Relay] Claude CLI not found, skipping auto-respond')
+              }
+            }
           } catch (err) {
             res.statusCode = 500
             res.end(JSON.stringify({ error: err.message }))
@@ -395,15 +533,31 @@ function localDashboardPlugin() {
       server.middlewares.use('/api/local/relay-outbox', (req, res) => {
         const url = new URL(req.url, 'http://localhost')
         const since = url.searchParams.get('since')
+        const replyTo = url.searchParams.get('reply_to') // Correlation ID filter
         const messagesById = new Map()
-        // Read from both paths to capture all responses
+        // Optimistic read: only parse new bytes if file grew
         for (const outboxPath of [RELAY_OUTBOX_PATH, REPO_OUTBOX_PATH]) {
           try {
-            const content = fs.readFileSync(outboxPath, 'utf-8')
+            const stat = fs.statSync(outboxPath)
+            const lastSize = lastOutboxSizes.get(outboxPath) || 0
+            let content
+            if (since && lastSize > 0 && stat.size > lastSize) {
+              // Only read new bytes (optimistic)
+              const fd = fs.openSync(outboxPath, 'r')
+              const buf = Buffer.alloc(stat.size - lastSize)
+              fs.readSync(fd, buf, 0, buf.length, lastSize)
+              fs.closeSync(fd)
+              content = buf.toString('utf-8')
+            } else {
+              content = fs.readFileSync(outboxPath, 'utf-8')
+            }
+            lastOutboxSizes.set(outboxPath, stat.size)
             for (const line of content.split('\n').filter(l => l.trim())) {
               try {
                 const msg = JSON.parse(line)
                 if (since && msg.timestamp && new Date(msg.timestamp) <= new Date(since)) continue
+                // Correlation filter: only return messages that match reply_to
+                if (replyTo && msg.reply_to !== replyTo) continue
                 if (msg.id && !messagesById.has(msg.id)) {
                   messagesById.set(msg.id, msg)
                 }

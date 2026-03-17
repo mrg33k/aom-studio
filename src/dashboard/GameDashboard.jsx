@@ -4,7 +4,7 @@ import {
   MessageSquare, Send, X, ChevronUp, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, GitCommit, Terminal, Maximize2, Minimize2,
-  ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map,
+  ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map as MapIcon,
   ZoomIn, ZoomOut, Home, LayoutDashboard, Gamepad2, Command,
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
 } from 'lucide-react'
@@ -70,7 +70,7 @@ class ChatErrorBoundary extends React.Component {
 
 // ---- MODE CONFIG -----------------------------------------------------------
 const MODES = {
-  game: { id: 'game', label: 'GAME', icon: Map, key: '1', path: '/dashboard' },
+  game: { id: 'game', label: 'GAME', icon: MapIcon, key: '1', path: '/dashboard' },
   checklist: { id: 'checklist', label: 'CHECKLIST', icon: ListTodo, key: '2', path: '/dashboard/checklist' },
   megaboard: { id: 'megaboard', label: 'MEGABOARD', icon: LayoutDashboard, key: '3', path: '/dashboard/megaboard' },
 }
@@ -2324,44 +2324,45 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode }) {
-  const [tab, setTab] = useState('session')
-  const [topSearchOpen, setTopSearchOpen] = useState(false)
-  const tabs = [
-    { id: 'session', label: 'Last Session', icon: Clock },
-    { id: 'project', label: 'By Project', icon: FolderKanban },
-    { id: 'upcoming', label: 'Upcoming', icon: Calendar },
-    { id: 'add', label: 'Add New', icon: Plus },
-  ]
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode }) {
+  const [teamOpen, setTeamOpen] = useState(false)
+  const [teamName, setTeamName] = useState(() => {
+    try { return localStorage.getItem('corner-team-name') || 'aom' } catch { return 'aom' }
+  })
+  const [editingName, setEditingName] = useState(false)
+  const teamRef = useRef(null)
 
-  // Active underline color: agent color or default orange
-  const activeAgent = selectedAgent ? AGENTS.find(a => a.slug === selectedAgent) : null
-  const underlineColor = activeAgent?.color || '#E85D26'
-  const agentColor = activeAgent?.color || '#9C27B0'
-  const agentName = activeAgent?.name || 'Agent'
+  // Close team popout on outside click
+  useEffect(() => {
+    if (!teamOpen) return
+    const handler = (e) => {
+      if (teamRef.current && !teamRef.current.contains(e.target)) setTeamOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [teamOpen])
 
-  // Agent status from data
-  const agentStatusFromData = data?.agents?.find(a => a.slug === selectedAgent)
-  const agentStatusLabel = agentStatusFromData?.status || 'IDLE'
-  const statusColorMap = { WORKING: '#22C55E', BLOCKED: '#EF4444', DONE: '#3B82F6', WAITING: '#F59E0B', PAUSED: '#F97316', IDLE: '#6B7280' }
-  const agentStatusColor = statusColorMap[agentStatusLabel] || '#6B7280'
+  // Save team name
+  useEffect(() => {
+    try { localStorage.setItem('corner-team-name', teamName) } catch {}
+  }, [teamName])
 
-  // Compute top-level stats
-  const topWorkingCount = (data?.agents || []).filter(a => a.status === 'WORKING').length
-  const topBlockedCount = (data?.agents || []).filter(a => a.status === 'BLOCKED').length
-  const topDoneCount = (data?.agents || []).filter(a => a.status === 'DONE').length
-
-  // Hide HUD drawer toggle in Checklist mode (Checklist IS the task view)
-  const showDrawer = currentMode !== 'checklist'
+  // Agent statuses from data
+  const agentStatuses = data?.agents || []
+  const getAgentStatus = (slug) => {
+    const a = agentStatuses.find(x => x.slug === slug)
+    return a?.status || 'IDLE'
+  }
+  const statusDotColor = { WORKING: '#22C55E', BLOCKED: '#EF4444', DONE: '#3B82F6', WAITING: '#F59E0B', PAUSED: '#F97316', IDLE: '#6B7280' }
 
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
     }}>
-      {/* Top HUD bar - DAYTIME: white glass with blue accents (layout-daytime.png). NIGHT: dark blue glass. */}
+      {/* Top bar */}
       <div style={{
-        height: detailLevel === 'detail' && currentMode === 'game' ? 40 : (isMobile ? 48 : 56),
-        transition: 'height 200ms ease, background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
+        height: isMobile ? 48 : 52,
+        transition: 'background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)'
           : 'rgba(255, 255, 255, 0.92)',
@@ -2373,8 +2374,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
           ? '0 2px 12px rgba(0, 0, 0, 0.4)'
           : '0 2px 12px rgba(0,0,0,0.08), 0 1px 0 rgba(59,130,246,0.1)',
         display: 'flex', alignItems: 'center',
-        padding: '0 24px',
-        gap: 16,
+        padding: '0 20px',
+        gap: 12,
       }}>
         {/* Corner. logo */}
         <div style={{
@@ -2389,7 +2390,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
         {/* LOCAL badge */}
         {IS_LOCAL && (
           <span style={{
-            fontSize: 12, fontWeight: 700,
+            fontSize: 11, fontWeight: 700,
             color: '#22C55E',
             background: 'rgba(34,197,94,0.1)',
             border: '1px solid rgba(34,197,94,0.2)',
@@ -2403,7 +2404,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
         {/* DEMO badge (production) */}
         {!IS_LOCAL && (
           <span style={{
-            fontSize: 12, fontWeight: 700,
+            fontSize: 11, fontWeight: 700,
             color: '#60A5FA',
             background: 'rgba(96,165,250,0.1)',
             border: '1px solid rgba(96,165,250,0.2)',
@@ -2414,212 +2415,270 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
           }}>DEMO</span>
         )}
 
-        {/* Agent portrait (selected agent in sidebar) */}
-        {!isMobile && selectedAgent && (
-          <>
-            <SpriteAvatar agentSlug={selectedAgent} size={40} borderColor={agentColor}
-              style={{
-                boxShadow: `0 0 12px ${agentColor}30`,
-                flexShrink: 0,
-              }}
-            />
+        {/* Team pill */}
+        <div ref={teamRef} style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            onClick={() => setTeamOpen(!teamOpen)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: teamOpen
+                ? (isNightMode ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)')
+                : (isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)'),
+              border: teamOpen
+                ? (isNightMode ? '2px solid rgba(59,130,246,0.4)' : '2px solid rgba(59,130,246,0.35)')
+                : (isNightMode ? '1.5px solid rgba(59,130,246,0.15)' : '1.5px solid rgba(59,130,246,0.2)'),
+              borderRadius: 10, padding: '6px 14px',
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+            }}
+          >
+            {/* Team name */}
             <span style={{
-              fontSize: 16, fontWeight: 700, color: isNightMode ? '#F1F5F9' : '#0F172A',
+              fontSize: 15, fontWeight: 800,
+              color: isNightMode ? '#E2E8F0' : '#1E293B',
               fontFamily: "'Inter', sans-serif",
-              flexShrink: 0,
+              textTransform: 'uppercase', letterSpacing: '0.04em',
             }}>
-              {agentName}
+              {teamName}
             </span>
-            <span style={{
-              fontSize: 12, fontWeight: 700,
-              textTransform: 'uppercase', letterSpacing: '0.08em',
-              color: agentStatusColor,
-              background: `${agentStatusColor}15`,
-              border: `1px solid ${agentStatusColor}25`,
-              padding: '2px 8px', borderRadius: 6,
-              fontFamily: "'Inter', sans-serif",
-              flexShrink: 0,
-            }}>
-              {agentStatusLabel === 'WORKING' ? 'ACTIVE' : agentStatusLabel}
-            </span>
-          </>
-        )}
+            {/* Plus / chevron icon */}
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+              stroke={isNightMode ? '#94A3B8' : '#64748B'} strokeWidth={2.5}
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: teamOpen ? 'rotate(45deg)' : 'rotate(0)', transition: 'transform 200ms ease' }}
+            >
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+
+          {/* Team popout */}
+          <AnimatePresence>
+            {teamOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+                  minWidth: 260,
+                  background: isNightMode
+                    ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.95) 100%)'
+                    : 'rgba(255,255,255,0.98)',
+                  backdropFilter: 'blur(20px)',
+                  border: isNightMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(0,0,0,0.1)',
+                  borderRadius: 12,
+                  boxShadow: isNightMode
+                    ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
+                    : '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+                  padding: '8px 0',
+                  zIndex: 100,
+                }}
+              >
+                {/* Owner at top */}
+                <button
+                  onClick={() => {
+                    if (onSelectAgent) onSelectAgent('patrik')
+                    onOpenSettings?.()
+                    setTeamOpen(false)
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', padding: '10px 16px',
+                    background: 'transparent',
+                    border: 'none', cursor: 'pointer',
+                    transition: 'background 100ms ease',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: isNightMode
+                      ? 'linear-gradient(135deg, #E85D26, #F59E0B)'
+                      : 'linear-gradient(135deg, #1D4ED8, #3B82F6)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, fontWeight: 800, color: '#FFFFFF',
+                    fontFamily: "'Inter', sans-serif",
+                    flexShrink: 0,
+                  }}>P</div>
+                  <div style={{ flex: 1, textAlign: 'left' }}>
+                    <div style={{
+                      fontSize: 14, fontWeight: 700,
+                      color: isNightMode ? '#E2E8F0' : '#1E293B',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>Patrik</div>
+                    <div style={{
+                      fontSize: 12, fontWeight: 500,
+                      color: isNightMode ? '#64748B' : '#94A3B8',
+                      fontFamily: "'Inter', sans-serif",
+                    }}>Owner</div>
+                  </div>
+                  {/* Settings gear */}
+                  <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
+                    stroke={isNightMode ? '#64748B' : '#94A3B8'} strokeWidth={2}
+                    strokeLinecap="round" strokeLinejoin="round"
+                    style={{ flexShrink: 0 }}
+                  >
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                </button>
+
+                {/* Divider + team header */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 16px 8px',
+                  borderTop: isNightMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
+                }}>
+                  {editingName ? (
+                    <input
+                      autoFocus
+                      value={teamName}
+                      onChange={e => setTeamName(e.target.value.slice(0, 20))}
+                      onBlur={() => setEditingName(false)}
+                      onKeyDown={e => { if (e.key === 'Enter') setEditingName(false) }}
+                      style={{
+                        fontSize: 12, fontWeight: 800,
+                        color: isNightMode ? '#E2E8F0' : '#1E293B',
+                        background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.05)',
+                        border: isNightMode ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(59,130,246,0.2)',
+                        borderRadius: 6, padding: '3px 8px',
+                        fontFamily: "'Inter', sans-serif",
+                        textTransform: 'uppercase', letterSpacing: '0.04em',
+                        outline: 'none', width: 100,
+                      }}
+                    />
+                  ) : (
+                    <span
+                      onClick={() => setEditingName(true)}
+                      style={{
+                        fontSize: 11, fontWeight: 800,
+                        color: isNightMode ? '#475569' : '#94A3B8',
+                        fontFamily: "'Inter', sans-serif",
+                        textTransform: 'uppercase', letterSpacing: '0.08em',
+                        cursor: 'pointer',
+                      }}
+                      title="Click to rename"
+                    >
+                      {teamName}
+                    </span>
+                  )}
+                  <span style={{
+                    fontSize: 11, fontWeight: 600,
+                    color: isNightMode ? '#334155' : '#CBD5E1',
+                    fontFamily: "'Inter', sans-serif",
+                  }}>
+                    {AGENTS.length}
+                  </span>
+                </div>
+
+                {/* Agent list */}
+                <div style={{ maxHeight: 320, overflowY: 'auto', padding: '0' }}>
+                  {AGENTS.map(agent => {
+                    const status = getAgentStatus(agent.slug)
+                    const dotCol = statusDotColor[status] || '#6B7280'
+                    const isSelected = selectedAgent === agent.slug
+                    return (
+                      <button
+                        key={agent.slug}
+                        onClick={() => {
+                          if (onSelectAgent) onSelectAgent(agent.slug)
+                          setTeamOpen(false)
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          width: '100%', padding: '8px 16px',
+                          background: isSelected
+                            ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
+                            : 'transparent',
+                          border: 'none', cursor: 'pointer',
+                          transition: 'background 100ms ease',
+                        }}
+                        onMouseEnter={e => {
+                          if (!isSelected) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
+                        }}
+                        onMouseLeave={e => {
+                          if (!isSelected) e.currentTarget.style.background = 'transparent'
+                        }}
+                      >
+                        <SpriteAvatar agentSlug={agent.slug} size={32} borderColor={agent.color} />
+                        <div style={{ flex: 1, textAlign: 'left' }}>
+                          <div style={{
+                            fontSize: 14, fontWeight: 700,
+                            color: isNightMode ? '#E2E8F0' : '#1E293B',
+                            fontFamily: "'Inter', sans-serif",
+                          }}>
+                            {agent.name}
+                          </div>
+                          <div style={{
+                            fontSize: 12, fontWeight: 500,
+                            color: isNightMode ? '#64748B' : '#94A3B8',
+                            fontFamily: "'Inter', sans-serif",
+                          }}>
+                            {agent.role}
+                          </div>
+                        </div>
+                        <div style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: dotCol,
+                          boxShadow: status === 'WORKING' ? `0 0 6px ${dotCol}` : 'none',
+                          flexShrink: 0,
+                        }} />
+                      </button>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* + New Team button (next to team pill) */}
+        <button
+          onClick={() => {
+            // Future: create new team / add friend world
+            alert('New Team coming soon')
+          }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'transparent',
+            border: isNightMode ? '1.5px dashed rgba(59,130,246,0.25)' : '1.5px dashed rgba(59,130,246,0.3)',
+            borderRadius: 10, padding: '6px 14px',
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)'
+            e.currentTarget.style.borderColor = isNightMode ? 'rgba(59,130,246,0.4)' : 'rgba(59,130,246,0.45)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.borderColor = isNightMode ? 'rgba(59,130,246,0.25)' : 'rgba(59,130,246,0.3)'
+          }}
+        >
+          <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
+            stroke={isNightMode ? '#64748B' : '#94A3B8'} strokeWidth={2}
+            strokeLinecap="round" strokeLinejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span style={{
+            fontSize: 13, fontWeight: 600,
+            color: isNightMode ? '#64748B' : '#94A3B8',
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            New Team
+          </span>
+        </button>
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Stat pills (Active / Blocked / Done) */}
-        {!isMobile && (
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            {[
-              { dot: 'green', count: topWorkingCount, label: 'Active' },
-              { dot: 'orange', count: topBlockedCount, label: 'Blocked' },
-              { dot: 'blue', count: topDoneCount, label: 'Done' },
-            ].map(pill => {
-              const dotColor = pill.dot === 'green' ? '#22C55E' : pill.dot === 'orange' ? '#F59E0B' : '#3B82F6'
-              return (
-              <div key={pill.label} style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: isNightMode ? '#162236' : `${dotColor}0D`,
-                border: isNightMode ? '2px solid #1E3A5F' : `2px solid ${dotColor}40`,
-                borderRadius: 12, padding: '6px 14px',
-                boxShadow: isNightMode ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
-              }}>
-                <div style={{
-                  width: 10, height: 10, borderRadius: '50%',
-                  background: dotColor,
-                  boxShadow: `0 0 6px ${dotColor}`,
-                }} />
-                <span style={{
-                  fontSize: 20, fontWeight: 900,
-                  color: isNightMode ? '#60A5FA' : dotColor,
-                  fontVariantNumeric: 'tabular-nums',
-                  fontFamily: "'Inter', sans-serif",
-                }}>
-                  {pill.count}
-                </span>
-                <span style={{
-                  fontSize: 14, fontWeight: 600,
-                  color: isNightMode ? '#94A3B8' : '#64748B',
-                  fontFamily: "'Inter', sans-serif",
-                }}>
-                  {pill.label}
-                </span>
-              </div>
-            )})}
-          </div>
-        )}
-
-        {/* Search */}
-        {!isMobile && (
-          <input type="text" placeholder="Search... (Cmd+K)"
-            style={{
-              width: 200,
-              background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.05)',
-              border: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '1.5px solid rgba(59,130,246,0.15)',
-              borderRadius: 10, padding: '8px 14px',
-              fontSize: 14,
-              fontFamily: "'Inter', system-ui, sans-serif",
-              color: isNightMode ? '#64748B' : '#94A3B8', outline: 'none',
-              flexShrink: 0,
-              cursor: 'pointer',
-            }}
-            readOnly
-            onClick={() => {
-              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))
-            }}
-          />
-        )}
-
-        {/* Notification bell */}
-        {!isMobile && (
-          <div style={{
-            width: 40, height: 40,
-            background: isNightMode ? '#162236' : 'rgba(59,130,246,0.05)',
-            border: isNightMode ? '2px solid #1E3A5F' : '1.5px solid rgba(59,130,246,0.15)',
-            borderRadius: 10,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20, color: isNightMode ? '#94A3B8' : '#64748B',
-            position: 'relative', flexShrink: 0,
-            cursor: 'pointer',
-          }}>
-            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            {topBlockedCount > 0 && (
-              <div style={{
-                position: 'absolute', top: -4, right: -4,
-                width: 18, height: 18, borderRadius: '50%',
-                background: '#EF4444',
-                color: 'white', fontSize: 12, fontWeight: 800,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: isNightMode ? '2px solid #0F1B2D' : '1.5px solid #FFFFFF',
-                boxShadow: '0 0 6px rgba(239,68,68,0.4)',
-                fontFamily: "'Inter', sans-serif",
-              }}>{topBlockedCount}</div>
-            )}
-          </div>
-        )}
-
-        {/* Expand chevron (only if drawer is available) */}
-        {showDrawer && (
-          <button onClick={onToggle}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, transition: 'color 150ms', flexShrink: 0 }}
-            onMouseEnter={e => e.target.style.color = '#F1F5F9'}
-            onMouseLeave={e => e.target.style.color = '#6B7280'}
-          >
-            <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 200ms ease' }} />
-          </button>
-        )}
       </div>
-
-      {/* Expanded drawer: 280px */}
-      <AnimatePresence>
-        {isOpen && showDrawer && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: isMobile ? '60vh' : 280, opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            style={{
-              background: 'rgba(10, 15, 30, 0.92)',
-              backdropFilter: 'blur(20px)',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.5)',
-              overflow: 'hidden',
-              position: 'relative',
-            }}
-          >
-            {/* Sub-tabs inside drawer (moved from collapsed bar per Steffen C3 spec) */}
-            <div style={{
-              display: 'flex', gap: isMobile ? 16 : 28,
-              padding: '0 20px',
-              borderBottom: '1px solid rgba(255,255,255,0.04)',
-            }}>
-              {tabs.map(t => {
-                const active = tab === t.id
-                return (
-                  <button key={t.id} onClick={() => setTab(t.id)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: active ? PALETTE.signText : '#6B7280',
-                      borderBottom: active ? `2px solid ${underlineColor}` : '2px solid transparent',
-                      fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 600,
-                      textTransform: 'uppercase', letterSpacing: '0.08em',
-                      padding: '10px 0', transition: 'color 150ms ease',
-                    }}
-                    onMouseEnter={e => { if (!active) e.target.style.color = '#A0A0A0' }}
-                    onMouseLeave={e => { if (!active) e.target.style.color = '#6B7280' }}
-                  >
-                    {t.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1, duration: 0.15 }}
-              style={{ padding: '16px 20px 20px', height: 'calc(100% - 40px)', overflowY: 'auto' }}
-              className="hud-scroll"
-            >
-              {tab === 'session' && <SessionTab data={data} />}
-              {tab === 'project' && <ProjectTab data={data} />}
-              {tab === 'upcoming' && <UpcomingTab />}
-              {tab === 'add' && <AddTaskTab />}
-            </motion.div>
-
-            {/* Gradient fade at bottom */}
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, height: 20,
-              background: 'linear-gradient(to bottom, rgba(10, 15, 30, 0) 0%, rgba(10, 15, 30, 0.92) 100%)',
-              pointerEvents: 'none',
-            }} />
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   )
 }
@@ -3385,12 +3444,98 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
 // KEY PRODUCT INSIGHT: Task -> Brief -> Action in one click.
 // When a task is clicked, load the associated brief from projects/[agent]/.
 // Briefs give context: WHY the task exists, WHAT was decided, HOW to act.
-function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode }) {
+const ctxBtnStyle = (isDaytime) => ({
+  display: 'block', width: '100%', textAlign: 'left',
+  padding: '8px 14px', background: 'none', border: 'none',
+  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  color: isDaytime ? '#1E293B' : '#E2E8F0',
+  fontFamily: "'Inter', sans-serif",
+  transition: 'background 100ms',
+})
+
+function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode, onAddToRightNow }) {
   const [expandedBrief, setExpandedBrief] = useState(null) // 'latest-result' | 'agent-md' | null
   const [briefContent, setBriefContent] = useState(null)
   const [briefLoading, setBriefLoading] = useState(false)
   const [briefError, setBriefError] = useState(null)
   const [relatedBriefs, setRelatedBriefs] = useState([])
+  const isDaytime = isNightMode === false
+
+  // Per-agent task list (localStorage-persisted)
+  const TASKS_KEY = `corner-tasks-${agentSlug}`
+  const [tasks, setTasks] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]') } catch { return [] }
+  })
+  const [taskInput, setTaskInput] = useState('')
+  const [taskCtx, setTaskCtx] = useState(null) // right-click context menu
+  const [dragIdx, setDragIdx] = useState(null)
+  const [dragOverIdx, setDragOverIdx] = useState(null)
+
+  // Persist tasks
+  useEffect(() => {
+    try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)) } catch {}
+  }, [tasks, TASKS_KEY])
+
+  // Reset tasks when switching agents
+  useEffect(() => {
+    try { setTasks(JSON.parse(localStorage.getItem(TASKS_KEY) || '[]')) } catch { setTasks([]) }
+    setTaskCtx(null)
+  }, [TASKS_KEY])
+
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!taskCtx) return
+    const handler = () => setTaskCtx(null)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [taskCtx])
+
+  const addTask = () => {
+    const text = taskInput.trim()
+    if (!text) return
+    setTasks(prev => [...prev, { id: Date.now(), text, done: false, agent: agentSlug }])
+    setTaskInput('')
+  }
+
+  const toggleTask = (id) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+  }
+
+  const deleteTask = (id) => {
+    setTasks(prev => prev.filter(t => t.id !== id))
+  }
+
+  const moveTask = (id, targetAgent) => {
+    const task = tasks.find(t => t.id === id)
+    if (!task) return
+    // Remove from current agent
+    setTasks(prev => prev.filter(t => t.id !== id))
+    // Add to target agent
+    const targetKey = `corner-tasks-${targetAgent}`
+    try {
+      const targetTasks = JSON.parse(localStorage.getItem(targetKey) || '[]')
+      targetTasks.push({ ...task, agent: targetAgent })
+      localStorage.setItem(targetKey, JSON.stringify(targetTasks))
+    } catch {}
+  }
+
+  // Drag and drop reorder
+  const handleDragStart = (idx) => setDragIdx(idx)
+  const handleDragOver = (e, idx) => {
+    e.preventDefault()
+    setDragOverIdx(idx)
+  }
+  const handleDrop = (idx) => {
+    if (dragIdx === null || dragIdx === idx) { setDragIdx(null); setDragOverIdx(null); return }
+    setTasks(prev => {
+      const copy = [...prev]
+      const [moved] = copy.splice(dragIdx, 1)
+      copy.splice(idx, 0, moved)
+      return copy
+    })
+    setDragIdx(null)
+    setDragOverIdx(null)
+  }
 
   // Map agent slugs to their project directory names
   const AGENT_PROJECT_MAP = {
@@ -3657,10 +3802,203 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         </div>
       )}
 
-      {/* Full task list link */}
-      <div style={{ color: isNightMode ? '#4A6080' : '#94A3B8', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textAlign: 'center', padding: '16px 0' }}>
-        Full task list in Checklist mode (press 2)
+      {/* Task list (draggable, right-clickable) */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{
+          color: isDaytime ? '#64748B' : '#6B7280',
+          fontSize: 11, fontWeight: 700,
+          fontFamily: "'JetBrains Mono', monospace",
+          textTransform: 'uppercase', letterSpacing: '0.12em',
+          marginBottom: 8,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span>Tasks</span>
+          <span style={{ fontWeight: 600, fontSize: 12, color: isDaytime ? '#94A3B8' : '#475569' }}>
+            {tasks.filter(t => !t.done).length} open
+          </span>
+        </div>
+
+        {/* Task items */}
+        {tasks.map((t, idx) => (
+          <div
+            key={t.id}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDrop={() => handleDrop(idx)}
+            onDragEnd={() => { setDragIdx(null); setDragOverIdx(null) }}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 10px', marginBottom: 4,
+              background: dragOverIdx === idx
+                ? (isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.12)')
+                : (isDaytime ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)'),
+              border: dragOverIdx === idx
+                ? (isDaytime ? '1px dashed rgba(59,130,246,0.4)' : '1px dashed rgba(59,130,246,0.4)')
+                : (isDaytime ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(255,255,255,0.04)'),
+              borderRadius: 6,
+              cursor: 'grab',
+              opacity: dragIdx === idx ? 0.4 : 1,
+              transition: 'background 100ms, opacity 100ms, border 100ms',
+            }}
+          >
+            {/* Drag handle */}
+            <div style={{ color: isDaytime ? '#CBD5E1' : '#334155', cursor: 'grab', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div style={{ width: 12, height: 2, background: 'currentColor', borderRadius: 1 }} />
+              <div style={{ width: 12, height: 2, background: 'currentColor', borderRadius: 1 }} />
+            </div>
+            {/* Checkbox */}
+            <div
+              onClick={(e) => { e.stopPropagation(); toggleTask(t.id) }}
+              style={{
+                width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                border: t.done
+                  ? `2px solid ${agentColor}`
+                  : (isDaytime ? '2px solid #CBD5E1' : '2px solid #475569'),
+                background: t.done ? agentColor : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all 150ms',
+              }}
+            >
+              {t.done && (
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </div>
+            {/* Task text */}
+            <span style={{
+              flex: 1, fontSize: 14, fontWeight: 500,
+              color: t.done
+                ? (isDaytime ? '#94A3B8' : '#475569')
+                : (isDaytime ? '#1E293B' : '#E2E8F0'),
+              fontFamily: "'Inter', sans-serif",
+              textDecoration: t.done ? 'line-through' : 'none',
+              lineHeight: 1.4,
+            }}>
+              {t.text}
+            </span>
+          </div>
+        ))}
+
+        {tasks.length === 0 && (
+          <div style={{
+            textAlign: 'center', padding: '16px 0',
+            color: isDaytime ? '#CBD5E1' : '#334155',
+            fontSize: 13, fontFamily: "'Inter', sans-serif",
+          }}>
+            No tasks yet. Add one below.
+          </div>
+        )}
+
+        {/* Add task input */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <input
+            value={taskInput}
+            onChange={e => setTaskInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') addTask() }}
+            placeholder="Add a task..."
+            style={{
+              flex: 1, padding: '8px 12px',
+              background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)',
+              border: isDaytime ? '1.5px solid rgba(59,130,246,0.12)' : '1.5px solid rgba(59,130,246,0.12)',
+              borderRadius: 6, fontSize: 13, fontWeight: 500,
+              color: isDaytime ? '#1E293B' : '#E2E8F0',
+              fontFamily: "'Inter', sans-serif", outline: 'none',
+            }}
+          />
+          <button
+            onClick={addTask}
+            style={{
+              padding: '8px 12px',
+              background: agentColor, border: 'none', borderRadius: 6,
+              color: '#FFF', fontSize: 13, fontWeight: 700,
+              fontFamily: "'Inter', sans-serif", cursor: 'pointer',
+            }}
+          >
+            Add
+          </button>
+        </div>
       </div>
+
+      {/* Right-click context menu for tasks */}
+      {taskCtx && (
+        <div style={{
+          position: 'fixed', left: taskCtx.x, top: taskCtx.y, zIndex: 200,
+          background: isDaytime ? '#FFFFFF' : 'rgba(15,23,42,0.98)',
+          border: isDaytime ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(59,130,246,0.2)',
+          borderRadius: 8, padding: '4px 0', minWidth: 180,
+          boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.12)' : '0 4px 16px rgba(0,0,0,0.5)',
+        }}>
+          {/* Move to top / bottom */}
+          <button onClick={() => {
+            setTasks(prev => {
+              const idx = prev.findIndex(t => t.id === taskCtx.id)
+              if (idx <= 0) return prev
+              const copy = [...prev]
+              const [item] = copy.splice(idx, 1)
+              copy.unshift(item)
+              return copy
+            })
+            setTaskCtx(null)
+          }} style={ctxBtnStyle(isDaytime)}>
+            Move to Top
+          </button>
+          <button onClick={() => {
+            setTasks(prev => {
+              const idx = prev.findIndex(t => t.id === taskCtx.id)
+              if (idx < 0 || idx === prev.length - 1) return prev
+              const copy = [...prev]
+              const [item] = copy.splice(idx, 1)
+              copy.push(item)
+              return copy
+            })
+            setTaskCtx(null)
+          }} style={ctxBtnStyle(isDaytime)}>
+            Move to Bottom
+          </button>
+
+          {/* Send to Right Now */}
+          <button onClick={() => {
+            const t = tasks.find(x => x.id === taskCtx.id)
+            if (t && onAddToRightNow) onAddToRightNow(t)
+            setTaskCtx(null)
+          }} style={{ ...ctxBtnStyle(isDaytime), color: '#FF6B3D', fontWeight: 700 }}>
+            Send to Right Now
+          </button>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: isDaytime ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+
+          {/* Assign to another agent */}
+          <div style={{
+            padding: '6px 14px',
+            fontSize: 11, fontWeight: 700, color: isDaytime ? '#94A3B8' : '#475569',
+            fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em',
+          }}>Move to agent</div>
+          {AGENTS.filter(a => a.slug !== agentSlug).slice(0, 6).map(a => (
+            <button key={a.slug} onClick={() => { moveTask(taskCtx.id, a.slug); setTaskCtx(null) }}
+              style={ctxBtnStyle(isDaytime)}
+            >
+              {a.name}
+            </button>
+          ))}
+
+          {/* Divider */}
+          <div style={{ height: 1, background: isDaytime ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+
+          {/* Delete */}
+          <button onClick={() => { deleteTask(taskCtx.id); setTaskCtx(null) }}
+            style={{ ...ctxBtnStyle(isDaytime), color: '#EF4444' }}
+          >
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -3831,7 +4169,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
 // Box 4: PROJECT PROGRESS (purple, cycle arrows, crossfade)
 // TODO(patrik): CALENDAR BOX REAL DATA -- Wire to Google Calendar MCP. Show NEXT EVENT with time + title.
 // TODO(patrik): PROGRESS BORDER CLOCKWISE FILL -- SVG stroke-dashoffset clockwise from top-center.
-function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgress, isNightMode, isDaytime, data, pipeData }) {
+function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgress, isNightMode, isDaytime, data, pipeData, rightNowTasksProp }) {
   const [glowBox, setGlowBox] = useState(null)
   const [expandedBox, setExpandedBox] = useState(null)
   const [projectIndex, setProjectIndex] = useState(0)
@@ -3852,23 +4190,40 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
   // On localhost: useDataPipe is source of truth. Zero running = zero shown.
   // On production: falls back to allAgentStatus demo data.
   const liveAgents = pipeData?.rightNow || []
+
+  // Right Now manual tasks passed in from parent (GameDashboard)
+  const rightNowTasks = rightNowTasksProp || []
+
   const workingAgents = useMemo(() => {
+    // Combine live agent tasks + manual Right Now tasks
+    const agents = []
     if (liveAgents.length > 0) {
-      return liveAgents.map(t => ({
+      agents.push(...liveAgents.map(t => ({
         slug: t.agent,
         name: (t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1),
         task: t.text || '',
-      }))
+        isLive: true,
+      })))
+    } else if (!IS_LOCAL) {
+      agents.push(...Object.entries(allAgentStatus || {})
+        .filter(([, a]) => a?.status === 'WORKING')
+        .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || '', isLive: true })))
     }
-    // On localhost, trust useDataPipe: 0 running = 0 shown. No fallback.
-    if (IS_LOCAL) return []
-    return Object.entries(allAgentStatus || {})
-      .filter(([, a]) => a?.status === 'WORKING')
-      .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || '' }))
-  }, [liveAgents, allAgentStatus])
+    // Add manual Right Now tasks
+    for (const t of rightNowTasks) {
+      agents.push({
+        slug: t.agent || 'patrik',
+        name: (t.agent || 'patrik').charAt(0).toUpperCase() + (t.agent || 'patrik').slice(1),
+        task: t.text || '',
+        isLive: false,
+        id: t.id,
+      })
+    }
+    return agents
+  }, [liveAgents, allAgentStatus, rightNowTasks])
 
-  // LIVE count: prefer useDataPipe count (same source as bottom HUD pills)
-  const liveCount = pipeData?.pillCounts?.rightNow ?? workingCount
+  // LIVE count: live agents + Right Now manual tasks
+  const liveCount = (pipeData?.pillCounts?.rightNow ?? 0) + rightNowTasks.length
 
   // YOUR TODOS: real count from useDataPipe (punch-list [Patrik] tags), not blocked agents
   const todoCount = pipeData?.pillCounts?.yourTodos ?? blockedCount ?? 0
@@ -4468,11 +4823,208 @@ function parsePunchListSidebar(markdown) {
 // TODO(patrik): DATA SYNC RULE -- ALL data syncs to proper place automatically. Pills are LIVE VIEWS: task completed removes from Right Now + adds to completed feed + updates project pill progress. TODO checked off drops Your TODOs count + archives it. Calendar event passes auto-checks in Schedule. Agent starts/finishes updates LIVE box. 3s polling keeps everything fresh. No data in only one place. Ref: bobby/last-conversation.md Data Sync Rule.
 // TODO(patrik): CHAT VISUAL TARGET -- Chat design target is NOT the sidebar spec mockup. The approved targets are: projects/steffen/visual-target/hud/dream-chat-v1.png and projects/steffen/visual-target/chat-view-full.png. Bobby should match THOSE, not generic bubbles. Ref: bobby/last-conversation.md Chat Design Note.
 // DONE(bobby2): isNightMode passed to GameHUD. Bottom HUD flips to white/vibrant blue in daytime. Ref: Patrik feedback Pass 22.
+// ---- OWNER NOTES (persistent notes for Patrik's profile) ----
+function OwnerNotes({ isNightMode, onAddToRightNow }) {
+  const isDaytime = isNightMode === false
+  const STORAGE_KEY = 'corner-owner-notes'
+  const [notes, setNotes] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    } catch { return [] }
+  })
+  const [input, setInput] = useState('')
+  const inputRef = useRef(null)
+
+  // Persist notes
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)) } catch {}
+  }, [notes])
+
+  const addNote = () => {
+    const text = input.trim()
+    if (!text) return
+    setNotes(prev => [{ id: Date.now(), text, ts: new Date().toISOString(), pinned: false }, ...prev])
+    setInput('')
+    inputRef.current?.focus()
+  }
+
+  const deleteNote = (id) => {
+    setNotes(prev => prev.filter(n => n.id !== id))
+  }
+
+  const togglePin = (id) => {
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, pinned: !n.pinned } : n))
+  }
+
+  // Sort: pinned first, then by time
+  const sorted = [...notes].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1
+    if (!a.pinned && b.pinned) return 1
+    return b.id - a.id
+  })
+
+  const formatTime = (ts) => {
+    try {
+      const d = new Date(ts)
+      const now = new Date()
+      const diff = now - d
+      if (diff < 60000) return 'just now'
+      if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    } catch { return '' }
+  }
+
+  // Context menu state
+  const [ctxMenu, setCtxMenu] = useState(null)
+
+  useEffect(() => {
+    if (!ctxMenu) return
+    const handler = () => setCtxMenu(null)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [ctxMenu])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Notes list */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+        {sorted.length === 0 && (
+          <div style={{
+            textAlign: 'center', padding: '40px 20px',
+            color: isDaytime ? '#94A3B8' : '#475569',
+            fontSize: 14, fontFamily: "'Inter', sans-serif",
+          }}>
+            Your notes will appear here.
+          </div>
+        )}
+        {sorted.map(note => (
+          <div
+            key={note.id}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              setCtxMenu({ id: note.id, x: e.clientX, y: e.clientY, text: note.text })
+            }}
+            style={{
+              padding: '10px 14px',
+              marginBottom: 8,
+              background: note.pinned
+                ? (isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.08)')
+                : (isDaytime ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)'),
+              border: note.pinned
+                ? (isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(59,130,246,0.2)')
+                : (isDaytime ? '1px solid rgba(0,0,0,0.05)' : '1px solid rgba(255,255,255,0.05)'),
+              borderRadius: 8,
+              cursor: 'default',
+            }}
+          >
+            <div style={{
+              fontSize: 14, fontWeight: 500, lineHeight: 1.5,
+              color: isDaytime ? '#1E293B' : '#E2E8F0',
+              fontFamily: "'Inter', sans-serif",
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            }}>
+              {note.pinned && <span style={{ color: '#3B82F6', marginRight: 6, fontSize: 12 }}>PINNED</span>}
+              {note.text}
+            </div>
+            <div style={{
+              fontSize: 12, fontWeight: 500, marginTop: 6,
+              color: isDaytime ? '#94A3B8' : '#475569',
+              fontFamily: "'Inter', sans-serif",
+            }}>
+              {formatTime(note.ts)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Right-click context menu */}
+      {ctxMenu && (
+        <div style={{
+          position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 200,
+          background: isDaytime ? '#FFFFFF' : 'rgba(15,23,42,0.98)',
+          border: isDaytime ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(59,130,246,0.2)',
+          borderRadius: 8, padding: '4px 0', minWidth: 160,
+          boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.12)' : '0 4px 16px rgba(0,0,0,0.5)',
+        }}>
+          {[
+            { label: ctxMenu.pinned ? 'Unpin' : 'Pin to top', action: () => togglePin(ctxMenu.id) },
+            { label: 'Send to Right Now', action: () => {
+              const note = notes.find(n => n.id === ctxMenu.id)
+              if (note && onAddToRightNow) onAddToRightNow({ id: note.id, text: note.text, agent: 'patrik' })
+            } },
+            { label: 'Delete', action: () => deleteNote(ctxMenu.id), color: '#EF4444' },
+          ].map(item => (
+            <button
+              key={item.label}
+              onClick={() => { item.action(); setCtxMenu(null) }}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                padding: '8px 14px', background: 'none', border: 'none',
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                color: item.color || (isDaytime ? '#1E293B' : '#E2E8F0'),
+                fontFamily: "'Inter', sans-serif",
+                transition: 'background 100ms',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input bar */}
+      <div style={{
+        padding: '12px 16px',
+        borderTop: isDaytime ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+        display: 'flex', gap: 8,
+      }}>
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addNote() } }}
+          placeholder="Write a note..."
+          style={{
+            flex: 1,
+            padding: '10px 14px',
+            background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)',
+            border: isDaytime ? '1.5px solid rgba(59,130,246,0.15)' : '1.5px solid rgba(59,130,246,0.15)',
+            borderRadius: 8,
+            fontSize: 14, fontWeight: 500,
+            color: isDaytime ? '#1E293B' : '#E2E8F0',
+            fontFamily: "'Inter', sans-serif",
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={addNote}
+          style={{
+            padding: '10px 16px',
+            background: '#3B82F6',
+            border: 'none', borderRadius: 8,
+            color: '#FFFFFF', fontSize: 14, fontWeight: 700,
+            fontFamily: "'Inter', sans-serif",
+            cursor: 'pointer',
+            transition: 'background 150ms',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#2563EB'}
+          onMouseLeave={e => e.currentTarget.style.background = '#3B82F6'}
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // DONE(bobby+bobby2): Sidebar seamless column -- sidebar is ONE continuous full-height column. Chat input at bottom of sidebar. ChatBar removed. GameHUD constrained to game viewport width.
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -4690,6 +5242,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         isDaytime={isDaytime}
         data={data}
         pipeData={pipeData}
+        rightNowTasksProp={rightNowTasks}
       />
 
       {/* ---- TAB BAR (Vegas glow tabs: Chat / Tasks / Info / List / Board) ---- */}
@@ -4699,21 +5252,33 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         flexShrink: 0,
         position: 'relative',
       }}>
-        {[
-          { id: 'chat', label: 'CHAT', key: 'C' },
-          { id: 'tasks', label: 'TASKS', key: 'T' },
-          { id: 'info', label: 'INFO', key: 'I' },
-          { id: 'checklist', label: 'LIST', key: '2' },
-          { id: 'megaboard', label: 'BOARD', key: '3' },
-        ].map(tab => {
+        {(agentSlug === 'patrik'
+          ? [
+              { id: 'notes', label: 'NOTES', key: 'N' },
+              { id: 'tasks', label: 'TASKS', key: 'T' },
+              { id: 'info', label: 'SETTINGS', key: 'S' },
+            ]
+          : [
+              { id: 'chat', label: 'CHAT', key: 'C' },
+              { id: 'tasks', label: 'TASKS', key: 'T' },
+              { id: 'info', label: 'INFO', key: 'I' },
+              { id: 'checklist', label: 'LIST', key: '2' },
+              { id: 'megaboard', label: 'BOARD', key: '3' },
+            ]
+        ).map(tab => {
           const active = activeTab === tab.id
           return (
             <motion.button
               key={tab.id}
               onClick={() => {
-                setActiveTab(tab.id)
-                if ((tab.id === 'checklist' || tab.id === 'megaboard') && !isExtended) {
+                if (activeTab === tab.id) {
+                  // Already on this tab, toggle expand/collapse
                   onToggleExtend?.()
+                } else {
+                  setActiveTab(tab.id)
+                  if ((tab.id === 'checklist' || tab.id === 'megaboard') && !isExtended) {
+                    onToggleExtend?.()
+                  }
                 }
               }}
               whileHover={{ y: -2, background: active ? 'none' : 'rgba(59,130,246,0.04)', transition: { type: 'spring', stiffness: 500, damping: 12 } }}
@@ -4778,6 +5343,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
       {/* ---- TAB CONTENT ---- */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* NOTES TAB (owner profile - persistent notes) */}
+        {activeTab === 'notes' && (
+          <OwnerNotes isNightMode={isNightMode} onAddToRightNow={onAddToRightNow} />
+        )}
+
         {/* CHAT TAB (matches chat-view-full.png) */}
         {activeTab === 'chat' && (
           <ChatErrorBoundary>
@@ -4804,7 +5374,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     {agent?.name || 'Agent'}
                   </div>
                   <div style={{ color: isDaytime ? '#94A3B8' : '#64748B', fontSize: 14, fontFamily: "'Inter', sans-serif", textAlign: 'center' }}>
-                    Real relay chat. Terminal + Telegram + Dashboard.
+                    Start a conversation with {agent?.name || 'this agent'}.
                   </div>
                 </div>
               )}
@@ -5028,7 +5598,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         fontSize: 13, color: isDaytime ? '#64748B' : '#94A3B8', fontStyle: 'italic', fontWeight: 500,
                         fontFamily: "'Inter', system-ui, sans-serif",
                       }}>
-                        {agent?.name || 'Agent'} is typing...
+                        {(() => {
+                          const streamMsg = chatMessages?.find?.(m => m.streaming)
+                          const phase = streamMsg?.streamPhase || 'typing'
+                          if (phase === 'busy') return `${agent?.name || 'Agent'} may be busy. Message delivered.`
+                          if (phase === 'processing') return `${agent?.name || 'Agent'} is processing...`
+                          return `${agent?.name || 'Agent'} is typing...`
+                        })()}
                       </span>
                     </div>
                     <ChatTimeoutRing
@@ -5135,6 +5711,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             agentStatus={agentStatus}
             agent={agent}
             isNightMode={isNightMode}
+            onAddToRightNow={onAddToRightNow}
           />
         )}
 
@@ -5300,6 +5877,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             </Suspense>
           </div>
         )}
+
       </div>
     </div>
   )
@@ -5388,7 +5966,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
         onMouseEnter={e => { if (!isOverview) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
         onMouseLeave={e => { if (!isOverview) e.currentTarget.style.background = 'transparent' }}
       >
-        <Map size={16} />
+        <MapIcon size={16} />
       </button>
     </div>
   )
@@ -5398,6 +5976,23 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
 export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
   const [hudOpen, setHudOpen] = useState(false)
+
+  // Right Now manual tasks (user-created, persisted to localStorage)
+  const [rightNowTasks, setRightNowTasks] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]') } catch { return [] }
+  })
+  useEffect(() => {
+    try { localStorage.setItem('corner-right-now-tasks', JSON.stringify(rightNowTasks)) } catch {}
+  }, [rightNowTasks])
+  const addToRightNow = useCallback((task) => {
+    setRightNowTasks(prev => {
+      if (prev.some(t => t.id === task.id)) return prev
+      return [...prev, { ...task, addedAt: new Date().toISOString() }]
+    })
+  }, [])
+  const removeFromRightNow = useCallback((id) => {
+    setRightNowTasks(prev => prev.filter(t => t.id !== id))
+  }, [])
   // HMR state recovery: restore selected room + tab from sessionStorage if HMR just reloaded
   const [selectedRoom, setSelectedRoom] = useState(() => {
     const saved = sessionStorage.getItem('corner-selected-room')
@@ -5432,8 +6027,59 @@ export default function GameDashboard() {
       ],
     }
   }, [])
-  const [panelMessages, setPanelMessages] = useState(IS_LOCAL ? {} : demoChatMessages)
+  // Per-agent chat history: { agentSlug: { _all: [...messages] } }
+  const [agentChats, setAgentChats] = useState(() => {
+    if (!IS_LOCAL) return { _demo: demoChatMessages }
+    // Clear any stale old-format data that might crash the app
+    try {
+      // Remove old panelMessages format if it exists
+      localStorage.removeItem('corner-panel-messages')
+    } catch {}
+    try {
+      const saved = localStorage.getItem('corner-agent-chats')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Validate structure: must be object with agent keys, each having _all array
+        if (parsed && typeof parsed === 'object' && !parsed._all) return parsed
+        // If it has _all at top level, it's the old format - discard
+        localStorage.removeItem('corner-agent-chats')
+      }
+    } catch {
+      // Corrupted data, nuke it
+      try { localStorage.removeItem('corner-agent-chats') } catch {}
+    }
+    return {}
+  })
+  // Convenience: current agent's messages
+  const panelMessages = agentChats[selectedRoom] || { _all: [] }
+  const setPanelMessages = useCallback((updater) => {
+    setAgentChats(prev => {
+      const agentKey = selectedRoom || '_default'
+      const current = prev[agentKey] || { _all: [] }
+      const updated = typeof updater === 'function' ? updater(current) : updater
+      return { ...prev, [agentKey]: updated }
+    })
+  }, [selectedRoom])
   const [panelStreaming, setPanelStreaming] = useState(false)
+
+  // Persist per-agent chats to localStorage (debounced)
+  const chatSaveTimerRef = useRef(null)
+  useEffect(() => {
+    if (!IS_LOCAL) return
+    if (chatSaveTimerRef.current) clearTimeout(chatSaveTimerRef.current)
+    chatSaveTimerRef.current = setTimeout(() => {
+      try {
+        // Only save last 50 messages per agent to keep localStorage lean
+        const toSave = {}
+        for (const [slug, chat] of Object.entries(agentChats)) {
+          if (chat?._all?.length > 0) {
+            toSave[slug] = { _all: chat._all.filter(m => !m.streaming).slice(-50) }
+          }
+        }
+        localStorage.setItem('corner-agent-chats', JSON.stringify(toSave))
+      } catch {}
+    }, 1000)
+  }, [agentChats])
 
   // Ref for CanvasOffice imperative handle (triggerCelebration)
   const canvasOfficeRef = useRef(null)
@@ -5455,7 +6101,8 @@ export default function GameDashboard() {
     try {
       setPanelMessages(prev => {
         try {
-          const result = updater(prev)
+          const safePrev = prev && prev._all ? prev : { _all: [] }
+          const result = updater(safePrev)
           // Validate _all array: every item must have role + content
           if (result?._all) {
             result._all = result._all.filter(m =>
@@ -5471,7 +6118,7 @@ export default function GameDashboard() {
     } catch (err) {
       console.warn('[Corner] setPanelMessages failed:', err)
     }
-  }, [])
+  }, [setPanelMessages])
   const panelRelayPollRef = useRef(null)
   // Background outbox polling state
   const [unreadCount, setUnreadCount] = useState(0)
@@ -5805,12 +6452,21 @@ export default function GameDashboard() {
 
   // Reset streaming state when switching agents so stale typing indicators don't persist
   // e.g., if agent A was streaming and user clicks agent B, the typing indicator clears
+  // Also strip any stale streaming placeholder messages from the chat array
   useEffect(() => {
     setPanelStreaming(false)
     if (panelRelayPollRef.current) {
       clearInterval(panelRelayPollRef.current)
       panelRelayPollRef.current = null
     }
+    // Clean stale streaming messages from chat
+    safePanelUpdate(prev => {
+      const filtered = [...(prev._all || [])].filter(m => !m.streaming)
+      if (filtered.length !== (prev._all || []).length) {
+        return { ...prev, _all: filtered }
+      }
+      return prev
+    })
   }, [selectedRoom])
 
   useEffect(() => {
@@ -6134,11 +6790,11 @@ export default function GameDashboard() {
       transition: 'background 500ms ease',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : (getDetailLevel(cameraZoom) === 'detail' ? 40 : 54), paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : 52, paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
@@ -6233,6 +6889,8 @@ export default function GameDashboard() {
               activeTab={panelActiveTab}
               onActiveTabChange={setPanelActiveTab}
               isNightMode={isNightMode}
+              onAddToRightNow={addToRightNow}
+              rightNowTasks={rightNowTasks}
               onSendMessage={(e) => {
                 e?.preventDefault()
                 const text = panelChatInput?.trim()
@@ -6250,40 +6908,89 @@ export default function GameDashboard() {
                   return { ...prev, _all: sorted }
                 })
                 setPanelStreaming(true)
+                // Phased timeout: 10s = "processing", 30s = "may be busy", 60s = give up
+                const streamingPhaseRef = { current: 'typing' }
+                const phase1 = setTimeout(() => {
+                  streamingPhaseRef.current = 'processing'
+                  safePanelUpdate(prev => {
+                    const msgs = [...(prev._all || [])]
+                    const streamMsg = msgs.find(m => m.streaming)
+                    if (streamMsg) streamMsg.streamPhase = 'processing'
+                    return { ...prev, _all: msgs }
+                  })
+                }, 10000)
+                const phase2 = setTimeout(() => {
+                  streamingPhaseRef.current = 'busy'
+                  safePanelUpdate(prev => {
+                    const msgs = [...(prev._all || [])]
+                    const streamMsg = msgs.find(m => m.streaming)
+                    if (streamMsg) streamMsg.streamPhase = 'busy'
+                    return { ...prev, _all: msgs }
+                  })
+                }, 30000)
+                const streamingTimeout = setTimeout(() => {
+                  setPanelStreaming(false)
+                  safePanelUpdate(prev => {
+                    const filtered = [...(prev._all || [])].filter(m => !m.streaming)
+                    return { ...prev, _all: filtered }
+                  })
+                  if (panelRelayPollRef.current) {
+                    clearInterval(panelRelayPollRef.current)
+                    panelRelayPollRef.current = null
+                  }
+                }, 60000)
+                const clearAllTimeouts = () => {
+                  clearTimeout(phase1)
+                  clearTimeout(phase2)
+                  clearTimeout(streamingTimeout)
+                }
                 if (IS_LOCAL) {
                   fetch('/api/local/relay-send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
-                  }).then(() => {
+                  }).then(async (sendRes) => {
+                    // Get the message ID for correlation
+                    const sendData = await sendRes.json().catch(() => ({}))
+                    const sentMsgId = sendData.id || null
                     if (panelRelayPollRef.current) clearInterval(panelRelayPollRef.current)
                     const lastCheck = { ts: sentTime }
                     panelRelayPollRef.current = setInterval(async () => {
                       try {
                         const since = encodeURIComponent(lastCheck.ts)
-                        const res = await fetch(`/api/local/relay-outbox?since=${since}`)
+                        // Use correlation ID if available, fall back to timestamp-based
+                        const replyParam = sentMsgId ? `&reply_to=${encodeURIComponent(sentMsgId)}` : ''
+                        const res = await fetch(`/api/local/relay-outbox?since=${since}${replyParam}`)
                         if (!res.ok) return
                         const data = await res.json()
-                        if (data.messages?.length > 0) {
-                          const responses = data.messages.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
-                          if (responses.length > 0) {
-                            const latest = responses[responses.length - 1]
-                            const cleanedResp = sanitizeRelayMessage(latest.message) || latest.message || ''
-                            safePanelUpdate(prev => {
-                              // Remove streaming, add real response, sort in one pass
-                              const filtered = [...(prev._all || [])].filter(m => !m.streaming)
-                              if (!filtered.some(m => m.id === latest.id)) {
-                                filtered.push({ role: 'assistant', content: cleanedResp, streaming: false, time: latest.timestamp || new Date().toISOString(), source: extractAgentFromMessage(latest) || 'system', id: latest.id || `resp-${Date.now()}` })
-                              }
-                              filtered.sort(safeTimeSort)
-                              return { ...prev, _all: filtered }
-                            })
-                            setPanelStreaming(false)
-                            lastCheck.ts = latest.timestamp
-                            lastBgOutboxCheckRef.current = latest.timestamp
-                            clearInterval(panelRelayPollRef.current)
-                            panelRelayPollRef.current = null
+                        // If no reply_to match, fall back to any new non-dashboard message
+                        let responses = data.messages?.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket') || []
+                        if (responses.length === 0 && sentMsgId) {
+                          // Retry without reply_to filter (agent might not have set it)
+                          const fallbackRes = await fetch(`/api/local/relay-outbox?since=${since}`)
+                          if (fallbackRes.ok) {
+                            const fallbackData = await fallbackRes.json()
+                            responses = fallbackData.messages?.filter(m => m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket') || []
                           }
+                        }
+                        if (responses.length > 0) {
+                          const latest = responses[responses.length - 1]
+                          const cleanedResp = sanitizeRelayMessage(latest.message) || latest.message || ''
+                          safePanelUpdate(prev => {
+                            // Remove streaming, add real response, sort in one pass
+                            const filtered = [...(prev._all || [])].filter(m => !m.streaming)
+                            if (!filtered.some(m => m.id === latest.id)) {
+                              filtered.push({ role: 'assistant', content: cleanedResp, streaming: false, time: latest.timestamp || new Date().toISOString(), source: extractAgentFromMessage(latest) || 'system', id: latest.id || `resp-${Date.now()}` })
+                            }
+                            filtered.sort(safeTimeSort)
+                            return { ...prev, _all: filtered }
+                          })
+                          setPanelStreaming(false)
+                          clearAllTimeouts()
+                          lastCheck.ts = latest.timestamp
+                          lastBgOutboxCheckRef.current = latest.timestamp
+                          clearInterval(panelRelayPollRef.current)
+                          panelRelayPollRef.current = null
                         }
                       } catch {}
                     }, 500) // Local: 500ms for near-instant response display
@@ -6295,6 +7002,7 @@ export default function GameDashboard() {
                       return { ...prev, _all: msgs }
                     })
                     setPanelStreaming(false)
+                    clearAllTimeouts()
                   })
                 }
               }}
