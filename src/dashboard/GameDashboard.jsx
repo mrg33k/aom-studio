@@ -7137,42 +7137,32 @@ export default function GameDashboard() {
     sessionStorage.setItem('corner-selected-room', selectedRoom || '')
   }, [selectedRoom])
 
-  // Reset streaming state when switching agents so stale typing indicators don't persist
-  // e.g., if agent A was streaming and user clicks agent B, the typing indicator clears
-  // On agent switch: reset streaming, clean stale messages, load conversation from server
+  // On agent switch: reset streaming, load conversation from server files
   useEffect(() => {
     setPanelStreaming(false)
     if (panelRelayPollRef.current) {
       clearInterval(panelRelayPollRef.current)
       panelRelayPollRef.current = null
     }
-    // Clean stale streaming messages
-    safePanelUpdate(prev => {
-      const filtered = [...(prev._all || [])].filter(m => !m.streaming)
-      if (filtered.length !== (prev._all || []).length) {
-        return { ...prev, _all: filtered }
-      }
-      return prev
-    })
-    // Load conversation history from server files (conversations/agents/{slug}.jsonl)
-    // ALWAYS load from server files. Server conversation files are the source of truth.
+    // Load conversation from server files. This is the ONLY source of truth.
     if (IS_LOCAL && selectedRoom) {
       fetch(`/api/local/conversations?target=${selectedRoom}&type=agent&limit=50`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
-          if (!data?.messages?.length) return
-          setAgentChats(prev => {
-            const loaded = data.messages.map(m => ({
-              role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
-              content: m.text || '',
-              time: m.timestamp || '',
-              source: m.source || 'file',
-              id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-            })).filter(m => m.content)
-            return { ...prev, [selectedRoom]: { _all: loaded } }
-          })
+          const msgs = (data?.messages || []).map(m => ({
+            role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
+            content: m.text || '',
+            time: m.timestamp || '',
+            source: m.source || 'file',
+            id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+          })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+          console.log(`[Corner] Loaded ${msgs.length} msgs for ${selectedRoom} (${msgs.filter(m=>m.role==='user').length} user, ${msgs.filter(m=>m.role==='assistant').length} asst)`)
+          setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: msgs } }))
         })
-        .catch(() => {})
+        .catch(() => {
+          // No server file, start empty
+          setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: [] } }))
+        })
     }
   }, [selectedRoom])
 
