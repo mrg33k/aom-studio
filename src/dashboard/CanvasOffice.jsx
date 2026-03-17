@@ -284,13 +284,16 @@ export default function CanvasOffice({
     return { roomShell, charLayer, glowLayer }
   }, [layers])
 
-  // Determine room state from agent status
-  const roomState = useMemo(() => {
-    if (elonStatus === 'BLOCKED') return 'blocked'
-    if (elonStatus === 'DONE') return 'celebrating'
-    if (isElonWorking) return 'working'
-    return 'idle'
-  }, [elonStatus, isElonWorking])
+  // PARTY MODE: cycle through all states every 3 seconds
+  const ALL_STATES = ['working', 'idle', 'celebrating', 'blocked', 'sleeping']
+  const [partyIdx, setPartyIdx] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPartyIdx(prev => (prev + 1) % ALL_STATES.length)
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [])
+  const roomState = ALL_STATES[partyIdx]
 
   // Crossfade between states
   const [fadeAlpha, setFadeAlpha] = useState(1)
