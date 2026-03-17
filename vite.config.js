@@ -472,6 +472,61 @@ function localDashboardPlugin() {
                 console.log(`[Relay] Conv log write failed: ${err.message}`)
               }
             }
+
+            // Auto-respond: spawn claude -p so dashboard always gets a response
+            // even when no terminal is open
+            if (source === 'corner-dashboard' && data.message) {
+              const agentFolder = AGENT_FOLDERS[agentName]
+              const agentMd = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/AGENT.md`) : null
+              const lastConvo = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/last-conversation.md`) : null
+
+              let agentContext = ''
+              try { if (agentMd && fs.existsSync(agentMd)) agentContext += '\n\n' + fs.readFileSync(agentMd, 'utf-8').slice(0, 2000) } catch {}
+              try { if (lastConvo && fs.existsSync(lastConvo)) agentContext += '\n\n' + fs.readFileSync(lastConvo, 'utf-8').slice(0, 1500) } catch {}
+
+              const prompt = `You are ${agentName}. Patrik sent: "${data.message}"\n\nRespond as ${agentName}. Prefix with [${agentName.toUpperCase()}]. Be concise. No em dashes.${agentContext}`
+
+              const claudeCli = ['/opt/homebrew/bin/claude', '/usr/local/bin/claude']
+                .find(p => { try { return fs.existsSync(p) } catch { return false } })
+
+              if (claudeCli) {
+                const child = spawn(claudeCli, ['-p', '--model', 'haiku', '--no-session-persistence'], {
+                  cwd: AOM_EA_ROOT, timeout: 45000, shell: true,
+                  env: { ...process.env }, stdio: ['pipe', 'pipe', 'pipe'],
+                })
+                let stdout = ''
+                child.stdout.on('data', c => { stdout += c.toString() })
+                child.on('close', (code) => {
+                  const response = stdout.trim()
+                  if (!response) return
+
+                  // Detect agent from [AGENT] prefix
+                  const prefixMatch = response.match(/^\[([A-Z]+)\]/)
+                  const respAgent = prefixMatch ? prefixMatch[1].toLowerCase() : agentName
+                  const cleanText = response.replace(/^\[[A-Z]+\]\s*/, '').trim()
+
+                  // Write response to conversation file (correct agent)
+                  const respEntry = {
+                    id: crypto.randomUUID(),
+                    timestamp: new Date().toISOString(),
+                    role: 'assistant',
+                    agent: respAgent,
+                    source: 'dashboard-auto',
+                    text: cleanText,
+                    reply_to: id,
+                  }
+                  const respLine = JSON.stringify(respEntry) + '\n'
+                  const respConvDir = resolve(AOM_EA_ROOT, 'conversations')
+                  try {
+                    fs.appendFileSync(resolve(respConvDir, 'agents', `${respAgent}.jsonl`), respLine)
+                    fs.appendFileSync(resolve(respConvDir, 'main.jsonl'), respLine)
+                  } catch {}
+                })
+                child.on('error', () => {})
+                child.stdin.write(prompt)
+                child.stdin.end()
+              }
+            }
           } catch (err) {
             res.statusCode = 500
             res.end(JSON.stringify({ error: err.message }))
