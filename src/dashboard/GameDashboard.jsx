@@ -6708,24 +6708,24 @@ export default function GameDashboard() {
     }
   }, [])
   // Per-agent chat history: { agentSlug: { _all: [...messages] } }
+  // VERSION 2: force clear on upgrade to fix cross-agent contamination
+  const CHAT_VERSION = 'v2'
   const [agentChats, setAgentChats] = useState(() => {
     if (!IS_LOCAL) return { _demo: demoChatMessages }
-    // Clear any stale old-format data that might crash the app
     try {
-      // Remove old panelMessages format if it exists
-      localStorage.removeItem('corner-panel-messages')
-    } catch {}
-    try {
+      const ver = localStorage.getItem('corner-chat-version')
+      if (ver !== CHAT_VERSION) {
+        // Version mismatch: clear corrupted data from old routing bug
+        localStorage.removeItem('corner-agent-chats')
+        localStorage.setItem('corner-chat-version', CHAT_VERSION)
+        return {}
+      }
       const saved = localStorage.getItem('corner-agent-chats')
       if (saved) {
         const parsed = JSON.parse(saved)
-        // Validate structure: must be object with agent keys, each having _all array
         if (parsed && typeof parsed === 'object' && !parsed._all) return parsed
-        // If it has _all at top level, it's the old format - discard
-        localStorage.removeItem('corner-agent-chats')
       }
     } catch {
-      // Corrupted data, nuke it
       try { localStorage.removeItem('corner-agent-chats') } catch {}
     }
     return {}
@@ -6862,7 +6862,8 @@ export default function GameDashboard() {
               if (!msg.message) continue
               const cleaned = sanitizeRelayMessage(msg.message)
               if (!cleaned) continue
-              const agentSlug = extractAgentFromMessage(msg) || selectedRoom || '_default'
+              const agentSlug = extractAgentFromMessage(msg)
+              if (!agentSlug) continue // Skip messages without a clear agent -- don't pollute any chat
               const agentKey = agentSlug
               const current = updated[agentKey] || { _all: [] }
               const allMsgs = [...(current._all || [])]
