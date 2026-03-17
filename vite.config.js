@@ -453,11 +453,8 @@ function localDashboardPlugin() {
               const convEntry = {
                 id,
                 timestamp: new Date().toISOString(),
-                sender: 'patrik',
-                target_type: 'agent',
-                target: agentName,
-                resolved_recipients: [agentName],
-                project_context: null,
+                role: 'user',
+                agent: agentName,
                 source: 'dashboard',
                 text: data.message,
               }
