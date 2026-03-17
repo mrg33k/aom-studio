@@ -14,6 +14,9 @@ import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, f
 // 5. CHARACTER LAYERS: character-layer.png composited on top of room shells (verified working).
 // 6. CHARACTER WALKING: Each character walks a casual loop inside their room hex on unique timing.
 //    Vegas energy: random phase offsets, speed multipliers, idle pauses, subtle hop.
+// 7. CHARACTER VISITING: Characters occasionally visit neighboring rooms (every 30-60s).
+//    Walk to edge -> cross gap (world space) -> wander neighbor -> walk home.
+//    Click room to recall its character home (hustle speed 1.6x). Visitors drawn at 85% opacity.
 //
 // CAMERA: Two-view system (Overview + Focus). No free pan/scroll zoom.
 //   View 1 (Overview): All 13 rooms visible, centered.
@@ -67,23 +70,23 @@ const ROOM_META = {
 // These are the slot coordinates in hex-grid space (row, col).
 // Slot 0 is top-center, slots grow outward to form a diamond.
 const HEX_SLOTS = [
-  // Row 0: 1 room (top center)
-  { row: 0, col: 0 },
-  // Row 1: 2 rooms
-  { row: 1, col: -1 },
-  { row: 1, col: 1 },
-  // Row 2: 3 rooms (widest)
-  { row: 2, col: -2 },
-  { row: 2, col: 0 },
-  { row: 2, col: 2 },
-  // Row 3: 3 rooms
+  // Row 0: 1 room (shifted left)
+  { row: 0, col: -1 },
+  // Row 1: 2 rooms (shifted left)
+  { row: 1, col: -2 },
+  { row: 1, col: 0 },
+  // Row 2: 3 rooms (shifted left)
+  { row: 2, col: -3 },
+  { row: 2, col: -1 },
+  { row: 2, col: 1 },
+  // Row 3: 3 rooms (stays)
   { row: 3, col: -2 },
   { row: 3, col: 0 },
   { row: 3, col: 2 },
-  // Row 4: 2 rooms
+  // Row 4: 2 rooms (stays)
   { row: 4, col: -1 },
   { row: 4, col: 1 },
-  // Row 5: 2 rooms (bottom)
+  // Row 5: 2 rooms (stays)
   { row: 5, col: -2 },
   { row: 5, col: 0 },
 ]
@@ -94,10 +97,11 @@ function getRoomImageSources(id) {
     'elon', 'bobby', 'steffen', 'steve', 'alex', 'cleo', 'jacob', 'mom',
     'tony', 'paige', 'elmo', 'colton', 'pixel',
   ]
+  const cacheBust = `?v=${Date.now()}`
   if (folderRooms.includes(id)) {
     return {
-      working: `/corner/${id}-room/room-shell-working.png`,
-      idle: `/corner/${id}-room/room-shell-idle.png`,
+      working: `/corner/${id}-room/room-shell-working.png${cacheBust}`,
+      idle: `/corner/${id}-room/room-shell-idle.png${cacheBust}`,
     }
   }
   return {
@@ -158,8 +162,8 @@ const VIS_W = ROOM_SIZE * 0.90
 const VIS_H = ROOM_SIZE * 0.90
 
 function hexPosition(row, col, originX, originY) {
-  const x = originX + col * (VIS_W * 0.52)
-  const y = originY + row * (VIS_H * 0.37)
+  const x = originX + col * (VIS_W * 0.51)
+  const y = originY + row * (VIS_H * 0.62)
   return { x, y }
 }
 
@@ -325,6 +329,72 @@ const WALK_HOP_PX = 2
 // Hop frequency (full bounces per second)
 const WALK_HOP_FREQ = 3.5
 
+// ---- VISIT CONFIG ----
+const VISIT_MIN_INTERVAL = 30  // min seconds between visit attempts
+const VISIT_MAX_INTERVAL = 60  // max seconds between visit attempts
+const VISIT_DURATION_MIN = 10  // min seconds spent in neighbor room
+const VISIT_DURATION_MAX = 20  // max seconds spent in neighbor room
+const VISIT_HUSTLE_MULTIPLIER = 1.6 // speed boost when recalled
+
+// Visit phases: null (home) -> 'exiting' -> 'crossing' -> 'entering' -> 'wandering' -> 'exit_neighbor' -> 'crossing_home' -> 'entering_home' -> null
+// 'exiting': walking to edge of home hex
+// 'crossing': traversing the gap between rooms (drawn in world space, unclipped)
+// 'entering': walking from neighbor hex edge to interior
+// 'wandering': walking waypoints in neighbor room
+// 'exit_neighbor': walking to edge of neighbor hex (heading home)
+// 'crossing_home': traversing gap back (drawn in world space, unclipped)
+// 'entering_home': walking from home hex edge to interior waypoint
+
+// Edge points on the hex for exiting/entering (in room-local 0..512 space)
+// These are midpoints of each hex edge
+const HEX_EDGE_POINTS = [
+  { x: 256, y: 38 },   // top edge midpoint
+  { x: 448, y: 166 },  // upper-right edge midpoint
+  { x: 448, y: 397 },  // lower-right edge midpoint
+  { x: 256, y: 480 },  // bottom edge midpoint
+  { x: 64, y: 397 },   // lower-left edge midpoint
+  { x: 64, y: 166 },   // upper-left edge midpoint
+]
+
+// Get neighbors for a given slot index (distance 1 or 2 in hex grid)
+function getNeighborSlots(slotIdx, totalSlots) {
+  const neighbors = []
+  for (let i = 0; i < totalSlots; i++) {
+    if (i === slotIdx) continue
+    const d = slotDistance(slotIdx, i)
+    if (d >= 1 && d <= 2) neighbors.push(i)
+  }
+  return neighbors
+}
+
+// Pick the best hex edge to exit toward a target room position
+function pickExitEdge(homePos, targetPos) {
+  const S = ROOM_SIZE
+  // Direction from home center to target center
+  const homeCX = homePos.x + S / 2
+  const homeCY = homePos.y + S / 2
+  const targetCX = targetPos.x + S / 2
+  const targetCY = targetPos.y + S / 2
+  const dx = targetCX - homeCX
+  const dy = targetCY - homeCY
+
+  // Find edge point whose direction from center best matches the target direction
+  let bestIdx = 0
+  let bestDot = -Infinity
+  const len = Math.sqrt(dx * dx + dy * dy) || 1
+  const ndx = dx / len
+  const ndy = dy / len
+  for (let i = 0; i < HEX_EDGE_POINTS.length; i++) {
+    const ep = HEX_EDGE_POINTS[i]
+    const edx = ep.x - S / 2
+    const edy = ep.y - S / 2
+    const elen = Math.sqrt(edx * edx + edy * edy) || 1
+    const dot = (edx / elen) * ndx + (edy / elen) * ndy
+    if (dot > bestDot) { bestDot = dot; bestIdx = i }
+  }
+  return bestIdx
+}
+
 // Initialize walk state for a character
 function initCharWalkState(roomId) {
   // Seeded pseudo-random from roomId string so it's deterministic but unique
@@ -344,13 +414,34 @@ function initCharWalkState(roomId) {
     phaseOffset: pseudoRand() * 100, // large offset so hop cycles don't sync
     x: WALK_WAYPOINTS[startWaypoint].x,
     y: WALK_WAYPOINTS[startWaypoint].y,
+    // ---- VISIT STATE ----
+    visiting: null,        // roomId of room being visited, null = home
+    visitPhase: null,      // current visit phase (see phases above)
+    returning: false,      // true = hustling back home (click-to-recall)
+    visitTimer: VISIT_MIN_INTERVAL + pseudoRand() * (VISIT_MAX_INTERVAL - VISIT_MIN_INTERVAL),
+    visitDuration: 0,      // how long to wander in neighbor
+    visitWanderTimer: 0,   // countdown while wandering
+    // World-space coordinates for crossing between rooms
+    visitWorldX: 0,
+    visitWorldY: 0,
+    visitTargetWorldX: 0,
+    visitTargetWorldY: 0,
+    visitCrossProgress: 0,
+    // Edge indices for exit/enter
+    visitExitEdge: 0,
+    visitEnterEdge: 0,
+    // Target position within the visited room (local coords)
+    visitLocalTargetX: 0,
+    visitLocalTargetY: 0,
   }
 }
 
 // Advance walk state by dt seconds, returns { x, y, isWalking }
+// This handles normal in-room walking only (visit phases handled separately)
 function advanceCharWalk(state, roomId, dt) {
   const cfg = CHAR_WALK_SPEEDS[roomId] || { speed: 1.0, pauseChance: 0.3 }
-  const speed = WALK_BASE_SPEED * cfg.speed
+  const speedMult = state.returning ? VISIT_HUSTLE_MULTIPLIER : 1.0
+  const speed = WALK_BASE_SPEED * cfg.speed * speedMult
 
   if (state.paused) {
     state.pauseTimer -= dt
@@ -380,14 +471,15 @@ function advanceCharWalk(state, roomId, dt) {
     state.nextWaypoint = (state.nextWaypoint + 1) % WALK_WAYPOINTS.length
     state.progress = 0
 
-    // Maybe pause at this waypoint
-    // Use a simple deterministic check based on phaseOffset + waypoint
-    const roll = ((state.phaseOffset * 7 + state.currentWaypoint * 13) % 100) / 100
-    if (roll < cfg.pauseChance) {
-      state.paused = true
-      state.pauseDuration = 1 + ((state.phaseOffset * 3 + state.currentWaypoint * 17) % 200) / 100 // 1-3s
-      state.pauseTimer = state.pauseDuration
-      return { x: state.x, y: state.y, isWalking: false }
+    // Maybe pause at this waypoint (skip pause if returning/hustling)
+    if (!state.returning) {
+      const roll = ((state.phaseOffset * 7 + state.currentWaypoint * 13) % 100) / 100
+      if (roll < cfg.pauseChance) {
+        state.paused = true
+        state.pauseDuration = 1 + ((state.phaseOffset * 3 + state.currentWaypoint * 17) % 200) / 100 // 1-3s
+        state.pauseTimer = state.pauseDuration
+        return { x: state.x, y: state.y, isWalking: false }
+      }
     }
   } else {
     // Smooth interpolation along segment
@@ -397,6 +489,220 @@ function advanceCharWalk(state, roomId, dt) {
   }
 
   return { x: state.x, y: state.y, isWalking: true }
+}
+
+// Move character toward a specific local point, returns true when arrived
+function moveTowardPoint(state, targetX, targetY, speed, dt) {
+  const dx = targetX - state.x
+  const dy = targetY - state.y
+  const dist = Math.sqrt(dx * dx + dy * dy)
+  if (dist < 2) {
+    state.x = targetX
+    state.y = targetY
+    return true // arrived
+  }
+  const step = speed * dt
+  if (step >= dist) {
+    state.x = targetX
+    state.y = targetY
+    return true
+  }
+  state.x += (dx / dist) * step
+  state.y += (dy / dist) * step
+  return false
+}
+
+// Advance the visit state machine. Called every frame for characters that have visit logic.
+// slotOrder + ORIGIN needed to compute world positions.
+// Returns: { x, y, isWalking, inWorldSpace, worldX, worldY }
+// inWorldSpace = true means the character should be drawn in world coords (not room-local)
+function advanceVisitState(state, roomId, dt, slotOrder, originX, originY) {
+  const cfg = CHAR_WALK_SPEEDS[roomId] || { speed: 1.0, pauseChance: 0.3 }
+  const speedMult = state.returning ? VISIT_HUSTLE_MULTIPLIER : 1.0
+  const speed = WALK_BASE_SPEED * cfg.speed * speedMult
+  const crossSpeed = speed * 1.2 // slightly faster when crossing open space
+
+  const homeSlot = slotOrder.indexOf(roomId)
+  if (homeSlot < 0) return null // room not in layout
+
+  // Not visiting: count down visit timer, maybe start a visit
+  if (!state.visitPhase) {
+    state.visitTimer -= dt
+    if (state.visitTimer <= 0) {
+      // Time to try visiting a neighbor
+      const neighbors = getNeighborSlots(homeSlot, slotOrder.length)
+      if (neighbors.length > 0) {
+        // Pick a random neighbor using phase offset for determinism variation
+        const pickIdx = Math.floor((state.phaseOffset * 7 + performance.now() * 0.001) % neighbors.length)
+        const targetSlot = neighbors[Math.abs(pickIdx) % neighbors.length]
+        const targetRoomId = slotOrder[targetSlot]
+
+        // Don't visit if the target character is also visiting us (avoid crossing paths)
+        // Simple: just go
+        state.visiting = targetRoomId
+        state.visitPhase = 'exiting'
+        state.returning = false
+
+        const homePos = slotWorldPos(homeSlot, originX, originY)
+        const targetPos = slotWorldPos(targetSlot, originX, originY)
+
+        // Pick exit/enter edges
+        const exitEdgeIdx = pickExitEdge(homePos, targetPos)
+        const enterEdgeIdx = pickExitEdge(targetPos, homePos) // opposite direction
+        state.visitExitEdge = exitEdgeIdx
+        state.visitEnterEdge = enterEdgeIdx
+
+        // Set visit duration
+        const durationRange = VISIT_DURATION_MAX - VISIT_DURATION_MIN
+        state.visitDuration = VISIT_DURATION_MIN + ((state.phaseOffset * 11 + targetSlot * 7) % (durationRange * 100)) / 100
+        state.visitWanderTimer = state.visitDuration
+      }
+      // Reset timer regardless
+      state.visitTimer = VISIT_MIN_INTERVAL + ((state.phaseOffset * 13 + performance.now() * 0.0007) % (VISIT_MAX_INTERVAL - VISIT_MIN_INTERVAL))
+    }
+    return null // normal walk, no visit active
+  }
+
+  // ---- VISIT PHASES ----
+  const homePos = slotWorldPos(homeSlot, originX, originY)
+  const visitSlot = slotOrder.indexOf(state.visiting)
+  if (visitSlot < 0) {
+    // Target room disappeared from layout, abort visit
+    state.visitPhase = null
+    state.visiting = null
+    state.returning = false
+    return null
+  }
+  const visitPos = slotWorldPos(visitSlot, originX, originY)
+
+  const exitEdge = HEX_EDGE_POINTS[state.visitExitEdge]
+  const enterEdge = HEX_EDGE_POINTS[state.visitEnterEdge]
+
+  switch (state.visitPhase) {
+    case 'exiting': {
+      // Walk toward exit edge of home room (room-local coords)
+      const arrived = moveTowardPoint(state, exitEdge.x, exitEdge.y, speed, dt)
+      if (arrived) {
+        // Switch to crossing phase, set up world-space coordinates
+        state.visitPhase = 'crossing'
+        state.visitWorldX = homePos.x + exitEdge.x
+        state.visitWorldY = homePos.y + exitEdge.y
+        state.visitTargetWorldX = visitPos.x + enterEdge.x
+        state.visitTargetWorldY = visitPos.y + enterEdge.y
+        state.visitCrossProgress = 0
+      }
+      return { x: state.x, y: state.y, isWalking: true, inWorldSpace: false }
+    }
+
+    case 'crossing': {
+      // Move in world space from home edge to neighbor edge
+      const dx = state.visitTargetWorldX - state.visitWorldX
+      const dy = state.visitTargetWorldY - state.visitWorldY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < 2) {
+        // Arrived at neighbor entrance
+        state.visitPhase = 'entering'
+        state.x = enterEdge.x
+        state.y = enterEdge.y
+        // Pick a waypoint to walk to inside the neighbor room
+        const wpIdx = Math.floor((state.phaseOffset * 3) % WALK_WAYPOINTS.length)
+        state.visitLocalTargetX = WALK_WAYPOINTS[wpIdx].x
+        state.visitLocalTargetY = WALK_WAYPOINTS[wpIdx].y
+        return { x: enterEdge.x, y: enterEdge.y, isWalking: true, inWorldSpace: false, currentRoom: state.visiting }
+      }
+      state.visitCrossProgress += (crossSpeed * dt) / dist
+      if (state.visitCrossProgress >= 1) state.visitCrossProgress = 1
+      const wx = state.visitWorldX + dx * state.visitCrossProgress
+      const wy = state.visitWorldY + dy * state.visitCrossProgress
+      // Convert world coords to local coords relative to... we need world space drawing
+      return { x: 0, y: 0, isWalking: true, inWorldSpace: true, worldX: wx, worldY: wy }
+    }
+
+    case 'entering': {
+      // Walk from neighbor edge to interior waypoint (in neighbor's local space)
+      const arrived = moveTowardPoint(state, state.visitLocalTargetX, state.visitLocalTargetY, speed, dt)
+      if (arrived) {
+        state.visitPhase = 'wandering'
+        // Set up waypoint walking in neighbor room
+        const wpIdx = Math.floor((state.phaseOffset * 5) % WALK_WAYPOINTS.length)
+        state.currentWaypoint = wpIdx
+        state.nextWaypoint = (wpIdx + 1) % WALK_WAYPOINTS.length
+        state.progress = 0
+      }
+      return { x: state.x, y: state.y, isWalking: true, inWorldSpace: false, currentRoom: state.visiting }
+    }
+
+    case 'wandering': {
+      // Walk waypoints in neighbor room, just like at home
+      state.visitWanderTimer -= dt
+      const result = advanceCharWalk(state, roomId, dt)
+      if (state.visitWanderTimer <= 0 || state.returning) {
+        // Time to head home (or recalled)
+        state.visitPhase = 'exit_neighbor'
+      }
+      return { x: result.x, y: result.y, isWalking: result.isWalking, inWorldSpace: false, currentRoom: state.visiting }
+    }
+
+    case 'exit_neighbor': {
+      // Walk to edge of neighbor room
+      const arrived = moveTowardPoint(state, enterEdge.x, enterEdge.y, speed, dt)
+      if (arrived) {
+        state.visitPhase = 'crossing_home'
+        state.visitWorldX = visitPos.x + enterEdge.x
+        state.visitWorldY = visitPos.y + enterEdge.y
+        state.visitTargetWorldX = homePos.x + exitEdge.x
+        state.visitTargetWorldY = homePos.y + exitEdge.y
+        state.visitCrossProgress = 0
+      }
+      return { x: state.x, y: state.y, isWalking: true, inWorldSpace: false, currentRoom: state.visiting }
+    }
+
+    case 'crossing_home': {
+      // Cross back in world space
+      const dx = state.visitTargetWorldX - state.visitWorldX
+      const dy = state.visitTargetWorldY - state.visitWorldY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < 2) {
+        state.visitPhase = 'entering_home'
+        state.x = exitEdge.x
+        state.y = exitEdge.y
+        // Pick a waypoint to settle into at home
+        const wpIdx = Math.floor((state.phaseOffset * 9) % WALK_WAYPOINTS.length)
+        state.visitLocalTargetX = WALK_WAYPOINTS[wpIdx].x
+        state.visitLocalTargetY = WALK_WAYPOINTS[wpIdx].y
+        return { x: exitEdge.x, y: exitEdge.y, isWalking: true, inWorldSpace: false }
+      }
+      state.visitCrossProgress += (crossSpeed * dt) / dist
+      if (state.visitCrossProgress >= 1) state.visitCrossProgress = 1
+      const wx = state.visitWorldX + dx * state.visitCrossProgress
+      const wy = state.visitWorldY + dy * state.visitCrossProgress
+      return { x: 0, y: 0, isWalking: true, inWorldSpace: true, worldX: wx, worldY: wy }
+    }
+
+    case 'entering_home': {
+      // Walk from home edge to interior
+      const arrived = moveTowardPoint(state, state.visitLocalTargetX, state.visitLocalTargetY, speed, dt)
+      if (arrived) {
+        // Visit complete, reset
+        state.visitPhase = null
+        state.visiting = null
+        state.returning = false
+        // Resume normal walking from this position
+        const wpIdx = Math.floor((state.phaseOffset * 2) % WALK_WAYPOINTS.length)
+        state.currentWaypoint = wpIdx
+        state.nextWaypoint = (wpIdx + 1) % WALK_WAYPOINTS.length
+        state.progress = 0
+        // Reset visit timer
+        state.visitTimer = VISIT_MIN_INTERVAL + ((state.phaseOffset * 17 + performance.now() * 0.001) % (VISIT_MAX_INTERVAL - VISIT_MIN_INTERVAL))
+      }
+      return { x: state.x, y: state.y, isWalking: true, inWorldSpace: false }
+    }
+
+    default:
+      state.visitPhase = null
+      state.visiting = null
+      return null
+  }
 }
 
 // ---- HEX DISTANCE (using slot positions) ----
@@ -672,38 +978,77 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       }
     }
 
-    // ---- ADVANCE CHARACTER WALK STATES ----
+    // ---- ADVANCE CHARACTER WALK STATES (with visit logic) ----
     const walkNow = performance.now()
     const walkDt = Math.min((walkNow - lastWalkTimeRef.current) / 1000, 0.1) // cap dt to avoid jumps
     lastWalkTimeRef.current = walkNow
     const walkStates = characterWalkRef.current
-    const walkPositions = {}
-    for (const roomId of ROOMS_WITH_CHARACTERS) {
-      if (!walkStates[roomId]) walkStates[roomId] = initCharWalkState(roomId)
-      const result = advanceCharWalk(walkStates[roomId], roomId, walkDt)
-      // Compute hop: tiny vertical bounce while walking (Crossy Road energy)
-      let hop = 0
-      if (result.isWalking) {
-        const hopTime = elapsed + walkStates[roomId].phaseOffset
-        hop = Math.abs(Math.sin(hopTime * Math.PI * WALK_HOP_FREQ)) * WALK_HOP_PX
+    const walkPositions = {}       // room-local positions for home characters
+    const visitingChars = []       // characters currently visiting (need second-pass drawing)
+
+    for (const charId of ROOMS_WITH_CHARACTERS) {
+      if (!walkStates[charId]) walkStates[charId] = initCharWalkState(charId)
+      const state = walkStates[charId]
+
+      // Try visit state machine first
+      const visitResult = advanceVisitState(state, charId, walkDt, slotOrder, ORIGIN_X, ORIGIN_Y)
+
+      if (visitResult) {
+        // Character is in a visit phase
+        let hop = 0
+        if (visitResult.isWalking) {
+          const hopTime = elapsed + state.phaseOffset
+          hop = Math.abs(Math.sin(hopTime * Math.PI * WALK_HOP_FREQ)) * WALK_HOP_PX
+        }
+
+        if (visitResult.inWorldSpace) {
+          // Crossing between rooms: draw in world space (unclipped)
+          visitingChars.push({
+            charId,
+            drawMode: 'world',
+            worldX: visitResult.worldX,
+            worldY: visitResult.worldY - hop,
+            isWalking: visitResult.isWalking,
+          })
+          // Don't put in walkPositions (character not in home room)
+          walkPositions[charId] = null
+        } else if (visitResult.currentRoom) {
+          // Inside neighbor room: draw clipped to neighbor's hex
+          visitingChars.push({
+            charId,
+            drawMode: 'neighbor',
+            currentRoom: visitResult.currentRoom,
+            localX: visitResult.x,
+            localY: visitResult.y - hop,
+            isWalking: visitResult.isWalking,
+          })
+          walkPositions[charId] = null
+        } else {
+          // In home room during exit/enter phases
+          walkPositions[charId] = { x: visitResult.x, y: visitResult.y - hop }
+        }
+      } else {
+        // Normal in-room walking
+        const result = advanceCharWalk(state, charId, walkDt)
+        let hop = 0
+        if (result.isWalking) {
+          const hopTime = elapsed + state.phaseOffset
+          hop = Math.abs(Math.sin(hopTime * Math.PI * WALK_HOP_FREQ)) * WALK_HOP_PX
+        }
+        walkPositions[charId] = { x: result.x, y: result.y - hop }
       }
-      walkPositions[roomId] = { x: result.x, y: result.y - hop }
     }
 
-    // ---- RENDER ALL ROOMS BY SLOT ----
+    // ---- RENDER ALL ROOMS BY SLOT (back-to-front: sort by row so lower rows draw on top) ----
     const drag = dragStateRef.current
     const draggedRoomId = drag.active ? drag.roomId : null
 
-    for (let slotIdx = 0; slotIdx < slotOrder.length; slotIdx++) {
-      const roomId = slotOrder[slotIdx]
-      if (roomId === draggedRoomId) continue // draw dragged room last
+    // Build sorted render order: top rows first (background), bottom rows last (foreground)
+    const renderOrder = slotOrder.map((id, idx) => ({ id, slotIdx: idx, row: HEX_SLOTS[idx]?.row ?? 0 }))
+    renderOrder.sort((a, b) => a.row - b.row)
 
-      const meta = ROOM_META[roomId]
-      if (!meta) continue
-      const imgs = roomImages[roomId]
-      if (!imgs) continue
-
-      // Get position: check shuffle animation first, then static slot position
+    // Helper: get room world position (handles shuffle animation)
+    function getRoomWorldPos(roomId, slotIdx) {
       let posX, posY
       const shuffleAnim = shuffleAnimRef.current[roomId]
       if (shuffleAnim && now < shuffleAnim.startTime + SHUFFLE_ANIM_MS) {
@@ -717,6 +1062,19 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         posX = slotPos.x
         posY = slotPos.y
       }
+      return { posX, posY }
+    }
+
+    for (const { id: roomId, slotIdx } of renderOrder) {
+      const roomId = slotOrder[slotIdx]
+      if (roomId === draggedRoomId) continue // draw dragged room last
+
+      const meta = ROOM_META[roomId]
+      if (!meta) continue
+      const imgs = roomImages[roomId]
+      if (!imgs) continue
+
+      const { posX, posY } = getRoomWorldPos(roomId, slotIdx)
 
       // ---- DIM INACTIVE ROOMS (#3) ----
       const roomStatus = agentStatus?.[roomId]?.status || 'IDLE'
@@ -737,13 +1095,62 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         celebGlow = getCelebrationGlow(celebElapsed, roomDelay)
       }
 
-      // Apply dim for inactive rooms
+      // All rooms full brightness (dimming off for now, can be a setting later)
       ctx.save()
-      if (!isActive) {
-        ctx.globalAlpha = 0.4
-      }
       drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL, cam.zoom, celebGlow, walkPositions[roomId])
       ctx.restore()
+    }
+
+    // ---- SECOND PASS: DRAW VISITING CHARACTERS ----
+    // These are characters outside their home room (crossing gaps or inside neighbor rooms)
+    for (const vc of visitingChars) {
+      const charImg = roomImages[vc.charId]?.character
+      if (!charImg?.complete) continue
+
+      const cw = charImg.naturalWidth || 100
+      const ch = charImg.naturalHeight || 118
+      const S = ROOM_SIZE
+      const charScale = (S * 0.22) / ch
+      const drawW = cw * charScale
+      const drawH = ch * charScale
+
+      if (vc.drawMode === 'world') {
+        // Draw in world space, unclipped
+        ctx.save()
+        ctx.globalAlpha = 1.0
+        ctx.drawImage(charImg, vc.worldX - drawW / 2, vc.worldY - drawH / 2, drawW, drawH)
+        ctx.restore()
+      } else if (vc.drawMode === 'neighbor') {
+        // Draw clipped to neighbor room's hex
+        const neighborSlot = slotOrder.indexOf(vc.currentRoom)
+        if (neighborSlot >= 0) {
+          const { posX: nPosX, posY: nPosY } = getRoomWorldPos(vc.currentRoom, neighborSlot)
+          // Apply celebration offset to neighbor room position
+          let nCelebOffsetY = 0
+          if (celeb.active && sourceSlotIdx >= 0) {
+            const dist = slotDistance(sourceSlotIdx, neighborSlot)
+            const roomDelay = dist * CELEBRATION_ROOM_DELAY_MS
+            nCelebOffsetY = getCelebrationOffset(celebElapsed, roomDelay)
+          }
+          ctx.save()
+          ctx.translate(nPosX, nPosY + nCelebOffsetY)
+          // Clip to neighbor's hex
+          ctx.beginPath()
+          ctx.moveTo(S * 0.50, S * 0.05)
+          ctx.lineTo(S * 0.95, S * 0.28)
+          ctx.lineTo(S * 0.95, S * 0.75)
+          ctx.lineTo(S * 0.50, S * 0.95)
+          ctx.lineTo(S * 0.05, S * 0.75)
+          ctx.lineTo(S * 0.05, S * 0.28)
+          ctx.closePath()
+          ctx.clip()
+          ctx.globalAlpha = 0.85 // slightly translucent so visitors look like guests
+          const chX = vc.localX - drawW / 2
+          const chY = vc.localY - drawH / 2
+          ctx.drawImage(charImg, chX, chY, drawW, drawH)
+          ctx.restore()
+        }
+      }
     }
 
     // ---- DRAW DRAGGED ROOM ON TOP ----
@@ -844,7 +1251,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
 
     // ---- CHARACTER LAYER (#5 + #6: walking animation, each on own timing) ----
-    if (charImg?.complete) {
+    // charWalkPos === null means character is visiting elsewhere (don't draw here)
+    // charWalkPos === undefined means no walk data (draw at fallback centered position)
+    if (charImg?.complete && charWalkPos !== null) {
       ctx.save()
       ctx.globalAlpha = 1.0
       const cw = charImg.naturalWidth || 100
@@ -902,25 +1311,31 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const badgeW = tw + dotSize + pillPadH * 3 + 4 * invZoomScale
     const badgeH = fontSize + pillPadV * 2
 
-    const badgeX = S * 0.50 - badgeW / 2
-    const badgeY = S * 0.02 - badgeH - 2 * invZoomScale
+    // Position on the right wall, pulled left and up, rotated to match isometric angle
+    const wallAngle = 27 * (Math.PI / 180) // right wall angle in radians
+    const wallX = S * 0.65 // pulled more left
+    const wallY = S * 0.28 // pulled more up
+
+    ctx.save()
+    ctx.translate(wallX, wallY)
+    ctx.rotate(wallAngle)
 
     // Dark pill background
     ctx.fillStyle = 'rgba(8, 12, 24, 0.92)'
     ctx.beginPath()
-    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, pillRadius)
+    ctx.roundRect(-pillPadH, -badgeH / 2, badgeW, badgeH, pillRadius)
     ctx.fill()
 
     // Subtle border
     ctx.strokeStyle = `${nameColor}40`
     ctx.lineWidth = 1.2 * invZoomScale
     ctx.beginPath()
-    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, pillRadius)
+    ctx.roundRect(-pillPadH, -badgeH / 2, badgeW, badgeH, pillRadius)
     ctx.stroke()
 
     // Status dot
-    const dotCX = badgeX + pillPadH + dotSize / 2
-    const dotCY = badgeY + badgeH / 2
+    const dotCX = dotSize / 2
+    const dotCY = 0
     ctx.beginPath()
     ctx.arc(dotCX, dotCY, dotSize / 2, 0, Math.PI * 2)
     ctx.fillStyle = nameColor
@@ -1094,7 +1509,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     mouseDownRef.current.active = false
   }, [])
 
-  // ---- CLICK: Focus/unfocus room ----
+  // ---- CLICK: Focus/unfocus room + recall visiting character ----
   const onClick = useCallback((e) => {
     if (mouseDownRef.current.didDrag) {
       mouseDownRef.current.didDrag = false
@@ -1108,6 +1523,17 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const hitRoom = hitTestSlots(cx, cy, ORIGIN_X, ORIGIN_Y, slotOrder)
 
     if (hitRoom) {
+      // ---- CLICK TO RECALL: if this room's character is visiting elsewhere, hustle them home ----
+      const walkStates = characterWalkRef.current
+      const charState = walkStates[hitRoom]
+      if (charState && charState.visiting && !charState.returning) {
+        charState.returning = true
+        // If currently wandering, immediately trigger exit
+        if (charState.visitPhase === 'wandering') {
+          charState.visitPhase = 'exit_neighbor'
+        }
+      }
+
       setFocusedRoom(hitRoom)
       onRoomClick?.(hitRoom)
     } else {
