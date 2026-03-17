@@ -413,8 +413,11 @@ function localDashboardPlugin() {
           return
         }
         let body = ''
+        let responded = false
         req.on('data', chunk => { body += chunk })
         req.on('end', () => {
+          if (responded) return
+          responded = true
           try {
             const data = JSON.parse(body)
             const id = crypto.randomUUID()
@@ -474,87 +477,77 @@ function localDashboardPlugin() {
             }
 
             // Auto-respond: spawn claude -p as fallback when no terminal is active
-            // If a terminal session exists, the relay hook handles it (better context).
-            // Auto-responder only fires after a delay, giving the terminal time to pick it up.
             if (source === 'corner-dashboard' && data.message) {
-              // Wait 5s. If terminal responds in that time, skip auto-responder.
-              const msgId = id
+              // Capture all values needed inside setTimeout closure
+              const _agent = data.agent || 'elon'
+              const _msg = data.message
+              const _msgId = id
+              const _entryTs = entry.timestamp
+              const _agentFolder = AGENT_FOLDERS[_agent]
+
               setTimeout(() => {
-                // Check if a response already appeared in the conversation file
-                const convFile = resolve(AOM_EA_ROOT, 'conversations', 'agents', `${agentName}.jsonl`)
+                console.log(`[AutoRespond] Checking for ${_agent} response after 5s...`)
+                // Check if terminal already responded
+                const convFile = resolve(AOM_EA_ROOT, 'conversations', 'agents', `${_agent}.jsonl`)
                 try {
                   if (fs.existsSync(convFile)) {
                     const lines = fs.readFileSync(convFile, 'utf-8').split('\n').filter(l => l.trim())
-                    const last = lines.length > 0 ? JSON.parse(lines[lines.length - 1]) : null
-                    if (last && last.role === 'assistant' && last.reply_to === msgId) {
-                      return // Terminal already responded, skip auto-responder
-                    }
-                    // Also check if any assistant message arrived after our user message
-                    const lastAssistant = [...lines].reverse().find(l => {
-                      try { return JSON.parse(l).role === 'assistant' } catch { return false }
-                    })
-                    if (lastAssistant) {
-                      const assistantTs = JSON.parse(lastAssistant).timestamp || ''
-                      if (assistantTs > entry.timestamp) return // Terminal responded
+                    for (let i = lines.length - 1; i >= Math.max(0, lines.length - 3); i--) {
+                      try {
+                        const m = JSON.parse(lines[i])
+                        if (m.role === 'assistant' && m.timestamp > _entryTs) return // Terminal responded
+                      } catch {}
                     }
                   }
                 } catch {}
-                // No terminal response after 5s. Auto-respond.
-              const agentFolder = AGENT_FOLDERS[agentName]
-              const agentMd = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/AGENT.md`) : null
-              const lastConvo = agentFolder ? resolve(AOM_EA_ROOT, `projects/${agentFolder}/last-conversation.md`) : null
 
-              let agentContext = ''
-              try { if (agentMd && fs.existsSync(agentMd)) agentContext += '\n\n' + fs.readFileSync(agentMd, 'utf-8').slice(0, 2000) } catch {}
-              try { if (lastConvo && fs.existsSync(lastConvo)) agentContext += '\n\n' + fs.readFileSync(lastConvo, 'utf-8').slice(0, 1500) } catch {}
+                // No response yet. Auto-respond.
+                console.log(`[AutoRespond] No terminal response for ${_agent}. Spawning claude -p...`)
+                const agentMd = _agentFolder ? resolve(AOM_EA_ROOT, `projects/${_agentFolder}/AGENT.md`) : null
+                const lastConvo = _agentFolder ? resolve(AOM_EA_ROOT, `projects/${_agentFolder}/last-conversation.md`) : null
+                let ctx = ''
+                try { if (agentMd && fs.existsSync(agentMd)) ctx += '\n\n' + fs.readFileSync(agentMd, 'utf-8').slice(0, 2000) } catch {}
+                try { if (lastConvo && fs.existsSync(lastConvo)) ctx += '\n\n' + fs.readFileSync(lastConvo, 'utf-8').slice(0, 1500) } catch {}
 
-              const prompt = `You are ${agentName}. Patrik sent: "${data.message}"\n\nRespond as ${agentName}. Prefix with [${agentName.toUpperCase()}]. Be concise. No em dashes.${agentContext}`
+                const prompt = `You are ${_agent}. Patrik sent: "${_msg}"\n\nRespond as ${_agent}. Prefix with [${_agent.toUpperCase()}]. Be concise. No em dashes.${ctx}`
+                const cli = ['/opt/homebrew/bin/claude', '/usr/local/bin/claude']
+                  .find(p => { try { return fs.existsSync(p) } catch { return false } })
 
-              const claudeCli = ['/opt/homebrew/bin/claude', '/usr/local/bin/claude']
-                .find(p => { try { return fs.existsSync(p) } catch { return false } })
-
-              if (claudeCli) {
-                const child = spawn(claudeCli, ['-p', '--model', 'haiku', '--no-session-persistence'], {
-                  cwd: AOM_EA_ROOT, timeout: 45000, shell: true,
-                  env: { ...process.env }, stdio: ['pipe', 'pipe', 'pipe'],
-                })
-                let stdout = ''
-                child.stdout.on('data', c => { stdout += c.toString() })
-                child.on('close', (code) => {
-                  const response = stdout.trim()
-                  if (!response) return
-
-                  // Detect agent from [AGENT] prefix
-                  const prefixMatch = response.match(/^\[([A-Z]+)\]/)
-                  const respAgent = prefixMatch ? prefixMatch[1].toLowerCase() : agentName
-                  const cleanText = response.replace(/^\[[A-Z]+\]\s*/, '').trim()
-
-                  // Write response to conversation file (correct agent)
-                  const respEntry = {
-                    id: crypto.randomUUID(),
-                    timestamp: new Date().toISOString(),
-                    role: 'assistant',
-                    agent: respAgent,
-                    source: 'dashboard-auto',
-                    text: cleanText,
-                    reply_to: id,
-                  }
-                  const respLine = JSON.stringify(respEntry) + '\n'
-                  const respConvDir = resolve(AOM_EA_ROOT, 'conversations')
-                  try {
-                    fs.appendFileSync(resolve(respConvDir, 'agents', `${respAgent}.jsonl`), respLine)
-                    fs.appendFileSync(resolve(respConvDir, 'main.jsonl'), respLine)
-                  } catch {}
-                })
-                child.on('error', () => {})
-                child.stdin.write(prompt)
-                child.stdin.end()
-              }
-              }, 5000) // 5s delay before auto-responding
+                console.log(`[AutoRespond] Claude CLI: ${cli || 'NOT FOUND'}`)
+                if (cli) {
+                  const child = spawn(cli, ['-p', '--model', 'haiku', '--no-session-persistence'], {
+                    cwd: AOM_EA_ROOT, timeout: 45000, shell: true,
+                    env: { ...process.env }, stdio: ['pipe', 'pipe', 'pipe'],
+                  })
+                  let out = ''
+                  child.stdout.on('data', c => { out += c.toString() })
+                  child.on('close', (code) => {
+                    const resp = out.trim()
+                    console.log(`[AutoRespond] claude -p exited (code ${code}), response: ${resp ? resp.slice(0, 60) + '...' : 'EMPTY'}`)
+                    if (!resp) return
+                    const pm = resp.match(/^\[([A-Z]+)\]/)
+                    const slug = pm ? pm[1].toLowerCase() : _agent
+                    const clean = resp.replace(/^\[[A-Z]+\]\s*/, '').trim()
+                    const line = JSON.stringify({
+                      id: crypto.randomUUID(), timestamp: new Date().toISOString(),
+                      role: 'assistant', agent: slug, source: 'dashboard-auto',
+                      text: clean, reply_to: _msgId,
+                    }) + '\n'
+                    const cd = resolve(AOM_EA_ROOT, 'conversations')
+                    try { fs.appendFileSync(resolve(cd, 'agents', `${slug}.jsonl`), line) } catch {}
+                    try { fs.appendFileSync(resolve(cd, 'main.jsonl'), line) } catch {}
+                  })
+                  child.on('error', () => {})
+                  child.stdin.write(prompt)
+                  child.stdin.end()
+                }
+              }, 5000)
             }
           } catch (err) {
-            res.statusCode = 500
-            res.end(JSON.stringify({ error: err.message }))
+            if (!res.writableEnded) {
+              res.statusCode = 500
+              res.end(JSON.stringify({ error: err.message }))
+            }
           }
         })
       })
