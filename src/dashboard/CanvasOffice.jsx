@@ -475,154 +475,30 @@ export default function CanvasOffice({
     }
 
     // ---- RENDER ALL ROOMS ----
-    // Isometric grid: each room offset by half-width right + quarter-height down
-    const GRID_OFFSET_X = ROOM_SIZE * 0.52  // horizontal spacing
-    const GRID_OFFSET_Y = ROOM_SIZE * 0.26  // vertical spacing (isometric)
+    // Isometric hex tessellation: rooms share edges like honeycomb.
+    // Hex clip uses 0.05-0.95 range, so visible width = ROOM_SIZE * 0.9
+    // For perfect tessellation: offset X = visible_half_width, offset Y = visible height * 0.75
+    const VIS_W = ROOM_SIZE * 0.90   // visible hex width
+    const VIS_H = ROOM_SIZE * 0.90   // visible hex height
 
     // Room 1: ELON (center-top)
     const elonX = ROOM_SIZE * 0.5
-    const elonY = 0
+    const elonY = ROOM_SIZE * 0.1
     drawRoom(ctx, elonX, elonY, stateImages['working'], stateImages['idle'], blendAlpha, 'ELON', ELON_COLOR)
 
-    // Room 2: BOBBY (left-bottom)
-    const bobbyX = elonX - GRID_OFFSET_X
-    const bobbyY = elonY + GRID_OFFSET_Y * 2
+    // Room 2: BOBBY (left-bottom, snapped to Elon's bottom-left edge)
+    const bobbyX = elonX - VIS_W * 0.50
+    const bobbyY = elonY + VIS_H * 0.70
     drawRoom(ctx, bobbyX, bobbyY, otherRoomImages['bobby-working'], otherRoomImages['bobby-idle'], blendAlpha, 'BOBBY', '#E91E90')
 
-    // Room 3: STEFFEN (right-bottom)
-    const steffenX = elonX + GRID_OFFSET_X
-    const steffenY = elonY + GRID_OFFSET_Y * 2
+    // Room 3: STEFFEN (right-bottom, snapped to Elon's bottom-right edge)
+    const steffenX = elonX + VIS_W * 0.50
+    const steffenY = elonY + VIS_H * 0.70
     drawRoom(ctx, steffenX, steffenY, otherRoomImages['steffen-working'], otherRoomImages['steffen-idle'], blendAlpha, 'STEFFEN', '#FFD700')
 
-    // Subtle glow overlay (15% screen blend)
-    if (layerCategories.glowLayer) {
-      ctx.save()
-      ctx.globalCompositeOperation = 'screen'
-      ctx.globalAlpha = 0.15
-      ctx.drawImage(layerCategories.glowLayer.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
-      ctx.restore()
-    }
+    // OLD single-room render code REMOVED. drawRoom() handles everything per room now.
 
-    // ---- INTERACTION: Hover glow (diamond-shaped) ----
-    if (hover) {
-      ctx.save()
-      ctx.globalAlpha = 0.12
-      // Clip to diamond shape so glow stays inside the room boundary
-      ctx.beginPath()
-      ctx.moveTo(DIAMOND_CX, DIAMOND_CY - DIAMOND_HH)        // top
-      ctx.lineTo(DIAMOND_CX + DIAMOND_HW, DIAMOND_CY)         // right
-      ctx.lineTo(DIAMOND_CX, DIAMOND_CY + DIAMOND_HH)         // bottom
-      ctx.lineTo(DIAMOND_CX - DIAMOND_HW, DIAMOND_CY)         // left
-      ctx.closePath()
-      ctx.clip()
-      const g = ctx.createRadialGradient(
-        DIAMOND_CX, DIAMOND_CY, 0,
-        DIAMOND_CX, DIAMOND_CY, ROOM_SIZE * 0.4
-      )
-      g.addColorStop(0, ELON_COLOR)
-      g.addColorStop(1, 'transparent')
-      ctx.fillStyle = g
-      ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE)
-      ctx.restore()
-    }
-
-    // ---- INTERACTION: Selected glow (diamond-shaped, no bounding box) ----
-    if (isSelected) {
-      ctx.save()
-      ctx.globalAlpha = 0.18
-      // Diamond clip for selection glow
-      ctx.beginPath()
-      ctx.moveTo(DIAMOND_CX, DIAMOND_CY - DIAMOND_HH)
-      ctx.lineTo(DIAMOND_CX + DIAMOND_HW, DIAMOND_CY)
-      ctx.lineTo(DIAMOND_CX, DIAMOND_CY + DIAMOND_HH)
-      ctx.lineTo(DIAMOND_CX - DIAMOND_HW, DIAMOND_CY)
-      ctx.closePath()
-      ctx.clip()
-      const sg = ctx.createRadialGradient(
-        DIAMOND_CX, DIAMOND_CY, ROOM_SIZE * 0.05,
-        DIAMOND_CX, DIAMOND_CY, ROOM_SIZE * 0.45
-      )
-      sg.addColorStop(0, ELON_COLOR)
-      sg.addColorStop(0.7, `${ELON_COLOR}44`)
-      sg.addColorStop(1, 'transparent')
-      ctx.fillStyle = sg
-      ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE)
-      ctx.restore()
-      // Subtle diamond edge glow (no rectangle)
-      ctx.save()
-      ctx.globalAlpha = 0.4
-      ctx.strokeStyle = ELON_COLOR
-      ctx.lineWidth = 1.5
-      ctx.shadowColor = ELON_COLOR
-      ctx.shadowBlur = 12
-      ctx.beginPath()
-      ctx.moveTo(DIAMOND_CX, DIAMOND_CY - DIAMOND_HH)
-      ctx.lineTo(DIAMOND_CX + DIAMOND_HW, DIAMOND_CY)
-      ctx.lineTo(DIAMOND_CX, DIAMOND_CY + DIAMOND_HH)
-      ctx.lineTo(DIAMOND_CX - DIAMOND_HW, DIAMOND_CY)
-      ctx.closePath()
-      ctx.stroke()
-      ctx.restore()
-    }
-
-    // ---- WORKING: Active pulse glow ----
-    if (isElonWorking) {
-      ctx.save()
-      ctx.globalAlpha = 0.08
-      const pg = ctx.createRadialGradient(
-        ROOM_SIZE / 2, ROOM_SIZE * 0.5, 0,
-        ROOM_SIZE / 2, ROOM_SIZE * 0.5, ROOM_SIZE * 0.35
-      )
-      pg.addColorStop(0, ELON_COLOR)
-      pg.addColorStop(1, 'transparent')
-      ctx.fillStyle = pg
-      ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE)
-      ctx.restore()
-    }
-
-    // ---- NAMEPLATE ----
-    ctx.save()
-    ctx.font = '600 14px Inter, system-ui, sans-serif'
-    const nameText = 'ELON'
-    const tw = ctx.measureText(nameText).width
-    const npX = ROOM_SIZE * 0.5 - tw / 2 - 8
-    const npY = ROOM_SIZE * 0.88
-
-    ctx.fillStyle = 'rgba(10, 15, 30, 0.85)'
-    ctx.beginPath()
-    ctx.roundRect(npX - 2, npY - 10, tw + 20, 24, 4)
-    ctx.fill()
-
-    ctx.strokeStyle = `${ELON_COLOR}55`
-    ctx.lineWidth = 1
-    ctx.stroke()
-
-    const statusColor = isElonWorking ? '#22C55E' : (elonStatus === 'BLOCKED' ? '#EF4444' : '#6B7280')
-    ctx.beginPath()
-    ctx.arc(npX + 6, npY + 2, 4, 0, Math.PI * 2)
-    ctx.fillStyle = statusColor
-    ctx.fill()
-
-    ctx.fillStyle = '#EDF2FA'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(nameText, npX + 14, npY + 2)
-    ctx.restore()
-
-    ctx.restore()
-
-    // Ambient glow in background
-    ctx.save()
-    ctx.globalAlpha = 0.06
-    const ambientG = ctx.createRadialGradient(
-      size.w / 2, size.h / 2, 0,
-      size.w / 2, size.h / 2, Math.max(size.w, size.h) * 0.4
-    )
-    ambientG.addColorStop(0, ELON_COLOR)
-    ambientG.addColorStop(1, 'transparent')
-    ctx.fillStyle = ambientG
-    ctx.fillRect(0, 0, size.w, size.h)
-    ctx.restore()
+    ctx.restore() // undo pan/zoom/breathe
 
   }, [layers, layerCategories, size, pan, zoom, hover, isSelected, isElonWorking, elonStatus, elonPos, walkState, hopFrame, facingLeft, breathe])
 
