@@ -835,7 +835,76 @@ export default function IslandBackground({ isNightMode }) {
       })
       buildingGroup.add(building)
     })
+    // ---- CITY GROUND PLANE (dark road/street surface under buildings) ----
+    const groundGroup = new THREE.Group()
+    // Main road surface
+    const roadGeo = new THREE.BoxGeometry(500, 2, 120)
+    const roadMat = voxelMat(0x2A2A35)
+    const road = new THREE.Mesh(roadGeo, roadMat)
+    road.position.set(10, -31, -215)
+    road.receiveShadow = true
+    groundGroup.add(road)
+
+    // Sidewalk edge (lighter strip along the front of the road)
+    const sidewalkGeo = new THREE.BoxGeometry(500, 2.5, 6)
+    const sidewalkMat = voxelMat(0x4A4A55)
+    const sidewalk = new THREE.Mesh(sidewalkGeo, sidewalkMat)
+    sidewalk.position.set(10, -30.5, -158)
+    groundGroup.add(sidewalk)
+
+    // Secondary sidewalk along back
+    const sidewalk2 = new THREE.Mesh(sidewalkGeo, sidewalkMat)
+    sidewalk2.position.set(10, -30.5, -272)
+    groundGroup.add(sidewalk2)
+
+    scene.add(groundGroup)
     scene.add(buildingGroup)
+
+    // ---- SMALL CHUNKY VOXEL CARS ----
+    function createVoxelCar(x, y, z, bodyColor, rotation = 0) {
+      const carGroup = new THREE.Group()
+      // Car body (main block)
+      const bodyGeo = new THREE.BoxGeometry(6, 2.5, 3)
+      const body = new THREE.Mesh(bodyGeo, voxelMat(bodyColor))
+      body.position.set(0, 1.8, 0)
+      carGroup.add(body)
+
+      // Car roof/cabin (smaller block on top)
+      const roofGeo = new THREE.BoxGeometry(3.5, 2, 2.6)
+      const roof = new THREE.Mesh(roofGeo, voxelMat(bodyColor))
+      roof.position.set(-0.3, 3.5, 0)
+      carGroup.add(roof)
+
+      // Wheels (4 dark blocks)
+      const wheelMat = voxelMat(0x222222)
+      const wheelGeo = new THREE.BoxGeometry(1.2, 1.2, 0.8)
+      const wheelPositions = [
+        [-1.8, 0.6, 1.5], [-1.8, 0.6, -1.5],
+        [1.8, 0.6, 1.5], [1.8, 0.6, -1.5],
+      ]
+      wheelPositions.forEach(([wx, wy, wz]) => {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat)
+        wheel.position.set(wx, wy, wz)
+        carGroup.add(wheel)
+      })
+
+      carGroup.position.set(x, y, z)
+      carGroup.rotation.y = rotation
+      return carGroup
+    }
+
+    // Place 5 cars on the streets near the city buildings
+    const carConfigs = [
+      { x: -60,  y: -30, z: -165, color: 0xCC4444, rot: 0 },          // muted red, on front road
+      { x: -10,  y: -30, z: -168, color: 0x4466AA, rot: Math.PI },    // muted blue, parked slightly off
+      { x: 50,   y: -30, z: -163, color: 0xCCAA44, rot: 0.1 },       // muted yellow, slight angle (parked)
+      { x: 120,  y: -30, z: -167, color: 0xCCCCCC, rot: Math.PI },   // white, on the road
+      { x: -120, y: -30, z: -162, color: 0x885533, rot: 0.3 },       // brown, parked at angle
+    ]
+    carConfigs.forEach((cc) => {
+      const car = createVoxelCar(cc.x, cc.y, cc.z, cc.color, cc.rot)
+      scene.add(car)
+    })
 
     // ---- ANIMATION ----
     const clock = new THREE.Clock()
@@ -945,16 +1014,16 @@ export default function IslandBackground({ isNightMode }) {
         pos.needsUpdate = true
       })
 
-      // Camera with mouse parallax (V2: zoomed out ~40% for more sky)
-      const targetX = mouseRef.current.x * 6
-      const targetY = 75 + mouseRef.current.y * 3 + Math.sin(elapsed * 0.3) * 0.3
-      const targetZ = 95 + Math.cos(elapsed * 0.15) * 1.5
+      // Camera with mouse parallax (V3: zoomed out another 35% for vast open sky)
+      const targetX = mouseRef.current.x * 8
+      const targetY = 105 + mouseRef.current.y * 4 + Math.sin(elapsed * 0.3) * 0.3
+      const targetZ = 130 + Math.cos(elapsed * 0.15) * 1.5
 
       camera.position.x += (targetX - camera.position.x) * 0.02
       camera.position.y += (targetY - camera.position.y) * 0.02
       camera.position.z += (targetZ - camera.position.z) * 0.02
 
-      camera.lookAt(0, 0, -35)
+      camera.lookAt(0, -5, -45)
 
       // V2: Building window glow intensity based on day/night
       const windowGlow = 0.2 + (1 - dayRatio) * 0.8
