@@ -6709,27 +6709,12 @@ export default function GameDashboard() {
       ],
     }
   }, [])
-  // Per-agent chat history: { agentSlug: { _all: [...messages] } }
-  // VERSION 2: force clear on upgrade to fix cross-agent contamination
-  const CHAT_VERSION = 'v5'
+  // Per-agent chat history: server files are source of truth
+  // localStorage is DISABLED for chat. Every agent switch loads fresh from server.
   const [agentChats, setAgentChats] = useState(() => {
     if (!IS_LOCAL) return { _demo: demoChatMessages }
-    try {
-      const ver = localStorage.getItem('corner-chat-version')
-      if (ver !== CHAT_VERSION) {
-        // Version mismatch: clear corrupted data from old routing bug
-        localStorage.removeItem('corner-agent-chats')
-        localStorage.setItem('corner-chat-version', CHAT_VERSION)
-        return {}
-      }
-      const saved = localStorage.getItem('corner-agent-chats')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (parsed && typeof parsed === 'object' && !parsed._all) return parsed
-      }
-    } catch {
-      try { localStorage.removeItem('corner-agent-chats') } catch {}
-    }
+    // Always start empty. Server files load on agent switch. No localStorage.
+    try { localStorage.removeItem('corner-agent-chats') } catch {}
     return {}
   })
   // Convenience: current agent's messages
@@ -6744,24 +6729,9 @@ export default function GameDashboard() {
   }, [selectedRoom])
   const [panelStreaming, setPanelStreaming] = useState(false)
 
-  // Persist per-agent chats to localStorage (debounced)
-  const chatSaveTimerRef = useRef(null)
-  useEffect(() => {
-    if (!IS_LOCAL) return
-    if (chatSaveTimerRef.current) clearTimeout(chatSaveTimerRef.current)
-    chatSaveTimerRef.current = setTimeout(() => {
-      try {
-        // Only save last 50 messages per agent to keep localStorage lean
-        const toSave = {}
-        for (const [slug, chat] of Object.entries(agentChats)) {
-          if (chat?._all?.length > 0) {
-            toSave[slug] = { _all: chat._all.filter(m => !m.streaming).slice(-50) }
-          }
-        }
-        localStorage.setItem('corner-agent-chats', JSON.stringify(toSave))
-      } catch {}
-    }, 1000)
-  }, [agentChats])
+  // NO localStorage for chats. Server conversation files are the only source of truth.
+  // Messages sent from dashboard write to server via relay-send.
+  // Messages loaded on agent switch via /api/local/conversations.
 
   // Ref for CanvasOffice imperative handle (triggerCelebration)
   const canvasOfficeRef = useRef(null)
@@ -6816,8 +6786,11 @@ export default function GameDashboard() {
     }
   }, [])
 
-  // Background outbox polling: check for new responses
-  // Picks up EA responses and adds them to the unified conversation
+  // Background outbox polling DISABLED
+  // Server conversation files are the source of truth.
+  // Dashboard reloads from server on agent switch.
+  // TODO: Re-enable with proper per-agent routing when conversation system is stable.
+  /*
   // On localhost: 500ms for near-instant response display
   useEffect(() => {
     if (!IS_LOCAL) return
@@ -6901,6 +6874,7 @@ export default function GameDashboard() {
       if (bgOutboxPollRef.current) clearInterval(bgOutboxPollRef.current)
     }
   }, [panelVisible])
+  */
 
   // Clear unread when panel is opened
   useEffect(() => {
