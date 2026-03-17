@@ -19,8 +19,8 @@ import {
 import { createChatConnection, CONNECTION_TYPE } from './chatConnection.js'
 import { renderFurniture } from './FurnitureRenderer.jsx'
 import { useWebSocket, WS_STATE } from './useWebSocket.js'
-import { AnimatedAgentCharacter, CharacterAnimationStyles } from './CharacterAnimations.jsx'
-import CanvasRoom from './CanvasRoom.jsx'
+// GHOST KILL: AnimatedAgentCharacter, CharacterAnimationStyles, CanvasRoom all REMOVED
+// Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
 import briefsIndex from '../data/briefs-index.json'
 
@@ -1457,35 +1457,8 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
           }}
         />
 
-        {/* Canvas 2D layered room: Elon's server room (Phase 2 POC) */}
-        {/* Renders 6 composited PNG layers via HTML5 Canvas instead of flat image */}
-        {/* Canvas area is sized square to match 512x512 asset canvas, centered on room target */}
-        {(() => {
-          const elonTarget = IMAGE_ROOM_TARGETS['elon']
-          if (!elonTarget) return null
-          const elonStatus = agentStatus['elon']?.status || 'IDLE'
-          const elonIsActive = elonStatus === 'WORKING'
-          // Square canvas area: use the larger dimension to keep aspect ratio
-          // Center the square on the room target's center point
-          const canvasSize = Math.max(elonTarget.w, elonTarget.h) * 1.6
-          const centerX = elonTarget.x + elonTarget.w / 2
-          const centerY = elonTarget.y + elonTarget.h / 2
-          return (
-            <div
-              style={{
-                position: 'absolute',
-                left: `${centerX - canvasSize / 2}%`,
-                top: `${centerY - canvasSize / 2}%`,
-                width: `${canvasSize}%`,
-                height: `${canvasSize}%`,
-                zIndex: 3,
-                pointerEvents: 'none',
-              }}
-            >
-              {/* OLD CanvasRoom KILLED -- CanvasOffice 3-layer system is the only renderer now */}
-            </div>
-          )
-        })()}
+        {/* GHOST KILL: Old CanvasRoom wrapper IIFE completely removed */}
+        {/* CanvasOffice 3-layer system is the only renderer (mounted at line ~5997) */}
 
         {/* Interactive room overlays - click targets, nameplates, status */}
         {/* C4: Wave animation on load, Crossy Road bounce on hover, isometric clip-path */}
@@ -1727,10 +1700,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   />
                 )}
 
-                {/* Bobby3: Animated agent character -- hop, idle bounce, state transitions, speaking bubble, celebration */}
-                {hasAgent && !isAway && SPRITE_AGENTS.includes(room.id) && (
-                  {/* OLD floating character KILLED -- bobble Elon lives on Canvas now */}
-                )}
+                {/* Bobby3: Old floating character REMOVED -- bobble Elon lives on Canvas only */}
               </motion.div>
             </motion.div>
           )
@@ -6364,8 +6334,7 @@ export default function GameDashboard() {
         </div>
       )}
 
-      {/* Bobby3: Character animation styles (dust burst, speech dot) */}
-      <CharacterAnimationStyles />
+      {/* GHOST KILL: CharacterAnimationStyles REMOVED -- old CSS injection for dust/speech no longer needed */}
 
       {/* Global styles */}
       <style>{`
