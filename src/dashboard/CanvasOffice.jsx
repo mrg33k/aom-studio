@@ -17,6 +17,24 @@ const BG_COLOR = '#0A0D1A'   // Dark night background
 const ELON_COLOR = '#4CAF50' // Elon's signature green
 const LAYER_BASE_PATH = '/corner/elon-room'
 
+// Room state images -- preloaded for smooth crossfade
+const ROOM_STATES = {
+  working: '/corner/elon-room/room-shell-working.png',
+  idle: '/corner/elon-room/room-shell-idle.png',
+  celebrating: '/corner/elon-room/room-shell-celebrating.png',
+  blocked: '/corner/elon-room/room-shell-blocked.png',
+  sleeping: '/corner/elon-room/room-shell-sleeping.png',
+}
+
+// Preload all state images on module load
+const stateImages = {}
+Object.entries(ROOM_STATES).forEach(([state, src]) => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = src
+  stateImages[state] = img
+})
+
 // Walk cycle waypoints (% of room size)
 const WALKABLE_POINTS = [
   { x: 0.35, y: 0.72, label: 'desk' },
@@ -266,6 +284,32 @@ export default function CanvasOffice({
     return { roomShell, charLayer, glowLayer }
   }, [layers])
 
+  // Determine room state from agent status
+  const roomState = useMemo(() => {
+    if (elonStatus === 'BLOCKED') return 'blocked'
+    if (elonStatus === 'DONE') return 'celebrating'
+    if (isElonWorking) return 'working'
+    return 'idle'
+  }, [elonStatus, isElonWorking])
+
+  // Crossfade between states
+  const [fadeAlpha, setFadeAlpha] = useState(1)
+  const [displayState, setDisplayState] = useState('working')
+  const prevStateRef = useRef('working')
+
+  useEffect(() => {
+    if (roomState !== prevStateRef.current) {
+      // Fade out, swap, fade in
+      setFadeAlpha(0)
+      const timer = setTimeout(() => {
+        setDisplayState(roomState)
+        prevStateRef.current = roomState
+        setFadeAlpha(1)
+      }, 300) // 300ms crossfade
+      return () => clearTimeout(timer)
+    }
+  }, [roomState])
+
   // Measure container
   useEffect(() => {
     const measure = () => {
@@ -327,17 +371,23 @@ export default function CanvasOffice({
 
     ctx.imageSmoothingEnabled = false
 
-    // ---- 3-LAYER RENDER: room-shell → character → glow ----
+    // ---- ROOM STATE RENDER (crossfade between states) ----
+    // Each state is a complete scene (room + character baked in).
+    // Smooth stop-motion: fade between state images on status change.
 
-    // Layer 1: ROOM SHELL (floor + walls + furniture, one cohesive scene)
-    if (layerCategories.roomShell) {
+    // Draw the current state image
+    const stateImg = stateImages[displayState]
+    if (stateImg && stateImg.complete) {
+      ctx.save()
+      ctx.globalAlpha = fadeAlpha
+      ctx.drawImage(stateImg, 0, 0, ROOM_SIZE, ROOM_SIZE)
+      ctx.restore()
+    } else if (layerCategories.roomShell) {
+      // Fallback to manifest room-shell if state images not loaded
       ctx.drawImage(layerCategories.roomShell.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
     }
 
-    // Layer 2: CHARACTER -- SKIPPED. Little fairy Elon stays (baked into room shell).
-    // Big bobble removed per Patrik. Will revisit character system for room 2.
-
-    // Layer 3: GLOW -- reduced to 15% to stop washing out the room/character
+    // Subtle glow overlay (15% screen blend)
     if (layerCategories.glowLayer) {
       ctx.save()
       ctx.globalCompositeOperation = 'screen'
