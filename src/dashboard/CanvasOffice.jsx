@@ -26,6 +26,15 @@ import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, f
 // ---- ROOM CONFIG ----
 const ROOM_SIZE = 512        // Base room size (px, scales with zoom)
 
+// Source-crop: room PNGs are 1024x1024 with navy (#0D0D1A) padding.
+// Actual hex content sits roughly at x=[88,936] y=[0,862] in the source.
+// We crop to an 864x864 square centered on the hex content, then draw it
+// into the full ROOM_SIZE destination so rooms fill tighter with less gap.
+const SRC_CROP_X = 80
+const SRC_CROP_Y = 0
+const SRC_CROP_W = 864
+const SRC_CROP_H = 864
+
 // Wave timing
 const CYCLE_TIME = 10        // Full working+idle cycle in seconds
 const FADE_DURATION = 4.5    // Crossfade duration in seconds
@@ -158,8 +167,8 @@ function getWaveBlend(elapsed, roomIndex) {
 }
 
 // ---- HEX LAYOUT ----
-const VIS_W = ROOM_SIZE * 0.90
-const VIS_H = ROOM_SIZE * 0.90
+const VIS_W = ROOM_SIZE * 0.94
+const VIS_H = ROOM_SIZE * 0.94
 
 function hexPosition(row, col, originX, originY) {
   const x = originX + col * (VIS_W * 0.45)
@@ -885,7 +894,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const roomCX = pos.x + ROOM_SIZE / 2
     const roomCY = pos.y + ROOM_SIZE / 2
     // 40% of viewport = focused room. Neighbors at the edges.
-    const visibleRoomSize = ROOM_SIZE * 0.90
+    const visibleRoomSize = ROOM_SIZE * 0.94
     const targetScreenSize = Math.min(viewW, viewH) * 0.40
     const zoomFocus = targetScreenSize / visibleRoomSize
     const panX = viewW / 2 - roomCX * zoomFocus
@@ -1134,14 +1143,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           }
           ctx.save()
           ctx.translate(nPosX, nPosY + nCelebOffsetY)
-          // Clip to neighbor's hex
+          // Clip to neighbor's hex (tightened to match source-cropped content)
           ctx.beginPath()
-          ctx.moveTo(S * 0.50, S * 0.05)
-          ctx.lineTo(S * 0.95, S * 0.28)
-          ctx.lineTo(S * 0.95, S * 0.75)
-          ctx.lineTo(S * 0.50, S * 0.95)
-          ctx.lineTo(S * 0.05, S * 0.75)
-          ctx.lineTo(S * 0.05, S * 0.28)
+          ctx.moveTo(S * 0.50, S * 0.03)
+          ctx.lineTo(S * 0.97, S * 0.27)
+          ctx.lineTo(S * 0.97, S * 0.76)
+          ctx.lineTo(S * 0.50, S * 0.97)
+          ctx.lineTo(S * 0.03, S * 0.76)
+          ctx.lineTo(S * 0.03, S * 0.27)
           ctx.closePath()
           ctx.clip()
           ctx.globalAlpha = 0.85 // slightly translucent so visitors look like guests
@@ -1196,12 +1205,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           ctx.setLineDash([8, 6])
           const S = ROOM_SIZE
           ctx.beginPath()
-          ctx.moveTo(targetPos.x + S * 0.50, targetPos.y + S * 0.05)
-          ctx.lineTo(targetPos.x + S * 0.95, targetPos.y + S * 0.28)
-          ctx.lineTo(targetPos.x + S * 0.95, targetPos.y + S * 0.75)
-          ctx.lineTo(targetPos.x + S * 0.50, targetPos.y + S * 0.95)
-          ctx.lineTo(targetPos.x + S * 0.05, targetPos.y + S * 0.75)
-          ctx.lineTo(targetPos.x + S * 0.05, targetPos.y + S * 0.28)
+          ctx.moveTo(targetPos.x + S * 0.50, targetPos.y + S * 0.03)
+          ctx.lineTo(targetPos.x + S * 0.97, targetPos.y + S * 0.27)
+          ctx.lineTo(targetPos.x + S * 0.97, targetPos.y + S * 0.76)
+          ctx.lineTo(targetPos.x + S * 0.50, targetPos.y + S * 0.97)
+          ctx.lineTo(targetPos.x + S * 0.03, targetPos.y + S * 0.76)
+          ctx.lineTo(targetPos.x + S * 0.03, targetPos.y + S * 0.27)
           ctx.closePath()
           ctx.stroke()
           ctx.setLineDash([])
@@ -1222,32 +1231,58 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.save()
     ctx.translate(offsetX, offsetY)
 
-    // Hex clip path
+    // Hex clip path (tightened to match source-cropped content)
     ctx.beginPath()
     const S = ROOM_SIZE
-    ctx.moveTo(S * 0.50, S * 0.05)
-    ctx.lineTo(S * 0.95, S * 0.28)
-    ctx.lineTo(S * 0.95, S * 0.75)
-    ctx.lineTo(S * 0.50, S * 0.95)
-    ctx.lineTo(S * 0.05, S * 0.75)
-    ctx.lineTo(S * 0.05, S * 0.28)
+    ctx.moveTo(S * 0.50, S * 0.03)
+    ctx.lineTo(S * 0.97, S * 0.27)
+    ctx.lineTo(S * 0.97, S * 0.76)
+    ctx.lineTo(S * 0.50, S * 0.97)
+    ctx.lineTo(S * 0.03, S * 0.76)
+    ctx.lineTo(S * 0.03, S * 0.27)
     ctx.closePath()
     ctx.clip()
 
     // Crossfade blend between working and idle
+    // Use 9-arg drawImage to source-crop the navy border padding out of 1024x1024 PNGs.
+    // This draws only the hex content region, stretched to fill ROOM_SIZE.
     if (workImg?.complete && idleImg?.complete) {
+      const iw = workImg.naturalWidth || 1024
+      const ih = workImg.naturalHeight || 1024
+      // Only apply source crop to full-size (1024x1024) room images
+      const useCrop = iw >= 1024 && ih >= 1024
       ctx.save()
       ctx.globalAlpha = (1 - alpha) * parentAlpha
-      ctx.drawImage(workImg, 0, 0, S, S)
+      if (useCrop) {
+        ctx.drawImage(workImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
+      } else {
+        ctx.drawImage(workImg, 0, 0, S, S)
+      }
       ctx.restore()
       ctx.save()
       ctx.globalAlpha = alpha * parentAlpha
-      ctx.drawImage(idleImg, 0, 0, S, S)
+      if (useCrop) {
+        ctx.drawImage(idleImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
+      } else {
+        ctx.drawImage(idleImg, 0, 0, S, S)
+      }
       ctx.restore()
     } else if (workImg?.complete) {
-      ctx.drawImage(workImg, 0, 0, S, S)
+      const iw = workImg.naturalWidth || 1024
+      const ih = workImg.naturalHeight || 1024
+      if (iw >= 1024 && ih >= 1024) {
+        ctx.drawImage(workImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
+      } else {
+        ctx.drawImage(workImg, 0, 0, S, S)
+      }
     } else if (idleImg?.complete) {
-      ctx.drawImage(idleImg, 0, 0, S, S)
+      const iw = idleImg.naturalWidth || 1024
+      const ih = idleImg.naturalHeight || 1024
+      if (iw >= 1024 && ih >= 1024) {
+        ctx.drawImage(idleImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
+      } else {
+        ctx.drawImage(idleImg, 0, 0, S, S)
+      }
     }
 
     // ---- CHARACTER LAYER (#5 + #6: walking animation, each on own timing) ----
@@ -1282,12 +1317,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const hexAlpha = Math.round(celebGlow * 80).toString(16).padStart(2, '0')
       ctx.fillStyle = `${nameColor}${hexAlpha}`
       ctx.beginPath()
-      ctx.moveTo(S * 0.50, S * 0.05)
-      ctx.lineTo(S * 0.95, S * 0.28)
-      ctx.lineTo(S * 0.95, S * 0.75)
-      ctx.lineTo(S * 0.50, S * 0.95)
-      ctx.lineTo(S * 0.05, S * 0.75)
-      ctx.lineTo(S * 0.05, S * 0.28)
+      ctx.moveTo(S * 0.50, S * 0.03)
+      ctx.lineTo(S * 0.97, S * 0.27)
+      ctx.lineTo(S * 0.97, S * 0.76)
+      ctx.lineTo(S * 0.50, S * 0.97)
+      ctx.lineTo(S * 0.03, S * 0.76)
+      ctx.lineTo(S * 0.03, S * 0.27)
       ctx.closePath()
       ctx.fill()
     }
