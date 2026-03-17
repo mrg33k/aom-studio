@@ -3380,6 +3380,293 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   )
 })
 
+// ---- TASKS TAB CONTENT (Task Detail -> Brief Link) -------------------------
+// KEY PRODUCT INSIGHT: Task -> Brief -> Action in one click.
+// When a task is clicked, load the associated brief from projects/[agent]/.
+// Briefs give context: WHY the task exists, WHAT was decided, HOW to act.
+function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode }) {
+  const [expandedBrief, setExpandedBrief] = useState(null) // 'latest-result' | 'agent-md' | null
+  const [briefContent, setBriefContent] = useState(null)
+  const [briefLoading, setBriefLoading] = useState(false)
+  const [briefError, setBriefError] = useState(null)
+  const [relatedBriefs, setRelatedBriefs] = useState([])
+
+  // Map agent slugs to their project directory names
+  const AGENT_PROJECT_MAP = {
+    bobby: 'bobby', mom: 'mom', alex: 'aom-strategy', steve: 'steve',
+    steffen: 'steffen', cleo: 'content-agent', tony: 'tony', jacob: 'jacob',
+    elon: 'sys', colton: 'colton', elmo: 'elmo', paige: 'paige', pixel: 'pixel',
+  }
+
+  // Load brief content from the local file API
+  const loadBrief = useCallback(async (briefType) => {
+    if (!IS_LOCAL || !agentSlug) return
+    const projectDir = AGENT_PROJECT_MAP[agentSlug] || agentSlug
+    const filePath = briefType === 'latest-result'
+      ? `projects/${projectDir}/latest-result.md`
+      : `projects/${projectDir}/AGENT.md`
+
+    setBriefLoading(true)
+    setBriefError(null)
+    try {
+      const res = await fetch(`/api/local/file?path=${encodeURIComponent(filePath)}`)
+      if (!res.ok) throw new Error(`Not found: ${filePath}`)
+      const data = await res.json()
+      setBriefContent(data.content || 'No content available.')
+      setExpandedBrief(briefType)
+    } catch (err) {
+      setBriefError(`Could not load ${filePath}`)
+      setBriefContent(null)
+    } finally {
+      setBriefLoading(false)
+    }
+  }, [agentSlug])
+
+  // Load related published briefs on mount
+  useEffect(() => {
+    if (!agentSlug) return
+    const agentName = agent?.name?.toLowerCase() || agentSlug
+    try {
+      // Check briefs-index for entries by this agent
+      fetch('/src/data/briefs-index.json').then(r => r.ok ? r.json() : null).then(index => {
+        if (!index?.categories) return
+        const matches = []
+        for (const cat of index.categories) {
+          for (const item of (cat.items || [])) {
+            if (item.agent?.toLowerCase() === agentName || item.agent?.toLowerCase() === agentSlug) {
+              matches.push(item)
+            }
+          }
+        }
+        setRelatedBriefs(matches.slice(0, 5)) // Show up to 5 related briefs
+      }).catch(() => {})
+    } catch {}
+  }, [agentSlug, agent])
+
+  // Simple markdown-to-text renderer (headers, bullets, bold)
+  const renderBriefContent = (content) => {
+    if (!content) return null
+    const lines = content.split('\n')
+    return lines.map((line, i) => {
+      const trimmed = line.trim()
+      if (!trimmed) return <div key={i} style={{ height: 8 }} />
+      // Headers
+      if (trimmed.startsWith('### ')) {
+        return <div key={i} style={{ color: isNightMode ? '#F1F5F9' : '#0F172A', fontSize: 14, fontWeight: 800, fontFamily: "'Inter', sans-serif", marginTop: 12, marginBottom: 4 }}>{trimmed.slice(4)}</div>
+      }
+      if (trimmed.startsWith('## ')) {
+        return <div key={i} style={{ color: isNightMode ? '#F1F5F9' : '#0F172A', fontSize: 15, fontWeight: 900, fontFamily: "'Inter', sans-serif", marginTop: 14, marginBottom: 6, borderBottom: `1px solid ${agentColor}25`, paddingBottom: 4 }}>{trimmed.slice(3)}</div>
+      }
+      if (trimmed.startsWith('# ')) {
+        return <div key={i} style={{ color: agentColor, fontSize: 16, fontWeight: 900, fontFamily: "'Inter', sans-serif", marginTop: 6, marginBottom: 8 }}>{trimmed.slice(2)}</div>
+      }
+      // Bullet points
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const text = trimmed.slice(2)
+        return (
+          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 3, paddingLeft: 4 }}>
+            <span style={{ color: agentColor, flexShrink: 0, fontSize: 14, lineHeight: '1.5' }}>&#8226;</span>
+            <span style={{ color: isNightMode ? '#CBD5E1' : '#334155', fontSize: 13, fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>{text}</span>
+          </div>
+        )
+      }
+      // Regular text with bold support
+      const parts = trimmed.split(/(\*\*[^*]+\*\*)/g)
+      return (
+        <div key={i} style={{ color: isNightMode ? '#94A3B8' : '#475569', fontSize: 13, fontFamily: "'Inter', sans-serif", lineHeight: 1.5, marginBottom: 2 }}>
+          {parts.map((part, j) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={j} style={{ color: isNightMode ? '#E2E8F0' : '#1E293B', fontWeight: 700 }}>{part.slice(2, -2)}</strong>
+            }
+            return <span key={j}>{part}</span>
+          })}
+        </div>
+      )
+    })
+  }
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+      {/* Current task highlighted -- clickable to load brief */}
+      <div
+        data-testid="task-brief-card"
+        onClick={() => {
+          if (expandedBrief === 'latest-result') {
+            setExpandedBrief(null)
+            setBriefContent(null)
+          } else {
+            loadBrief('latest-result')
+          }
+        }}
+        style={{
+          padding: '12px 14px', marginBottom: 12,
+          background: isNightMode ? `${agentColor}10` : `${agentColor}08`,
+          border: `1px solid ${agentColor}25`,
+          borderRadius: 8,
+          cursor: IS_LOCAL ? 'pointer' : 'default',
+          transition: 'background 150ms ease, border-color 150ms ease',
+        }}
+        onMouseEnter={e => { if (IS_LOCAL) { e.currentTarget.style.background = isNightMode ? `${agentColor}18` : `${agentColor}12`; e.currentTarget.style.borderColor = agentColor + '40' } }}
+        onMouseLeave={e => { if (IS_LOCAL) { e.currentTarget.style.background = isNightMode ? `${agentColor}10` : `${agentColor}08`; e.currentTarget.style.borderColor = agentColor + '25' } }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <div style={{ color: isNightMode ? '#6B7280' : '#94A3B8', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Current Task</div>
+          {IS_LOCAL && (
+            <div style={{
+              fontSize: 11, fontWeight: 700, color: agentColor,
+              fontFamily: "'JetBrains Mono', monospace",
+              opacity: 0.7, display: 'flex', alignItems: 'center', gap: 4,
+            }}>
+              {expandedBrief === 'latest-result' ? (
+                <><ChevronUp size={12} /> HIDE</>
+              ) : (
+                <><ChevronDown size={12} /> VIEW BRIEF</>
+              )}
+            </div>
+          )}
+        </div>
+        <div style={{ color: isNightMode ? '#F0ECE6' : '#1E293B', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{task}</div>
+      </div>
+
+      {/* Expanded brief content (latest-result.md) */}
+      {expandedBrief === 'latest-result' && (
+        <div style={{
+          padding: '14px 16px', marginBottom: 12,
+          background: isNightMode ? 'rgba(15,27,45,0.6)' : 'rgba(248,250,255,0.95)',
+          border: isNightMode ? `1px solid ${agentColor}20` : `1px solid ${agentColor}15`,
+          borderLeft: `3px solid ${agentColor}`,
+          borderRadius: 8,
+          maxHeight: 400, overflowY: 'auto',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: agentColor, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Latest Result
+            </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); loadBrief('agent-md') }}
+              style={{
+                fontSize: 11, fontWeight: 700, color: isNightMode ? '#60A5FA' : '#3B82F6',
+                fontFamily: "'JetBrains Mono', monospace",
+                background: 'none', border: 'none', cursor: 'pointer',
+                textDecoration: 'underline', textUnderlineOffset: 2,
+              }}
+            >
+              AGENT.md
+            </button>
+          </div>
+          {briefLoading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
+              <Loader2 size={14} style={{ color: agentColor, animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: 13, color: '#6B7280', fontFamily: "'Inter', sans-serif" }}>Loading brief...</span>
+            </div>
+          )}
+          {briefError && (
+            <div style={{ fontSize: 13, color: '#EF4444', fontFamily: "'Inter', sans-serif", padding: '4px 0' }}>{briefError}</div>
+          )}
+          {briefContent && !briefLoading && renderBriefContent(briefContent)}
+        </div>
+      )}
+
+      {/* Expanded AGENT.md content */}
+      {expandedBrief === 'agent-md' && (
+        <div style={{
+          padding: '14px 16px', marginBottom: 12,
+          background: isNightMode ? 'rgba(15,27,45,0.6)' : 'rgba(248,250,255,0.95)',
+          border: isNightMode ? `1px solid ${agentColor}20` : `1px solid ${agentColor}15`,
+          borderLeft: `3px solid ${agentColor}`,
+          borderRadius: 8,
+          maxHeight: 400, overflowY: 'auto',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: agentColor, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Agent Brief
+            </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); loadBrief('latest-result') }}
+              style={{
+                fontSize: 11, fontWeight: 700, color: isNightMode ? '#60A5FA' : '#3B82F6',
+                fontFamily: "'JetBrains Mono', monospace",
+                background: 'none', border: 'none', cursor: 'pointer',
+                textDecoration: 'underline', textUnderlineOffset: 2,
+              }}
+            >
+              Latest Result
+            </button>
+          </div>
+          {briefLoading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
+              <Loader2 size={14} style={{ color: agentColor, animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: 13, color: '#6B7280', fontFamily: "'Inter', sans-serif" }}>Loading brief...</span>
+            </div>
+          )}
+          {briefError && (
+            <div style={{ fontSize: 13, color: '#EF4444', fontFamily: "'Inter', sans-serif", padding: '4px 0' }}>{briefError}</div>
+          )}
+          {briefContent && !briefLoading && renderBriefContent(briefContent)}
+        </div>
+      )}
+
+      {/* Last completion */}
+      {agentStatus?.lastCompletion && (
+        <div style={{
+          padding: '10px 14px', marginBottom: 12,
+          background: isNightMode ? 'rgba(100,180,255,0.04)' : 'rgba(100,180,255,0.06)',
+          border: isNightMode ? '1px solid rgba(100,180,255,0.08)' : '1px solid rgba(100,180,255,0.12)',
+          borderRadius: 8,
+        }}>
+          <div style={{ color: isNightMode ? '#6B7280' : '#94A3B8', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
+          <div style={{ color: isNightMode ? '#A8A29E' : '#475569', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
+          <div style={{ color: isNightMode ? '#6B7280' : '#94A3B8', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
+        </div>
+      )}
+
+      {/* Related published briefs -- clickable links to /briefs/[slug] */}
+      {relatedBriefs.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ color: isNightMode ? '#6B7280' : '#94A3B8', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+            Related Briefs
+          </div>
+          {relatedBriefs.map((brief, i) => (
+            <a
+              key={brief.slug || i}
+              href={brief.path || `/briefs/${brief.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'block', padding: '8px 12px', marginBottom: 6,
+                background: isNightMode ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)',
+                border: isNightMode ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(59,130,246,0.15)',
+                borderRadius: 6, cursor: 'pointer',
+                textDecoration: 'none',
+                transition: 'background 150ms ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.1)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)' }}
+            >
+              <div style={{ color: isNightMode ? '#60A5FA' : '#2563EB', fontSize: 13, fontWeight: 700, fontFamily: "'Inter', sans-serif", marginBottom: 2 }}>
+                {brief.title}
+              </div>
+              {brief.summary && (
+                <div style={{ color: isNightMode ? '#64748B' : '#94A3B8', fontSize: 12, fontFamily: "'Inter', sans-serif", lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                  {brief.summary}
+                </div>
+              )}
+              <div style={{ color: isNightMode ? '#475569' : '#CBD5E1', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
+                {brief.dateFormatted} -- {brief.agent}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* Full task list link */}
+      <div style={{ color: isNightMode ? '#4A6080' : '#94A3B8', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textAlign: 'center', padding: '16px 0' }}>
+        Full task list in Checklist mode (press 2)
+      </div>
+    </div>
+  )
+}
+
 // ---- SKELETON LOADER (loading placeholder for panel data) -------------------
 function SkeletonLine({ width = '100%', height = 14, style: extraStyle }) {
   return (
@@ -4210,37 +4497,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </ChatErrorBoundary>
         )}
 
-        {/* TASKS TAB */}
+        {/* TASKS TAB -- Task Detail -> Brief Link (KEY INSIGHT: Task -> Brief -> Action in one click) */}
         {activeTab === 'tasks' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-            {/* Current task highlighted */}
-            <div style={{
-              padding: '12px 14px', marginBottom: 12,
-              background: `${agentColor}10`, border: `1px solid ${agentColor}25`,
-              borderRadius: 8,
-            }}>
-              <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Current Task</div>
-              <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{task}</div>
-            </div>
-
-            {/* Last completion */}
-            {agentStatus?.lastCompletion && (
-              <div style={{
-                padding: '10px 14px', marginBottom: 12,
-                background: 'rgba(100,180,255,0.04)', border: '1px solid rgba(100,180,255,0.08)',
-                borderRadius: 8,
-              }}>
-                <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
-                <div style={{ color: '#A8A29E', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
-                <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
-              </div>
-            )}
-
-            {/* No more tasks message */}
-            <div style={{ color: '#4A6080', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", textAlign: 'center', padding: '16px 0' }}>
-              Full task list in Checklist mode (press 2)
-            </div>
-          </div>
+          <TasksTabContent
+            task={task}
+            agentColor={agentColor}
+            agentSlug={agentSlug}
+            agentStatus={agentStatus}
+            agent={agent}
+            isNightMode={isNightMode}
+          />
         )}
 
         {/* INFO TAB */}
