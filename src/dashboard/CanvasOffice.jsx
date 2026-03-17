@@ -47,6 +47,19 @@ const WALKABLE_POINTS = [
 
 const WALK_SPEED = 0.08
 
+// ---- DIAMOND HIT TEST ----
+// Isometric room is a diamond (rhombus). 2:1 ratio means half-height = half-width / 2.
+// Returns true if point (px, py) is inside the diamond centered at (cx, cy).
+function isInsideDiamond(px, py, cx, cy, hw, hh) {
+  return Math.abs(px - cx) / hw + Math.abs(py - cy) / hh <= 1
+}
+
+// Helper: diamond center and half-dimensions for the room
+const DIAMOND_CX = ROOM_SIZE / 2
+const DIAMOND_CY = ROOM_SIZE / 2
+const DIAMOND_HW = ROOM_SIZE / 2   // half-width
+const DIAMOND_HH = ROOM_SIZE / 4   // half-height (isometric 2:1)
+
 // ---- LAYER LOADER ----
 // Loads layers.json manifest, then loads all PNGs + JSON sidecars in parallel.
 // Returns sorted layers array with loaded Image objects and metadata.
@@ -445,13 +458,21 @@ export default function CanvasOffice({
       ctx.restore()
     }
 
-    // ---- INTERACTION: Hover glow ----
+    // ---- INTERACTION: Hover glow (diamond-shaped) ----
     if (hover) {
       ctx.save()
       ctx.globalAlpha = 0.12
+      // Clip to diamond shape so glow stays inside the room boundary
+      ctx.beginPath()
+      ctx.moveTo(DIAMOND_CX, DIAMOND_CY - DIAMOND_HH)        // top
+      ctx.lineTo(DIAMOND_CX + DIAMOND_HW, DIAMOND_CY)         // right
+      ctx.lineTo(DIAMOND_CX, DIAMOND_CY + DIAMOND_HH)         // bottom
+      ctx.lineTo(DIAMOND_CX - DIAMOND_HW, DIAMOND_CY)         // left
+      ctx.closePath()
+      ctx.clip()
       const g = ctx.createRadialGradient(
-        ROOM_SIZE / 2, ROOM_SIZE / 2, 0,
-        ROOM_SIZE / 2, ROOM_SIZE / 2, ROOM_SIZE * 0.45
+        DIAMOND_CX, DIAMOND_CY, 0,
+        DIAMOND_CX, DIAMOND_CY, ROOM_SIZE * 0.4
       )
       g.addColorStop(0, ELON_COLOR)
       g.addColorStop(1, 'transparent')
@@ -460,15 +481,42 @@ export default function CanvasOffice({
       ctx.restore()
     }
 
-    // ---- INTERACTION: Selected border ----
+    // ---- INTERACTION: Selected glow (diamond-shaped, no bounding box) ----
     if (isSelected) {
       ctx.save()
+      ctx.globalAlpha = 0.18
+      // Diamond clip for selection glow
+      ctx.beginPath()
+      ctx.moveTo(DIAMOND_CX, DIAMOND_CY - DIAMOND_HH)
+      ctx.lineTo(DIAMOND_CX + DIAMOND_HW, DIAMOND_CY)
+      ctx.lineTo(DIAMOND_CX, DIAMOND_CY + DIAMOND_HH)
+      ctx.lineTo(DIAMOND_CX - DIAMOND_HW, DIAMOND_CY)
+      ctx.closePath()
+      ctx.clip()
+      const sg = ctx.createRadialGradient(
+        DIAMOND_CX, DIAMOND_CY, ROOM_SIZE * 0.05,
+        DIAMOND_CX, DIAMOND_CY, ROOM_SIZE * 0.45
+      )
+      sg.addColorStop(0, ELON_COLOR)
+      sg.addColorStop(0.7, `${ELON_COLOR}44`)
+      sg.addColorStop(1, 'transparent')
+      ctx.fillStyle = sg
+      ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE)
+      ctx.restore()
+      // Subtle diamond edge glow (no rectangle)
+      ctx.save()
+      ctx.globalAlpha = 0.4
       ctx.strokeStyle = ELON_COLOR
-      ctx.lineWidth = 2
-      ctx.globalAlpha = 0.6
+      ctx.lineWidth = 1.5
       ctx.shadowColor = ELON_COLOR
-      ctx.shadowBlur = 16
-      ctx.strokeRect(2, 2, ROOM_SIZE - 4, ROOM_SIZE - 4)
+      ctx.shadowBlur = 12
+      ctx.beginPath()
+      ctx.moveTo(DIAMOND_CX, DIAMOND_CY - DIAMOND_HH)
+      ctx.lineTo(DIAMOND_CX + DIAMOND_HW, DIAMOND_CY)
+      ctx.lineTo(DIAMOND_CX, DIAMOND_CY + DIAMOND_HH)
+      ctx.lineTo(DIAMOND_CX - DIAMOND_HW, DIAMOND_CY)
+      ctx.closePath()
+      ctx.stroke()
       ctx.restore()
     }
 
@@ -583,7 +631,7 @@ export default function CanvasOffice({
       const rect = containerRef.current.getBoundingClientRect()
       const cx = (e.clientX - rect.left - pan.x) / zoom
       const cy = (e.clientY - rect.top - pan.y) / zoom
-      const isOver = cx >= 0 && cx <= ROOM_SIZE && cy >= 0 && cy <= ROOM_SIZE
+      const isOver = isInsideDiamond(cx, cy, DIAMOND_CX, DIAMOND_CY, DIAMOND_HW, DIAMOND_HH)
       if (isOver !== hover) {
         setHover(isOver)
         setExtHover?.(isOver ? 'elon' : null)
@@ -629,8 +677,7 @@ export default function CanvasOffice({
       const rect = containerRef.current.getBoundingClientRect()
       const cx = (e.clientX - rect.left - pan.x) / zoom
       const cy = (e.clientY - rect.top - pan.y) / zoom
-      const isOver = cx >= 0 && cx <= ROOM_SIZE && cy >= 0 && cy <= ROOM_SIZE
-      if (isOver) {
+      if (isInsideDiamond(cx, cy, DIAMOND_CX, DIAMOND_CY, DIAMOND_HW, DIAMOND_HH)) {
         onRoomClick?.('elon')
       }
     }
@@ -670,7 +717,7 @@ export default function CanvasOffice({
         if (rect) {
           const cx = (panRef.current.lx - rect.left - pan.x) / zoom
           const cy = (panRef.current.ly - rect.top - pan.y) / zoom
-          if (cx >= 0 && cx <= ROOM_SIZE && cy >= 0 && cy <= ROOM_SIZE) {
+          if (isInsideDiamond(cx, cy, DIAMOND_CX, DIAMOND_CY, DIAMOND_HW, DIAMOND_HH)) {
             onRoomClick?.('elon')
           }
         }
