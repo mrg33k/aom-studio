@@ -23,6 +23,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
 import CrossyBackground from './CrossyBackground.jsx'
+import { useDataPipe } from './hooks/useDataPipe.js'
 import briefsIndex from '../data/briefs-index.json'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
@@ -4389,9 +4390,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
     }
   }, [chatMessages, activeTab])
 
-  // Working agents count
-  const workingCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'WORKING').length
-  const blockedCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
+  // Working agents count -- use REAL data from useDataPipe (agent-notifications.md TASK STARTED/FINISHED)
+  const { rightNow: liveAgents, pillCounts: pipeCounts } = useDataPipe(() => ({}))
+  const workingCount = liveAgents?.length || Object.values(allAgentStatus || {}).filter(a => a?.status === 'WORKING').length
+  const blockedCount = pipeCounts?.yourTodos || Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
   const doneCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'DONE').length
   const totalAgents = Object.keys(allAgentStatus || {}).length || 13
   const overallProgress = totalAgents > 0 ? Math.round(((workingCount + doneCount) / totalAgents) * 100) : 0
