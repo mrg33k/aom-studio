@@ -32,7 +32,7 @@
 // TODO(patrik): SCHEDULE = GOOGLE CALENDAR CHECKLIST -- Schedule section pulls Google Calendar events as a task list sorted by time. When event time passes, auto-check it off. Day-by-day navigation (arrows, not month view). Add new event inline (day, time, invitees) writes directly to Google Calendar MCP. Data sources: patrikmatheson@gmail.com + hello@aom-inhouse.com calendars. Ref: bobby/last-conversation.md Schedule section.
 // TODO(patrik): PILL DRAG-TO-REORDER + PERSIST -- Pills are drag-to-reorder and the custom order persists in localStorage. Current pill rendering has no drag support. Ref: bobby/last-conversation.md section order.
 // TODO(patrik): ARCHIVE PILL (CHECKLIST) -- Completed tasks go to Archive pill with accordion by month/day/year. Small "Archive" link at bottom of each pill task list. Searchable. If task existed at any point, it's in the archive. Ref: bobby/last-conversation.md item 16.
-// TODO(patrik): RIGHT-CLICK CONTEXT MENU (CHECKLIST) -- Extend existing TaskContextMenu with: Add to Right Now, Move to Project (submenu), Add Context (inline note). Unify with GameDashboard ContextMenu into shared component at src/dashboard/components/TaskContextMenu.jsx. Full spec: projects/steffen/right-click-menu-spec.md. Ref: bobby/last-conversation.md.
+// DONE(bobby2): RIGHT-CLICK CONTEXT MENU (CHECKLIST) -- Unified shared TaskContextMenu at src/dashboard/components/TaskContextMenu.jsx. 7 actions: Mark Done, Assign Agent, Add to Right Now, Move to Project, Set Priority, Add Context, Delete. Day/night palette swap, submenu slide-left, two-click delete. Full spec: projects/steffen/right-click-menu-spec.md.
 // ==========
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
@@ -45,6 +45,7 @@ import {
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
+import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 
 // Sprite avatar (duplicated here to avoid circular imports, small component)
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
@@ -738,186 +739,18 @@ const ASSIGNABLE_AGENTS = AGENTS.filter(a =>
   !['paige', 'pixel'].includes(a.slug)
 )
 
-function TaskContextMenu({ position, task, onClose, onAction }) {
-  const menuRef = useRef(null)
-
-  // Close on click outside or Escape
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
-    }
-    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClick)
-      document.addEventListener('keydown', handleKey)
-    }, 30)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener('mousedown', handleClick)
-      document.removeEventListener('keydown', handleKey)
-    }
-  }, [onClose])
-
-  // Keep menu in viewport
-  const [adjustedPos, setAdjustedPos] = useState(position)
-  useEffect(() => {
-    if (!menuRef.current) return
-    const rect = menuRef.current.getBoundingClientRect()
-    let x = position.x
-    let y = position.y
-    if (x + rect.width > window.innerWidth - 8) x = window.innerWidth - rect.width - 8
-    if (y + rect.height > window.innerHeight - 8) y = window.innerHeight - rect.height - 8
-    if (x < 8) x = 8
-    if (y < 8) y = 8
-    setAdjustedPos({ x, y })
-  }, [position])
-
-  const [showAgents, setShowAgents] = useState(false)
-
-  const menuItemStyle = {
-    display: 'flex', alignItems: 'center', gap: 10,
-    width: '100%', padding: '8px 14px',
-    background: 'none', border: 'none', cursor: 'pointer',
-    fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 500,
-    color: '#E0E0E0', textAlign: 'left',
-    borderRadius: 6, transition: 'background 80ms ease',
-  }
-
+// TaskContextMenu: now uses shared component from ./components/TaskContextMenu.jsx
+// Kept as a thin wrapper for backwards compatibility with existing onAction interface
+function TaskContextMenu({ position, task, onClose, onAction, isNightMode, projects }) {
   return (
-    <motion.div
-      ref={menuRef}
-      initial={{ opacity: 0, scale: 0.92, y: -4 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.92, y: -4 }}
-      transition={{ duration: 0.12 }}
-      style={{
-        position: 'fixed',
-        left: adjustedPos.x,
-        top: adjustedPos.y,
-        zIndex: 300,
-        minWidth: 210,
-        background: 'rgba(12, 16, 28, 0.97)',
-        backdropFilter: 'blur(20px)',
-        border: '1.5px solid rgba(100, 180, 255, 0.18)',
-        borderRadius: 10,
-        boxShadow: '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(100,180,255,0.06)',
-        padding: '6px 4px',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Toggle done/undone */}
-      <button
-        style={menuItemStyle}
-        onClick={() => { onAction('toggle', task); onClose() }}
-        onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'none'}
-      >
-        {task.done
-          ? <><Square size={15} color="#8BA4C4" /> <span>Mark undone</span></>
-          : <><CheckSquare size={15} color="#22C55E" /> <span>Mark done</span></>
-        }
-      </button>
-
-      {/* Separator */}
-      <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
-
-      {/* Priority options */}
-      {PRIORITY_OPTIONS.map(opt => (
-        <button
-          key={opt.key}
-          style={menuItemStyle}
-          onClick={() => { onAction('priority', task, opt.key); onClose() }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-        >
-          <opt.icon size={15} color={opt.color} />
-          <span>{opt.label}</span>
-        </button>
-      ))}
-
-      {/* Separator */}
-      <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
-
-      {/* Reassign agent (submenu) */}
-      <div style={{ position: 'relative' }}>
-        <button
-          style={menuItemStyle}
-          onClick={() => setShowAgents(!showAgents)}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-        >
-          <UserCircle2 size={15} color="#8BA4C4" />
-          <span style={{ flex: 1 }}>Reassign agent</span>
-          <ChevronRight size={13} color="#4A6080" />
-        </button>
-
-        {/* Agent submenu */}
-        <AnimatePresence>
-          {showAgents && (
-            <motion.div
-              initial={{ opacity: 0, x: -4 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -4 }}
-              style={{
-                position: 'absolute',
-                left: '100%', top: 0,
-                minWidth: 180,
-                background: 'rgba(12, 16, 28, 0.97)',
-                backdropFilter: 'blur(20px)',
-                border: '1.5px solid rgba(100, 180, 255, 0.18)',
-                borderRadius: 10,
-                boxShadow: '0 12px 48px rgba(0,0,0,0.5)',
-                padding: '6px 4px',
-                marginLeft: 4,
-                maxHeight: 300, overflowY: 'auto',
-              }}
-              className="hud-scroll"
-            >
-              {ASSIGNABLE_AGENTS.map(a => (
-                <button
-                  key={a.slug}
-                  style={{
-                    ...menuItemStyle,
-                    color: task.agent === a.slug ? a.color : '#E0E0E0',
-                    fontWeight: task.agent === a.slug ? 700 : 500,
-                  }}
-                  onClick={() => { onAction('reassign', task, a.slug); onClose() }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <div style={{
-                    width: 18, height: 18, borderRadius: '50%',
-                    background: `${a.color}25`,
-                    border: `1.5px solid ${a.color}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700, color: a.color,
-                    flexShrink: 0,
-                  }}>
-                    {a.name.charAt(0)}
-                  </div>
-                  <span>{a.name}</span>
-                  {task.agent === a.slug && <Check size={13} color={a.color} style={{ marginLeft: 'auto' }} />}
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Separator */}
-      <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
-
-      {/* Delete */}
-      <button
-        style={{ ...menuItemStyle, color: '#EF4444' }}
-        onClick={() => { onAction('delete', task); onClose() }}
-        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'none'}
-      >
-        <Trash2 size={15} color="#EF4444" />
-        <span>Delete task</span>
-      </button>
-    </motion.div>
+    <SharedTaskContextMenu
+      position={position}
+      task={task}
+      onClose={onClose}
+      onAction={onAction}
+      isNightMode={isNightMode}
+      projects={projects}
+    />
   )
 }
 
@@ -946,6 +779,7 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive })
       onMouseLeave={() => setIsHovered(false)}
       onContextMenu={handleContextMenu}
       style={{
+        position: 'relative',
         minHeight: 48,
         background: isDone
           ? 'rgba(255,255,255,0.01)'
@@ -962,6 +796,9 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive })
         opacity: isDone ? 0.5 : 1,
       }}
     >
+      {/* Priority bar indicator (left edge) */}
+      <TaskPriorityBar taskText={task.text} />
+
       {/* Drag handle (visible on hover) */}
       <div style={{
         opacity: isHovered ? 0.5 : 0,
@@ -1051,17 +888,25 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive })
           )}
         </div>
       </div>
+
+      {/* Context note indicator (right side) */}
+      <TaskNoteIndicator taskText={task.text} style={{ alignSelf: 'center', flexShrink: 0 }} />
     </motion.div>
   )
 }
 
 // ---- RIGHT NOW TASK CARD (agent avatar + task + progress bar) ---------------
-function RightNowTaskCard({ task, index, isDaytime }) {
+function RightNowTaskCard({ task, index, isDaytime, onContextMenu }) {
   const [isHovered, setIsHovered] = useState(false)
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
   const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
   const color = '#FF6B3D'
   const agentColor = agentInfo?.color || color
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault()
+    onContextMenu?.(e, task)
+  }, [task, onContextMenu])
 
   return (
     <motion.div
@@ -1072,6 +917,7 @@ function RightNowTaskCard({ task, index, isDaytime }) {
       transition={{ duration: 0.18, delay: index * 0.04 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onContextMenu={handleContextMenu}
       style={{
         background: isHovered
           ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
@@ -1192,7 +1038,7 @@ function RightNowTaskCard({ task, index, isDaytime }) {
 
 // ---- RIGHT NOW SECTION (ONLY running agents, dead simple) -------------------
 // PATRIK CORRECTION: "it should just link to what agents are running and what the task is"
-function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime }) {
+function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMenu }) {
   const color = '#FF6B3D'
 
   // If no running agents, show "All clear"
@@ -1282,6 +1128,7 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime }) {
               task={task}
               index={i}
               isDaytime={isDaytime}
+              onContextMenu={onContextMenu}
             />
           ))}
         </AnimatePresence>
@@ -1291,9 +1138,14 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime }) {
 }
 
 // ---- YOUR TODOS TASK CARD (red accent, checkbox energy) ---------------------
-function YourTodoTaskCard({ task, index, isDaytime, onCheck }) {
+function YourTodoTaskCard({ task, index, isDaytime, onCheck, onContextMenu }) {
   const [isHovered, setIsHovered] = useState(false)
   const agentInfo = AGENTS.find(a => a.slug === 'patrik') || { name: 'Patrik', color: '#EF4444' }
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault()
+    onContextMenu?.(e, task)
+  }, [task, onContextMenu])
 
   return (
     <motion.div
@@ -1304,6 +1156,7 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck }) {
       transition={{ duration: 0.18, delay: index * 0.04 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onContextMenu={handleContextMenu}
       style={{
         background: isHovered
           ? (isDaytime ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.06)')
@@ -1381,7 +1234,7 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck }) {
 }
 
 // ---- YOUR TODOS SECTION (Patrik's personal blocked items) -------------------
-function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck }) {
+function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck, onContextMenu }) {
   if (!tasks || tasks.length === 0) return null
 
   return (
@@ -1441,6 +1294,7 @@ function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck }) 
               index={i}
               isDaytime={isDaytime}
               onCheck={onCheck}
+              onContextMenu={onContextMenu}
             />
           ))}
         </AnimatePresence>
@@ -1450,10 +1304,15 @@ function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck }) 
 }
 
 // ---- FINISH THESE TASK CARD (muted gray/amber, timestamp, stale nudge) ------
-function CheckingInTaskCard({ task, index, isDaytime }) {
+function CheckingInTaskCard({ task, index, isDaytime, onContextMenu }) {
   const [isHovered, setIsHovered] = useState(false)
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
   const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault()
+    onContextMenu?.(e, task)
+  }, [task, onContextMenu])
 
   return (
     <motion.div
@@ -1464,6 +1323,7 @@ function CheckingInTaskCard({ task, index, isDaytime }) {
       transition={{ duration: 0.18, delay: index * 0.04 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onContextMenu={handleContextMenu}
       style={{
         background: isHovered
           ? (isDaytime ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.05)')
@@ -1682,7 +1542,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
 }
 
 // ---- FINISH THESE SECTION (stale tasks, muted nudge -- was "Checking In") ----
-function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime }) {
+function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMenu }) {
   if (!tasks || tasks.length === 0) return null
 
   return (
@@ -1738,6 +1598,7 @@ function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime }) {
               task={task}
               index={i}
               isDaytime={isDaytime}
+              onContextMenu={onContextMenu}
             />
           ))}
         </AnimatePresence>
@@ -1880,41 +1741,10 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     setContextMenu({ position: { x: e.clientX, y: e.clientY }, task })
   }, [])
 
+  // Context menu action handler: delegates to shared handler from TaskContextMenu.jsx
+  // Supports all 7 actions: toggle, priority, reassign, delete, addToRightNow, moveToProject, addContext
   const handleContextAction = useCallback((action, task, payload) => {
-    if (action === 'toggle') {
-      // Toggle done/undone (same as checkbox click)
-      const key = task.text
-      setCheckedTasks(prev => {
-        const next = { ...prev }
-        if (next[key] !== undefined) {
-          delete next[key]
-        } else {
-          next[key] = !task.done
-        }
-        return next
-      })
-    } else if (action === 'priority') {
-      // Priority: stored in localStorage for now (C4: Supabase)
-      try {
-        const saved = JSON.parse(localStorage.getItem('corner-task-priorities') || '{}')
-        saved[task.text] = payload
-        localStorage.setItem('corner-task-priorities', JSON.stringify(saved))
-      } catch {}
-    } else if (action === 'reassign') {
-      // Reassign: stored in localStorage for now (C4: Supabase)
-      try {
-        const saved = JSON.parse(localStorage.getItem('corner-task-agents') || '{}')
-        saved[task.text] = payload
-        localStorage.setItem('corner-task-agents', JSON.stringify(saved))
-      } catch {}
-    } else if (action === 'delete') {
-      // Soft delete: mark as deleted in localStorage (C4: Supabase)
-      try {
-        const saved = JSON.parse(localStorage.getItem('corner-task-deleted') || '[]')
-        if (!saved.includes(task.text)) saved.push(task.text)
-        localStorage.setItem('corner-task-deleted', JSON.stringify(saved))
-      } catch {}
-    }
+    handleTaskContextAction(action, task, payload, setCheckedTasks)
   }, [])
 
   // Sync checkbox state to localStorage on every change
@@ -2084,6 +1914,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 isCollapsed={collapsedProjects['rightnow-live']}
                 onToggle={() => toggleCollapse('rightnow-live')}
                 isDaytime={isDaytime}
+                onContextMenu={handleTaskContextMenu}
               />
             )}
 
@@ -2095,6 +1926,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 onToggle={() => toggleCollapse('your-todos-live')}
                 isDaytime={isDaytime}
                 onCheck={handleCheck}
+                onContextMenu={handleTaskContextMenu}
               />
             )}
 
@@ -2223,6 +2055,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 isCollapsed={collapsedProjects['finish-these-live']}
                 onToggle={() => toggleCollapse('finish-these-live')}
                 isDaytime={isDaytime}
+                onContextMenu={handleTaskContextMenu}
               />
             )}
           </div>
@@ -2257,7 +2090,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         </form>
       </div>
 
-      {/* Right-click context menu */}
+      {/* Right-click context menu (shared component) */}
       <AnimatePresence>
         {contextMenu && (
           <TaskContextMenu
@@ -2265,6 +2098,8 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             task={contextMenu.task}
             onClose={() => setContextMenu(null)}
             onAction={handleContextAction}
+            isNightMode={isNightMode}
+            projects={projects}
           />
         )}
       </AnimatePresence>

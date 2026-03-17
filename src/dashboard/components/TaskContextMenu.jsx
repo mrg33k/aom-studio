@@ -1,0 +1,823 @@
+// Shared Task Context Menu -- universal right-click menu for ALL task items
+// Used by: ChecklistMode.jsx, GameDashboard.jsx (sidebar task lists + expanded sections)
+// Spec: projects/steffen/right-click-menu-spec.md
+// Owner: Bobby2 (HUD team)
+//
+// Menu options: Mark Done, Assign Agent (submenu), Add to Right Now, Move to Project (submenu),
+// Set Priority (submenu), Add Context (inline input), Delete (two-click confirm)
+//
+// Day/night palette swap. Submenus slide LEFT (sidebar is right-aligned).
+// Keyboard nav: ArrowDown/Up = move focus, ArrowLeft = open submenu, ArrowRight = close submenu,
+// Enter = activate, Escape = close.
+
+import React, { useState, useRef, useCallback, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  CheckSquare, Square,
+  UserCircle2, ChevronRight,
+  Zap,
+  FolderKanban,
+  Flag,
+  ArrowUpCircle, ArrowRightCircle, ArrowDownCircle,
+  MessageSquare,
+  Trash2,
+  Check,
+  StickyNote,
+} from 'lucide-react'
+import { AGENTS } from '../gridSpec.js'
+
+// ---- Constants ----
+const ASSIGNABLE_AGENTS = AGENTS.filter(a =>
+  !['paige', 'pixel'].includes(a.slug)
+)
+
+const PRIORITY_OPTIONS = [
+  { key: 'high', label: 'High priority', icon: ArrowUpCircle, color: '#EF4444' },
+  { key: 'med', label: 'Medium priority', icon: ArrowRightCircle, color: '#F59E0B' },
+  { key: 'low', label: 'Low priority', icon: ArrowDownCircle, color: '#6B7280' },
+]
+
+// ---- Day/Night palettes ----
+function getPalette(isNightMode) {
+  if (isNightMode !== false) {
+    // Night mode (default)
+    return {
+      panelBg: 'rgba(12, 16, 28, 0.97)',
+      panelBorder: 'rgba(100, 180, 255, 0.18)',
+      panelShadow: '0 12px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(100,180,255,0.06)',
+      itemText: '#D0D8E8',
+      headerText: '#4A6080',
+      divider: 'rgba(100,180,255,0.08)',
+      hoverBg: 'rgba(100,180,255,0.08)',
+      dangerColor: '#EF4444',
+      accentColor: '#5BB8FF',
+      inputBg: 'rgba(255,255,255,0.04)',
+      inputBorder: 'rgba(100,180,255,0.15)',
+      inputText: '#F0ECE6',
+    }
+  }
+  // Day mode
+  return {
+    panelBg: 'rgba(255, 255, 255, 0.96)',
+    panelBorder: 'rgba(0, 0, 0, 0.08)',
+    panelShadow: '0 12px 48px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+    itemText: '#1E293B',
+    headerText: '#94A3B8',
+    divider: 'rgba(0,0,0,0.06)',
+    hoverBg: 'rgba(0,0,0,0.04)',
+    dangerColor: '#DC2626',
+    accentColor: '#2563EB',
+    inputBg: 'rgba(0,0,0,0.03)',
+    inputBorder: 'rgba(0,0,0,0.1)',
+    inputText: '#1E293B',
+  }
+}
+
+// ---- Submenu wrapper ----
+function Submenu({ children, parentRef, isNightMode }) {
+  const pal = getPalette(isNightMode)
+  const subRef = useRef(null)
+  const [flipRight, setFlipRight] = useState(false)
+
+  useEffect(() => {
+    if (!subRef.current || !parentRef?.current) return
+    const sub = subRef.current.getBoundingClientRect()
+    // If submenu would overflow left edge, flip to right
+    if (sub.left < 8) setFlipRight(true)
+  }, [parentRef])
+
+  return (
+    <motion.div
+      ref={subRef}
+      initial={{ opacity: 0, x: flipRight ? -8 : 8 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: flipRight ? -8 : 8 }}
+      transition={{ duration: 0.1, ease: 'easeOut' }}
+      style={{
+        position: 'absolute',
+        ...(flipRight
+          ? { left: '100%', marginLeft: 4 }
+          : { right: '100%', marginRight: 4 }),
+        top: 0,
+        minWidth: 180,
+        maxHeight: 300,
+        overflowY: 'auto',
+        background: pal.panelBg,
+        backdropFilter: 'blur(20px)',
+        border: `1.5px solid ${pal.panelBorder}`,
+        borderRadius: 10,
+        boxShadow: pal.panelShadow,
+        padding: '6px 4px',
+        zIndex: 301,
+      }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// ---- Main TaskContextMenu ----
+export default function TaskContextMenu({
+  position,
+  task,
+  onClose,
+  onAction,
+  isNightMode,
+  projects, // Array of { name, section, color, tasks } for Move to Project submenu
+}) {
+  const menuRef = useRef(null)
+  const pal = getPalette(isNightMode)
+
+  // Submenus
+  const [showAgents, setShowAgents] = useState(false)
+  const [showProjects, setShowProjects] = useState(false)
+  const [showPriority, setShowPriority] = useState(false)
+
+  // Context input
+  const [showContextInput, setShowContextInput] = useState(false)
+  const [contextText, setContextText] = useState('')
+  const contextInputRef = useRef(null)
+
+  // Delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const deleteTimerRef = useRef(null)
+
+  // Keyboard navigation
+  const [focusIndex, setFocusIndex] = useState(-1)
+
+  // Submenu hover grace timers
+  const agentHoverTimer = useRef(null)
+  const projectHoverTimer = useRef(null)
+  const priorityHoverTimer = useRef(null)
+
+  // Refs for submenu parent items (for positioning)
+  const agentItemRef = useRef(null)
+  const projectItemRef = useRef(null)
+  const priorityItemRef = useRef(null)
+
+  // Is task already in Right Now?
+  const isInRightNow = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-rightnow') || '[]')
+      return saved.includes(task?.text)
+    } catch { return false }
+  })()
+
+  // Current priority
+  const currentPriority = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-priorities') || '{}')
+      return saved[task?.text] || null
+    } catch { return null }
+  })()
+
+  // Current context note
+  const existingNote = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-context') || '{}')
+      return saved[task?.text] || ''
+    } catch { return '' }
+  })()
+
+  // Close on click outside or Escape
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
+    }
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        if (showAgents || showProjects || showPriority) {
+          setShowAgents(false)
+          setShowProjects(false)
+          setShowPriority(false)
+        } else if (showContextInput) {
+          setShowContextInput(false)
+          setContextText('')
+        } else {
+          onClose()
+        }
+      }
+    }
+    const handleScroll = () => onClose()
+
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClick)
+      document.addEventListener('keydown', handleKey)
+    }, 30)
+    // Close on scroll (parent scroll)
+    window.addEventListener('scroll', handleScroll, true)
+
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+      window.removeEventListener('scroll', handleScroll, true)
+    }
+  }, [onClose, showAgents, showProjects, showPriority, showContextInput])
+
+  // Cleanup delete timer
+  useEffect(() => {
+    return () => {
+      if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current)
+    }
+  }, [])
+
+  // Focus context input when shown
+  useEffect(() => {
+    if (showContextInput && contextInputRef.current) {
+      contextInputRef.current.focus()
+    }
+  }, [showContextInput])
+
+  // Keep menu in viewport
+  const [adjustedPos, setAdjustedPos] = useState(position)
+  useEffect(() => {
+    if (!menuRef.current) return
+    const rect = menuRef.current.getBoundingClientRect()
+    let x = position.x
+    let y = position.y
+    if (x + rect.width > window.innerWidth - 8) x = window.innerWidth - rect.width - 8
+    if (y + rect.height > window.innerHeight - 8) y = window.innerHeight - rect.height - 8
+    if (x < 8) x = 8
+    if (y < 8) y = 8
+    setAdjustedPos({ x, y })
+  }, [position])
+
+  // Close all submenus
+  const closeSubmenus = useCallback(() => {
+    setShowAgents(false)
+    setShowProjects(false)
+    setShowPriority(false)
+  }, [])
+
+  // ---- Shared styles ----
+  const menuItemStyle = {
+    display: 'flex', alignItems: 'center', gap: 10,
+    width: '100%', padding: '8px 14px',
+    background: 'none', border: 'none', cursor: 'pointer',
+    fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 500,
+    color: pal.itemText, textAlign: 'left',
+    borderRadius: 6, transition: 'background 80ms ease',
+  }
+
+  const dividerStyle = {
+    height: 1, background: pal.divider, margin: '4px 10px',
+  }
+
+  // ---- Action handlers ----
+  const handleToggleDone = () => {
+    onAction('toggle', task)
+    onClose()
+  }
+
+  const handleAssignAgent = (agentSlug) => {
+    onAction('reassign', task, agentSlug)
+    onClose()
+  }
+
+  const handleAddToRightNow = () => {
+    if (isInRightNow) return
+    onAction('addToRightNow', task)
+    onClose()
+  }
+
+  const handleMoveToProject = (projectSection) => {
+    onAction('moveToProject', task, projectSection)
+    onClose()
+  }
+
+  const handleSetPriority = (priorityKey) => {
+    onAction('priority', task, priorityKey)
+    onClose()
+  }
+
+  const handleAddContext = () => {
+    if (!contextText.trim()) return
+    onAction('addContext', task, contextText.trim())
+    onClose()
+  }
+
+  const handleDelete = () => {
+    if (!deleteConfirm) {
+      setDeleteConfirm(true)
+      deleteTimerRef.current = setTimeout(() => {
+        setDeleteConfirm(false)
+      }, 2000)
+      return
+    }
+    // Second click: execute delete
+    onAction('delete', task)
+    onClose()
+  }
+
+  // Submenu hover handlers with grace period
+  const handleAgentEnter = () => {
+    clearTimeout(agentHoverTimer.current)
+    agentHoverTimer.current = setTimeout(() => {
+      closeSubmenus()
+      setShowAgents(true)
+    }, 150)
+  }
+  const handleAgentLeave = () => {
+    clearTimeout(agentHoverTimer.current)
+    agentHoverTimer.current = setTimeout(() => {
+      setShowAgents(false)
+    }, 200)
+  }
+
+  const handleProjectEnter = () => {
+    clearTimeout(projectHoverTimer.current)
+    projectHoverTimer.current = setTimeout(() => {
+      closeSubmenus()
+      setShowProjects(true)
+    }, 150)
+  }
+  const handleProjectLeave = () => {
+    clearTimeout(projectHoverTimer.current)
+    projectHoverTimer.current = setTimeout(() => {
+      setShowProjects(false)
+    }, 200)
+  }
+
+  const handlePriorityEnter = () => {
+    clearTimeout(priorityHoverTimer.current)
+    priorityHoverTimer.current = setTimeout(() => {
+      closeSubmenus()
+      setShowPriority(true)
+    }, 150)
+  }
+  const handlePriorityLeave = () => {
+    clearTimeout(priorityHoverTimer.current)
+    priorityHoverTimer.current = setTimeout(() => {
+      setShowPriority(false)
+    }, 200)
+  }
+
+  // Task label for header (truncated)
+  const taskLabel = (task?.text || task?.description || 'Task').slice(0, 30)
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.92, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.92, y: -4 }}
+      transition={{ duration: 0.12, ease: [0.2, 0.9, 0.3, 1] }}
+      style={{
+        position: 'fixed',
+        left: adjustedPos.x,
+        top: adjustedPos.y,
+        zIndex: 300,
+        minWidth: 210,
+        maxWidth: 260,
+        background: pal.panelBg,
+        backdropFilter: 'blur(20px)',
+        border: `1.5px solid ${pal.panelBorder}`,
+        borderRadius: 10,
+        boxShadow: pal.panelShadow,
+        padding: '6px 4px',
+        overflow: 'hidden',
+      }}
+    >
+      {/* ---- HEADER (task label) ---- */}
+      <div style={{
+        padding: '6px 14px 8px',
+        fontSize: 12,
+        fontFamily: 'JetBrains Mono, monospace',
+        fontWeight: 700,
+        color: pal.headerText,
+        textTransform: 'uppercase',
+        letterSpacing: '0.12em',
+        borderBottom: `1px solid ${pal.divider}`,
+        marginBottom: 2,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        maxWidth: 200,
+      }}>
+        {taskLabel}
+      </div>
+
+      {/* ---- 1. MARK DONE / MARK UNDONE ---- */}
+      <button
+        style={{
+          ...menuItemStyle,
+          color: task?.done ? '#8BA4C4' : pal.accentColor,
+        }}
+        onClick={handleToggleDone}
+        onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg; closeSubmenus() }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+      >
+        {task?.done
+          ? <><Square size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>Mark undone</span></>
+          : <><CheckSquare size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>Mark done</span></>
+        }
+      </button>
+
+      <div style={dividerStyle} />
+
+      {/* ---- 2. ASSIGN AGENT (submenu) ---- */}
+      <div
+        style={{ position: 'relative' }}
+        onMouseEnter={handleAgentEnter}
+        onMouseLeave={handleAgentLeave}
+        ref={agentItemRef}
+      >
+        <button
+          style={menuItemStyle}
+          onClick={() => { closeSubmenus(); setShowAgents(s => !s) }}
+          onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+        >
+          <UserCircle2 size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+          <span style={{ flex: 1 }}>Assign Agent</span>
+          <ChevronRight size={13} color={pal.headerText} />
+        </button>
+
+        <AnimatePresence>
+          {showAgents && (
+            <Submenu parentRef={agentItemRef} isNightMode={isNightMode}>
+              {ASSIGNABLE_AGENTS.map(a => (
+                <button
+                  key={a.slug}
+                  style={{
+                    ...menuItemStyle,
+                    color: task?.agent === a.slug ? a.color : pal.itemText,
+                    fontWeight: task?.agent === a.slug ? 700 : 500,
+                  }}
+                  onClick={() => handleAssignAgent(a.slug)}
+                  onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                >
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: `${a.color}25`,
+                    border: `1.5px solid ${a.color}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 700, color: a.color,
+                    flexShrink: 0,
+                  }}>
+                    {a.name.charAt(0)}
+                  </div>
+                  <span style={{ fontSize: 14 }}>{a.name}</span>
+                  {task?.agent === a.slug && <Check size={13} color={a.color} style={{ marginLeft: 'auto' }} />}
+                </button>
+              ))}
+            </Submenu>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ---- 3. ADD TO RIGHT NOW ---- */}
+      <button
+        style={{
+          ...menuItemStyle,
+          opacity: isInRightNow ? 0.4 : 1,
+          cursor: isInRightNow ? 'default' : 'pointer',
+        }}
+        onClick={handleAddToRightNow}
+        onMouseEnter={e => {
+          if (!isInRightNow) e.currentTarget.style.background = pal.hoverBg
+          closeSubmenus()
+        }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+        disabled={isInRightNow}
+      >
+        {isInRightNow
+          ? <><Check size={15} style={{ flexShrink: 0, opacity: 0.7, color: '#6B7280' }} /> <span style={{ color: '#6B7280' }}>Already in Right Now</span></>
+          : <><Zap size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>Add to Right Now</span></>
+        }
+      </button>
+
+      {/* ---- 4. MOVE TO PROJECT (submenu) ---- */}
+      <div
+        style={{ position: 'relative' }}
+        onMouseEnter={handleProjectEnter}
+        onMouseLeave={handleProjectLeave}
+        ref={projectItemRef}
+      >
+        <button
+          style={menuItemStyle}
+          onClick={() => { closeSubmenus(); setShowProjects(s => !s) }}
+          onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+        >
+          <FolderKanban size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+          <span style={{ flex: 1 }}>Move to Project</span>
+          <ChevronRight size={13} color={pal.headerText} />
+        </button>
+
+        <AnimatePresence>
+          {showProjects && (
+            <Submenu parentRef={projectItemRef} isNightMode={isNightMode}>
+              {(projects || []).map(p => {
+                const isCurrent = task?.projectSection === p.section
+                const remaining = p.tasks ? p.tasks.filter(t => !t.done).length : 0
+                return (
+                  <button
+                    key={p.section}
+                    style={{
+                      ...menuItemStyle,
+                      color: isCurrent ? pal.accentColor : pal.itemText,
+                      fontWeight: isCurrent ? 700 : 500,
+                      cursor: isCurrent ? 'default' : 'pointer',
+                      opacity: isCurrent ? 0.6 : 1,
+                    }}
+                    onClick={() => !isCurrent && handleMoveToProject(p.section)}
+                    onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = pal.hoverBg }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                    disabled={isCurrent}
+                  >
+                    <div style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: p.color || '#6B7280', flexShrink: 0,
+                    }} />
+                    <span style={{ flex: 1, fontSize: 14 }}>{p.name}</span>
+                    <span style={{
+                      fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
+                      color: pal.headerText,
+                    }}>
+                      {remaining}
+                    </span>
+                    {isCurrent && <Check size={13} color={pal.accentColor} style={{ marginLeft: 4 }} />}
+                  </button>
+                )
+              })}
+              {(!projects || projects.length === 0) && (
+                <div style={{ padding: '8px 14px', color: pal.headerText, fontSize: 13, fontStyle: 'italic' }}>
+                  No projects available
+                </div>
+              )}
+            </Submenu>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div style={dividerStyle} />
+
+      {/* ---- 5. SET PRIORITY (submenu) ---- */}
+      <div
+        style={{ position: 'relative' }}
+        onMouseEnter={handlePriorityEnter}
+        onMouseLeave={handlePriorityLeave}
+        ref={priorityItemRef}
+      >
+        <button
+          style={menuItemStyle}
+          onClick={() => { closeSubmenus(); setShowPriority(s => !s) }}
+          onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+        >
+          <Flag size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+          <span style={{ flex: 1 }}>Set Priority</span>
+          <ChevronRight size={13} color={pal.headerText} />
+        </button>
+
+        <AnimatePresence>
+          {showPriority && (
+            <Submenu parentRef={priorityItemRef} isNightMode={isNightMode}>
+              {PRIORITY_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  style={{
+                    ...menuItemStyle,
+                    color: currentPriority === opt.key ? opt.color : pal.itemText,
+                    fontWeight: currentPriority === opt.key ? 700 : 500,
+                  }}
+                  onClick={() => handleSetPriority(opt.key)}
+                  onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                >
+                  <opt.icon size={15} color={opt.color} style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1 }}>{opt.label}</span>
+                  {currentPriority === opt.key && <Check size={13} color={opt.color} style={{ marginLeft: 'auto' }} />}
+                </button>
+              ))}
+            </Submenu>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ---- 6. ADD CONTEXT ---- */}
+      <div>
+        {!showContextInput ? (
+          <button
+            style={menuItemStyle}
+            onClick={() => {
+              closeSubmenus()
+              setShowContextInput(true)
+              setContextText(existingNote)
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg; closeSubmenus() }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+          >
+            <MessageSquare size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+            <span>{existingNote ? 'Edit Note' : 'Add Context'}</span>
+            {existingNote && <StickyNote size={12} color={pal.headerText} style={{ marginLeft: 'auto' }} />}
+          </button>
+        ) : (
+          <motion.div
+            initial={{ height: 37, opacity: 0.8 }}
+            animate={{ height: 70, opacity: 1 }}
+            transition={{ duration: 0.12, ease: 'easeOut' }}
+            style={{ padding: '4px 10px', overflow: 'hidden' }}
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.08, duration: 0.08 }}
+            >
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                marginBottom: 6, color: pal.headerText,
+                fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
+                fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
+              }}>
+                <MessageSquare size={12} /> NOTE
+              </div>
+              <input
+                ref={contextInputRef}
+                type="text"
+                value={contextText}
+                onChange={e => setContextText(e.target.value)}
+                placeholder="Add a note..."
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleAddContext()
+                  if (e.key === 'Escape') { setShowContextInput(false); setContextText('') }
+                  e.stopPropagation()
+                }}
+                style={{
+                  width: '100%', minHeight: 32,
+                  background: pal.inputBg,
+                  border: `1px solid ${pal.inputBorder}`,
+                  borderRadius: 6, padding: '6px 10px',
+                  color: pal.inputText,
+                  fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  outline: 'none',
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </div>
+
+      <div style={dividerStyle} />
+
+      {/* ---- 7. DELETE (two-click confirm) ---- */}
+      <button
+        style={{
+          ...menuItemStyle,
+          color: pal.dangerColor,
+        }}
+        onClick={handleDelete}
+        onMouseEnter={e => { e.currentTarget.style.background = `${pal.dangerColor}14`; closeSubmenus() }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+      >
+        <Trash2 size={15} color={pal.dangerColor} style={{ flexShrink: 0 }} />
+        <motion.span
+          key={deleteConfirm ? 'confirm' : 'delete'}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15 }}
+        >
+          {deleteConfirm ? 'Confirm delete?' : 'Delete'}
+        </motion.span>
+      </button>
+    </motion.div>
+  )
+}
+
+// ---- Priority bar indicator for task cards ----
+export function TaskPriorityBar({ taskText }) {
+  const priority = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-priorities') || '{}')
+      return saved[taskText] || null
+    } catch { return null }
+  })()
+
+  if (!priority) return null
+
+  const colors = {
+    high: { bg: '#EF4444', glow: '0 0 6px rgba(239,68,68,0.3)' },
+    med: { bg: '#F59E0B', glow: '0 0 6px rgba(245,158,11,0.2)' },
+    low: { bg: '#6B7280', glow: 'none' },
+  }
+
+  const c = colors[priority] || colors.low
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: 0, top: 0, bottom: 0,
+      width: 3, borderRadius: '3px 0 0 3px',
+      background: c.bg,
+      boxShadow: c.glow,
+    }} />
+  )
+}
+
+// ---- Context note indicator for task cards ----
+export function TaskNoteIndicator({ taskText, style }) {
+  const note = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-context') || '{}')
+      return saved[taskText] || ''
+    } catch { return '' }
+  })()
+
+  const [showTooltip, setShowTooltip] = useState(false)
+
+  if (!note) return null
+
+  return (
+    <div
+      style={{ position: 'relative', display: 'inline-flex', ...style }}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <StickyNote size={12} color="#4A6080" />
+      {showTooltip && (
+        <div style={{
+          position: 'absolute', bottom: '100%', right: 0,
+          marginBottom: 6,
+          maxWidth: 200, padding: '8px 10px',
+          background: 'rgba(12, 16, 28, 0.97)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(100,180,255,0.15)',
+          borderRadius: 6,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          color: '#F0ECE6', fontSize: 12,
+          fontFamily: "'Inter', system-ui, sans-serif",
+          lineHeight: 1.4,
+          whiteSpace: 'pre-wrap',
+          zIndex: 310,
+          pointerEvents: 'none',
+        }}>
+          {note}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---- Context menu action handler (shared logic, call from parent) ----
+// This centralizes the localStorage writes so both ChecklistMode and GameDashboard
+// can use the same handler without duplicating logic.
+export function handleTaskContextAction(action, task, payload, setCheckedTasks) {
+  if (action === 'toggle') {
+    if (setCheckedTasks) {
+      const key = task.text
+      setCheckedTasks(prev => {
+        const next = { ...prev }
+        if (next[key] !== undefined) {
+          delete next[key]
+        } else {
+          next[key] = !task.done
+        }
+        return next
+      })
+    }
+  } else if (action === 'priority') {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-priorities') || '{}')
+      saved[task.text] = payload
+      localStorage.setItem('corner-task-priorities', JSON.stringify(saved))
+    } catch {}
+  } else if (action === 'reassign') {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-agents') || '{}')
+      saved[task.text] = payload
+      localStorage.setItem('corner-task-agents', JSON.stringify(saved))
+    } catch {}
+    console.log(`[Corner] Task "${task.text}" reassigned to ${payload}`)
+  } else if (action === 'delete') {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-deleted') || '[]')
+      if (!saved.includes(task.text)) saved.push(task.text)
+      localStorage.setItem('corner-task-deleted', JSON.stringify(saved))
+    } catch {}
+  } else if (action === 'addToRightNow') {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-rightnow') || '[]')
+      if (!saved.includes(task.text)) saved.push(task.text)
+      localStorage.setItem('corner-task-rightnow', JSON.stringify(saved))
+    } catch {}
+    console.log(`[Corner] Task "${task.text}" added to Right Now`)
+  } else if (action === 'moveToProject') {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-project-moves') || '{}')
+      saved[task.text] = payload
+      localStorage.setItem('corner-task-project-moves', JSON.stringify(saved))
+    } catch {}
+    console.log(`[Corner] Task "${task.text}" moved to project: ${payload}`)
+  } else if (action === 'addContext') {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-context') || '{}')
+      saved[task.text] = payload
+      localStorage.setItem('corner-task-context', JSON.stringify(saved))
+    } catch {}
+    console.log(`[Corner] Context note added to "${task.text}": ${payload}`)
+  }
+}

@@ -24,6 +24,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 import CanvasOffice from './CanvasOffice.jsx'
 import CrossyBackground from './CrossyBackground.jsx'
 import { useDataPipe } from './hooks/useDataPipe.js'
+import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import briefsIndex from '../data/briefs-index.json'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
@@ -2584,7 +2585,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
 }
 
 // ---- Task Item Card (Steffen HUD spec) -------------------------------------
-function TaskCard({ entry, agentColor }) {
+function TaskCard({ entry, agentColor, onContextMenu }) {
   const statusBadgeColors = {
     DONE: { bg: 'rgba(16,185,129,0.15)', text: '#10B981' },
     ACTIVE: { bg: 'rgba(245,158,11,0.15)', text: '#F59E0B' },
@@ -2593,9 +2594,11 @@ function TaskCard({ entry, agentColor }) {
     WORKING: { bg: 'rgba(245,158,11,0.15)', text: '#F59E0B' },
   }
   const badge = statusBadgeColors[entry.status] || statusBadgeColors.QUEUED
+  const taskText = entry.description || entry.currentTask || entry.text || 'No task'
 
   return (
     <div style={{
+      position: 'relative',
       minHeight: 64, background: 'rgba(255, 255, 255, 0.03)',
       border: '1px solid rgba(255, 255, 255, 0.06)',
       borderRadius: 6, padding: '14px 16px',
@@ -2603,7 +2606,15 @@ function TaskCard({ entry, agentColor }) {
     }}
       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
       onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
+      onContextMenu={(e) => {
+        if (onContextMenu) {
+          e.preventDefault()
+          const agentSlug = AGENTS.find(a => a.name?.toLowerCase() === entry.agent?.toLowerCase())?.slug || entry.agent
+          onContextMenu(e, { text: taskText, agent: agentSlug, done: entry.status === 'DONE' })
+        }
+      }}
     >
+      <TaskPriorityBar taskText={taskText} />
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         {/* Agent sprite avatar (tiny, 20px) */}
         {entry.agent ? (
@@ -2639,6 +2650,7 @@ function TaskCard({ entry, agentColor }) {
             )}
           </div>
         </div>
+        <TaskNoteIndicator taskText={taskText} style={{ alignSelf: 'center', flexShrink: 0 }} />
       </div>
     </div>
   )
@@ -4217,11 +4229,19 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {workingAgents.map(a => (
-                    <div key={a.slug} style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '6px 10px', borderRadius: 8,
-                      background: isNightMode ? 'rgba(34,197,94,0.05)' : 'rgba(34,197,94,0.03)',
-                    }}>
+                    <div key={a.slug}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        handleSidebarTaskContextMenu(e, { text: a.task || a.name, agent: a.slug, done: false })
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '6px 10px', borderRadius: 8,
+                        background: isNightMode ? 'rgba(34,197,94,0.05)' : 'rgba(34,197,94,0.03)',
+                        cursor: 'default', position: 'relative',
+                      }}
+                    >
+                      <TaskPriorityBar taskText={a.task || a.name} />
                       <div style={{
                         width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0,
                         animation: 'livePulse 1.5s ease-in-out infinite',
@@ -4232,6 +4252,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                       <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                         {a.task}
                       </span>
+                      <TaskNoteIndicator taskText={a.task || a.name} />
                     </div>
                   ))}
                 </div>
@@ -4261,11 +4282,19 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {realPatrikTodos.slice(0, 8).map((t, i) => (
-                    <div key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '6px 10px', borderRadius: 8,
-                      background: isNightMode ? 'rgba(245,158,11,0.05)' : 'rgba(245,158,11,0.03)',
-                    }}>
+                    <div key={i}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        handleSidebarTaskContextMenu(e, { text: t.text, agent: t.agent || 'patrik', done: t.done || false, projectSection: t.projectSection })
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '6px 10px', borderRadius: 8,
+                        background: isNightMode ? 'rgba(245,158,11,0.05)' : 'rgba(245,158,11,0.03)',
+                        cursor: 'default', position: 'relative',
+                      }}
+                    >
+                      <TaskPriorityBar taskText={t.text} />
                       <CheckCircle2 size={14} style={{ color: accent('todos'), flexShrink: 0 }} />
                       {t.projectColor && (
                         <span style={{
@@ -4275,6 +4304,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                       <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                         {t.text}
                       </span>
+                      <TaskNoteIndicator taskText={t.text} />
                     </div>
                   ))}
                 </div>
@@ -4447,7 +4477,7 @@ function parsePunchListSidebar(markdown) {
 // TODO(patrik): PILL ARCHITECTURE -- Below the 4 top squares, project pills auto-populate from context (Ambition, Corner, ISA, KOHRS, etc). System routes tasks to the right project bucket. Pills overflow with LEFT/RIGHT ARROWS to scroll (not wrap). SEARCH BAR at top = instant pill add. Project pills are the PROJECT level. The 4 top squares are the WORKFLOW level. Ref: bobby/last-conversation.md item 15.
 // TODO(patrik): TASKS IN MULTIPLE PILLS -- A task like "Bobby: chat cleanup" can appear in BOTH "Corner" project pill AND "Right Now" org pill simultaneously. Tasks aren't exclusive to one bucket. They exist wherever they're relevant. Ref: bobby/last-conversation.md item 15b.
 // TODO(patrik): ARCHIVE PILL -- Completed tasks don't show inline in each category. Instead: small "Archive" link at bottom of each pill's task list. "Archived" is its own PILL with an accordion organized by month, day, and year. Simple expandable sections. If you can't find your task, search it. Ref: bobby/last-conversation.md item 16.
-// TODO(patrik): RIGHT-CLICK CONTEXT MENU ON SIDEBAR TASKS -- Right-click any task in sidebar for: mark done, assign agent, add to Right Now, move to project, set priority, add context note, delete. Full spec at projects/steffen/right-click-menu-spec.md. Unify ChecklistMode TaskContextMenu + GameDashboard ContextMenu into shared component. Day/night mode, keyboard nav, submenu slide-left. Ref: bobby/last-conversation.md.
+// DONE(bobby2): RIGHT-CLICK CONTEXT MENU ON SIDEBAR TASKS -- Unified shared TaskContextMenu at src/dashboard/components/TaskContextMenu.jsx. 7 actions: Mark Done, Assign Agent, Add to Right Now, Move to Project, Set Priority, Add Context (inline input), Delete (two-click confirm). Day/night palette swap, submenu slide-left, viewport-aware positioning. Wired to sidebar expanded sections (Right Now, Your TODOs). Full spec: projects/steffen/right-click-menu-spec.md.
 // TODO(patrik): DATA SYNC RULE -- ALL data syncs to proper place automatically. Pills are LIVE VIEWS: task completed removes from Right Now + adds to completed feed + updates project pill progress. TODO checked off drops Your TODOs count + archives it. Calendar event passes auto-checks in Schedule. Agent starts/finishes updates LIVE box. 3s polling keeps everything fresh. No data in only one place. Ref: bobby/last-conversation.md Data Sync Rule.
 // TODO(patrik): CHAT VISUAL TARGET -- Chat design target is NOT the sidebar spec mockup. The approved targets are: projects/steffen/visual-target/hud/dream-chat-v1.png and projects/steffen/visual-target/chat-view-full.png. Bobby should match THOSE, not generic bubbles. Ref: bobby/last-conversation.md Chat Design Note.
 // DONE(bobby2): isNightMode passed to GameHUD. Bottom HUD flips to white/vibrant blue in daytime. Ref: Patrik feedback Pass 22.
@@ -5441,6 +5471,9 @@ export default function GameDashboard() {
   const [panelMessages, setPanelMessages] = useState(IS_LOCAL ? {} : demoChatMessages)
   const [panelStreaming, setPanelStreaming] = useState(false)
 
+  // Ref for CanvasOffice imperative handle (triggerCelebration)
+  const canvasOfficeRef = useRef(null)
+
   // Safe sort for messages: handles missing/invalid timestamps without NaN crashes
   const safeTimeSort = useCallback((a, b) => {
     const ta = a?.time ? new Date(a.time).getTime() : 0
@@ -5744,6 +5777,35 @@ export default function GameDashboard() {
 
   // Right-click context menu state
   const [contextMenu, setContextMenu] = useState(null) // { type, data, position: {x, y} }
+
+  // Task right-click context menu state (separate from room/agent context menu)
+  const [taskContextMenu, setTaskContextMenu] = useState(null) // { position: {x,y}, task }
+
+  // Checkbox state for task context menu actions (toggle done)
+  const [sidebarCheckedTasks, setSidebarCheckedTasks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('corner-checks')
+      return saved ? JSON.parse(saved) : {}
+    } catch { return {} }
+  })
+
+  // Sync checkbox state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('corner-checks', JSON.stringify(sidebarCheckedTasks))
+    } catch {}
+  }, [sidebarCheckedTasks])
+
+  // Handle task right-click on sidebar items
+  const handleSidebarTaskContextMenu = useCallback((e, task) => {
+    e.preventDefault()
+    setTaskContextMenu({ position: { x: e.clientX, y: e.clientY }, task })
+  }, [])
+
+  // Task context menu action handler
+  const handleSidebarContextAction = useCallback((action, task, payload) => {
+    handleTaskContextAction(action, task, payload, setSidebarCheckedTasks)
+  }, [])
 
   // C3: MODE STATE
   const [currentMode, setCurrentMode] = useState(() => {
@@ -6104,6 +6166,7 @@ export default function GameDashboard() {
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
               {currentMode === 'game' && <CrossyBackground isNightMode={isNightMode} />}
               <CanvasOffice
+                ref={canvasOfficeRef}
                 agentStatus={agentStatus}
                 onRoomClick={handleRoomClick}
                 selectedRoom={selectedRoom}
@@ -6414,7 +6477,7 @@ export default function GameDashboard() {
           Bottom HUD should NOT have a message input. Sidebar is the only place to chat.
           The ChatBar component still exists in the codebase for potential mobile reuse. */}
 
-      {/* Right-click context menu */}
+      {/* Right-click context menu (rooms/agents/projects) */}
       <AnimatePresence>
         {contextMenu && (
           <ContextMenu
@@ -6424,6 +6487,21 @@ export default function GameDashboard() {
             position={contextMenu.position}
             onClose={() => setContextMenu(null)}
             onAction={handleContextAction}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Right-click context menu (task items in sidebar) */}
+      <AnimatePresence>
+        {taskContextMenu && (
+          <TaskContextMenuShared
+            key={`task-ctx-${taskContextMenu.position.x}-${taskContextMenu.position.y}`}
+            position={taskContextMenu.position}
+            task={taskContextMenu.task}
+            onClose={() => setTaskContextMenu(null)}
+            onAction={handleSidebarContextAction}
+            isNightMode={isNightMode}
+            projects={pipeData?.punchData?.projects || []}
           />
         )}
       </AnimatePresence>
