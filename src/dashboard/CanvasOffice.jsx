@@ -734,7 +734,7 @@ export default function CanvasOffice({
       style={{
         width: '100%', height: '100%',
         position: 'relative', overflow: 'hidden', cursor,
-        background: BG_COLOR,
+        background: 'transparent', zIndex: 1,
       }}
       onMouseDown={onDown}
       onMouseMove={onMove}
