@@ -459,13 +459,15 @@ function localDashboardPlugin() {
                 text: data.message,
               }
               const convLine = JSON.stringify(convEntry) + '\n'
-              // Write to main log + agent-specific log
+              // Write to main log + agent/project-specific log
               const convDir = resolve(AOM_EA_ROOT, 'conversations')
-              const agentConvDir = resolve(convDir, 'agents')
+              const isProjectMsg = agentName === 'aom' || agentName.includes('-')
+              const convSubDir = isProjectMsg ? resolve(convDir, 'projects') : resolve(convDir, 'agents')
+              const convFileName = agentName === 'aom' ? 'aom-internal' : agentName
               try {
-                fs.mkdirSync(agentConvDir, { recursive: true })
+                fs.mkdirSync(convSubDir, { recursive: true })
                 fs.appendFileSync(resolve(convDir, 'main.jsonl'), convLine)
-                fs.appendFileSync(resolve(agentConvDir, `${agentName}.jsonl`), convLine)
+                fs.appendFileSync(resolve(convSubDir, `${convFileName}.jsonl`), convLine)
               } catch (err) {
                 console.log(`[Relay] Conv log write failed: ${err.message}`)
               }
