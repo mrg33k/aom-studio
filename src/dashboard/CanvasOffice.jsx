@@ -162,8 +162,8 @@ const VIS_W = ROOM_SIZE * 0.90
 const VIS_H = ROOM_SIZE * 0.90
 
 function hexPosition(row, col, originX, originY) {
-  const x = originX + col * (VIS_W * 0.51)
-  const y = originY + row * (VIS_H * 0.62)
+  const x = originX + col * (VIS_W * 0.45)
+  const y = originY + row * (VIS_H * 0.55)
   return { x, y }
 }
 
