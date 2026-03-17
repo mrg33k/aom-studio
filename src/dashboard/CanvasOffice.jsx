@@ -68,25 +68,20 @@ function useLayerLoader() {
         const manifest = await manifestRes.json()
         const layerDefs = manifest.layers || []
 
-        // Load all images + metadata in parallel
+        // Load all layer images (3-layer system: room-shell + character + glow)
         const loadPromises = layerDefs.map(async (def) => {
-          // Load metadata JSON
-          let meta = { name: def.id, x: 0, y: 0, z: 0, width: 512, height: 512, layer: 'background' }
-          try {
-            const metaRes = await fetch(`${LAYER_BASE_PATH}/${def.meta}`)
-            if (metaRes.ok) meta = await metaRes.json()
-          } catch {}
+          const meta = { name: def.id, z: def.z || 0, type: def.type || 'full' }
+          const filename = def.file || def.src
 
-          // Load image
           return new Promise((resolve) => {
             const img = new Image()
             img.crossOrigin = 'anonymous'
             img.onload = () => resolve({ id: def.id, img, meta })
             img.onerror = () => {
-              console.warn(`[CanvasOffice] Failed to load layer: ${def.src}`)
+              console.warn(`[CanvasOffice] Failed to load layer: ${filename}`)
               resolve(null)
             }
-            img.src = `${LAYER_BASE_PATH}/${def.src}`
+            img.src = `${LAYER_BASE_PATH}/${filename}`
           })
         })
 
@@ -299,24 +294,13 @@ export default function CanvasOffice({
   // drawing on top, causing a double-rack. Skip server-rack when desk-monitor exists.
   // FIX: character-final.png is the new Gemini/Steffen art. When it exists,
   // the old walk sprite system must be disabled to prevent double-character.
+  // 3-LAYER SYSTEM: room-shell + character + glow
+  // Simple. No complex categorization. Each layer type handled directly.
   const layerCategories = useMemo(() => {
-    const bg = []      // floor, walls (z 0-1)
-    const furniture = [] // desk, rack, chair (z 5-10)
-    const overlays = [] // lights, glow (z 20-25)
-    const charLayer = layers.find(l => l.id === 'character')
-    const hasDeskMonitor = layers.some(l => l.id === 'desk-monitor')
-
-    for (const layer of layers) {
-      if (layer.id === 'character') continue // character handled separately below
-      // Skip server-rack when desk-monitor composite already contains it
-      if (layer.id === 'server-rack' && hasDeskMonitor) continue
-      const z = layer.meta.z || 0
-      if (z <= 1) bg.push(layer)
-      else if (z < 20) furniture.push(layer)
-      else overlays.push(layer)
-    }
-
-    return { bg, furniture, overlays, charLayer }
+    const roomShell = layers.find(l => l.id === 'room-shell' || l.meta.type === 'full')
+    const charLayer = layers.find(l => l.id === 'character' || l.meta.type === 'character')
+    const glowLayer = layers.find(l => l.id === 'glow' || l.meta.type === 'overlay')
+    return { roomShell, charLayer, glowLayer }
   }, [layers])
 
   // Measure container
@@ -380,47 +364,37 @@ export default function CanvasOffice({
 
     ctx.imageSmoothingEnabled = false
 
-    // ---- LAYER 1: BACKGROUND LAYERS (floor, walls) ----
-    for (const layer of layerCategories.bg) {
-      const m = layer.meta
-      ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || ROOM_SIZE, m.height || ROOM_SIZE)
+    // ---- 3-LAYER RENDER: room-shell → character → glow ----
+
+    // Layer 1: ROOM SHELL (floor + walls + furniture, one cohesive scene)
+    if (layerCategories.roomShell) {
+      ctx.drawImage(layerCategories.roomShell.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
     }
 
-    // ---- LAYER 2: FURNITURE LAYERS (desk, server-rack, chair) ----
-    // Some furniture PNGs are pre-positioned on 512x512 canvas (draw full).
-    // Others are actual-size sprites that need JSON x/y positioning.
-    // Detect by comparing image natural size to canvas size.
-    for (const layer of layerCategories.furniture) {
-      const m = layer.meta
-      const isFullCanvas = layer.img.naturalWidth === ROOM_SIZE && layer.img.naturalHeight === ROOM_SIZE
-      if (isFullCanvas) {
-        // Pre-composited on 512x512 canvas -- draw as full overlay
-        ctx.drawImage(layer.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
-      } else {
-        // Actual-size sprite -- position from JSON sidecar
-        ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || layer.img.naturalWidth, m.height || layer.img.naturalHeight)
-      }
-    }
-
-    // ---- LAYER 3: CHARACTER (z ~15) ----
-    // When the new character-final.png layer exists (Gemini/Steffen art),
-    // draw it ONCE and skip the old walk sprite system to prevent double-character.
-    // When no character layer exists, fall back to the old walk sprite system.
-    // BIG BOBBLE CHARACTER from Gemini layers -- scaled to fit room properly.
-    // Draws character-final.png at ~25% of room size, positioned at walk system coords.
-    // Old floating walk sprites are KILLED. The bobble IS the character now.
+    // Layer 2: CHARACTER (bobble head Elon, scaled to 25% of room, positioned at walk coords)
     if (layerCategories.charLayer) {
       const cl = layerCategories.charLayer
-      const charSize = ROOM_SIZE * 0.25  // 25% of room = ~128px in a 512 room
+      const charSize = ROOM_SIZE * 0.25
       const charX = elonPos.x * ROOM_SIZE - charSize / 2
-      let charY = elonPos.y * ROOM_SIZE - charSize * 0.7  // offset up so feet touch ground
+      let charY = elonPos.y * ROOM_SIZE - charSize * 0.7
 
-      // Hop frame Y offset
       let hopOffsetY = 0
       if (hopFrame === 'peak') hopOffsetY = -16
       if (hopFrame === 'landing') hopOffsetY = 4
       charY += hopOffsetY
 
+      // Shadow
+      ctx.save()
+      ctx.globalAlpha = hopFrame === 'peak' ? 0.12 : 0.25
+      const shadowW = charSize * 0.6
+      const shadowH = charSize * 0.12
+      ctx.beginPath()
+      ctx.ellipse(elonPos.x * ROOM_SIZE, elonPos.y * ROOM_SIZE + charSize * 0.15, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'
+      ctx.fill()
+      ctx.restore()
+
+      // Character sprite
       ctx.save()
       ctx.imageSmoothingEnabled = false
       if (facingLeft) {
@@ -432,19 +406,6 @@ export default function CanvasOffice({
       }
       ctx.restore()
 
-      // Shadow under character
-      ctx.save()
-      ctx.globalAlpha = hopFrame === 'peak' ? 0.12 : 0.25
-      const shadowW = charSize * 0.6
-      const shadowH = charSize * 0.12
-      const shadowX = elonPos.x * ROOM_SIZE - shadowW / 2
-      const shadowY = elonPos.y * ROOM_SIZE + charSize * 0.15
-      ctx.beginPath()
-      ctx.ellipse(shadowX + shadowW / 2, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'
-      ctx.fill()
-      ctx.restore()
-
       // Dust on landing
       if (hopFrame === 'landing') {
         ctx.save()
@@ -453,11 +414,7 @@ export default function CanvasOffice({
           const dx = (Math.random() - 0.5) * 20
           const dy = Math.random() * 5
           ctx.beginPath()
-          ctx.arc(
-            elonPos.x * ROOM_SIZE + dx,
-            elonPos.y * ROOM_SIZE + charSize * 0.35 + dy,
-            2 + Math.random() * 2, 0, Math.PI * 2
-          )
+          ctx.arc(elonPos.x * ROOM_SIZE + dx, elonPos.y * ROOM_SIZE + charSize * 0.35 + dy, 2 + Math.random() * 2, 0, Math.PI * 2)
           ctx.fillStyle = 'rgba(160,180,200,0.4)'
           ctx.fill()
         }
@@ -465,19 +422,12 @@ export default function CanvasOffice({
       }
     }
 
-    // ---- LAYER 4: OVERLAY LAYERS (lights, glow) ----
-    // Both use screen blend mode. Lights at 0.6 alpha, glow at 0.4 alpha.
-    // Prevents green wash while keeping ambient lighting feel.
-    for (const layer of layerCategories.overlays) {
-      const m = layer.meta
+    // Layer 3: GLOW (atmosphere overlay, screen blend, low alpha)
+    if (layerCategories.glowLayer) {
       ctx.save()
       ctx.globalCompositeOperation = 'screen'
-      if (layer.id === 'lights') {
-        ctx.globalAlpha = 0.6
-      } else if (layer.id === 'glow') {
-        ctx.globalAlpha = 0.4
-      }
-      ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || ROOM_SIZE, m.height || ROOM_SIZE)
+      ctx.globalAlpha = 0.4
+      ctx.drawImage(layerCategories.glowLayer.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
       ctx.restore()
     }
 

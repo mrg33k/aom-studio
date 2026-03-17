@@ -1,14 +1,8 @@
 {
-  "room": "elon",
-  "size": 512,
+  "system": "3-layer",
   "layers": [
-    { "id": "floor", "src": "floor-final.png", "meta": "floor-final.json" },
-    { "id": "walls", "src": "walls-final.png", "meta": "walls-final.json" },
-    { "id": "desk-monitor", "src": "desk-monitor-final.png", "meta": "desk-monitor-final.json" },
-    { "id": "server-rack", "src": "server-rack-final.png", "meta": "server-rack-final.json" },
-    { "id": "chair", "src": "chair-final.png", "meta": "chair-final.json" },
-    { "id": "character", "src": "character-final.png", "meta": "character-final.json" },
-    { "id": "lights", "src": "lights-final.png", "meta": "lights-final.json" },
-    { "id": "glow", "src": "glow-final.png", "meta": "glow-final.json" }
+    { "file": "room-shell.png", "z": 0, "id": "room-shell", "type": "full" },
+    { "file": "character-layer.png", "z": 20, "id": "character", "type": "character" },
+    { "file": "glow-layer.png", "z": 30, "id": "glow", "type": "overlay" }
   ]
 }
