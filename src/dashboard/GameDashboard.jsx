@@ -6,7 +6,7 @@ import {
   Pause, Eye, Zap, GitCommit, Terminal, Maximize2, Minimize2,
   ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map,
   ZoomIn, ZoomOut, Home, LayoutDashboard, Gamepad2, Command,
-  ArrowRight, Coffee, Play,
+  ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
 import {
@@ -3823,19 +3823,29 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
   )
 }
 
-// ---- 4 TOP SQUARES (Patrik spec item 14: interactive, alive sidebar boxes) ----
-// Box 1: LIVE (running agents, animated progress border)
-// Box 2: YOUR TODOS (Patrik action items count)
-// Box 3: CALENDAR (iOS Calendar icon, next event)
-// Box 4: PROJECT PROGRESS (cycle through projects with arrows)
-// TODO(patrik): CALENDAR BOX REAL DATA -- Box 3 currently shows hardcoded "No events". Wire to Google Calendar MCP (patrikmatheson@gmail.com + hello@aom-inhouse.com). Show NEXT EVENT with time + title. Click expands Schedule section with day-by-day nav. Events auto-check when time passes. Ref: bobby/last-conversation.md Schedule section spec.
-// TODO(patrik): PROGRESS BORDER CLOCKWISE FILL -- The LIVE box border should fill clockwise like a SimCity build-progress bar. Current SVG stroke-dashoffset is close but needs clockwise fill direction starting from top-center. When all agents idle, border static. When active, continuous clockwise animation. Ref: Patrik "progress border" directive.
-// TODO(steve): RANDOM PROGRESS BUG -- Line ~3858: `Math.random() * 40 + 30` generates NEW random progress percentages on every re-render. This causes the project progress bar to jump randomly. Progress should be derived from real data (task completion ratio) or memoized per agent slug so it stays stable between renders.
+// ---- 4 TOP SQUARES (Steffen spec: top-squares-spec.md) ----
+// Box 1: LIVE (green, SVG progress-bar border, pulse dot)
+// Box 2: YOUR TODOS (amber, badge energy, checkbox feeling)
+// Box 3: CALENDAR (iOS Calendar icon, red header, blue glow)
+// Box 4: PROJECT PROGRESS (purple, cycle arrows, crossfade)
+// TODO(patrik): CALENDAR BOX REAL DATA -- Wire to Google Calendar MCP. Show NEXT EVENT with time + title.
+// TODO(patrik): PROGRESS BORDER CLOCKWISE FILL -- SVG stroke-dashoffset clockwise from top-center.
 function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgress, isNightMode, isDaytime, data }) {
-  const [glowBox, setGlowBox] = useState(null) // which box is glowing
-  const [expandedBox, setExpandedBox] = useState(null) // which box's section is expanded
-  const [projectIndex, setProjectIndex] = useState(0) // current project in box 4
+  const [glowBox, setGlowBox] = useState(null)
+  const [expandedBox, setExpandedBox] = useState(null)
+  const [projectIndex, setProjectIndex] = useState(0)
+  const [slideDir, setSlideDir] = useState('right') // for project crossfade direction
   const glowTimerRef = useRef(null)
+  const liveBoxRef = useRef(null)
+  const [livePerimeter, setLivePerimeter] = useState(400)
+
+  // Measure LIVE box for SVG perimeter calculation
+  useEffect(() => {
+    if (liveBoxRef.current) {
+      const { width, height } = liveBoxRef.current.getBoundingClientRect()
+      setLivePerimeter(2 * (width + height) - 8 * 12) // subtract corners (8 * borderRadius)
+    }
+  }, [])
 
   // LIVE: get working agents with names
   const workingAgents = useMemo(() => {
@@ -3847,7 +3857,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
   // YOUR TODOS: count items tagged [Patrik] from data (or use blockedCount as proxy)
   const todoCount = blockedCount || 0
 
-  // PROJECT PROGRESS: derive from data.agents or demo projects
+  // PROJECT PROGRESS: stable progress derived from agent slug hash (FIX: no more Math.random)
   const projects = useMemo(() => {
     const agents = data?.agents || []
     const working = agents.filter(a => a.status === 'WORKING')
@@ -3855,10 +3865,13 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
       return [{ name: 'All Clear', progress: 100, estimate: '' }]
     }
     return working.map(a => {
-      // Estimate progress from task description or default to ongoing
-      const progress = Math.round(Math.random() * 40 + 30) // 30-70% range for active tasks
+      // Stable hash from agent name: sum char codes, mod to get 30-70 range
+      const name = a.name || a.slug || 'unknown'
+      let hash = 0
+      for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0
+      const progress = 30 + Math.abs(hash % 41) // 30-70 range, stable per agent
       return {
-        name: a.name || a.slug,
+        name: name,
         task: a.currentTask || 'In progress',
         progress,
         estimate: a.timeActive ? 'Active' : '',
@@ -3868,7 +3881,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
 
   const currentProject = projects[projectIndex % projects.length] || projects[0]
 
-  // Glow animation: quick 250ms glow then clear
+  // Glow animation: fast 80ms on, hold 220ms, fade 400ms
   const triggerGlow = useCallback((boxId) => {
     if (glowTimerRef.current) clearTimeout(glowTimerRef.current)
     setGlowBox(boxId)
@@ -3880,71 +3893,96 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
     setExpandedBox(prev => prev === boxId ? null : boxId)
   }, [triggerGlow])
 
-  // Progress border animation: SVG rect that fills based on agent activity
-  const progressPercent = workingCount > 0 ? Math.min(100, (workingCount / Math.max(Object.keys(allAgentStatus || {}).length, 1)) * 100) : 0
+  // Progress border: ratio of working agents to total
+  const totalAgents = Math.max(Object.keys(allAgentStatus || {}).length, 1)
+  const progressPercent = workingCount > 0 ? Math.min(100, (workingCount / totalAgents) * 100) : 0
 
-  // Shared box styles
-  const boxBase = (isGlowing, accentColor) => ({
-    background: isNightMode ? '#162236' : '#FFFFFF',
-    borderRadius: 10,
-    padding: '10px 8px',
+  // Day/night accent colors (Steffen spec: darkened accents for white bg contrast)
+  const ACCENTS = {
+    live:     { night: '#22C55E', day: '#16A34A' },
+    todos:    { night: '#F59E0B', day: '#D97706' },
+    calendar: { night: '#3B82F6', day: '#2563EB' },
+    progress: { night: '#8B5CF6', day: '#7C3AED' },
+  }
+  const accent = (key) => isNightMode ? ACCENTS[key].night : ACCENTS[key].day
+
+  // Shared tile base styles (Steffen spec: gradient bg, 12px radius, 88px min-height)
+  const tileBase = (isGlowing, accentColor, hasActiveBorder = false) => ({
+    background: isNightMode
+      ? 'linear-gradient(180deg, #162236 0%, #131F30 100%)'
+      : '#FFFFFF',
+    borderRadius: 12,
+    padding: '12px 10px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    minHeight: 72,
+    minHeight: 88,
     cursor: 'pointer',
     position: 'relative',
     overflow: 'hidden',
-    transition: 'transform 0.15s ease, box-shadow 0.2s ease',
+    transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.08s ease-out',
     boxShadow: isGlowing
-      ? `0 0 16px ${accentColor}60, 0 0 32px ${accentColor}20, inset 0 0 8px ${accentColor}15`
-      : (isNightMode ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 6px rgba(0,0,0,0.06)'),
+      ? `0 0 16px ${accentColor}99, 0 0 40px ${accentColor}33, inset 0 0 12px ${accentColor}1A`
+      : (isNightMode
+        ? '0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03)'
+        : '0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px rgba(59,130,246,0.06)'),
     border: isGlowing
       ? `2px solid ${accentColor}`
-      : (isNightMode ? '1px solid #1E3A5F' : '2px solid rgba(59,130,246,0.12)'),
+      : hasActiveBorder
+        ? `2px solid ${accentColor}40`
+        : (isNightMode ? '2px solid #1E3A5F' : '2px solid rgba(59,130,246,0.12)'),
   })
 
-  const labelStyle = {
-    fontSize: 11, fontWeight: 700, color: isNightMode ? '#64748B' : '#94A3B8',
-    textTransform: 'uppercase', letterSpacing: '0.06em',
+  // Steffen spec label: colored per tile, not gray
+  const labelStyle = (color) => ({
+    fontSize: 12, fontWeight: 800, color,
+    textTransform: 'uppercase', letterSpacing: '0.08em',
     fontFamily: "'Inter', system-ui, sans-serif",
     marginTop: 4,
-  }
+  })
 
+  // Steffen spec value: 24px, 900 weight
   const valueStyle = (color) => ({
-    fontSize: 20, fontWeight: 900, color,
+    fontSize: 24, fontWeight: 900, color,
     fontVariantNumeric: 'tabular-nums', lineHeight: 1,
     fontFamily: "'Inter', system-ui, sans-serif",
   })
 
+  // Idle/zero colors
+  const mutedColor = isNightMode ? '#64748B' : '#94A3B8'
+  const subtextColor = isNightMode ? '#94A3B8' : '#64748B'
+
   return (
     <div style={{ flexShrink: 0 }}>
-      {/* CSS keyframes for progress border animation */}
+      {/* Keyframes: live pulse + progress border shimmer */}
       <style>{`
-        @keyframes topSquareProgressBorder {
-          0% { stroke-dashoffset: 320; }
-          100% { stroke-dashoffset: 0; }
+        @keyframes livePulse {
+          0%, 100% { opacity: 0.5; transform: scale(0.9); }
+          50% { opacity: 1; transform: scale(1.1); }
         }
-        @keyframes topSquarePulse {
-          0%, 100% { opacity: 0.6; }
+        @keyframes progressBorderShimmer {
+          0%, 100% { opacity: 0.7; }
           50% { opacity: 1; }
         }
       `}</style>
 
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8,
-        padding: '10px 24px',
-        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.08)' : '2px solid rgba(59,130,246,0.1)',
-        background: isNightMode ? 'rgba(59,130,246,0.02)' : 'rgba(59,130,246,0.04)',
+        display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10,
+        padding: '12px 20px 14px',
       }}>
 
-        {/* BOX 1: LIVE -- Running agents with animated progress border */}
+        {/* BOX 1: LIVE -- Running agents with SVG progress-bar border */}
         <div
-          style={boxBase(glowBox === 'live', '#22C55E')}
+          ref={liveBoxRef}
+          role="button"
+          tabIndex={0}
+          aria-label={`Live agents: ${workingCount} running`}
+          style={tileBase(glowBox === 'live', accent('live'))}
           onClick={() => handleBoxClick('live')}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)' }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBoxClick('live') } }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03) translateY(-3px)' }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
           data-testid="top-square-live"
         >
-          {/* Animated progress border (SVG overlay) */}
+          {/* SVG progress-bar border (Steffen spec: strokeLinecap round, drop-shadow, perimeter from ref) */}
           {workingCount > 0 && (
             <svg style={{
               position: 'absolute', inset: -1, width: 'calc(100% + 2px)', height: 'calc(100% + 2px)',
@@ -3953,90 +3991,114 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               <rect
                 x="1" y="1"
                 width="calc(100% - 2px)" height="calc(100% - 2px)"
-                rx="10" ry="10"
+                rx="12" ry="12"
                 fill="none"
-                stroke="#22C55E"
-                strokeWidth="2.5"
-                strokeDasharray="320"
-                strokeDashoffset={320 - (320 * progressPercent / 100)}
+                stroke={isNightMode ? '#22C55E' : '#16A34A'}
+                strokeWidth={isNightMode ? '2.5' : '2'}
+                strokeLinecap="round"
+                strokeDasharray={livePerimeter}
+                strokeDashoffset={livePerimeter - (livePerimeter * progressPercent / 100)}
                 style={{
-                  transition: 'stroke-dashoffset 1s ease',
-                  animation: workingCount > 0 ? 'topSquarePulse 2s ease-in-out infinite' : 'none',
+                  transition: 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  filter: isNightMode
+                    ? 'drop-shadow(0 0 4px rgba(34, 197, 94, 0.4))'
+                    : 'drop-shadow(0 0 3px rgba(34, 197, 94, 0.3))',
+                  animation: 'progressBorderShimmer 2.5s ease-in-out infinite',
                 }}
               />
             </svg>
           )}
-          {/* Live pulse dot */}
+          {/* Live pulse dot (10px, Steffen spec) */}
           {workingCount > 0 && (
             <div style={{
-              position: 'absolute', top: 6, right: 6,
-              width: 8, height: 8, borderRadius: '50%',
-              background: '#22C55E',
-              boxShadow: '0 0 6px #22C55E',
-              animation: 'topSquarePulse 1.5s ease-in-out infinite',
+              position: 'absolute', top: 8, right: 8,
+              width: 10, height: 10, borderRadius: '50%',
+              background: accent('live'),
+              boxShadow: `0 0 8px ${accent('live')}, 0 0 16px rgba(34, 197, 94, 0.3)`,
+              animation: 'livePulse 1.5s ease-in-out infinite',
             }} />
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Zap size={14} style={{ color: '#22C55E' }} />
-            <span style={valueStyle('#22C55E')}>{workingCount}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Zap size={16} style={{ color: accent('live') }} />
+            <span style={valueStyle(workingCount > 0 ? accent('live') : mutedColor)}>{workingCount}</span>
           </div>
-          <span style={labelStyle}>LIVE</span>
-          {workingAgents.length > 0 && (
+          <span style={labelStyle(workingCount > 0 ? accent('live') : (isNightMode ? '#475569' : '#94A3B8'))}>LIVE</span>
+          {workingAgents.length > 0 ? (
             <div style={{
-              fontSize: 10, fontWeight: 600, color: isNightMode ? '#94A3B8' : '#64748B',
-              fontFamily: "'Inter', sans-serif", marginTop: 2,
+              fontSize: 11, fontWeight: 600, color: subtextColor,
+              fontFamily: "'Inter', sans-serif", marginTop: 3,
               maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               textAlign: 'center',
             }}>
               {workingAgents.slice(0, 3).map(a => a.name).join(', ')}{workingAgents.length > 3 ? ` +${workingAgents.length - 3}` : ''}
             </div>
+          ) : (
+            <div style={{ fontSize: 11, fontWeight: 600, color: mutedColor, fontStyle: 'italic', fontFamily: "'Inter', sans-serif", marginTop: 3 }}>
+              All clear
+            </div>
           )}
         </div>
 
-        {/* BOX 2: YOUR TODOS -- Patrik action items */}
+        {/* BOX 2: YOUR TODOS -- Amber/gold, badge energy */}
         <div
-          style={boxBase(glowBox === 'todos', '#F59E0B')}
+          role="button"
+          tabIndex={0}
+          aria-label={`Your todos: ${todoCount} items`}
+          style={tileBase(glowBox === 'todos', accent('todos'), todoCount > 0)}
           onClick={() => handleBoxClick('todos')}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)' }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBoxClick('todos') } }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03) translateY(-3px)' }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
           data-testid="top-square-todos"
         >
+          {/* Static amber notification dot (no animation, badge energy) */}
           {todoCount > 0 && (
             <div style={{
-              position: 'absolute', top: 6, right: 6,
-              width: 8, height: 8, borderRadius: '50%',
-              background: '#F59E0B',
-              boxShadow: '0 0 6px #F59E0B',
+              position: 'absolute', top: 8, right: 8,
+              width: 10, height: 10, borderRadius: '50%',
+              background: accent('todos'),
+              boxShadow: `0 0 8px rgba(245, 158, 11, 0.6)`,
             }} />
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <CheckCircle2 size={14} style={{ color: '#F59E0B' }} />
-            <span style={valueStyle('#F59E0B')}>{todoCount}</span>
+          {/* Subtle checkmark overlay when zero */}
+          {todoCount === 0 && (
+            <CheckCircle2 size={48} style={{
+              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              color: accent('todos'), opacity: 0.05,
+            }} />
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircle2 size={16} style={{ color: accent('todos') }} />
+            <span style={valueStyle(todoCount > 0 ? accent('todos') : mutedColor)}>{todoCount}</span>
           </div>
-          <span style={labelStyle}>YOUR TODOS</span>
+          <span style={labelStyle(todoCount > 0 ? accent('todos') : (isNightMode ? '#475569' : '#94A3B8'))}>YOUR TODOS</span>
         </div>
 
-        {/* BOX 3: CALENDAR -- iOS Calendar icon look, next event */}
+        {/* BOX 3: CALENDAR -- iOS Calendar icon, red header, blue glow */}
         <div
-          style={boxBase(glowBox === 'calendar', '#3B82F6')}
+          role="button"
+          tabIndex={0}
+          aria-label="Calendar: No events"
+          style={tileBase(glowBox === 'calendar', accent('calendar'))}
           onClick={() => handleBoxClick('calendar')}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)' }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBoxClick('calendar') } }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03) translateY(-3px)' }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
           data-testid="top-square-calendar"
         >
-          {/* iOS Calendar icon style: red header strip + day number */}
+          {/* iOS Calendar icon (40x40, 10px radius, red gradient header, Steffen spec) */}
           <div style={{
-            width: 36, height: 36, borderRadius: 8,
+            width: 40, height: 40, borderRadius: 10,
             background: isNightMode ? '#1E293B' : '#F8FAFC',
             border: isNightMode ? '1.5px solid #334155' : '1.5px solid #E2E8F0',
             overflow: 'hidden', display: 'flex', flexDirection: 'column',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
           }}>
             <div style={{
-              height: 10, background: '#EF4444',
+              height: 12, background: 'linear-gradient(180deg, #EF4444 0%, #DC2626 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ fontSize: 6, fontWeight: 800, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              <span style={{ fontSize: 7, fontWeight: 800, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', system-ui, sans-serif" }}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
               </span>
             </div>
@@ -4044,92 +4106,119 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <span style={{
-                fontSize: 16, fontWeight: 900, color: isNightMode ? '#F1F5F9' : '#0F172A',
-                fontFamily: "'Inter', system-ui, sans-serif",
-                lineHeight: 1,
+                fontSize: 18, fontWeight: 900, color: isNightMode ? '#F1F5F9' : '#0F172A',
+                fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1,
               }}>
                 {new Date().getDate()}
               </span>
             </div>
           </div>
-          <span style={{ ...labelStyle, marginTop: 2 }}>SCHEDULE</span>
+          <span style={labelStyle(isNightMode ? '#64748B' : '#94A3B8')}>SCHEDULE</span>
           <div style={{
-            fontSize: 10, fontWeight: 600, color: isNightMode ? '#94A3B8' : '#64748B',
-            fontFamily: "'Inter', sans-serif", marginTop: 1,
+            fontSize: 11, fontWeight: 600, color: subtextColor,
+            fontFamily: "'Inter', sans-serif", marginTop: 2,
             maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            textAlign: 'center',
+            textAlign: 'center', fontStyle: 'italic',
           }}>
             No events
           </div>
         </div>
 
-        {/* BOX 4: PROJECT PROGRESS -- Cycle through active projects */}
+        {/* BOX 4: PROJECT PROGRESS -- Purple, cycle arrows with crossfade */}
         <div
-          style={boxBase(glowBox === 'project', '#8B5CF6')}
+          role="button"
+          tabIndex={0}
+          aria-label={`Project progress: ${currentProject.name} ${currentProject.progress}%`}
+          style={tileBase(glowBox === 'project', accent('progress'))}
           onClick={() => handleBoxClick('project')}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02) translateY(-1px)' }}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBoxClick('project') } }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03) translateY(-3px)' }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
           data-testid="top-square-project"
         >
-          {/* Left/right arrows inside the box */}
+          {/* Chevron arrows inside (Steffen spec: ChevronLeft/Right 14px, hover bg) */}
           {projects.length > 1 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); setProjectIndex(i => (i - 1 + projects.length) % projects.length) }}
+                onClick={(e) => { e.stopPropagation(); setSlideDir('left'); setProjectIndex(i => (i - 1 + projects.length) % projects.length) }}
                 style={{
-                  position: 'absolute', left: 3, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 2,
-                  color: isNightMode ? '#64748B' : '#94A3B8', display: 'flex', zIndex: 3,
+                  position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                  color: isNightMode ? '#475569' : '#94A3B8', display: 'flex', zIndex: 3,
+                  borderRadius: 6, transition: 'background 0.15s ease, color 0.15s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#F1F5F9' : '#0F172A' }}
-                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#64748B' : '#94A3B8' }}
+                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#E2E8F0' : '#1E293B'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#475569' : '#94A3B8'; e.currentTarget.style.background = 'none' }}
               >
-                <ArrowLeft size={12} />
+                <ChevronLeft size={14} />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setProjectIndex(i => (i + 1) % projects.length) }}
+                onClick={(e) => { e.stopPropagation(); setSlideDir('right'); setProjectIndex(i => (i + 1) % projects.length) }}
                 style={{
-                  position: 'absolute', right: 3, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 2,
-                  color: isNightMode ? '#64748B' : '#94A3B8', display: 'flex', zIndex: 3,
+                  position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                  color: isNightMode ? '#475569' : '#94A3B8', display: 'flex', zIndex: 3,
+                  borderRadius: 6, transition: 'background 0.15s ease, color 0.15s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#F1F5F9' : '#0F172A' }}
-                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#64748B' : '#94A3B8' }}
+                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#E2E8F0' : '#1E293B'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#475569' : '#94A3B8'; e.currentTarget.style.background = 'none' }}
               >
-                <ArrowRight size={12} />
+                <ChevronRight size={14} />
               </button>
             </>
           )}
-          <div style={{
-            fontSize: 12, fontWeight: 800, color: isNightMode ? '#E2E8F0' : '#1E293B',
-            fontFamily: "'Inter', system-ui, sans-serif",
-            maxWidth: 'calc(100% - 28px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            textAlign: 'center',
-          }}>
-            {currentProject.name}
-          </div>
-          {/* Progress bar */}
-          <div style={{
-            width: '80%', height: 5, borderRadius: 3, marginTop: 4,
-            background: isNightMode ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              height: '100%', borderRadius: 3,
-              background: 'linear-gradient(90deg, #8B5CF6, #A78BFA)',
-              width: `${currentProject.progress}%`,
-              transition: 'width 0.5s ease',
-            }} />
-          </div>
-          <span style={labelStyle}>PROGRESS</span>
-          {currentProject.estimate && (
-            <div style={{
-              fontSize: 10, fontWeight: 600, color: isNightMode ? '#94A3B8' : '#64748B',
-              fontFamily: "'Inter', sans-serif", marginTop: 1,
-            }}>
-              {currentProject.estimate}
-            </div>
-          )}
+          {/* Project content with crossfade (AnimatePresence) */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentProject.name}
+              initial={{ opacity: 0, x: slideDir === 'right' ? 15 : -15 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: slideDir === 'right' ? -15 : 15 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}
+            >
+              <div style={{
+                fontSize: 14, fontWeight: 800, color: isNightMode ? '#E2E8F0' : '#1E293B',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                maxWidth: 'calc(100% - 36px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                textAlign: 'center',
+              }}>
+                {currentProject.name}
+              </div>
+              {/* Progress bar + percentage (Steffen spec: 6px height, gradient, glow) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '85%', marginTop: 6 }}>
+                <div style={{
+                  flex: 1, height: 6, borderRadius: 3,
+                  background: isNightMode ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.10)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    height: '100%', borderRadius: 3,
+                    background: 'linear-gradient(90deg, #8B5CF6, #A78BFA)',
+                    width: `${currentProject.progress}%`,
+                    transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 0 6px rgba(139, 92, 246, 0.4)',
+                  }} />
+                </div>
+                <span style={{
+                  fontSize: 12, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  color: isNightMode ? '#A78BFA' : '#7C3AED',
+                }}>
+                  {currentProject.progress}%
+                </span>
+              </div>
+              <span style={labelStyle(isNightMode ? '#64748B' : '#94A3B8')}>PROGRESS</span>
+              {currentProject.estimate && (
+                <div style={{
+                  fontSize: 11, fontWeight: 600, color: subtextColor,
+                  fontFamily: "'Inter', sans-serif", marginTop: 2,
+                }}>
+                  {currentProject.estimate}
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 
@@ -4140,35 +4229,35 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ height: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }, opacity: { duration: 0.15, delay: 0.05 } }}
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '8px 24px 12px',
-              borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.1)',
+              padding: '10px 20px 14px',
+              borderBottom: '2px solid rgba(59,130,246,0.08)',
               background: isNightMode ? 'rgba(34,197,94,0.03)' : 'rgba(34,197,94,0.02)',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#22C55E', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: accent('live'), textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
                 Right Now
               </div>
               {workingAgents.length === 0 ? (
-                <div style={{ fontSize: 13, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>All agents idle</div>
+                <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>All agents idle</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {workingAgents.map(a => (
                     <div key={a.slug} style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '4px 8px', borderRadius: 6,
-                      background: isNightMode ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.04)',
+                      padding: '6px 10px', borderRadius: 8,
+                      background: isNightMode ? 'rgba(34,197,94,0.05)' : 'rgba(34,197,94,0.03)',
                     }}>
                       <div style={{
-                        width: 6, height: 6, borderRadius: '50%', background: '#22C55E', flexShrink: 0,
-                        animation: 'topSquarePulse 1.5s ease-in-out infinite',
+                        width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0,
+                        animation: 'livePulse 1.5s ease-in-out infinite',
                       }} />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif" }}>
                         {a.name}
                       </span>
-                      <span style={{ fontSize: 12, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                         {a.task}
                       </span>
                     </div>
@@ -4184,15 +4273,15 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ height: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }, opacity: { duration: 0.15, delay: 0.05 } }}
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '8px 24px 12px',
-              borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.1)',
+              padding: '10px 20px 14px',
+              borderBottom: '2px solid rgba(59,130,246,0.08)',
               background: isNightMode ? 'rgba(245,158,11,0.03)' : 'rgba(245,158,11,0.02)',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: accent('todos'), textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
                 Your TODOs
               </div>
               {(() => {
@@ -4200,21 +4289,21 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                   .filter(([, a]) => a?.status === 'BLOCKED')
                   .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || 'Blocked' }))
                 if (blockedAgents.length === 0) {
-                  return <div style={{ fontSize: 13, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>No blockers. All clear.</div>
+                  return <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>No blockers. All clear.</div>
                 }
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {blockedAgents.map(a => (
                       <div key={a.slug} style={{
                         display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '4px 8px', borderRadius: 6,
-                        background: isNightMode ? 'rgba(245,158,11,0.06)' : 'rgba(245,158,11,0.04)',
+                        padding: '6px 10px', borderRadius: 8,
+                        background: isNightMode ? 'rgba(245,158,11,0.05)' : 'rgba(245,158,11,0.03)',
                       }}>
-                        <CheckCircle2 size={12} style={{ color: '#F59E0B', flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif" }}>
+                        <CheckCircle2 size={14} style={{ color: accent('todos'), flexShrink: 0 }} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif" }}>
                           {a.name}:
                         </span>
-                        <span style={{ fontSize: 12, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                           {a.task}
                         </span>
                       </div>
@@ -4231,18 +4320,18 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ height: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }, opacity: { duration: 0.15, delay: 0.05 } }}
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '8px 24px 12px',
-              borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.1)',
+              padding: '10px 20px 14px',
+              borderBottom: '2px solid rgba(59,130,246,0.08)',
               background: isNightMode ? 'rgba(59,130,246,0.03)' : 'rgba(59,130,246,0.02)',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#3B82F6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: accent('calendar'), textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
                 Schedule
               </div>
-              <div style={{ fontSize: 13, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>
+              <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>
                 No events today. Calendar API will connect here.
               </div>
             </div>
@@ -4254,42 +4343,42 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ height: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }, opacity: { duration: 0.15, delay: 0.05 } }}
             style={{ overflow: 'hidden' }}
           >
             <div style={{
-              padding: '8px 24px 12px',
-              borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.1)',
+              padding: '10px 20px 14px',
+              borderBottom: '2px solid rgba(59,130,246,0.08)',
               background: isNightMode ? 'rgba(139,92,246,0.03)' : 'rgba(139,92,246,0.02)',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: accent('progress'), textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
                 Active Projects
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {projects.map((p, i) => (
                   <div key={i} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '4px 8px', borderRadius: 6,
+                    padding: '6px 10px', borderRadius: 8,
                     background: i === (projectIndex % projects.length)
                       ? (isNightMode ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)')
                       : (isNightMode ? 'rgba(139,92,246,0.04)' : 'rgba(139,92,246,0.02)'),
                     border: i === (projectIndex % projects.length) ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent',
                   }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif", minWidth: 50 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif", minWidth: 50 }}>
                       {p.name}
                     </span>
                     <div style={{
-                      flex: 1, height: 4, borderRadius: 2,
+                      flex: 1, height: 5, borderRadius: 3,
                       background: isNightMode ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.1)',
                       overflow: 'hidden',
                     }}>
                       <div style={{
-                        height: '100%', borderRadius: 2,
-                        background: '#8B5CF6',
+                        height: '100%', borderRadius: 3,
+                        background: 'linear-gradient(90deg, #8B5CF6, #A78BFA)',
                         width: `${p.progress}%`,
                       }} />
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: isNightMode ? '#94A3B8' : '#64748B', fontFamily: "'Inter', sans-serif", minWidth: 30, textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: isNightMode ? '#A78BFA' : '#7C3AED', fontFamily: "'Inter', sans-serif", minWidth: 32, textAlign: 'right' }}>
                       {p.progress}%
                     </span>
                   </div>
