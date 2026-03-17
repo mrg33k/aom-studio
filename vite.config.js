@@ -503,6 +503,8 @@ function localDashboardPlugin() {
 
                 // No response yet. Auto-respond.
                 console.log(`[AutoRespond] No terminal response for ${_agent}. Spawning claude -p...`)
+                // Write marker so Stop hook knows auto-responder is handling this
+                try { fs.writeFileSync(resolve(AOM_EA_ROOT, 'context', '.auto-responding'), _agent) } catch {}
                 const agentMd = _agentFolder ? resolve(AOM_EA_ROOT, `projects/${_agentFolder}/AGENT.md`) : null
                 const lastConvo = _agentFolder ? resolve(AOM_EA_ROOT, `projects/${_agentFolder}/last-conversation.md`) : null
                 let ctx = ''
@@ -536,6 +538,8 @@ function localDashboardPlugin() {
                     const cd = resolve(AOM_EA_ROOT, 'conversations')
                     try { fs.appendFileSync(resolve(cd, 'agents', `${slug}.jsonl`), line) } catch {}
                     try { fs.appendFileSync(resolve(cd, 'main.jsonl'), line) } catch {}
+                    // Clear auto-responding marker
+                    try { fs.unlinkSync(resolve(AOM_EA_ROOT, 'context', '.auto-responding')) } catch {}
                   })
                   child.on('error', () => {})
                   child.stdin.write(prompt)
