@@ -1,274 +1,146 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 
-// CanvasOffice: ELON'S ROOM with LAYERED SPRITE SYSTEM (Steffen spec)
-// Renders 8 layers from JSON sidecars: floor -> walls -> furniture -> character -> lights -> glow
+// CanvasOffice: MULTI-ROOM hex tessellation with wave crossfade transitions
 //
 // FILE OWNER: Bobby (Canvas team). Bobby2 (HUD team) does NOT touch this file.
 //
-// Layers loaded from /corner/elon-room/layers.json manifest.
-// Each layer has: *-final.png (sprite) + *-final.json (position/z/size metadata)
-// Character layer uses walk system (not static Steffen character sprite).
-// Floor + walls + lights + glow = full 512x512 overlays.
-// Furniture items (desk, rack, chair) = positioned sprites from JSON x/y.
+// All available agent rooms from public/corner/ rendered as hex puzzle pieces.
+// Wave effect: each room crossfades between working/idle at a staggered time offset.
+// Dark backdrop behind rooms so skyline doesn't peek through gaps.
 
 // ---- ROOM CONFIG ----
 const ROOM_SIZE = 512        // Base room size (px, scales with zoom)
 const BG_COLOR = '#0A0D1A'   // Dark night background
-const ELON_COLOR = '#4CAF50' // Elon's signature green
-const LAYER_BASE_PATH = '/corner/elon-room'
 
-// Room state images -- preloaded for smooth crossfade
-const ROOM_STATES = {
-  working: '/corner/elon-room/room-shell-working.png',
-  idle: '/corner/elon-room/room-shell-idle.png',
-  celebrating: '/corner/elon-room/room-shell-celebrating.png',
-  blocked: '/corner/elon-room/room-shell-blocked.png',
-  sleeping: '/corner/elon-room/room-shell-sleeping.png',
+// Wave timing
+const CYCLE_TIME = 10        // Full working+idle cycle in seconds
+const FADE_DURATION = 4.5    // Crossfade duration in seconds
+const WAVE_OFFSET = 1.2      // Stagger between consecutive rooms in seconds
+
+// ---- ALL AGENT ROOMS ----
+// Rooms with dedicated folders (working + idle states)
+// Rooms without folders use their single PNG for both states
+const ALL_ROOMS = [
+  // Row 0: top center
+  { id: 'elon',    name: 'ELON',    color: '#4CAF50', row: 0, col: 0 },
+  // Row 1: offset left and right
+  { id: 'bobby',   name: 'BOBBY',   color: '#E91E90', row: 1, col: -1 },
+  { id: 'steffen', name: 'STEFFEN', color: '#FFD700', row: 1, col: 1 },
+  // Row 2: three across
+  { id: 'steve',   name: 'STEVE',   color: '#60A5FA', row: 2, col: -2 },
+  { id: 'cleo',    name: 'CLEO',    color: '#C084FC', row: 2, col: 0 },
+  { id: 'alex',    name: 'ALEX',    color: '#F97316', row: 2, col: 2 },
+  // Row 3: offset
+  { id: 'mom',     name: 'MOM',     color: '#EC4899', row: 3, col: -1 },
+  { id: 'tony',    name: 'TONY',    color: '#22D3EE', row: 3, col: 1 },
+  // Row 4: three across
+  { id: 'jacob',   name: 'JACOB',   color: '#A3E635', row: 4, col: -2 },
+  { id: 'paige',   name: 'PAIGE',   color: '#FB923C', row: 4, col: 0 },
+  { id: 'elmo',    name: 'ELMO',    color: '#F43F5E', row: 4, col: 2 },
+]
+
+// ---- IMAGE SOURCES ----
+// Rooms with folders get working + idle variants
+// Rooms with only a single PNG use that for both states
+function getRoomImageSources(id) {
+  const folderRooms = ['elon', 'bobby', 'steffen', 'steve', 'alex', 'cleo', 'jacob', 'mom']
+  if (folderRooms.includes(id)) {
+    return {
+      working: `/corner/${id}-room/room-shell-working.png`,
+      idle: `/corner/${id}-room/room-shell-idle.png`,
+    }
+  }
+  // Single PNG rooms: same image for both states
+  return {
+    working: `/corner/${id}-room.png`,
+    idle: `/corner/${id}-room.png`,
+  }
 }
 
-// Preload all state images on module load
-const stateImages = {}
-Object.entries(ROOM_STATES).forEach(([state, src]) => {
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.src = src
-  stateImages[state] = img
+// Preload ALL room images at module load
+const roomImages = {}
+ALL_ROOMS.forEach((room) => {
+  const sources = getRoomImageSources(room.id)
+  const workImg = new Image()
+  workImg.crossOrigin = 'anonymous'
+  workImg.src = sources.working
+  const idleImg = new Image()
+  idleImg.crossOrigin = 'anonymous'
+  idleImg.src = sources.idle
+  roomImages[room.id] = { working: workImg, idle: idleImg }
 })
 
-// MULTI-ROOM: Additional agent rooms
-const AGENT_ROOMS = [
-  { id: 'elon', name: 'ELON', color: '#4CAF50', x: 0, y: 0 },
-  { id: 'bobby', name: 'BOBBY', color: '#E91E90', x: 1, y: 0 },
-  { id: 'steffen', name: 'STEFFEN', color: '#FFD700', x: 0.5, y: 0.5 },
-]
+// ---- SMOOTHSTEP ----
+// Hermite interpolation for buttery smooth transitions
+function smoothstep(t) {
+  t = Math.max(0, Math.min(1, t))
+  return t * t * (3 - 2 * t)
+}
 
-// Preload other room images
-const otherRoomImages = {}
-const otherRooms = [
-  { id: 'bobby-working', src: '/corner/bobby-room/room-shell-working.png' },
-  { id: 'bobby-idle', src: '/corner/bobby-room/room-shell-idle.png' },
-  { id: 'steffen-working', src: '/corner/steffen-room/room-shell-working.png' },
-  { id: 'steffen-idle', src: '/corner/steffen-room/room-shell-idle.png' },
-]
-otherRooms.forEach(({ id, src }) => {
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.src = src
-  otherRoomImages[id] = img
-})
+// ---- WAVE BLEND ----
+// Returns blend alpha (0 = working, 1 = idle) for a given room index at time t
+function getWaveBlend(elapsed, roomIndex) {
+  const offset = roomIndex * WAVE_OFFSET
+  const t = ((elapsed + offset) % CYCLE_TIME) / CYCLE_TIME
 
-// Walk cycle waypoints (% of room size)
-const WALKABLE_POINTS = [
-  { x: 0.35, y: 0.72, label: 'desk' },
-  { x: 0.50, y: 0.65, label: 'center' },
-  { x: 0.65, y: 0.45, label: 'servers-1' },
-  { x: 0.70, y: 0.55, label: 'servers-2' },
-  { x: 0.45, y: 0.55, label: 'mid' },
-  { x: 0.30, y: 0.60, label: 'near-door' },
-]
+  // First half of cycle: working -> idle (fade up)
+  // Second half: idle -> working (fade down)
+  const halfCycle = CYCLE_TIME / 2
+  const fadeFraction = FADE_DURATION / halfCycle
 
-const WALK_SPEED = 0.08
+  const cyclePos = ((elapsed + offset) % CYCLE_TIME)
+
+  if (cyclePos < halfCycle) {
+    // Working -> Idle phase
+    const fadeProgress = cyclePos / FADE_DURATION
+    if (fadeProgress < 1) {
+      return smoothstep(fadeProgress)
+    }
+    return 1 // fully idle, holding
+  } else {
+    // Idle -> Working phase
+    const fadeProgress = (cyclePos - halfCycle) / FADE_DURATION
+    if (fadeProgress < 1) {
+      return 1 - smoothstep(fadeProgress)
+    }
+    return 0 // fully working, holding
+  }
+}
+
+// ---- HEX LAYOUT ----
+// Compute pixel position for a room given its row/col in the hex grid.
+// Even rows are centered, odd rows are offset by half a hex width.
+const VIS_W = ROOM_SIZE * 0.90   // visible hex width (clip uses 0.05-0.95)
+const VIS_H = ROOM_SIZE * 0.90   // visible hex height
+
+function hexPosition(row, col, originX, originY) {
+  // Each column step is half the visible width
+  const x = originX + col * (VIS_W * 0.50)
+  // Each row step is 70% of visible height (hex tessellation vertical overlap)
+  const y = originY + row * (VIS_H * 0.35)
+  return { x, y }
+}
 
 // ---- DIAMOND HIT TEST ----
-// Isometric room is a diamond (rhombus). 2:1 ratio means half-height = half-width / 2.
-// Returns true if point (px, py) is inside the diamond centered at (cx, cy).
 function isInsideDiamond(px, py, cx, cy, hw, hh) {
   return Math.abs(px - cx) / hw + Math.abs(py - cy) / hh <= 1
 }
 
-// Helper: diamond center and half-dimensions for the room
-const DIAMOND_CX = ROOM_SIZE / 2
-const DIAMOND_CY = ROOM_SIZE / 2
-const DIAMOND_HW = ROOM_SIZE / 2   // half-width
-const DIAMOND_HH = ROOM_SIZE / 4   // half-height (isometric 2:1)
+const DIAMOND_HW = ROOM_SIZE / 2
+const DIAMOND_HH = ROOM_SIZE / 4
 
-// ---- LAYER LOADER ----
-// Loads layers.json manifest, then loads all PNGs + JSON sidecars in parallel.
-// Returns sorted layers array with loaded Image objects and metadata.
-function useLayerLoader() {
-  const [layers, setLayers] = useState([])
-  const [loaded, setLoaded] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadLayers() {
-      try {
-        // Load manifest
-        const manifestRes = await fetch(`${LAYER_BASE_PATH}/layers.json`)
-        if (!manifestRes.ok) {
-          console.warn('[CanvasOffice] layers.json not found, falling back to flat image')
-          // Fallback: load single room image
-          const img = new Image()
-          img.crossOrigin = 'anonymous'
-          img.onload = () => {
-            if (!cancelled) {
-              setLayers([{
-                id: 'room',
-                img,
-                meta: { name: 'room', x: 0, y: 0, z: 0, width: 512, height: 512, layer: 'background' },
-              }])
-              setLoaded(true)
-            }
-          }
-          img.onerror = () => {
-            if (!cancelled) setLoaded(true)
-          }
-          img.src = '/corner/rooms/elon-v2.png'
-          return
-        }
-
-        const manifest = await manifestRes.json()
-        const layerDefs = manifest.layers || []
-
-        // Load all layer images (3-layer system: room-shell + character + glow)
-        const loadPromises = layerDefs.map(async (def) => {
-          const meta = { name: def.id, z: def.z || 0, type: def.type || 'full' }
-          const filename = def.file || def.src
-
-          return new Promise((resolve) => {
-            const img = new Image()
-            img.crossOrigin = 'anonymous'
-            img.onload = () => resolve({ id: def.id, img, meta })
-            img.onerror = () => {
-              console.warn(`[CanvasOffice] Failed to load layer: ${filename}`)
-              resolve(null)
-            }
-            img.src = `${LAYER_BASE_PATH}/${filename}`
-          })
-        })
-
-        const results = (await Promise.all(loadPromises)).filter(Boolean)
-
-        // Sort by z-index from metadata
-        results.sort((a, b) => (a.meta.z || 0) - (b.meta.z || 0))
-
-        if (!cancelled) {
-          setLayers(results)
-          setLoaded(true)
-        }
-      } catch (err) {
-        console.error('[CanvasOffice] Layer loading failed:', err)
-        if (!cancelled) setLoaded(true)
-      }
+// Test if a canvas-space point hits any room's diamond
+function hitTestRooms(cx, cy, originX, originY) {
+  for (let i = ALL_ROOMS.length - 1; i >= 0; i--) {
+    const room = ALL_ROOMS[i]
+    const pos = hexPosition(room.row, room.col, originX, originY)
+    const roomCX = pos.x + ROOM_SIZE / 2
+    const roomCY = pos.y + ROOM_SIZE / 2
+    if (isInsideDiamond(cx, cy, roomCX, roomCY, DIAMOND_HW, DIAMOND_HH)) {
+      return room.id
     }
-
-    loadLayers()
-    return () => { cancelled = true }
-  }, [])
-
-  return { layers, loaded }
-}
-
-// OLD CHARACTER SPRITE LOADER -- REMOVED
-// Big bobble Elon from character-layer.png is the only character now.
-// Walk sprites (elon-idle, elon-hop-*) no longer loaded or drawn.
-
-// ---- ELON WALK SYSTEM ----
-function useElonWalk(isWorking) {
-  const [position, setPosition] = useState({ x: 0.35, y: 0.72 })
-  const [targetIdx, setTargetIdx] = useState(0)
-  const [walkState, setWalkState] = useState('idle')
-  const [hopFrame, setHopFrame] = useState(null)
-  const [facingLeft, setFacingLeft] = useState(false)
-  const lastUpdateRef = useRef(performance.now())
-  const idleTimerRef = useRef(null)
-  const hopTimerRef = useRef(null)
-  const rafRef = useRef(null)
-
-  const pickNewTarget = useCallback(() => {
-    if (isWorking) {
-      setTargetIdx(0)
-      return
-    }
-    let next
-    do {
-      next = Math.floor(Math.random() * WALKABLE_POINTS.length)
-    } while (next === targetIdx && WALKABLE_POINTS.length > 1)
-    setTargetIdx(next)
-    setWalkState('walking')
-  }, [targetIdx, isWorking])
-
-  const doHop = useCallback((onComplete) => {
-    setWalkState('hop')
-    setHopFrame('ground')
-    hopTimerRef.current = setTimeout(() => {
-      setHopFrame('peak')
-      hopTimerRef.current = setTimeout(() => {
-        setHopFrame('landing')
-        hopTimerRef.current = setTimeout(() => {
-          setHopFrame(null)
-          onComplete?.()
-        }, 80)
-      }, 80)
-    }, 80)
-  }, [])
-
-  useEffect(() => {
-    const animate = (now) => {
-      const dt = (now - lastUpdateRef.current) / 1000
-      lastUpdateRef.current = now
-
-      if (walkState === 'walking') {
-        const target = WALKABLE_POINTS[targetIdx]
-        if (!target) {
-          setWalkState('idle')
-          rafRef.current = requestAnimationFrame(animate)
-          return
-        }
-
-        setPosition(prev => {
-          const dx = target.x - prev.x
-          const dy = target.y - prev.y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-
-          if (dist < 0.02) {
-            doHop(() => {
-              setWalkState('idle')
-              idleTimerRef.current = setTimeout(() => {
-                pickNewTarget()
-              }, 1500 + Math.random() * 1500)
-            })
-            return { x: target.x, y: target.y }
-          }
-
-          const step = Math.min(WALK_SPEED * dt, dist)
-          const nx = prev.x + (dx / dist) * step
-          const ny = prev.y + (dy / dist) * step
-
-          if (Math.abs(dx) > 0.01) {
-            setFacingLeft(dx < 0)
-          }
-
-          return { x: nx, y: ny }
-        })
-      }
-
-      rafRef.current = requestAnimationFrame(animate)
-    }
-
-    rafRef.current = requestAnimationFrame(animate)
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }
-  }, [walkState, targetIdx, doHop, pickNewTarget])
-
-  useEffect(() => {
-    if (isWorking) {
-      setTargetIdx(0)
-      setWalkState('walking')
-      return
-    }
-    idleTimerRef.current = setTimeout(() => {
-      pickNewTarget()
-    }, 2000)
-    return () => {
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
-      if (hopTimerRef.current) clearTimeout(hopTimerRef.current)
-    }
-  }, [isWorking]) // eslint-disable-line
-
-  return { position, walkState, hopFrame, facingLeft }
+  }
+  return null
 }
 
 // ---- COMPONENT ----
@@ -282,79 +154,39 @@ export default function CanvasOffice({
 }) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
-  const { layers, loaded: layersLoaded } = useLayerLoader()
-  const loaded = layersLoaded
   const [size, setSize] = useState({ w: 0, h: 0 })
-  const [hover, setHover] = useState(false)
-  const [breathe, setBreathe] = useState(0)
+  const [hover, setHover] = useState(null) // hovered room id
+  const [loaded, setLoaded] = useState(false)
 
   // Pan + zoom
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1.0)
   const panRef = useRef({ dragging: false, sx: 0, sy: 0, lx: 0, ly: 0, vx: 0, vy: 0, didDrag: false })
   const momRef = useRef(null)
-  const ZOOM_MIN = 0.5
+  const ZOOM_MIN = 0.3
   const ZOOM_MAX = 3.0
 
-  // Elon's status
-  const elonStatus = agentStatus['elon']?.status || 'IDLE'
-  const isElonWorking = elonStatus === 'WORKING'
-  const isSelected = selectedRoom === 'elon'
+  // Animation time reference
+  const startTimeRef = useRef(performance.now())
 
-  // Walk system
-  const { position: elonPos, walkState, hopFrame, facingLeft } = useElonWalk(isElonWorking)
-
-  // Separate layers into categories for rendering order
-  // FIX: desk-monitor-final.png is a FULL room composite (512x512) that already
-  // contains the server rack inside it. The standalone server-rack layer was
-  // drawing on top, causing a double-rack. Skip server-rack when desk-monitor exists.
-  // FIX: character-final.png is the new Gemini/Steffen art. When it exists,
-  // the old walk sprite system must be disabled to prevent double-character.
-  // 3-LAYER SYSTEM: room-shell + character + glow
-  // Simple. No complex categorization. Each layer type handled directly.
-  const layerCategories = useMemo(() => {
-    const roomShell = layers.find(l => l.id === 'room-shell' || l.meta.type === 'full')
-    const charLayer = layers.find(l => l.id === 'character' || l.meta.type === 'character')
-    const glowLayer = layers.find(l => l.id === 'glow' || l.meta.type === 'overlay')
-    return { roomShell, charLayer, glowLayer }
-  }, [layers])
-
-  // SMOOTH PULSE: fade between working (green) and idle (blue) over 5-8 seconds
-  // Creates a breathing progress feeling. No flash, just smooth.
-  const roomState = 'working' // always working for now
-  const [pulseState, setPulseState] = useState('working')
+  // Track image loading
   useEffect(() => {
-    const timer = setInterval(() => {
-      setPulseState(prev => prev === 'working' ? 'idle' : 'working')
-    }, 6000) // swap every 6 seconds
-    return () => clearInterval(timer)
-  }, [])
-
-  // Smooth crossfade: draw BOTH states, animate alpha between them
-  // No flash. Both images render simultaneously with opposing alphas.
-  const [blendAlpha, setBlendAlpha] = useState(0) // 0 = fully working, 1 = fully idle
-  const blendRef = useRef(0)
-  const blendTargetRef = useRef(0)
-  const displayState = 'working' // base state
-
-  useEffect(() => {
-    blendTargetRef.current = pulseState === 'idle' ? 1 : 0
-  }, [pulseState])
-
-  // Animate blend smoothly
-  useEffect(() => {
-    let raf
-    const animate = () => {
-      const target = blendTargetRef.current
-      const diff = target - blendRef.current
-      if (Math.abs(diff) > 0.005) {
-        blendRef.current += diff * 0.02 // slow smooth lerp
-        setBlendAlpha(blendRef.current)
-      }
-      raf = requestAnimationFrame(animate)
+    let loadCount = 0
+    const totalImages = ALL_ROOMS.length * 2
+    const checkDone = () => {
+      loadCount++
+      if (loadCount >= totalImages) setLoaded(true)
     }
-    raf = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(raf)
+    ALL_ROOMS.forEach((room) => {
+      const imgs = roomImages[room.id]
+      if (imgs.working.complete) checkDone()
+      else imgs.working.onload = checkDone
+      if (imgs.idle.complete) checkDone()
+      else imgs.idle.onload = checkDone
+    })
+    // Fallback: mark loaded after 3s even if some images fail
+    const fallback = setTimeout(() => setLoaded(true), 3000)
+    return () => clearTimeout(fallback)
   }, [])
 
   // Measure container
@@ -370,28 +202,30 @@ export default function CanvasOffice({
     return () => window.removeEventListener('resize', measure)
   }, [])
 
-  // Center room on mount
+  // Center the grid on mount
   useEffect(() => {
     if (size.w > 0 && size.h > 0) {
-      setPan({
-        x: (size.w - ROOM_SIZE * zoom) / 2,
-        y: (size.h - ROOM_SIZE * zoom) / 2,
+      // Find bounding box of all rooms
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+      ALL_ROOMS.forEach((room) => {
+        const pos = hexPosition(room.row, room.col, 0, 0)
+        minX = Math.min(minX, pos.x)
+        maxX = Math.max(maxX, pos.x + ROOM_SIZE)
+        minY = Math.min(minY, pos.y)
+        maxY = Math.max(maxY, pos.y + ROOM_SIZE)
       })
+      const gridW = maxX - minX
+      const gridH = maxY - minY
+      // Center the grid, accounting for zoom
+      const cx = (size.w - gridW * zoom) / 2 - minX * zoom
+      const cy = (size.h - gridH * zoom) / 2 - minY * zoom
+      setPan({ x: cx, y: cy })
     }
   }, [size.w, size.h]) // eslint-disable-line
 
-  // Breathing animation
-  useEffect(() => {
-    let raf
-    const start = performance.now()
-    const animate = (now) => {
-      const elapsed = (now - start) / 1000
-      setBreathe(Math.sin(elapsed * 0.5) * 2)
-      raf = requestAnimationFrame(animate)
-    }
-    raf = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(raf)
-  }, [])
+  // Origin for hex layout (will be adjusted by centering)
+  const ORIGIN_X = ROOM_SIZE * 1.5
+  const ORIGIN_Y = ROOM_SIZE * 0.1
 
   // ---- DRAW ----
   const draw = useCallback(() => {
@@ -413,18 +247,107 @@ export default function CanvasOffice({
     ctx.save()
     ctx.translate(pan.x, pan.y)
     ctx.scale(zoom, zoom)
-    ctx.translate(0, breathe * 0.3) // subtle depth breathing
 
     ctx.imageSmoothingEnabled = false
 
-    // ---- HELPER: Draw one room with hex clip ----
-    function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, alpha, nameText, nameColor) {
-      ctx.save()
-      ctx.translate(offsetX, offsetY)
+    const elapsed = (performance.now() - startTimeRef.current) / 1000
 
-      // Hex clip
-      ctx.beginPath()
+    // ---- DARK BACKDROP ----
+    // Draw a dark solid shape behind all rooms so the city doesn't peek through gaps.
+    // We compute a convex hull-ish polygon that covers all room hexes plus padding.
+    ctx.save()
+    ctx.fillStyle = '#080B16'
+
+    // Collect all hex vertices from all rooms, then draw a padded bounding region
+    const PAD = 20
+    let bMinX = Infinity, bMaxX = -Infinity, bMinY = Infinity, bMaxY = -Infinity
+    ALL_ROOMS.forEach((room) => {
+      const pos = hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
       const S = ROOM_SIZE
+      // The hex vertices
+      const verts = [
+        [pos.x + S * 0.50, pos.y + S * 0.05],
+        [pos.x + S * 0.95, pos.y + S * 0.28],
+        [pos.x + S * 0.95, pos.y + S * 0.75],
+        [pos.x + S * 0.50, pos.y + S * 0.95],
+        [pos.x + S * 0.05, pos.y + S * 0.75],
+        [pos.x + S * 0.05, pos.y + S * 0.28],
+      ]
+      verts.forEach(([vx, vy]) => {
+        bMinX = Math.min(bMinX, vx)
+        bMaxX = Math.max(bMaxX, vx)
+        bMinY = Math.min(bMinY, vy)
+        bMaxY = Math.max(bMaxY, vy)
+      })
+    })
+
+    // Draw a rounded dark rectangle behind the entire room cluster
+    const bdX = bMinX - PAD
+    const bdY = bMinY - PAD
+    const bdW = (bMaxX - bMinX) + PAD * 2
+    const bdH = (bMaxY - bMinY) + PAD * 2
+    ctx.beginPath()
+    ctx.roundRect(bdX, bdY, bdW, bdH, 24)
+    ctx.fill()
+
+    // Subtle edge glow on the backdrop
+    ctx.strokeStyle = 'rgba(76, 175, 80, 0.08)'
+    ctx.lineWidth = 1
+    ctx.stroke()
+    ctx.restore()
+
+    // ---- RENDER ALL ROOMS ----
+    ALL_ROOMS.forEach((room, idx) => {
+      const pos = hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
+      const imgs = roomImages[room.id]
+      const alpha = getWaveBlend(elapsed, idx)
+
+      drawRoom(ctx, pos.x, pos.y, imgs.working, imgs.idle, alpha, room.name, room.color, room.id === hover || room.id === selectedRoom)
+    })
+
+    ctx.restore() // undo pan/zoom
+
+  }, [size, pan, zoom, hover, selectedRoom, ORIGIN_X, ORIGIN_Y])
+
+  // ---- HELPER: Draw one room with hex clip ----
+  function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, alpha, nameText, nameColor, isHighlighted) {
+    ctx.save()
+    ctx.translate(offsetX, offsetY)
+
+    // Hex clip path
+    ctx.beginPath()
+    const S = ROOM_SIZE
+    ctx.moveTo(S * 0.50, S * 0.05)
+    ctx.lineTo(S * 0.95, S * 0.28)
+    ctx.lineTo(S * 0.95, S * 0.75)
+    ctx.lineTo(S * 0.50, S * 0.95)
+    ctx.lineTo(S * 0.05, S * 0.75)
+    ctx.lineTo(S * 0.05, S * 0.28)
+    ctx.closePath()
+    ctx.clip()
+
+    // Crossfade blend between working and idle
+    if (workImg?.complete && idleImg?.complete) {
+      // Draw working state
+      ctx.save()
+      ctx.globalAlpha = 1 - alpha
+      ctx.drawImage(workImg, 0, 0, S, S)
+      ctx.restore()
+      // Draw idle state on top
+      ctx.save()
+      ctx.globalAlpha = alpha
+      ctx.drawImage(idleImg, 0, 0, S, S)
+      ctx.restore()
+    } else if (workImg?.complete) {
+      ctx.drawImage(workImg, 0, 0, S, S)
+    } else if (idleImg?.complete) {
+      ctx.drawImage(idleImg, 0, 0, S, S)
+    }
+
+    // Highlight glow for hovered/selected rooms
+    if (isHighlighted) {
+      ctx.fillStyle = `${nameColor}15`
+      ctx.beginPath()
       ctx.moveTo(S * 0.50, S * 0.05)
       ctx.lineTo(S * 0.95, S * 0.28)
       ctx.lineTo(S * 0.95, S * 0.75)
@@ -432,75 +355,36 @@ export default function CanvasOffice({
       ctx.lineTo(S * 0.05, S * 0.75)
       ctx.lineTo(S * 0.05, S * 0.28)
       ctx.closePath()
-      ctx.clip()
-
-      // Crossfade blend
-      if (workImg?.complete && idleImg?.complete) {
-        ctx.save()
-        ctx.globalAlpha = 1 - alpha
-        ctx.drawImage(workImg, 0, 0, S, S)
-        ctx.restore()
-        ctx.save()
-        ctx.globalAlpha = alpha
-        ctx.drawImage(idleImg, 0, 0, S, S)
-        ctx.restore()
-      } else if (workImg?.complete) {
-        ctx.drawImage(workImg, 0, 0, S, S)
-      }
-
-      // Nameplate
-      ctx.save()
-      ctx.font = '600 14px Inter, system-ui, sans-serif'
-      const tw = ctx.measureText(nameText).width
-      const npX = S * 0.5 - tw / 2 - 8
-      const npY = S * 0.88
-      ctx.fillStyle = 'rgba(10, 15, 30, 0.85)'
-      ctx.beginPath()
-      ctx.roundRect(npX - 2, npY - 10, tw + 20, 24, 4)
       ctx.fill()
-      ctx.strokeStyle = `${nameColor}55`
-      ctx.lineWidth = 1
-      ctx.stroke()
-      ctx.beginPath()
-      ctx.arc(npX + 6, npY + 2, 4, 0, Math.PI * 2)
-      ctx.fillStyle = nameColor
-      ctx.fill()
-      ctx.fillStyle = '#EDF2FA'
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(nameText, npX + 14, npY + 2)
-      ctx.restore()
-
-      ctx.restore() // undo translate + clip
     }
 
-    // ---- RENDER ALL ROOMS ----
-    // Isometric hex tessellation: rooms share edges like honeycomb.
-    // Hex clip uses 0.05-0.95 range, so visible width = ROOM_SIZE * 0.9
-    // For perfect tessellation: offset X = visible_half_width, offset Y = visible height * 0.75
-    const VIS_W = ROOM_SIZE * 0.90   // visible hex width
-    const VIS_H = ROOM_SIZE * 0.90   // visible hex height
+    // Nameplate
+    ctx.save()
+    ctx.font = '600 14px Inter, system-ui, sans-serif'
+    const tw = ctx.measureText(nameText).width
+    const npX = S * 0.5 - tw / 2 - 8
+    const npY = S * 0.88
+    ctx.fillStyle = 'rgba(10, 15, 30, 0.85)'
+    ctx.beginPath()
+    ctx.roundRect(npX - 2, npY - 10, tw + 20, 24, 4)
+    ctx.fill()
+    ctx.strokeStyle = `${nameColor}55`
+    ctx.lineWidth = 1
+    ctx.stroke()
+    // Status dot
+    ctx.beginPath()
+    ctx.arc(npX + 6, npY + 2, 4, 0, Math.PI * 2)
+    ctx.fillStyle = nameColor
+    ctx.fill()
+    // Name text
+    ctx.fillStyle = '#EDF2FA'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(nameText, npX + 14, npY + 2)
+    ctx.restore()
 
-    // Room 1: ELON (center-top)
-    const elonX = ROOM_SIZE * 0.5
-    const elonY = ROOM_SIZE * 0.1
-    drawRoom(ctx, elonX, elonY, stateImages['working'], stateImages['idle'], blendAlpha, 'ELON', ELON_COLOR)
-
-    // Room 2: BOBBY (left-bottom, snapped to Elon's bottom-left edge)
-    const bobbyX = elonX - VIS_W * 0.50
-    const bobbyY = elonY + VIS_H * 0.70
-    drawRoom(ctx, bobbyX, bobbyY, otherRoomImages['bobby-working'], otherRoomImages['bobby-idle'], blendAlpha, 'BOBBY', '#E91E90')
-
-    // Room 3: STEFFEN (right-bottom, snapped to Elon's bottom-right edge)
-    const steffenX = elonX + VIS_W * 0.50
-    const steffenY = elonY + VIS_H * 0.70
-    drawRoom(ctx, steffenX, steffenY, otherRoomImages['steffen-working'], otherRoomImages['steffen-idle'], blendAlpha, 'STEFFEN', '#FFD700')
-
-    // OLD single-room render code REMOVED. drawRoom() handles everything per room now.
-
-    ctx.restore() // undo pan/zoom/breathe
-
-  }, [layers, layerCategories, size, pan, zoom, hover, isSelected, isElonWorking, elonStatus, elonPos, walkState, hopFrame, facingLeft, breathe])
+    ctx.restore() // undo translate + clip
+  }
 
   // Render loop
   useEffect(() => {
@@ -552,10 +436,10 @@ export default function CanvasOffice({
       const rect = containerRef.current.getBoundingClientRect()
       const cx = (e.clientX - rect.left - pan.x) / zoom
       const cy = (e.clientY - rect.top - pan.y) / zoom
-      const isOver = isInsideDiamond(cx, cy, DIAMOND_CX, DIAMOND_CY, DIAMOND_HW, DIAMOND_HH)
-      if (isOver !== hover) {
-        setHover(isOver)
-        setExtHover?.(isOver ? 'elon' : null)
+      const hitRoom = hitTestRooms(cx, cy, ORIGIN_X, ORIGIN_Y)
+      if (hitRoom !== hover) {
+        setHover(hitRoom)
+        setExtHover?.(hitRoom)
       }
     }
 
@@ -570,7 +454,7 @@ export default function CanvasOffice({
       panRef.current.didDrag = true
     }
     setPan({ x: nx, y: ny })
-  }, [pan, zoom, hover, setExtHover])
+  }, [pan, zoom, hover, setExtHover, ORIGIN_X, ORIGIN_Y])
 
   const onUp = useCallback(() => {
     if (!panRef.current.dragging) return
@@ -598,11 +482,12 @@ export default function CanvasOffice({
       const rect = containerRef.current.getBoundingClientRect()
       const cx = (e.clientX - rect.left - pan.x) / zoom
       const cy = (e.clientY - rect.top - pan.y) / zoom
-      if (isInsideDiamond(cx, cy, DIAMOND_CX, DIAMOND_CY, DIAMOND_HW, DIAMOND_HH)) {
-        onRoomClick?.('elon')
+      const hitRoom = hitTestRooms(cx, cy, ORIGIN_X, ORIGIN_Y)
+      if (hitRoom) {
+        onRoomClick?.(hitRoom)
       }
     }
-  }, [pan, zoom, onRoomClick])
+  }, [pan, zoom, onRoomClick, ORIGIN_X, ORIGIN_Y])
 
   // Touch events
   const onTouchStart = useCallback((e) => {
@@ -638,15 +523,16 @@ export default function CanvasOffice({
         if (rect) {
           const cx = (panRef.current.lx - rect.left - pan.x) / zoom
           const cy = (panRef.current.ly - rect.top - pan.y) / zoom
-          if (isInsideDiamond(cx, cy, DIAMOND_CX, DIAMOND_CY, DIAMOND_HW, DIAMOND_HH)) {
-            onRoomClick?.('elon')
+          const hitRoom = hitTestRooms(cx, cy, ORIGIN_X, ORIGIN_Y)
+          if (hitRoom) {
+            onRoomClick?.(hitRoom)
           }
         }
       }
       panRef.current.didDrag = false
       onUp()
     }
-  }, [pan, zoom, onRoomClick, onUp])
+  }, [pan, zoom, onRoomClick, onUp, ORIGIN_X, ORIGIN_Y])
 
   const cursor = panRef.current.dragging ? 'grabbing' : (hover ? 'pointer' : 'grab')
 
@@ -661,7 +547,7 @@ export default function CanvasOffice({
       onMouseDown={onDown}
       onMouseMove={onMove}
       onMouseUp={onUp}
-      onMouseLeave={() => { onUp(); setHover(false); setExtHover?.(null) }}
+      onMouseLeave={() => { onUp(); setHover(null); setExtHover?.(null) }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -690,7 +576,7 @@ export default function CanvasOffice({
               fontFamily: "'JetBrains Mono', monospace",
               letterSpacing: '0.1em',
             }}>
-              LOADING SERVER ROOM
+              LOADING OFFICE
             </div>
           </div>
         </div>
