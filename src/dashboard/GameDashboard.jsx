@@ -4052,14 +4052,18 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           { label: 'PROGRESS', value: `${overallProgress}%`, color: isNightMode ? '#F1F5F9' : '#0F172A' },
         ].map(stat => (
           <div key={stat.label} style={{
-            background: isNightMode ? '#162236' : `${stat.color}0F`,
-            border: isNightMode ? '1px solid #1E3A5F' : `2px solid ${stat.color === '#0F172A' ? 'rgba(59,130,246,0.1)' : stat.color + '33'}`,
+            background: isNightMode ? '#162236' : '#FFFFFF',
+            border: isNightMode ? '1px solid #1E3A5F' : `2px solid ${stat.color === '#0F172A' ? 'rgba(59,130,246,0.15)' : stat.color + '33'}`,
             borderRadius: 8,
             padding: '8px 4px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             minHeight: 48,
-            boxShadow: isNightMode ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
-          }}>
+            boxShadow: isNightMode ? '0 1px 3px rgba(0,0,0,0.15)' : '0 1px 4px rgba(0,0,0,0.06)',
+            cursor: 'default',
+            transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03) translateY(-1px)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}>
             <span style={{
               fontSize: 18, fontWeight: 900, color: stat.color,
               fontVariantNumeric: 'tabular-nums', lineHeight: 1,
@@ -4082,7 +4086,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       {/* ---- TAB BAR (Vegas glow tabs: Chat / Tasks / Info / List / Board) ---- */}
       <div style={{
         display: 'flex',
-        borderBottom: '2px solid rgba(59,130,246,0.12)',
+        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.1)',
         flexShrink: 0,
         position: 'relative',
       }}>
@@ -4144,8 +4148,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 {tab.label}
                 {tab.key && (
                   <span style={{
-                    background: isDaytime ? 'rgba(15,23,42,0.05)' : 'rgba(255,255,255,0.06)',
-                    border: isDaytime ? '1px solid rgba(15,23,42,0.1)' : '1px solid rgba(255,255,255,0.1)',
+                    background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.06)',
+                    border: isDaytime ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 3,
                     padding: '1px 4px',
                     fontFamily: "'JetBrains Mono', monospace",
@@ -4541,14 +4545,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Latest Result */}
             {agentStatus && agentStatus?.latestResult && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Latest Result</div>
+                <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Latest Result</div>
                 <div style={{
                   padding: '10px 14px',
-                  background: isDaytime ? `${agentColor}08` : `${agentColor}08`,
-                  border: isDaytime ? `2px solid ${agentColor}20` : `1px solid ${agentColor}20`,
+                  background: isDaytime ? 'rgba(59,130,246,0.04)' : `${agentColor}08`,
+                  border: isDaytime ? '1px solid rgba(59,130,246,0.1)' : `1px solid ${agentColor}20`,
                   borderRadius: 8,
                 }}>
-                  <div style={{ color: isDaytime ? '#1E293B' : '#F0ECE6', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+                  <div style={{ color: isDaytime ? '#334155' : '#F0ECE6', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
                     {agentStatus.latestResult}
                   </div>
                 </div>
@@ -4558,10 +4562,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Room info */}
             {agentStatus && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
-              <div style={{ color: isDaytime ? '#334155' : '#A8A29E', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif" }}>{room?.name || 'Unknown'}</div>
+              <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
+              <div style={{ color: isDaytime ? '#334155' : '#F0ECE6', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif" }}>{room?.name || 'Unknown'}</div>
               {room?.personality && (
-                <div style={{ color: isDaytime ? '#64748B' : '#6B7280', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
+                <div style={{ color: isDaytime ? '#64748B' : '#94A3B8', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
               )}
             </div>
             )}
@@ -4569,7 +4573,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Data source */}
             {IS_LOCAL && agentStatus && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Data Source</div>
+                <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Data Source</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
                   <span style={{ color: '#4CAF50', fontSize: 13, fontFamily: 'JetBrains Mono, monospace' }}>Local (2s poll)</span>
@@ -4580,7 +4584,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Status */}
             {agentStatus && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
+              <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Status</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: cfg.bg, borderRadius: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color }} />
                 <span style={{ color: cfg.color, fontSize: 13, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase' }}>{cfg.label}</span>
@@ -4595,7 +4599,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               if (agentFeed.length === 0) return null
               return (
                 <div>
-                  <div style={{ color: isDaytime ? '#94A3B8' : '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Recent Activity</div>
+                  <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>Recent Activity</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {agentFeed.map((entry, idx) => {
                       const desc = entry.description?.replace(/^[A-Za-z]+:\s*/, '') || ''
@@ -4620,10 +4624,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             {commitShort && (
                               <span style={{
                                 fontSize: 12, fontWeight: 600,
-                                color: '#22C55E',
+                                color: isDaytime ? '#16A34A' : '#22C55E',
                                 fontFamily: "'JetBrains Mono', monospace",
                                 background: isDaytime ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.08)',
-                                border: isDaytime ? '1px solid rgba(34,197,94,0.18)' : '1px solid rgba(34,197,94,0.15)',
+                                border: isDaytime ? '1px solid rgba(34,197,94,0.12)' : '1px solid rgba(34,197,94,0.15)',
                                 borderRadius: 4, padding: '1px 6px',
                                 display: 'flex', alignItems: 'center', gap: 4,
                               }}>
@@ -5952,12 +5956,12 @@ export default function GameDashboard() {
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { overflow: hidden; }
-        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #2D3748; border-radius: 2px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4A5568; }
-        .hud-scroll::-webkit-scrollbar { width: 4px; }
-        .hud-scroll::-webkit-scrollbar-thumb { background: #4A5568; }
+        ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.15); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.3); }
+        .hud-scroll::-webkit-scrollbar { width: 6px; }
+        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.15); border-radius: 3px; }
         /* PWA safe areas */
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
           .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
