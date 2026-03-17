@@ -294,14 +294,22 @@ export default function CanvasOffice({
   const { position: elonPos, walkState, hopFrame, facingLeft } = useElonWalk(isElonWorking)
 
   // Separate layers into categories for rendering order
+  // FIX: desk-monitor-final.png is a FULL room composite (512x512) that already
+  // contains the server rack inside it. The standalone server-rack layer was
+  // drawing on top, causing a double-rack. Skip server-rack when desk-monitor exists.
+  // FIX: character-final.png is the new Gemini/Steffen art. When it exists,
+  // the old walk sprite system must be disabled to prevent double-character.
   const layerCategories = useMemo(() => {
     const bg = []      // floor, walls (z 0-1)
     const furniture = [] // desk, rack, chair (z 5-10)
     const overlays = [] // lights, glow (z 20-25)
     const charLayer = layers.find(l => l.id === 'character')
+    const hasDeskMonitor = layers.some(l => l.id === 'desk-monitor')
 
     for (const layer of layers) {
-      if (layer.id === 'character') continue // character drawn by walk system
+      if (layer.id === 'character') continue // character handled separately below
+      // Skip server-rack when desk-monitor composite already contains it
+      if (layer.id === 'server-rack' && hasDeskMonitor) continue
       const z = layer.meta.z || 0
       if (z <= 1) bg.push(layer)
       else if (z < 20) furniture.push(layer)
@@ -394,71 +402,86 @@ export default function CanvasOffice({
       }
     }
 
-    // ---- LAYER 3: CHARACTER (walk system, z ~15) ----
-    // Elon walks around via the walk system, not drawn from the static character layer
-    const charSize = 80
-    const charX = elonPos.x * ROOM_SIZE - charSize / 2
-    let charY = elonPos.y * ROOM_SIZE - charSize / 2
-
-    // Hop frame Y offset
-    let hopOffsetY = 0
-    if (hopFrame === 'peak') hopOffsetY = -12
-    if (hopFrame === 'landing') hopOffsetY = 3
-    charY += hopOffsetY
-
-    // Determine sprite
-    let spriteKey = 'elon-idle'
-    if (walkState === 'walking') spriteKey = 'elon-idle'
-    if (isElonWorking && walkState === 'idle') spriteKey = 'elon-working'
-    if (hopFrame === 'ground') spriteKey = 'elon-hop-ground'
-    if (hopFrame === 'peak') spriteKey = 'elon-hop-peak'
-    if (hopFrame === 'landing') spriteKey = 'elon-hop-landing'
-
-    const spriteImg = sprites[spriteKey]
-    if (spriteImg) {
-      ctx.save()
-      ctx.imageSmoothingEnabled = false
-
-      if (facingLeft) {
-        ctx.translate(charX + charSize, charY)
-        ctx.scale(-1, 1)
-        ctx.drawImage(spriteImg, 0, 0, charSize, charSize)
+    // ---- LAYER 3: CHARACTER (z ~15) ----
+    // When the new character-final.png layer exists (Gemini/Steffen art),
+    // draw it ONCE and skip the old walk sprite system to prevent double-character.
+    // When no character layer exists, fall back to the old walk sprite system.
+    if (layerCategories.charLayer) {
+      // New layered character art -- draw from the character-final.png
+      const cl = layerCategories.charLayer
+      const cm = cl.meta
+      const isCharFullCanvas = cl.img.naturalWidth === ROOM_SIZE && cl.img.naturalHeight === ROOM_SIZE
+      if (isCharFullCanvas) {
+        ctx.drawImage(cl.img, 0, 0, ROOM_SIZE, ROOM_SIZE)
       } else {
-        ctx.drawImage(spriteImg, charX, charY, charSize, charSize)
+        ctx.drawImage(cl.img, cm.x || 0, cm.y || 0, cm.width || cl.img.naturalWidth, cm.height || cl.img.naturalHeight)
       }
-      ctx.restore()
+    } else {
+      // Old walk sprite system (fallback when no character layer PNG exists)
+      const charSize = 80
+      const charX = elonPos.x * ROOM_SIZE - charSize / 2
+      let charY = elonPos.y * ROOM_SIZE - charSize / 2
 
-      // Shadow under character
-      ctx.save()
-      ctx.globalAlpha = hopFrame === 'peak' ? 0.12 : 0.25
-      const shadowW = charSize * 0.6
-      const shadowH = charSize * 0.12
-      const shadowX = elonPos.x * ROOM_SIZE - shadowW / 2
-      const shadowY = elonPos.y * ROOM_SIZE + charSize * 0.35
+      // Hop frame Y offset
+      let hopOffsetY = 0
+      if (hopFrame === 'peak') hopOffsetY = -12
+      if (hopFrame === 'landing') hopOffsetY = 3
+      charY += hopOffsetY
 
-      ctx.beginPath()
-      ctx.ellipse(shadowX + shadowW / 2, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'
-      ctx.fill()
-      ctx.restore()
+      // Determine sprite
+      let spriteKey = 'elon-idle'
+      if (walkState === 'walking') spriteKey = 'elon-idle'
+      if (isElonWorking && walkState === 'idle') spriteKey = 'elon-working'
+      if (hopFrame === 'ground') spriteKey = 'elon-hop-ground'
+      if (hopFrame === 'peak') spriteKey = 'elon-hop-peak'
+      if (hopFrame === 'landing') spriteKey = 'elon-hop-landing'
 
-      // Dust on landing
-      if (hopFrame === 'landing') {
+      const spriteImg = sprites[spriteKey]
+      if (spriteImg) {
         ctx.save()
-        ctx.globalAlpha = 0.3
-        for (let i = 0; i < 4; i++) {
-          const dx = (Math.random() - 0.5) * 20
-          const dy = Math.random() * 5
-          ctx.beginPath()
-          ctx.arc(
-            elonPos.x * ROOM_SIZE + dx,
-            elonPos.y * ROOM_SIZE + charSize * 0.35 + dy,
-            2 + Math.random() * 2, 0, Math.PI * 2
-          )
-          ctx.fillStyle = 'rgba(160,180,200,0.4)'
-          ctx.fill()
+        ctx.imageSmoothingEnabled = false
+
+        if (facingLeft) {
+          ctx.translate(charX + charSize, charY)
+          ctx.scale(-1, 1)
+          ctx.drawImage(spriteImg, 0, 0, charSize, charSize)
+        } else {
+          ctx.drawImage(spriteImg, charX, charY, charSize, charSize)
         }
         ctx.restore()
+
+        // Shadow under character
+        ctx.save()
+        ctx.globalAlpha = hopFrame === 'peak' ? 0.12 : 0.25
+        const shadowW = charSize * 0.6
+        const shadowH = charSize * 0.12
+        const shadowX = elonPos.x * ROOM_SIZE - shadowW / 2
+        const shadowY = elonPos.y * ROOM_SIZE + charSize * 0.35
+
+        ctx.beginPath()
+        ctx.ellipse(shadowX + shadowW / 2, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'
+        ctx.fill()
+        ctx.restore()
+
+        // Dust on landing
+        if (hopFrame === 'landing') {
+          ctx.save()
+          ctx.globalAlpha = 0.3
+          for (let i = 0; i < 4; i++) {
+            const dx = (Math.random() - 0.5) * 20
+            const dy = Math.random() * 5
+            ctx.beginPath()
+            ctx.arc(
+              elonPos.x * ROOM_SIZE + dx,
+              elonPos.y * ROOM_SIZE + charSize * 0.35 + dy,
+              2 + Math.random() * 2, 0, Math.PI * 2
+            )
+            ctx.fillStyle = 'rgba(160,180,200,0.4)'
+            ctx.fill()
+          }
+          ctx.restore()
+        }
       }
     }
 
