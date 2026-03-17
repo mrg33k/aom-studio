@@ -80,6 +80,7 @@ const AGENT_FOLDERS = {
   bobby: 'bobby', colton: 'colton', steffen: 'steffen', jacob: 'jacob',
   elon: 'sys', alex: 'aom-strategy', steve: 'steve', cleo: 'content-agent',
   tony: 'tony', paige: 'paige', pixel: 'pixel', mom: 'mom',
+  patrik: 'corner', elmo: 'corner',
 }
 
 const AGENTS_LIST = [

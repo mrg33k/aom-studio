@@ -104,7 +104,11 @@ const PROJECT_CONFIG = {
 // Map agents to their projects
 function getAgentProjects(slug) {
   return Object.entries(PROJECT_CONFIG)
-    .filter(([, p]) => p.team.includes(slug) || p.team.includes('all'))
+    .filter(([key, p]) => {
+      // Skip broadcast channels (team: ['all']) from individual agent views
+      if (p.team.includes('all')) return false
+      return p.team.includes(slug)
+    })
     .map(([key, p]) => ({ key, ...p }))
 }
 
@@ -5346,20 +5350,42 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const prevMessageCountRef = useRef(0)
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
 
-  // NO auto-scroll. Chat stays exactly where user scrolled.
-  // Only the manual "scroll to bottom" button triggers any scroll.
-  // Track new message arrivals to show the "New messages" indicator button.
+  // Conversations default to latest (scroll to bottom).
+  // On first load or agent switch: snap to bottom.
+  // On new message: scroll to bottom ONLY if already at bottom.
+  // User scrolls up: stay there, show "New messages" if needed.
   useEffect(() => {
     if (!messagesContainerRef.current || activeTab !== 'chat') return
+    const el = messagesContainerRef.current
     const newCount = chatMessages?.length || 0
     const prevCount = prevMessageCountRef.current
     const isNewMessage = newCount > prevCount
     prevMessageCountRef.current = newCount
 
-    if (isNewMessage && !isNearBottomRef.current) {
-      setShowNewMsgIndicator(true)
+    if (isNewMessage) {
+      if (isNearBottomRef.current || userJustSentRef.current) {
+        // At bottom or user just sent: follow the conversation
+        requestAnimationFrame(() => {
+          el.scrollTop = el.scrollHeight
+        })
+        userJustSentRef.current = false
+      } else {
+        setShowNewMsgIndicator(true)
+      }
     }
   }, [chatMessages, activeTab])
+
+  // Snap to bottom on agent switch or first chat open
+  useEffect(() => {
+    if (!messagesContainerRef.current || activeTab !== 'chat') return
+    const el = messagesContainerRef.current
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight
+    })
+    isNearBottomRef.current = true
+    setShowNewMsgIndicator(false)
+    prevMessageCountRef.current = chatMessages?.length || 0
+  }, [agentSlug, activeTab])
 
   // Working agents count -- use REAL data from useDataPipe (agent-notifications.md TASK STARTED/FINISHED)
   // Bobby2: Full pipeData passed to TopSquares so sidebar uses same persistent truth as HUD pills
@@ -5964,6 +5990,32 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               )}
               <div ref={messagesEndRef} />
             </div>
+            {/* Scroll to bottom button (subtle, always available) */}
+            {chatMessages?.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0', flexShrink: 0 }}>
+                <button
+                  onClick={() => {
+                    messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' })
+                    isNearBottomRef.current = true
+                    setShowNewMsgIndicator(false)
+                  }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: isDaytime ? '#CBD5E1' : '#334155',
+                    padding: '2px 8px', borderRadius: 4,
+                    fontSize: 11, fontWeight: 600, fontFamily: "'Inter', sans-serif",
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    transition: 'color 100ms',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#3B82F6' : '#60A5FA'}
+                  onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#CBD5E1' : '#334155'}
+                >
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+              </div>
+            )}
             {/* New messages indicator */}
             {showNewMsgIndicator && (
               <div style={{ position: 'relative', zIndex: 10 }}>

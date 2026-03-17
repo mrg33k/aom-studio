@@ -1170,7 +1170,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu }) {
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (white glass, blue accents)
   const tpBg = isDaytime ? 'rgba(248, 250, 255, 0.96)' : HUD.panelBg
@@ -1452,7 +1452,6 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
               onContextMenu={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('[Corner] Task right-click:', task.text?.slice(0, 30), 'handler:', !!onTaskContextMenu)
                 onTaskContextMenu?.(e, task, project)
               }}
               style={{
@@ -1460,7 +1459,14 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                 padding: '10px 8px',
                 borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 opacity: isDone ? 0.35 : 1,
-                transition: 'opacity 200ms ease',
+                transition: 'opacity 200ms ease, background 100ms ease',
+                // Highlight when this task's context menu is open
+                background: hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
+                  ? (isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.15)')
+                  : 'transparent',
+                borderLeft: hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
+                  ? `3px solid ${project.color || '#3B82F6'}`
+                  : '3px solid transparent',
               }}
             >
               {/* Checkbox - CLICKABLE */}
@@ -1645,9 +1651,22 @@ export default function GameHUD({
   const [hudTaskCtx, setHudTaskCtx] = useState(null)
   useEffect(() => {
     if (!hudTaskCtx) return
-    const handler = () => setHudTaskCtx(null)
-    document.addEventListener('click', handler)
-    return () => document.removeEventListener('click', handler)
+    // Delay listener so the originating right-click event doesn't immediately close the menu
+    const timer = setTimeout(() => {
+      const handler = (e) => {
+        // Don't close if clicking inside the menu itself
+        const menu = document.querySelector('[data-hud-ctx-menu]')
+        if (menu && menu.contains(e.target)) return
+        setHudTaskCtx(null)
+      }
+      document.addEventListener('mousedown', handler)
+      // Store cleanup ref
+      hudTaskCtx._cleanup = () => document.removeEventListener('mousedown', handler)
+    }, 50)
+    return () => {
+      clearTimeout(timer)
+      hudTaskCtx._cleanup?.()
+    }
   }, [hudTaskCtx])
 
   // Daytime palette: white glass with vibrant blue accents (matches top bar)
@@ -1922,10 +1941,9 @@ export default function GameHUD({
             onToggleManualTask={toggleManualTask}
             onDeleteManualTask={deleteManualTask}
             allProjects={projects}
+            hudTaskCtxId={hudTaskCtx?.taskId}
             onTaskContextMenu={(e, task, proj) => {
-              const menuHeight = 300
-              const y = Math.min(e.clientY, window.innerHeight - menuHeight - 20)
-              setHudTaskCtx({ task, project: proj, x: e.clientX, y })
+              setHudTaskCtx({ task, project: proj, taskId: task.isManual ? `manual-${task.manualId}` : task.origIdx })
             }}
           />
         )}
@@ -2218,18 +2236,34 @@ export default function GameHUD({
 
       {/* Task right-click context menu (rendered outside all overflow containers) */}
       {hudTaskCtx && (
-        <div style={{
-          position: 'fixed', left: hudTaskCtx.x, top: hudTaskCtx.y, zIndex: 9999,
+        <div data-hud-ctx-menu style={{
+          position: 'fixed',
+          bottom: 80,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
           background: isNightMode
             ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)'
             : 'rgba(255,255,255,0.98)',
           border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '1px solid rgba(59,130,246,0.2)',
-          borderRadius: 10, padding: '6px 0', minWidth: 200,
+          borderRadius: 10, padding: '6px 0', minWidth: 240, maxWidth: 320,
           boxShadow: isNightMode
             ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
             : '0 8px 32px rgba(0,0,0,0.15)',
           backdropFilter: 'blur(20px)',
         }}>
+          {/* Task name header */}
+          <div style={{
+            padding: '8px 14px 6px',
+            fontSize: 12, fontWeight: 700,
+            color: isNightMode ? '#94A3B8' : '#64748B',
+            fontFamily: "'Inter', sans-serif",
+            borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(0,0,0,0.06)',
+            marginBottom: 4,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {hudTaskCtx.task.text?.slice(0, 40)}{hudTaskCtx.task.text?.length > 40 ? '...' : ''}
+          </div>
           <button onClick={() => {
             if (hudTaskCtx.task.isManual) toggleManualTask?.(hudTaskCtx.task.manualId)
             setHudTaskCtx(null)
