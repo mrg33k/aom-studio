@@ -4,9 +4,10 @@ import React, { useRef, useEffect, useState, useCallback } from 'react'
 //
 // FILE OWNER: Bobby (Canvas team). Bobby2 (HUD team) does NOT touch this file.
 //
-// All available agent rooms from public/corner/ rendered as hex puzzle pieces.
+// All 13 agent rooms from public/corner/ rendered as hex puzzle pieces.
 // Wave effect: each room crossfades between working/idle at a staggered time offset.
-// Dark backdrop behind rooms so skyline doesn't peek through gaps.
+// Drag-and-drop: rooms can be repositioned, positions saved to localStorage.
+// Right-click context menu: Regenerate Room, Reset Position, View Agent.
 
 // ---- ROOM CONFIG ----
 const ROOM_SIZE = 512        // Base room size (px, scales with zoom)
@@ -17,9 +18,14 @@ const CYCLE_TIME = 10        // Full working+idle cycle in seconds
 const FADE_DURATION = 4.5    // Crossfade duration in seconds
 const WAVE_OFFSET = 1.2      // Stagger between consecutive rooms in seconds
 
-// ---- ALL AGENT ROOMS ----
-// Rooms with dedicated folders (working + idle states)
-// Rooms without folders use their single PNG for both states
+// Drag threshold (px) - less than this = click, more = drag
+const DRAG_THRESHOLD = 5
+
+// localStorage key for custom room positions
+const POSITIONS_KEY = 'corner-room-positions'
+
+// ---- ALL 13 AGENT ROOMS ----
+// Full roster: Elon, Bobby, Steffen, Steve, Cleo, Alex, Mom, Tony, Colton, Jacob, Paige, Elmo, Pixel
 const ALL_ROOMS = [
   // Row 0: top center
   { id: 'elon',    name: 'ELON',    color: '#4CAF50', row: 0, col: 0 },
@@ -30,27 +36,32 @@ const ALL_ROOMS = [
   { id: 'steve',   name: 'STEVE',   color: '#60A5FA', row: 2, col: -2 },
   { id: 'cleo',    name: 'CLEO',    color: '#C084FC', row: 2, col: 0 },
   { id: 'alex',    name: 'ALEX',    color: '#F97316', row: 2, col: 2 },
-  // Row 3: offset
-  { id: 'mom',     name: 'MOM',     color: '#EC4899', row: 3, col: -1 },
-  { id: 'tony',    name: 'TONY',    color: '#22D3EE', row: 3, col: 1 },
-  // Row 4: three across
-  { id: 'jacob',   name: 'JACOB',   color: '#A3E635', row: 4, col: -2 },
-  { id: 'paige',   name: 'PAIGE',   color: '#FB923C', row: 4, col: 0 },
-  { id: 'elmo',    name: 'ELMO',    color: '#F43F5E', row: 4, col: 2 },
+  // Row 3: three across (Mom, Tony, Colton)
+  { id: 'mom',     name: 'MOM',     color: '#EC4899', row: 3, col: -2 },
+  { id: 'tony',    name: 'TONY',    color: '#22D3EE', row: 3, col: 0 },
+  { id: 'colton',  name: 'COLTON',  color: '#8B5CF6', row: 3, col: 2 },
+  // Row 4: two offset
+  { id: 'jacob',   name: 'JACOB',   color: '#A3E635', row: 4, col: -1 },
+  { id: 'paige',   name: 'PAIGE',   color: '#FB923C', row: 4, col: 1 },
+  // Row 5: bottom pair
+  { id: 'elmo',    name: 'ELMO',    color: '#F43F5E', row: 5, col: -2 },
+  { id: 'pixel',   name: 'PIXEL',   color: '#06B6D4', row: 5, col: 0 },
 ]
 
 // ---- IMAGE SOURCES ----
-// Rooms with folders get working + idle variants
-// Rooms with only a single PNG use that for both states
+// All 13 rooms have dedicated folders with working + idle variants
 function getRoomImageSources(id) {
-  const folderRooms = ['elon', 'bobby', 'steffen', 'steve', 'alex', 'cleo', 'jacob', 'mom']
+  const folderRooms = [
+    'elon', 'bobby', 'steffen', 'steve', 'alex', 'cleo', 'jacob', 'mom',
+    'tony', 'paige', 'elmo', 'colton', 'pixel',
+  ]
   if (folderRooms.includes(id)) {
     return {
       working: `/corner/${id}-room/room-shell-working.png`,
       idle: `/corner/${id}-room/room-shell-idle.png`,
     }
   }
-  // Single PNG rooms: same image for both states
+  // Fallback: single PNG rooms
   return {
     working: `/corner/${id}-room.png`,
     idle: `/corner/${id}-room.png`,
@@ -129,11 +140,16 @@ function isInsideDiamond(px, py, cx, cy, hw, hh) {
 const DIAMOND_HW = ROOM_SIZE / 2
 const DIAMOND_HH = ROOM_SIZE / 4
 
-// Test if a canvas-space point hits any room's diamond
-function hitTestRooms(cx, cy, originX, originY) {
+// Test if a canvas-space point hits any room's diamond, using custom positions if available
+function hitTestRoomsWithPositions(cx, cy, originX, originY, customPositions) {
   for (let i = ALL_ROOMS.length - 1; i >= 0; i--) {
     const room = ALL_ROOMS[i]
-    const pos = hexPosition(room.row, room.col, originX, originY)
+    let pos
+    if (customPositions && customPositions[room.id]) {
+      pos = customPositions[room.id]
+    } else {
+      pos = hexPosition(room.row, room.col, originX, originY)
+    }
     const roomCX = pos.x + ROOM_SIZE / 2
     const roomCY = pos.y + ROOM_SIZE / 2
     if (isInsideDiamond(cx, cy, roomCX, roomCY, DIAMOND_HW, DIAMOND_HH)) {
@@ -141,6 +157,25 @@ function hitTestRooms(cx, cy, originX, originY) {
     }
   }
   return null
+}
+
+// ---- LOAD/SAVE POSITIONS FROM LOCALSTORAGE ----
+function loadSavedPositions() {
+  try {
+    const raw = localStorage.getItem(POSITIONS_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch (e) {
+    // Ignore corrupt data
+  }
+  return {}
+}
+
+function savePositions(positions) {
+  try {
+    localStorage.setItem(POSITIONS_KEY, JSON.stringify(positions))
+  } catch (e) {
+    // localStorage full or unavailable
+  }
 }
 
 // ---- COMPONENT ----
@@ -165,6 +200,27 @@ export default function CanvasOffice({
   const momRef = useRef(null)
   const ZOOM_MIN = 0.3
   const ZOOM_MAX = 3.0
+
+  // Custom room positions (drag-and-drop overrides hex layout)
+  const [roomPositions, setRoomPositions] = useState(loadSavedPositions)
+
+  // Room drag state
+  const roomDragRef = useRef({
+    active: false,
+    roomId: null,
+    offsetX: 0,
+    offsetY: 0,
+    startClientX: 0,
+    startClientY: 0,
+    totalMovement: 0,
+  })
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState(null) // { x, y, roomId, roomName }
+
+  // Toast notification state
+  const [toast, setToast] = useState(null)
+  const toastTimerRef = useRef(null)
 
   // Animation time reference
   const startTimeRef = useRef(performance.now())
@@ -205,10 +261,10 @@ export default function CanvasOffice({
   // Center the grid on mount
   useEffect(() => {
     if (size.w > 0 && size.h > 0) {
-      // Find bounding box of all rooms
+      // Find bounding box of all rooms (using custom positions if saved)
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
       ALL_ROOMS.forEach((room) => {
-        const pos = hexPosition(room.row, room.col, 0, 0)
+        const pos = roomPositions[room.id] || hexPosition(room.row, room.col, 0, 0)
         minX = Math.min(minX, pos.x)
         maxX = Math.max(maxX, pos.x + ROOM_SIZE)
         minY = Math.min(minY, pos.y)
@@ -226,6 +282,12 @@ export default function CanvasOffice({
   // Origin for hex layout (will be adjusted by centering)
   const ORIGIN_X = ROOM_SIZE * 1.5
   const ORIGIN_Y = ROOM_SIZE * 0.1
+
+  // Helper: get room position (custom or default hex)
+  const getRoomPos = useCallback((room) => {
+    if (roomPositions[room.id]) return roomPositions[room.id]
+    return hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
+  }, [roomPositions, ORIGIN_X, ORIGIN_Y])
 
   // ---- DRAW ----
   const draw = useCallback(() => {
@@ -252,62 +314,37 @@ export default function CanvasOffice({
 
     const elapsed = (performance.now() - startTimeRef.current) / 1000
 
-    // ---- DARK BACKDROP ----
-    // Draw a dark solid shape behind all rooms so the city doesn't peek through gaps.
-    // We compute a convex hull-ish polygon that covers all room hexes plus padding.
-    ctx.save()
-    ctx.fillStyle = '#080B16'
-
-    // Collect all hex vertices from all rooms, then draw a padded bounding region
-    const PAD = 20
-    let bMinX = Infinity, bMaxX = -Infinity, bMinY = Infinity, bMaxY = -Infinity
-    ALL_ROOMS.forEach((room) => {
-      const pos = hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
-      const S = ROOM_SIZE
-      // The hex vertices
-      const verts = [
-        [pos.x + S * 0.50, pos.y + S * 0.05],
-        [pos.x + S * 0.95, pos.y + S * 0.28],
-        [pos.x + S * 0.95, pos.y + S * 0.75],
-        [pos.x + S * 0.50, pos.y + S * 0.95],
-        [pos.x + S * 0.05, pos.y + S * 0.75],
-        [pos.x + S * 0.05, pos.y + S * 0.28],
-      ]
-      verts.forEach(([vx, vy]) => {
-        bMinX = Math.min(bMinX, vx)
-        bMaxX = Math.max(bMaxX, vx)
-        bMinY = Math.min(bMinY, vy)
-        bMaxY = Math.max(bMaxY, vy)
-      })
-    })
-
-    // Draw a rounded dark rectangle behind the entire room cluster
-    const bdX = bMinX - PAD
-    const bdY = bMinY - PAD
-    const bdW = (bMaxX - bMinX) + PAD * 2
-    const bdH = (bMaxY - bMinY) + PAD * 2
-    ctx.beginPath()
-    ctx.roundRect(bdX, bdY, bdW, bdH, 24)
-    ctx.fill()
-
-    // Subtle edge glow on the backdrop
-    ctx.strokeStyle = 'rgba(76, 175, 80, 0.08)'
-    ctx.lineWidth = 1
-    ctx.stroke()
-    ctx.restore()
+    // No backdrop - rooms float directly on the Three.js scene
 
     // ---- RENDER ALL ROOMS ----
+    // Draw dragged room last so it renders on top
+    const dragId = roomDragRef.current.active ? roomDragRef.current.roomId : null
     ALL_ROOMS.forEach((room, idx) => {
-      const pos = hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
+      if (room.id === dragId) return // skip, draw last
+      const pos = getRoomPos(room)
       const imgs = roomImages[room.id]
       const alpha = getWaveBlend(elapsed, idx)
-
       drawRoom(ctx, pos.x, pos.y, imgs.working, imgs.idle, alpha, room.name, room.color, room.id === hover || room.id === selectedRoom)
     })
 
+    // Draw dragged room on top with slight transparency
+    if (dragId) {
+      const dragRoom = ALL_ROOMS.find(r => r.id === dragId)
+      if (dragRoom) {
+        const dragIdx = ALL_ROOMS.indexOf(dragRoom)
+        const pos = getRoomPos(dragRoom)
+        const imgs = roomImages[dragRoom.id]
+        const alpha = getWaveBlend(elapsed, dragIdx)
+        ctx.save()
+        ctx.globalAlpha = 0.9
+        drawRoom(ctx, pos.x, pos.y, imgs.working, imgs.idle, alpha, dragRoom.name, dragRoom.color, true)
+        ctx.restore()
+      }
+    }
+
     ctx.restore() // undo pan/zoom
 
-  }, [size, pan, zoom, hover, selectedRoom, ORIGIN_X, ORIGIN_Y])
+  }, [size, pan, zoom, hover, selectedRoom, ORIGIN_X, ORIGIN_Y, getRoomPos])
 
   // ---- HELPER: Draw one room with hex clip ----
   function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, alpha, nameText, nameColor, isHighlighted) {
@@ -368,9 +405,6 @@ export default function CanvasOffice({
     ctx.beginPath()
     ctx.roundRect(npX - 2, npY - 10, tw + 20, 24, 4)
     ctx.fill()
-    ctx.strokeStyle = `${nameColor}55`
-    ctx.lineWidth = 1
-    ctx.stroke()
     // Status dot
     ctx.beginPath()
     ctx.arc(npX + 6, npY + 2, 4, 0, Math.PI * 2)
@@ -422,21 +456,50 @@ export default function CanvasOffice({
     return () => el.removeEventListener('wheel', handler)
   }, []) // eslint-disable-line
 
-  // ---- PAN ----
+  // ---- MOUSE DOWN: Start pan or room drag ----
   const onDown = useCallback((e) => {
+    // Close context menu on any mousedown
+    setContextMenu(null)
+
     if (momRef.current) cancelAnimationFrame(momRef.current)
+
+    // Check if mouse is on a room (for room drag)
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (rect) {
+      const cx = (e.clientX - rect.left - pan.x) / zoom
+      const cy = (e.clientY - rect.top - pan.y) / zoom
+      const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
+      if (hitRoom) {
+        const room = ALL_ROOMS.find(r => r.id === hitRoom)
+        if (room) {
+          const pos = roomPositions[hitRoom] || hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
+          roomDragRef.current = {
+            active: false, // becomes true after threshold
+            roomId: hitRoom,
+            offsetX: cx - pos.x,
+            offsetY: cy - pos.y,
+            startClientX: e.clientX,
+            startClientY: e.clientY,
+            totalMovement: 0,
+          }
+        }
+      }
+    }
+
     panRef.current = {
       dragging: true, sx: e.clientX - pan.x, sy: e.clientY - pan.y,
       lx: e.clientX, ly: e.clientY, vx: 0, vy: 0, didDrag: false,
     }
-  }, [pan])
+  }, [pan, zoom, ORIGIN_X, ORIGIN_Y, roomPositions])
 
+  // ---- MOUSE MOVE: Pan canvas or drag room ----
   const onMove = useCallback((e) => {
+    // Hover detection
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       const cx = (e.clientX - rect.left - pan.x) / zoom
       const cy = (e.clientY - rect.top - pan.y) / zoom
-      const hitRoom = hitTestRooms(cx, cy, ORIGIN_X, ORIGIN_Y)
+      const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
       if (hitRoom !== hover) {
         setHover(hitRoom)
         setExtHover?.(hitRoom)
@@ -444,6 +507,33 @@ export default function CanvasOffice({
     }
 
     if (!panRef.current.dragging) return
+
+    // Check if we should start a room drag (past threshold)
+    const rd = roomDragRef.current
+    if (rd.roomId && !rd.active) {
+      const dx = e.clientX - rd.startClientX
+      const dy = e.clientY - rd.startClientY
+      rd.totalMovement = Math.sqrt(dx * dx + dy * dy)
+      if (rd.totalMovement >= DRAG_THRESHOLD) {
+        rd.active = true
+        panRef.current.didDrag = true // prevent click-select
+      }
+    }
+
+    // If dragging a room, update its position
+    if (rd.active && rd.roomId) {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (rect) {
+        const cx = (e.clientX - rect.left - pan.x) / zoom
+        const cy = (e.clientY - rect.top - pan.y) / zoom
+        const newX = cx - rd.offsetX
+        const newY = cy - rd.offsetY
+        setRoomPositions(prev => ({ ...prev, [rd.roomId]: { x: newX, y: newY } }))
+      }
+      return // don't pan while room dragging
+    }
+
+    // Regular canvas pan
     const nx = e.clientX - panRef.current.sx
     const ny = e.clientY - panRef.current.sy
     panRef.current.vx = e.clientX - panRef.current.lx
@@ -454,11 +544,27 @@ export default function CanvasOffice({
       panRef.current.didDrag = true
     }
     setPan({ x: nx, y: ny })
-  }, [pan, zoom, hover, setExtHover, ORIGIN_X, ORIGIN_Y])
+  }, [pan, zoom, hover, setExtHover, ORIGIN_X, ORIGIN_Y, roomPositions])
 
+  // ---- MOUSE UP: End pan or room drag ----
   const onUp = useCallback(() => {
+    // If room was being dragged, save positions to localStorage
+    const rd = roomDragRef.current
+    if (rd.active && rd.roomId) {
+      setRoomPositions(prev => {
+        savePositions(prev)
+        return prev
+      })
+      rd.active = false
+      rd.roomId = null
+    } else {
+      rd.roomId = null
+    }
+
     if (!panRef.current.dragging) return
     panRef.current.dragging = false
+
+    // Momentum drift
     let vx = panRef.current.vx
     let vy = panRef.current.vy
     const drift = () => {
@@ -473,6 +579,7 @@ export default function CanvasOffice({
     }
   }, [])
 
+  // ---- CLICK: Select room (if not dragged) ----
   const onClick = useCallback((e) => {
     if (panRef.current.didDrag) {
       panRef.current.didDrag = false
@@ -482,28 +589,142 @@ export default function CanvasOffice({
       const rect = containerRef.current.getBoundingClientRect()
       const cx = (e.clientX - rect.left - pan.x) / zoom
       const cy = (e.clientY - rect.top - pan.y) / zoom
-      const hitRoom = hitTestRooms(cx, cy, ORIGIN_X, ORIGIN_Y)
+      const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
       if (hitRoom) {
         onRoomClick?.(hitRoom)
       }
     }
-  }, [pan, zoom, onRoomClick, ORIGIN_X, ORIGIN_Y])
+  }, [pan, zoom, onRoomClick, ORIGIN_X, ORIGIN_Y, roomPositions])
 
-  // Touch events
+  // ---- RIGHT-CLICK: Context menu on rooms ----
+  const onContextMenu = useCallback((e) => {
+    e.preventDefault()
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const cx = (e.clientX - rect.left - pan.x) / zoom
+    const cy = (e.clientY - rect.top - pan.y) / zoom
+    const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
+    if (hitRoom) {
+      const room = ALL_ROOMS.find(r => r.id === hitRoom)
+      setContextMenu({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        roomId: hitRoom,
+        roomName: room?.name || hitRoom,
+      })
+    } else {
+      setContextMenu(null)
+    }
+  }, [pan, zoom, ORIGIN_X, ORIGIN_Y, roomPositions])
+
+  // Close context menu on Escape
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') setContextMenu(null)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  // Show toast notification
+  const showToast = useCallback((msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast(msg)
+    toastTimerRef.current = setTimeout(() => setToast(null), 3000)
+  }, [])
+
+  // Context menu actions
+  const handleRegenerate = useCallback((roomId, roomName) => {
+    console.log(`Regenerate: ${roomName}`)
+    showToast(`Regenerating ${roomName}'s room...`)
+    setContextMenu(null)
+  }, [showToast])
+
+  const handleResetPosition = useCallback((roomId) => {
+    setRoomPositions(prev => {
+      const next = { ...prev }
+      delete next[roomId]
+      savePositions(next)
+      return next
+    })
+    showToast('Position reset')
+    setContextMenu(null)
+  }, [showToast])
+
+  const handleViewAgent = useCallback((roomId) => {
+    onRoomClick?.(roomId)
+    setContextMenu(null)
+  }, [onRoomClick])
+
+  // ---- TOUCH EVENTS ----
   const onTouchStart = useCallback((e) => {
+    setContextMenu(null)
     if (e.touches.length === 1) {
       const t = e.touches[0]
       if (momRef.current) cancelAnimationFrame(momRef.current)
+
+      // Check for room hit (for touch drag)
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (rect) {
+        const cx = (t.clientX - rect.left - pan.x) / zoom
+        const cy = (t.clientY - rect.top - pan.y) / zoom
+        const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
+        if (hitRoom) {
+          const room = ALL_ROOMS.find(r => r.id === hitRoom)
+          if (room) {
+            const pos = roomPositions[hitRoom] || hexPosition(room.row, room.col, ORIGIN_X, ORIGIN_Y)
+            roomDragRef.current = {
+              active: false,
+              roomId: hitRoom,
+              offsetX: cx - pos.x,
+              offsetY: cy - pos.y,
+              startClientX: t.clientX,
+              startClientY: t.clientY,
+              totalMovement: 0,
+            }
+          }
+        }
+      }
+
       panRef.current = {
         dragging: true, sx: t.clientX - pan.x, sy: t.clientY - pan.y,
         lx: t.clientX, ly: t.clientY, vx: 0, vy: 0, didDrag: false,
       }
     }
-  }, [pan])
+  }, [pan, zoom, ORIGIN_X, ORIGIN_Y, roomPositions])
 
   const onTouchMove = useCallback((e) => {
     if (!panRef.current.dragging || e.touches.length !== 1) return
     const t = e.touches[0]
+
+    // Check room drag threshold
+    const rd = roomDragRef.current
+    if (rd.roomId && !rd.active) {
+      const dx = t.clientX - rd.startClientX
+      const dy = t.clientY - rd.startClientY
+      rd.totalMovement = Math.sqrt(dx * dx + dy * dy)
+      if (rd.totalMovement >= DRAG_THRESHOLD) {
+        rd.active = true
+        panRef.current.didDrag = true
+      }
+    }
+
+    // Room drag
+    if (rd.active && rd.roomId) {
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (rect) {
+        const cx = (t.clientX - rect.left - pan.x) / zoom
+        const cy = (t.clientY - rect.top - pan.y) / zoom
+        const newX = cx - rd.offsetX
+        const newY = cy - rd.offsetY
+        setRoomPositions(prev => ({ ...prev, [rd.roomId]: { x: newX, y: newY } }))
+      }
+      panRef.current.lx = t.clientX
+      panRef.current.ly = t.clientY
+      return
+    }
+
+    // Canvas pan
     const nx = t.clientX - panRef.current.sx
     const ny = t.clientY - panRef.current.sy
     panRef.current.vx = t.clientX - panRef.current.lx
@@ -514,16 +735,29 @@ export default function CanvasOffice({
       panRef.current.didDrag = true
     }
     setPan({ x: nx, y: ny })
-  }, [])
+  }, [pan, zoom])
 
   const onTouchEnd = useCallback((e) => {
     if (e.touches.length === 0) {
+      // Save room drag
+      const rd = roomDragRef.current
+      if (rd.active && rd.roomId) {
+        setRoomPositions(prev => {
+          savePositions(prev)
+          return prev
+        })
+        rd.active = false
+        rd.roomId = null
+      } else {
+        rd.roomId = null
+      }
+
       if (!panRef.current.didDrag) {
         const rect = containerRef.current?.getBoundingClientRect()
         if (rect) {
           const cx = (panRef.current.lx - rect.left - pan.x) / zoom
           const cy = (panRef.current.ly - rect.top - pan.y) / zoom
-          const hitRoom = hitTestRooms(cx, cy, ORIGIN_X, ORIGIN_Y)
+          const hitRoom = hitTestRoomsWithPositions(cx, cy, ORIGIN_X, ORIGIN_Y, roomPositions)
           if (hitRoom) {
             onRoomClick?.(hitRoom)
           }
@@ -532,9 +766,13 @@ export default function CanvasOffice({
       panRef.current.didDrag = false
       onUp()
     }
-  }, [pan, zoom, onRoomClick, onUp, ORIGIN_X, ORIGIN_Y])
+  }, [pan, zoom, onRoomClick, onUp, ORIGIN_X, ORIGIN_Y, roomPositions])
 
-  const cursor = panRef.current.dragging ? 'grabbing' : (hover ? 'pointer' : 'grab')
+  const cursor = roomDragRef.current.active
+    ? 'grabbing'
+    : panRef.current.dragging
+      ? 'grabbing'
+      : (hover ? 'pointer' : 'grab')
 
   return (
     <div
@@ -547,16 +785,94 @@ export default function CanvasOffice({
       onMouseDown={onDown}
       onMouseMove={onMove}
       onMouseUp={onUp}
-      onMouseLeave={() => { onUp(); setHover(null); setExtHover?.(null) }}
+      onMouseLeave={() => { onUp(); setHover(null); setExtHover?.(null); setContextMenu(null) }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onContextMenu={onContextMenu}
     >
       <canvas
         ref={canvasRef}
         style={{ width: '100%', height: '100%', display: 'block' }}
         onClick={onClick}
       />
+
+      {/* ---- CONTEXT MENU ---- */}
+      {contextMenu && (
+        <div
+          style={{
+            position: 'absolute',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 100,
+            minWidth: 180,
+            background: 'rgba(12, 16, 30, 0.95)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(96, 165, 250, 0.25)',
+            borderRadius: 10,
+            padding: '6px 0',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            fontFamily: "'Inter', system-ui, sans-serif",
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {/* Menu header */}
+          <div style={{
+            padding: '6px 14px 8px',
+            fontSize: 11,
+            fontWeight: 700,
+            color: 'rgba(96, 165, 250, 0.7)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            borderBottom: '1px solid rgba(96, 165, 250, 0.12)',
+            marginBottom: 4,
+          }}>
+            {contextMenu.roomName}
+          </div>
+          <ContextMenuItem
+            label="Regenerate Room"
+            icon="&#x21BB;"
+            onClick={() => handleRegenerate(contextMenu.roomId, contextMenu.roomName)}
+          />
+          <ContextMenuItem
+            label="Reset Position"
+            icon="&#x2316;"
+            onClick={() => handleResetPosition(contextMenu.roomId)}
+          />
+          <ContextMenuItem
+            label="View Agent"
+            icon="&#x2192;"
+            onClick={() => handleViewAgent(contextMenu.roomId)}
+          />
+        </div>
+      )}
+
+      {/* ---- TOAST NOTIFICATION ---- */}
+      {toast && (
+        <div style={{
+          position: 'absolute',
+          bottom: 24,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          background: 'rgba(12, 16, 30, 0.92)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(96, 165, 250, 0.3)',
+          borderRadius: 8,
+          padding: '10px 20px',
+          color: '#EDF2FA',
+          fontSize: 13,
+          fontWeight: 500,
+          fontFamily: "'Inter', system-ui, sans-serif",
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          animation: 'canvasOfficeToastIn 0.2s ease-out',
+        }}>
+          {toast}
+        </div>
+      )}
+
+      {/* ---- LOADING OVERLAY ---- */}
       {!loaded && (
         <div style={{
           position: 'absolute', inset: 0,
@@ -585,13 +901,50 @@ export default function CanvasOffice({
   )
 }
 
+// ---- CONTEXT MENU ITEM COMPONENT ----
+function ContextMenuItem({ label, icon, onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '8px 14px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        fontSize: 13,
+        fontWeight: 500,
+        color: hovered ? '#fff' : '#C8D6E5',
+        background: hovered ? 'rgba(96, 165, 250, 0.15)' : 'transparent',
+        transition: 'all 0.12s ease',
+      }}
+    >
+      <span style={{
+        fontSize: 15,
+        opacity: 0.7,
+        width: 18,
+        textAlign: 'center',
+      }}>
+        {icon}
+      </span>
+      {label}
+    </div>
+  )
+}
+
 // Inject keyframes
 if (typeof document !== 'undefined') {
   const id = 'canvas-office-styles'
   if (!document.getElementById(id)) {
     const s = document.createElement('style')
     s.id = id
-    s.textContent = `@keyframes canvasOfficeSpin { to { transform: rotate(360deg); } }`
+    s.textContent = [
+      '@keyframes canvasOfficeSpin { to { transform: rotate(360deg); } }',
+      '@keyframes canvasOfficeToastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }',
+    ].join('\n')
     document.head.appendChild(s)
   }
 }

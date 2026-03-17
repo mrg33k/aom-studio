@@ -1,0 +1,23 @@
+{
+  "system": "3-layer",
+  "layers": [
+    {
+      "file": "room-shell-idle.png",
+      "z": 0,
+      "id": "room-shell",
+      "type": "full"
+    },
+    {
+      "file": "character-layer.png",
+      "z": 20,
+      "id": "character",
+      "type": "character"
+    },
+    {
+      "file": "glow-layer.png",
+      "z": 30,
+      "id": "glow",
+      "type": "overlay"
+    }
+  ]
+}
