@@ -31,9 +31,9 @@ const ROOM_SIZE = 512        // Base room size (px, scales with zoom)
 // We crop to an 864x864 square centered on the hex content, then draw it
 // into the full ROOM_SIZE destination so rooms fill tighter with less gap.
 const SRC_CROP_X = 80
-const SRC_CROP_Y = 0
+const SRC_CROP_Y = 160
 const SRC_CROP_W = 864
-const SRC_CROP_H = 864
+const SRC_CROP_H = 704
 
 // Wave timing
 const CYCLE_TIME = 10        // Full working+idle cycle in seconds
@@ -1234,12 +1234,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     // Hex clip path (tightened to match source-cropped content)
     ctx.beginPath()
     const S = ROOM_SIZE
-    ctx.moveTo(S * 0.50, S * 0.03)
-    ctx.lineTo(S * 0.97, S * 0.27)
-    ctx.lineTo(S * 0.97, S * 0.76)
-    ctx.lineTo(S * 0.50, S * 0.97)
-    ctx.lineTo(S * 0.03, S * 0.76)
-    ctx.lineTo(S * 0.03, S * 0.27)
+    ctx.moveTo(S * 0.50, S * 0.00)
+    ctx.lineTo(S * 0.99, S * 0.31)
+    ctx.lineTo(S * 0.99, S * 0.72)
+    ctx.lineTo(S * 0.50, S * 0.99)
+    ctx.lineTo(S * 0.01, S * 0.72)
+    ctx.lineTo(S * 0.01, S * 0.31)
     ctx.closePath()
     ctx.clip()
 
