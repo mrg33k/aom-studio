@@ -1169,7 +1169,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
 
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
-function TaskPanel({ project, onClose, isNightMode }) {
+// DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (white glass, blue accents)
   const tpBg = isDaytime ? 'rgba(248, 250, 255, 0.96)' : HUD.panelBg
@@ -1191,6 +1192,10 @@ function TaskPanel({ project, onClose, isNightMode }) {
   // Local state for optimistic checkbox toggling
   const [localToggles, setLocalToggles] = useState({}) // task index -> toggled done state
   const [saving, setSaving] = useState(null) // which task index is saving
+  // Inline add-task input state
+  const [addingTask, setAddingTask] = useState(false)
+  const [addTaskText, setAddTaskText] = useState('')
+  const addTaskInputRef = useRef(null)
 
   const tasks = project.tasks
   const getTaskDone = (task, idx) => localToggles[idx] !== undefined ? localToggles[idx] : task.done
@@ -1344,12 +1349,113 @@ function TaskPanel({ project, onClose, isNightMode }) {
         {sortedTasks.map((task, i) => {
           const isDone = getTaskDone(task, task.origIdx)
           const isSaving = saving === task.origIdx
+
+          // DONE(bobby2): isAddPrompt renders as inline input for adding manual tasks to Right Now
+          if (task.isAddPrompt) {
+            return (
+              <motion.div
+                key="add-prompt"
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03, duration: 0.15 }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 8px',
+                  borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
+                }}
+              >
+                {addingTask ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                      border: `1.5px solid rgba(255,107,61,0.4)`,
+                      background: 'rgba(255,107,61,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <span style={{ color: '#FF6B3D', fontSize: 14, fontWeight: 800, lineHeight: 1 }}>+</span>
+                    </div>
+                    <input
+                      ref={addTaskInputRef}
+                      autoFocus
+                      value={addTaskText}
+                      onChange={e => setAddTaskText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && addTaskText.trim()) {
+                          onAddManualTask?.(addTaskText.trim())
+                          setAddTaskText('')
+                          setAddingTask(false)
+                        }
+                        if (e.key === 'Escape') {
+                          setAddTaskText('')
+                          setAddingTask(false)
+                        }
+                      }}
+                      onBlur={() => {
+                        if (addTaskText.trim()) {
+                          onAddManualTask?.(addTaskText.trim())
+                        }
+                        setAddTaskText('')
+                        setAddingTask(false)
+                      }}
+                      placeholder="Type a task, hit Enter..."
+                      style={{
+                        flex: 1,
+                        background: isDaytime ? 'rgba(255,107,61,0.06)' : 'rgba(255,107,61,0.08)',
+                        border: `1.5px solid rgba(255,107,61,0.3)`,
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        fontSize: 15, fontWeight: 500,
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        color: tpTextPrimary,
+                        outline: 'none',
+                        caretColor: '#FF6B3D',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <motion.div
+                    onClick={() => setAddingTask(true)}
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, flex: 1,
+                      cursor: 'pointer', padding: '4px 0',
+                    }}
+                  >
+                    <div style={{
+                      width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                      border: `1.5px dashed rgba(255,107,61,0.35)`,
+                      background: 'rgba(255,107,61,0.05)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <span style={{ color: '#FF6B3D', fontSize: 14, fontWeight: 800, lineHeight: 1 }}>+</span>
+                    </div>
+                    <span style={{
+                      fontFamily: "'Inter', system-ui, sans-serif", fontSize: 15, fontWeight: 500,
+                      color: isDaytime ? 'rgba(255,107,61,0.7)' : 'rgba(255,107,61,0.6)',
+                      fontStyle: 'italic',
+                    }}>
+                      Add task...
+                    </span>
+                  </motion.div>
+                )}
+              </motion.div>
+            )
+          }
+
           return (
             <motion.div
-              key={task.origIdx}
+              key={task.isManual ? `manual-${task.manualId}` : task.origIdx}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03, duration: 0.15 }}
+              onContextMenu={(e) => {
+                if (task.isManual) {
+                  e.preventDefault()
+                  // Manual tasks: right-click to delete
+                  onDeleteManualTask?.(task.manualId)
+                }
+              }}
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12,
                 padding: '10px 8px',
@@ -1360,7 +1466,13 @@ function TaskPanel({ project, onClose, isNightMode }) {
             >
               {/* Checkbox - CLICKABLE */}
               <motion.div
-                onClick={() => toggleTask(task, task.origIdx)}
+                onClick={() => {
+                  if (task.isManual) {
+                    onToggleManualTask?.(task.manualId)
+                  } else {
+                    toggleTask(task, task.origIdx)
+                  }
+                }}
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.85 }}
                 style={{
@@ -1369,7 +1481,7 @@ function TaskPanel({ project, onClose, isNightMode }) {
                   background: isDone ? (task.autoChecked ? '#22C55E' : project.color) : tpCheckboxBg,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 150ms ease',
-                  cursor: IS_LOCAL ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   opacity: isSaving ? 0.5 : 1,
                   boxShadow: task.autoChecked ? '0 0 8px rgba(34,197,94,0.4)' : 'none',
                 }}>
@@ -1386,6 +1498,24 @@ function TaskPanel({ project, onClose, isNightMode }) {
               }}>
                 {task.text}
               </span>
+
+              {/* LIVE badge for live agent tasks */}
+              {task.isLive && (
+                <span style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 9, fontWeight: 800,
+                  color: '#FF6B3D',
+                  background: 'rgba(255,107,61,0.12)',
+                  padding: '2px 6px', borderRadius: 4,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  border: '1px solid rgba(255,107,61,0.25)',
+                  flexShrink: 0,
+                  animation: 'statusPulse 2s ease-in-out infinite',
+                }}>
+                  LIVE
+                </span>
+              )}
 
               {/* Agent badge */}
               {task.agent && (() => {
@@ -1532,6 +1662,32 @@ export default function GameHUD({
   const hudRef = useRef(null)
   const conversationScores = useConversationRecency()
 
+  // DONE(bobby2): MANUAL TASKS for Right Now -- persisted in localStorage under 'corner-rightnow-manual-tasks'
+  const [manualTasks, setManualTasks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('corner-rightnow-manual-tasks')
+      return saved ? JSON.parse(saved) : []
+    } catch { return [] }
+  })
+  // Sync manual tasks to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('corner-rightnow-manual-tasks', JSON.stringify(manualTasks))
+    } catch {}
+  }, [manualTasks])
+
+  const addManualTask = useCallback((text) => {
+    setManualTasks(prev => [...prev, { id: Date.now(), text, done: false, createdAt: new Date().toISOString() }])
+  }, [])
+
+  const toggleManualTask = useCallback((id) => {
+    setManualTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+  }, [])
+
+  const deleteManualTask = useCallback((id) => {
+    setManualTasks(prev => prev.filter(t => t.id !== id))
+  }, [])
+
   // Sort projects by CONVERSATION RECENCY first, then incomplete task count.
   // The system KNOWS what matters based on what you TALK ABOUT.
   // Uses live conversation parsing on localhost, falls back to defaults on production.
@@ -1545,22 +1701,40 @@ export default function GameHUD({
     // Remove any punch-list "RIGHT NOW" section (we replace it with live running agents)
     let merged = raw.filter(p => p.section !== 'rightnow')
 
-    // RIGHT NOW = ONLY currently running agents from active-missions.md
-    if (liveRightNowTasks.length > 0) {
-      merged.push({
-        name: 'Right Now',
-        section: 'rightnow',
-        color: '#FF6B3D',
-        icon: 'zap',
-        tasks: liveRightNowTasks.map(t => ({
-          text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: ${t.text}`,
-          done: false,
-          agent: t.agent,
-          raw: '',
-          isLive: true,
-        })),
+    // RIGHT NOW = ALWAYS visible. Shows live agent tasks + manual tasks + add prompt.
+    // Live agent tasks get LIVE badge. Manual tasks (from localStorage) don't. Add prompt always at end.
+    const rightNowTasks = []
+    // Live agent tasks first
+    liveRightNowTasks.forEach(t => {
+      rightNowTasks.push({
+        text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: ${t.text}`,
+        done: false,
+        agent: t.agent,
+        raw: '',
+        isLive: true,
       })
-    }
+    })
+    // Manual tasks (from localStorage)
+    manualTasks.forEach(t => {
+      rightNowTasks.push({
+        text: t.text,
+        done: t.done,
+        agent: null,
+        raw: '',
+        isLive: false,
+        isManual: true,
+        manualId: t.id,
+      })
+    })
+    // Always show add prompt at the end
+    rightNowTasks.push({ text: '+ Add task...', done: false, agent: null, raw: '', isLive: false, isAddPrompt: true })
+    merged.push({
+      name: 'Right Now',
+      section: 'rightnow',
+      color: '#FF6B3D',
+      icon: 'zap',
+      tasks: rightNowTasks,
+    })
 
     // COMPLETED FEED = simplified activity feed of recent task completions
     if (completedFeed.length > 0) {
@@ -1664,7 +1838,7 @@ export default function GameHUD({
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks])
+  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks, manualTasks])
 
   // Filter projects by search query
   const filteredProjects = useMemo(() => {
@@ -1725,6 +1899,9 @@ export default function GameHUD({
             project={expandedProject}
             onClose={() => setExpandedProject(null)}
             isNightMode={isNightMode}
+            onAddManualTask={addManualTask}
+            onToggleManualTask={toggleManualTask}
+            onDeleteManualTask={deleteManualTask}
           />
         )}
       </AnimatePresence>

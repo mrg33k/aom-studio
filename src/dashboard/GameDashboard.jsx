@@ -142,6 +142,46 @@ function sanitizeRelayMessage(text) {
   return cleaned
 }
 
+// ---- DEDUPLICATION ──────────────────────────────────────────────────────────
+// When a message is sent from dashboard, it goes to relay-inbox as source "corner-dashboard".
+// The relay hook then echoes it back to terminal as source "terminal" with watchdog preamble.
+// This creates duplicate messages. We detect these by comparing cleaned content within 2 seconds.
+function deduplicateMessages(messages) {
+  const seen = new Map() // normalized content -> first message
+  const result = []
+
+  for (const msg of messages) {
+    if (!msg.content) { result.push(msg); continue }
+
+    // Normalize content for comparison (lowercase, strip whitespace/punctuation)
+    const normalized = msg.content.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (normalized.length < 3) { result.push(msg); continue }
+
+    const existing = seen.get(normalized)
+    if (existing) {
+      // Keep the earlier message (original), skip the echo
+      // If timestamps are within 2 seconds, it's a duplicate
+      const existingTime = new Date(existing.time).getTime()
+      const thisTime = new Date(msg.time).getTime()
+      if (Math.abs(existingTime - thisTime) < 2000) {
+        // Prefer corner-dashboard source over terminal echo
+        if ((msg.source === 'via dashboard' || msg.source === 'corner-dashboard') && existing.source !== 'via dashboard' && existing.source !== 'corner-dashboard') {
+          // Replace existing with this one (dashboard source is preferred)
+          const idx = result.indexOf(existing)
+          if (idx >= 0) result[idx] = msg
+          seen.set(normalized, msg)
+        }
+        continue // skip duplicate
+      }
+    }
+
+    seen.set(normalized, msg)
+    result.push(msg)
+  }
+
+  return result
+}
+
 // ---- DEMO DATA (production: thriving sample business for prospects) ---------
 // Garcia Construction -- believable Phoenix GC using Corner to run operations.
 // Shows a living office with active agents, recent commits, and real workflow.
@@ -2298,7 +2338,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, isMobile, currentMode,
   const activeAgent = selectedAgent ? AGENTS.find(a => a.slug === selectedAgent) : null
   const underlineColor = activeAgent?.color || '#E85D26'
   const agentColor = activeAgent?.color || '#9C27B0'
-  const agentName = activeAgent?.name || 'Elon'
+  const agentName = activeAgent?.name || 'Agent'
 
   // Agent status from data
   const agentStatusFromData = data?.agents?.find(a => a.slug === selectedAgent)
@@ -2788,7 +2828,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const agentColor = currentAgent?.color || '#E85D26'
 
-  // Smooth auto-scroll: instant when sending, smooth when receiving
+  // Manual scroll to bottom (no auto-scroll -- user controls scroll position)
   const scrollToBottom = useCallback((instant) => {
     const container = messagesContainerRef.current
     if (!container) return
@@ -2797,11 +2837,6 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
       behavior: instant ? 'instant' : 'smooth',
     })
   }, [])
-
-  useEffect(() => {
-    const lastMsg = currentMessages[currentMessages.length - 1]
-    scrollToBottom(lastMsg?.role === 'user')
-  }, [currentMessages, scrollToBottom])
 
   useEffect(() => {
     if (expanded) setTimeout(() => inputRef.current?.focus(), 200)
@@ -3893,15 +3928,15 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
   }
   const accent = (key) => isNightMode ? ACCENTS[key].night : ACCENTS[key].day
 
-  // Shared tile base styles (Steffen spec: gradient bg, 12px radius, 88px min-height)
+  // Shared tile base styles (Steffen spec: gradient bg, 12px radius -- COMPACT for 1x4 single row)
   const tileBase = (isGlowing, accentColor, hasActiveBorder = false) => ({
     background: isNightMode
       ? 'linear-gradient(180deg, #162236 0%, #131F30 100%)'
       : '#FFFFFF',
-    borderRadius: 12,
-    padding: '12px 10px',
+    borderRadius: 10,
+    padding: '8px 6px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    minHeight: 88,
+    minHeight: 64,
     cursor: 'pointer',
     position: 'relative',
     overflow: 'hidden',
@@ -3918,17 +3953,17 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
         : (isNightMode ? '2px solid #1E3A5F' : '2px solid rgba(59,130,246,0.12)'),
   })
 
-  // Steffen spec label: colored per tile, not gray
+  // Steffen spec label: colored per tile, not gray (compact for 1x4 row)
   const labelStyle = (color) => ({
-    fontSize: 12, fontWeight: 800, color,
-    textTransform: 'uppercase', letterSpacing: '0.08em',
+    fontSize: 10, fontWeight: 800, color,
+    textTransform: 'uppercase', letterSpacing: '0.06em',
     fontFamily: "'Inter', system-ui, sans-serif",
-    marginTop: 4,
+    marginTop: 2,
   })
 
-  // Steffen spec value: 24px, 900 weight
+  // Steffen spec value: compact for 1x4 row
   const valueStyle = (color) => ({
-    fontSize: 24, fontWeight: 900, color,
+    fontSize: 20, fontWeight: 900, color,
     fontVariantNumeric: 'tabular-nums', lineHeight: 1,
     fontFamily: "'Inter', system-ui, sans-serif",
   })
@@ -3951,9 +3986,10 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
         }
       `}</style>
 
+      {/* DONE(bobby2): 1x4 single row per Patrik directive "4 squares in one row" */}
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10,
-        padding: '12px 20px 14px',
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8,
+        padding: '10px 16px 12px',
       }}>
 
         {/* BOX 1: LIVE -- Running agents with SVG progress-bar border */}
@@ -3995,35 +4031,21 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               />
             </svg>
           )}
-          {/* Live pulse dot (10px, Steffen spec) */}
+          {/* Live pulse dot (8px compact for 1x4) */}
           {liveCount > 0 && (
             <div style={{
-              position: 'absolute', top: 8, right: 8,
-              width: 10, height: 10, borderRadius: '50%',
+              position: 'absolute', top: 6, right: 6,
+              width: 8, height: 8, borderRadius: '50%',
               background: accent('live'),
               boxShadow: `0 0 8px ${accent('live')}, 0 0 16px rgba(34, 197, 94, 0.3)`,
               animation: 'livePulse 1.5s ease-in-out infinite',
             }} />
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Zap size={16} style={{ color: accent('live') }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Zap size={14} style={{ color: accent('live') }} />
             <span style={valueStyle(liveCount > 0 ? accent('live') : mutedColor)}>{liveCount}</span>
           </div>
           <span style={labelStyle(liveCount > 0 ? accent('live') : (isNightMode ? '#475569' : '#94A3B8'))}>LIVE</span>
-          {workingAgents.length > 0 ? (
-            <div style={{
-              fontSize: 11, fontWeight: 600, color: subtextColor,
-              fontFamily: "'Inter', sans-serif", marginTop: 3,
-              maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              textAlign: 'center',
-            }}>
-              {workingAgents.slice(0, 3).map(a => a.name).join(', ')}{workingAgents.length > 3 ? ` +${workingAgents.length - 3}` : ''}
-            </div>
-          ) : (
-            <div style={{ fontSize: 11, fontWeight: 600, color: mutedColor, fontStyle: 'italic', fontFamily: "'Inter', sans-serif", marginTop: 3 }}>
-              All clear
-            </div>
-          )}
         </div>
 
         {/* BOX 2: YOUR TODOS -- Amber/gold, badge energy */}
@@ -4041,24 +4063,24 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
           {/* Static amber notification dot (no animation, badge energy) */}
           {todoCount > 0 && (
             <div style={{
-              position: 'absolute', top: 8, right: 8,
-              width: 10, height: 10, borderRadius: '50%',
+              position: 'absolute', top: 6, right: 6,
+              width: 8, height: 8, borderRadius: '50%',
               background: accent('todos'),
               boxShadow: `0 0 8px rgba(245, 158, 11, 0.6)`,
             }} />
           )}
           {/* Subtle checkmark overlay when zero */}
           {todoCount === 0 && (
-            <CheckCircle2 size={48} style={{
+            <CheckCircle2 size={36} style={{
               position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
               color: accent('todos'), opacity: 0.05,
             }} />
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <CheckCircle2 size={16} style={{ color: accent('todos') }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <CheckCircle2 size={14} style={{ color: accent('todos') }} />
             <span style={valueStyle(todoCount > 0 ? accent('todos') : mutedColor)}>{todoCount}</span>
           </div>
-          <span style={labelStyle(todoCount > 0 ? accent('todos') : (isNightMode ? '#475569' : '#94A3B8'))}>YOUR TODOS</span>
+          <span style={labelStyle(todoCount > 0 ? accent('todos') : (isNightMode ? '#475569' : '#94A3B8'))}>TODOS</span>
         </div>
 
         {/* BOX 3: CALENDAR -- iOS Calendar icon, red header, blue glow */}
@@ -4073,19 +4095,19 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
           data-testid="top-square-calendar"
         >
-          {/* iOS Calendar icon (40x40, 10px radius, red gradient header, Steffen spec) */}
+          {/* iOS Calendar icon (32x32 compact for 1x4, red gradient header) */}
           <div style={{
-            width: 40, height: 40, borderRadius: 10,
+            width: 32, height: 32, borderRadius: 8,
             background: isNightMode ? '#1E293B' : '#F8FAFC',
             border: isNightMode ? '1.5px solid #334155' : '1.5px solid #E2E8F0',
             overflow: 'hidden', display: 'flex', flexDirection: 'column',
             boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
           }}>
             <div style={{
-              height: 12, background: 'linear-gradient(180deg, #EF4444 0%, #DC2626 100%)',
+              height: 10, background: 'linear-gradient(180deg, #EF4444 0%, #DC2626 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ fontSize: 7, fontWeight: 800, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', system-ui, sans-serif" }}>
+              <span style={{ fontSize: 6, fontWeight: 800, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: "'Inter', system-ui, sans-serif" }}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
               </span>
             </div>
@@ -4093,7 +4115,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <span style={{
-                fontSize: 18, fontWeight: 900, color: isNightMode ? '#F1F5F9' : '#0F172A',
+                fontSize: 14, fontWeight: 900, color: isNightMode ? '#F1F5F9' : '#0F172A',
                 fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1,
               }}>
                 {new Date().getDate()}
@@ -4101,14 +4123,6 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
             </div>
           </div>
           <span style={labelStyle(isNightMode ? '#64748B' : '#94A3B8')}>SCHEDULE</span>
-          <div style={{
-            fontSize: 11, fontWeight: 600, color: subtextColor,
-            fontFamily: "'Inter', sans-serif", marginTop: 2,
-            maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            textAlign: 'center', fontStyle: 'italic',
-          }}>
-            No events
-          </div>
         </div>
 
         {/* BOX 4: PROJECT PROGRESS -- Purple, cycle arrows with crossfade */}
@@ -4123,87 +4137,57 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1) translateY(0)' }}
           data-testid="top-square-project"
         >
-          {/* Chevron arrows inside (Steffen spec: ChevronLeft/Right 14px, hover bg) */}
+          {/* Chevron arrows inside (compact for 1x4, ChevronLeft/Right 12px) */}
           {projects.length > 1 && (
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setSlideDir('left'); setProjectIndex(i => (i - 1 + projects.length) % projects.length) }}
                 style={{
-                  position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                  position: 'absolute', left: 2, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 2,
                   color: isNightMode ? '#475569' : '#94A3B8', display: 'flex', zIndex: 3,
-                  borderRadius: 6, transition: 'background 0.15s ease, color 0.15s ease',
+                  borderRadius: 4, transition: 'background 0.15s ease, color 0.15s ease',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#E2E8F0' : '#1E293B'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
                 onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#475569' : '#94A3B8'; e.currentTarget.style.background = 'none' }}
               >
-                <ChevronLeft size={14} />
+                <ChevronLeft size={12} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setSlideDir('right'); setProjectIndex(i => (i + 1) % projects.length) }}
                 style={{
-                  position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                  position: 'absolute', right: 2, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 2,
                   color: isNightMode ? '#475569' : '#94A3B8', display: 'flex', zIndex: 3,
-                  borderRadius: 6, transition: 'background 0.15s ease, color 0.15s ease',
+                  borderRadius: 4, transition: 'background 0.15s ease, color 0.15s ease',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#E2E8F0' : '#1E293B'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
                 onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#475569' : '#94A3B8'; e.currentTarget.style.background = 'none' }}
               >
-                <ChevronRight size={14} />
+                <ChevronRight size={12} />
               </button>
             </>
           )}
-          {/* Project content with crossfade (AnimatePresence) */}
+          {/* Project content with crossfade (AnimatePresence, compact for 1x4) */}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentProject.name}
-              initial={{ opacity: 0, x: slideDir === 'right' ? 15 : -15 }}
+              initial={{ opacity: 0, x: slideDir === 'right' ? 10 : -10 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: slideDir === 'right' ? -15 : 15 }}
+              exit={{ opacity: 0, x: slideDir === 'right' ? -10 : 10 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}
             >
-              <div style={{
-                fontSize: 14, fontWeight: 800, color: isNightMode ? '#E2E8F0' : '#1E293B',
+              {/* Progress percentage as the main number */}
+              <span style={{
+                fontSize: 18, fontWeight: 900, fontVariantNumeric: 'tabular-nums',
                 fontFamily: "'Inter', system-ui, sans-serif",
-                maxWidth: 'calc(100% - 36px)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                textAlign: 'center',
+                color: isNightMode ? '#A78BFA' : '#7C3AED',
+                lineHeight: 1,
               }}>
-                {currentProject.name}
-              </div>
-              {/* Progress bar + percentage (Steffen spec: 6px height, gradient, glow) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '85%', marginTop: 6 }}>
-                <div style={{
-                  flex: 1, height: 6, borderRadius: 3,
-                  background: isNightMode ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.10)',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    height: '100%', borderRadius: 3,
-                    background: 'linear-gradient(90deg, #8B5CF6, #A78BFA)',
-                    width: `${currentProject.progress}%`,
-                    transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 0 6px rgba(139, 92, 246, 0.4)',
-                  }} />
-                </div>
-                <span style={{
-                  fontSize: 12, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  color: isNightMode ? '#A78BFA' : '#7C3AED',
-                }}>
-                  {currentProject.progress}%
-                </span>
-              </div>
+                {currentProject.progress}%
+              </span>
               <span style={labelStyle(isNightMode ? '#64748B' : '#94A3B8')}>PROGRESS</span>
-              {currentProject.estimate && (
-                <div style={{
-                  fontSize: 11, fontWeight: 600, color: subtextColor,
-                  fontFamily: "'Inter', sans-serif", marginTop: 2,
-                }}>
-                  {currentProject.estimate}
-                </div>
-              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -4504,11 +4488,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const prevMessageCountRef = useRef(0)
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
 
-  // Smart auto-scroll (ported from ChatDashboard 408afba):
-  // 1. User just sent a message -> always scroll to show it
-  // 2. User is typing -> NEVER yank scroll
-  // 3. New message + near bottom -> auto-scroll
-  // 4. New message + scrolled up -> show indicator
+  // NO auto-scroll. Chat stays exactly where user scrolled.
+  // Only the manual "scroll to bottom" button triggers any scroll.
+  // Track new message arrivals to show the "New messages" indicator button.
   useEffect(() => {
     if (!messagesContainerRef.current || activeTab !== 'chat') return
     const newCount = chatMessages?.length || 0
@@ -4516,28 +4498,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
     const isNewMessage = newCount > prevCount
     prevMessageCountRef.current = newCount
 
-    if (userJustSentRef.current) {
-      userJustSentRef.current = false
-      requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      })
-      setShowNewMsgIndicator(false)
-      return
-    }
-
-    if (isUserTypingRef.current) {
-      if (isNewMessage && !isNearBottomRef.current) {
-        setShowNewMsgIndicator(true)
-      }
-      return
-    }
-
-    if (isNewMessage && isNearBottomRef.current) {
-      requestAnimationFrame(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      })
-      setShowNewMsgIndicator(false)
-    } else if (isNewMessage && !isNearBottomRef.current) {
+    if (isNewMessage && !isNearBottomRef.current) {
       setShowNewMsgIndicator(true)
     }
   }, [chatMessages, activeTab])
@@ -5113,7 +5074,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             }}>
               <form onSubmit={(e) => {
                 isUserTypingRef.current = false
-                userJustSentRef.current = true
                 onSendMessage(e)
               }} style={{ position: 'relative' }}>
                 <input type="text" value={chatInput || ''} onChange={e => {
@@ -5589,7 +5549,7 @@ export default function GameDashboard() {
               })
             }
             allMsgs.sort(safeTimeSort)
-            return { ...prev, _all: allMsgs }
+            return { ...prev, _all: deduplicateMessages(allMsgs) }
           })
 
           // Count unread if panel is closed
@@ -5669,7 +5629,7 @@ export default function GameDashboard() {
                 })
               }
               allMsgs.sort(safeTimeSort)
-              return { ...prev, _all: allMsgs }
+              return { ...prev, _all: deduplicateMessages(allMsgs) }
             })
           }
         }
@@ -5755,9 +5715,10 @@ export default function GameDashboard() {
           })
         }
 
-        // Sort by timestamp and take last 50
+        // Sort by timestamp, deduplicate relay echoes, and take last 50
         all.sort(safeTimeSort)
-        const recent = all.slice(-50)
+        const deduped = deduplicateMessages(all)
+        const recent = deduped.slice(-50)
 
         if (recent.length > 0) {
           // Store under a global key '_all' for the unified conversation view
@@ -5825,11 +5786,14 @@ export default function GameDashboard() {
   const [cameraZoom, setCameraZoom] = useState(0.7)
   const [isOverview, setIsOverview] = useState(true)
 
-  // Time-based theme: bright daytime default, night mode at 8pm AZ (was 9pm)
-  // TODO(bobby): DARK MODE 8PM SWITCH -- Patrik directive: dark mode switches at 8PM Arizona time (updated from 9pm). The entire interface flips at once: top bar, sidebar, bottom HUD, Right Now, chat, pills. One switch. One time. 8pm AZ. Arizona does NOT observe DST so UTC-7 year-round. Ref: Patrik feedback line 274.
-  const [isNightMode, setIsNightMode] = useState(() => new Date().getHours() >= 20)
+  // Time-based theme: 7pm-7am = dark mode, 7am-7pm = day mode. Arizona time (UTC-7, no DST).
+  const getIsNight = () => {
+    const azHour = parseInt(new Date().toLocaleString('en-US', { timeZone: 'America/Phoenix', hour: 'numeric', hour12: false }))
+    return azHour >= 19 || azHour < 7
+  }
+  const [isNightMode, setIsNightMode] = useState(getIsNight)
   useEffect(() => {
-    const check = () => setIsNightMode(new Date().getHours() >= 20)
+    const check = () => setIsNightMode(getIsNight())
     const timer = setInterval(check, 60000)
     return () => clearInterval(timer)
   }, [])
@@ -5837,6 +5801,16 @@ export default function GameDashboard() {
   // HMR state persistence: save key state so hot reloads from Bobby commits don't reset the UI
   useEffect(() => {
     sessionStorage.setItem('corner-selected-room', selectedRoom || '')
+  }, [selectedRoom])
+
+  // Reset streaming state when switching agents so stale typing indicators don't persist
+  // e.g., if agent A was streaming and user clicks agent B, the typing indicator clears
+  useEffect(() => {
+    setPanelStreaming(false)
+    if (panelRelayPollRef.current) {
+      clearInterval(panelRelayPollRef.current)
+      panelRelayPollRef.current = null
+    }
   }, [selectedRoom])
 
   useEffect(() => {
