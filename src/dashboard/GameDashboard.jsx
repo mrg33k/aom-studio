@@ -22,7 +22,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // GHOST KILL: AnimatedAgentCharacter, CharacterAnimationStyles, CanvasRoom all REMOVED
 // Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
-import IslandBackground from './IslandBackground.jsx'
+import CrossyBackground from './CrossyBackground.jsx'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import briefsIndex from '../data/briefs-index.json'
@@ -47,7 +47,7 @@ class ChatErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div style={{
-          padding: 20, textAlign: 'center', color: '#94A3B8',
+          padding: 20, textAlign: 'center', color: '#6B8AB0',
           fontFamily: "'Inter', sans-serif", fontSize: 14,
         }}>
           <div style={{ marginBottom: 8, color: '#EF4444', fontWeight: 700 }}>Chat render error</div>
@@ -617,7 +617,7 @@ function PasswordGate({ onAuth }) {
             CORNER
           </div>
           <div style={{
-            color: '#64748B', fontSize: 16, fontWeight: 500,
+            color: '#8BA4C4', fontSize: 16, fontWeight: 500,
             fontFamily: "'Inter', system-ui, sans-serif",
             letterSpacing: '0.02em',
           }}>
@@ -1678,7 +1678,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                       : '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 4,
                     padding: '2px 8px',
-                    color: (isHovered || isSelected) ? '#fff' : 'rgba(255,255,255,0.85)',
+                    color: (isHovered || isSelected) ? '#fff' : 'rgba(26,35,50,0.85)',
                     fontSize: 11,
                     fontWeight: 600,
                     fontFamily: "'Inter', system-ui, sans-serif",
@@ -2411,14 +2411,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         transition: 'background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)'
-          : 'rgba(255, 255, 255, 0.92)',
+          : 'rgba(20, 30, 48, 0.95)',
         backdropFilter: 'blur(12px)',
         borderBottom: isNightMode
           ? '1px solid rgba(59,130,246,0.15)'
-          : '2px solid rgba(59, 130, 246, 0.25)',
+          : '2px solid rgba(59, 130, 246, 0.35)',
         boxShadow: isNightMode
           ? '0 2px 12px rgba(0, 0, 0, 0.4)'
-          : '0 2px 12px rgba(0,0,0,0.08), 0 1px 0 rgba(59,130,246,0.1)',
+          : '0 2px 12px rgba(0,0,0,0.3), 0 1px 0 rgba(59,130,246,0.15)',
         display: 'flex', alignItems: 'center',
         padding: '0 20px',
         gap: 12,
@@ -2426,7 +2426,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         {/* Corner. logo */}
         <div style={{
           fontSize: 22, fontWeight: 900,
-          color: isNightMode ? '#F1F5F9' : '#1D4ED8',
+          color: isNightMode ? '#F1F5F9' : '#60A5FA',
           fontFamily: "'Inter', system-ui, sans-serif",
           letterSpacing: '0.01em', flexShrink: 0,
         }}>
@@ -2481,7 +2481,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             {/* Team name */}
             <span style={{
               fontSize: 15, fontWeight: 800,
-              color: isNightMode ? '#E2E8F0' : '#1E293B',
+              color: isNightMode ? '#E2E8F0' : '#E2E8F0',
               fontFamily: "'Inter', sans-serif",
               textTransform: 'uppercase', letterSpacing: '0.04em',
             }}>
@@ -2489,7 +2489,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             </span>
             {/* Plus / chevron icon */}
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-              stroke={isNightMode ? '#94A3B8' : '#64748B'} strokeWidth={2.5}
+              stroke={isNightMode ? '#94A3B8' : '#8BA4C4'} strokeWidth={2.5}
               strokeLinecap="round" strokeLinejoin="round"
               style={{ transform: teamOpen ? 'rotate(45deg)' : 'rotate(0)', transition: 'transform 200ms ease' }}
             >
@@ -2511,13 +2511,13 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   minWidth: 260,
                   background: isNightMode
                     ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.95) 100%)'
-                    : 'rgba(255,255,255,0.98)',
+                    : 'rgba(26,35,50,0.98)',
                   backdropFilter: 'blur(20px)',
-                  border: isNightMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(0,0,0,0.1)',
+                  border: isNightMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
                   borderRadius: 12,
                   boxShadow: isNightMode
                     ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
-                    : '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+                    : '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.1)',
                   padding: '8px 0',
                   zIndex: 100,
                 }}
@@ -2536,34 +2536,34 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     border: 'none', cursor: 'pointer',
                     transition: 'background 100ms ease',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
+                  onMouseEnter={e => e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(59,130,246,0.06)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <div style={{
                     width: 32, height: 32, borderRadius: '50%',
                     background: isNightMode
                       ? 'linear-gradient(135deg, #E85D26, #F59E0B)'
-                      : 'linear-gradient(135deg, #1D4ED8, #3B82F6)',
+                      : 'linear-gradient(135deg, #3B82F6, #60A5FA)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, fontWeight: 800, color: '#FFFFFF',
+                    fontSize: 14, fontWeight: 800, color: '#1E2A3A',
                     fontFamily: "'Inter', sans-serif",
                     flexShrink: 0,
                   }}>P</div>
                   <div style={{ flex: 1, textAlign: 'left' }}>
                     <div style={{
                       fontSize: 14, fontWeight: 700,
-                      color: isNightMode ? '#E2E8F0' : '#1E293B',
+                      color: isNightMode ? '#E2E8F0' : '#E2E8F0',
                       fontFamily: "'Inter', sans-serif",
                     }}>Patrik</div>
                     <div style={{
                       fontSize: 12, fontWeight: 500,
-                      color: isNightMode ? '#64748B' : '#94A3B8',
+                      color: isNightMode ? '#64748B' : '#6B8AB0',
                       fontFamily: "'Inter', sans-serif",
                     }}>Owner</div>
                   </div>
                   {/* Settings gear */}
                   <svg width={16} height={16} viewBox="0 0 24 24" fill="none"
-                    stroke={isNightMode ? '#64748B' : '#94A3B8'} strokeWidth={2}
+                    stroke={isNightMode ? '#64748B' : '#6B8AB0'} strokeWidth={2}
                     strokeLinecap="round" strokeLinejoin="round"
                     style={{ flexShrink: 0 }}
                   >
@@ -2584,7 +2584,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     style={{
                       flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                       padding: '6px 10px', borderRadius: 6,
-                      background: isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)',
+                      background: isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.1)',
                       border: isNightMode ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(59,130,246,0.12)',
                       cursor: 'pointer', transition: 'all 120ms ease',
                     }}
@@ -2613,15 +2613,15 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     style={{
                       flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                       padding: '6px 10px', borderRadius: 6,
-                      background: isNightMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                      border: isNightMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
+                      background: isNightMode ? 'rgba(255,255,255,0.03)' : 'rgba(59,130,246,0.04)',
+                      border: isNightMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(59,130,246,0.1)',
                       cursor: 'pointer', transition: 'all 120ms ease',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(59,130,246,0.06)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.03)' : 'rgba(59,130,246,0.04)' }}
                   >
                     <svg width={12} height={12} viewBox="0 0 24 24" fill="none"
-                      stroke={isNightMode ? '#94A3B8' : '#64748B'} strokeWidth={2}
+                      stroke={isNightMode ? '#94A3B8' : '#8BA4C4'} strokeWidth={2}
                       strokeLinecap="round" strokeLinejoin="round"
                     >
                       <circle cx="12" cy="12" r="3"/>
@@ -2629,7 +2629,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     </svg>
                     <span style={{
                       fontSize: 11, fontWeight: 600,
-                      color: isNightMode ? '#94A3B8' : '#64748B',
+                      color: isNightMode ? '#94A3B8' : '#8BA4C4',
                       fontFamily: "'Inter', sans-serif",
                     }}>Team Settings</span>
                   </button>
@@ -2639,7 +2639,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '8px 16px 8px',
-                  borderTop: isNightMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
+                  borderTop: isNightMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(59,130,246,0.1)',
                 }}>
                   {editingName ? (
                     <input
@@ -2650,8 +2650,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       onKeyDown={e => { if (e.key === 'Enter') setEditingName(false) }}
                       style={{
                         fontSize: 12, fontWeight: 800,
-                        color: isNightMode ? '#E2E8F0' : '#1E293B',
-                        background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.05)',
+                        color: isNightMode ? '#E2E8F0' : '#E2E8F0',
+                        background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.1)',
                         border: isNightMode ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(59,130,246,0.2)',
                         borderRadius: 6, padding: '3px 8px',
                         fontFamily: "'Inter', sans-serif",
@@ -2664,7 +2664,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       onClick={() => setEditingName(true)}
                       style={{
                         fontSize: 11, fontWeight: 800,
-                        color: isNightMode ? '#475569' : '#94A3B8',
+                        color: isNightMode ? '#475569' : '#6B8AB0',
                         fontFamily: "'Inter', sans-serif",
                         textTransform: 'uppercase', letterSpacing: '0.08em',
                         cursor: 'pointer',
@@ -2676,7 +2676,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   )}
                   <span style={{
                     fontSize: 11, fontWeight: 600,
-                    color: isNightMode ? '#334155' : '#CBD5E1',
+                    color: isNightMode ? '#334155' : '#4A6585',
                     fontFamily: "'Inter', sans-serif",
                   }}>
                     {AGENTS.length}
@@ -2706,7 +2706,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                           transition: 'background 100ms ease',
                         }}
                         onMouseEnter={e => {
-                          if (!isSelected) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
+                          if (!isSelected) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(59,130,246,0.06)'
                         }}
                         onMouseLeave={e => {
                           if (!isSelected) e.currentTarget.style.background = 'transparent'
@@ -2716,14 +2716,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                         <div style={{ flex: 1, textAlign: 'left' }}>
                           <div style={{
                             fontSize: 14, fontWeight: 700,
-                            color: isNightMode ? '#E2E8F0' : '#1E293B',
+                            color: isNightMode ? '#E2E8F0' : '#E2E8F0',
                             fontFamily: "'Inter', sans-serif",
                           }}>
                             {agent.name}
                           </div>
                           <div style={{
                             fontSize: 12, fontWeight: 500,
-                            color: isNightMode ? '#64748B' : '#94A3B8',
+                            color: isNightMode ? '#64748B' : '#6B8AB0',
                             fontFamily: "'Inter', sans-serif",
                           }}>
                             {agent.role}
@@ -2779,7 +2779,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 >
                   <span style={{
                     fontSize: 13, fontWeight: 700,
-                    color: isNightMode ? '#94A3B8' : '#64748B',
+                    color: isNightMode ? '#94A3B8' : '#8BA4C4',
                     fontFamily: "'Inter', sans-serif",
                     letterSpacing: '0.02em',
                   }}>
@@ -2787,7 +2787,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   </span>
                   <span style={{
                     fontSize: 10, fontWeight: 600,
-                    color: isNightMode ? '#475569' : '#94A3B8',
+                    color: isNightMode ? '#475569' : '#6B8AB0',
                     fontFamily: "'Inter', sans-serif",
                   }}>
                     {projectAgents.length}
@@ -2807,13 +2807,13 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                         minWidth: 220,
                         background: isNightMode
                           ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.95) 100%)'
-                          : 'rgba(255,255,255,0.98)',
+                          : 'rgba(26,35,50,0.98)',
                         backdropFilter: 'blur(20px)',
-                        border: isNightMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(0,0,0,0.1)',
+                        border: isNightMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
                         borderRadius: 12,
                         boxShadow: isNightMode
                           ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
-                          : '0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
+                          : '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.1)',
                         padding: '8px 0',
                         zIndex: 100,
                       }}
@@ -2825,7 +2825,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       }}>
                         <span style={{
                           fontSize: 11, fontWeight: 800,
-                          color: isNightMode ? '#475569' : '#94A3B8',
+                          color: isNightMode ? '#475569' : '#6B8AB0',
                           fontFamily: "'Inter', sans-serif",
                           textTransform: 'uppercase', letterSpacing: '0.08em',
                         }}>
@@ -2834,7 +2834,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                         {project.lead && (
                           <span style={{
                             fontSize: 10, fontWeight: 600,
-                            color: isNightMode ? '#334155' : '#CBD5E1',
+                            color: isNightMode ? '#334155' : '#4A6585',
                             fontFamily: "'Inter', sans-serif",
                           }}>
                             Lead: {project.lead}
@@ -2863,7 +2863,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                               transition: 'background 100ms ease',
                             }}
                             onMouseEnter={e => {
-                              if (selectedAgent !== agent.slug) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'
+                              if (selectedAgent !== agent.slug) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(59,130,246,0.06)'
                             }}
                             onMouseLeave={e => {
                               if (selectedAgent !== agent.slug) e.currentTarget.style.background = 'transparent'
@@ -2873,14 +2873,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                             <div style={{ flex: 1, textAlign: 'left' }}>
                               <div style={{
                                 fontSize: 13, fontWeight: 700,
-                                color: isNightMode ? '#E2E8F0' : '#1E293B',
+                                color: isNightMode ? '#E2E8F0' : '#E2E8F0',
                                 fontFamily: "'Inter', sans-serif",
                               }}>
                                 {agent.name}
                               </div>
                               <div style={{
                                 fontSize: 11, fontWeight: 500,
-                                color: isNightMode ? '#64748B' : '#94A3B8',
+                                color: isNightMode ? '#64748B' : '#6B8AB0',
                                 fontFamily: "'Inter', sans-serif",
                               }}>
                                 {agent.role}
@@ -2913,7 +2913,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                                 ? 'linear-gradient(135deg, #475569, #64748B)'
                                 : 'linear-gradient(135deg, #94A3B8, #CBD5E1)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 12, fontWeight: 800, color: '#FFFFFF',
+                              fontSize: 12, fontWeight: 800, color: '#1E2A3A',
                               fontFamily: "'Inter', sans-serif",
                               flexShrink: 0,
                             }}>
@@ -2922,7 +2922,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                             <div style={{ flex: 1, textAlign: 'left' }}>
                               <div style={{
                                 fontSize: 13, fontWeight: 700,
-                                color: isNightMode ? '#E2E8F0' : '#1E293B',
+                                color: isNightMode ? '#E2E8F0' : '#E2E8F0',
                                 fontFamily: "'Inter', sans-serif",
                                 textTransform: 'capitalize',
                               }}>
@@ -2930,7 +2930,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                               </div>
                               <div style={{
                                 fontSize: 11, fontWeight: 500,
-                                color: isNightMode ? '#64748B' : '#94A3B8',
+                                color: isNightMode ? '#64748B' : '#6B8AB0',
                                 fontFamily: "'Inter', sans-serif",
                               }}>
                                 Team Member
@@ -2972,7 +2972,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           }}
         >
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-            stroke={isNightMode ? '#64748B' : '#94A3B8'} strokeWidth={2}
+            stroke={isNightMode ? '#64748B' : '#6B8AB0'} strokeWidth={2}
             strokeLinecap="round" strokeLinejoin="round"
           >
             <line x1="12" y1="5" x2="12" y2="19"/>
@@ -2980,7 +2980,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           </svg>
           <span style={{
             fontSize: 13, fontWeight: 600,
-            color: isNightMode ? '#64748B' : '#94A3B8',
+            color: isNightMode ? '#64748B' : '#6B8AB0',
             fontFamily: "'Inter', sans-serif",
           }}>
             New Team
@@ -3760,7 +3760,7 @@ const ctxBtnStyle = (isDaytime) => ({
   display: 'block', width: '100%', textAlign: 'left',
   padding: '8px 14px', background: 'none', border: 'none',
   fontSize: 13, fontWeight: 600, cursor: 'pointer',
-  color: isDaytime ? '#1E293B' : '#E2E8F0',
+  color: isDaytime ? '#E2E8F0' : '#E2E8F0',
   fontFamily: "'Inter', sans-serif",
   transition: 'background 100ms',
 })
@@ -3907,10 +3907,10 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       if (!trimmed) return <div key={i} style={{ height: 8 }} />
       // Headers
       if (trimmed.startsWith('### ')) {
-        return <div key={i} style={{ color: isNightMode ? '#F1F5F9' : '#0F172A', fontSize: 14, fontWeight: 800, fontFamily: "'Inter', sans-serif", marginTop: 12, marginBottom: 4 }}>{trimmed.slice(4)}</div>
+        return <div key={i} style={{ color: isNightMode ? '#F1F5F9' : '#E8ECF0', fontSize: 14, fontWeight: 800, fontFamily: "'Inter', sans-serif", marginTop: 12, marginBottom: 4 }}>{trimmed.slice(4)}</div>
       }
       if (trimmed.startsWith('## ')) {
-        return <div key={i} style={{ color: isNightMode ? '#F1F5F9' : '#0F172A', fontSize: 15, fontWeight: 900, fontFamily: "'Inter', sans-serif", marginTop: 14, marginBottom: 6, borderBottom: `1px solid ${agentColor}25`, paddingBottom: 4 }}>{trimmed.slice(3)}</div>
+        return <div key={i} style={{ color: isNightMode ? '#F1F5F9' : '#E8ECF0', fontSize: 15, fontWeight: 900, fontFamily: "'Inter', sans-serif", marginTop: 14, marginBottom: 6, borderBottom: `1px solid ${agentColor}25`, paddingBottom: 4 }}>{trimmed.slice(3)}</div>
       }
       if (trimmed.startsWith('# ')) {
         return <div key={i} style={{ color: agentColor, fontSize: 16, fontWeight: 900, fontFamily: "'Inter', sans-serif", marginTop: 6, marginBottom: 8 }}>{trimmed.slice(2)}</div>
@@ -3921,17 +3921,17 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         return (
           <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 3, paddingLeft: 4 }}>
             <span style={{ color: agentColor, flexShrink: 0, fontSize: 14, lineHeight: '1.5' }}>&#8226;</span>
-            <span style={{ color: isNightMode ? '#CBD5E1' : '#334155', fontSize: 13, fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>{text}</span>
+            <span style={{ color: isNightMode ? '#CBD5E1' : '#A0B4CC', fontSize: 13, fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>{text}</span>
           </div>
         )
       }
       // Regular text with bold support
       const parts = trimmed.split(/(\*\*[^*]+\*\*)/g)
       return (
-        <div key={i} style={{ color: isNightMode ? '#94A3B8' : '#475569', fontSize: 13, fontFamily: "'Inter', sans-serif", lineHeight: 1.5, marginBottom: 2 }}>
+        <div key={i} style={{ color: isNightMode ? '#94A3B8' : '#8BA4C4', fontSize: 13, fontFamily: "'Inter', sans-serif", lineHeight: 1.5, marginBottom: 2 }}>
           {parts.map((part, j) => {
             if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={j} style={{ color: isNightMode ? '#E2E8F0' : '#1E293B', fontWeight: 700 }}>{part.slice(2, -2)}</strong>
+              return <strong key={j} style={{ color: isNightMode ? '#E2E8F0' : '#E2E8F0', fontWeight: 700 }}>{part.slice(2, -2)}</strong>
             }
             return <span key={j}>{part}</span>
           })}
@@ -3965,7 +3965,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         onMouseLeave={e => { if (IS_LOCAL) { e.currentTarget.style.background = isNightMode ? `${agentColor}10` : `${agentColor}08`; e.currentTarget.style.borderColor = agentColor + '25' } }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <div style={{ color: isNightMode ? '#6B7280' : '#94A3B8', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Current Task</div>
+          <div style={{ color: isNightMode ? '#6B7280' : '#6B8AB0', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Current Task</div>
           {IS_LOCAL && (
             <div style={{
               fontSize: 11, fontWeight: 700, color: agentColor,
@@ -3980,14 +3980,14 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             </div>
           )}
         </div>
-        <div style={{ color: isNightMode ? '#F0ECE6' : '#1E293B', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{task}</div>
+        <div style={{ color: isNightMode ? '#F0ECE6' : '#E2E8F0', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{task}</div>
       </div>
 
       {/* Expanded brief content (latest-result.md) */}
       {expandedBrief === 'latest-result' && (
         <div style={{
           padding: '14px 16px', marginBottom: 12,
-          background: isNightMode ? 'rgba(15,27,45,0.6)' : 'rgba(248,250,255,0.95)',
+          background: isNightMode ? 'rgba(15,27,45,0.6)' : 'rgba(26,40,58,0.95)',
           border: isNightMode ? `1px solid ${agentColor}20` : `1px solid ${agentColor}15`,
           borderLeft: `3px solid ${agentColor}`,
           borderRadius: 8,
@@ -4026,7 +4026,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       {expandedBrief === 'agent-md' && (
         <div style={{
           padding: '14px 16px', marginBottom: 12,
-          background: isNightMode ? 'rgba(15,27,45,0.6)' : 'rgba(248,250,255,0.95)',
+          background: isNightMode ? 'rgba(15,27,45,0.6)' : 'rgba(26,40,58,0.95)',
           border: isNightMode ? `1px solid ${agentColor}20` : `1px solid ${agentColor}15`,
           borderLeft: `3px solid ${agentColor}`,
           borderRadius: 8,
@@ -4069,16 +4069,16 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           border: isNightMode ? '1px solid rgba(100,180,255,0.08)' : '1px solid rgba(100,180,255,0.12)',
           borderRadius: 8,
         }}>
-          <div style={{ color: isNightMode ? '#6B7280' : '#94A3B8', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
-          <div style={{ color: isNightMode ? '#A8A29E' : '#475569', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
-          <div style={{ color: isNightMode ? '#6B7280' : '#94A3B8', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
+          <div style={{ color: isNightMode ? '#6B7280' : '#6B8AB0', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
+          <div style={{ color: isNightMode ? '#A8A29E' : '#8BA4C4', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
+          <div style={{ color: isNightMode ? '#6B7280' : '#6B8AB0', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
         </div>
       )}
 
       {/* Related published briefs -- clickable links to /briefs/[slug] */}
       {relatedBriefs.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ color: isNightMode ? '#6B7280' : '#94A3B8', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+          <div style={{ color: isNightMode ? '#6B7280' : '#6B8AB0', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
             Related Briefs
           </div>
           {relatedBriefs.map((brief, i) => (
@@ -4098,15 +4098,15 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
               onMouseEnter={e => { e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.1)' }}
               onMouseLeave={e => { e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)' }}
             >
-              <div style={{ color: isNightMode ? '#60A5FA' : '#2563EB', fontSize: 13, fontWeight: 700, fontFamily: "'Inter', sans-serif", marginBottom: 2 }}>
+              <div style={{ color: isNightMode ? '#60A5FA' : '#60A5FA', fontSize: 13, fontWeight: 700, fontFamily: "'Inter', sans-serif", marginBottom: 2 }}>
                 {brief.title}
               </div>
               {brief.summary && (
-                <div style={{ color: isNightMode ? '#64748B' : '#94A3B8', fontSize: 12, fontFamily: "'Inter', sans-serif", lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                <div style={{ color: isNightMode ? '#64748B' : '#6B8AB0', fontSize: 12, fontFamily: "'Inter', sans-serif", lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                   {brief.summary}
                 </div>
               )}
-              <div style={{ color: isNightMode ? '#475569' : '#94A3B8', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
+              <div style={{ color: isNightMode ? '#475569' : '#6B8AB0', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
                 {brief.dateFormatted} -- {brief.agent}
               </div>
             </a>
@@ -4117,7 +4117,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       {/* Task list (draggable, right-clickable) */}
       <div style={{ marginBottom: 12 }}>
         <div style={{
-          color: isDaytime ? '#64748B' : '#6B7280',
+          color: isDaytime ? '#8BA4C4' : '#6B7280',
           fontSize: 11, fontWeight: 700,
           fontFamily: "'JetBrains Mono', monospace",
           textTransform: 'uppercase', letterSpacing: '0.12em',
@@ -4125,7 +4125,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <span>Tasks</span>
-          <span style={{ fontWeight: 600, fontSize: 12, color: isDaytime ? '#94A3B8' : '#475569' }}>
+          <span style={{ fontWeight: 600, fontSize: 12, color: isDaytime ? '#6B8AB0' : '#475569' }}>
             {tasks.filter(t => !t.done).length} open
           </span>
         </div>
@@ -4147,11 +4147,11 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 10px', marginBottom: 4,
               background: dragOverIdx === idx
-                ? (isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.12)')
-                : (isDaytime ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)'),
+                ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.12)')
+                : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.03)'),
               border: dragOverIdx === idx
-                ? (isDaytime ? '1px dashed rgba(59,130,246,0.4)' : '1px dashed rgba(59,130,246,0.4)')
-                : (isDaytime ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(255,255,255,0.04)'),
+                ? (isDaytime ? '1px dashed rgba(59,130,246,0.5)' : '1px dashed rgba(59,130,246,0.4)')
+                : (isDaytime ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(255,255,255,0.04)'),
               borderRadius: 6,
               cursor: 'grab',
               opacity: dragIdx === idx ? 0.4 : 1,
@@ -4159,7 +4159,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             }}
           >
             {/* Drag handle */}
-            <div style={{ color: isDaytime ? '#CBD5E1' : '#334155', cursor: 'grab', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ color: isDaytime ? '#4A6585' : '#A0B4CC', cursor: 'grab', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <div style={{ width: 12, height: 2, background: 'currentColor', borderRadius: 1 }} />
               <div style={{ width: 12, height: 2, background: 'currentColor', borderRadius: 1 }} />
             </div>
@@ -4170,7 +4170,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                 width: 18, height: 18, borderRadius: 4, flexShrink: 0,
                 border: t.done
                   ? `2px solid ${agentColor}`
-                  : (isDaytime ? '2px solid #CBD5E1' : '2px solid #475569'),
+                  : (isDaytime ? '2px solid #4A6585' : '2px solid #475569'),
                 background: t.done ? agentColor : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', transition: 'all 150ms',
@@ -4186,8 +4186,8 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             <span style={{
               flex: 1, fontSize: 14, fontWeight: 500,
               color: t.done
-                ? (isDaytime ? '#94A3B8' : '#475569')
-                : (isDaytime ? '#1E293B' : '#E2E8F0'),
+                ? (isDaytime ? '#6B8AB0' : '#475569')
+                : (isDaytime ? '#E2E8F0' : '#E2E8F0'),
               fontFamily: "'Inter', sans-serif",
               textDecoration: t.done ? 'line-through' : 'none',
               lineHeight: 1.4,
@@ -4200,7 +4200,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         {tasks.length === 0 && (
           <div style={{
             textAlign: 'center', padding: '16px 0',
-            color: isDaytime ? '#CBD5E1' : '#334155',
+            color: isDaytime ? '#4A6585' : '#A0B4CC',
             fontSize: 13, fontFamily: "'Inter', sans-serif",
           }}>
             No tasks yet. Add one below.
@@ -4216,10 +4216,10 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             placeholder="Add a task..."
             style={{
               flex: 1, padding: '8px 12px',
-              background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)',
-              border: isDaytime ? '1.5px solid rgba(59,130,246,0.12)' : '1.5px solid rgba(59,130,246,0.12)',
+              background: isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)',
+              border: isDaytime ? '1.5px solid rgba(59,130,246,0.18)' : '1.5px solid rgba(59,130,246,0.12)',
               borderRadius: 6, fontSize: 13, fontWeight: 500,
-              color: isDaytime ? '#1E293B' : '#E2E8F0',
+              color: isDaytime ? '#E2E8F0' : '#E2E8F0',
               fontFamily: "'Inter', sans-serif", outline: 'none',
             }}
           />
@@ -4241,10 +4241,10 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       {taskCtx && (
         <div style={{
           position: 'fixed', left: taskCtx.x, top: taskCtx.y, zIndex: 200,
-          background: isDaytime ? '#FFFFFF' : 'rgba(15,23,42,0.98)',
-          border: isDaytime ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(59,130,246,0.2)',
+          background: isDaytime ? '#1E2A3A' : 'rgba(15,23,42,0.98)',
+          border: isDaytime ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
           borderRadius: 8, padding: '4px 0', minWidth: 180,
-          boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.12)' : '0 4px 16px rgba(0,0,0,0.5)',
+          boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
         }}>
           {/* Move to top / bottom */}
           <button onClick={() => {
@@ -4284,12 +4284,12 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           </button>
 
           {/* Divider */}
-          <div style={{ height: 1, background: isDaytime ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <div style={{ height: 1, background: isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
 
           {/* Assign to another agent */}
           <div style={{
             padding: '6px 14px',
-            fontSize: 11, fontWeight: 700, color: isDaytime ? '#94A3B8' : '#475569',
+            fontSize: 11, fontWeight: 700, color: isDaytime ? '#6B8AB0' : '#8BA4C4',
             fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>Move to agent</div>
           {AGENTS.filter(a => a.slug !== agentSlug).slice(0, 6).map(a => (
@@ -4301,7 +4301,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           ))}
 
           {/* Divider */}
-          <div style={{ height: 1, background: isDaytime ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <div style={{ height: 1, background: isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
 
           {/* Delete */}
           <button onClick={() => { deleteTask(taskCtx.id); setTaskCtx(null) }}
@@ -4444,7 +4444,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
       {/* Status text */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={{
-          fontSize: 13, fontWeight: 600, color: '#94A3B8',
+          fontSize: 13, fontWeight: 600, color: '#6B8AB0',
           fontFamily: "'Inter', sans-serif",
         }}>
           Waiting for {agentName || 'agent'}...
@@ -4599,7 +4599,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
   const tileBase = (isGlowing, accentColor, hasActiveBorder = false) => ({
     background: isNightMode
       ? 'linear-gradient(180deg, #162236 0%, #131F30 100%)'
-      : '#FFFFFF',
+      : '#1E2A3A',
     borderRadius: 10,
     padding: '8px 6px',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -4765,8 +4765,8 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
           {/* iOS Calendar icon (32x32 compact for 1x4, red gradient header) */}
           <div style={{
             width: 32, height: 32, borderRadius: 8,
-            background: isNightMode ? '#1E293B' : '#F8FAFC',
-            border: isNightMode ? '1.5px solid #334155' : '1.5px solid #E2E8F0',
+            background: isNightMode ? '#1E293B' : '#1A2332',
+            border: isNightMode ? '1.5px solid #334155' : '1.5px solid rgba(59,130,246,0.2)',
             overflow: 'hidden', display: 'flex', flexDirection: 'column',
             boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
           }}>
@@ -4782,7 +4782,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <span style={{
-                fontSize: 14, fontWeight: 900, color: isNightMode ? '#F1F5F9' : '#0F172A',
+                fontSize: 14, fontWeight: 900, color: isNightMode ? '#F1F5F9' : '#E8ECF0',
                 fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1,
               }}>
                 {new Date().getDate()}
@@ -4812,11 +4812,11 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                 style={{
                   position: 'absolute', left: 2, top: '50%', transform: 'translateY(-50%)',
                   background: 'none', border: 'none', cursor: 'pointer', padding: 2,
-                  color: isNightMode ? '#475569' : '#94A3B8', display: 'flex', zIndex: 3,
+                  color: isNightMode ? '#475569' : '#6B8AB0', display: 'flex', zIndex: 3,
                   borderRadius: 4, transition: 'background 0.15s ease, color 0.15s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#E2E8F0' : '#1E293B'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#475569' : '#94A3B8'; e.currentTarget.style.background = 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#E2E8F0' : '#E2E8F0'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#475569' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
               >
                 <ChevronLeft size={12} />
               </button>
@@ -4825,11 +4825,11 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                 style={{
                   position: 'absolute', right: 2, top: '50%', transform: 'translateY(-50%)',
                   background: 'none', border: 'none', cursor: 'pointer', padding: 2,
-                  color: isNightMode ? '#475569' : '#94A3B8', display: 'flex', zIndex: 3,
+                  color: isNightMode ? '#475569' : '#6B8AB0', display: 'flex', zIndex: 3,
                   borderRadius: 4, transition: 'background 0.15s ease, color 0.15s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#E2E8F0' : '#1E293B'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#475569' : '#94A3B8'; e.currentTarget.style.background = 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.color = isNightMode ? '#E2E8F0' : '#E2E8F0'; e.currentTarget.style.background = 'rgba(139,92,246,0.12)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#475569' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
               >
                 <ChevronRight size={12} />
               </button>
@@ -4879,7 +4879,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                 Right Now
               </div>
               {workingAgents.length === 0 ? (
-                <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>All agents idle</div>
+                <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#6B8AB0', fontFamily: "'Inter', sans-serif" }}>All agents idle</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {workingAgents.map(a => (
@@ -4900,10 +4900,10 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                         width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0,
                         animation: 'livePulse 1.5s ease-in-out infinite',
                       }} />
-                      <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#E2E8F0', fontFamily: "'Inter', sans-serif" }}>
                         {a.name}
                       </span>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#64748B' : '#94A3B8', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#64748B' : '#6B8AB0', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                         {a.task}
                       </span>
                       <TaskNoteIndicator taskText={a.task || a.name} />
@@ -4932,7 +4932,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                 Your TODOs
               </div>
               {realPatrikTodos.length === 0 ? (
-                <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>No Patrik TODOs. All clear.</div>
+                <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#6B8AB0', fontFamily: "'Inter', sans-serif" }}>No Patrik TODOs. All clear.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {realPatrikTodos.slice(0, 8).map((t, i) => (
@@ -4955,7 +4955,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                           width: 6, height: 6, borderRadius: '50%', background: t.projectColor, flexShrink: 0,
                         }} />
                       )}
-                      <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: isNightMode ? '#E2E8F0' : '#E2E8F0', fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                         {t.text}
                       </span>
                       <TaskNoteIndicator taskText={t.text} />
@@ -4983,7 +4983,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               <div style={{ fontSize: 12, fontWeight: 800, color: accent('calendar'), textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
                 Schedule
               </div>
-              <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#94A3B8', fontFamily: "'Inter', sans-serif" }}>
+              <div style={{ fontSize: 14, fontStyle: 'italic', color: isNightMode ? '#475569' : '#6B8AB0', fontFamily: "'Inter', sans-serif" }}>
                 No events today. Calendar API will connect here.
               </div>
             </div>
@@ -5016,7 +5016,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                       : (isNightMode ? 'rgba(139,92,246,0.04)' : 'rgba(139,92,246,0.02)'),
                     border: i === (projectIndex % projects.length) ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent',
                   }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#1E293B', fontFamily: "'Inter', sans-serif", minWidth: 50 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#E2E8F0', fontFamily: "'Inter', sans-serif", minWidth: 50 }}>
                       {p.name}
                     </span>
                     <div style={{
@@ -5059,8 +5059,8 @@ function parsePunchListSidebar(markdown) {
   const SECTION_MAP = {
     'RIGHT NOW':     { name: 'Right Now', section: 'rightnow',     color: '#FF6B3D' },
     'YOUR TODOS':    { name: 'Your TODOs', section: 'your-todos', color: '#EF4444' },
-    'FINISH THESE':  { name: 'Finish These', section: 'finish-these', color: '#94A3B8' },
-    'CHECKING IN':   { name: 'Finish These', section: 'finish-these', color: '#94A3B8' },
+    'FINISH THESE':  { name: 'Finish These', section: 'finish-these', color: '#6B8AB0' },
+    'CHECKING IN':   { name: 'Finish These', section: 'finish-these', color: '#6B8AB0' },
     'SCHEDULE':      { name: 'Schedule',  section: 'schedule',    color: '#FF6B3D' },
     'TODAY':         { name: 'Schedule',  section: 'schedule',    color: '#FF6B3D' },
     'CORNER':        { name: 'Corner',    section: 'corner',      color: '#3B9EFF' },
@@ -5204,7 +5204,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
         {sorted.length === 0 && (
           <div style={{
             textAlign: 'center', padding: '40px 20px',
-            color: isDaytime ? '#94A3B8' : '#475569',
+            color: isDaytime ? '#6B8AB0' : '#8BA4C4',
             fontSize: 14, fontFamily: "'Inter', sans-serif",
           }}>
             Your notes will appear here.
@@ -5221,18 +5221,18 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
               padding: '10px 14px',
               marginBottom: 8,
               background: note.pinned
-                ? (isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.08)')
-                : (isDaytime ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.03)'),
+                ? (isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.08)')
+                : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.03)'),
               border: note.pinned
                 ? (isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(59,130,246,0.2)')
-                : (isDaytime ? '1px solid rgba(0,0,0,0.05)' : '1px solid rgba(255,255,255,0.05)'),
+                : (isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(255,255,255,0.05)'),
               borderRadius: 8,
               cursor: 'default',
             }}
           >
             <div style={{
               fontSize: 14, fontWeight: 500, lineHeight: 1.5,
-              color: isDaytime ? '#1E293B' : '#E2E8F0',
+              color: isDaytime ? '#E2E8F0' : '#E2E8F0',
               fontFamily: "'Inter', sans-serif",
               whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             }}>
@@ -5241,7 +5241,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
             </div>
             <div style={{
               fontSize: 12, fontWeight: 500, marginTop: 6,
-              color: isDaytime ? '#94A3B8' : '#475569',
+              color: isDaytime ? '#6B8AB0' : '#8BA4C4',
               fontFamily: "'Inter', sans-serif",
             }}>
               {formatTime(note.ts)}
@@ -5254,10 +5254,10 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
       {ctxMenu && (
         <div style={{
           position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 200,
-          background: isDaytime ? '#FFFFFF' : 'rgba(15,23,42,0.98)',
-          border: isDaytime ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(59,130,246,0.2)',
+          background: isDaytime ? '#1E2A3A' : 'rgba(15,23,42,0.98)',
+          border: isDaytime ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
           borderRadius: 8, padding: '4px 0', minWidth: 160,
-          boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.12)' : '0 4px 16px rgba(0,0,0,0.5)',
+          boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
         }}>
           {[
             { label: ctxMenu.pinned ? 'Unpin' : 'Pin to top', action: () => togglePin(ctxMenu.id) },
@@ -5274,11 +5274,11 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
                 display: 'block', width: '100%', textAlign: 'left',
                 padding: '8px 14px', background: 'none', border: 'none',
                 fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                color: item.color || (isDaytime ? '#1E293B' : '#E2E8F0'),
+                color: item.color || (isDaytime ? '#E2E8F0' : '#E2E8F0'),
                 fontFamily: "'Inter', sans-serif",
                 transition: 'background 100ms',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.08)'}
+              onMouseEnter={e => e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.08)'}
               onMouseLeave={e => e.currentTarget.style.background = 'none'}
             >
               {item.label}
@@ -5290,7 +5290,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
       {/* Input bar */}
       <div style={{
         padding: '12px 16px',
-        borderTop: isDaytime ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(255,255,255,0.06)',
+        borderTop: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(255,255,255,0.06)',
         display: 'flex', gap: 8,
       }}>
         <input
@@ -5302,11 +5302,11 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
           style={{
             flex: 1,
             padding: '10px 14px',
-            background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)',
-            border: isDaytime ? '1.5px solid rgba(59,130,246,0.15)' : '1.5px solid rgba(59,130,246,0.15)',
+            background: isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)',
+            border: isDaytime ? '1.5px solid rgba(59,130,246,0.2)' : '1.5px solid rgba(59,130,246,0.15)',
             borderRadius: 8,
             fontSize: 14, fontWeight: 500,
-            color: isDaytime ? '#1E293B' : '#E2E8F0',
+            color: isDaytime ? '#E2E8F0' : '#E2E8F0',
             fontFamily: "'Inter', sans-serif",
             outline: 'none',
           }}
@@ -5317,7 +5317,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
             padding: '10px 16px',
             background: '#3B82F6',
             border: 'none', borderRadius: 8,
-            color: '#FFFFFF', fontSize: 14, fontWeight: 700,
+            color: '#1E2A3A', fontSize: 14, fontWeight: 700,
             fontFamily: "'Inter', sans-serif",
             cursor: 'pointer',
             transition: 'background 150ms',
@@ -5438,14 +5438,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         height: '100%',
         background: isNightMode
           ? 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)'
-          : 'linear-gradient(180deg, rgba(248,250,255,0.98) 0%, rgba(240,245,255,0.97) 50%, rgba(248,250,255,0.98) 100%)',
+          : 'linear-gradient(180deg, rgba(26,35,50,0.98) 0%, rgba(30,42,58,0.97) 50%, rgba(26,35,50,0.98) 100%)',
         borderLeft: isNightMode
           ? '2px solid rgba(59, 130, 246, 0.35)'
           : '2px solid rgba(59, 130, 246, 0.35)',
         display: 'flex', flexDirection: 'column',
         boxShadow: isNightMode
           ? '-6px 0 30px rgba(0,0,0,0.6), -1px 0 0 rgba(59,130,246,0.1)'
-          : '-8px 0 32px rgba(0,0,0,0.06), -1px 0 0 rgba(59,130,246,0.08)',
+          : '-8px 0 32px rgba(0,0,0,0.4), -1px 0 0 rgba(59,130,246,0.15)',
         transition: 'width 250ms ease, background 500ms ease',
         position: 'relative',
         overflow: 'hidden',
@@ -5466,8 +5466,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         padding: '20px 24px',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%)'
-          : 'linear-gradient(180deg, rgba(59,130,246,0.04) 0%, transparent 100%)',
-        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.15)' : '2px solid rgba(59,130,246,0.12)',
+          : 'linear-gradient(180deg, rgba(59,130,246,0.08) 0%, transparent 100%)',
+        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.15)' : '2px solid rgba(59,130,246,0.2)',
         flexShrink: 0,
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
@@ -5485,14 +5485,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             position: 'absolute', bottom: 0, right: 0,
             width: 18, height: 18, borderRadius: '50%',
             background: cfg.color,
-            border: isNightMode ? '3px solid #0F1B2D' : '3px solid rgba(248,250,255,0.98)',
+            border: isNightMode ? '3px solid #0F1B2D' : '3px solid #1A2332',
             boxShadow: `0 0 8px ${cfg.color}`,
           }} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            color: isNightMode ? '#F1F5F9' : '#0F172A', fontSize: 22, fontWeight: 900,
+            color: isNightMode ? '#F1F5F9' : '#E8ECF0', fontSize: 22, fontWeight: 900,
             fontFamily: "'Inter', system-ui, sans-serif",
             letterSpacing: '0.01em', lineHeight: 1.1,
           }}>
@@ -5515,7 +5515,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             borderRadius: 4, padding: '2px 8px',
             ...(status === 'WORKING' ? { color: '#16A34A', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }
               : status === 'BLOCKED' ? { color: '#DC2626', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }
-              : status === 'DONE' ? { color: '#2563EB', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }
+              : status === 'DONE' ? { color: '#60A5FA', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }
               : { color: '#6B7280', background: 'rgba(107,114,128,0.1)', border: '1px solid rgba(107,114,128,0.2)' }),
           }}>
             <span style={{
@@ -5527,7 +5527,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </div>
           <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
             <span style={{
-              fontSize: 14, fontWeight: 700, color: isDaytime ? '#64748B' : '#94A3B8',
+              fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
               fontFamily: "'Inter', system-ui, sans-serif",
               display: 'flex', alignItems: 'center', gap: 4,
             }}>
@@ -5537,7 +5537,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               builds
             </span>
             <span style={{
-              fontSize: 14, fontWeight: 700, color: isDaytime ? '#64748B' : '#94A3B8',
+              fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
               fontFamily: "'Inter', system-ui, sans-serif",
               display: 'flex', alignItems: 'center', gap: 4,
             }}>
@@ -5552,15 +5552,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {/* Extend/collapse */}
         <button onClick={onToggleExtend} title={isExtended ? 'Collapse panel' : 'Expand panel'}
           style={{
-            background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)',
+            background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
             border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.1)',
-            borderRadius: 8, cursor: 'pointer', color: isExtended ? '#E85D26' : (isDaytime ? '#94A3B8' : '#6B7280'),
+            borderRadius: 8, cursor: 'pointer', color: isExtended ? '#E85D26' : (isDaytime ? '#6B8AB0' : '#6B7280'),
             width: 32, height: 32,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 150ms ease', flexShrink: 0,
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = isDaytime ? '#1E293B' : '#EDF2FA'; e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.12)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : (isDaytime ? '#94A3B8' : '#6B7280'); e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)' }}
+          onMouseEnter={e => { e.currentTarget.style.color = isDaytime ? '#E2E8F0' : '#EDF2FA'; e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.12)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : (isDaytime ? '#6B8AB0' : '#6B7280'); e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)' }}
         >
           {isExtended ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
         </button>
@@ -5583,14 +5583,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       <div style={{
         display: 'flex', alignItems: 'center', gap: 6,
         padding: '6px 24px',
-        borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.06)',
+        borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.12)',
         flexShrink: 0,
       }}>
-        <MessageSquare size={12} style={{ color: isDaytime ? '#94A3B8' : '#475569', flexShrink: 0 }} />
+        <MessageSquare size={12} style={{ color: isDaytime ? '#6B8AB0' : '#8BA4C4', flexShrink: 0 }} />
         <span style={{
           fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
           textTransform: 'uppercase', letterSpacing: '0.1em',
-          color: isDaytime ? '#94A3B8' : '#475569',
+          color: isDaytime ? '#6B8AB0' : '#8BA4C4',
         }}>
           Talking to:
         </span>
@@ -5608,9 +5608,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           return projects.slice(0, 2).map(p => (
             <span key={p.key} style={{
               fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-              color: isDaytime ? '#64748B' : '#475569',
-              background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)',
-              border: isDaytime ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(100,180,255,0.08)',
+              color: isDaytime ? '#8BA4C4' : '#8BA4C4',
+              background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
+              border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.08)',
               borderRadius: 3, padding: '1px 5px',
               textTransform: 'uppercase', letterSpacing: '0.06em',
             }}>
@@ -5623,7 +5623,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       {/* ---- TAB BAR (Vegas glow tabs: Chat / Tasks / Info / List / Board) ---- */}
       <div style={{
         display: 'flex',
-        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.1)',
+        borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
         flexShrink: 0,
         position: 'relative',
       }}>
@@ -5697,14 +5697,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 {tab.label}
                 {tab.key && (
                   <span style={{
-                    background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.06)',
-                    border: isDaytime ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(255,255,255,0.1)',
+                    background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.06)',
+                    border: isDaytime ? '1px solid rgba(59,130,246,0.18)' : '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 3,
                     padding: '1px 4px',
                     fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 12,
                     fontWeight: 600,
-                    color: isDaytime ? '#94A3B8' : '#475569',
+                    color: isDaytime ? '#6B8AB0' : '#8BA4C4',
                     lineHeight: 1.2,
                   }}>
                     {tab.key}
@@ -5745,10 +5745,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   justifyContent: 'center', height: '100%', gap: 10, padding: '24px 0',
                 }}>
                   <SpriteAvatar agentSlug={room?.id} size={48} borderColor={agentColor} />
-                  <div style={{ color: isDaytime ? '#0F172A' : '#F1F5F9', fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
+                  <div style={{ color: isDaytime ? '#E8ECF0' : '#F1F5F9', fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
                     {agent?.name || 'Agent'}
                   </div>
-                  <div style={{ color: isDaytime ? '#94A3B8' : '#64748B', fontSize: 14, fontFamily: "'Inter', sans-serif", textAlign: 'center' }}>
+                  <div style={{ color: isDaytime ? '#6B8AB0' : '#8BA4C4', fontSize: 14, fontFamily: "'Inter', sans-serif", textAlign: 'center' }}>
                     Start a conversation with {agent?.name || 'this agent'}.
                   </div>
                 </div>
@@ -5759,13 +5759,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   display: 'flex', alignItems: 'center', gap: 12,
                   margin: '4px 0 8px',
                 }}>
-                  <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.1)' }} />
+                  <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.1)' }} />
                   <span style={{
-                    fontSize: 11, fontWeight: 700, color: isDaytime ? '#94A3B8' : '#475569',
+                    fontSize: 11, fontWeight: 700, color: isDaytime ? '#6B8AB0' : '#8BA4C4',
                     textTransform: 'uppercase', letterSpacing: '0.12em',
                     fontFamily: "'JetBrains Mono', monospace",
                   }}>TODAY</span>
-                  <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.1)' }} />
+                  <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.1)' }} />
                 </div>
               )}
               {chatMessages && chatMessages.map((msg, i) => {
@@ -5790,7 +5790,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       borderRadius: 10,
                       padding: '10px 14px',
                       display: 'flex', alignItems: 'center', gap: 10,
-                      boxShadow: isDaytime ? '0 1px 3px rgba(0,0,0,0.04)' : '0 2px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(34,197,94,0.08)',
+                      boxShadow: isDaytime ? '0 1px 3px rgba(0,0,0,0.2)' : '0 2px 6px rgba(0,0,0,0.15), 0 1px 2px rgba(34,197,94,0.08)',
                     }}>
                       <div style={{
                         width: 8, height: 8, borderRadius: '50%',
@@ -5798,13 +5798,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         flexShrink: 0,
                       }} />
                       <span style={{
-                        fontSize: 14, fontWeight: 600, color: isDaytime ? '#475569' : '#94A3B8',
+                        fontSize: 14, fontWeight: 600, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
                         fontFamily: "'Inter', sans-serif", flex: 1,
                       }}>
                         <strong style={{ color: agentColor, fontWeight: 800 }}>{agent?.name || 'Agent'}</strong> {msg.content}
                       </span>
                       {msg.time && (
-                        <span style={{ fontSize: 12, color: isDaytime ? '#94A3B8' : '#475569', whiteSpace: 'nowrap', fontFamily: "'Inter', sans-serif" }}>
+                        <span style={{ fontSize: 12, color: isDaytime ? '#6B8AB0' : '#8BA4C4', whiteSpace: 'nowrap', fontFamily: "'Inter', sans-serif" }}>
                           {formatChatTime(msg.time)}
                         </span>
                       )}
@@ -5826,7 +5826,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     }}>
                       <SpriteAvatar agentSlug={ambientAgent?.slug || msg.source} size={20} borderColor={ambientColor} />
                       <span style={{
-                        fontSize: 13, fontWeight: 500, color: isDaytime ? '#64748B' : '#94A3B8',
+                        fontSize: 13, fontWeight: 500, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
                         fontFamily: "'Inter', sans-serif", flex: 1,
                         fontStyle: 'italic',
                       }}>
@@ -5834,7 +5834,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         {msg.content}
                       </span>
                       {msg.time && (
-                        <span style={{ fontSize: 10, color: isDaytime ? '#94A3B8' : '#475569', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" }}>
+                        <span style={{ fontSize: 10, color: isDaytime ? '#6B8AB0' : '#8BA4C4', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono', monospace" }}>
                           {formatChatTime(msg.time)}
                         </span>
                       )}
@@ -5854,7 +5854,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         border: '3px solid #F59E0B',
                         background: '#F59E0B',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 14, fontWeight: 800, color: '#FFFFFF',
+                        fontSize: 14, fontWeight: 800, color: '#1E2A3A',
                         flexShrink: 0,
                         boxShadow: '0 0 12px rgba(245,158,11,0.4), 0 2px 4px rgba(0,0,0,0.2)',
                       }}>
@@ -5883,8 +5883,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                               background: isNightMode
                                 ? 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)'
                                 : '#EDF2F7',
-                              border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '1px solid #E2E8F0',
-                              color: isNightMode ? '#F1F5F9' : '#1E293B',
+                              border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '1px solid rgba(59,130,246,0.2)',
+                              color: isNightMode ? '#F1F5F9' : '#E2E8F0',
                               borderTopRightRadius: 4,
                               boxShadow: isNightMode
                                 ? '0 2px 8px rgba(0,0,0,0.2), 0 1px 2px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)'
@@ -5897,7 +5897,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                               border: isNightMode
                                 ? `2px solid ${msg.streaming ? agentColor + '35' : agentColor + '22'}`
                                 : `1px solid #E2E8F0`,
-                              color: isNightMode ? '#F1F5F9' : '#1E293B',
+                              color: isNightMode ? '#F1F5F9' : '#E2E8F0',
                               borderTopLeftRadius: 4,
                               borderLeft: isNightMode ? undefined : `3px solid ${agentColor}`,
                               boxShadow: isNightMode
@@ -5929,7 +5929,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         }}>
                           {msg.time && (
                             <span style={{
-                              fontSize: 10, fontWeight: 500, color: isDaytime ? '#64748B' : '#94A3B8',
+                              fontSize: 10, fontWeight: 500, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
                               fontFamily: "'JetBrains Mono', monospace",
                             }}>
                               {formatChatTime(msg.time)}
@@ -5937,10 +5937,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           )}
                           {sourceLabel && (
                             <span style={{
-                              fontSize: 9, fontWeight: 500, color: isDaytime ? '#64748B' : '#94A3B8',
+                              fontSize: 9, fontWeight: 500, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
                               letterSpacing: '0.06em',
                               fontFamily: "'JetBrains Mono', monospace",
-                              opacity: isDaytime ? 0.6 : 0.4,
+                              opacity: isDaytime ? 0.5 : 0.4,
                               textTransform: 'lowercase',
                             }}>
                               {sourceLabel.toLowerCase()}
@@ -5970,7 +5970,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         ))}
                       </div>
                       <span style={{
-                        fontSize: 13, color: isDaytime ? '#64748B' : '#94A3B8', fontStyle: 'italic', fontWeight: 500,
+                        fontSize: 13, color: isDaytime ? '#8BA4C4' : '#6B8AB0', fontStyle: 'italic', fontWeight: 500,
                         fontFamily: "'Inter', system-ui, sans-serif",
                       }}>
                         {(() => {
@@ -6003,14 +6003,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   }}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: isDaytime ? '#CBD5E1' : '#334155',
+                    color: isDaytime ? '#4A6585' : '#A0B4CC',
                     padding: '2px 8px', borderRadius: 4,
                     fontSize: 11, fontWeight: 600, fontFamily: "'Inter', sans-serif",
                     display: 'flex', alignItems: 'center', gap: 4,
                     transition: 'color 100ms',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#3B82F6' : '#60A5FA'}
-                  onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#CBD5E1' : '#334155'}
+                  onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#60A5FA' : '#60A5FA'}
+                  onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#4A6585' : '#A0B4CC'}
                 >
                   <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9" />
@@ -6043,7 +6043,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Chat input */}
             <div style={{
               padding: '16px 20px',
-              borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.1)',
+              borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
               background: isNightMode
                 ? 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)'
                 : 'transparent',
@@ -6058,19 +6058,19 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   <div style={{
                     position: 'absolute', bottom: '100%', left: 0, right: 0,
                     marginBottom: 6,
-                    background: isNightMode ? '#1A2744' : '#FFFFFF',
+                    background: isNightMode ? '#1A2744' : '#1E2A3A',
                     border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
                     borderRadius: 12,
                     boxShadow: isNightMode
                       ? '0 -8px 32px rgba(0,0,0,0.5), 0 -2px 8px rgba(59,130,246,0.15)'
-                      : '0 -8px 32px rgba(0,0,0,0.1), 0 -2px 8px rgba(59,130,246,0.08)',
+                      : '0 -8px 32px rgba(0,0,0,0.4), 0 -2px 8px rgba(59,130,246,0.15)',
                     maxHeight: 240, overflowY: 'auto',
                     zIndex: 100,
                     padding: '6px 0',
                   }}>
                     <div style={{
                       padding: '4px 14px 8px',
-                      fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#94A3B8',
+                      fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#6B8AB0',
                       textTransform: 'uppercase', letterSpacing: '0.08em',
                       fontFamily: "'JetBrains Mono', monospace",
                     }}>
@@ -6101,7 +6101,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{
                             fontSize: 15, fontWeight: 800,
-                            color: isNightMode ? '#F1F5F9' : '#0F172A',
+                            color: isNightMode ? '#F1F5F9' : '#E8ECF0',
                             fontFamily: "'Inter', system-ui, sans-serif",
                           }}>
                             {opt.name}
@@ -6118,7 +6118,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           </div>
                           <div style={{
                             fontSize: 12, fontWeight: 600,
-                            color: isNightMode ? '#64748B' : '#94A3B8',
+                            color: isNightMode ? '#64748B' : '#6B8AB0',
                             fontFamily: "'Inter', system-ui, sans-serif",
                             marginTop: 1,
                           }}>
@@ -6127,7 +6127,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         </div>
                         <span style={{
                           fontSize: 12, fontWeight: 600,
-                          color: isNightMode ? '#475569' : '#CBD5E1',
+                          color: isNightMode ? '#475569' : '#4A6585',
                           fontFamily: "'JetBrains Mono', monospace",
                         }}>
                           @{opt.slug}
@@ -6175,7 +6175,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     padding: '14px 56px 14px 18px',
                     fontSize: 18, fontWeight: 400,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    color: isNightMode ? '#F1F5F9' : '#1E293B',
+                    color: isNightMode ? '#F1F5F9' : '#E2E8F0',
                     outline: 'none',
                     transition: 'border-color 200ms ease, box-shadow 200ms ease',
                   }}
@@ -6230,7 +6230,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <SkeletonLine width={100} height={12} style={{ marginBottom: 10 }} />
-                  <div style={{ padding: '10px 14px', background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(100,180,255,0.04)', borderRadius: 8, border: isDaytime ? '2px solid rgba(59,130,246,0.08)' : '1px solid rgba(100,180,255,0.08)' }}>
+                  <div style={{ padding: '10px 14px', background: isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.04)', borderRadius: 8, border: isDaytime ? '2px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.08)' }}>
                     <SkeletonBlock lines={3} />
                   </div>
                 </div>
@@ -6252,11 +6252,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Latest Result</div>
                 <div style={{
                   padding: '10px 14px',
-                  background: isDaytime ? 'rgba(59,130,246,0.04)' : `${agentColor}08`,
-                  border: isDaytime ? '1px solid rgba(59,130,246,0.1)' : `1px solid ${agentColor}20`,
+                  background: isDaytime ? 'rgba(59,130,246,0.08)' : `${agentColor}08`,
+                  border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : `1px solid ${agentColor}20`,
                   borderRadius: 8,
                 }}>
-                  <div style={{ color: isDaytime ? '#334155' : '#F0ECE6', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
+                  <div style={{ color: isDaytime ? '#A0B4CC' : '#F0ECE6', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.5 }}>
                     {agentStatus.latestResult}
                   </div>
                 </div>
@@ -6267,9 +6267,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {agentStatus && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Room</div>
-              <div style={{ color: isDaytime ? '#334155' : '#F0ECE6', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif" }}>{room?.name || 'Unknown'}</div>
+              <div style={{ color: isDaytime ? '#A0B4CC' : '#F0ECE6', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif" }}>{room?.name || 'Unknown'}</div>
               {room?.personality && (
-                <div style={{ color: isDaytime ? '#64748B' : '#94A3B8', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
+                <div style={{ color: isDaytime ? '#8BA4C4' : '#6B8AB0', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", marginTop: 6, fontStyle: 'italic', lineHeight: 1.5 }}>{room.personality}</div>
               )}
             </div>
             )}
@@ -6311,14 +6311,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       return (
                         <div key={idx} style={{
                           padding: '8px 12px',
-                          background: isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(100,180,255,0.03)',
-                          border: isDaytime ? '2px solid rgba(59,130,246,0.08)' : '1px solid rgba(100,180,255,0.06)',
+                          background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.03)',
+                          border: isDaytime ? '2px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.06)',
                           borderLeft: `3px solid ${agentColor}40`,
                           borderRadius: 6,
                           display: 'flex', flexDirection: 'column', gap: 4,
                         }}>
                           <div style={{
-                            color: isDaytime ? '#334155' : '#D0D8E8', fontSize: 13,
+                            color: isDaytime ? '#A0B4CC' : '#D0D8E8', fontSize: 13,
                             fontFamily: "'Inter', system-ui, sans-serif",
                             lineHeight: 1.4,
                           }}>
@@ -6330,7 +6330,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                                 fontSize: 12, fontWeight: 600,
                                 color: isDaytime ? '#16A34A' : '#22C55E',
                                 fontFamily: "'JetBrains Mono', monospace",
-                                background: isDaytime ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.08)',
+                                background: isDaytime ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.08)',
                                 border: isDaytime ? '1px solid rgba(34,197,94,0.12)' : '1px solid rgba(34,197,94,0.15)',
                                 borderRadius: 4, padding: '1px 6px',
                                 display: 'flex', alignItems: 'center', gap: 4,
@@ -6341,7 +6341,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             )}
                             {entry.repo && (
                               <span style={{
-                                fontSize: 12, fontWeight: 600, color: isDaytime ? '#94A3B8' : '#64748B',
+                                fontSize: 12, fontWeight: 600, color: isDaytime ? '#6B8AB0' : '#8BA4C4',
                                 fontFamily: "'JetBrains Mono', monospace",
                               }}>
                                 {entry.repo}
@@ -6349,7 +6349,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             )}
                             {entry.time && (
                               <span style={{
-                                fontSize: 12, fontWeight: 500, color: isDaytime ? '#94A3B8' : '#475569',
+                                fontSize: 12, fontWeight: 500, color: isDaytime ? '#6B8AB0' : '#8BA4C4',
                                 fontFamily: "'Inter', sans-serif",
                                 marginLeft: 'auto',
                               }}>
@@ -6378,12 +6378,12 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       return (
                         <div key={p.key} style={{
                           padding: '10px 12px',
-                          background: isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(100,180,255,0.03)',
-                          border: isDaytime ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(100,180,255,0.06)',
+                          background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.03)',
+                          border: isDaytime ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(100,180,255,0.06)',
                           borderRadius: 8,
                         }}>
                           <div style={{
-                            color: isDaytime ? '#0F172A' : '#F1F5F9', fontSize: 14, fontWeight: 800,
+                            color: isDaytime ? '#E8ECF0' : '#F1F5F9', fontSize: 14, fontWeight: 800,
                             fontFamily: "'Inter', system-ui, sans-serif",
                             marginBottom: 6,
                           }}>
@@ -6392,27 +6392,27 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           {/* Lead */}
                           {leadAgent && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: isDaytime ? '#94A3B8' : '#475569', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.08em' }}>Lead:</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: isDaytime ? '#6B8AB0' : '#8BA4C4', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.08em' }}>Lead:</span>
                               <SpriteAvatar agentSlug={p.lead} size={18} borderColor={leadAgent.color} />
                               <span style={{ fontSize: 12, fontWeight: 700, color: leadAgent.color, fontFamily: "'Inter', sans-serif" }}>{leadAgent.name}</span>
                             </div>
                           )}
                           {/* Team */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: isDaytime ? '#94A3B8' : '#475569', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.08em', marginRight: 2 }}>Team:</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: isDaytime ? '#6B8AB0' : '#8BA4C4', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.08em', marginRight: 2 }}>Team:</span>
                             {p.team.filter(t => t !== 'all').map(slug => {
                               const ta = AGENTS.find(a => a.slug === slug)
-                              if (!ta) return <span key={slug} style={{ fontSize: 11, color: isDaytime ? '#64748B' : '#475569', fontFamily: "'Inter', sans-serif" }}>{slug}</span>
+                              if (!ta) return <span key={slug} style={{ fontSize: 11, color: isDaytime ? '#8BA4C4' : '#8BA4C4', fontFamily: "'Inter', sans-serif" }}>{slug}</span>
                               return <SpriteAvatar key={slug} agentSlug={slug} size={20} borderColor={ta.color} />
                             })}
-                            {p.team.includes('all') && <span style={{ fontSize: 11, color: isDaytime ? '#64748B' : '#475569', fontFamily: "'Inter', sans-serif", fontWeight: 600 }}>All agents</span>}
+                            {p.team.includes('all') && <span style={{ fontSize: 11, color: isDaytime ? '#8BA4C4' : '#8BA4C4', fontFamily: "'Inter', sans-serif", fontWeight: 600 }}>All agents</span>}
                           </div>
                           {/* Context files */}
                           {p.contextFiles.length > 0 && (
                             <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
                               {p.contextFiles.map(f => (
                                 <span key={f} style={{
-                                  fontSize: 11, fontWeight: 600, color: isDaytime ? '#3B82F6' : '#60A5FA',
+                                  fontSize: 11, fontWeight: 600, color: isDaytime ? '#60A5FA' : '#60A5FA',
                                   fontFamily: "'JetBrains Mono', monospace",
                                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                 }}>
@@ -7480,7 +7480,7 @@ export default function GameDashboard() {
     <div style={{
       position: 'fixed', inset: 0,
       width: '100vw', maxWidth: '100vw',
-      background: currentMode === 'game' ? '#0A0D1A' : (isNightMode ? PALETTE.background : '#E8F0FA'),
+      background: currentMode === 'game' ? '#0A0D1A' : (isNightMode ? PALETTE.background : '#141E30'),
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',
@@ -7495,7 +7495,7 @@ export default function GameDashboard() {
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
-              {currentMode === 'game' && <IslandBackground isNightMode={isNightMode} />}
+              {currentMode === 'game' && <CrossyBackground isNightMode={isNightMode} />}
               <CanvasOffice
                 ref={canvasOfficeRef}
                 agentStatus={agentStatus}
@@ -7510,8 +7510,8 @@ export default function GameDashboard() {
               {!isMobile && (
                 <div style={{
                   position: 'absolute', bottom: 16, left: 16, zIndex: 10,
-                  background: isNightMode ? 'rgba(15,27,45,0.8)' : 'rgba(255,255,255,0.85)',
-                  border: isNightMode ? '1px solid rgba(59,130,246,0.15)' : '1.5px solid rgba(59,130,246,0.2)',
+                  background: isNightMode ? 'rgba(15,27,45,0.8)' : 'rgba(26,35,50,0.85)',
+                  border: isNightMode ? '1px solid rgba(59,130,246,0.15)' : '1.5px solid rgba(59,130,246,0.25)',
                   borderRadius: 8,
                   padding: '6px 12px',
                   display: 'flex', gap: 12, alignItems: 'center',
@@ -7519,12 +7519,12 @@ export default function GameDashboard() {
                   pointerEvents: 'none',
                   opacity: cameraZoom > 2.5 ? 0 : 1,
                   transition: 'opacity 300ms ease, background 500ms ease',
-                  boxShadow: isNightMode ? 'none' : '0 2px 8px rgba(0,0,0,0.06)',
+                  boxShadow: isNightMode ? 'none' : '0 2px 8px rgba(0,0,0,0.3)',
                 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: '#16A34A', fontFamily: "'Inter', system-ui, sans-serif" }}>
                     {Object.values(agentStatus).filter(a => a?.status === 'WORKING').length} Active
                   </span>
-                  <span style={{ color: isNightMode ? 'rgba(59,130,246,0.3)' : '#CBD5E1' }}>|</span>
+                  <span style={{ color: isNightMode ? 'rgba(59,130,246,0.3)' : '#4A6585' }}>|</span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: '#DC2626', fontFamily: "'Inter', system-ui, sans-serif" }}>
                     {Object.values(agentStatus).filter(a => a?.status === 'BLOCKED').length} Blocked
                   </span>

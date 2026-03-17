@@ -106,8 +106,8 @@ function parsePunchList(markdown) {
   const SECTION_MAP = {
     'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy. [SURVIVES: HUD data pill.]
     'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },  // Patrik's personal blocked items
-    'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#94A3B8', icon: 'history' },  // Stale tasks needing attention (was "Checking In")
-    'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#94A3B8', icon: 'history' },  // Legacy alias
+    'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Stale tasks needing attention (was "Checking In")
+    'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Legacy alias
     'SCHEDULE':          { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },
     'TODAY':             { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },  // Legacy alias
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -965,8 +965,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
           ? (isExpanded
               ? `0 4px 16px ${project.color}20, 0 1px 4px rgba(0,0,0,0.08)`
               : isClient && project.statusTag === 'RED'
-                ? '0 2px 12px rgba(239,68,68,0.12), 0 1px 3px rgba(0,0,0,0.06)'
-                : '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)')
+                ? '0 2px 12px rgba(239,68,68,0.2), 0 1px 3px rgba(0,0,0,0.2)'
+                : '0 2px 8px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.15)')
           : (isExpanded
               ? `0 6px 24px ${project.color}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
               : isClient && project.statusTag === 'RED'
@@ -1030,12 +1030,12 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 20, fontWeight: 900,
         color: isExpanded
-          ? (isDaytime ? '#1E293B' : '#FFFFFF')
-          : isDaytime ? '#0F172A' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),
+          ? (isDaytime ? '#E2E8F0' : '#FFFFFF')
+          : isDaytime ? '#E8ECF0' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',
-        textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.06)' : (isSchedule ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
+        textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.3)' : (isSchedule ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
       }}>
         {project.name}
       </span>
@@ -1091,7 +1091,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
           display: 'flex', alignItems: 'center', gap: 4,
           fontFamily: 'JetBrains Mono, monospace',
           fontSize: 11, fontWeight: 700,
-          color: '#94A3B8',
+          color: '#6B8AB0',
           background: 'rgba(148,163,184,0.08)',
           padding: '3px 8px', borderRadius: 6,
           letterSpacing: '0.08em',
@@ -1173,21 +1173,21 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
 function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (white glass, blue accents)
-  const tpBg = isDaytime ? 'rgba(248, 250, 255, 0.96)' : HUD.panelBg
+  const tpBg = isDaytime ? 'rgba(20, 30, 48, 0.96)' : HUD.panelBg
   const tpBorder = isDaytime ? 'rgba(59, 130, 246, 0.2)' : HUD.panelBorder
   const tpShadow = isDaytime
-    ? '0 -12px 48px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)'
+    ? '0 -12px 48px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,180,255,0.1)'
     : '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(100,180,255,0.08)'
   const tpDivider = isDaytime ? 'rgba(59, 130, 246, 0.12)' : HUD.divider
-  const tpTextPrimary = isDaytime ? '#0F172A' : HUD.textPrimary
-  const tpTextMuted = isDaytime ? '#64748B' : HUD.textMuted
+  const tpTextPrimary = isDaytime ? '#E8ECF0' : HUD.textPrimary
+  const tpTextMuted = isDaytime ? '#8BA4C4' : HUD.textMuted
   const tpGlow = isDaytime
-    ? 'linear-gradient(180deg, rgba(59,130,246,0.04) 0%, transparent 100%)'
+    ? 'linear-gradient(180deg, rgba(59,130,246,0.08) 0%, transparent 100%)'
     : 'linear-gradient(180deg, rgba(100,180,255,0.05) 0%, transparent 100%)'
-  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.2)' : 'rgba(100,180,255,0.18)'
-  const tpCheckboxBg = isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(100,180,255,0.03)'
-  const tpCloseBg = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)'
-  const tpCloseHoverBg = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.12)'
+  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.25)' : 'rgba(100,180,255,0.18)'
+  const tpCheckboxBg = isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.03)'
+  const tpCloseBg = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)'
+  const tpCloseHoverBg = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.12)'
   const tpProgressBg = isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.06)'
   // Local state for optimistic checkbox toggling
   const [localToggles, setLocalToggles] = useState({}) // task index -> toggled done state
@@ -1333,7 +1333,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 150ms ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = tpCloseHoverBg; e.currentTarget.style.color = isDaytime ? '#475569' : HUD.textSecondary }}
+            onMouseEnter={e => { e.currentTarget.style.background = tpCloseHoverBg; e.currentTarget.style.color = isDaytime ? '#8BA4C4' : HUD.textSecondary }}
             onMouseLeave={e => { e.currentTarget.style.background = tpCloseBg; e.currentTarget.style.color = tpTextMuted }}
           >
             <X size={16} />
@@ -1462,7 +1462,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                 transition: 'opacity 200ms ease, background 100ms ease',
                 // Highlight when this task's context menu is open
                 background: hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
-                  ? (isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.15)')
+                  ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.15)')
                   : 'transparent',
                 borderLeft: hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
                   ? `3px solid ${project.color || '#3B82F6'}`
@@ -1571,7 +1571,7 @@ const hudCtxBtn = (isNight) => ({
   display: 'block', width: '100%', textAlign: 'left',
   padding: '8px 14px', background: 'none', border: 'none',
   fontSize: 13, fontWeight: 600, cursor: 'pointer',
-  color: isNight ? '#E2E8F0' : '#1E293B',
+  color: isNight ? '#E2E8F0' : '#E2E8F0',
   fontFamily: "'Inter', sans-serif",
   transition: 'background 100ms',
 })
@@ -1581,7 +1581,7 @@ function CompactStats({ agentStatus, throughput, overallProgress, isNightMode })
   const working = throughput?.working || Object.values(agentStatus || {}).filter(a => a?.status === 'WORKING').length
   const blocked = throughput?.blocked || Object.values(agentStatus || {}).filter(a => a?.status === 'BLOCKED').length
 
-  const labelColor = isNightMode === false ? '#475569' : HUD.textMuted
+  const labelColor = isNightMode === false ? '#8BA4C4' : HUD.textMuted
 
   return (
     <div style={{
@@ -1604,20 +1604,20 @@ function CompactStats({ agentStatus, throughput, overallProgress, isNightMode })
       {/* Mini progress ring - LARGER */}
       <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
         <svg width={40} height={40} viewBox="0 0 40 40">
-          <circle cx={20} cy={20} r={15} fill="none" stroke={isNightMode === false ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.08)'} strokeWidth={3} />
+          <circle cx={20} cy={20} r={15} fill="none" stroke={isNightMode === false ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.08)'} strokeWidth={3} />
           <circle
             cx={20} cy={20} r={15}
-            fill="none" stroke={isNightMode === false ? '#2563EB' : HUD.accent} strokeWidth={3}
+            fill="none" stroke={isNightMode === false ? '#60A5FA' : HUD.accent} strokeWidth={3}
             strokeLinecap="round"
             strokeDasharray={`${overallProgress * 0.942} 94.2`}
             transform="rotate(-90 20 20)"
-            style={{ transition: 'stroke-dasharray 600ms ease', filter: `drop-shadow(0 0 4px ${isNightMode === false ? 'rgba(37,99,235,0.35)' : HUD.accentGlow})` }}
+            style={{ transition: 'stroke-dasharray 600ms ease', filter: `drop-shadow(0 0 4px ${isNightMode === false ? 'rgba(96,165,250,0.35)' : HUD.accentGlow})` }}
           />
         </svg>
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 800, color: isNightMode === false ? '#2563EB' : HUD.accent,
+          fontSize: 13, fontWeight: 800, color: isNightMode === false ? '#60A5FA' : HUD.accent,
         }}>
           {overallProgress}%
         </div>
@@ -1671,18 +1671,18 @@ export default function GameHUD({
 
   // Daytime palette: white glass with vibrant blue accents (matches top bar)
   const isDaytime = isNightMode === false
-  const hudPanelBg = isDaytime ? 'rgba(248, 250, 255, 0.94)' : HUD.panelBg
+  const hudPanelBg = isDaytime ? 'rgba(20, 30, 48, 0.94)' : HUD.panelBg
   const hudPanelBorder = isDaytime ? 'rgba(59, 130, 246, 0.2)' : HUD.panelBorder
   const hudPanelShadow = isDaytime
-    ? '0 -8px 48px rgba(0,0,0,0.08), 0 -2px 0 rgba(59,130,246,0.12), inset 0 1px 0 rgba(255,255,255,0.9)'
+    ? '0 -8px 48px rgba(0,0,0,0.3), 0 -2px 0 rgba(59,130,246,0.15), inset 0 1px 0 rgba(100,180,255,0.1)'
     : HUD.panelShadow
   const hudBlueOverlay = isDaytime
-    ? 'linear-gradient(180deg, rgba(59,130,246,0.04) 0%, rgba(59,130,246,0.01) 50%, transparent 100%)'
+    ? 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, rgba(59,130,246,0.02) 50%, transparent 100%)'
     : HUD.blueOverlay
-  const hudDivider = isDaytime ? 'rgba(59, 130, 246, 0.12)' : HUD.divider
-  const hudTextPrimary = isDaytime ? '#0F172A' : HUD.textPrimary
-  const hudTextMuted = isDaytime ? '#64748B' : HUD.textMuted
-  const hudAccent = isDaytime ? '#2563EB' : HUD.accent
+  const hudDivider = isDaytime ? 'rgba(100, 180, 255, 0.12)' : HUD.divider
+  const hudTextPrimary = isDaytime ? '#E8ECF0' : HUD.textPrimary
+  const hudTextMuted = isDaytime ? '#8BA4C4' : HUD.textMuted
+  const hudAccent = isDaytime ? '#60A5FA' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -1822,7 +1822,7 @@ export default function GameHUD({
         merged.push({
           name: 'Finish These',
           section: 'finish-these',
-          color: '#94A3B8',
+          color: '#6B8AB0',
           icon: 'history',
           tasks: checkingInTasks.map(t => ({
             text: t.text,
@@ -1956,8 +1956,8 @@ export default function GameHUD({
           background: hudPanelBg,
           backdropFilter: 'blur(24px)',
           borderTop: `2px solid ${hudPanelBorder}`,
-          borderLeft: `2px solid ${isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(100,180,255,0.08)'}`,
-          borderRight: `2px solid ${isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(100,180,255,0.08)'}`,
+          borderLeft: `2px solid ${isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.08)'}`,
+          borderRight: `2px solid ${isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.08)'}`,
           // Chunky game panel shape
           borderRadius: isMobile ? 0 : '18px 18px 0 0',
           boxShadow: hudPanelShadow,
@@ -2026,12 +2026,12 @@ export default function GameHUD({
             }}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: isDaytime ? '#94A3B8' : '#475569',
+              color: isDaytime ? '#6B8AB0' : '#8BA4C4',
               padding: '4px 2px', flexShrink: 0, display: 'flex', alignItems: 'center',
               transition: 'color 100ms',
             }}
-            onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#3B82F6' : '#60A5FA'}
-            onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#94A3B8' : '#475569'}
+            onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#60A5FA' : '#60A5FA'}
+            onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#6B8AB0' : '#8BA4C4'}
           >
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
@@ -2068,7 +2068,7 @@ export default function GameHUD({
                       }}
                       placeholder="Filter projects..."
                       style={{
-                        background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.06)',
+                        background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
                         border: `1px solid ${hudPanelBorder}`,
                         borderRadius: 10,
                         height: 36,
@@ -2088,7 +2088,7 @@ export default function GameHUD({
                   whileTap={{ scale: 0.9 }}
                   style={{
                     width: 32, height: 32, borderRadius: 8,
-                    background: searchOpen ? `${hudAccent}22` : (isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(100,180,255,0.04)'),
+                    background: searchOpen ? `${hudAccent}22` : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.04)'),
                     border: `1px solid ${searchOpen ? hudAccent + '44' : hudDivider}`,
                     color: searchOpen ? hudAccent : hudTextMuted,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -2136,12 +2136,12 @@ export default function GameHUD({
             }}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: isDaytime ? '#94A3B8' : '#475569',
+              color: isDaytime ? '#6B8AB0' : '#8BA4C4',
               padding: '4px 2px', flexShrink: 0, display: 'flex', alignItems: 'center',
               transition: 'color 100ms',
             }}
-            onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#3B82F6' : '#60A5FA'}
-            onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#94A3B8' : '#475569'}
+            onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#60A5FA' : '#60A5FA'}
+            onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#6B8AB0' : '#8BA4C4'}
           >
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
@@ -2244,21 +2244,21 @@ export default function GameHUD({
           zIndex: 9999,
           background: isNightMode
             ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)'
-            : 'rgba(255,255,255,0.98)',
+            : 'rgba(26,35,50,0.98)',
           border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '1px solid rgba(59,130,246,0.2)',
           borderRadius: 10, padding: '6px 0', minWidth: 240, maxWidth: 320,
           boxShadow: isNightMode
             ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
-            : '0 8px 32px rgba(0,0,0,0.15)',
+            : '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.1)',
           backdropFilter: 'blur(20px)',
         }}>
           {/* Task name header */}
           <div style={{
             padding: '8px 14px 6px',
             fontSize: 12, fontWeight: 700,
-            color: isNightMode ? '#94A3B8' : '#64748B',
+            color: isNightMode ? '#94A3B8' : '#8BA4C4',
             fontFamily: "'Inter', sans-serif",
-            borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(0,0,0,0.06)',
+            borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(59,130,246,0.1)',
             marginBottom: 4,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
@@ -2284,11 +2284,11 @@ export default function GameHUD({
             Send to Right Now
           </button>
 
-          <div style={{ height: 1, background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(0,0,0,0.06)', margin: '4px 0' }} />
+          <div style={{ height: 1, background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.1)', margin: '4px 0' }} />
 
           <div style={{
             padding: '5px 14px', fontSize: 10, fontWeight: 700,
-            color: isNightMode ? '#475569' : '#94A3B8',
+            color: isNightMode ? '#475569' : '#6B8AB0',
             fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.08em',
           }}>Move to pill</div>
           {(projects || []).filter(p => p.name !== hudTaskCtx.project?.name).slice(0, 5).map(p => (
@@ -2299,7 +2299,7 @@ export default function GameHUD({
             >{p.name}</button>
           ))}
 
-          <div style={{ height: 1, background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(0,0,0,0.06)', margin: '4px 0' }} />
+          <div style={{ height: 1, background: isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.1)', margin: '4px 0' }} />
 
           {hudTaskCtx.task.isManual && (
             <button onClick={() => {

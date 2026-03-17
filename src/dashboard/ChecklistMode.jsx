@@ -105,8 +105,8 @@ function parsePunchList(markdown) {
   const SECTION_MAP = {
     'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy
     'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },
-    'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#94A3B8', icon: 'history' },  // Was "Checking In"
-    'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#94A3B8', icon: 'history' },  // Legacy alias
+    'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Was "Checking In"
+    'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Legacy alias
     'SCHEDULE':          { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },
     'TODAY':             { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },  // Legacy alias
     'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
@@ -491,7 +491,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               border: `1.5px solid ${selectedProject === 'finish-these' ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.1)'}`,
               borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
               cursor: 'pointer', scrollSnapAlign: 'start',
-              color: '#94A3B8',
+              color: '#6B8AB0',
               fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
               textTransform: 'uppercase',
             }}
@@ -500,7 +500,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
             Finish These
             <span style={{
               fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-              fontSize: 13, color: '#FFF', background: '#94A3B8',
+              fontSize: 13, color: '#FFF', background: '#6B8AB0',
               padding: '2px 7px', borderRadius: 8, lineHeight: 1,
             }}>
               {checkingInCount}
@@ -713,7 +713,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           <span style={{ flex: 1, letterSpacing: '-0.01em' }}>Finish These</span>
           <span style={{
             fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
-            fontSize: 12, color: '#94A3B8',
+            fontSize: 12, color: '#6B8AB0',
             background: 'rgba(148,163,184,0.10)',
             padding: '3px 9px', borderRadius: 8, lineHeight: 1,
             border: '1px solid rgba(148,163,184,0.15)',
@@ -920,10 +920,10 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu }) {
       onContextMenu={handleContextMenu}
       style={{
         background: isHovered
-          ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
-          : (isDaytime ? 'rgba(255,107,61,0.04)' : 'rgba(255,107,61,0.02)'),
+          ? (isDaytime ? 'rgba(255,107,61,0.12)' : 'rgba(255,107,61,0.06)')
+          : (isDaytime ? 'rgba(255,107,61,0.06)' : 'rgba(255,107,61,0.02)'),
         border: `1px solid ${isHovered
-          ? (isDaytime ? 'rgba(255,107,61,0.2)' : 'rgba(255,107,61,0.15)')
+          ? (isDaytime ? 'rgba(255,107,61,0.25)' : 'rgba(255,107,61,0.15)')
           : (isDaytime ? 'rgba(255,107,61,0.1)' : 'rgba(255,107,61,0.06)')}`,
         borderRadius: 12,
         padding: '12px 16px 10px',
@@ -941,7 +941,7 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu }) {
           <div style={{
             width: 32, height: 32, borderRadius: '50%',
             border: `2px solid ${agentColor}`,
-            overflow: 'hidden', flexShrink: 0, background: isDaytime ? '#F1F5F9' : '#0A0F1E',
+            overflow: 'hidden', flexShrink: 0, background: isDaytime ? '#1A2332' : '#0A0F1E',
             boxShadow: `0 0 8px ${agentColor}44`,
           }}>
             <img
@@ -971,7 +971,7 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 500, fontSize: 15,
-            color: task.done ? '#6B7280' : (isDaytime ? '#1E293B' : '#F0ECE6'),
+            color: task.done ? '#6B7280' : (isDaytime ? '#E2E8F0' : '#F0ECE6'),
             lineHeight: 1.35,
             textDecoration: task.done ? 'line-through' : 'none',
             opacity: task.done ? 0.6 : 1,
@@ -1056,7 +1056,7 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMen
           <span style={{
             fontFamily: "'Inter Tight', system-ui, sans-serif",
             fontSize: 22, fontWeight: 900,
-            color: isDaytime ? '#0F172A' : '#EDF2FA',
+            color: isDaytime ? '#E8ECF0' : '#EDF2FA',
             textTransform: 'uppercase',
             letterSpacing: '-0.02em',
           }}>
@@ -1065,7 +1065,7 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMen
           <span style={{
             fontFamily: "'Inter', system-ui, sans-serif",
             fontSize: 14, fontWeight: 500,
-            color: isDaytime ? '#94A3B8' : '#6B7280',
+            color: isDaytime ? '#6B8AB0' : '#6B7280',
           }}>
             All clear
           </span>
@@ -1086,7 +1086,7 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMen
           textAlign: 'left',
         }}
       >
-        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} />}
+        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} />}
 
         <Zap size={20} color={color} style={{
           filter: `drop-shadow(0 0 8px ${color}AA)`,
@@ -1096,11 +1096,11 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMen
         <span style={{
           fontFamily: "'Inter Tight', system-ui, sans-serif",
           fontSize: 22, fontWeight: 900,
-          color: isDaytime ? '#0F172A' : '#EDF2FA',
+          color: isDaytime ? '#E8ECF0' : '#EDF2FA',
           textTransform: 'uppercase',
           letterSpacing: '-0.02em',
           flex: 1,
-          textShadow: isDaytime ? 'none' : `0 0 20px ${color}33`,
+          textShadow: isDaytime ? '0 1px 4px rgba(0,0,0,0.2)' : `0 0 20px ${color}33`,
         }}>
           Right Now
         </span>
@@ -1159,8 +1159,8 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck, onContextMenu }) {
       onContextMenu={handleContextMenu}
       style={{
         background: isHovered
-          ? (isDaytime ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.06)')
-          : (isDaytime ? 'rgba(239,68,68,0.03)' : 'rgba(239,68,68,0.02)'),
+          ? (isDaytime ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)')
+          : (isDaytime ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.02)'),
         border: `1px solid ${isHovered
           ? (isDaytime ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.15)')
           : (isDaytime ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.06)')}`,
@@ -1193,7 +1193,7 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck, onContextMenu }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 500, fontSize: 15,
-            color: task.done ? '#6B7280' : (isDaytime ? '#1E293B' : '#F0ECE6'),
+            color: task.done ? '#6B7280' : (isDaytime ? '#E2E8F0' : '#F0ECE6'),
             lineHeight: 1.35,
             textDecoration: task.done ? 'line-through' : 'none',
             opacity: task.done ? 0.6 : 1,
@@ -1249,7 +1249,7 @@ function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck, on
           textAlign: 'left',
         }}
       >
-        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} />}
+        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} />}
 
         <AlertCircle size={20} color="#EF4444" style={{
           filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.5))',
@@ -1259,11 +1259,11 @@ function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck, on
         <span style={{
           fontFamily: "'Inter Tight', system-ui, sans-serif",
           fontSize: 22, fontWeight: 900,
-          color: isDaytime ? '#0F172A' : '#EDF2FA',
+          color: isDaytime ? '#E8ECF0' : '#EDF2FA',
           textTransform: 'uppercase',
           letterSpacing: '-0.02em',
           flex: 1,
-          textShadow: isDaytime ? 'none' : '0 0 20px rgba(239,68,68,0.2)',
+          textShadow: isDaytime ? '0 1px 4px rgba(0,0,0,0.2)' : '0 0 20px rgba(239,68,68,0.2)',
         }}>
           Your TODOs
         </span>
@@ -1326,11 +1326,11 @@ function CheckingInTaskCard({ task, index, isDaytime, onContextMenu }) {
       onContextMenu={handleContextMenu}
       style={{
         background: isHovered
-          ? (isDaytime ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.05)')
-          : (isDaytime ? 'rgba(148,163,184,0.03)' : 'rgba(148,163,184,0.02)'),
+          ? (isDaytime ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.05)')
+          : (isDaytime ? 'rgba(148,163,184,0.05)' : 'rgba(148,163,184,0.02)'),
         border: `1px solid ${isHovered
           ? (isDaytime ? 'rgba(148,163,184,0.18)' : 'rgba(148,163,184,0.12)')
-          : (isDaytime ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.05)')}`,
+          : (isDaytime ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.05)')}`,
         borderRadius: 12,
         padding: '12px 16px',
         marginBottom: 6,
@@ -1346,7 +1346,7 @@ function CheckingInTaskCard({ task, index, isDaytime, onContextMenu }) {
             width: 28, height: 28, borderRadius: '50%',
             border: `2px solid ${agentInfo.color}55`,
             overflow: 'hidden', flexShrink: 0,
-            background: isDaytime ? '#F1F5F9' : '#0A0F1E',
+            background: isDaytime ? '#1A2332' : '#0A0F1E',
             opacity: 0.7,
           }}>
             <img
@@ -1376,7 +1376,7 @@ function CheckingInTaskCard({ task, index, isDaytime, onContextMenu }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 15,
-            color: isDaytime ? '#64748B' : '#8BA4C4',
+            color: isDaytime ? '#8BA4C4' : '#8BA4C4',
             lineHeight: 1.35,
           }}>
             {task.text}
@@ -1398,7 +1398,7 @@ function CheckingInTaskCard({ task, index, isDaytime, onContextMenu }) {
         <span style={{
           fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 10,
           textTransform: 'uppercase', letterSpacing: '0.12em',
-          color: '#94A3B8',
+          color: '#6B8AB0',
           background: 'rgba(148,163,184,0.08)',
           border: '1px solid rgba(148,163,184,0.15)',
           borderRadius: 4, padding: '3px 8px',
@@ -1431,7 +1431,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
           textAlign: 'left',
         }}
       >
-        {isCollapsed ? <ChevronRight size={14} color={isDaytime ? '#94A3B8' : '#6B7280'} /> : <ChevronDown size={14} color={isDaytime ? '#94A3B8' : '#6B7280'} />}
+        {isCollapsed ? <ChevronRight size={14} color={isDaytime ? '#6B8AB0' : '#6B7280'} /> : <ChevronDown size={14} color={isDaytime ? '#6B8AB0' : '#6B7280'} />}
 
         <CheckCircle2 size={16} color="#22C55E" style={{
           filter: 'drop-shadow(0 0 4px rgba(34,197,94,0.3))',
@@ -1440,7 +1440,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
         <span style={{
           fontFamily: "'Inter Tight', system-ui, sans-serif",
           fontSize: 16, fontWeight: 700,
-          color: isDaytime ? '#64748B' : '#8BA4C4',
+          color: isDaytime ? '#8BA4C4' : '#8BA4C4',
           textTransform: 'uppercase',
           letterSpacing: '-0.01em',
           flex: 1,
@@ -1479,7 +1479,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
                   padding: '6px 12px',
                   marginBottom: 2,
                   borderRadius: 8,
-                  background: isDaytime ? 'rgba(34,197,94,0.02)' : 'rgba(34,197,94,0.01)',
+                  background: isDaytime ? 'rgba(34,197,94,0.04)' : 'rgba(34,197,94,0.01)',
                 }}
               >
                 {/* Small agent avatar */}
@@ -1487,7 +1487,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
                   <div style={{
                     width: 22, height: 22, borderRadius: '50%',
                     border: `1.5px solid ${agentColor}44`,
-                    overflow: 'hidden', flexShrink: 0, background: isDaytime ? '#F1F5F9' : '#0A0F1E',
+                    overflow: 'hidden', flexShrink: 0, background: isDaytime ? '#1A2332' : '#0A0F1E',
                   }}>
                     <img
                       src={`/corner/sprites/${task.agent}-idle.png`}
@@ -1515,7 +1515,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
                 {/* One-liner: "Bobby shipped chat cleanup" */}
                 <span style={{
                   fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 13,
-                  color: isDaytime ? '#64748B' : '#8BA4C4',
+                  color: isDaytime ? '#8BA4C4' : '#8BA4C4',
                   lineHeight: 1.3, flex: 1, minWidth: 0,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>
@@ -1526,7 +1526,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
                 {task.timestamp && (
                   <span style={{
                     fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 10,
-                    color: isDaytime ? '#94A3B8' : '#4A6080',
+                    color: isDaytime ? '#6B8AB0' : '#4A6080',
                     flexShrink: 0,
                   }}>
                     {task.timestamp}
@@ -1557,7 +1557,7 @@ function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime, onContextM
           textAlign: 'left',
         }}
       >
-        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#94A3B8' : '#6B7280'} />}
+        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} />}
 
         <History size={20} color="#94A3B8" style={{
           filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.3))',
@@ -1566,7 +1566,7 @@ function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime, onContextM
         <span style={{
           fontFamily: "'Inter Tight', system-ui, sans-serif",
           fontSize: 20, fontWeight: 800,
-          color: isDaytime ? '#64748B' : '#8BA4C4',
+          color: isDaytime ? '#8BA4C4' : '#8BA4C4',
           textTransform: 'uppercase',
           letterSpacing: '-0.01em',
           flex: 1,
@@ -1578,7 +1578,7 @@ function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime, onContextM
         {tasks.length > 0 && (
           <span style={{
             fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
-            fontSize: 13, color: '#94A3B8',
+            fontSize: 13, color: '#6B8AB0',
             background: 'rgba(148,163,184,0.10)',
             padding: '4px 12px', borderRadius: 10, lineHeight: 1,
             border: '1px solid rgba(148,163,184,0.15)',
