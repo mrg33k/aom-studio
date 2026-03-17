@@ -22,6 +22,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 import { AnimatedAgentCharacter, CharacterAnimationStyles } from './CharacterAnimations.jsx'
 import CanvasRoom from './CanvasRoom.jsx'
 import CanvasOffice from './CanvasOffice.jsx'
+import briefsIndex from '../data/briefs-index.json'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -3424,24 +3425,21 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     }
   }, [agentSlug])
 
-  // Load related published briefs on mount
+  // Load related published briefs on mount (uses static import, no fetch needed)
   useEffect(() => {
     if (!agentSlug) return
     const agentName = agent?.name?.toLowerCase() || agentSlug
     try {
-      // TODO(steve): WRONG FETCH PATH -- '/src/data/briefs-index.json' is a source-tree path, not a public path. Vite serves files from /public, not /src. This fetch will 404 in production (and probably localhost too). Should be '/data/briefs-index.json' (if in public/) or use an import statement. Related briefs will silently never load.
-      fetch('/src/data/briefs-index.json').then(r => r.ok ? r.json() : null).then(index => {
-        if (!index?.categories) return
-        const matches = []
-        for (const cat of index.categories) {
-          for (const item of (cat.items || [])) {
-            if (item.agent?.toLowerCase() === agentName || item.agent?.toLowerCase() === agentSlug) {
-              matches.push(item)
-            }
+      if (!briefsIndex?.categories) return
+      const matches = []
+      for (const cat of briefsIndex.categories) {
+        for (const item of (cat.items || [])) {
+          if (item.agent?.toLowerCase() === agentName || item.agent?.toLowerCase() === agentSlug) {
+            matches.push(item)
           }
         }
-        setRelatedBriefs(matches.slice(0, 5)) // Show up to 5 related briefs
-      }).catch(() => {})
+      }
+      setRelatedBriefs(matches.slice(0, 5)) // Show up to 5 related briefs
     } catch {}
   }, [agentSlug, agent])
 
