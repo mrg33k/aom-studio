@@ -12,6 +12,8 @@ import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, f
 // 3. DIM INACTIVE ROOMS: Rooms with inactive agentStatus get globalAlpha 0.4, locked idle, no crossfade.
 // 4. VIEW 2 (FOCUS) = NEIGHBORS VISIBLE: Zoomed room is big + centered but neighbors are around it.
 // 5. CHARACTER LAYERS: character-layer.png composited on top of room shells (verified working).
+// 6. CHARACTER WALKING: Each character walks a casual loop inside their room hex on unique timing.
+//    Vegas energy: random phase offsets, speed multipliers, idle pauses, subtle hop.
 //
 // CAMERA: Two-view system (Overview + Focus). No free pan/scroll zoom.
 //   View 1 (Overview): All 13 rooms visible, centered.
@@ -156,8 +158,8 @@ const VIS_W = ROOM_SIZE * 0.90
 const VIS_H = ROOM_SIZE * 0.90
 
 function hexPosition(row, col, originX, originY) {
-  const x = originX + col * (VIS_W * 0.50)
-  const y = originY + row * (VIS_H * 0.35)
+  const x = originX + col * (VIS_W * 0.52)
+  const y = originY + row * (VIS_H * 0.37)
   return { x, y }
 }
 
@@ -284,6 +286,119 @@ function getCelebrationGlow(elapsed, roomDelay) {
   }
 }
 
+// ---- CHARACTER WALK CONFIG ----
+// Waypoints define a casual loop inside the room hex interior safe zone.
+// Coordinates are in room-local space (0..512). The safe interior is roughly x:56-456, y:180-345.
+// Characters walk this loop, each on their own timing.
+const WALK_WAYPOINTS = [
+  { x: 180, y: 220 },  // upper-left area (near desk)
+  { x: 320, y: 200 },  // upper-right
+  { x: 380, y: 280 },  // right side
+  { x: 300, y: 340 },  // lower-right
+  { x: 200, y: 320 },  // lower-left
+  { x: 140, y: 260 },  // left side
+]
+
+// Per-character speed multipliers and pause tendencies. Bobby/Tony = fast. Mom/Paige = slow.
+const CHAR_WALK_SPEEDS = {
+  elon:    { speed: 0.7,  pauseChance: 0.4 },
+  bobby:   { speed: 1.3,  pauseChance: 0.15 },
+  steffen: { speed: 0.65, pauseChance: 0.5 },
+  steve:   { speed: 0.8,  pauseChance: 0.35 },
+  cleo:    { speed: 0.9,  pauseChance: 0.3 },
+  alex:    { speed: 1.0,  pauseChance: 0.25 },
+  mom:     { speed: 0.5,  pauseChance: 0.55 },
+  tony:    { speed: 1.4,  pauseChance: 0.1 },
+  colton:  { speed: 1.1,  pauseChance: 0.2 },
+  jacob:   { speed: 0.85, pauseChance: 0.3 },
+  paige:   { speed: 0.45, pauseChance: 0.6 },
+  elmo:    { speed: 1.05, pauseChance: 0.2 },
+  pixel:   { speed: 1.2,  pauseChance: 0.15 },
+}
+
+// Base walk speed: pixels per second (before multiplier)
+const WALK_BASE_SPEED = 40
+
+// Hop amplitude (pixels) for walking bounce
+const WALK_HOP_PX = 2
+
+// Hop frequency (full bounces per second)
+const WALK_HOP_FREQ = 3.5
+
+// Initialize walk state for a character
+function initCharWalkState(roomId) {
+  // Seeded pseudo-random from roomId string so it's deterministic but unique
+  let seed = 0
+  for (let i = 0; i < roomId.length; i++) seed = (seed * 31 + roomId.charCodeAt(i)) | 0
+  const pseudoRand = () => { seed = (seed * 16807 + 0) % 2147483647; return (seed & 0x7fffffff) / 2147483647 }
+
+  const startWaypoint = Math.floor(pseudoRand() * WALK_WAYPOINTS.length)
+  const nextWaypoint = (startWaypoint + 1) % WALK_WAYPOINTS.length
+  return {
+    currentWaypoint: startWaypoint,
+    nextWaypoint: nextWaypoint,
+    progress: pseudoRand() * 0.5, // start partway through first segment
+    paused: false,
+    pauseTimer: 0,
+    pauseDuration: 0,
+    phaseOffset: pseudoRand() * 100, // large offset so hop cycles don't sync
+    x: WALK_WAYPOINTS[startWaypoint].x,
+    y: WALK_WAYPOINTS[startWaypoint].y,
+  }
+}
+
+// Advance walk state by dt seconds, returns { x, y, isWalking }
+function advanceCharWalk(state, roomId, dt) {
+  const cfg = CHAR_WALK_SPEEDS[roomId] || { speed: 1.0, pauseChance: 0.3 }
+  const speed = WALK_BASE_SPEED * cfg.speed
+
+  if (state.paused) {
+    state.pauseTimer -= dt
+    if (state.pauseTimer <= 0) {
+      state.paused = false
+    }
+    return { x: state.x, y: state.y, isWalking: false }
+  }
+
+  // Move toward next waypoint
+  const from = WALK_WAYPOINTS[state.currentWaypoint]
+  const to = WALK_WAYPOINTS[state.nextWaypoint]
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  const segLen = Math.sqrt(dx * dx + dy * dy)
+  if (segLen < 0.01) {
+    state.progress = 1
+  } else {
+    state.progress += (speed * dt) / segLen
+  }
+
+  if (state.progress >= 1) {
+    // Arrived at waypoint
+    state.x = to.x
+    state.y = to.y
+    state.currentWaypoint = state.nextWaypoint
+    state.nextWaypoint = (state.nextWaypoint + 1) % WALK_WAYPOINTS.length
+    state.progress = 0
+
+    // Maybe pause at this waypoint
+    // Use a simple deterministic check based on phaseOffset + waypoint
+    const roll = ((state.phaseOffset * 7 + state.currentWaypoint * 13) % 100) / 100
+    if (roll < cfg.pauseChance) {
+      state.paused = true
+      state.pauseDuration = 1 + ((state.phaseOffset * 3 + state.currentWaypoint * 17) % 200) / 100 // 1-3s
+      state.pauseTimer = state.pauseDuration
+      return { x: state.x, y: state.y, isWalking: false }
+    }
+  } else {
+    // Smooth interpolation along segment
+    const t = state.progress
+    state.x = from.x + dx * t
+    state.y = from.y + dy * t
+  }
+
+  return { x: state.x, y: state.y, isWalking: true }
+}
+
 // ---- HEX DISTANCE (using slot positions) ----
 function slotDistance(slotA, slotB) {
   const a = HEX_SLOTS[slotA]
@@ -345,6 +460,20 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   const [toast, setToast] = useState(null)
   const toastTimerRef = useRef(null)
 
+  // ---- CHARACTER WALK STATE ----
+  const characterWalkRef = useRef({})
+  const lastWalkTimeRef = useRef(performance.now())
+
+  // Initialize walk states for all characters on mount
+  useEffect(() => {
+    const walkStates = {}
+    ROOMS_WITH_CHARACTERS.forEach(id => {
+      walkStates[id] = initCharWalkState(id)
+    })
+    characterWalkRef.current = walkStates
+    lastWalkTimeRef.current = performance.now()
+  }, [])
+
   // ---- CELEBRATION WAVE STATE ----
   const celebrationRef = useRef({ active: false, sourceRoomId: null, startTime: 0 })
 
@@ -368,7 +497,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const id = DEFAULT_ROOM_IDS[roomIdx % DEFAULT_ROOM_IDS.length]
       triggerCelebration(id)
       roomIdx++
-    }, 15000)
+    }, 60000)
     const initial = setTimeout(() => {
       triggerCelebration(DEFAULT_ROOM_IDS[0])
       roomIdx = 1
@@ -543,6 +672,24 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       }
     }
 
+    // ---- ADVANCE CHARACTER WALK STATES ----
+    const walkNow = performance.now()
+    const walkDt = Math.min((walkNow - lastWalkTimeRef.current) / 1000, 0.1) // cap dt to avoid jumps
+    lastWalkTimeRef.current = walkNow
+    const walkStates = characterWalkRef.current
+    const walkPositions = {}
+    for (const roomId of ROOMS_WITH_CHARACTERS) {
+      if (!walkStates[roomId]) walkStates[roomId] = initCharWalkState(roomId)
+      const result = advanceCharWalk(walkStates[roomId], roomId, walkDt)
+      // Compute hop: tiny vertical bounce while walking (Crossy Road energy)
+      let hop = 0
+      if (result.isWalking) {
+        const hopTime = elapsed + walkStates[roomId].phaseOffset
+        hop = Math.abs(Math.sin(hopTime * Math.PI * WALK_HOP_FREQ)) * WALK_HOP_PX
+      }
+      walkPositions[roomId] = { x: result.x, y: result.y - hop }
+    }
+
     // ---- RENDER ALL ROOMS BY SLOT ----
     const drag = dragStateRef.current
     const draggedRoomId = drag.active ? drag.roomId : null
@@ -595,7 +742,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       if (!isActive) {
         ctx.globalAlpha = 0.4
       }
-      drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL, cam.zoom, celebGlow)
+      drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL, cam.zoom, celebGlow, walkPositions[roomId])
       ctx.restore()
     }
 
@@ -629,7 +776,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const isActive = roomStatus === 'WORKING'
         const alpha = isActive ? getWaveBlend(elapsed, dragSlotIdx >= 0 ? dragSlotIdx : 0) : 1.0
 
-        drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, true, cam.zoom, celebGlow)
+        drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, true, cam.zoom, celebGlow, walkPositions[draggedRoomId])
         ctx.restore()
 
         // ---- DRAW DROP INDICATOR (ghost outline at target slot) ----
@@ -661,7 +808,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, ORIGIN_X, ORIGIN_Y])
 
   // ---- HELPER: Draw one room ----
-  function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, charImg, alpha, nameText, nameColor, isHighlighted, currentZoom, celebGlow = 0) {
+  function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, charImg, alpha, nameText, nameColor, isHighlighted, currentZoom, celebGlow = 0, charWalkPos = null) {
     // Capture the current globalAlpha BEFORE saving (so dim + crossfade compound correctly)
     const parentAlpha = ctx.globalAlpha
 
@@ -696,24 +843,30 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       ctx.drawImage(idleImg, 0, 0, S, S)
     }
 
-    // ---- CHARACTER LAYER (#5: drawn on top of room shell, inside hex clip) ----
+    // ---- CHARACTER LAYER (#5 + #6: walking animation, each on own timing) ----
     if (charImg?.complete) {
-      ctx.drawImage(charImg, 0, 0, S, S)
+      ctx.save()
+      ctx.globalAlpha = 1.0
+      const cw = charImg.naturalWidth || 100
+      const ch = charImg.naturalHeight || 118
+      const charScale = (S * 0.22) / ch
+      const drawW = cw * charScale
+      const drawH = ch * charScale
+      // Use walk position if available, otherwise fall back to centered desk position
+      let chX, chY
+      if (charWalkPos) {
+        // charWalkPos.x/y are in 512px room-local space. Center the sprite on that point.
+        chX = charWalkPos.x - drawW / 2
+        chY = charWalkPos.y - drawH / 2
+      } else {
+        chX = (S - drawW) / 2
+        chY = S * 0.55 - drawH / 2
+      }
+      ctx.drawImage(charImg, chX, chY, drawW, drawH)
+      ctx.restore()
     }
 
-    // Highlight glow for hovered/selected/focused rooms
-    if (isHighlighted) {
-      ctx.fillStyle = `${nameColor}15`
-      ctx.beginPath()
-      ctx.moveTo(S * 0.50, S * 0.05)
-      ctx.lineTo(S * 0.95, S * 0.28)
-      ctx.lineTo(S * 0.95, S * 0.75)
-      ctx.lineTo(S * 0.50, S * 0.95)
-      ctx.lineTo(S * 0.05, S * 0.75)
-      ctx.lineTo(S * 0.05, S * 0.28)
-      ctx.closePath()
-      ctx.fill()
-    }
+    // Highlight: no transparency overlay (Patrik: "no wall transparency for me")
 
     // ---- CELEBRATION GLOW PULSE ----
     if (celebGlow > 0.01) {
@@ -750,7 +903,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const badgeH = fontSize + pillPadV * 2
 
     const badgeX = S * 0.50 - badgeW / 2
-    const badgeY = S * 0.97 + 2 * invZoomScale
+    const badgeY = S * 0.02 - badgeH - 2 * invZoomScale
 
     // Dark pill background
     ctx.fillStyle = 'rgba(8, 12, 24, 0.92)'
