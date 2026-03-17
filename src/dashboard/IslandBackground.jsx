@@ -906,6 +906,182 @@ export default function IslandBackground({ isNightMode }) {
       scene.add(car)
     })
 
+    // ---- TOWN LANDSCAPE (ground plane far below the floating island) ----
+    const townGroup = new THREE.Group()
+    const groundY = -95  // Far below the island
+
+    // === GREEN FIELDS (base) ===
+    // Main grass field (large, covers the whole ground area)
+    const fieldGeo = new THREE.BoxGeometry(600, 2, 500)
+    const fieldMat = voxelMat(0x6BAF4A)
+    const mainField = new THREE.Mesh(fieldGeo, fieldMat)
+    mainField.position.set(0, groundY, -100)
+    mainField.receiveShadow = true
+    townGroup.add(mainField)
+
+    // Farmland patches (different green shades for variety)
+    const patchConfigs = [
+      { x: -120, z: -60, w: 80, d: 50, color: 0x5A9E3A },   // darker green
+      { x: 80, z: -40, w: 70, d: 60, color: 0x7CC55A },     // lighter green
+      { x: -60, z: -150, w: 90, d: 40, color: 0x5A9E3A },   // darker green
+      { x: 150, z: -120, w: 60, d: 70, color: 0x7CC55A },   // lighter green
+      { x: -180, z: -130, w: 70, d: 55, color: 0x62A845 },  // mid green
+      { x: 40, z: -200, w: 85, d: 45, color: 0x62A845 },    // mid green
+      { x: -150, z: 30, w: 65, d: 50, color: 0x7CC55A },    // lighter green
+      { x: 200, z: -60, w: 55, d: 65, color: 0x5A9E3A },    // darker green
+    ]
+    patchConfigs.forEach(({ x, z, w, d, color }) => {
+      const patchGeo = new THREE.BoxGeometry(w, 2.5, d)
+      const patch = new THREE.Mesh(patchGeo, voxelMat(color))
+      patch.position.set(x, groundY + 0.3, z)
+      townGroup.add(patch)
+    })
+
+    // === DIRT ROADS (country roads cutting through fields) ===
+    const dirtRoadMat = voxelMat(0xA0784A)
+    // Main north-south road
+    const nsRoadGeo = new THREE.BoxGeometry(4, 2.8, 300)
+    const nsRoad = new THREE.Mesh(nsRoadGeo, dirtRoadMat)
+    nsRoad.position.set(0, groundY + 0.5, -80)
+    townGroup.add(nsRoad)
+
+    // Main east-west road
+    const ewRoadGeo = new THREE.BoxGeometry(350, 2.8, 4)
+    const ewRoad = new THREE.Mesh(ewRoadGeo, dirtRoadMat)
+    ewRoad.position.set(20, groundY + 0.5, -100)
+    townGroup.add(ewRoad)
+
+    // Secondary winding road (diagonal)
+    const diagRoadGeo = new THREE.BoxGeometry(120, 2.8, 4)
+    const diagRoad = new THREE.Mesh(diagRoadGeo, dirtRoadMat)
+    diagRoad.position.set(-80, groundY + 0.5, -50)
+    diagRoad.rotation.y = Math.PI / 5
+    townGroup.add(diagRoad)
+
+    // Another secondary road
+    const diagRoad2Geo = new THREE.BoxGeometry(100, 2.8, 4)
+    const diagRoad2 = new THREE.Mesh(diagRoad2Geo, dirtRoadMat)
+    diagRoad2.position.set(90, groundY + 0.5, -140)
+    diagRoad2.rotation.y = -Math.PI / 6
+    townGroup.add(diagRoad2)
+
+    // === HIGHWAY (wider road connecting town to city) ===
+    const highwayMat = voxelMat(0x555555)
+    // Main highway running north toward city buildings
+    const highwayGeo = new THREE.BoxGeometry(8, 2.9, 200)
+    const highway = new THREE.Mesh(highwayGeo, highwayMat)
+    highway.position.set(10, groundY + 0.6, -200)
+    townGroup.add(highway)
+
+    // Highway lane markings (dashed yellow center line)
+    const laneMarkMat = voxelMat(0xDDCC44)
+    for (let i = 0; i < 15; i++) {
+      const markGeo = new THREE.BoxGeometry(0.6, 3.0, 4)
+      const mark = new THREE.Mesh(markGeo, laneMarkMat)
+      mark.position.set(10, groundY + 0.8, -110 - i * 13)
+      townGroup.add(mark)
+    }
+
+    // Secondary highway spur to the right
+    const spurGeo = new THREE.BoxGeometry(100, 2.9, 7)
+    const spur = new THREE.Mesh(spurGeo, highwayMat)
+    spur.position.set(80, groundY + 0.6, -180)
+    spur.rotation.y = -Math.PI / 8
+    townGroup.add(spur)
+
+    // === SMALL TOWN CLUSTER (tiny buildings seen from high above) ===
+    const townBuildingConfigs = [
+      // { x, z, w, h, d, wallColor, roofColor }
+      { x: -8, z: -95, w: 3, h: 3, d: 3, wall: 0xE8DCC8, roof: 0xA04030 },      // cream walls, red roof
+      { x: 5, z: -92, w: 4, h: 2.5, d: 3, wall: 0xF5F0E0, roof: 0x8B4513 },     // white walls, brown roof
+      { x: -3, z: -105, w: 3.5, h: 4, d: 3, wall: 0xD4C4A0, roof: 0xA04030 },   // tan walls, red roof
+      { x: 8, z: -103, w: 2.5, h: 2, d: 2.5, wall: 0xF5F0E0, roof: 0x666666 },  // white, grey roof (church?)
+      { x: -12, z: -100, w: 3, h: 2.5, d: 4, wall: 0xE8DCC8, roof: 0x8B4513 },  // cream, brown roof
+      { x: 2, z: -110, w: 3, h: 3, d: 2.5, wall: 0xCCBB99, roof: 0xA04030 },    // tan, red roof
+      { x: -6, z: -88, w: 4, h: 2, d: 3, wall: 0xF5F0E0, roof: 0x8B4513 },     // white, brown roof
+      { x: 12, z: -98, w: 2.5, h: 3.5, d: 2.5, wall: 0xD4C4A0, roof: 0x666666 }, // tan, grey roof (tall)
+      { x: -15, z: -108, w: 3, h: 2, d: 3.5, wall: 0xE8DCC8, roof: 0xA04030 },  // cream, red roof
+      { x: 6, z: -85, w: 5, h: 2, d: 6, wall: 0xCCBB99, roof: 0x8B4513 },       // large barn-like
+    ]
+    townBuildingConfigs.forEach(({ x, z, w, h, d, wall, roof }) => {
+      const bGroup = new THREE.Group()
+      // Walls
+      const wallGeo = new THREE.BoxGeometry(w, h, d)
+      const wallMesh = new THREE.Mesh(wallGeo, voxelMat(wall))
+      wallMesh.position.set(0, h / 2, 0)
+      bGroup.add(wallMesh)
+      // Roof (slightly wider than walls)
+      const roofGeo = new THREE.BoxGeometry(w + 0.5, h * 0.3, d + 0.5)
+      const roofMesh = new THREE.Mesh(roofGeo, voxelMat(roof))
+      roofMesh.position.set(0, h + h * 0.15, 0)
+      bGroup.add(roofMesh)
+      bGroup.position.set(x, groundY + 1, z)
+      townGroup.add(bGroup)
+    })
+
+    // === SMALL DETAILS ===
+    // Tiny trees (green dots/cubes scattered around fields and town)
+    const tinyTreeMat = voxelMat(0x4A8A30)
+    const tinyTreeTrunkMat = voxelMat(0x6B4E32)
+    const tinyTreePositions = [
+      [-30, -80], [-45, -95], [25, -75], [35, -115],
+      [-20, -120], [50, -90], [-55, -70], [65, -105],
+      [-70, -135], [40, -130], [-25, -60], [55, -65],
+      [-80, -100], [75, -80], [-40, -145], [20, -145],
+    ]
+    tinyTreePositions.forEach(([tx, tz]) => {
+      // Trunk
+      const trunkGeo = new THREE.BoxGeometry(0.5, 1.5, 0.5)
+      const trunk = new THREE.Mesh(trunkGeo, tinyTreeTrunkMat)
+      trunk.position.set(tx, groundY + 1.8, tz)
+      townGroup.add(trunk)
+      // Canopy (a chunky cube)
+      const canopySize = 1.2 + Math.random() * 0.8
+      const canopyGeo = new THREE.BoxGeometry(canopySize, canopySize, canopySize)
+      const canopy = new THREE.Mesh(canopyGeo, tinyTreeMat)
+      canopy.position.set(tx, groundY + 3, tz)
+      townGroup.add(canopy)
+    })
+
+    // Pond / small lake (blue rectangle)
+    const pondGeo = new THREE.BoxGeometry(15, 2.6, 10)
+    const pondMat = voxelMat(0x4488BB)
+    const pond = new THREE.Mesh(pondGeo, pondMat)
+    pond.position.set(-50, groundY + 0.2, -110)
+    townGroup.add(pond)
+
+    // Second smaller pond
+    const pond2Geo = new THREE.BoxGeometry(8, 2.6, 6)
+    const pond2 = new THREE.Mesh(pond2Geo, pondMat)
+    pond2.position.set(70, groundY + 0.2, -70)
+    townGroup.add(pond2)
+
+    // Field rows (plowed farmland lines for visual texture)
+    const plowMat = voxelMat(0x8B6842)
+    for (let i = 0; i < 12; i++) {
+      const rowGeo = new THREE.BoxGeometry(40, 2.6, 1.5)
+      const row = new THREE.Mesh(rowGeo, plowMat)
+      row.position.set(-130, groundY + 0.3, -40 - i * 5)
+      townGroup.add(row)
+    }
+    for (let i = 0; i < 8; i++) {
+      const rowGeo = new THREE.BoxGeometry(1.5, 2.6, 35)
+      const row = new THREE.Mesh(rowGeo, plowMat)
+      row.position.set(160 + i * 5, groundY + 0.3, -50)
+      townGroup.add(row)
+    }
+
+    // Fences along some roads (tiny posts)
+    const fenceMat = voxelMat(0x8B7355)
+    for (let i = 0; i < 20; i++) {
+      const postGeo = new THREE.BoxGeometry(0.3, 1.5, 0.3)
+      const post = new THREE.Mesh(postGeo, fenceMat)
+      post.position.set(3, groundY + 1.8, -30 - i * 12)
+      townGroup.add(post)
+    }
+
+    scene.add(townGroup)
+
     // ---- ANIMATION ----
     const clock = new THREE.Clock()
     let animFrameId = null
