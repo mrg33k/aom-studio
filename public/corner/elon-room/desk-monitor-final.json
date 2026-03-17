@@ -1,0 +1,15 @@
+{
+  "name": "desk-monitor",
+  "x": 100,
+  "y": 220,
+  "z": 10,
+  "width": 192,
+  "height": 128,
+  "layer": "furniture",
+  "gag_states": {
+    "idle": "Screensaver",
+    "active": "Green terminal text",
+    "error": "Red error screen",
+    "celebration": "Confetti"
+  }
+}

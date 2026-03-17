@@ -1,0 +1,13 @@
+{
+  "room": "elon",
+  "canvasSize": 512,
+  "layers": [
+    { "file": "floor-v6-clean.png", "z": 0, "name": "floor" },
+    { "file": "walls-v6-clean.png", "z": 1, "name": "walls" },
+    { "file": "rack-v6-clean.png", "z": 10, "name": "server-rack" },
+    { "file": "desk-v6-clean.png", "z": 12, "name": "desk" },
+    { "file": "character-v6-clean.png", "z": 20, "name": "character" },
+    { "file": "lights-v6-clean.png", "z": 25, "name": "lights" },
+    { "file": "glow-v6-clean.png", "z": 30, "name": "glow" }
+  ]
+}

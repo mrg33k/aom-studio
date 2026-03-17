@@ -1,0 +1,15 @@
+{
+  "name": "elon-character",
+  "x": 200,
+  "y": 260,
+  "z": 15,
+  "width": 48,
+  "height": 64,
+  "layer": "character",
+  "gag_states": {
+    "idle": "Standing idle",
+    "active": "Typing",
+    "error": "Sleeping",
+    "celebration": "Hop + arms up"
+  }
+}

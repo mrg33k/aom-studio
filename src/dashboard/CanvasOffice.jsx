@@ -1,57 +1,128 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react'
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 
-// CanvasOffice: ELON'S ROOM ONLY on dark background, centered.
-// All other rooms STRIPPED per Patrik directive (Pass 25, line 255, 264, 268):
-// "Dark background. Only Elon's room. Clean slate. 1 turns into 13 if you can count to 1."
+// CanvasOffice: ELON'S ROOM with LAYERED SPRITE SYSTEM (Steffen spec)
+// Renders 8 layers from JSON sidecars: floor -> walls -> furniture -> character -> lights -> glow
 //
 // FILE OWNER: Bobby (Canvas team). Bobby2 (HUD team) does NOT touch this file.
 //
-// Uses v2 room image (elon-v2.png, 1024x1024) as single room asset.
-// Walk cycle: Elon character wanders around his room via pathfinding.
-// Hop sprites from Steffen catalog: ground/peak/landing.
-//
-// GATE BEFORE ROOM 2 (all must pass):
-//  1. Room background right
-//  2. Furniture sprites right
-//  3. Click perfect
-//  4. Hover feels right
-//  5. Depth looks right
-//  6. Character placed correctly
-//  7. Character WALKS AROUND
+// Layers loaded from /corner/elon-room/layers.json manifest.
+// Each layer has: *-final.png (sprite) + *-final.json (position/z/size metadata)
+// Character layer uses walk system (not static Steffen character sprite).
+// Floor + walls + lights + glow = full 512x512 overlays.
+// Furniture items (desk, rack, chair) = positioned sprites from JSON x/y.
 
 // ---- ROOM CONFIG ----
-const ROOM_SIZE = 512        // Render size for the room (px, will scale with zoom)
+const ROOM_SIZE = 512        // Base room size (px, scales with zoom)
 const BG_COLOR = '#0A0D1A'   // Dark night background
 const ELON_COLOR = '#4CAF50' // Elon's signature green
+const LAYER_BASE_PATH = '/corner/elon-room'
 
-// Walk cycle: pathfinding waypoints within the room (% of room size)
-// These define the walkable area of Elon's server room.
-// Elon wanders between desk, server racks, and center.
+// Walk cycle waypoints (% of room size)
 const WALKABLE_POINTS = [
-  { x: 0.35, y: 0.72, label: 'desk' },       // At his desk (working position)
-  { x: 0.50, y: 0.65, label: 'center' },      // Room center
-  { x: 0.65, y: 0.45, label: 'servers-1' },   // Near server rack 1
-  { x: 0.70, y: 0.55, label: 'servers-2' },   // Near server rack 2
-  { x: 0.45, y: 0.55, label: 'mid' },         // Middle of room
-  { x: 0.30, y: 0.60, label: 'near-door' },   // Near entrance
+  { x: 0.35, y: 0.72, label: 'desk' },
+  { x: 0.50, y: 0.65, label: 'center' },
+  { x: 0.65, y: 0.45, label: 'servers-1' },
+  { x: 0.70, y: 0.55, label: 'servers-2' },
+  { x: 0.45, y: 0.55, label: 'mid' },
+  { x: 0.30, y: 0.60, label: 'near-door' },
 ]
 
-// Walk speed in room-units per second
 const WALK_SPEED = 0.08
 
-// ---- IMAGE PRELOADER ----
-function useImagePreloader() {
-  const [images, setImages] = useState({})
+// ---- LAYER LOADER ----
+// Loads layers.json manifest, then loads all PNGs + JSON sidecars in parallel.
+// Returns sorted layers array with loaded Image objects and metadata.
+function useLayerLoader() {
+  const [layers, setLayers] = useState([])
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    const imgMap = {}
+
+    async function loadLayers() {
+      try {
+        // Load manifest
+        const manifestRes = await fetch(`${LAYER_BASE_PATH}/layers.json`)
+        if (!manifestRes.ok) {
+          console.warn('[CanvasOffice] layers.json not found, falling back to flat image')
+          // Fallback: load single room image
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          img.onload = () => {
+            if (!cancelled) {
+              setLayers([{
+                id: 'room',
+                img,
+                meta: { name: 'room', x: 0, y: 0, z: 0, width: 512, height: 512, layer: 'background' },
+              }])
+              setLoaded(true)
+            }
+          }
+          img.onerror = () => {
+            if (!cancelled) setLoaded(true)
+          }
+          img.src = '/corner/rooms/elon-v2.png'
+          return
+        }
+
+        const manifest = await manifestRes.json()
+        const layerDefs = manifest.layers || []
+
+        // Load all images + metadata in parallel
+        const loadPromises = layerDefs.map(async (def) => {
+          // Load metadata JSON
+          let meta = { name: def.id, x: 0, y: 0, z: 0, width: 512, height: 512, layer: 'background' }
+          try {
+            const metaRes = await fetch(`${LAYER_BASE_PATH}/${def.meta}`)
+            if (metaRes.ok) meta = await metaRes.json()
+          } catch {}
+
+          // Load image
+          return new Promise((resolve) => {
+            const img = new Image()
+            img.crossOrigin = 'anonymous'
+            img.onload = () => resolve({ id: def.id, img, meta })
+            img.onerror = () => {
+              console.warn(`[CanvasOffice] Failed to load layer: ${def.src}`)
+              resolve(null)
+            }
+            img.src = `${LAYER_BASE_PATH}/${def.src}`
+          })
+        })
+
+        const results = (await Promise.all(loadPromises)).filter(Boolean)
+
+        // Sort by z-index from metadata
+        results.sort((a, b) => (a.meta.z || 0) - (b.meta.z || 0))
+
+        if (!cancelled) {
+          setLayers(results)
+          setLoaded(true)
+        }
+      } catch (err) {
+        console.error('[CanvasOffice] Layer loading failed:', err)
+        if (!cancelled) setLoaded(true)
+      }
+    }
+
+    loadLayers()
+    return () => { cancelled = true }
+  }, [])
+
+  return { layers, loaded }
+}
+
+// ---- CHARACTER SPRITE LOADER ----
+function useCharacterSprites() {
+  const [sprites, setSprites] = useState({})
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    const spriteMap = {}
     let count = 0
 
     const toLoad = [
-      { id: 'elon-room', src: '/corner/rooms/elon-v2.png' },
-      // Walk/hop sprites
       { id: 'elon-idle', src: '/corner/sprites/elon-idle.png' },
       { id: 'elon-working', src: '/corner/sprites/elon-working.png' },
       { id: 'elon-hop-ground', src: '/corner/sprites/hop/elon-hop-ground.png' },
@@ -66,37 +137,35 @@ function useImagePreloader() {
       const done = () => {
         count++
         if (count === total && !cancelled) {
-          setImages(imgMap)
+          setSprites(spriteMap)
           setLoaded(true)
         }
       }
-      img.onload = () => { imgMap[item.id] = img; done() }
-      img.onerror = () => { console.warn(`[CanvasOffice] Failed: ${item.src}`); done() }
+      img.onload = () => { spriteMap[item.id] = img; done() }
+      img.onerror = () => { console.warn(`[CanvasOffice] Sprite failed: ${item.src}`); done() }
       img.src = item.src
     })
 
     return () => { cancelled = true }
   }, [])
 
-  return { images, loaded }
+  return { sprites, loaded }
 }
 
 // ---- ELON WALK SYSTEM ----
 function useElonWalk(isWorking) {
-  const [position, setPosition] = useState({ x: 0.35, y: 0.72 }) // Start at desk
+  const [position, setPosition] = useState({ x: 0.35, y: 0.72 })
   const [targetIdx, setTargetIdx] = useState(0)
-  const [walkState, setWalkState] = useState('idle') // 'idle' | 'walking' | 'hop'
-  const [hopFrame, setHopFrame] = useState(null) // null | 'ground' | 'peak' | 'landing'
+  const [walkState, setWalkState] = useState('idle')
+  const [hopFrame, setHopFrame] = useState(null)
   const [facingLeft, setFacingLeft] = useState(false)
   const lastUpdateRef = useRef(performance.now())
   const idleTimerRef = useRef(null)
   const hopTimerRef = useRef(null)
   const rafRef = useRef(null)
 
-  // Pick a new random waypoint (different from current target)
   const pickNewTarget = useCallback(() => {
     if (isWorking) {
-      // Working: stay at desk
       setTargetIdx(0)
       return
     }
@@ -108,7 +177,6 @@ function useElonWalk(isWorking) {
     setWalkState('walking')
   }, [targetIdx, isWorking])
 
-  // Hop animation cycle: ground -> peak -> landing -> idle/walking
   const doHop = useCallback((onComplete) => {
     setWalkState('hop')
     setHopFrame('ground')
@@ -124,7 +192,6 @@ function useElonWalk(isWorking) {
     }, 80)
   }, [])
 
-  // Walk loop
   useEffect(() => {
     const animate = (now) => {
       const dt = (now - lastUpdateRef.current) / 1000
@@ -144,10 +211,8 @@ function useElonWalk(isWorking) {
           const dist = Math.sqrt(dx * dx + dy * dy)
 
           if (dist < 0.02) {
-            // Arrived at target. Do a landing hop, then idle.
             doHop(() => {
               setWalkState('idle')
-              // After idling for 1.5-3s, pick new target
               idleTimerRef.current = setTimeout(() => {
                 pickNewTarget()
               }, 1500 + Math.random() * 1500)
@@ -155,12 +220,10 @@ function useElonWalk(isWorking) {
             return { x: target.x, y: target.y }
           }
 
-          // Move toward target
           const step = Math.min(WALK_SPEED * dt, dist)
           const nx = prev.x + (dx / dist) * step
           const ny = prev.y + (dy / dist) * step
 
-          // Update facing direction
           if (Math.abs(dx) > 0.01) {
             setFacingLeft(dx < 0)
           }
@@ -178,10 +241,8 @@ function useElonWalk(isWorking) {
     }
   }, [walkState, targetIdx, doHop, pickNewTarget])
 
-  // Start walking after initial idle
   useEffect(() => {
     if (isWorking) {
-      // If working, go to desk and stay
       setTargetIdx(0)
       setWalkState('walking')
       return
@@ -205,14 +266,16 @@ export default function CanvasOffice({
   selectedRoom,
   hoveredRoom: extHover,
   setHoveredRoom: setExtHover,
-  isNightMode = true, // Always dark for now (Elon room focus)
+  isNightMode = true,
 }) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
-  const { images, loaded } = useImagePreloader()
+  const { layers, loaded: layersLoaded } = useLayerLoader()
+  const { sprites, loaded: spritesLoaded } = useCharacterSprites()
+  const loaded = layersLoaded && spritesLoaded
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [hover, setHover] = useState(false)
-  const [breathe, setBreathe] = useState(0) // Subtle depth breathing
+  const [breathe, setBreathe] = useState(0)
 
   // Pan + zoom
   const [pan, setPan] = useState({ x: 0, y: 0 })
@@ -229,6 +292,24 @@ export default function CanvasOffice({
 
   // Walk system
   const { position: elonPos, walkState, hopFrame, facingLeft } = useElonWalk(isElonWorking)
+
+  // Separate layers into categories for rendering order
+  const layerCategories = useMemo(() => {
+    const bg = []      // floor, walls (z 0-1)
+    const furniture = [] // desk, rack, chair (z 5-10)
+    const overlays = [] // lights, glow (z 20-25)
+    const charLayer = layers.find(l => l.id === 'character')
+
+    for (const layer of layers) {
+      if (layer.id === 'character') continue // character drawn by walk system
+      const z = layer.meta.z || 0
+      if (z <= 1) bg.push(layer)
+      else if (z < 20) furniture.push(layer)
+      else overlays.push(layer)
+    }
+
+    return { bg, furniture, overlays, charLayer }
+  }, [layers])
 
   // Measure container
   useEffect(() => {
@@ -253,13 +334,12 @@ export default function CanvasOffice({
     }
   }, [size.w, size.h]) // eslint-disable-line
 
-  // Subtle breathing animation (depth wave into the room)
+  // Breathing animation
   useEffect(() => {
     let raf
     const start = performance.now()
     const animate = (now) => {
       const elapsed = (now - start) / 1000
-      // Slow sine wave for subtle room depth breathing
       setBreathe(Math.sin(elapsed * 0.5) * 2)
       raf = requestAnimationFrame(animate)
     }
@@ -281,174 +361,190 @@ export default function CanvasOffice({
     canvas.style.height = `${size.h}px`
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    // Dark background fills everything
+    // Dark background
     ctx.fillStyle = BG_COLOR
     ctx.fillRect(0, 0, size.w, size.h)
 
     ctx.save()
     ctx.translate(pan.x, pan.y)
     ctx.scale(zoom, zoom)
+    ctx.translate(0, breathe * 0.3) // subtle depth breathing
 
-    // Subtle depth breathing: translate the room slightly
-    ctx.translate(0, breathe * 0.3)
+    ctx.imageSmoothingEnabled = false
 
-    const roomImg = images['elon-room']
-    if (roomImg) {
+    // ---- LAYER 1: BACKGROUND LAYERS (floor, walls) ----
+    for (const layer of layerCategories.bg) {
+      const m = layer.meta
+      ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || ROOM_SIZE, m.height || ROOM_SIZE)
+    }
+
+    // ---- LAYER 2: FURNITURE LAYERS (desk, server-rack, chair) ----
+    // Draw at their JSON-specified positions, sorted by z
+    for (const layer of layerCategories.furniture) {
+      const m = layer.meta
+      ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || 64, m.height || 64)
+    }
+
+    // ---- LAYER 3: CHARACTER (walk system, z ~15) ----
+    // Elon walks around via the walk system, not drawn from the static character layer
+    const charSize = 80
+    const charX = elonPos.x * ROOM_SIZE - charSize / 2
+    let charY = elonPos.y * ROOM_SIZE - charSize / 2
+
+    // Hop frame Y offset
+    let hopOffsetY = 0
+    if (hopFrame === 'peak') hopOffsetY = -12
+    if (hopFrame === 'landing') hopOffsetY = 3
+    charY += hopOffsetY
+
+    // Determine sprite
+    let spriteKey = 'elon-idle'
+    if (walkState === 'walking') spriteKey = 'elon-idle'
+    if (isElonWorking && walkState === 'idle') spriteKey = 'elon-working'
+    if (hopFrame === 'ground') spriteKey = 'elon-hop-ground'
+    if (hopFrame === 'peak') spriteKey = 'elon-hop-peak'
+    if (hopFrame === 'landing') spriteKey = 'elon-hop-landing'
+
+    const spriteImg = sprites[spriteKey]
+    if (spriteImg) {
+      ctx.save()
       ctx.imageSmoothingEnabled = false
 
-      // Draw room image centered
-      ctx.drawImage(roomImg, 0, 0, ROOM_SIZE, ROOM_SIZE)
-
-      // Hover glow
-      if (hover) {
-        ctx.save()
-        ctx.globalAlpha = 0.15
-        const g = ctx.createRadialGradient(
-          ROOM_SIZE / 2, ROOM_SIZE / 2, 0,
-          ROOM_SIZE / 2, ROOM_SIZE / 2, ROOM_SIZE * 0.45
-        )
-        g.addColorStop(0, ELON_COLOR)
-        g.addColorStop(1, 'transparent')
-        ctx.fillStyle = g
-        ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE)
-        ctx.restore()
+      if (facingLeft) {
+        ctx.translate(charX + charSize, charY)
+        ctx.scale(-1, 1)
+        ctx.drawImage(spriteImg, 0, 0, charSize, charSize)
+      } else {
+        ctx.drawImage(spriteImg, charX, charY, charSize, charSize)
       }
+      ctx.restore()
 
-      // Selected border glow
-      if (isSelected) {
-        ctx.save()
-        ctx.strokeStyle = ELON_COLOR
-        ctx.lineWidth = 2
-        ctx.globalAlpha = 0.6
-        ctx.shadowColor = ELON_COLOR
-        ctx.shadowBlur = 16
-        ctx.strokeRect(2, 2, ROOM_SIZE - 4, ROOM_SIZE - 4)
-        ctx.restore()
-      }
-
-      // Active working pulse
-      if (isElonWorking) {
-        ctx.save()
-        ctx.globalAlpha = 0.08
-        const pg = ctx.createRadialGradient(
-          ROOM_SIZE / 2, ROOM_SIZE * 0.5, 0,
-          ROOM_SIZE / 2, ROOM_SIZE * 0.5, ROOM_SIZE * 0.35
-        )
-        pg.addColorStop(0, ELON_COLOR)
-        pg.addColorStop(1, 'transparent')
-        ctx.fillStyle = pg
-        ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE)
-        ctx.restore()
-      }
-
-      // ---- ELON CHARACTER ----
-      // Draw Elon walking/hopping in his room
-      const charSize = 80 // Character sprite render size
-      const charX = elonPos.x * ROOM_SIZE - charSize / 2
-      let charY = elonPos.y * ROOM_SIZE - charSize / 2
-
-      // Hop frame Y offset
-      let hopOffsetY = 0
-      if (hopFrame === 'peak') hopOffsetY = -12
-      if (hopFrame === 'landing') hopOffsetY = 3
-      charY += hopOffsetY
-
-      // Determine which sprite to draw
-      let spriteKey = 'elon-idle'
-      if (walkState === 'walking') spriteKey = 'elon-idle' // Walk uses idle sprite + position change
-      if (isElonWorking && walkState === 'idle') spriteKey = 'elon-working'
-      if (hopFrame === 'ground') spriteKey = 'elon-hop-ground'
-      if (hopFrame === 'peak') spriteKey = 'elon-hop-peak'
-      if (hopFrame === 'landing') spriteKey = 'elon-hop-landing'
-
-      const spriteImg = images[spriteKey]
-      if (spriteImg) {
-        ctx.save()
-        ctx.imageSmoothingEnabled = false
-
-        // Apply facing direction
-        if (facingLeft) {
-          ctx.translate(charX + charSize, charY)
-          ctx.scale(-1, 1)
-          ctx.drawImage(spriteImg, 0, 0, charSize, charSize)
-        } else {
-          ctx.drawImage(spriteImg, charX, charY, charSize, charSize)
-        }
-        ctx.restore()
-
-        // Shadow under character
-        ctx.save()
-        ctx.globalAlpha = 0.25
-        const shadowW = charSize * 0.6
-        const shadowH = charSize * 0.12
-        const shadowX = elonPos.x * ROOM_SIZE - shadowW / 2
-        const shadowY = elonPos.y * ROOM_SIZE + charSize * 0.35
-        if (hopFrame === 'peak') ctx.globalAlpha = 0.12 // Dimmer shadow when in air
-
-        ctx.beginPath()
-        ctx.ellipse(shadowX + shadowW / 2, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'
-        ctx.fill()
-        ctx.restore()
-
-        // Dust on landing
-        if (hopFrame === 'landing') {
-          ctx.save()
-          ctx.globalAlpha = 0.3
-          for (let i = 0; i < 4; i++) {
-            const dx = (Math.random() - 0.5) * 20
-            const dy = Math.random() * 5
-            ctx.beginPath()
-            ctx.arc(
-              elonPos.x * ROOM_SIZE + dx,
-              elonPos.y * ROOM_SIZE + charSize * 0.35 + dy,
-              2 + Math.random() * 2, 0, Math.PI * 2
-            )
-            ctx.fillStyle = 'rgba(160,180,200,0.4)'
-            ctx.fill()
-          }
-          ctx.restore()
-        }
-      }
-
-      // ---- AGENT NAME ON WALL ----
-      // Nameplate rendered as part of the room scene (not a DOM label below)
+      // Shadow under character
       ctx.save()
-      ctx.font = '600 14px Inter, system-ui, sans-serif'
-      const nameText = 'ELON'
-      const tw = ctx.measureText(nameText).width
-      const npX = ROOM_SIZE * 0.5 - tw / 2 - 8
-      const npY = ROOM_SIZE * 0.88
+      ctx.globalAlpha = hopFrame === 'peak' ? 0.12 : 0.25
+      const shadowW = charSize * 0.6
+      const shadowH = charSize * 0.12
+      const shadowX = elonPos.x * ROOM_SIZE - shadowW / 2
+      const shadowY = elonPos.y * ROOM_SIZE + charSize * 0.35
 
-      // Nameplate background
-      ctx.fillStyle = 'rgba(10, 15, 30, 0.85)'
       ctx.beginPath()
-      ctx.roundRect(npX - 2, npY - 10, tw + 20, 24, 4)
+      ctx.ellipse(shadowX + shadowW / 2, shadowY, shadowW / 2, shadowH / 2, 0, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'
       ctx.fill()
+      ctx.restore()
 
-      // Border
-      ctx.strokeStyle = `${ELON_COLOR}55`
-      ctx.lineWidth = 1
-      ctx.stroke()
+      // Dust on landing
+      if (hopFrame === 'landing') {
+        ctx.save()
+        ctx.globalAlpha = 0.3
+        for (let i = 0; i < 4; i++) {
+          const dx = (Math.random() - 0.5) * 20
+          const dy = Math.random() * 5
+          ctx.beginPath()
+          ctx.arc(
+            elonPos.x * ROOM_SIZE + dx,
+            elonPos.y * ROOM_SIZE + charSize * 0.35 + dy,
+            2 + Math.random() * 2, 0, Math.PI * 2
+          )
+          ctx.fillStyle = 'rgba(160,180,200,0.4)'
+          ctx.fill()
+        }
+        ctx.restore()
+      }
+    }
 
-      // Status dot
-      const statusColor = isElonWorking ? '#22C55E' : (elonStatus === 'BLOCKED' ? '#EF4444' : '#6B7280')
-      ctx.beginPath()
-      ctx.arc(npX + 6, npY + 2, 4, 0, Math.PI * 2)
-      ctx.fillStyle = statusColor
-      ctx.fill()
-
-      // Name text
-      ctx.fillStyle = '#EDF2FA'
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(nameText, npX + 14, npY + 2)
+    // ---- LAYER 4: OVERLAY LAYERS (lights, glow) ----
+    for (const layer of layerCategories.overlays) {
+      const m = layer.meta
+      ctx.save()
+      // Glow layer uses screen blend for ambient lighting feel
+      if (layer.id === 'glow') {
+        ctx.globalAlpha = 0.6
+        ctx.globalCompositeOperation = 'screen'
+      }
+      // Lights layer uses lighter blend
+      if (layer.id === 'lights') {
+        ctx.globalAlpha = 0.7
+        ctx.globalCompositeOperation = 'screen'
+      }
+      ctx.drawImage(layer.img, m.x || 0, m.y || 0, m.width || ROOM_SIZE, m.height || ROOM_SIZE)
       ctx.restore()
     }
 
+    // ---- INTERACTION: Hover glow ----
+    if (hover) {
+      ctx.save()
+      ctx.globalAlpha = 0.12
+      const g = ctx.createRadialGradient(
+        ROOM_SIZE / 2, ROOM_SIZE / 2, 0,
+        ROOM_SIZE / 2, ROOM_SIZE / 2, ROOM_SIZE * 0.45
+      )
+      g.addColorStop(0, ELON_COLOR)
+      g.addColorStop(1, 'transparent')
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE)
+      ctx.restore()
+    }
+
+    // ---- INTERACTION: Selected border ----
+    if (isSelected) {
+      ctx.save()
+      ctx.strokeStyle = ELON_COLOR
+      ctx.lineWidth = 2
+      ctx.globalAlpha = 0.6
+      ctx.shadowColor = ELON_COLOR
+      ctx.shadowBlur = 16
+      ctx.strokeRect(2, 2, ROOM_SIZE - 4, ROOM_SIZE - 4)
+      ctx.restore()
+    }
+
+    // ---- WORKING: Active pulse glow ----
+    if (isElonWorking) {
+      ctx.save()
+      ctx.globalAlpha = 0.08
+      const pg = ctx.createRadialGradient(
+        ROOM_SIZE / 2, ROOM_SIZE * 0.5, 0,
+        ROOM_SIZE / 2, ROOM_SIZE * 0.5, ROOM_SIZE * 0.35
+      )
+      pg.addColorStop(0, ELON_COLOR)
+      pg.addColorStop(1, 'transparent')
+      ctx.fillStyle = pg
+      ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE)
+      ctx.restore()
+    }
+
+    // ---- NAMEPLATE ----
+    ctx.save()
+    ctx.font = '600 14px Inter, system-ui, sans-serif'
+    const nameText = 'ELON'
+    const tw = ctx.measureText(nameText).width
+    const npX = ROOM_SIZE * 0.5 - tw / 2 - 8
+    const npY = ROOM_SIZE * 0.88
+
+    ctx.fillStyle = 'rgba(10, 15, 30, 0.85)'
+    ctx.beginPath()
+    ctx.roundRect(npX - 2, npY - 10, tw + 20, 24, 4)
+    ctx.fill()
+
+    ctx.strokeStyle = `${ELON_COLOR}55`
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    const statusColor = isElonWorking ? '#22C55E' : (elonStatus === 'BLOCKED' ? '#EF4444' : '#6B7280')
+    ctx.beginPath()
+    ctx.arc(npX + 6, npY + 2, 4, 0, Math.PI * 2)
+    ctx.fillStyle = statusColor
+    ctx.fill()
+
+    ctx.fillStyle = '#EDF2FA'
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(nameText, npX + 14, npY + 2)
     ctx.restore()
 
-    // Subtle ambient glow in the background (server room vibe)
+    ctx.restore()
+
+    // Ambient glow in background
     ctx.save()
     ctx.globalAlpha = 0.06
     const ambientG = ctx.createRadialGradient(
@@ -461,9 +557,9 @@ export default function CanvasOffice({
     ctx.fillRect(0, 0, size.w, size.h)
     ctx.restore()
 
-  }, [images, size, pan, zoom, hover, isSelected, isElonWorking, elonStatus, elonPos, walkState, hopFrame, facingLeft, breathe])
+  }, [layers, layerCategories, sprites, size, pan, zoom, hover, isSelected, isElonWorking, elonStatus, elonPos, walkState, hopFrame, facingLeft, breathe])
 
-  // Render loop (requestAnimationFrame for walk + breathing)
+  // Render loop
   useEffect(() => {
     if (!loaded) return
     let raf
@@ -509,7 +605,6 @@ export default function CanvasOffice({
   }, [pan])
 
   const onMove = useCallback((e) => {
-    // Hover detection
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       const cx = (e.clientX - rect.left - pan.x) / zoom
@@ -551,7 +646,6 @@ export default function CanvasOffice({
     }
   }, [])
 
-  // Click (only if not dragging)
   const onClick = useCallback((e) => {
     if (panRef.current.didDrag) {
       panRef.current.didDrag = false
@@ -568,7 +662,7 @@ export default function CanvasOffice({
     }
   }, [pan, zoom, onRoomClick])
 
-  // Touch
+  // Touch events
   const onTouchStart = useCallback((e) => {
     if (e.touches.length === 1) {
       const t = e.touches[0]

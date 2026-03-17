@@ -1,0 +1,9 @@
+{
+  "name": "ambient-glow",
+  "x": 0,
+  "y": 0,
+  "z": 25,
+  "width": 512,
+  "height": 512,
+  "layer": "effects"
+}
