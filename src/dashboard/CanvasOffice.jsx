@@ -107,45 +107,9 @@ function useLayerLoader() {
   return { layers, loaded }
 }
 
-// ---- CHARACTER SPRITE LOADER ----
-function useCharacterSprites() {
-  const [sprites, setSprites] = useState({})
-  const [loaded, setLoaded] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    const spriteMap = {}
-    let count = 0
-
-    const toLoad = [
-      { id: 'elon-idle', src: '/corner/sprites/elon-idle.png' },
-      { id: 'elon-working', src: '/corner/sprites/elon-working.png' },
-      { id: 'elon-hop-ground', src: '/corner/sprites/hop/elon-hop-ground.png' },
-      { id: 'elon-hop-peak', src: '/corner/sprites/hop/elon-hop-peak.png' },
-      { id: 'elon-hop-landing', src: '/corner/sprites/hop/elon-hop-landing.png' },
-    ]
-    const total = toLoad.length
-
-    toLoad.forEach(item => {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      const done = () => {
-        count++
-        if (count === total && !cancelled) {
-          setSprites(spriteMap)
-          setLoaded(true)
-        }
-      }
-      img.onload = () => { spriteMap[item.id] = img; done() }
-      img.onerror = () => { console.warn(`[CanvasOffice] Sprite failed: ${item.src}`); done() }
-      img.src = item.src
-    })
-
-    return () => { cancelled = true }
-  }, [])
-
-  return { sprites, loaded }
-}
+// OLD CHARACTER SPRITE LOADER -- REMOVED
+// Big bobble Elon from character-layer.png is the only character now.
+// Walk sprites (elon-idle, elon-hop-*) no longer loaded or drawn.
 
 // ---- ELON WALK SYSTEM ----
 function useElonWalk(isWorking) {
@@ -266,8 +230,7 @@ export default function CanvasOffice({
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
   const { layers, loaded: layersLoaded } = useLayerLoader()
-  const { sprites, loaded: spritesLoaded } = useCharacterSprites()
-  const loaded = layersLoaded && spritesLoaded
+  const loaded = layersLoaded
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [hover, setHover] = useState(false)
   const [breathe, setBreathe] = useState(0)
@@ -518,7 +481,7 @@ export default function CanvasOffice({
     ctx.fillRect(0, 0, size.w, size.h)
     ctx.restore()
 
-  }, [layers, layerCategories, sprites, size, pan, zoom, hover, isSelected, isElonWorking, elonStatus, elonPos, walkState, hopFrame, facingLeft, breathe])
+  }, [layers, layerCategories, size, pan, zoom, hover, isSelected, isElonWorking, elonStatus, elonPos, walkState, hopFrame, facingLeft, breathe])
 
   // Render loop
   useEffect(() => {
