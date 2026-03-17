@@ -1737,20 +1737,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
 
                 {/* Bobby3: Animated agent character -- hop, idle bounce, state transitions, speaking bubble, celebration */}
                 {hasAgent && !isAway && SPRITE_AGENTS.includes(room.id) && (
-                  <div style={{
-                    position: 'absolute', bottom: '5%', left: '50%', transform: 'translateX(-50%)',
-                    width: '40%', height: '50%',
-                    pointerEvents: 'none', zIndex: 4,
-                  }}>
-                    <AnimatedAgentCharacter
-                      color={agentColor}
-                      status={status}
-                      agentSlug={room.id}
-                      isSpeaking={streamingAgent === room.id}
-                      roomW={120}
-                      roomH={120}
-                    />
-                  </div>
+                  {/* OLD floating character KILLED -- bobble Elon lives on Canvas now */}
                 )}
               </motion.div>
             </motion.div>
