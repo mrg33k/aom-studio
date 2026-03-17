@@ -15,9 +15,9 @@ import * as THREE from 'three'
  *
  * Schedule:
  *   6:00 AM - 8:00 AM  -> sunrise (0 -> 1 smooth)
- *   8:00 AM - 6:00 PM  -> full day (1)
- *   6:00 PM - 8:00 PM  -> sunset (1 -> 0 smooth)
- *   8:00 PM - 6:00 AM  -> full night (0)
+ *   8:00 AM - 5:00 PM  -> full day (1)
+ *   5:00 PM - 7:00 PM  -> sunset (1 -> 0 smooth)
+ *   7:00 PM - 6:00 AM  -> full night (0)
  *
  * Transitions use a smoothstep for natural-feeling light changes.
  */
@@ -34,11 +34,17 @@ function getArizonaDayRatio() {
     return t * t * (3 - 2 * t)
   }
 
-  if (hour >= 6 && hour < 18) {
-    // Full day: 6am to 6pm
+  if (hour >= 8 && hour < 17) {
+    // Full day: 8am to 5pm
     return 1
+  } else if (hour >= 6 && hour < 8) {
+    // Sunrise: 6am to 8am, smooth 0 -> 1
+    return smoothstep(6, 8, hour)
+  } else if (hour >= 17 && hour < 19) {
+    // Sunset: 5pm to 7pm, smooth 1 -> 0
+    return 1 - smoothstep(17, 19, hour)
   } else {
-    // Full night: 6pm to 6am
+    // Full night: 7pm to 6am
     return 0
   }
 }
@@ -262,6 +268,103 @@ export default function CrossyBackground({ isNightMode }) {
 
     scene.add(treeGroup)
 
+    // ---- CLOUDS (chunky voxel clusters) ----
+    const cloudGroup = new THREE.Group()
+    const cloudMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 1,
+      flatShading: true,
+      transparent: true,
+      opacity: 0.92,
+    })
+
+    function makeCloud(scale) {
+      const cloud = new THREE.Group()
+      // Each cloud is 5-9 chunky boxes clustered together
+      const count = 5 + Math.floor(Math.random() * 5)
+      for (let i = 0; i < count; i++) {
+        const w = (3 + Math.random() * 5) * scale
+        const h = (2 + Math.random() * 3) * scale
+        const d = (3 + Math.random() * 5) * scale
+        const boxGeo = new THREE.BoxGeometry(w, h, d)
+        const box = new THREE.Mesh(boxGeo, cloudMat)
+        box.position.set(
+          (Math.random() - 0.5) * 8 * scale,
+          (Math.random() - 0.5) * 2 * scale,
+          (Math.random() - 0.5) * 4 * scale,
+        )
+        cloud.add(box)
+      }
+      return cloud
+    }
+
+    const clouds = []
+    for (let i = 0; i < 13; i++) {
+      const scale = 0.6 + Math.random() * 1.0
+      const cloud = makeCloud(scale)
+      cloud.position.set(
+        (Math.random() - 0.5) * 500,
+        80 + Math.random() * 120,
+        -100 - Math.random() * 200,
+      )
+      cloud.userData.driftSpeed = 0.5 + Math.random() * 1.5
+      cloud.userData.startX = cloud.position.x
+      cloudGroup.add(cloud)
+      clouds.push(cloud)
+    }
+    scene.add(cloudGroup)
+
+    // ---- PLANES (tiny voxel airplanes) ----
+    const planeGroup = new THREE.Group()
+    const planeMat = new THREE.MeshStandardMaterial({
+      color: 0xe0e0e0,
+      roughness: 1,
+      flatShading: true,
+    })
+
+    function makeAirplane() {
+      const airplane = new THREE.Group()
+      // Body (fuselage)
+      const bodyGeo = new THREE.BoxGeometry(4, 1, 1)
+      const body = new THREE.Mesh(bodyGeo, planeMat)
+      airplane.add(body)
+      // Wings
+      const wingGeo = new THREE.BoxGeometry(1, 0.3, 6)
+      const wings = new THREE.Mesh(wingGeo, planeMat)
+      wings.position.set(0.3, 0.2, 0)
+      airplane.add(wings)
+      // Tail fin (vertical)
+      const tailVGeo = new THREE.BoxGeometry(0.8, 1.2, 0.3)
+      const tailV = new THREE.Mesh(tailVGeo, planeMat)
+      tailV.position.set(-1.8, 0.6, 0)
+      airplane.add(tailV)
+      // Tail fin (horizontal)
+      const tailHGeo = new THREE.BoxGeometry(0.6, 0.2, 2.5)
+      const tailH = new THREE.Mesh(tailHGeo, planeMat)
+      tailH.position.set(-1.8, 0.3, 0)
+      airplane.add(tailH)
+      return airplane
+    }
+
+    const airplanes = []
+    for (let i = 0; i < 2; i++) {
+      const airplane = makeAirplane()
+      airplane.scale.setScalar(0.7)
+      const startX = -300 + i * 200
+      airplane.position.set(
+        startX,
+        140 + i * 40,
+        -200 - i * 60,
+      )
+      // Direction: fly left-to-right (positive X)
+      airplane.userData.speed = 8 + Math.random() * 6
+      airplane.userData.boundLeft = -350
+      airplane.userData.boundRight = 350
+      planeGroup.add(airplane)
+      airplanes.push(airplane)
+    }
+    scene.add(planeGroup)
+
     // ---- FOREGROUND LIGHT (park lamp right on the trees) ----
     const fgLight = new THREE.PointLight(0xffeedd, 14.0, 180, 1.0)
     fgLight.position.set(0, 10, 32) // Right on the foreground trees
@@ -347,6 +450,28 @@ export default function CrossyBackground({ isNightMode }) {
         const tree = trees[i]
         tree.rotation.z = Math.sin(elapsed * 0.5 + tree.userData.phase) * 0.02
         tree.rotation.x = Math.cos(elapsed * 0.3 + tree.userData.phase) * 0.01
+      }
+
+      // Cloud drift (slow horizontal movement)
+      for (let i = 0; i < clouds.length; i++) {
+        const cloud = clouds[i]
+        cloud.position.x += cloud.userData.driftSpeed * 0.02
+        // Wrap around when off-screen
+        if (cloud.position.x > 300) {
+          cloud.position.x = -300
+        }
+        // Clouds fade in day, more visible. At night, dim them slightly.
+        cloudMat.opacity = 0.5 + dayRatio * 0.42
+      }
+
+      // Airplane flight (slow straight line, loop back)
+      for (let i = 0; i < airplanes.length; i++) {
+        const ap = airplanes[i]
+        ap.position.x += ap.userData.speed * 0.02
+        // Loop back to left when past right bound
+        if (ap.position.x > ap.userData.boundRight) {
+          ap.position.x = ap.userData.boundLeft
+        }
       }
 
       // Camera with mouse parallax
