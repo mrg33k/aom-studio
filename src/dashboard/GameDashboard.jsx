@@ -2606,8 +2606,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   </button>
                   <button
                     onClick={() => {
-                      if (onSelectAgent) onSelectAgent('patrik')
-                      onOpenSettings?.()
+                      // Open AOM team chat in sidebar
+                      if (onSelectAgent) onSelectAgent('aom')
                       setTeamOpen(false)
                     }}
                     style={{
@@ -2624,14 +2624,16 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       stroke={isNightMode ? '#94A3B8' : '#8BA4C4'} strokeWidth={2}
                       strokeLinecap="round" strokeLinejoin="round"
                     >
-                      <circle cx="12" cy="12" r="3"/>
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
                     <span style={{
                       fontSize: 11, fontWeight: 600,
                       color: isNightMode ? '#94A3B8' : '#8BA4C4',
                       fontFamily: "'Inter', sans-serif",
-                    }}>Team Settings</span>
+                    }}>Team Chat</span>
                   </button>
                 </div>
 
@@ -7115,8 +7117,12 @@ export default function GameDashboard() {
       panelRelayPollRef.current = null
     }
     // Load conversation from server files. This is the ONLY source of truth.
+    // 'aom' = team chat (project file), everything else = agent 1:1
     if (IS_LOCAL && selectedRoom) {
-      fetch(`/api/local/conversations?target=${selectedRoom}&type=agent&limit=50`)
+      const isProject = selectedRoom === 'aom' || selectedRoom.includes('-')
+      const convTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
+      const convType = isProject ? 'project' : 'agent'
+      fetch(`/api/local/conversations?target=${convTarget}&type=${convType}&limit=50`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           const msgs = (data?.messages || []).map(m => ({
@@ -7139,8 +7145,11 @@ export default function GameDashboard() {
   // Poll conversation file every 3s for new messages (live updates without full page refresh)
   useEffect(() => {
     if (!IS_LOCAL || !selectedRoom) return
+    const isProj = selectedRoom === 'aom' || selectedRoom.includes('-')
+    const pollTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
+    const pollType = isProj ? 'project' : 'agent'
     const poll = setInterval(() => {
-      fetch(`/api/local/conversations?target=${selectedRoom}&type=agent&limit=50`)
+      fetch(`/api/local/conversations?target=${pollTarget}&type=${pollType}&limit=50`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (!data?.messages?.length) return
@@ -7561,7 +7570,7 @@ export default function GameDashboard() {
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
           {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. [SURVIVES: Responsive layout. Engine canvas auto-scales, sidebar logic stays.] */}
           {/* TODO(steffen-design): Mobile bottom-sheet drawer UX -- design the swipe-up drawer for mobile. Should show: agent name/status at peek height, chat on half-pull, full panel on full-pull. Reference Steffen's c3-mobile-layout-spec.md. The notification cards currently overlap the bottom bar on mobile. [SURVIVES: Mobile UI design. Engine-independent.] */}
-          {!isMobile && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+          {!isMobile && selectedRoom && (selectedRoom === 'aom' || (ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null)) && (
             <UnifiedPanel
               key={selectedRoom}
               room={ROOM_MAP[selectedRoom]}
