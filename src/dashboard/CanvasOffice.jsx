@@ -395,6 +395,22 @@ export default function CanvasOffice({
 
     ctx.imageSmoothingEnabled = false
 
+    // ---- CLIP TO ISOMETRIC HEXAGON ----
+    // The room is an isometric cube (hexagonal shape). Clip to match the actual
+    // room edges so no square background leaks. The hex shape has 6 points:
+    // top-center, top-right, bottom-right, bottom-center, bottom-left, top-left
+    ctx.save()
+    ctx.beginPath()
+    const S = ROOM_SIZE
+    ctx.moveTo(S * 0.50, S * 0.05)  // top center (roof peak)
+    ctx.lineTo(S * 0.95, S * 0.28)  // top right
+    ctx.lineTo(S * 0.95, S * 0.75)  // bottom right
+    ctx.lineTo(S * 0.50, S * 0.95)  // bottom center
+    ctx.lineTo(S * 0.05, S * 0.75)  // bottom left
+    ctx.lineTo(S * 0.05, S * 0.28)  // top left
+    ctx.closePath()
+    ctx.clip()
+
     // ---- ROOM STATE RENDER (crossfade between states) ----
     // Each state is a complete scene (room + character baked in).
     // Smooth stop-motion: fade between state images on status change.
