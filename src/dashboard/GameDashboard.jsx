@@ -7136,6 +7136,32 @@ export default function GameDashboard() {
     }
   }, [selectedRoom])
 
+  // Poll conversation file every 3s for new messages (live updates without full page refresh)
+  useEffect(() => {
+    if (!IS_LOCAL || !selectedRoom) return
+    const poll = setInterval(() => {
+      fetch(`/api/local/conversations?target=${selectedRoom}&type=agent&limit=50`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (!data?.messages?.length) return
+          setAgentChats(prev => {
+            const currentCount = (prev[selectedRoom]?._all || []).length
+            if (data.messages.length === currentCount) return prev // no change
+            const msgs = data.messages.map(m => ({
+              role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
+              content: m.text || '',
+              time: m.timestamp || '',
+              source: m.source || 'file',
+              id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+            })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+            return { ...prev, [selectedRoom]: { _all: msgs } }
+          })
+        })
+        .catch(() => {})
+    }, 3000)
+    return () => clearInterval(poll)
+  }, [selectedRoom])
+
   useEffect(() => {
     sessionStorage.setItem('corner-panel-tab', panelActiveTab || 'chat')
   }, [panelActiveTab])
