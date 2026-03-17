@@ -42,7 +42,8 @@ function sanitizeRelayMessage(text) {
   cleaned = cleaned.replace(/<task-notification>[\s\S]*?<\/task-notification>/g, '')
   cleaned = cleaned.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '')
   cleaned = cleaned.replace(/<available-deferred-tools>[\s\S]*?<\/available-deferred-tools>/g, '')
-  cleaned = cleaned.replace(/<[a-z_-]+>[\s\S]*?<\/[a-z_-]+>/g, '') // catch any remaining XML blocks
+  // DONE(bobby2): XML REGEX FIXED -- Only strip SPECIFIC system tags, not all lowercase XML. Users can type <b>hello</b> etc. safely now.
+  // No generic catch-all. Only these three system tags get stripped (already handled above individually).
 
   // 2. Strip watchdog preamble patterns (all known variations)
   cleaned = cleaned.replace(/^Patrik sent this via Telegram:\s*/i, '')

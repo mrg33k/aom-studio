@@ -416,9 +416,11 @@ function usePunchListData() {
   return { data, loading }
 }
 
-// ---- RIGHT NOW LIVE TASKS (polls active-missions.md for RUNNING agents) ----
-// PATRIK CORRECTION: Right Now = ONLY agents that are RUNNING right now. Not finished tasks.
-// One line per running agent: avatar + agent name + current task. If nothing running: empty.
+// ---- RIGHT NOW LIVE TASKS (polls active-missions.md + agent-notifications.md) ----
+// DONE(bobby2): DATA SYNC -- Right Now count = agents with TASK STARTED but no TASK FINISHED
+// in agent-notifications.md, merged with active-missions.md "## Running" table.
+// Both sources contribute. Notifications catch agents that started recently but aren't in
+// the Running table yet. Running table catches agents tracked there but without notification entries.
 function useRightNowLiveTasks() {
   const [tasks, setTasks] = useState([])
 
@@ -427,47 +429,77 @@ function useRightNowLiveTasks() {
 
     const fetchTasks = async () => {
       try {
-        const res = await fetch('/api/local/file?path=context/active-missions.md')
-        if (!res.ok) return
-        const json = await res.json()
-        if (!json.content) return
+        const missionTasks = []
 
-        // Parse the "## Running" table for active agents
-        const content = json.content
-        const runningSection = content.split(/^## Running/m)[1]
-        if (!runningSection) { setTasks([]); return }
-        // Stop at next section header
-        const runningContent = runningSection.split(/^## /m)[0]
-
-        // Parse table rows (skip header + separator)
-        const rows = runningContent.trim().split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('Agent'))
-        const parsed = rows.map(row => {
-          const cells = row.split('|').map(c => c.trim()).filter(Boolean)
-          if (cells.length < 3) return null
-          const agentRaw = cells[0]
-          const mission = cells[1]
-          // Normalize agent slug
-          let agentSlug = agentRaw.toLowerCase().replace(/\s+\d+$/, '').trim()
-          if (/^bobby/.test(agentSlug)) agentSlug = 'bobby'
-          if (/^steffen/.test(agentSlug)) agentSlug = 'steffen'
-
-          // Clean mission text to a short description
-          let text = mission
-            .replace(/^Relaunched:\s*/i, '')
-            .replace(/\([^)]*\)/g, '')
-            .replace(/\s{2,}/g, ' ')
-            .trim()
-          if (text.length > 55) text = text.slice(0, 52) + '...'
-
-          return {
-            text,
-            agent: agentSlug,
-            done: false,
-            isLive: true,
+        // Source 1: active-missions.md "## Running" table
+        try {
+          const res = await fetch('/api/local/file?path=context/active-missions.md')
+          if (res.ok) {
+            const json = await res.json()
+            if (json.content) {
+              const runningSection = json.content.split(/^## Running/m)[1]
+              if (runningSection) {
+                const runningContent = runningSection.split(/^## /m)[0]
+                const rows = runningContent.trim().split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('Agent'))
+                for (const row of rows) {
+                  const cells = row.split('|').map(c => c.trim()).filter(Boolean)
+                  if (cells.length < 3) continue
+                  let agentSlug = cells[0].toLowerCase().replace(/\s+\d+$/, '').trim()
+                  if (/^bobby/.test(agentSlug)) agentSlug = 'bobby'
+                  if (/^steffen/.test(agentSlug)) agentSlug = 'steffen'
+                  let text = cells[1].replace(/^Relaunched:\s*/i, '').replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
+                  if (text.length > 55) text = text.slice(0, 52) + '...'
+                  if (text.length > 3 && agentSlug) {
+                    missionTasks.push({ text, agent: agentSlug, done: false, isLive: true })
+                  }
+                }
+              }
+            }
           }
-        }).filter(t => t && t.text.length > 3 && t.agent)
+        } catch {}
 
-        setTasks(parsed)
+        // Source 2: agent-notifications.md TASK STARTED without matching TASK FINISHED
+        try {
+          const res2 = await fetch('/api/local/file?path=context/agent-notifications.md')
+          if (res2.ok) {
+            const json2 = await res2.json()
+            if (json2.content) {
+              const lines = json2.content.trim().split('\n').filter(l => l.startsWith('['))
+              const started = new Map() // agent -> latest TASK STARTED info
+              const finished = new Set() // agents with TASK FINISHED after last TASK STARTED
+
+              for (const line of lines) {
+                const startMatch = line.match(/TASK STARTED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]\s*(.+?)$/i)
+                if (startMatch) {
+                  let slug = startMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
+                  if (/^bobby/.test(slug)) slug = 'bobby'
+                  if (/^steffen/.test(slug)) slug = 'steffen'
+                  let text = startMatch[2].replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
+                  if (text.length > 55) text = text.slice(0, 52) + '...'
+                  started.set(slug, { text, agent: slug, done: false, isLive: true })
+                  finished.delete(slug) // new task started, clear finished flag
+                }
+                const finishMatch = line.match(/TASK FINISHED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]/i)
+                if (finishMatch) {
+                  let slug = finishMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
+                  if (/^bobby/.test(slug)) slug = 'bobby'
+                  if (/^steffen/.test(slug)) slug = 'steffen'
+                  finished.add(slug)
+                }
+              }
+
+              // Add notification-based running agents not already in missions list
+              const missionAgents = new Set(missionTasks.map(t => t.agent))
+              for (const [slug, taskInfo] of started) {
+                if (!finished.has(slug) && !missionAgents.has(slug)) {
+                  missionTasks.push(taskInfo)
+                }
+              }
+            }
+          }
+        } catch {}
+
+        setTasks(missionTasks)
       } catch {}
     }
 
@@ -479,8 +511,33 @@ function useRightNowLiveTasks() {
   return tasks
 }
 
+// ---- RELATIVE TIME FORMATTER ------------------------------------------------
+// Converts a date string to relative time: "2m ago", "1h ago", "Yesterday", etc.
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return ''
+  try {
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return dateStr
+    const now = new Date()
+    const diffMs = now - date
+    const diffMin = Math.floor(diffMs / 60000)
+    const diffHr = Math.floor(diffMs / 3600000)
+    const diffDay = Math.floor(diffMs / 86400000)
+
+    if (diffMin < 1) return 'just now'
+    if (diffMin < 60) return `${diffMin}m ago`
+    if (diffHr < 24) return `${diffHr}h ago`
+    if (diffDay === 1) return 'yesterday'
+    if (diffDay < 7) return `${diffDay}d ago`
+    return dateStr.split('T')[0] // fallback to date
+  } catch {
+    return dateStr
+  }
+}
+
 // ---- COMPLETED FEED (polls agent-notifications.md for recent completions) ----
-// Simplified activity feed: "Bobby shipped chat cleanup" + timestamp. Last 8 max.
+// DONE(bobby2): Cleaned up. Format: "Agent shipped description" + relative timestamp ("2m ago").
+// Max 8 items. No raw notification text. Agent name + short description only.
 function useCompletedFeed() {
   const [completions, setCompletions] = useState([])
 
@@ -523,6 +580,7 @@ function useCompletedFeed() {
             text = afterAgent ? afterAgent[1].trim() : ''
           }
 
+          // Clean raw notification cruft: hashes, file paths, commit refs, remaining TODOs
           text = text.replace(/@\w+:?/g, '')
             .replace(/\b[0-9a-f]{7,8}\b/g, '')
             .replace(/projects\/\S+/g, '')
@@ -537,14 +595,17 @@ function useCompletedFeed() {
             .trim()
           if (text.length > 55) text = text.slice(0, 52) + '...'
 
-          // Extract date from [YYYY-MM-DD]
+          // Extract timestamp: prefer ISO [YYYY-MM-DDTHH:MM:SSZ], fallback to [YYYY-MM-DD]
+          const isoMatch = line.match(/\[(\d{4}-\d{2}-\d{2}T[^\]]+)\]/)
           const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\]/)
-          const timestamp = dateMatch ? dateMatch[1] : ''
+          const rawTimestamp = isoMatch ? isoMatch[1] : (dateMatch ? dateMatch[1] : '')
+          const relativeTime = formatRelativeTime(rawTimestamp)
 
           return {
             text,
             agent: agentSlug,
-            timestamp,
+            timestamp: relativeTime,
+            rawTimestamp,
             done: true,
             isLive: false,
           }
