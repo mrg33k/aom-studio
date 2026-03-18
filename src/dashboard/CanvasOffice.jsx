@@ -1973,9 +1973,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const hitRoom = hitTestSlots(cx, cy, ORIGIN_X, ORIGIN_Y, slotOrder)
     if (hitRoom) {
       const meta = ROOM_META[hitRoom]
+      const MENU_W = 180
+      const MENU_H = 220
+      const rawX = e.clientX - rect.left
+      const rawY = e.clientY - rect.top
       setContextMenu({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+        x: Math.min(rawX, rect.width - MENU_W - 16),
+        y: Math.min(rawY, rect.height - MENU_H - 16),
         roomId: hitRoom,
         roomName: meta?.name || hitRoom,
       })
@@ -2124,18 +2128,25 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           // Start long-press timer (500ms) for context menu
           const touchClientX = t.clientX
           const touchClientY = t.clientY
+          const longPressHitRoom = hitRoom
           longPressTimerRef.current = setTimeout(() => {
             // Only fire if we haven't dragged
             if (mouseDownRef.current.active && !mouseDownRef.current.didDrag) {
               longPressFiredRef.current = true
-              const meta = ROOM_META[hitRoom]
+              // Pan camera to center the long-pressed room before showing menu
+              setFocusedRoom(longPressHitRoom)
+              const meta = ROOM_META[longPressHitRoom]
               const r = containerRef.current?.getBoundingClientRect()
               if (r) {
+                const MENU_W = 180
+                const MENU_H = 220
+                const rawX = touchClientX - r.left
+                const rawY = touchClientY - r.top
                 setContextMenu({
-                  x: touchClientX - r.left,
-                  y: touchClientY - r.top,
-                  roomId: hitRoom,
-                  roomName: meta?.name || hitRoom,
+                  x: Math.min(rawX, r.width - MENU_W - 16),
+                  y: Math.min(rawY, r.height - MENU_H - 16),
+                  roomId: longPressHitRoom,
+                  roomName: meta?.name || longPressHitRoom,
                 })
               }
             }
