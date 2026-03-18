@@ -5338,7 +5338,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -5741,7 +5741,17 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               display: 'flex', flexDirection: 'column', gap: 14,
               position: 'relative',
             }}>
-              {(!chatMessages || chatMessages.length === 0) && (
+              {chatLoading && (
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', height: '100%', gap: 10, padding: '24px 0',
+                }}>
+                  <div style={{ color: isDaytime ? '#6B8AB0' : '#8BA4C4', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>
+                    Loading conversation...
+                  </div>
+                </div>
+              )}
+              {!chatLoading && (!chatMessages || chatMessages.length === 0) && (
                 <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   justifyContent: 'center', height: '100%', gap: 10, padding: '24px 0',
@@ -6728,6 +6738,7 @@ export default function GameDashboard() {
     })
   }, [selectedRoom])
   const [panelStreaming, setPanelStreaming] = useState(false)
+  const [panelChatLoading, setPanelChatLoading] = useState(false)
 
   // NO localStorage for chats. Server conversation files are the only source of truth.
   // Messages sent from dashboard write to server via relay-send.
@@ -7111,16 +7122,19 @@ export default function GameDashboard() {
     sessionStorage.setItem('corner-selected-room', selectedRoom || '')
   }, [selectedRoom])
 
-  // On agent switch: reset streaming, load conversation from server files
+  // On agent switch: clear stale data immediately, show loading, then fetch fresh conversation
   useEffect(() => {
     setPanelStreaming(false)
     if (panelRelayPollRef.current) {
       clearInterval(panelRelayPollRef.current)
       panelRelayPollRef.current = null
     }
-    // Load conversation from server files. This is the ONLY source of truth.
-    // 'aom' = team chat (project file), everything else = agent 1:1
+    // CRITICAL FIX: Clear conversation immediately to prevent stale data flash.
+    // Set loading state so the UI shows a brief loading indicator instead of wrong data.
     if (IS_LOCAL && selectedRoom) {
+      setPanelChatLoading(true)
+      setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: [] } }))
+
       const isProject = selectedRoom === 'aom' || selectedRoom.includes('-')
       const convTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
       const convType = isProject ? 'project' : 'agent'
@@ -7136,10 +7150,11 @@ export default function GameDashboard() {
           })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
           console.log(`[Corner] Loaded ${msgs.length} msgs for ${selectedRoom} (${msgs.filter(m=>m.role==='user').length} user, ${msgs.filter(m=>m.role==='assistant').length} asst)`)
           setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: msgs } }))
+          setPanelChatLoading(false)
         })
         .catch(() => {
-          // No server file, start empty
           setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: [] } }))
+          setPanelChatLoading(false)
         })
     }
   }, [selectedRoom])
@@ -7614,6 +7629,7 @@ export default function GameDashboard() {
               chatInput={panelChatInput}
               onChatInputChange={handleAtInputChange}
               streaming={panelStreaming}
+              chatLoading={panelChatLoading}
               agentSlug={selectedRoom}
               isExtended={panelExtended}
               onToggleExtend={() => setPanelExtended(e => !e)}
