@@ -804,7 +804,20 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
       if (!saved.includes(task.text)) saved.push(task.text)
       localStorage.setItem('corner-task-rightnow', JSON.stringify(saved))
     } catch {}
-    console.log(`[Corner] Task "${task.text}" added to Right Now`)
+    // Route to agent via task-assign endpoint (auto-assigns and notifies)
+    try {
+      fetch('/api/local/task-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: task.text,
+          agent: task.agent || undefined,
+          project: task.projectSection || undefined,
+          blocked: task.agent === 'patrik',
+        }),
+      }).catch(() => {}) // fire-and-forget, don't block UI
+    } catch {}
+    console.log(`[Corner] Task "${task.text}" added to Right Now + routed via task-assign`)
   } else if (action === 'moveToProject') {
     try {
       const saved = JSON.parse(localStorage.getItem('corner-task-project-moves') || '{}')

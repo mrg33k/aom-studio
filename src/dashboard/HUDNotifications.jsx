@@ -543,7 +543,7 @@ export function HUDBellButton({ onClick }) {
         }}
         title={totalCount > 0 ? `${totalCount} notification${totalCount > 1 ? 's' : ''}` : 'Notification history'}
       >
-        <Bell size={15} />
+        <Zap size={15} />
         <NotificationBadge count={historyOpen ? 0 : totalCount} />
       </motion.button>
 

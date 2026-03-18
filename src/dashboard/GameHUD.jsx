@@ -276,7 +276,7 @@ function parsePunchList(markdown) {
 
         if (text.length > 80) text = text.slice(0, 77) + '...'
 
-        const task = { text, done: isDone, agent, raw: trimmed }
+        const task = { text, done: isDone, agent, raw: trimmed, projectSource: currentProject.name, projectSection: currentProject.section, projectColor: currentProject.color }
         currentProject.tasks.push(task)
 
         if (currentProject.section === 'schedule' && !isDone) {
@@ -289,7 +289,7 @@ function parsePunchList(markdown) {
         if (cols.length >= 3 && cols[0] !== 'Client') {
           const text = `${cols[0]}: ${cols[1]} (${cols[2]})`
           const done = cols[3]?.toLowerCase().includes('done') || cols[3]?.toLowerCase().includes('wrapped')
-          currentProject.tasks.push({ text: text.slice(0, 80), done, agent: null, raw: trimmed })
+          currentProject.tasks.push({ text: text.slice(0, 80), done, agent: null, raw: trimmed, projectSource: currentProject.name, projectSection: currentProject.section, projectColor: currentProject.color })
         }
       }
     }
@@ -308,13 +308,13 @@ function parsePunchList(markdown) {
           const isDone = content.toLowerCase().includes('done') || content.toLowerCase().includes('complete') || content.toLowerCase().includes('wrapped')
           let text = content
           if (text.length > 80) text = text.slice(0, 77) + '...'
-          currentProject.tasks.push({ text, done: isDone, agent: null, raw: trimmed, isAction: true })
+          currentProject.tasks.push({ text, done: isDone, agent: null, raw: trimmed, isAction: true, projectSource: currentProject.name, projectSection: currentProject.section, projectColor: currentProject.color })
         } else if (label === 'status' && content) {
           // Status becomes a info task so the pill has content
           const isDone = content.toLowerCase().includes('done') || content.toLowerCase().includes('complete') || content.toLowerCase().includes('green')
           let text = content
           if (text.length > 80) text = text.slice(0, 77) + '...'
-          currentProject.tasks.push({ text, done: isDone, agent: null, raw: trimmed, isStatus: true })
+          currentProject.tasks.push({ text, done: isDone, agent: null, raw: trimmed, isStatus: true, projectSource: currentProject.name, projectSection: currentProject.section, projectColor: currentProject.color })
         }
       }
     }
@@ -1030,8 +1030,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
         fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 20, fontWeight: 900,
         color: isExpanded
-          ? (isDaytime ? '#E2E8F0' : '#FFFFFF')
-          : isDaytime ? '#E8ECF0' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),
+          ? '#FFFFFF'
+          : isDaytime ? '#F1F5F9' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',
@@ -1170,25 +1170,25 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId }) {
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask }) {
   const isDaytime = isNightMode === false
-  // Daytime palette for the expanded task panel (white glass, blue accents)
-  const tpBg = isDaytime ? 'rgba(20, 30, 48, 0.96)' : HUD.panelBg
-  const tpBorder = isDaytime ? 'rgba(59, 130, 246, 0.2)' : HUD.panelBorder
+  // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
+  const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
+  const tpBorder = isDaytime ? 'rgba(59, 130, 246, 0.3)' : HUD.panelBorder
   const tpShadow = isDaytime
-    ? '0 -12px 48px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,180,255,0.1)'
+    ? '0 -12px 48px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,180,255,0.12)'
     : '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(100,180,255,0.08)'
-  const tpDivider = isDaytime ? 'rgba(59, 130, 246, 0.12)' : HUD.divider
-  const tpTextPrimary = isDaytime ? '#E8ECF0' : HUD.textPrimary
-  const tpTextMuted = isDaytime ? '#8BA4C4' : HUD.textMuted
+  const tpDivider = isDaytime ? 'rgba(59, 130, 246, 0.18)' : HUD.divider
+  const tpTextPrimary = isDaytime ? '#F1F5F9' : HUD.textPrimary
+  const tpTextMuted = isDaytime ? '#94B8D8' : HUD.textMuted
   const tpGlow = isDaytime
-    ? 'linear-gradient(180deg, rgba(59,130,246,0.08) 0%, transparent 100%)'
+    ? 'linear-gradient(180deg, rgba(59,130,246,0.12) 0%, transparent 100%)'
     : 'linear-gradient(180deg, rgba(100,180,255,0.05) 0%, transparent 100%)'
-  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.25)' : 'rgba(100,180,255,0.18)'
-  const tpCheckboxBg = isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.03)'
-  const tpCloseBg = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)'
-  const tpCloseHoverBg = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.12)'
-  const tpProgressBg = isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.06)'
+  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(100,180,255,0.18)'
+  const tpCheckboxBg = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.03)'
+  const tpCloseBg = isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.06)'
+  const tpCloseHoverBg = isDaytime ? 'rgba(59,130,246,0.25)' : 'rgba(100,180,255,0.12)'
+  const tpProgressBg = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.06)'
   // Local state for optimistic checkbox toggling
   const [localToggles, setLocalToggles] = useState({}) // task index -> toggled done state
   const [saving, setSaving] = useState(null) // which task index is saving
@@ -1459,14 +1459,18 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                 padding: '10px 8px',
                 borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 opacity: isDone ? 0.35 : 1,
-                transition: 'opacity 200ms ease, background 100ms ease',
-                // Highlight when this task's context menu is open
-                background: hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
-                  ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.15)')
-                  : 'transparent',
-                borderLeft: hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
-                  ? `3px solid ${project.color || '#3B82F6'}`
-                  : '3px solid transparent',
+                transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
+                // Highlight when navigated-to OR context menu open
+                background: highlightedTask && task.text === highlightedTask.text
+                  ? (isDaytime ? 'rgba(59,158,255,0.25)' : 'rgba(59,158,255,0.2)')
+                  : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
+                    ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.15)')
+                    : 'transparent',
+                borderLeft: highlightedTask && task.text === highlightedTask.text
+                  ? `3px solid ${project.color || '#3B9EFF'}`
+                  : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
+                    ? `3px solid ${project.color || '#3B82F6'}`
+                    : '3px solid transparent',
               }}
             >
               {/* Checkbox - CLICKABLE */}
@@ -1493,15 +1497,40 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                 {isDone && <Check size={12} color="#FFF" strokeWidth={3} />}
               </motion.div>
 
-              {/* Task text - LARGER */}
-              <span style={{
-                fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 400,
-                color: isDone ? tpTextMuted : tpTextPrimary,
-                lineHeight: 1.45,
-                textDecoration: isDone ? 'line-through' : 'none',
-                flex: 1,
-              }}>
+              {/* Task text - LARGER. Clickable if task has a project link. */}
+              <span
+                onClick={() => {
+                  if (task.projectSource || task.projectSection) {
+                    onNavigateToProject?.(task)
+                  }
+                }}
+                style={{
+                  fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 400,
+                  color: isDone ? tpTextMuted : tpTextPrimary,
+                  lineHeight: 1.45,
+                  textDecoration: isDone ? 'line-through' : 'none',
+                  flex: 1,
+                  cursor: (task.projectSource || task.projectSection) ? 'pointer' : 'default',
+                }}
+              >
                 {task.text}
+                {/* Project source badge - shows which project this task lives in */}
+                {(task.projectSource || task.projectSection) && !isDone && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    marginLeft: 8, verticalAlign: 'middle',
+                    fontSize: 10, fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    color: task.projectColor || '#60A5FA',
+                    background: `${task.projectColor || '#60A5FA'}15`,
+                    border: `1px solid ${task.projectColor || '#60A5FA'}30`,
+                    borderRadius: 4, padding: '1px 6px',
+                    textTransform: 'uppercase', letterSpacing: '0.06em',
+                    opacity: 0.8,
+                  }}>
+                    {task.projectSource || task.projectSection}
+                  </span>
+                )}
               </span>
 
               {/* LIVE badge for live agent tasks */}
@@ -1669,24 +1698,27 @@ export default function GameHUD({
     }
   }, [hudTaskCtx])
 
-  // Daytime palette: white glass with vibrant blue accents (matches top bar)
+  // Daytime palette: brighter blue glass with vibrant accents (distinct from night)
   const isDaytime = isNightMode === false
-  const hudPanelBg = isDaytime ? 'rgba(20, 30, 48, 0.94)' : HUD.panelBg
-  const hudPanelBorder = isDaytime ? 'rgba(59, 130, 246, 0.2)' : HUD.panelBorder
+  const hudPanelBg = isDaytime ? 'rgba(18, 42, 75, 0.95)' : HUD.panelBg
+  const hudPanelBorder = isDaytime ? 'rgba(59, 130, 246, 0.3)' : HUD.panelBorder
   const hudPanelShadow = isDaytime
-    ? '0 -8px 48px rgba(0,0,0,0.3), 0 -2px 0 rgba(59,130,246,0.15), inset 0 1px 0 rgba(100,180,255,0.1)'
+    ? '0 -8px 48px rgba(0,0,0,0.3), 0 -2px 0 rgba(59,130,246,0.2), inset 0 1px 0 rgba(100,180,255,0.12)'
     : HUD.panelShadow
   const hudBlueOverlay = isDaytime
-    ? 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, rgba(59,130,246,0.02) 50%, transparent 100%)'
+    ? 'linear-gradient(180deg, rgba(59,130,246,0.10) 0%, rgba(59,130,246,0.04) 50%, transparent 100%)'
     : HUD.blueOverlay
-  const hudDivider = isDaytime ? 'rgba(100, 180, 255, 0.12)' : HUD.divider
-  const hudTextPrimary = isDaytime ? '#E8ECF0' : HUD.textPrimary
-  const hudTextMuted = isDaytime ? '#8BA4C4' : HUD.textMuted
+  const hudDivider = isDaytime ? 'rgba(100, 180, 255, 0.18)' : HUD.divider
+  const hudTextPrimary = isDaytime ? '#F1F5F9' : HUD.textPrimary
+  const hudTextMuted = isDaytime ? '#94B8D8' : HUD.textMuted
   const hudAccent = isDaytime ? '#60A5FA' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
+  const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const searchRef = useRef(null)
+  // navigateToProject uses a ref so it doesn't depend on projects useMemo (avoids ordering issue)
+  const projectsRef = useRef([]);
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
   const {
     rightNow: liveRightNowTasks,
@@ -1808,6 +1840,7 @@ export default function GameHUD({
             agent: 'patrik',
             raw: t.raw,
             projectSource: t.project,
+            projectSection: t.projectSection,
             projectColor: t.projectColor,
           })),
           isTodoList: true,
@@ -1830,6 +1863,7 @@ export default function GameHUD({
             agent: t.agent,
             raw: t.raw,
             projectSource: t.project,
+            projectSection: t.projectSection,
             projectColor: t.projectColor,
             isStale: true,
           })),
@@ -1878,6 +1912,23 @@ export default function GameHUD({
     })
   }, [punchData, conversationScores, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks, manualTasks])
 
+  // Keep ref in sync for navigateToProject callback
+  projectsRef.current = projects
+
+  // Navigate from a meta-pill (Right Now, Your TODOs, Finish These) to the source project pill
+  const navigateToProject = useCallback((task) => {
+    if (!task.projectSection && !task.projectSource) return
+    const currentProjects = projectsRef.current
+    const target = currentProjects.find(p =>
+      (task.projectSection && p.section === task.projectSection) ||
+      (task.projectSource && p.name === task.projectSource)
+    )
+    if (!target) return
+    setExpandedProject(target)
+    setHighlightedTask({ text: task.text })
+    setTimeout(() => setHighlightedTask(null), 2500)
+  }, [])
+
   // Filter projects by search query
   const filteredProjects = useMemo(() => {
     if (!searchQuery.trim()) return projects
@@ -1923,7 +1974,7 @@ export default function GameHUD({
       ref={hudRef}
       style={{
         position: 'fixed',
-        bottom: isMobile ? 60 : 0,
+        bottom: 0,
         left: 0, right: 0,
         zIndex: 40,
         pointerEvents: 'auto',
@@ -1945,24 +1996,28 @@ export default function GameHUD({
             onTaskContextMenu={(e, task, proj) => {
               setHudTaskCtx({ task, project: proj, taskId: task.isManual ? `manual-${task.manualId}` : task.origIdx })
             }}
+            onNavigateToProject={navigateToProject}
+            highlightedTask={highlightedTask}
           />
         )}
       </AnimatePresence>
 
-      {/* The HUD panel - BLUE GLASS game panel (daytime = white/vibrant blue) */}
+      {/* The HUD panel - BLUE GLASS game panel (daytime = brighter blue glass) */}
       <div
         className="hud-panel-shimmer"
         style={{
           background: hudPanelBg,
           backdropFilter: 'blur(24px)',
           borderTop: `2px solid ${hudPanelBorder}`,
-          borderLeft: `2px solid ${isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.08)'}`,
-          borderRight: `2px solid ${isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.08)'}`,
+          borderLeft: `2px solid ${isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(100,180,255,0.08)'}`,
+          borderRight: `2px solid ${isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(100,180,255,0.08)'}`,
           // Chunky game panel shape
           borderRadius: isMobile ? 0 : '18px 18px 0 0',
           boxShadow: hudPanelShadow,
-          padding: isMobile ? '4px 10px' : '0 20px',
+          padding: isMobile ? '4px 8px' : '0 20px',
           margin: isMobile ? 0 : '0 12px',
+          // Mobile: flush bottom with no gap
+          ...(isMobile ? { borderRadius: 0 } : {}),
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
@@ -1997,27 +2052,101 @@ export default function GameHUD({
           <rect width="100%" height="100%" filter="url(#hudNoise4)" opacity="0.015" style={{ mixBlendMode: 'overlay' }} />
         </svg>
 
-        {/* Main row: Agents | Projects + Stats | Chat -- LARGER min height */}
+        {/* DINER DASH TICKER -- Right Now tasks scroll left like orders coming in */}
+        {(() => {
+          const rightNowProject = filteredProjects.find(p => p.section === 'rightnow')
+          const tickerTasks = rightNowProject?.tasks?.filter(t => !t.isAddPrompt) || []
+          const hasTickerTasks = tickerTasks.length > 0
+          return hasTickerTasks ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: isMobile ? '4px 0 2px' : '6px 0 2px',
+              minHeight: isMobile ? 36 : 42,
+              position: 'relative',
+              zIndex: 2,
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }} className="hud-ticker-scroll">
+              <Zap size={14} color="#FF6B3D" style={{ flexShrink: 0, marginLeft: 4, filter: 'drop-shadow(0 0 6px rgba(255,107,61,0.6))' }} />
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 800,
+                color: '#FF6B3D', letterSpacing: '0.1em', textTransform: 'uppercase',
+                flexShrink: 0, whiteSpace: 'nowrap',
+              }}>RIGHT NOW</span>
+              <div style={{ width: 1, height: 20, background: hudDivider, flexShrink: 0 }} />
+              {tickerTasks.map((task, idx) => (
+                <motion.button
+                  key={task.manualId || task.text || idx}
+                  initial={{ opacity: 0, x: 60, scale: 0.9 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -80, scale: 0.85 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20, delay: idx * 0.04 }}
+                  onClick={() => {
+                    // Expand the Right Now pill to show task detail
+                    setExpandedProject(rightNowProject)
+                  }}
+                  whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+                  whileTap={{ scale: 0.94 }}
+                  className={task.done ? '' : (task.isLive ? 'ticker-task-live' : 'ticker-task-new')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '4px 12px',
+                    background: task.done
+                      ? 'rgba(34,197,94,0.12)'
+                      : task.isLive
+                        ? 'rgba(255,107,61,0.12)'
+                        : 'rgba(100,180,255,0.08)',
+                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isLive ? 'rgba(255,107,61,0.25)' : 'rgba(100,180,255,0.15)'}`,
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'background 150ms ease, border-color 150ms ease',
+                  }}
+                >
+                  {task.done ? (
+                    <CheckCircle2 size={13} color="#22C55E" style={{ flexShrink: 0 }} />
+                  ) : task.isLive ? (
+                    <span style={{
+                      width: 7, height: 7, borderRadius: '50%', background: '#FF6B3D',
+                      boxShadow: '0 0 6px rgba(255,107,61,0.6)',
+                      animation: 'statusPulse 1.5s ease-in-out infinite',
+                      flexShrink: 0,
+                    }} />
+                  ) : null}
+                  <span style={{
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    fontSize: 13, fontWeight: 600,
+                    color: task.done ? '#4ADE80' : (isDaytime ? '#F1F5F9' : HUD.textPrimary),
+                    whiteSpace: 'nowrap',
+                    maxWidth: 200,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    textDecoration: task.done ? 'line-through' : 'none',
+                    opacity: task.done ? 0.7 : 1,
+                  }}>
+                    {task.text}
+                  </span>
+                </motion.button>
+              ))}
+            </div>
+          ) : null
+        })()}
+
+        {/* Main row: Pills ONLY. No agent roster. No counters. No percentage. */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? 6 : 14,
-          minHeight: isMobile ? 58 : 108,
+          gap: isMobile ? 6 : 10,
+          minHeight: isMobile ? 52 : 68,
           position: 'relative',
           zIndex: 1,
-          padding: isMobile ? 0 : '8px 0',
+          padding: isMobile ? 0 : '4px 0 6px',
         }}>
-          {/* Left: Agent plumbob portraits */}
-          {!isMobile && (
-            <AgentRoster agentStatus={agentStatus} onAgentClick={onAgentClick} onAgentContextMenu={onAgentContextMenu} />
-          )}
-
-          {/* Divider */}
-          {!isMobile && (
-            <div style={{ width: 1, height: 36, background: hudDivider, flexShrink: 0 }} />
-          )}
-
-          {/* Center: Scroll arrows + Project pills (scrollable, no wrapping) */}
           {/* Left scroll arrow */}
           <button
             onClick={() => {
@@ -2037,19 +2166,21 @@ export default function GameHUD({
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
+
+          {/* Center: Scrollable project pills -- THE WHOLE BAR */}
           <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            padding: '4px 6px',
+            padding: '2px 4px',
             overflowX: 'auto',
             overflowY: 'hidden',
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }} className="hud-pills-scroll">
-            {/* Search toggle + input: filters projects in real-time */}
+            {/* Search toggle + input */}
             {!isMobile && (
               <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                 <AnimatePresence>
@@ -2128,6 +2259,7 @@ export default function GameHUD({
               ))
             )}
           </div>
+
           {/* Right scroll arrow */}
           <button
             onClick={() => {
@@ -2148,20 +2280,8 @@ export default function GameHUD({
             </svg>
           </button>
 
-          {/* Compact stats */}
-          {!isMobile && (
-            <CompactStats
-              agentStatus={agentStatus}
-              throughput={throughput}
-              overallProgress={overallProgress}
-              isNightMode={isNightMode}
-            />
-          )}
-
-          {/* Notification bell with badge */}
-          {!isMobile && (
-            <HUDBellButton onClick={onExpandChat} />
-          )}
+          {/* Lightning bolt notification button (was bell) */}
+          <HUDBellButton onClick={onExpandChat} />
         </div>
       </div>
 
@@ -2194,6 +2314,25 @@ export default function GameHUD({
         .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(100,180,255,0.22); }
         .hud-pills-scroll::-webkit-scrollbar { display: none; }
         .hud-pills-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .hud-ticker-scroll::-webkit-scrollbar { display: none; }
+        .hud-ticker-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes tickerFlash {
+          0%, 100% { box-shadow: 0 0 0 rgba(255,107,61,0); }
+          30% { box-shadow: 0 0 12px rgba(255,107,61,0.4); }
+        }
+        @keyframes tickerWiggle {
+          0%, 100% { transform: rotate(0deg); }
+          20% { transform: rotate(-1.5deg); }
+          40% { transform: rotate(1.5deg); }
+          60% { transform: rotate(-1deg); }
+          80% { transform: rotate(1deg); }
+        }
+        .ticker-task-new {
+          animation: tickerFlash 1.2s ease-out 1, tickerWiggle 0.5s ease-in-out 1 0.15s;
+        }
+        .ticker-task-live {
+          animation: tickerFlash 2s ease-in-out infinite;
+        }
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
