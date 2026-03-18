@@ -7218,80 +7218,11 @@ export default function GameDashboard() {
   // DONE(bobby2): RELAY MESSAGE CRASH FIX -- safePanelUpdate() wraps all setPanelMessages calls with try/catch + field validation. safeTimeSort() handles NaN timestamps. All relay message pushes validate .message exists and default .time/.id. Malformed relay data can no longer crash React render cycle.
   // DONE(bobby): HMR STATE PRESERVATION -- Key dashboard state (selectedRoom, panelActiveTab) persists to sessionStorage on change, restores on HMR reload. Auth already in sessionStorage. Mode already in localStorage. Chat messages reload from relay history on reconnect. Bobby commits no longer reset which agent Patrik was talking to.
 
-  // Background INBOX polling: picks up new messages from terminal/telegram
-  // so the dashboard shows messages sent from other interfaces in real-time
-  const lastBgInboxCheckRef = useRef(null)
-  const bgInboxPollRef = useRef(null)
-  useEffect(() => {
-    if (!IS_LOCAL) return
-
-    bgInboxPollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch('/api/local/relay-inbox')
-        if (!res.ok) return
-        const data = await res.json()
-        const allInbox = data.messages || []
-        if (allInbox.length === 0) return
-
-        // Check for messages newer than what we've seen
-        const since = lastBgInboxCheckRef.current
-        const newMsgs = since
-          ? allInbox.filter(m => m.timestamp && new Date(m.timestamp) > new Date(since))
-          : [] // Don't treat initial load as "new"
-
-        // Always update the last check to the latest inbox message
-        lastBgInboxCheckRef.current = allInbox[allInbox.length - 1].timestamp
-
-        if (newMsgs.length > 0) {
-          // Filter to messages NOT from the dashboard (those are already added on send)
-          const externalMsgs = newMsgs.filter(m =>
-            m.source !== 'corner-dashboard' && m.source !== 'corner-websocket' && m.message?.trim()
-          )
-          if (externalMsgs.length > 0) {
-            safePanelUpdate(prev => {
-              const allMsgs = [...(prev._all || [])]
-              for (const msg of externalMsgs) {
-                if (!msg.message) continue // skip empty messages
-                if (msg.id && allMsgs.some(m => m.id === msg.id)) continue
-                const cleaned = sanitizeRelayMessage(msg.message)
-                if (!cleaned) continue
-                let sourceLabel = 'unknown'
-                if (msg.source === 'telegram') sourceLabel = 'via telegram'
-                else if (msg.source === 'terminal' || msg.source === 'cli') sourceLabel = 'via terminal'
-                else if (msg.source) sourceLabel = `via ${msg.source}`
-                allMsgs.push({
-                  role: 'user',
-                  content: cleaned,
-                  time: msg.timestamp || new Date().toISOString(),
-                  source: sourceLabel,
-                  targetAgent: msg.agent || null,
-                  id: msg.id || `inbox-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-                })
-              }
-              allMsgs.sort(safeTimeSort)
-              return { ...prev, _all: deduplicateMessages(allMsgs) }
-            })
-          }
-        }
-      } catch {}
-    }, 500) // Local: 500ms for near-instant relay message display
-
-    // Initialize the last check timestamp
-    fetch('/api/local/relay-inbox').then(res => {
-      if (res.ok) return res.json()
-    }).then(data => {
-      const msgs = data?.messages || []
-      if (msgs.length > 0) {
-        lastBgInboxCheckRef.current = msgs[msgs.length - 1].timestamp
-      } else {
-        lastBgInboxCheckRef.current = new Date().toISOString()
-      }
-    }).catch(() => {})
-
-    return () => {
-      if (bgInboxPollRef.current) clearInterval(bgInboxPollRef.current)
-    }
-  }, [])
+  // Background INBOX polling DISABLED (Wave 6: single source of truth)
+  // Conversations API is now the ONLY read source for chat messages.
+  // relay-inbox is write-only (dashboard sends go there, then get written to conversation files).
+  // This eliminates the dual-source race condition that caused message flicker:
+  // inbox poll (500ms) would add messages, then conversations poll (3s) would replace them.
 
   // Load FULL relay conversation history (all sources) when panel opens
   // The relay is a unified conversation channel. Show everything so terminal,
@@ -7303,82 +7234,11 @@ export default function GameDashboard() {
   // DONE(bobby2): CHAT SCROLL STAY AT BOTTOM (SIDEBAR) -- Ported ChatDashboard fix (isUserTypingRef, userJustSentRef, prevMessageCountRef) to sidebar chat. No more scroll yanking while user types. Ref: Patrik feedback line 248, 261.
   // DONE(bobby2): JANKY CHAT CLEANUP -- (1) Watchdog system prompt stripped by expanded sanitizeRelayMessage (7 new regex patterns). Ghost messages filtered by watchdog-responded status. (2) Typing indicator separated into standalone block with animated dots. (3) Source labels muted to 9px/#78716C/25% opacity. Deduplication added for relay echo messages. Ref: Patrik feedback line 249. REMAINING: see TODO(steve) about overly aggressive XML regex that may eat user content.
   // DONE(bobby2): CHAT BUBBLE CONTRAST FIX -- Daytime bubbles now solid warm gray (#EDF2F7) with dark text (#1E293B). Agent bubbles get colored left border (3px agent color). Patrik avatar now orange (#F59E0B) with white P per dream-hud-v1.png. Night mode unchanged (dark translucent). All text readable in both modes.
-  const panelHistoryLoadedRef = useRef(false)
-  useEffect(() => {
-    if (!IS_LOCAL || panelHistoryLoadedRef.current) return
-    panelHistoryLoadedRef.current = true
-
-    const loadFullHistory = async () => {
-      try {
-        const [inboxRes, outboxRes] = await Promise.all([
-          fetch('/api/local/relay-inbox'),
-          fetch('/api/local/relay-outbox'),
-        ])
-        const inbox = inboxRes.ok ? await inboxRes.json() : { messages: [] }
-        const outbox = outboxRes.ok ? await outboxRes.json() : { messages: [] }
-
-        const all = []
-        // Inbox: ALL user messages from any source (dashboard, telegram, terminal)
-        for (const msg of inbox.messages) {
-          const cleaned = sanitizeRelayMessage(msg.message)
-          if (!cleaned) continue
-          // Derive source label
-          let sourceLabel = 'unknown'
-          if (msg.source === 'corner-dashboard' || msg.source === 'corner-websocket') sourceLabel = 'via dashboard'
-          else if (msg.source === 'telegram') sourceLabel = 'via telegram'
-          else if (msg.source === 'terminal' || msg.source === 'cli') sourceLabel = 'via terminal'
-          else if (msg.source) sourceLabel = `via ${msg.source}`
-          all.push({
-            role: 'user',
-            content: cleaned,
-            time: msg.timestamp,
-            source: sourceLabel,
-            targetAgent: msg.agent || null,
-            id: msg.id,
-          })
-        }
-        // Outbox: ALL EA/agent responses (no filtering by agent -- it's one conversation)
-        for (const msg of outbox.messages) {
-          if (!msg.message?.trim()) continue
-          // Skip messages that are actually dashboard sends that leaked into outbox
-          if (msg.source === 'corner-dashboard' || msg.source === 'corner-websocket') continue
-          const cleaned = sanitizeRelayMessage(msg.message)
-          if (!cleaned) continue
-          const agentSlug = extractAgentFromMessage(msg)
-          all.push({
-            role: 'assistant',
-            content: cleaned,
-            time: msg.timestamp,
-            source: agentSlug || 'system',
-            id: msg.id,
-            ambient: msg.ambient === true || msg.ambient === 'true',
-          })
-        }
-
-        // Sort by timestamp, deduplicate relay echoes, and take last 50
-        all.sort(safeTimeSort)
-        const deduped = deduplicateMessages(all)
-        const recent = deduped.slice(-50)
-
-        if (recent.length > 0) {
-          // Store under a global key '_all' for the unified conversation view
-          safePanelUpdate(prev => ({
-            ...prev,
-            _all: recent,
-          }))
-          // Also set the last outbox timestamp for background polling
-          const lastOutbox = outbox.messages.filter(m => m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
-          if (lastOutbox.length > 0) {
-            lastBgOutboxCheckRef.current = lastOutbox[lastOutbox.length - 1].timestamp
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to load relay history:', err)
-      }
-    }
-
-    loadFullHistory()
-  }, [])
+  // Initial relay history load DISABLED (Wave 6: single source of truth)
+  // The conversations API (selectedRoom useEffect below) is now the ONLY source for chat data.
+  // relay-inbox + relay-outbox are no longer read for display. They remain write targets only.
+  // This eliminates the dual-source race: relay files could return different message sets than
+  // conversation files, causing appear/disappear flicker every 3 seconds.
 
   // Right-click context menu state
   const [contextMenu, setContextMenu] = useState(null) // { type, data, position: {x, y} }
@@ -7481,14 +7341,15 @@ export default function GameDashboard() {
     }
   }, [selectedRoom])
 
-  // Poll conversation file for new messages (live updates without full page refresh)
-  // Local: 3s (fast, file-backed). Production: 8s (GitHub API rate limit awareness).
+  // Poll conversation file for new messages (SINGLE SOURCE OF TRUTH)
+  // This is now the ONLY read path for chat messages (Wave 6 flicker fix).
+  // Local: 1.5s (fast, file-backed, replaces old 500ms relay poll). Production: 8s (GitHub API rate limit).
   useEffect(() => {
     if (!selectedRoom) return
     const isProj = selectedRoom === 'aom' || selectedRoom.includes('-')
     const pollTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
     const pollType = isProj ? 'project' : 'agent'
-    const pollInterval = IS_LOCAL ? 3000 : 8000
+    const pollInterval = IS_LOCAL ? 1500 : 8000
     const poll = setInterval(() => {
       fetch(`${CONV_API_BASE}?target=${pollTarget}&type=${pollType}&limit=50`)
         .then(res => res.ok ? res.json() : null)
