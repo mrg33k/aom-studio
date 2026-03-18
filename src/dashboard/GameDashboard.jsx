@@ -2188,6 +2188,7 @@ function MobileDrawer({
   const dragStartTime = useRef(0)
   const dragStartHeight = useRef(0)
   const isDraggingHandle = useRef(false)
+  const [handlePulsed, setHandlePulsed] = useState(false)
   const [activeTab, setActiveTab] = useState('chat')
   const [mobileViewportHeight, setMobileViewportHeight] = useState(null)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
@@ -2303,6 +2304,14 @@ function MobileDrawer({
     }
   }, [snap, getSnapHeights, sheetHeight, onClose, onSnapChange])
 
+  // One-time pulse glow on drag handle to teach the gesture
+  useEffect(() => {
+    if (!handlePulsed) {
+      const timer = setTimeout(() => setHandlePulsed(true), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [handlePulsed])
+
   // Drag handle touch handlers
   const handleDragStart = useCallback((e) => {
     dragStartY.current = e.touches[0].clientY
@@ -2384,8 +2393,10 @@ function MobileDrawer({
         }}
       >
         <div style={{
-          width: 40, height: 5, borderRadius: 3,
-          background: 'rgba(255, 255, 255, 0.25)',
+          width: 48, height: 5, borderRadius: 3,
+          background: 'rgba(255, 255, 255, 0.35)',
+          boxShadow: !handlePulsed ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
+          animation: !handlePulsed ? 'handlePulse 1.5s ease-in-out infinite' : 'none',
         }} />
       </div>
 
@@ -3811,7 +3822,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 onClick={() => setFullscreen(true)}
                 style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', cursor: 'pointer' }}
               >
-                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255, 255, 255, 0.15)' }} />
+                <div style={{ width: 48, height: 5, borderRadius: 3, background: 'rgba(255, 255, 255, 0.35)' }} />
               </div>
             )}
 
@@ -4072,6 +4083,7 @@ const ctxBtnStyle = (isDaytime) => ({
 
 function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode, onAddToRightNow, rightNowTasks, punchProjects }) {
   const isDaytime = isNightMode === false
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
   // Per-agent task list (localStorage-persisted)
   const TASKS_KEY = `corner-tasks-${agentSlug}`
@@ -4272,8 +4284,9 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         onContextMenu={ctxHandler}
         onClick={() => setSelectedTask({ ...t, _cardColor: cardColor, _cardAgent: cardAgent, _isLive: isLive, _sectionName: sectionName, _sectionColor: sectionColor || projectColor })}
         style={{
-          display: 'flex', alignItems: 'flex-start', gap: 10,
-          padding: '10px 12px', marginBottom: 6,
+          display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 10,
+          padding: isMobile ? '8px 10px' : '10px 12px', marginBottom: isMobile ? 10 : 6,
+          minHeight: isMobile ? 44 : undefined,
           background: isLive
             ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
             : t.done
@@ -4314,7 +4327,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           <div
             onClick={(e) => { e.stopPropagation(); onToggle(t.id) }}
             style={{
-              width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
+              width: isMobile ? 24 : 20, height: isMobile ? 24 : 20, borderRadius: isMobile ? 6 : 5, flexShrink: 0, marginTop: 1,
               border: t.done ? `2px solid ${cardColor}` : `2px solid ${cardColor}50`,
               background: t.done ? cardColor : `${cardColor}08`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -4333,7 +4346,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         {/* Task content (right column) */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontSize: 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
+            fontSize: isMobile ? 12 : 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
             color: t.done
               ? (isDaytime ? '#6B8AB0' : '#475569')
               : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
@@ -6693,6 +6706,41 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             </div>
             )}
 
+            {/* Project memberships (Vegas-style mini pills) */}
+            {agentStatus && (() => {
+              const agentProjects = PROJECTS.filter(p => p.team?.includes(agentSlug))
+              if (agentProjects.length === 0) return null
+              return (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>Projects</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {agentProjects.map(p => (
+                      <button
+                        key={p.slug}
+                        onClick={() => {}}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          padding: '4px 10px', borderRadius: 20,
+                          background: `${p.color}18`,
+                          border: `1.5px solid ${p.color}60`,
+                          color: p.color, fontSize: 11, fontWeight: 800,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          letterSpacing: '0.04em', textTransform: 'uppercase',
+                          cursor: 'pointer', transition: 'all 150ms',
+                          boxShadow: `0 0 8px ${p.color}15, inset 0 0 6px ${p.color}08`,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = `${p.color}30`; e.currentTarget.style.boxShadow = `0 0 12px ${p.color}30, inset 0 0 8px ${p.color}12` }}
+                        onMouseLeave={e => { e.currentTarget.style.background = `${p.color}18`; e.currentTarget.style.boxShadow = `0 0 8px ${p.color}15, inset 0 0 6px ${p.color}08` }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Data source */}
             {IS_LOCAL && agentStatus && (
               <div style={{ marginBottom: 16 }}>
@@ -8482,6 +8530,7 @@ export default function GameDashboard() {
           30% { transform: translateY(-3px) scale(1.02); }
           60% { transform: translateY(-1px) scale(0.99); }
         }
+        @keyframes handlePulse { 0%,100%{box-shadow:0 0 6px rgba(255,255,255,0.2)} 50%{box-shadow:0 0 14px rgba(255,255,255,0.6)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes dotPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
