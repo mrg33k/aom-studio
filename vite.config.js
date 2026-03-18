@@ -678,8 +678,15 @@ function localDashboardPlugin() {
             const lines = fs.readFileSync(filePath, 'utf-8').split('\n').filter(l => l.trim())
             // Take last N messages
             const recent = lines.slice(-limit)
+            const seenIds = new Set()
             for (const line of recent) {
-              try { messages.push(JSON.parse(line)) } catch {}
+              try {
+                const msg = JSON.parse(line)
+                // Dedup by message ID
+                if (msg.id && seenIds.has(msg.id)) continue
+                if (msg.id) seenIds.add(msg.id)
+                messages.push(msg)
+              } catch {}
             }
           }
         } catch {}
