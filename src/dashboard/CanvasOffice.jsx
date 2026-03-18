@@ -1261,6 +1261,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       return { posX, posY }
     }
 
+    // Collect badge draw data so we can render ALL badges in a final pass on top of everything
+    const badgeQueue = []
+
     for (const { id: roomId, slotIdx } of renderOrder) {
       if (roomId === draggedRoomId) continue // draw dragged room last
 
@@ -1308,6 +1311,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
       // All rooms full brightness (dimming off for now, can be a setting later)
       drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL, cam.zoom, celebGlow, walkPositions[roomId])
+
+      // Queue badge for deferred rendering (on top of all rooms)
+      badgeQueue.push({ offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
 
       // Context menu dotted hex outline (drawn AFTER room, outside clip)
       if (isCtxRoom) {
@@ -1427,6 +1433,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, true, cam.zoom, celebGlow, walkPositions[draggedRoomId])
         ctx.restore()
 
+        // Queue badge for dragged room too
+        badgeQueue.push({ offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
+
         // ---- DRAW DROP INDICATOR (ghost outline at target slot) ----
         if (drag.currentSlot >= 0 && drag.currentSlot !== drag.fromSlot) {
           const targetPos = slotWorldPos(drag.currentSlot, ORIGIN_X, ORIGIN_Y)
@@ -1449,6 +1458,66 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           ctx.restore()
         }
       }
+    }
+
+    // ---- FINAL PASS: DRAW ALL NAME BADGES ON TOP OF EVERYTHING ----
+    for (const badge of badgeQueue) {
+      const { offsetX: bx, offsetY: by, nameText, nameColor, currentZoom } = badge
+      const S = ROOM_SIZE
+      const baseFontSize = 17
+      const invZoomScale = Math.min(3.0, Math.max(1.0, 1.0 / (currentZoom || 1)))
+      const fontSize = baseFontSize * invZoomScale
+      const dotSize = 7 * invZoomScale
+      const pillPadH = 10 * invZoomScale
+      const pillPadV = 6 * invZoomScale
+      const pillRadius = 6 * invZoomScale
+
+      ctx.save()
+      ctx.translate(bx, by)
+
+      ctx.font = `800 ${fontSize}px Inter, system-ui, sans-serif`
+      const tw = ctx.measureText(nameText).width
+      const badgeW = tw + dotSize + pillPadH * 3 + 4 * invZoomScale
+      const badgeH = fontSize + pillPadV * 2
+
+      // Position on the right wall, pulled left and up, rotated to match isometric angle
+      const wallAngle = 27 * (Math.PI / 180)
+      const wallX = S * 0.72
+      const wallY = S * 0.28
+
+      ctx.save()
+      ctx.translate(wallX, wallY)
+      ctx.rotate(wallAngle)
+
+      // Dark pill background
+      ctx.fillStyle = 'rgba(8, 12, 24, 0.92)'
+      ctx.beginPath()
+      ctx.roundRect(-pillPadH, -badgeH / 2, badgeW, badgeH, pillRadius)
+      ctx.fill()
+
+      // Subtle border
+      ctx.strokeStyle = `${nameColor}40`
+      ctx.lineWidth = 1.2 * invZoomScale
+      ctx.beginPath()
+      ctx.roundRect(-pillPadH, -badgeH / 2, badgeW, badgeH, pillRadius)
+      ctx.stroke()
+
+      // Status dot
+      const dotCX = dotSize / 2
+      const dotCY = 0
+      ctx.beginPath()
+      ctx.arc(dotCX, dotCY, dotSize / 2, 0, Math.PI * 2)
+      ctx.fillStyle = nameColor
+      ctx.fill()
+
+      // Name text
+      ctx.fillStyle = '#EDF2FA'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(nameText, dotCX + dotSize / 2 + 4 * invZoomScale, dotCY)
+
+      ctx.restore()
+      ctx.restore()
     }
 
     ctx.restore() // undo pan/zoom
@@ -1608,60 +1677,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
 
     ctx.restore() // undo hex clip so badge renders OUTSIDE/BELOW the hex
-
-    // ---- NAME BADGE (below the hex, not clipped) ----
-    ctx.save()
-    ctx.translate(offsetX, offsetY)
-
-    const baseFontSize = 17
-    const invZoomScale = Math.min(3.0, Math.max(1.0, 1.0 / (currentZoom || 1)))
-    const fontSize = baseFontSize * invZoomScale
-    const dotSize = 7 * invZoomScale
-    const pillPadH = 10 * invZoomScale
-    const pillPadV = 6 * invZoomScale
-    const pillRadius = 6 * invZoomScale
-
-    ctx.font = `800 ${fontSize}px Inter, system-ui, sans-serif`
-    const tw = ctx.measureText(nameText).width
-    const badgeW = tw + dotSize + pillPadH * 3 + 4 * invZoomScale
-    const badgeH = fontSize + pillPadV * 2
-
-    // Position on the right wall, pulled left and up, rotated to match isometric angle
-    const wallAngle = 27 * (Math.PI / 180) // right wall angle in radians
-    const wallX = S * 0.72 // pulled more left
-    const wallY = S * 0.28 // pulled more up
-
-    ctx.save()
-    ctx.translate(wallX, wallY)
-    ctx.rotate(wallAngle)
-
-    // Dark pill background
-    ctx.fillStyle = 'rgba(8, 12, 24, 0.92)'
-    ctx.beginPath()
-    ctx.roundRect(-pillPadH, -badgeH / 2, badgeW, badgeH, pillRadius)
-    ctx.fill()
-
-    // Subtle border
-    ctx.strokeStyle = `${nameColor}40`
-    ctx.lineWidth = 1.2 * invZoomScale
-    ctx.beginPath()
-    ctx.roundRect(-pillPadH, -badgeH / 2, badgeW, badgeH, pillRadius)
-    ctx.stroke()
-
-    // Status dot
-    const dotCX = dotSize / 2
-    const dotCY = 0
-    ctx.beginPath()
-    ctx.arc(dotCX, dotCY, dotSize / 2, 0, Math.PI * 2)
-    ctx.fillStyle = nameColor
-    ctx.fill()
-
-    // Name text
-    ctx.fillStyle = '#EDF2FA'
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(nameText, dotCX + dotSize / 2 + 4 * invZoomScale, dotCY)
-    ctx.restore()
   }
 
   // Render loop
