@@ -230,6 +230,7 @@ function derivePatrikTodos(punchData) {
         text: task.text,
         agent: 'patrik',
         project: project.name,
+        projectSection: project.section,
         projectColor: project.color,
         raw: task.raw,
         done: false,
@@ -256,6 +257,7 @@ function deriveFinishThese(punchData) {
           text: task.text,
           agent: task.agent,
           project: project.name,
+          projectSection: project.section,
           projectColor: project.color,
           raw: task.raw,
           done: false,
@@ -305,42 +307,69 @@ export function useDataPipe(parsePunchList) {
   parseFnRef.current = parsePunchList
 
   const fetchAll = useCallback(async () => {
-    if (!IS_LOCAL) return
+    if (IS_LOCAL) {
+      // LOCAL: read from filesystem APIs
+      try {
+        const [notifRes, punchRes, missionsRes] = await Promise.all([
+          fetch('/api/local/file?path=context/agent-notifications.md').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/local/file?path=context/active-missions.md').then(r => r.ok ? r.json() : null).catch(() => null),
+        ])
 
-    try {
-      // ONE poll, THREE parallel fetches
-      const [notifRes, punchRes, missionsRes] = await Promise.all([
-        fetch('/api/local/file?path=context/agent-notifications.md').then(r => r.ok ? r.json() : null).catch(() => null),
-        fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null),
-        fetch('/api/local/file?path=context/active-missions.md').then(r => r.ok ? r.json() : null).catch(() => null),
-      ])
+        const notifContent = notifRes?.content || ''
+        const punchContent = punchRes?.content || ''
+        const missionsContent = missionsRes?.content || ''
 
-      const notifContent = notifRes?.content || ''
-      const punchContent = punchRes?.content || ''
-      const missionsContent = missionsRes?.content || ''
+        setRightNow(parseRightNow(missionsContent, notifContent))
+        setCompletedFeed(parseCompletedFeed(notifContent))
+        keywordsRef.current = buildAutoCheckKeywords(notifContent)
 
-      // All computed from the same data snapshot, same tick
-      setRightNow(parseRightNow(missionsContent, notifContent))
-      setCompletedFeed(parseCompletedFeed(notifContent))
-      keywordsRef.current = buildAutoCheckKeywords(notifContent)
-
-      // Parse punch-list using consumer's parser
-      if (punchContent && parseFnRef.current) {
-        setPunchData(parseFnRef.current(punchContent))
-      } else {
-        setPunchData(null)
+        if (punchContent && parseFnRef.current) {
+          setPunchData(parseFnRef.current(punchContent))
+        } else {
+          setPunchData(null)
+        }
+        setPunchLoading(false)
+        setLastUpdated(Date.now())
+      } catch {
+        setPunchLoading(false)
       }
-      setPunchLoading(false)
-      setLastUpdated(Date.now())
-    } catch {
-      setPunchLoading(false)
+    } else {
+      // PRODUCTION: read from Supabase via API
+      try {
+        const res = await fetch('/api/dashboard/supabase-status')
+        if (!res.ok) return
+        const data = await res.json()
+
+        // Map Supabase data to Right Now format
+        if (data.agents) {
+          const active = data.agents
+            .filter(a => a.status === 'working')
+            .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, live: true }))
+          setRightNow(active)
+        }
+
+        // Map tasks to completed feed
+        if (data.tasks) {
+          const completed = data.tasks
+            .filter(t => t.status === 'completed')
+            .map(t => ({ agent: t.agent || 'system', text: t.text }))
+          setCompletedFeed(completed)
+        }
+
+        setPunchLoading(false)
+        setLastUpdated(Date.now())
+      } catch {
+        setPunchLoading(false)
+      }
     }
   }, [])
 
   useEffect(() => {
-    if (!IS_LOCAL) return
     fetchAll()
-    const timer = setInterval(fetchAll, 3000)
+    // Local: poll every 3s. Production: poll every 10s (Supabase has rate limits)
+    const interval = IS_LOCAL ? 3000 : 10000
+    const timer = setInterval(fetchAll, interval)
     return () => clearInterval(timer)
   }, [fetchAll])
 
