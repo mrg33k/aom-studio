@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, animate as fmAnimate } from 'framer-motion'
 import {
   MessageSquare, Send, X, ChevronUp, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
@@ -7446,6 +7446,74 @@ export default function GameDashboard() {
     setPanelVisible(true)
   }
 
+  // ---- SHARED SEND MESSAGE HANDLER (used by both desktop sidebar and mobile drawer) ----
+  const handlePanelSendMessage = useCallback((e) => {
+    e?.preventDefault()
+    setAtMenuOpen(false)
+    setAtMenuFilter('')
+    let text = panelChatInput?.trim()
+    if (!text || panelStreaming) return
+    // @ prefix routing: "@bobby fix the nav" switches to Bobby, sends "fix the nav"
+    const atPrefixMatch = text.match(/^@(\S+)\s*(.*)$/)
+    if (atPrefixMatch) {
+      const atTarget = atPrefixMatch[1].toLowerCase()
+      const remainingText = atPrefixMatch[2]?.trim() || ''
+      const matchedOption = atOptions.find(opt =>
+        opt.slug === atTarget ||
+        opt.name.toLowerCase() === atTarget ||
+        opt.aliases.some(a => a.replace('@', '') === atTarget)
+      )
+      if (matchedOption) {
+        const targetSlug = matchedOption.type === 'project' ? (matchedOption.lead || matchedOption.slug) : matchedOption.slug
+        const targetRoom = ROOM_LOOKUP[targetSlug]
+        if (targetRoom && targetSlug !== selectedRoom) {
+          setSelectedRoom(targetSlug)
+          setCameraTarget(targetSlug)
+          setIsOverview(false)
+          setPanelActiveTab('chat')
+        }
+        text = remainingText
+        if (!text) {
+          setPanelChatInput('')
+          return
+        }
+      }
+    }
+    setPanelChatInput('')
+    const sentTime = new Date().toISOString()
+    const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    setAgentChats(prev => {
+      const current = prev[selectedRoom] || { _all: [] }
+      const msgs = [...(current._all || []), {
+        role: 'user', content: text, time: sentTime,
+        source: 'via dashboard', id: localId,
+      }, {
+        role: 'assistant', content: '', streaming: true,
+        time: sentTime, id: `thinking-${localId}`,
+      }]
+      return { ...prev, [selectedRoom]: { _all: msgs } }
+    })
+    setPanelStreaming(true)
+    if (IS_LOCAL) {
+      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard' }
+      if (atPrefixMatch) {
+        const matchedOpt = atOptions.find(opt =>
+          opt.slug === atPrefixMatch[1].toLowerCase() ||
+          opt.name.toLowerCase() === atPrefixMatch[1].toLowerCase() ||
+          opt.aliases.some(a => a.replace('@', '') === atPrefixMatch[1].toLowerCase())
+        )
+        if (matchedOpt && matchedOpt.type === 'project') {
+          sendBody.project = matchedOpt.slug
+        }
+      }
+      fetch('/api/local/relay-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sendBody),
+      }).catch(() => {})
+    }
+  }, [panelChatInput, panelStreaming, selectedRoom, atOptions])
+
   // Right-click context menu on rooms
   const handleRoomContextMenu = useCallback((e, roomId) => {
     e.preventDefault()
@@ -7716,83 +7784,7 @@ export default function GameDashboard() {
               isNightMode={isNightMode}
               onAddToRightNow={addToRightNow}
               rightNowTasks={rightNowTasks}
-              onSendMessage={(e) => {
-                e?.preventDefault()
-                // Close @ menu if open
-                setAtMenuOpen(false)
-                setAtMenuFilter('')
-                let text = panelChatInput?.trim()
-                if (!text || panelStreaming) return
-                // @ prefix routing: "@bobby fix the nav" switches to Bobby, sends "fix the nav"
-                const atPrefixMatch = text.match(/^@(\S+)\s*(.*)$/)
-                if (atPrefixMatch) {
-                  const atTarget = atPrefixMatch[1].toLowerCase()
-                  const remainingText = atPrefixMatch[2]?.trim() || ''
-                  // Find matching agent or project
-                  const matchedOption = atOptions.find(opt =>
-                    opt.slug === atTarget ||
-                    opt.name.toLowerCase() === atTarget ||
-                    opt.aliases.some(a => a.replace('@', '') === atTarget)
-                  )
-                  if (matchedOption) {
-                    const targetSlug = matchedOption.type === 'project' ? (matchedOption.lead || matchedOption.slug) : matchedOption.slug
-                    const targetRoom = ROOM_MAP[targetSlug]
-                    if (targetRoom && targetRoom.agent !== null && targetSlug !== selectedRoom) {
-                      // Switch room, then send the remaining text
-                      setSelectedRoom(targetSlug)
-                      setCameraTarget(targetSlug)
-                      setIsOverview(false)
-                      setPanelActiveTab('chat')
-                    }
-                    text = remainingText
-                    if (!text) {
-                      // Just a channel switch, no message to send
-                      setPanelChatInput('')
-                      return
-                    }
-                  }
-                }
-                setPanelChatInput('')
-                const sentTime = new Date().toISOString()
-                const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-                // Show user message + thinking indicator immediately
-                setAgentChats(prev => {
-                  const current = prev[selectedRoom] || { _all: [] }
-                  const msgs = [...(current._all || []), {
-                    role: 'user', content: text, time: sentTime,
-                    source: 'via dashboard', id: localId,
-                  }, {
-                    role: 'assistant', content: '', streaming: true,
-                    time: sentTime, id: `thinking-${localId}`,
-                  }]
-                  return { ...prev, [selectedRoom]: { _all: msgs } }
-                })
-                setPanelStreaming(true)
-                // Send to server (writes to conversation file + relay inbox)
-                if (IS_LOCAL) {
-                  // If the user typed @project (e.g. @ambition), include the project slug
-                  // so the server can write to conversations/projects/{project}.jsonl too.
-                  const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard' }
-                  if (atPrefixMatch) {
-                    const matchedOpt = atOptions.find(opt =>
-                      opt.slug === atPrefixMatch[1].toLowerCase() ||
-                      opt.name.toLowerCase() === atPrefixMatch[1].toLowerCase() ||
-                      opt.aliases.some(a => a.replace('@', '') === atPrefixMatch[1].toLowerCase())
-                    )
-                    if (matchedOpt && matchedOpt.type === 'project') {
-                      sendBody.project = matchedOpt.slug
-                    }
-                  }
-                  fetch('/api/local/relay-send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(sendBody),
-                  }).catch(() => {})
-                  // No polling. No streaming. No timeout.
-                  // Agent responds from terminal -> Stop hook writes to conversation file.
-                  // User clicks agent again or refreshes -> loads response from server.
-                }
-              }}
+              onSendMessage={handlePanelSendMessage}
             />
           )}
       </div>
@@ -7994,35 +7986,7 @@ export default function GameDashboard() {
               isNightMode={isNightMode}
               onAddToRightNow={addToRightNow}
               rightNowTasks={rightNowTasks}
-              onSendMessage={(e) => {
-                e?.preventDefault()
-                setAtMenuOpen(false)
-                setAtMenuFilter('')
-                let text = panelChatInput?.trim()
-                if (!text || panelStreaming) return
-                setPanelChatInput('')
-                const sentTime = new Date().toISOString()
-                const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-                setAgentChats(prev => {
-                  const current = prev[selectedRoom] || { _all: [] }
-                  const msgs = [...(current._all || []), {
-                    role: 'user', content: text, time: sentTime,
-                    source: 'via dashboard', id: localId,
-                  }, {
-                    role: 'assistant', content: '', streaming: true,
-                    time: sentTime, id: `thinking-${localId}`,
-                  }]
-                  return { ...prev, [selectedRoom]: { _all: msgs } }
-                })
-                setPanelStreaming(true)
-                if (IS_LOCAL) {
-                  fetch('/api/local/relay-send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
-                  }).catch(() => {})
-                }
-              }}
+              onSendMessage={handlePanelSendMessage}
             />
           </div>
         </div>
