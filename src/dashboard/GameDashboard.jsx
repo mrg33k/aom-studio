@@ -2166,71 +2166,216 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
   )
 }
 
-// ---- MOBILE BOTTOM SHEET (Steffen c3-mobile-layout-spec) --------------------
-function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTasks, onOpenMobileChat }) {
-  const [expanded, setExpanded] = useState(false)
-  const status = agentStatus?.status || 'IDLE'
-  const task = agentStatus?.currentTask || 'Standing by'
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
-  const agentColor = room?.agentColor || agent?.color || '#6B7280'
+// ---- MOBILE BOTTOM SHEET DRAWER (iOS-style, 3 snap points) ------------------
+// Snap points: HIDDEN (off-screen), HALF (~50% screen), FULL (100% screen)
+// Uses framer-motion useMotionValue + animate for spring physics
 
-  // Swipe down to dismiss
-  const startY = useRef(0)
-  const handleTouchStart = (e) => { startY.current = e.touches[0].clientY }
-  const handleTouchEnd = (e) => {
-    const deltaY = e.changedTouches[0].clientY - startY.current
-    if (deltaY > 60) {
-      if (expanded) setExpanded(false)
-      else onClose()
-    } else if (deltaY < -60 && !expanded) {
-      setExpanded(true)
+function MobileDrawer({
+  room, agent, agentStatus, onClose, agentSlug,
+  // Chat props (passed through to UnifiedPanel)
+  chatMessages, chatInput, onChatInputChange, onSendMessage, streaming, chatLoading,
+  allAgentStatus, data, isNightMode, onAddToRightNow, rightNowTasks,
+  atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig,
+  // Snap state (controlled from parent)
+  snap, onSnapChange,
+}) {
+  const sheetRef = useRef(null)
+  const dragStartY = useRef(0)
+  const dragStartTime = useRef(0)
+  const isDraggingHandle = useRef(false)
+  const [activeTab, setActiveTab] = useState('chat')
+  const [mobileViewportHeight, setMobileViewportHeight] = useState(null)
+
+  const agentColor = room?.agentColor || agent?.color || '#6B7280'
+  const status = agentStatus?.status || 'IDLE'
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
+
+  // Compute snap Y positions (distance from top of viewport)
+  // HIDDEN = fully below viewport
+  // HALF = sheet top at ~50% viewport height
+  // FULL = sheet top at ~0 (status bar area)
+  const getSnapPositions = useCallback(() => {
+    const vh = window.innerHeight
+    const modeBarHeight = 48
+    return {
+      hidden: vh + 20, // off screen with a little extra
+      half: Math.round(vh * 0.48), // sheet top sits at about 48% from top
+      full: 0,
     }
-  }
+  }, [])
+
+  // Motion value for the sheet's `top` position
+  const sheetY = useMotionValue(getSnapPositions().half)
+
+  // Animate to snap position when snap prop changes
+  useEffect(() => {
+    const positions = getSnapPositions()
+    const target = positions[snap] ?? positions.half
+    fmAnimate(sheetY, target, {
+      type: 'spring',
+      stiffness: 300,
+      damping: 32,
+      mass: 0.8,
+    })
+  }, [snap]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // iOS keyboard awareness
+  useEffect(() => {
+    if (!window.visualViewport) return
+    const handler = () => {
+      const vvh = window.visualViewport.height
+      const wh = window.innerHeight
+      setMobileViewportHeight(vvh < wh - 50 ? vvh : null)
+    }
+    window.visualViewport.addEventListener('resize', handler)
+    return () => window.visualViewport.removeEventListener('resize', handler)
+  }, [])
+
+  // Snap to nearest position based on current Y + velocity
+  const snapToNearest = useCallback((currentY, velocityY) => {
+    const positions = getSnapPositions()
+    let targetSnap
+
+    if (Math.abs(velocityY) > 400) {
+      // Fast swipe: go in swipe direction
+      if (velocityY > 0) {
+        // Swiping down
+        targetSnap = snap === 'full' ? 'half' : 'hidden'
+      } else {
+        // Swiping up
+        targetSnap = snap === 'half' ? 'full' : 'half'
+      }
+    } else {
+      // Slow drag: snap to closest
+      const dists = [
+        { key: 'full', d: Math.abs(currentY - positions.full) },
+        { key: 'half', d: Math.abs(currentY - positions.half) },
+        { key: 'hidden', d: Math.abs(currentY - positions.hidden) },
+      ]
+      dists.sort((a, b) => a.d - b.d)
+      targetSnap = dists[0].key
+    }
+
+    const targetY = positions[targetSnap] ?? positions.half
+    fmAnimate(sheetY, targetY, {
+      type: 'spring',
+      stiffness: 300,
+      damping: 32,
+      mass: 0.8,
+    })
+
+    if (targetSnap === 'hidden') {
+      onClose()
+    } else {
+      onSnapChange(targetSnap)
+    }
+  }, [snap, getSnapPositions, sheetY, onClose, onSnapChange])
+
+  // Drag handle touch handlers
+  const handleDragStart = useCallback((e) => {
+    dragStartY.current = e.touches[0].clientY
+    dragStartTime.current = Date.now()
+    isDraggingHandle.current = true
+  }, [])
+
+  const handleDragMove = useCallback((e) => {
+    if (!isDraggingHandle.current) return
+    e.preventDefault()
+    const touch = e.touches[0]
+    const delta = touch.clientY - dragStartY.current
+    const positions = getSnapPositions()
+    const baseY = positions[snap] ?? positions.half
+    const newY = Math.max(positions.full - 30, Math.min(positions.hidden, baseY + delta))
+    sheetY.set(newY)
+  }, [sheetY, getSnapPositions, snap])
+
+  const handleDragEnd = useCallback((e) => {
+    if (!isDraggingHandle.current) return
+    isDraggingHandle.current = false
+    const endY = e.changedTouches[0].clientY
+    const totalDelta = endY - dragStartY.current
+    const elapsed = Math.max(1, Date.now() - dragStartTime.current)
+    const velocityY = (totalDelta / elapsed) * 1000 // px/sec
+    snapToNearest(sheetY.get(), velocityY)
+  }, [sheetY, snapToNearest])
+
+  const tabs = [
+    { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'tasks', label: 'List', icon: ListTodo },
+    { id: 'info', label: 'Info', icon: Activity },
+  ]
 
   return (
     <motion.div
-      initial={{ y: '100%' }}
-      animate={{ y: 0 }}
-      exit={{ y: '100%' }}
-      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      ref={sheetRef}
       style={{
         position: 'fixed',
-        bottom: 'calc(48px + env(safe-area-inset-bottom, 0px))', // above MobileModeBar
-        left: 0, right: 0,
-        height: expanded ? '60vh' : 220,
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        y: sheetY,
+        height: '100vh',
+        zIndex: snap === 'full' ? 200 : 38,
         background: 'rgba(10, 15, 30, 0.98)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '16px 16px 0 0',
-        boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.4)',
-        zIndex: 38,
+        borderRadius: snap === 'full' ? 0 : '16px 16px 0 0',
+        boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.6)',
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden',
-        transition: 'height 300ms ease',
-        display: 'flex', flexDirection: 'column',
-        touchAction: 'auto',
+        willChange: 'transform',
       }}
     >
-      {/* Drag handle */}
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 6px' }}>
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255, 255, 255, 0.15)' }} />
+      {/* Drag handle area */}
+      <div
+        onTouchStart={handleDragStart}
+        onTouchMove={handleDragMove}
+        onTouchEnd={handleDragEnd}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: snap === 'full' ? 'calc(10px + env(safe-area-inset-top, 0px)) 0 6px' : '10px 0 6px',
+          cursor: 'grab',
+          touchAction: 'none',
+          flexShrink: 0,
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+        }}
+      >
+        <div style={{
+          width: 40, height: 5, borderRadius: 3,
+          background: 'rgba(255, 255, 255, 0.25)',
+        }} />
       </div>
 
-      {/* Agent info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px 12px' }}>
-        <SpriteAvatar agentSlug={room?.id} size={40} borderColor={agentColor} />
-        <div style={{ flex: 1 }}>
-          <div style={{ color: '#FDF6EC', fontSize: 18, fontWeight: 700, fontFamily: "'Inter', system-ui, sans-serif" }}>
+      {/* Agent info header (compact) */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '2px 16px 8px', flexShrink: 0,
+      }}>
+        <SpriteAvatar agentSlug={room?.id} size={36} borderColor={agentColor} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            color: '#F1F5F9', fontSize: 16, fontWeight: 700,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
             {agent?.name || room?.agent}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              color: '#6B7280', fontSize: 11,
+              fontFamily: "'JetBrains Mono', monospace",
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+            }}>
               {agent?.role || room?.role}
             </span>
             <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-              color: cfg.color, background: cfg.bg, padding: '2px 8px', borderRadius: 3,
+              fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, fontSize: 11,
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              color: cfg.color, background: cfg.bg,
+              padding: '1px 6px', borderRadius: 3,
             }}>
               {cfg.label}
             </span>
@@ -2238,59 +2383,147 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
         </div>
       </div>
 
-      {/* Current task */}
-      <div style={{ padding: '0 20px 16px' }}>
-        <div style={{ color: '#F0ECE6', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.4 }}>
-          {task}
-        </div>
+      {/* Tab bar (Chat / List / Info) */}
+      <div style={{
+        display: 'flex',
+        borderBottom: '2px solid rgba(59, 130, 246, 0.15)',
+        flexShrink: 0,
+      }}>
+        {tabs.map(tab => {
+          const active = activeTab === tab.id
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: 6, padding: '10px 0', minHeight: 44,
+                fontSize: 13, fontWeight: active ? 800 : 600,
+                textTransform: 'uppercase', letterSpacing: '0.06em',
+                color: active ? '#60A5FA' : '#6B8AB0',
+                background: active ? 'rgba(59, 130, 246, 0.06)' : 'none',
+                border: 'none', cursor: 'pointer',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                position: 'relative',
+                transition: 'color 200ms, background 200ms',
+              }}
+            >
+              <Icon size={14} />
+              {tab.label}
+              {active && (
+                <div style={{
+                  position: 'absolute', bottom: -2, left: '20%', right: '20%',
+                  height: 2, background: '#3B82F6', borderRadius: 1,
+                }} />
+              )}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Action buttons */}
-      <div style={{ display: 'flex', gap: 12, padding: '0 20px 16px' }}>
-        <button onClick={() => {
-          // Open fullscreen mobile chat, also set up room selection
-          onChat(room?.id)
-          onOpenMobileChat?.()
-        }} style={{
-          flex: 1, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          background: `${agentColor}26`, color: agentColor, border: `1px solid ${agentColor}40`,
-          borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
-          minHeight: 44,
-        }}>
-          <MessageSquare size={16} />
-          Chat
-        </button>
-        <button onClick={onViewTasks} style={{
-          flex: 1, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          background: 'rgba(255,255,255,0.04)', color: '#F0ECE6', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
-          minHeight: 44,
-        }}>
-          <ListTodo size={16} />
-          Tasks
-        </button>
-      </div>
-
-      {/* Expanded content: recent completions */}
-      {expanded && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', padding: '12px 0 8px' }}>
-            Recent
+      {/* Tab content (fills remaining height) */}
+      <div style={{
+        flex: 1, overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
+        touchAction: 'auto',
+      }}>
+        {activeTab === 'chat' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <UnifiedPanel
+              key={`drawer-chat-${agentSlug}`}
+              room={room}
+              agent={agent}
+              agentStatus={agentStatus}
+              allAgentStatus={allAgentStatus}
+              onClose={onClose}
+              onChat={() => {}}
+              chatMessages={chatMessages}
+              chatInput={chatInput}
+              onChatInputChange={onChatInputChange}
+              streaming={streaming}
+              chatLoading={chatLoading}
+              agentSlug={agentSlug}
+              isExtended={false}
+              onToggleExtend={() => {}}
+              isMobile={true}
+              atMenuOpen={atMenuOpen}
+              filteredAtOptions={filteredAtOptions}
+              atMenuIndex={atMenuIndex}
+              onAtSelect={onAtSelect}
+              onAtKeyDown={onAtKeyDown}
+              cornerConfig={cornerConfig}
+              data={data}
+              activeTab="chat"
+              onActiveTabChange={() => {}}
+              isNightMode={isNightMode}
+              onAddToRightNow={onAddToRightNow}
+              rightNowTasks={rightNowTasks}
+              onSendMessage={onSendMessage}
+            />
           </div>
-          {agentStatus?.lastCompletion ? (
-            <div style={{ color: '#A8A29E', fontSize: 12, lineHeight: 1.5, fontFamily: "'Inter', system-ui, sans-serif" }}>
-              {agentStatus.lastCompletion.description}
-              <div style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>
-                {agentStatus.lastCompletion.date}
-              </div>
-            </div>
-          ) : (
-            <div style={{ color: '#6B7280', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif", padding: '8px 0' }}>
-              No recent completions
-            </div>
-          )}
-        </div>
-      )}
+        )}
+
+        {activeTab === 'tasks' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <UnifiedPanel
+              key={`drawer-tasks-${agentSlug}`}
+              room={room}
+              agent={agent}
+              agentStatus={agentStatus}
+              allAgentStatus={allAgentStatus}
+              onClose={onClose}
+              onChat={() => {}}
+              chatMessages={[]}
+              chatInput=""
+              onChatInputChange={() => {}}
+              streaming={false}
+              chatLoading={false}
+              agentSlug={agentSlug}
+              isExtended={false}
+              onToggleExtend={() => {}}
+              isMobile={true}
+              data={data}
+              activeTab="tasks"
+              onActiveTabChange={() => {}}
+              isNightMode={isNightMode}
+              onAddToRightNow={onAddToRightNow}
+              rightNowTasks={rightNowTasks}
+              cornerConfig={cornerConfig}
+            />
+          </div>
+        )}
+
+        {activeTab === 'info' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <UnifiedPanel
+              key={`drawer-info-${agentSlug}`}
+              room={room}
+              agent={agent}
+              agentStatus={agentStatus}
+              allAgentStatus={allAgentStatus}
+              onClose={onClose}
+              onChat={() => {}}
+              chatMessages={[]}
+              chatInput=""
+              onChatInputChange={() => {}}
+              streaming={false}
+              chatLoading={false}
+              agentSlug={agentSlug}
+              isExtended={false}
+              onToggleExtend={() => {}}
+              isMobile={true}
+              data={data}
+              activeTab="info"
+              onActiveTabChange={() => {}}
+              isNightMode={isNightMode}
+              onAddToRightNow={onAddToRightNow}
+              rightNowTasks={rightNowTasks}
+              cornerConfig={cornerConfig}
+            />
+          </div>
+        )}
+      </div>
     </motion.div>
   )
 }
@@ -6603,28 +6836,10 @@ export default function GameDashboard() {
   const [relayDebugData, setRelayDebugData] = useState(null)
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
-  const [mobileChatOpen, setMobileChatOpen] = useState(false) // Fullscreen mobile chat overlay
-  const [mobileActiveTab, setMobileActiveTab] = useState('chat') // Mobile overlay tab (Live=chat/List=tasks/Info=info)
-  const [mobileViewportHeight, setMobileViewportHeight] = useState(null) // iOS keyboard-aware viewport height
+  // Mobile drawer state: null = hidden, 'half' = 50% screen, 'full' = 100% screen
+  const [drawerSnap, setDrawerSnap] = useState(null)
+  const drawerOpen = drawerSnap === 'half' || drawerSnap === 'full'
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
-
-  // iOS keyboard-aware viewport: when the keyboard opens, visualViewport shrinks.
-  // Adjust the mobile overlay height so the chat input stays visible above the keyboard.
-  useEffect(() => {
-    if (!mobileChatOpen || !window.visualViewport) return
-    const handler = () => {
-      const vvh = window.visualViewport.height
-      const wh = window.innerHeight
-      // Keyboard is open when visual viewport is significantly smaller than inner height
-      if (vvh < wh - 50) {
-        setMobileViewportHeight(vvh)
-      } else {
-        setMobileViewportHeight(null)
-      }
-    }
-    window.visualViewport.addEventListener('resize', handler)
-    return () => window.visualViewport.removeEventListener('resize', handler)
-  }, [mobileChatOpen])
 
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
@@ -7423,10 +7638,18 @@ export default function GameDashboard() {
     if (roomId === selectedRoom) {
       // Already selected: zoom to Level 3 (detail)
       setCameraZoom(ZOOM_MAX)
+      // On mobile, open drawer to full on double-tap
+      if (isMobile && drawerSnap === 'half') {
+        setDrawerSnap('full')
+      }
     } else {
       // First click: zoom to Level 2 (neighborhood)
       setCameraZoom(1.6)
       setSelectedRoom(roomId)
+      // On mobile, open the bottom sheet drawer to half position
+      if (isMobile) {
+        setDrawerSnap('half')
+      }
     }
   }
 
@@ -7436,6 +7659,10 @@ export default function GameDashboard() {
     setCameraTarget(roomId)
     setIsOverview(false)
     setPanelVisible(true)
+    // On mobile, open drawer to half position
+    if (isMobile) {
+      setDrawerSnap('half')
+    }
   }
 
   const handleHomeRoom = () => {
@@ -7592,6 +7819,11 @@ export default function GameDashboard() {
     onToggleMinimap: () => setShowMinimap(m => !m),
     onEscape: () => {
       if (showShortcuts) { setShowShortcuts(false); return }
+      // Mobile drawer: step down snap positions (full -> half -> hidden)
+      if (isMobile && drawerOpen) {
+        if (drawerSnap === 'full') { setDrawerSnap('half'); return }
+        setDrawerSnap(null); return
+      }
       // Panel is always visible, Escape just collapses extended mode
       if (panelExtended) { setPanelExtended(false); return }
       if (cameraZoom > 2.0) { setCameraZoom(1.6); return }
@@ -7794,7 +8026,8 @@ export default function GameDashboard() {
       {/* Game HUD (Sims x Chaart) - bottom strip with project pills + agent status */}
       {/* Wrapped in a container that constrains fixed positioning to the game viewport only.
           transform creates a new containing block, so GameHUD's position:fixed becomes relative to this container.
-          On desktop with sidebar visible: HUD only covers game area, not sidebar. */}
+          On desktop with sidebar visible: HUD only covers game area, not sidebar.
+          HIDDEN on mobile when drawer is open (pills vs drawer mutual exclusion). */}
       {(
         <div style={{
           position: 'fixed',
@@ -7802,10 +8035,11 @@ export default function GameDashboard() {
           left: 0,
           right: (!isMobile && selectedRoom && ROOM_LOOKUP[selectedRoom]) ? (panelExtended ? '65%' : '30%') : 0,
           zIndex: 40,
-          transition: 'right 250ms ease, bottom 200ms ease',
+          transition: 'right 250ms ease, bottom 200ms ease, opacity 200ms ease',
           pointerEvents: 'none',
+          opacity: (isMobile && drawerOpen) ? 0 : 1,
         }}>
-        <div style={{ position: 'relative', width: '100%', height: 0, transform: 'translateZ(0)', pointerEvents: 'auto' }}>
+        <div style={{ position: 'relative', width: '100%', height: 0, transform: 'translateZ(0)', pointerEvents: (isMobile && drawerOpen) ? 'none' : 'auto' }}>
         <Suspense fallback={null}>
           <GameHUD
             agentStatus={agentStatus}
@@ -7889,107 +8123,35 @@ export default function GameDashboard() {
         </div>
       )}
 
-      {/* Mobile bottom sheet */}
-      {isMobile && (
-        <AnimatePresence>
-          {selectedRoom && ROOM_LOOKUP[selectedRoom] && (
-            <MobileBottomSheet
-              key={selectedRoom}
-              room={ROOM_LOOKUP[selectedRoom]}
-              agent={AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom)}
-              agentStatus={agentStatus[selectedRoom]}
-              onClose={() => { setSelectedRoom(null); setIsOverview(true) }}
-              onChat={handleChat}
-              onViewTasks={() => { handleModeSwitch('checklist') }}
-              onOpenMobileChat={() => setMobileChatOpen(true)}
-            />
-          )}
-        </AnimatePresence>
-      )}
-
-      {/* Fullscreen mobile overlay (Live / List / Info) */}
-      {isMobile && mobileChatOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0,
-          // When keyboard opens, shrink to visualViewport height so input stays visible
-          height: mobileViewportHeight ? `${mobileViewportHeight}px` : '100%',
-          zIndex: 200,
-          background: 'rgba(10,15,30,0.98)',
-          display: 'flex', flexDirection: 'column',
-          touchAction: 'auto',
-          transition: 'height 100ms ease',
-        }}>
-          {/* Mobile header: back + agent info */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12,
-            padding: '10px 16px',
-            paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))',
-            background: 'rgba(15,27,45,0.95)',
-            backdropFilter: 'blur(12px)',
-            flexShrink: 0,
-          }}>
-            <button
-              onClick={() => { setMobileChatOpen(false); setMobileActiveTab('chat') }}
-              style={{
-                width: 44, height: 44, minWidth: 44, minHeight: 44,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)',
-                borderRadius: 8, cursor: 'pointer', color: '#8BA4C4',
-              }}
-            >
-              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-            <SpriteAvatar agentSlug={selectedRoom} size={36} borderColor={ROOM_LOOKUP[selectedRoom]?.agentColor || AGENTS.find(a => a.slug === selectedRoom)?.color || PROJECTS.find(p => p.slug === selectedRoom)?.color || '#6B7280'} />
-            <div style={{ flex: 1 }}>
-              <div style={{ color: '#F1F5F9', fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
-                {AGENTS.find(a => a.slug === selectedRoom)?.name || PROJECTS.find(p => p.slug === selectedRoom)?.name || selectedRoom}
-              </div>
-              <div style={{
-                fontSize: 11, fontWeight: 600, color: '#6B8AB0',
-                fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em',
-              }}>
-                {AGENTS.find(a => a.slug === selectedRoom)?.role || (ROOM_LOOKUP[selectedRoom]?.type === 'project' ? 'Project' : '')}
-              </div>
-            </div>
-          </div>
-          {/* Full UnifiedPanel with all tabs (Live / List / Info) */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <UnifiedPanel
-              key={`mobile-panel-${selectedRoom}`}
-              room={ROOM_LOOKUP[selectedRoom]}
-              agent={AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom)}
-              agentStatus={agentStatus[selectedRoom]}
-              allAgentStatus={agentStatus}
-              onClose={() => { setMobileChatOpen(false); setMobileActiveTab('chat') }}
-              onChat={handleChat}
-              chatMessages={panelMessages._all || []}
-              chatInput={panelChatInput}
-              onChatInputChange={handleAtInputChange}
-              streaming={panelStreaming}
-              chatLoading={panelChatLoading}
-              agentSlug={selectedRoom}
-              isExtended={false}
-              onToggleExtend={() => {}}
-              isMobile={true}
-              atMenuOpen={atMenuOpen}
-              filteredAtOptions={filteredAtOptions}
-              atMenuIndex={atMenuIndex}
-              onAtSelect={handleAtSelect}
-              onAtKeyDown={handleAtKeyDown}
-              cornerConfig={cornerConfig}
-              data={data}
-              activeTab={mobileActiveTab}
-              onActiveTabChange={setMobileActiveTab}
-              isNightMode={isNightMode}
-              onAddToRightNow={addToRightNow}
-              rightNowTasks={rightNowTasks}
-              onSendMessage={handlePanelSendMessage}
-            />
-          </div>
-        </div>
+      {/* Mobile bottom sheet drawer (iOS-style, 3 snap points) */}
+      {isMobile && drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
+        <MobileDrawer
+          key={`drawer-${selectedRoom}`}
+          room={ROOM_LOOKUP[selectedRoom]}
+          agent={AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom)}
+          agentStatus={agentStatus[selectedRoom]}
+          agentSlug={selectedRoom}
+          onClose={() => { setDrawerSnap(null); setSelectedRoom(null); setIsOverview(true) }}
+          snap={drawerSnap}
+          onSnapChange={setDrawerSnap}
+          chatMessages={panelMessages._all || []}
+          chatInput={panelChatInput}
+          onChatInputChange={handleAtInputChange}
+          onSendMessage={handlePanelSendMessage}
+          streaming={panelStreaming}
+          chatLoading={panelChatLoading}
+          allAgentStatus={agentStatus}
+          data={data}
+          isNightMode={isNightMode}
+          onAddToRightNow={addToRightNow}
+          rightNowTasks={rightNowTasks}
+          atMenuOpen={atMenuOpen}
+          filteredAtOptions={filteredAtOptions}
+          atMenuIndex={atMenuIndex}
+          onAtSelect={handleAtSelect}
+          onAtKeyDown={handleAtKeyDown}
+          cornerConfig={cornerConfig}
+        />
       )}
 
       {/* Notification toasts */}
