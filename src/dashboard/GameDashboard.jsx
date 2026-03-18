@@ -6611,8 +6611,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   }}
                   onFocus={e => {
                     isUserTypingRef.current = true
-                    e.target.style.borderColor = 'rgba(59,130,246,0.45)'
-                    e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)'
+                    e.target.style.borderColor = agentColor + '88'
+                    e.target.style.boxShadow = `0 0 0 3px ${agentColor}25, 0 0 16px ${agentColor}15`
                   }}
                   onBlur={e => {
                     setTimeout(() => { isUserTypingRef.current = false }, 300)
