@@ -5656,7 +5656,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         })()}
       </div>
 
-      {/* ---- TAB BAR (Vegas glow tabs: Chat / Tasks / Info / List / Board) ---- */}
+      {/* ---- TAB BAR (3 tabs: Live / List / Info) ---- */}
       <div style={{
         display: 'flex',
         borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
@@ -5666,15 +5666,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {(agentSlug === 'patrik'
           ? [
               { id: 'notes', label: 'NOTES', key: 'N' },
-              { id: 'tasks', label: 'TASKS', key: 'T' },
-              { id: 'info', label: 'SETTINGS', key: 'S' },
+              { id: 'tasks', label: 'LIST', key: 'L' },
+              { id: 'info', label: 'INFO', key: 'I' },
             ]
           : [
-              { id: 'chat', label: 'CHAT', key: 'C' },
-              { id: 'tasks', label: 'TASKS', key: 'T' },
+              { id: 'chat', label: 'LIVE', key: 'L' },
+              { id: 'tasks', label: 'LIST', key: 'T' },
               { id: 'info', label: 'INFO', key: 'I' },
-              { id: 'checklist', label: 'LIST', key: '2' },
-              { id: 'megaboard', label: 'BOARD', key: '3' },
             ]
         ).map(tab => {
           const active = activeTab === tab.id
@@ -5687,9 +5685,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   onToggleExtend?.()
                 } else {
                   setActiveTab(tab.id)
-                  if ((tab.id === 'checklist' || tab.id === 'megaboard') && !isExtended) {
-                    onToggleExtend?.()
-                  }
                 }
               }}
               whileHover={{ y: -2, background: active ? 'none' : 'rgba(59,130,246,0.04)', transition: { type: 'spring', stiffness: 500, damping: 12 } }}
@@ -6474,23 +6469,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </div>
         )}
 
-        {/* CHECKLIST TAB (embedded in sidebar) */}
-        {activeTab === 'checklist' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13 }}>Loading Checklist...</div>}>
-              <ChecklistMode agentStatus={allAgentStatus} isMobile={isMobile} data={data} />
-            </Suspense>
-          </div>
-        )}
-
-        {/* MEGABOARD TAB (embedded in sidebar) */}
-        {activeTab === 'megaboard' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13 }}>Loading Megaboard...</div>}>
-              <MegaboardMode agentStatus={allAgentStatus} data={data} isMobile={isMobile} />
-            </Suspense>
-          </div>
-        )}
+        {/* Checklist and Megaboard tabs removed. Use full-screen mode switching instead. */}
 
       </div>
     </div>
@@ -6625,7 +6604,7 @@ export default function GameDashboard() {
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
   const [mobileChatOpen, setMobileChatOpen] = useState(false) // Fullscreen mobile chat overlay
-  const [mobileActiveTab, setMobileActiveTab] = useState('chat') // Mobile overlay tab (chat/tasks/info/checklist/megaboard)
+  const [mobileActiveTab, setMobileActiveTab] = useState('chat') // Mobile overlay tab (Live=chat/List=tasks/Info=info)
   const [mobileViewportHeight, setMobileViewportHeight] = useState(null) // iOS keyboard-aware viewport height
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
 
@@ -8000,7 +7979,7 @@ export default function GameDashboard() {
               streaming={panelStreaming}
               chatLoading={panelChatLoading}
               agentSlug={selectedRoom}
-              isExtended={mobileActiveTab === 'checklist' || mobileActiveTab === 'megaboard'}
+              isExtended={false}
               onToggleExtend={() => {}}
               isMobile={true}
               atMenuOpen={atMenuOpen}
