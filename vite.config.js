@@ -460,6 +460,7 @@ function localDashboardPlugin() {
             // Write to conversation log files (file-backed chat history)
             if (source === 'corner-dashboard' && data.message) {
               const agentName = data.agent || 'elon'
+              const projectSlug = data.project || null // e.g. 'ambition-mechanical'
               const convEntry = {
                 id,
                 timestamp: new Date().toISOString(),
@@ -468,22 +469,27 @@ function localDashboardPlugin() {
                 source: 'dashboard',
                 text: data.message,
                 reply_to: '',
+                ...(projectSlug ? { project: projectSlug } : {}),
               }
               const convLine = JSON.stringify(convEntry) + '\n'
-              // Write to main log + agent/project-specific log
               const convDir = resolve(AOM_EA_ROOT, 'conversations')
-              const isProjectMsg = agentName === 'aom' || agentName.includes('-')
-              const convSubDir = isProjectMsg ? resolve(convDir, 'projects') : resolve(convDir, 'agents')
-              const convFileName = agentName === 'aom' ? 'aom-internal' : agentName
               try {
-                fs.mkdirSync(convSubDir, { recursive: true })
+                // Always write to main log
                 fs.appendFileSync(resolve(convDir, 'main.jsonl'), convLine)
-                fs.appendFileSync(resolve(convSubDir, `${convFileName}.jsonl`), convLine)
-                // Also write to AOM master chat (all messages flow here)
-                if (convFileName !== 'aom-internal') {
-                  const aomChat = resolve(convDir, 'projects', 'aom-internal.jsonl')
-                  fs.appendFileSync(aomChat, convLine)
+                // Always write to agent-specific log
+                const agentsDir = resolve(convDir, 'agents')
+                fs.mkdirSync(agentsDir, { recursive: true })
+                fs.appendFileSync(resolve(agentsDir, `${agentName}.jsonl`), convLine)
+                // If project slug provided, also write to project conversation file
+                if (projectSlug) {
+                  const projectsDir = resolve(convDir, 'projects')
+                  fs.mkdirSync(projectsDir, { recursive: true })
+                  fs.appendFileSync(resolve(projectsDir, `${projectSlug}.jsonl`), convLine)
                 }
+                // Also write to AOM master chat (all messages flow here)
+                const aomChat = resolve(convDir, 'projects', 'aom-internal.jsonl')
+                fs.mkdirSync(resolve(convDir, 'projects'), { recursive: true })
+                fs.appendFileSync(aomChat, convLine)
               } catch (err) {
                 console.log(`[Relay] Conv log write failed: ${err.message}`)
               }
@@ -1197,6 +1203,7 @@ function webSocketServerPlugin() {
 
                 // Write to conversation files (same as HTTP relay-send)
                 if (data.content) {
+                  const projectSlug = data.project || null
                   const convEntry = {
                     id: wsId,
                     timestamp: wsTs,
@@ -1205,19 +1212,27 @@ function webSocketServerPlugin() {
                     source: 'dashboard',
                     text: data.content,
                     reply_to: '',
+                    ...(projectSlug ? { project: projectSlug } : {}),
                   }
                   const convLine = JSON.stringify(convEntry) + '\n'
                   const convDir = resolve(AOM_EA_ROOT, 'conversations')
-                  const isProjectMsg = agentName === 'aom' || agentName.includes('-')
-                  const convSubDir = isProjectMsg ? resolve(convDir, 'projects') : resolve(convDir, 'agents')
-                  const convFileName = agentName === 'aom' ? 'aom-internal' : agentName
                   try {
-                    fs.mkdirSync(convSubDir, { recursive: true })
+                    // Always write to main log
                     fs.appendFileSync(resolve(convDir, 'main.jsonl'), convLine)
-                    fs.appendFileSync(resolve(convSubDir, `${convFileName}.jsonl`), convLine)
-                    if (convFileName !== 'aom-internal') {
-                      fs.appendFileSync(resolve(convDir, 'projects', 'aom-internal.jsonl'), convLine)
+                    // Always write to agent-specific log
+                    const agentsDir = resolve(convDir, 'agents')
+                    fs.mkdirSync(agentsDir, { recursive: true })
+                    fs.appendFileSync(resolve(agentsDir, `${agentName}.jsonl`), convLine)
+                    // If project slug provided, also write to project conversation file
+                    if (projectSlug) {
+                      const projectsDir = resolve(convDir, 'projects')
+                      fs.mkdirSync(projectsDir, { recursive: true })
+                      fs.appendFileSync(resolve(projectsDir, `${projectSlug}.jsonl`), convLine)
                     }
+                    // Also write to AOM master chat
+                    const aomChat = resolve(convDir, 'projects', 'aom-internal.jsonl')
+                    fs.mkdirSync(resolve(convDir, 'projects'), { recursive: true })
+                    fs.appendFileSync(aomChat, convLine)
                   } catch (err) {
                     console.log(`[WebSocket] Conv log write failed: ${err.message}`)
                   }

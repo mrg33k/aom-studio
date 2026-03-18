@@ -7700,10 +7700,23 @@ export default function GameDashboard() {
                 setPanelStreaming(true)
                 // Send to server (writes to conversation file + relay inbox)
                 if (IS_LOCAL) {
+                  // If the user typed @project (e.g. @ambition), include the project slug
+                  // so the server can write to conversations/projects/{project}.jsonl too.
+                  const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard' }
+                  if (atPrefixMatch) {
+                    const matchedOpt = atOptions.find(opt =>
+                      opt.slug === atPrefixMatch[1].toLowerCase() ||
+                      opt.name.toLowerCase() === atPrefixMatch[1].toLowerCase() ||
+                      opt.aliases.some(a => a.replace('@', '') === atPrefixMatch[1].toLowerCase())
+                    )
+                    if (matchedOpt && matchedOpt.type === 'project') {
+                      sendBody.project = matchedOpt.slug
+                    }
+                  }
                   fetch('/api/local/relay-send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
+                    body: JSON.stringify(sendBody),
                   }).catch(() => {})
                   // No polling. No streaming. No timeout.
                   // Agent responds from terminal -> Stop hook writes to conversation file.
