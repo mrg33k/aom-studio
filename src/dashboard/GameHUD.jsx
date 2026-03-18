@@ -2030,9 +2030,28 @@ export default function GameHUD({
   const totalDone = filteredProjects.reduce((sum, p) => sum + p.tasks.filter(t => t.done).length, 0)
   const overallProgress = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0
 
+  // Swipe-up on HUD bar = open first pill's task panel. Swipe-down = close it.
+  const hudSwipeStartY = useRef(0)
+  const handleHudSwipeStart = useCallback((e) => {
+    hudSwipeStartY.current = e.touches[0].clientY
+  }, [])
+  const handleHudSwipeEnd = useCallback((e) => {
+    const deltaY = e.changedTouches[0].clientY - hudSwipeStartY.current
+    if (deltaY < -50 && !expandedProject) {
+      // Swipe up: open the first project pill (Right Now preferred)
+      const firstPill = filteredProjects[0]
+      if (firstPill) setExpandedProject(firstPill)
+    } else if (deltaY > 50 && expandedProject) {
+      // Swipe down: close the expanded panel
+      setExpandedProject(null)
+    }
+  }, [expandedProject, filteredProjects])
+
   return (
     <div
       ref={hudRef}
+      onTouchStart={handleHudSwipeStart}
+      onTouchEnd={handleHudSwipeEnd}
       style={{
         position: 'fixed',
         bottom: 0,
