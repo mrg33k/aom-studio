@@ -4383,23 +4383,35 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         </div>
       )}
 
-      {/* Task list (draggable, right-clickable) */}
+      {/* Task list (draggable, right-clickable) -- Vegas-style colored cards */}
       <div style={{ marginBottom: 12 }}>
         <div style={{
           color: isDaytime ? '#8BA4C4' : '#6B7280',
           fontSize: 11, fontWeight: 700,
           fontFamily: "'JetBrains Mono', monospace",
           textTransform: 'uppercase', letterSpacing: '0.12em',
-          marginBottom: 8,
+          marginBottom: 10,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <span>Tasks</span>
-          <span style={{ fontWeight: 600, fontSize: 12, color: isDaytime ? '#6B8AB0' : '#475569' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: 2,
+              background: agentColor,
+              boxShadow: `0 0 8px ${agentColor}44`,
+            }} />
+            <span>Tasks</span>
+          </div>
+          <span style={{
+            fontWeight: 700, fontSize: 11,
+            color: agentColor,
+            background: `${agentColor}15`,
+            padding: '2px 8px', borderRadius: 4,
+          }}>
             {tasks.filter(t => !t.done).length} open
           </span>
         </div>
 
-        {/* Task items */}
+        {/* Task items -- Vegas-style colored cards with agent accent */}
         {tasks.map((t, idx) => (
           <div
             key={t.id}
@@ -4413,22 +4425,34 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
               setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
             }}
             style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 10px', marginBottom: 4,
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '10px 12px', marginBottom: 6,
               background: dragOverIdx === idx
-                ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.12)')
-                : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.03)'),
+                ? (isDaytime ? `${agentColor}22` : `${agentColor}18`)
+                : t.done
+                  ? (isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(255,255,255,0.02)')
+                  : (isDaytime ? `${agentColor}0C` : `${agentColor}08`),
               border: dragOverIdx === idx
-                ? (isDaytime ? '1px dashed rgba(59,130,246,0.5)' : '1px dashed rgba(59,130,246,0.4)')
-                : (isDaytime ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(255,255,255,0.04)'),
-              borderRadius: 6,
+                ? `1px dashed ${agentColor}60`
+                : t.done
+                  ? (isDaytime ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(255,255,255,0.03)')
+                  : `1px solid ${agentColor}20`,
+              borderLeft: t.done
+                ? (isDaytime ? '3px solid rgba(59,130,246,0.08)' : '3px solid rgba(255,255,255,0.03)')
+                : `3px solid ${agentColor}`,
+              borderRadius: 8,
               cursor: 'grab',
-              opacity: dragIdx === idx ? 0.4 : 1,
-              transition: 'background 100ms, opacity 100ms, border 100ms',
+              opacity: dragIdx === idx ? 0.4 : (t.done ? 0.5 : 1),
+              transition: 'background 150ms, opacity 150ms, border 150ms, box-shadow 150ms',
+              boxShadow: !t.done && !dragOverIdx
+                ? (isDaytime
+                    ? `0 2px 8px ${agentColor}12, 0 1px 2px rgba(0,0,0,0.08)`
+                    : `0 2px 8px ${agentColor}10, 0 1px 2px rgba(0,0,0,0.2)`)
+                : 'none',
             }}
           >
             {/* Drag handle */}
-            <div style={{ color: isDaytime ? '#4A6585' : '#A0B4CC', cursor: 'grab', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ color: isDaytime ? `${agentColor}60` : `${agentColor}50`, cursor: 'grab', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <div style={{ width: 12, height: 2, background: 'currentColor', borderRadius: 1 }} />
               <div style={{ width: 12, height: 2, background: 'currentColor', borderRadius: 1 }} />
             </div>
@@ -4436,13 +4460,14 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             <div
               onClick={(e) => { e.stopPropagation(); toggleTask(t.id) }}
               style={{
-                width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                width: 20, height: 20, borderRadius: 5, flexShrink: 0,
                 border: t.done
                   ? `2px solid ${agentColor}`
-                  : (isDaytime ? '2px solid #4A6585' : '2px solid #475569'),
-                background: t.done ? agentColor : 'transparent',
+                  : `2px solid ${agentColor}60`,
+                background: t.done ? agentColor : `${agentColor}10`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', transition: 'all 150ms',
+                boxShadow: t.done ? `0 0 8px ${agentColor}40` : 'none',
               }}
             >
               {t.done && (
@@ -4453,10 +4478,10 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             </div>
             {/* Task text */}
             <span style={{
-              flex: 1, fontSize: 14, fontWeight: 500,
+              flex: 1, fontSize: 14, fontWeight: t.done ? 400 : 500,
               color: t.done
                 ? (isDaytime ? '#6B8AB0' : '#475569')
-                : (isDaytime ? '#E2E8F0' : '#E2E8F0'),
+                : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
               fontFamily: "'Inter', sans-serif",
               textDecoration: t.done ? 'line-through' : 'none',
               lineHeight: 1.4,
@@ -4477,7 +4502,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         )}
 
         {/* Add task input */}
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
           <input
             value={taskInput}
             onChange={e => setTaskInput(e.target.value)}
@@ -4485,20 +4510,23 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             placeholder="Add a task..."
             style={{
               flex: 1, padding: '8px 12px',
-              background: isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)',
-              border: isDaytime ? '1.5px solid rgba(59,130,246,0.18)' : '1.5px solid rgba(59,130,246,0.12)',
-              borderRadius: 6, fontSize: 13, fontWeight: 500,
-              color: isDaytime ? '#E2E8F0' : '#E2E8F0',
+              background: `${agentColor}08`,
+              border: `1.5px solid ${agentColor}25`,
+              borderRadius: 8, fontSize: 14, fontWeight: 500,
+              color: isDaytime ? '#F1F5F9' : '#E2E8F0',
               fontFamily: "'Inter', sans-serif", outline: 'none',
+              caretColor: agentColor,
             }}
           />
           <button
             onClick={addTask}
             style={{
-              padding: '8px 12px',
-              background: agentColor, border: 'none', borderRadius: 6,
+              padding: '8px 14px',
+              background: agentColor, border: 'none', borderRadius: 8,
               color: '#FFF', fontSize: 13, fontWeight: 700,
               fontFamily: "'Inter', sans-serif", cursor: 'pointer',
+              boxShadow: `0 2px 8px ${agentColor}40`,
+              transition: 'transform 100ms, box-shadow 100ms',
             }}
           >
             Add
@@ -5909,7 +5937,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               { id: 'info', label: 'INFO', key: 'I' },
             ]
           : [
-              { id: 'chat', label: 'LIVE', key: 'L' },
+              { id: 'chat', label: 'CHAT', key: 'L' },
               { id: 'tasks', label: 'LIST', key: 'T' },
               { id: 'info', label: 'INFO', key: 'I' },
             ]

@@ -1316,7 +1316,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 20px 12px',
+        padding: '16px 24px 12px',
         borderBottom: `1px solid ${tpDivider}`,
         position: 'relative',
       }}>
