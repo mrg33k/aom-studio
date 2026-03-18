@@ -345,7 +345,7 @@ export function useDataPipe(parsePunchList) {
         if (data.agents) {
           const active = data.agents
             .filter(a => a.status === 'working')
-            .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, live: true }))
+            .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, isLive: true }))
           setRightNow(active)
         }
 
@@ -353,8 +353,59 @@ export function useDataPipe(parsePunchList) {
         if (data.tasks) {
           const completed = data.tasks
             .filter(t => t.status === 'completed')
-            .map(t => ({ agent: t.agent || 'system', text: t.text }))
+            .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
           setCompletedFeed(completed)
+        }
+
+        // Build punchData from Supabase tasks so pills render on production.
+        // Group tasks by project into the { projects: [], todayTasks: [] } format.
+        if (data.tasks && data.tasks.length > 0) {
+          const projectMap = new Map()
+          const todayTasks = []
+
+          // Color palette for auto-generated project pills
+          const PROD_COLORS = {
+            'rightnow': '#FF6B3D', 'your-todos': '#EF4444', 'schedule': '#FF6B3D',
+            'finish-these': '#6B8AB0', 'corner': '#3B9EFF', 'ambition': '#F59E0B',
+            'outreach': '#EF4444', 'infra': '#4CAF50', 'content': '#FF7043',
+          }
+          const DEFAULT_COLOR = '#6B8AB0'
+
+          for (const task of data.tasks) {
+            const projectKey = task.project || task.section || 'general'
+            const slug = projectKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
+            if (!projectMap.has(slug)) {
+              projectMap.set(slug, {
+                name: task.project || projectKey.charAt(0).toUpperCase() + projectKey.slice(1),
+                section: slug,
+                color: PROD_COLORS[slug] || DEFAULT_COLOR,
+                icon: 'project',
+                tasks: [],
+              })
+            }
+
+            const proj = projectMap.get(slug)
+            const isDone = task.status === 'completed' || task.status === 'done'
+            const taskObj = {
+              text: task.text || '',
+              done: isDone,
+              agent: task.agent || null,
+              raw: '',
+              projectSource: proj.name,
+              projectSection: slug,
+              projectColor: proj.color,
+            }
+            proj.tasks.push(taskObj)
+
+            if (slug === 'schedule' && !isDone) {
+              todayTasks.push({ ...taskObj, project: 'Schedule' })
+            }
+          }
+
+          setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
+        } else {
+          setPunchData({ projects: [], todayTasks: [] })
         }
 
         setPunchLoading(false)
