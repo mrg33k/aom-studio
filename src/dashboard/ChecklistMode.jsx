@@ -103,7 +103,7 @@ function parsePunchList(markdown) {
   let currentProject = null
 
   const SECTION_MAP = {
-    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy
+    'RIGHT NOW':         { name: 'Inbox', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // Renamed from Right Now to Inbox per Patrik Round 2
     'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },
     'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Was "Checking In"
     'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Legacy alias

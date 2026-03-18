@@ -104,7 +104,7 @@ function parsePunchList(markdown) {
 
   // Section name -> project config mapping
   const SECTION_MAP = {
-    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // DONE(bobby2): orange/fire to match Today's urgency energy. [SURVIVES: HUD data pill.]
+    'RIGHT NOW':         { name: 'Inbox', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // Renamed from Right Now to Inbox per Patrik Round 2. [SURVIVES: HUD data pill.]
     'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },  // Patrik's personal blocked items
     'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Stale tasks needing attention (was "Checking In")
     'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Legacy alias
@@ -959,7 +959,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
       whileTap={{ scale: 0.88, y: 4, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
         display: 'flex', alignItems: 'center', gap: 14,
-        height: 56, padding: '0 24px', minWidth: 80,
+        height: 56, padding: '0 24px', minWidth: isRightNow ? 120 : 80,
         background: isDaytime
           ? (isExpanded
               ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
@@ -1883,7 +1883,7 @@ export default function GameHUD({
     // Always show add prompt at the end
     rightNowTasks.push({ text: '+ Add task...', done: false, agent: null, raw: '', isLive: false, isAddPrompt: true })
     merged.push({
-      name: 'Right Now',
+      name: 'Inbox',
       section: 'rightnow',
       color: '#FF6B3D',
       icon: 'zap',
@@ -2167,7 +2167,7 @@ export default function GameHUD({
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: isMobile ? 'center' : 'flex-start',
+              justifyContent: 'flex-start',
               gap: 6,
               padding: isMobile ? '4px 0 2px' : '6px 0 2px',
               minHeight: isMobile ? 36 : 42,
@@ -2185,7 +2185,7 @@ export default function GameHUD({
                 fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 800,
                 color: '#FF6B3D', letterSpacing: '0.1em', textTransform: 'uppercase',
                 flexShrink: 0, whiteSpace: 'nowrap',
-              }}>RIGHT NOW</span>
+              }}>INBOX</span>
               <div style={{ width: 1, height: 20, background: hudDivider, flexShrink: 0 }} />
               {tickerTasks.map((task, idx) => (
                 <motion.button
@@ -2356,12 +2356,12 @@ export default function GameHUD({
             </svg>
           </button>
 
-          {/* Center: Scrollable project pills -- THE WHOLE BAR */}
+          {/* Scrollable project pills -- THE WHOLE BAR. Left-aligned so Inbox pill is always visible first. */}
           <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: isMobile ? 'center' : 'flex-start',
+            justifyContent: 'flex-start',
             gap: 8,
             padding: '2px 4px',
             overflowX: 'auto',

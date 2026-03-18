@@ -102,7 +102,7 @@ const POWERUPS = [
 ]
 
 // ---- POWERUP MENU COMPONENT ----
-function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode }) {
+function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hideTrigger }) {
   const panelRef = useRef(null)
   const [particles, setParticles] = useState([])
 
@@ -158,8 +158,9 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode }) {
   }, [onActivate, onToggle])
 
   return (
-    <div ref={panelRef} style={{ position: 'relative', flexShrink: 0 }}>
-      {/* Trigger Button */}
+    <div ref={panelRef} style={{ position: 'relative', flexShrink: 0, ...(hideTrigger ? { width: 0, height: 0, overflow: 'visible' } : {}) }}>
+      {/* Trigger Button -- hidden when hideTrigger is true (mobile dual-purpose button) */}
+      {!hideTrigger && (
       <motion.button
         onClick={() => onToggle(!isOpen)}
         animate={{ rotate: isOpen ? 45 : 0 }}
@@ -184,6 +185,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode }) {
       >
         <Sparkles size={20} />
       </motion.button>
+      )}
 
       {/* Particle burst on activation */}
       <AnimatePresence>
@@ -2581,7 +2583,7 @@ function MobileDrawer({
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
 
   // Compute snap heights (sheet height from bottom)
-  // MobileModeBar = 48px + safe-area. Sheet sits ABOVE it.
+  // MobileModeBar KILLED (Round 2). Sheet sits at bottom directly.
   const getSnapHeights = useCallback(() => {
     const vh = mobileViewportHeight || window.innerHeight
     return {
@@ -3123,10 +3125,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           ? '0 2px 12px rgba(0, 0, 0, 0.4)'
           : '0 2px 12px rgba(0,0,0,0.3), 0 1px 0 rgba(59,130,246,0.15)',
         display: 'flex', alignItems: 'center',
-        padding: '0 20px',
-        gap: 12,
-        overflow: 'hidden',
-      }}>
+        padding: isMobile ? '0 12px' : '0 20px',
+        gap: isMobile ? 8 : 12,
+        overflowX: isMobile ? 'auto' : 'hidden',
+        overflowY: 'hidden',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }} className="topbar-scroll">
         {/* Corner. logo */}
         <div style={{
           fontSize: 22, fontWeight: 900,
@@ -3137,18 +3143,27 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           Corner<span style={{ color: isNightMode ? '#3B82F6' : '#E85D26' }}>.</span>
         </div>
 
-        {/* LOCAL badge */}
+        {/* LOCAL badge -- subtle dot on mobile, text on desktop */}
         {IS_LOCAL && (
-          <span style={{
-            fontSize: 11, fontWeight: 700,
-            color: '#22C55E',
-            background: 'rgba(34,197,94,0.1)',
-            border: '1px solid rgba(34,197,94,0.2)',
-            borderRadius: 4, padding: '2px 6px',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-            fontFamily: "'Inter', sans-serif",
-            flexShrink: 0,
-          }}>LOCAL</span>
+          isMobile ? (
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#22C55E',
+              boxShadow: '0 0 4px rgba(34,197,94,0.5)',
+              flexShrink: 0,
+            }} />
+          ) : (
+            <span style={{
+              fontSize: 11, fontWeight: 700,
+              color: '#22C55E',
+              background: 'rgba(34,197,94,0.1)',
+              border: '1px solid rgba(34,197,94,0.2)',
+              borderRadius: 4, padding: '2px 6px',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              fontFamily: "'Inter', sans-serif",
+              flexShrink: 0,
+            }}>LOCAL</span>
+          )
         )}
 
         {/* DEMO badge (production) */}
@@ -3655,17 +3670,17 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           })
         }
 
-        {/* + New Team button (next to team pill) -- hidden on mobile to prevent overflow */}
+        {/* + New Project button -- compact on mobile (icon only) */}
         <button
           onClick={() => {
-            // Future: create new team / add friend world
-            alert('New Team coming soon')
+            // Future: create new project
+            alert('New Project coming soon')
           }}
           style={{
-            display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 6,
+            display: 'flex', alignItems: 'center', gap: 6,
             background: 'transparent',
             border: isNightMode ? '1.5px dashed rgba(59,130,246,0.25)' : '1.5px dashed rgba(59,130,246,0.3)',
-            borderRadius: 10, padding: '6px 14px',
+            borderRadius: 10, padding: isMobile ? '6px 10px' : '6px 14px',
             cursor: 'pointer',
             transition: 'all 150ms ease',
             flexShrink: 0,
@@ -3686,13 +3701,15 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          <span style={{
-            fontSize: 13, fontWeight: 600,
-            color: isNightMode ? '#64748B' : '#6B8AB0',
-            fontFamily: "'Inter', sans-serif",
-          }}>
-            New Team
-          </span>
+          {!isMobile && (
+            <span style={{
+              fontSize: 13, fontWeight: 600,
+              color: isNightMode ? '#64748B' : '#6B8AB0',
+              fontFamily: "'Inter', sans-serif",
+            }}>
+              New
+            </span>
+          )}
         </button>
 
         {/* Spacer */}
@@ -4968,7 +4985,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           {!collapsedSections.rightnow && liveRightNow.map((t, i) =>
             renderTaskCard(
               { id: t.id || `rn-${i}`, text: t.text || t.task || t.description || 'Running...', agent: t.agent },
-              { isLive: true, showAgent: true, idx: i, sectionName: 'Right Now', sectionColor: '#FF6B3D' }
+              { isLive: true, showAgent: true, idx: i, sectionName: 'Inbox', sectionColor: '#FF6B3D' }
             )
           )}
         </div>
@@ -5871,7 +5888,7 @@ function parsePunchListSidebar(markdown) {
   let currentProject = null
 
   const SECTION_MAP = {
-    'RIGHT NOW':     { name: 'Right Now', section: 'rightnow',     color: '#FF6B3D' },
+    'RIGHT NOW':     { name: 'Inbox', section: 'rightnow',     color: '#FF6B3D' },
     'YOUR TODOS':    { name: 'Your TODOs', section: 'your-todos', color: '#EF4444' },
     'FINISH THESE':  { name: 'Finish These', section: 'finish-these', color: '#6B8AB0' },
     'CHECKING IN':   { name: 'Finish These', section: 'finish-these', color: '#6B8AB0' },
@@ -6872,14 +6889,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 : 'transparent',
               flexShrink: 0,
             }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-              {/* Powerup trigger button */}
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 0 : 10 }}>
+              {/* Powerup menu: desktop shows full trigger button. Mobile hides trigger (dual-purpose send/powerup button in input). */}
               <PowerupMenu
                 isOpen={powerupOpen || false}
                 onToggle={(v) => onPowerupToggle?.(v)}
                 onActivate={(slash) => onPowerupActivate?.(slash)}
                 isMobile={isMobile}
                 isNightMode={isNightMode}
+                hideTrigger={isMobile}
               />
               <form onSubmit={(e) => {
                 isUserTypingRef.current = false
@@ -7023,18 +7041,31 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     e.target.style.boxShadow = 'none'
                   }}
                 />
-                <button type="submit" disabled={!chatInput?.trim() || streaming} style={{
-                  position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                  width: 44, height: 44, borderRadius: 12,
-                  background: chatInput?.trim() ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' : 'rgba(59,130,246,0.12)',
-                  border: chatInput?.trim() ? '2px solid rgba(59,130,246,0.6)' : '2px solid rgba(59,130,246,0.2)',
-                  color: '#FFF',
-                  cursor: chatInput?.trim() ? 'pointer' : 'default',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: chatInput?.trim() ? '0 3px 12px rgba(59,130,246,0.3)' : 'none',
-                  transition: 'all 150ms ease',
-                }}>
-                  {streaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                {/* Dual-purpose button: on mobile, shows sparkle (powerup) when empty, send arrow when has text. Desktop always shows send. */}
+                <button
+                  type={isMobile && !chatInput?.trim() ? 'button' : 'submit'}
+                  disabled={streaming}
+                  onClick={isMobile && !chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
+                  style={{
+                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    width: 44, height: 44, borderRadius: 12,
+                    background: chatInput?.trim()
+                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                      : (isMobile ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)' : 'rgba(59,130,246,0.12)'),
+                    border: chatInput?.trim()
+                      ? '2px solid rgba(59,130,246,0.6)'
+                      : (isMobile ? '2px solid rgba(124, 58, 237, 0.4)' : '2px solid rgba(59,130,246,0.2)'),
+                    color: '#FFF',
+                    cursor: (chatInput?.trim() || isMobile) ? 'pointer' : 'default',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: chatInput?.trim()
+                      ? '0 3px 12px rgba(59,130,246,0.3)'
+                      : (isMobile ? '0 2px 12px rgba(124, 58, 237, 0.25)' : 'none'),
+                    transition: 'all 150ms ease',
+                  }}>
+                  {streaming ? <Loader2 size={18} className="animate-spin" /> : (
+                    isMobile && !chatInput?.trim() ? <Sparkles size={18} /> : <Send size={18} />
+                  )}
                 </button>
               </form>
               </div>{/* end powerup + form flex row */}
@@ -8195,6 +8226,10 @@ export default function GameDashboard() {
       return { ...prev, [selectedRoom]: { _all: msgs } }
     })
     setPanelStreaming(true)
+    // Mobile: auto-snap drawer to full when user sends a message (they're in a conversation now)
+    if (isMobile && drawerSnap !== 'full') {
+      setDrawerSnap('full')
+    }
     // Send message via relay (local Vite middleware or Vercel serverless)
     if (IS_LOCAL) {
       const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard' }
@@ -8234,7 +8269,7 @@ export default function GameDashboard() {
         }, 15000)
       }).catch(() => {})
     }
-  }, [panelChatInput, panelStreaming, selectedRoom, atOptions])
+  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap])
 
   // Powerup activation: inject slash command and auto-submit
   const handlePowerupActivate = useCallback((slash) => {
@@ -8426,75 +8461,11 @@ export default function GameDashboard() {
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
 
-      {/* Mobile floating notification badges -- top right, above game map */}
-      {isMobile && currentMode === 'game' && (() => {
-        const workingCount = Object.values(agentStatus).filter(a => a?.status === 'WORKING').length
-        const blockedCount = Object.values(agentStatus).filter(a => a?.status === 'BLOCKED').length
-        const rightNowCount = rightNowTasks.length
-        const hasBadges = workingCount > 0 || blockedCount > 0 || rightNowCount > 0
-        if (!hasBadges) return null
-        return (
-          <div style={{
-            position: 'fixed',
-            top: 'calc(52px + env(safe-area-inset-top, 0px))',
-            right: 8,
-            zIndex: 35,
-            display: 'flex',
-            gap: 6,
-            pointerEvents: 'none',
-          }}>
-            {workingCount > 0 && (
-              <div style={{
-                background: 'rgba(22,163,74,0.9)',
-                color: '#FFF',
-                borderRadius: 12,
-                padding: '4px 10px',
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Inter', system-ui, sans-serif",
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-              }}>
-                {workingCount} active
-              </div>
-            )}
-            {blockedCount > 0 && (
-              <div style={{
-                background: 'rgba(239,68,68,0.9)',
-                color: '#FFF',
-                borderRadius: 12,
-                padding: '4px 10px',
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Inter', system-ui, sans-serif",
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-              }}>
-                {blockedCount} blocked
-              </div>
-            )}
-            {rightNowCount > 0 && (
-              <div style={{
-                background: 'rgba(255,107,61,0.9)',
-                color: '#FFF',
-                borderRadius: 12,
-                padding: '4px 10px',
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Inter', system-ui, sans-serif",
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-              }}>
-                {rightNowCount} tasks
-              </div>
-            )}
-          </div>
-        )
-      })()}
+      {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 120 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 80 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
@@ -8538,19 +8509,21 @@ export default function GameDashboard() {
                 </div>
               )}
 
-              {/* Camera controls (floating, right side of game viewport) */}
-              <CameraControls
-                cameraZoom={cameraZoom}
-                setCameraZoom={setCameraZoom}
-                isOverview={isOverview}
-                setIsOverview={setIsOverview}
-                cameraTarget={cameraTarget}
-                setCameraTarget={setCameraTarget}
-                onHomeRoom={handleHomeRoom}
-                panelVisible={false}
-                isMobile={isMobile}
-                drawerOpen={drawerOpen}
-              />
+              {/* Camera controls (floating, right side of game viewport) -- desktop only. Mobile uses pinch-to-zoom + tap-to-center. */}
+              {!isMobile && (
+                <CameraControls
+                  cameraZoom={cameraZoom}
+                  setCameraZoom={setCameraZoom}
+                  isOverview={isOverview}
+                  setIsOverview={setIsOverview}
+                  cameraTarget={cameraTarget}
+                  setCameraTarget={setCameraTarget}
+                  onHomeRoom={handleHomeRoom}
+                  panelVisible={false}
+                  isMobile={isMobile}
+                  drawerOpen={drawerOpen}
+                />
+              )}
 
               {/* Ambient vignette overlay for Elon room focus (dark bg, subtle server-green glow) */}
               {currentMode === 'game' && (
@@ -8622,7 +8595,7 @@ export default function GameDashboard() {
       {(
         <div style={{
           position: 'fixed',
-          bottom: isMobile ? 'calc(48px + env(safe-area-inset-bottom, 0px))' : 0,
+          bottom: 0,
           left: 0,
           right: (!isMobile && selectedRoom && ROOM_LOOKUP[selectedRoom]) ? (panelExtended ? '65%' : '30%') : 0,
           zIndex: 40,
@@ -8681,8 +8654,8 @@ export default function GameDashboard() {
         </div>
       )}
 
-      {/* Mobile mode tab bar: RESTORED -- nav was completely hidden on mobile without it */}
-      {isMobile && <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />}
+      {/* Mobile mode tab bar: KILLED per Patrik Round 2 directive. Mode switching via top bar only. */}
+      {/* {isMobile && <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />} */}
 
       {/* Mobile fullscreen Checklist/Megaboard overlays */}
       {isMobile && currentMode === 'checklist' && (
@@ -9115,6 +9088,9 @@ export default function GameDashboard() {
         }
         /* Touch action for game viewport */
         .game-viewport { touch-action: none; }
+        /* Top bar scroll: hide scrollbar on mobile */
+        .topbar-scroll::-webkit-scrollbar { display: none; }
+        .topbar-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         /* FIX 3 Wave 5: Allow text selection in inputs/textareas despite root user-select:none */
         input, textarea, [contenteditable="true"] {
           -webkit-touch-callout: default !important;
