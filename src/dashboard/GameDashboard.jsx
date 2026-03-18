@@ -4070,12 +4070,7 @@ const ctxBtnStyle = (isDaytime) => ({
   transition: 'background 100ms',
 })
 
-function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode, onAddToRightNow }) {
-  const [expandedBrief, setExpandedBrief] = useState(null) // 'latest-result' | 'agent-md' | null
-  const [briefContent, setBriefContent] = useState(null)
-  const [briefLoading, setBriefLoading] = useState(false)
-  const [briefError, setBriefError] = useState(null)
-  const [relatedBriefs, setRelatedBriefs] = useState([])
+function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode, onAddToRightNow, rightNowTasks, punchProjects }) {
   const isDaytime = isNightMode === false
 
   // Per-agent task list (localStorage-persisted)
@@ -4084,9 +4079,11 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     try { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]') } catch { return [] }
   })
   const [taskInput, setTaskInput] = useState('')
-  const [taskCtx, setTaskCtx] = useState(null) // right-click context menu
+  const [taskCtx, setTaskCtx] = useState(null)
   const [dragIdx, setDragIdx] = useState(null)
   const [dragOverIdx, setDragOverIdx] = useState(null)
+  const [activeFilter, setActiveFilter] = useState('all')
+  const [collapsedSections, setCollapsedSections] = useState({})
 
   // Persist tasks
   useEffect(() => {
@@ -4097,6 +4094,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   useEffect(() => {
     try { setTasks(JSON.parse(localStorage.getItem(TASKS_KEY) || '[]')) } catch { setTasks([]) }
     setTaskCtx(null)
+    setActiveFilter('all')
   }, [TASKS_KEY])
 
   // Close context menu on outside click
@@ -4123,25 +4121,20 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   }
 
   const moveTask = (id, targetAgent) => {
-    const task = tasks.find(t => t.id === id)
-    if (!task) return
-    // Remove from current agent
+    const taskItem = tasks.find(t => t.id === id)
+    if (!taskItem) return
     setTasks(prev => prev.filter(t => t.id !== id))
-    // Add to target agent
     const targetKey = `corner-tasks-${targetAgent}`
     try {
       const targetTasks = JSON.parse(localStorage.getItem(targetKey) || '[]')
-      targetTasks.push({ ...task, agent: targetAgent })
+      targetTasks.push({ ...taskItem, agent: targetAgent })
       localStorage.setItem(targetKey, JSON.stringify(targetTasks))
     } catch {}
   }
 
   // Drag and drop reorder
   const handleDragStart = (idx) => setDragIdx(idx)
-  const handleDragOver = (e, idx) => {
-    e.preventDefault()
-    setDragOverIdx(idx)
-  }
+  const handleDragOver = (e, idx) => { e.preventDefault(); setDragOverIdx(idx) }
   const handleDrop = (idx) => {
     if (dragIdx === null || dragIdx === idx) { setDragIdx(null); setDragOverIdx(null); return }
     setTasks(prev => {
@@ -4154,420 +4147,366 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     setDragOverIdx(null)
   }
 
-  // Map agent slugs to their project directory names
-  const AGENT_PROJECT_MAP = {
-    bobby: 'bobby', mom: 'mom', alex: 'aom-strategy', steve: 'steve',
-    steffen: 'steffen', cleo: 'content-agent', tony: 'tony', jacob: 'jacob',
-    elon: 'sys', colton: 'colton', elmo: 'elmo', paige: 'paige', pixel: 'pixel',
+  const toggleSection = (key) => {
+    setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
-  // Load brief content from the local file API
-  const loadBrief = useCallback(async (briefType) => {
-    if (!IS_LOCAL || !agentSlug) return
-    const projectDir = AGENT_PROJECT_MAP[agentSlug] || agentSlug
-    const filePath = briefType === 'latest-result'
-      ? `projects/${projectDir}/latest-result.md`
-      : `projects/${projectDir}/AGENT.md`
+  // Build sections from punch-list data + local tasks + right now
+  const liveRightNow = rightNowTasks || []
+  const projectSections = punchProjects || []
 
-    setBriefLoading(true)
-    setBriefError(null)
-    try {
-      const res = await fetch(`/api/local/file?path=${encodeURIComponent(filePath)}`)
-      if (!res.ok) throw new Error(`Not found: ${filePath}`)
-      const data = await res.json()
-      setBriefContent(data.content || 'No content available.')
-      setExpandedBrief(briefType)
-    } catch (err) {
-      setBriefError(`Could not load ${filePath}`)
-      setBriefContent(null)
-    } finally {
-      setBriefLoading(false)
-    }
-  }, [agentSlug])
+  // Agent's projects (which projects is this agent on?)
+  const agentProjects = PROJECTS.filter(p => p.team?.includes(agentSlug))
 
-  // Load related published briefs on mount (uses static import, no fetch needed)
-  useEffect(() => {
-    if (!agentSlug) return
-    const agentName = agent?.name?.toLowerCase() || agentSlug
-    try {
-      if (!briefsIndex?.categories) return
-      const matches = []
-      for (const cat of briefsIndex.categories) {
-        for (const item of (cat.items || [])) {
-          if (item.agent?.toLowerCase() === agentName || item.agent?.toLowerCase() === agentSlug) {
-            matches.push(item)
-          }
-        }
-      }
-      setRelatedBriefs(matches.slice(0, 5)) // Show up to 5 related briefs
-    } catch {}
-  }, [agentSlug, agent])
-
-  // Simple markdown-to-text renderer (headers, bullets, bold)
-  const renderBriefContent = (content) => {
-    if (!content) return null
-    const lines = content.split('\n')
-    return lines.map((line, i) => {
-      const trimmed = line.trim()
-      if (!trimmed) return <div key={i} style={{ height: 8 }} />
-      // Headers
-      if (trimmed.startsWith('### ')) {
-        return <div key={i} style={{ color: isNightMode ? '#F1F5F9' : '#E8ECF0', fontSize: 14, fontWeight: 800, fontFamily: "'Inter', sans-serif", marginTop: 12, marginBottom: 4 }}>{trimmed.slice(4)}</div>
-      }
-      if (trimmed.startsWith('## ')) {
-        return <div key={i} style={{ color: isNightMode ? '#F1F5F9' : '#E8ECF0', fontSize: 15, fontWeight: 900, fontFamily: "'Inter', sans-serif", marginTop: 14, marginBottom: 6, borderBottom: `1px solid ${agentColor}25`, paddingBottom: 4 }}>{trimmed.slice(3)}</div>
-      }
-      if (trimmed.startsWith('# ')) {
-        return <div key={i} style={{ color: agentColor, fontSize: 16, fontWeight: 900, fontFamily: "'Inter', sans-serif", marginTop: 6, marginBottom: 8 }}>{trimmed.slice(2)}</div>
-      }
-      // Bullet points
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        const text = trimmed.slice(2)
-        return (
-          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 3, paddingLeft: 4 }}>
-            <span style={{ color: agentColor, flexShrink: 0, fontSize: 14, lineHeight: '1.5' }}>&#8226;</span>
-            <span style={{ color: isNightMode ? '#CBD5E1' : '#A0B4CC', fontSize: 13, fontFamily: "'Inter', sans-serif", lineHeight: 1.5 }}>{text}</span>
-          </div>
-        )
-      }
-      // Regular text with bold support
-      const parts = trimmed.split(/(\*\*[^*]+\*\*)/g)
-      return (
-        <div key={i} style={{ color: isNightMode ? '#94A3B8' : '#8BA4C4', fontSize: 13, fontFamily: "'Inter', sans-serif", lineHeight: 1.5, marginBottom: 2 }}>
-          {parts.map((part, j) => {
-            if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={j} style={{ color: isNightMode ? '#E2E8F0' : '#E2E8F0', fontWeight: 700 }}>{part.slice(2, -2)}</strong>
-            }
-            return <span key={j}>{part}</span>
-          })}
-        </div>
+  // Determine which punch-list sections are relevant to this agent
+  const relevantSections = useMemo(() => {
+    if (!projectSections.length) return []
+    return projectSections.map(section => {
+      // Filter tasks to only those assigned to this agent (or unassigned)
+      const agentTasks = section.tasks.filter(t =>
+        !t.agent || t.agent === agentSlug || t.agent === 'patrik'
       )
-    })
-  }
+      if (agentTasks.length === 0) return null
+      return { ...section, tasks: agentTasks }
+    }).filter(Boolean)
+  }, [projectSections, agentSlug])
 
-  return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-      {/* Current task highlighted -- clickable to load brief */}
-      <div
-        data-testid="task-brief-card"
-        onClick={() => {
-          if (expandedBrief === 'latest-result') {
-            setExpandedBrief(null)
-            setBriefContent(null)
-          } else {
-            loadBrief('latest-result')
-          }
-        }}
-        style={{
-          padding: '12px 14px', marginBottom: 12,
-          background: isNightMode ? `${agentColor}10` : `${agentColor}08`,
-          border: `1px solid ${agentColor}25`,
-          borderRadius: 8,
-          cursor: IS_LOCAL ? 'pointer' : 'default',
-          transition: 'background 150ms ease, border-color 150ms ease',
-        }}
-        onMouseEnter={e => { if (IS_LOCAL) { e.currentTarget.style.background = isNightMode ? `${agentColor}18` : `${agentColor}12`; e.currentTarget.style.borderColor = agentColor + '40' } }}
-        onMouseLeave={e => { if (IS_LOCAL) { e.currentTarget.style.background = isNightMode ? `${agentColor}10` : `${agentColor}08`; e.currentTarget.style.borderColor = agentColor + '25' } }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <div style={{ color: isNightMode ? '#6B7280' : '#6B8AB0', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>Current Task</div>
-          {IS_LOCAL && (
-            <div style={{
-              fontSize: 11, fontWeight: 700, color: agentColor,
-              fontFamily: "'JetBrains Mono', monospace",
-              opacity: 0.7, display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              {expandedBrief === 'latest-result' ? (
-                <><ChevronUp size={12} /> HIDE</>
-              ) : (
-                <><ChevronDown size={12} /> VIEW BRIEF</>
-              )}
-            </div>
-          )}
-        </div>
-        <div style={{ color: isNightMode ? '#F0ECE6' : '#E2E8F0', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{task}</div>
-      </div>
+  // Count totals for filter pills
+  const rightNowCount = liveRightNow.length
+  const localOpenCount = tasks.filter(t => !t.done).length
+  const totalCount = rightNowCount + localOpenCount + relevantSections.reduce((sum, s) => sum + s.tasks.filter(t => !t.done).length, 0)
 
-      {/* Expanded brief content (latest-result.md) */}
-      {expandedBrief === 'latest-result' && (
-        <div style={{
-          padding: '14px 16px', marginBottom: 12,
-          background: isNightMode ? 'rgba(15,27,45,0.6)' : 'rgba(26,40,58,0.95)',
-          border: isNightMode ? `1px solid ${agentColor}20` : `1px solid ${agentColor}15`,
-          borderLeft: `3px solid ${agentColor}`,
-          borderRadius: 8,
-          maxHeight: 400, overflowY: 'auto',
+  // Filter pill style helper
+  const pillStyle = (key, color) => ({
+    padding: '5px 12px',
+    borderRadius: 20,
+    fontSize: 12,
+    fontWeight: 800,
+    fontFamily: "'Inter', sans-serif",
+    cursor: 'pointer',
+    border: activeFilter === key ? `2px solid ${color}` : '2px solid transparent',
+    background: activeFilter === key ? `${color}20` : (isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.04)'),
+    color: activeFilter === key ? color : (isDaytime ? '#8BA4C4' : '#6B7280'),
+    transition: 'all 150ms ease',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  })
+
+  // Section header render helper
+  const renderSectionHeader = (label, count, color, sectionKey, isLive, progressPct) => (
+    <div
+      onClick={() => toggleSection(sectionKey)}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '8px 0', cursor: 'pointer', userSelect: 'none',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <ChevronDown
+          size={14}
+          style={{
+            color: color || (isDaytime ? '#8BA4C4' : '#6B7280'),
+            transform: collapsedSections[sectionKey] ? 'rotate(-90deg)' : 'rotate(0deg)',
+            transition: 'transform 150ms ease',
+          }}
+        />
+        <span style={{
+          fontSize: 12, fontWeight: 900, letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          fontFamily: "'Inter', sans-serif",
+          color: color || (isDaytime ? '#E2E8F0' : '#CBD5E1'),
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: agentColor, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Latest Result
-            </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); loadBrief('agent-md') }}
-              style={{
-                fontSize: 11, fontWeight: 700, color: isNightMode ? '#60A5FA' : '#3B82F6',
-                fontFamily: "'JetBrains Mono', monospace",
-                background: 'none', border: 'none', cursor: 'pointer',
-                textDecoration: 'underline', textUnderlineOffset: 2,
-              }}
-            >
-              AGENT.md
-            </button>
-          </div>
-          {briefLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
-              <Loader2 size={14} style={{ color: agentColor, animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: 13, color: '#6B7280', fontFamily: "'Inter', sans-serif" }}>Loading brief...</span>
-            </div>
-          )}
-          {briefError && (
-            <div style={{ fontSize: 13, color: '#EF4444', fontFamily: "'Inter', sans-serif", padding: '4px 0' }}>{briefError}</div>
-          )}
-          {briefContent && !briefLoading && renderBriefContent(briefContent)}
-        </div>
-      )}
-
-      {/* Expanded AGENT.md content */}
-      {expandedBrief === 'agent-md' && (
-        <div style={{
-          padding: '14px 16px', marginBottom: 12,
-          background: isNightMode ? 'rgba(15,27,45,0.6)' : 'rgba(26,40,58,0.95)',
-          border: isNightMode ? `1px solid ${agentColor}20` : `1px solid ${agentColor}15`,
-          borderLeft: `3px solid ${agentColor}`,
-          borderRadius: 8,
-          maxHeight: 400, overflowY: 'auto',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: agentColor, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              Agent Brief
-            </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); loadBrief('latest-result') }}
-              style={{
-                fontSize: 11, fontWeight: 700, color: isNightMode ? '#60A5FA' : '#3B82F6',
-                fontFamily: "'JetBrains Mono', monospace",
-                background: 'none', border: 'none', cursor: 'pointer',
-                textDecoration: 'underline', textUnderlineOffset: 2,
-              }}
-            >
-              Latest Result
-            </button>
-          </div>
-          {briefLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
-              <Loader2 size={14} style={{ color: agentColor, animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: 13, color: '#6B7280', fontFamily: "'Inter', sans-serif" }}>Loading brief...</span>
-            </div>
-          )}
-          {briefError && (
-            <div style={{ fontSize: 13, color: '#EF4444', fontFamily: "'Inter', sans-serif", padding: '4px 0' }}>{briefError}</div>
-          )}
-          {briefContent && !briefLoading && renderBriefContent(briefContent)}
-        </div>
-      )}
-
-      {/* Last completion */}
-      {agentStatus?.lastCompletion && (
-        <div style={{
-          padding: '10px 14px', marginBottom: 12,
-          background: isNightMode ? 'rgba(100,180,255,0.04)' : 'rgba(100,180,255,0.06)',
-          border: isNightMode ? '1px solid rgba(100,180,255,0.08)' : '1px solid rgba(100,180,255,0.12)',
-          borderRadius: 8,
-        }}>
-          <div style={{ color: isNightMode ? '#6B7280' : '#6B8AB0', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Last Completed</div>
-          <div style={{ color: isNightMode ? '#A8A29E' : '#8BA4C4', fontSize: 13, fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.45 }}>{agentStatus.lastCompletion.description}</div>
-          <div style={{ color: isNightMode ? '#6B7280' : '#6B8AB0', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', marginTop: 4 }}>{agentStatus.lastCompletion.date}</div>
-        </div>
-      )}
-
-      {/* Related published briefs -- clickable links to /briefs/[slug] */}
-      {relatedBriefs.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ color: isNightMode ? '#6B7280' : '#6B8AB0', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
-            Related Briefs
-          </div>
-          {relatedBriefs.map((brief, i) => (
-            <a
-              key={brief.slug || i}
-              href={brief.path || `/briefs/${brief.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'block', padding: '8px 12px', marginBottom: 6,
-                background: isNightMode ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)',
-                border: isNightMode ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(59,130,246,0.15)',
-                borderRadius: 6, cursor: 'pointer',
-                textDecoration: 'none',
-                transition: 'background 150ms ease',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.1)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.04)' : 'rgba(59,130,246,0.06)' }}
-            >
-              <div style={{ color: isNightMode ? '#60A5FA' : '#60A5FA', fontSize: 13, fontWeight: 700, fontFamily: "'Inter', sans-serif", marginBottom: 2 }}>
-                {brief.title}
-              </div>
-              {brief.summary && (
-                <div style={{ color: isNightMode ? '#64748B' : '#6B8AB0', fontSize: 12, fontFamily: "'Inter', sans-serif", lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                  {brief.summary}
-                </div>
-              )}
-              <div style={{ color: isNightMode ? '#475569' : '#6B8AB0', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>
-                {brief.dateFormatted} -- {brief.agent}
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
-
-      {/* Task list (draggable, right-clickable) -- Vegas-style colored cards */}
-      <div style={{ marginBottom: 12 }}>
-        <div style={{
-          color: isDaytime ? '#8BA4C4' : '#6B7280',
-          fontSize: 11, fontWeight: 700,
-          fontFamily: "'JetBrains Mono', monospace",
-          textTransform: 'uppercase', letterSpacing: '0.12em',
-          marginBottom: 10,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: 2,
-              background: agentColor,
-              boxShadow: `0 0 8px ${agentColor}44`,
-            }} />
-            <span>Tasks</span>
-          </div>
+          {label}
+        </span>
+        {isLive && (
           <span style={{
-            fontWeight: 700, fontSize: 11,
-            color: agentColor,
-            background: `${agentColor}15`,
-            padding: '2px 8px', borderRadius: 4,
+            fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 10,
+            background: '#FF6B3D22', color: '#FF6B3D',
+            fontFamily: "'Inter', sans-serif",
           }}>
-            {tasks.filter(t => !t.done).length} open
+            {count} running
           </span>
-        </div>
-
-        {/* Task items -- Vegas-style colored cards with agent accent */}
-        {tasks.map((t, idx) => (
-          <div
-            key={t.id}
-            draggable
-            onDragStart={() => handleDragStart(idx)}
-            onDragOver={(e) => handleDragOver(e, idx)}
-            onDrop={() => handleDrop(idx)}
-            onDragEnd={() => { setDragIdx(null); setDragOverIdx(null) }}
-            onContextMenu={(e) => {
-              e.preventDefault()
-              setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '10px 12px', marginBottom: 6,
-              background: dragOverIdx === idx
-                ? (isDaytime ? `${agentColor}22` : `${agentColor}18`)
-                : t.done
-                  ? (isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(255,255,255,0.02)')
-                  : (isDaytime ? `${agentColor}0C` : `${agentColor}08`),
-              border: dragOverIdx === idx
-                ? `1px dashed ${agentColor}60`
-                : t.done
-                  ? (isDaytime ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(255,255,255,0.03)')
-                  : `1px solid ${agentColor}20`,
-              borderLeft: t.done
-                ? (isDaytime ? '3px solid rgba(59,130,246,0.08)' : '3px solid rgba(255,255,255,0.03)')
-                : `3px solid ${agentColor}`,
-              borderRadius: 8,
-              cursor: 'grab',
-              opacity: dragIdx === idx ? 0.4 : (t.done ? 0.5 : 1),
-              transition: 'background 150ms, opacity 150ms, border 150ms, box-shadow 150ms',
-              boxShadow: !t.done && !dragOverIdx
-                ? (isDaytime
-                    ? `0 2px 8px ${agentColor}12, 0 1px 2px rgba(0,0,0,0.08)`
-                    : `0 2px 8px ${agentColor}10, 0 1px 2px rgba(0,0,0,0.2)`)
-                : 'none',
-            }}
-          >
-            {/* Drag handle */}
-            <div style={{ color: isDaytime ? `${agentColor}60` : `${agentColor}50`, cursor: 'grab', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <div style={{ width: 12, height: 2, background: 'currentColor', borderRadius: 1 }} />
-              <div style={{ width: 12, height: 2, background: 'currentColor', borderRadius: 1 }} />
-            </div>
-            {/* Checkbox */}
-            <div
-              onClick={(e) => { e.stopPropagation(); toggleTask(t.id) }}
-              style={{
-                width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-                border: t.done
-                  ? `2px solid ${agentColor}`
-                  : `2px solid ${agentColor}60`,
-                background: t.done ? agentColor : `${agentColor}10`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', transition: 'all 150ms',
-                boxShadow: t.done ? `0 0 8px ${agentColor}40` : 'none',
-              }}
-            >
-              {t.done && (
-                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
-            </div>
-            {/* Task text */}
-            <span style={{
-              flex: 1, fontSize: 14, fontWeight: t.done ? 400 : 500,
-              color: t.done
-                ? (isDaytime ? '#6B8AB0' : '#475569')
-                : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
-              fontFamily: "'Inter', sans-serif",
-              textDecoration: t.done ? 'line-through' : 'none',
-              lineHeight: 1.4,
-            }}>
-              {t.text}
-            </span>
-          </div>
-        ))}
-
-        {tasks.length === 0 && (
-          <div style={{
-            textAlign: 'center', padding: '16px 0',
-            color: isDaytime ? '#4A6585' : '#A0B4CC',
-            fontSize: 13, fontFamily: "'Inter', sans-serif",
+        )}
+        {!isLive && count > 0 && (
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+            background: `${color || '#6B7280'}15`, color: color || '#6B7280',
+            fontFamily: "'Inter', sans-serif",
           }}>
-            No tasks yet. Add one below.
+            {count} left
+          </span>
+        )}
+      </div>
+      {progressPct !== undefined && progressPct !== null && (
+        <div style={{
+          width: 60, height: 4, borderRadius: 2,
+          background: isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.06)',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            width: `${Math.min(100, Math.max(0, progressPct))}%`,
+            height: '100%', borderRadius: 2,
+            background: color || agentColor,
+            transition: 'width 300ms ease',
+          }} />
+        </div>
+      )}
+    </div>
+  )
+
+  // Task card render helper
+  const renderTaskCard = (t, opts = {}) => {
+    const { isLive, showAgent, showProject, projectColor, onToggle, onContextMenu: ctxHandler, draggable: isDraggable, idx } = opts
+    const cardAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
+    const cardColor = isLive ? '#FF6B3D' : (cardAgent?.agentColor || cardAgent?.color || agentColor)
+
+    return (
+      <div
+        key={t.id || `task-${idx}`}
+        draggable={isDraggable}
+        onDragStart={isDraggable ? () => handleDragStart(idx) : undefined}
+        onDragOver={isDraggable ? (e) => handleDragOver(e, idx) : undefined}
+        onDrop={isDraggable ? () => handleDrop(idx) : undefined}
+        onDragEnd={isDraggable ? () => { setDragIdx(null); setDragOverIdx(null) } : undefined}
+        onContextMenu={ctxHandler}
+        style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          padding: '10px 12px', marginBottom: 6,
+          background: isLive
+            ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
+            : t.done
+              ? (isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(255,255,255,0.02)')
+              : (isDaytime ? `${cardColor}0A` : `${cardColor}06`),
+          border: isLive
+            ? '1px solid rgba(255,107,61,0.2)'
+            : t.done
+              ? (isDaytime ? '1px solid rgba(59,130,246,0.06)' : '1px solid rgba(255,255,255,0.03)')
+              : `1px solid ${cardColor}18`,
+          borderLeft: isLive
+            ? '3px solid #FF6B3D'
+            : t.done
+              ? (isDaytime ? '3px solid rgba(59,130,246,0.06)' : '3px solid rgba(255,255,255,0.03)')
+              : `3px solid ${cardColor}`,
+          borderRadius: 8,
+          cursor: isDraggable ? 'grab' : 'default',
+          opacity: dragIdx === idx ? 0.4 : (t.done ? 0.45 : 1),
+          transition: 'background 150ms, opacity 150ms, border 150ms',
+        }}
+      >
+        {/* Agent avatar (left column) */}
+        {showAgent && cardAgent && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0, minWidth: 32 }}>
+            <SpriteAvatar agentSlug={cardAgent.slug || cardAgent.id} size={28} borderColor={cardColor} />
+            <span style={{
+              fontSize: 9, fontWeight: 700, color: cardColor,
+              fontFamily: "'Inter', sans-serif", textTransform: 'uppercase',
+              letterSpacing: '0.04em', lineHeight: 1,
+            }}>
+              {cardAgent.name || cardAgent.agent}
+            </span>
           </div>
         )}
 
-        {/* Add task input */}
-        <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-          <input
-            value={taskInput}
-            onChange={e => setTaskInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') addTask() }}
-            placeholder="Add a task..."
+        {/* Checkbox (non-live tasks only) */}
+        {!isLive && onToggle && (
+          <div
+            onClick={(e) => { e.stopPropagation(); onToggle(t.id) }}
             style={{
-              flex: 1, padding: '8px 12px',
-              background: `${agentColor}08`,
-              border: `1.5px solid ${agentColor}25`,
-              borderRadius: 8, fontSize: 14, fontWeight: 500,
-              color: isDaytime ? '#F1F5F9' : '#E2E8F0',
-              fontFamily: "'Inter', sans-serif", outline: 'none',
-              caretColor: agentColor,
-            }}
-          />
-          <button
-            onClick={addTask}
-            style={{
-              padding: '8px 14px',
-              background: agentColor, border: 'none', borderRadius: 8,
-              color: '#FFF', fontSize: 13, fontWeight: 700,
-              fontFamily: "'Inter', sans-serif", cursor: 'pointer',
-              boxShadow: `0 2px 8px ${agentColor}40`,
-              transition: 'transform 100ms, box-shadow 100ms',
+              width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
+              border: t.done ? `2px solid ${cardColor}` : `2px solid ${cardColor}50`,
+              background: t.done ? cardColor : `${cardColor}08`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 150ms',
+              boxShadow: t.done ? `0 0 6px ${cardColor}30` : 'none',
             }}
           >
-            Add
-          </button>
+            {t.done && (
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </div>
+        )}
+
+        {/* Task content (right column) */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
+            color: t.done
+              ? (isDaytime ? '#6B8AB0' : '#475569')
+              : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
+            fontFamily: "'Inter', sans-serif",
+            textDecoration: t.done ? 'line-through' : 'none',
+          }}>
+            {t.text}
+          </div>
+          {/* Badges row */}
+          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            {isLive && (
+              <span style={{
+                fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
+                background: '#FF6B3D', color: '#FFF',
+                fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+              }}>LIVE</span>
+            )}
+            {showProject && t.project && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
+                background: `${projectColor || '#3B82F6'}18`,
+                color: projectColor || '#3B82F6',
+                fontFamily: "'Inter', sans-serif",
+              }}>{t.project}</span>
+            )}
+          </div>
         </div>
+      </div>
+    )
+  }
+
+  // Determine what to show based on active filter
+  const showRightNow = activeFilter === 'all' || activeFilter === 'rightnow'
+  const showLocal = activeFilter === 'all' || activeFilter === 'local'
+  const showProjectFilter = activeFilter !== 'all' && activeFilter !== 'rightnow' && activeFilter !== 'local'
+  const filteredProjectSection = showProjectFilter
+    ? relevantSections.find(s => s.section === activeFilter)
+    : null
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+      {/* Filter pills row */}
+      <div style={{
+        display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto',
+        paddingBottom: 4, WebkitOverflowScrolling: 'touch',
+      }}>
+        <div
+          onClick={() => setActiveFilter('all')}
+          style={pillStyle('all', agentColor)}
+        >
+          ALL {totalCount > 0 ? totalCount : ''}
+        </div>
+        {rightNowCount > 0 && (
+          <div
+            onClick={() => setActiveFilter('rightnow')}
+            style={pillStyle('rightnow', '#FF6B3D')}
+          >
+            RIGHT NOW {rightNowCount}
+          </div>
+        )}
+        {/* Project-scoped filter pills */}
+        {relevantSections.map(section => {
+          const openCount = section.tasks.filter(t => !t.done).length
+          if (openCount === 0) return null
+          return (
+            <div
+              key={section.section}
+              onClick={() => setActiveFilter(section.section)}
+              style={pillStyle(section.section, section.color)}
+            >
+              {section.name} {openCount}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* RIGHT NOW section */}
+      {showRightNow && liveRightNow.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          {renderSectionHeader('RIGHT NOW', liveRightNow.length, '#FF6B3D', 'rightnow', true)}
+          {!collapsedSections.rightnow && liveRightNow.map((t, i) =>
+            renderTaskCard(
+              { id: t.id || `rn-${i}`, text: t.text || t.task || t.description || 'Running...', agent: t.agent },
+              { isLive: true, showAgent: true, idx: i }
+            )
+          )}
+        </div>
+      )}
+
+      {/* Project sections from punch-list */}
+      {(activeFilter === 'all' ? relevantSections : (filteredProjectSection ? [filteredProjectSection] : [])).map(section => {
+        const openTasks = section.tasks.filter(t => !t.done)
+        const doneTasks = section.tasks.filter(t => t.done)
+        const total = section.tasks.length
+        const doneCount = doneTasks.length
+        const progressPct = total > 0 ? Math.round((doneCount / total) * 100) : 0
+
+        return (
+          <div key={section.section} style={{ marginBottom: 12 }}>
+            {renderSectionHeader(section.name, openTasks.length, section.color, section.section, false, progressPct)}
+            {!collapsedSections[section.section] && openTasks.map((t, i) =>
+              renderTaskCard(
+                { id: t.id || `pl-${section.section}-${i}`, text: t.text, done: t.done, agent: t.agent, project: section.name },
+                { showAgent: !!t.agent && t.agent !== agentSlug, showProject: activeFilter === 'all', projectColor: section.color, idx: i }
+              )
+            )}
+          </div>
+        )
+      })}
+
+      {/* Local tasks (per-agent, user-created) */}
+      {showLocal && tasks.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          {renderSectionHeader(
+            agent?.name || agentSlug?.toUpperCase() || 'TASKS',
+            tasks.filter(t => !t.done).length,
+            agentColor,
+            'local',
+            false,
+            tasks.length > 0 ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 0
+          )}
+          {!collapsedSections.local && tasks.map((t, idx) =>
+            renderTaskCard(t, {
+              onToggle: toggleTask,
+              draggable: true,
+              idx,
+              onContextMenu: (e) => {
+                e.preventDefault()
+                setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
+              },
+            })
+          )}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {totalCount === 0 && tasks.length === 0 && (
+        <div style={{
+          textAlign: 'center', padding: '24px 0',
+          color: isDaytime ? '#4A6585' : '#64748B',
+          fontSize: 13, fontFamily: "'Inter', sans-serif",
+        }}>
+          No tasks yet. Add one below.
+        </div>
+      )}
+
+      {/* Add task input */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        <input
+          value={taskInput}
+          onChange={e => setTaskInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') addTask() }}
+          placeholder="Add a task..."
+          style={{
+            flex: 1, padding: '8px 12px',
+            background: `${agentColor}08`,
+            border: `1.5px solid ${agentColor}22`,
+            borderRadius: 8, fontSize: 14, fontWeight: 500,
+            color: isDaytime ? '#F1F5F9' : '#E2E8F0',
+            fontFamily: "'Inter', sans-serif", outline: 'none',
+            caretColor: agentColor,
+          }}
+        />
+        <button
+          onClick={addTask}
+          style={{
+            padding: '8px 14px',
+            background: agentColor, border: 'none', borderRadius: 8,
+            color: '#FFF', fontSize: 13, fontWeight: 700,
+            fontFamily: "'Inter', sans-serif", cursor: 'pointer',
+            boxShadow: `0 2px 8px ${agentColor}40`,
+          }}
+        >
+          Add
+        </button>
       </div>
 
       {/* Right-click context menu for tasks */}
@@ -4579,7 +4518,6 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           borderRadius: 8, padding: '4px 0', minWidth: 180,
           boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
         }}>
-          {/* Move to top / bottom */}
           <button onClick={() => {
             setTasks(prev => {
               const idx = prev.findIndex(t => t.id === taskCtx.id)
@@ -4606,8 +4544,6 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           }} style={ctxBtnStyle(isDaytime)}>
             Move to Bottom
           </button>
-
-          {/* Send to Right Now */}
           <button onClick={() => {
             const t = tasks.find(x => x.id === taskCtx.id)
             if (t && onAddToRightNow) onAddToRightNow(t)
@@ -4615,14 +4551,10 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           }} style={{ ...ctxBtnStyle(isDaytime), color: '#FF6B3D', fontWeight: 700 }}>
             Send to Right Now
           </button>
-
-          {/* Divider */}
           <div style={{ height: 1, background: isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-
-          {/* Assign to another agent */}
           <div style={{
-            padding: '6px 14px',
-            fontSize: 11, fontWeight: 700, color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+            padding: '6px 14px', fontSize: 11, fontWeight: 700,
+            color: isDaytime ? '#6B8AB0' : '#8BA4C4',
             fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>Move to agent</div>
           {AGENTS.filter(a => a.slug !== agentSlug).slice(0, 6).map(a => (
@@ -4632,11 +4564,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
               {a.name}
             </button>
           ))}
-
-          {/* Divider */}
           <div style={{ height: 1, background: isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-
-          {/* Delete */}
           <button onClick={() => { deleteTask(taskCtx.id); setTaskCtx(null) }}
             style={{ ...ctxBtnStyle(isDaytime), color: '#EF4444' }}
           >
@@ -6560,6 +6488,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             agent={agent}
             isNightMode={isNightMode}
             onAddToRightNow={onAddToRightNow}
+            rightNowTasks={rightNowTasks}
+            punchProjects={pipeData?.punchData?.projects || []}
           />
         )}
 
