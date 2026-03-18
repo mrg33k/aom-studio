@@ -903,7 +903,7 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
 // ---- PROJECT CARD (VEGAS ENERGY: Trello thickness, physical objects) ---------
 // If you think it's big enough, DOUBLE IT. Slot machine buttons. Casino cards.
 // Drop shadows, bold rounded corners, chunky, grabbable, satisfying.
-function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode }) {
+function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode, wiggle }) {
   const isDaytime = isNightMode === false
   const totalTasks = project.tasks.length
   const doneTasks = project.tasks.filter(t => t.done).length
@@ -944,11 +944,17 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
 
   return (
     <motion.button
+      className={wiggle ? 'pill-wiggle-glow' : undefined}
       onClick={onClick}
       onContextMenu={(e) => onContextMenu?.(e, project)}
       onTouchStart={handlePillTouchStart}
       onTouchEnd={handlePillTouchEnd}
       onTouchMove={handlePillTouchMove}
+      animate={wiggle ? {
+        scale: [1, 1.05, 0.98, 1.03, 1],
+        y: [0, -2, 0, -1, 0],
+        transition: { duration: 0.6, ease: 'easeInOut' },
+      } : { scale: 1, y: 0 }}
       whileHover={{ scale: 1.08, y: -6, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
       whileTap={{ scale: 0.88, y: 4, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
@@ -1778,6 +1784,9 @@ export default function GameHUD({
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const searchRef = useRef(null)
+  // Track Right Now pill count for wiggle animation on new tasks
+  const prevRightNowCountRef = useRef(0)
+  const [rightNowWiggle, setRightNowWiggle] = useState(false)
   // navigateToProject uses a ref so it doesn't depend on projects useMemo (avoids ordering issue)
   const projectsRef = useRef([]);
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
@@ -1818,6 +1827,17 @@ export default function GameHUD({
   const deleteManualTask = useCallback((id) => {
     setManualTasks(prev => prev.filter(t => t.id !== id))
   }, [])
+
+  // Detect new Right Now tasks and trigger wiggle animation
+  useEffect(() => {
+    const currentCount = liveRightNowTasks.length + manualTasks.length
+    if (prevRightNowCountRef.current > 0 && currentCount > prevRightNowCountRef.current) {
+      setRightNowWiggle(true)
+      const timer = setTimeout(() => setRightNowWiggle(false), 700)
+      return () => clearTimeout(timer)
+    }
+    prevRightNowCountRef.current = currentCount
+  }, [liveRightNowTasks.length, manualTasks.length])
 
   // Sort projects by CONVERSATION RECENCY first, then incomplete task count.
   // The system KNOWS what matters based on what you TALK ABOUT.
@@ -2221,6 +2241,67 @@ export default function GameHUD({
           ) : null
         })()}
 
+        {/* Search bar ABOVE pills (Patrik: search above pills so you see pills filter as you type) */}
+        <AnimatePresence>
+          {searchOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              style={{ overflow: 'hidden', position: 'relative', zIndex: 2 }}
+            >
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: isMobile ? '4px 8px 2px' : '4px 12px 2px',
+              }}>
+                <Search size={14} color={hudTextMuted} style={{ flexShrink: 0 }} />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false) }
+                  }}
+                  placeholder="Filter pills and tasks..."
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: `1px solid ${searchQuery ? hudAccent + '44' : hudDivider}`,
+                    height: 32,
+                    padding: '0 4px',
+                    color: hudTextPrimary,
+                    fontSize: isMobile ? 15 : 14,
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    fontWeight: 500,
+                    outline: 'none',
+                    transition: 'border-color 150ms ease',
+                  }}
+                />
+                {searchQuery && (
+                  <motion.button
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      width: 24, height: 24, borderRadius: 12,
+                      background: isDaytime ? 'rgba(59,130,246,0.15)' : 'rgba(100,180,255,0.1)',
+                      border: 'none', cursor: 'pointer',
+                      color: hudTextMuted,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <X size={12} />
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Main row: Pills ONLY. No agent roster. No counters. No percentage. */}
         <div style={{
           display: 'flex',
@@ -2267,54 +2348,22 @@ export default function GameHUD({
             msOverflowStyle: 'none',
             touchAction: 'pan-x',
           }} className="hud-pills-scroll">
-            {/* Search toggle + input (available on all viewports) */}
-              <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                <AnimatePresence>
-                  {searchOpen && (
-                    <motion.input
-                      ref={searchRef}
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: isMobile ? 120 : 140, opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      type="text"
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false) }
-                      }}
-                      placeholder="Filter..."
-                      style={{
-                        background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
-                        border: `1px solid ${hudPanelBorder}`,
-                        borderRadius: 10,
-                        height: isMobile ? 40 : 36,
-                        padding: '0 12px',
-                        color: hudTextPrimary,
-                        fontSize: isMobile ? 16 : 14,
-                        fontFamily: "'Inter', system-ui, sans-serif",
-                        outline: 'none',
-                        marginRight: 6,
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
-                <motion.button
-                  onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setSearchQuery('') }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  style={{
-                    width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 8,
-                    background: searchOpen ? `${hudAccent}22` : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.04)'),
-                    border: `1px solid ${searchOpen ? hudAccent + '44' : hudDivider}`,
-                    color: searchOpen ? hudAccent : hudTextMuted,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, transition: 'all 150ms ease',
-                  }}
-                >
-                  <Search size={isMobile ? 18 : 15} />
-                </motion.button>
-              </div>
+            {/* Search toggle button (opens search bar above) */}
+              <motion.button
+                onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setSearchQuery('') }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                style={{
+                  width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 8,
+                  background: searchOpen ? `${hudAccent}22` : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.04)'),
+                  border: `1px solid ${searchOpen ? hudAccent + '44' : hudDivider}`,
+                  color: searchOpen ? hudAccent : hudTextMuted,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, transition: 'all 150ms ease',
+                }}
+              >
+                <Search size={isMobile ? 18 : 15} />
+              </motion.button>
 
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
@@ -2340,6 +2389,7 @@ export default function GameHUD({
                   }}
                   onContextMenu={onProjectContextMenu}
                   isNightMode={isNightMode}
+                  wiggle={project.section === 'rightnow' && rightNowWiggle}
                 />
               ))
             )}
@@ -2403,6 +2453,15 @@ export default function GameHUD({
         .hud-pills-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         .hud-ticker-scroll::-webkit-scrollbar { display: none; }
         .hud-ticker-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pillWiggleGlow {
+          0% { box-shadow: 0 4px 16px rgba(255,107,61,0.1); }
+          30% { box-shadow: 0 4px 24px rgba(255,107,61,0.5), 0 0 12px rgba(255,107,61,0.3); }
+          60% { box-shadow: 0 4px 20px rgba(255,107,61,0.3); }
+          100% { box-shadow: 0 4px 16px rgba(255,107,61,0.1); }
+        }
+        .pill-wiggle-glow {
+          animation: pillWiggleGlow 0.6s ease-in-out 1;
+        }
         @keyframes tickerFlash {
           0%, 100% { box-shadow: 0 0 0 rgba(255,107,61,0); }
           30% { box-shadow: 0 0 12px rgba(255,107,61,0.4); }

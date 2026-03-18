@@ -4084,6 +4084,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [dragOverIdx, setDragOverIdx] = useState(null)
   const [activeFilter, setActiveFilter] = useState('all')
   const [collapsedSections, setCollapsedSections] = useState({})
+  const [selectedTask, setSelectedTask] = useState(null) // Task detail view
 
   // Persist tasks
   useEffect(() => {
@@ -4256,7 +4257,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
 
   // Task card render helper
   const renderTaskCard = (t, opts = {}) => {
-    const { isLive, showAgent, showProject, projectColor, onToggle, onContextMenu: ctxHandler, draggable: isDraggable, idx } = opts
+    const { isLive, showAgent, showProject, projectColor, onToggle, onContextMenu: ctxHandler, draggable: isDraggable, idx, sectionName, sectionColor } = opts
     const cardAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
     const cardColor = isLive ? '#FF6B3D' : (cardAgent?.agentColor || cardAgent?.color || agentColor)
 
@@ -4269,6 +4270,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         onDrop={isDraggable ? () => handleDrop(idx) : undefined}
         onDragEnd={isDraggable ? () => { setDragIdx(null); setDragOverIdx(null) } : undefined}
         onContextMenu={ctxHandler}
+        onClick={() => setSelectedTask({ ...t, _cardColor: cardColor, _cardAgent: cardAgent, _isLive: isLive, _sectionName: sectionName, _sectionColor: sectionColor || projectColor })}
         style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
           padding: '10px 12px', marginBottom: 6,
@@ -4372,7 +4374,153 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     : null
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', position: 'relative' }}>
+      {/* Task Detail View (slides in from right) */}
+      <AnimatePresence>
+        {selectedTask && (
+          <motion.div
+            key="task-detail"
+            initial={{ x: '100%', opacity: 0.5 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+            style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              zIndex: 20, padding: '12px 14px',
+              background: isDaytime ? 'rgba(18, 42, 75, 0.98)' : 'rgba(8, 16, 32, 0.98)',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Back button */}
+            <div
+              onClick={() => setSelectedTask(null)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                padding: '6px 0', marginBottom: 16,
+                color: isDaytime ? '#94B8D8' : '#6B8AB0',
+                fontSize: 13, fontWeight: 700,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to list</span>
+            </div>
+
+            {/* Agent identity */}
+            {(() => {
+              const detailAgent = selectedTask._cardAgent
+              const detailColor = selectedTask._cardColor || agentColor
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+                  {detailAgent && (
+                    <SpriteAvatar agentSlug={detailAgent.slug || detailAgent.id} size={48} borderColor={detailColor} />
+                  )}
+                  <div>
+                    <div style={{
+                      fontSize: 16, fontWeight: 800, color: detailColor,
+                      fontFamily: "'Inter', sans-serif", textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                    }}>
+                      {detailAgent?.name || selectedTask.agent || agentSlug}
+                    </div>
+                    {agentStatus && (
+                      <div style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: isDaytime ? '#6B8AB0' : '#475569',
+                        fontFamily: "'Inter', sans-serif", marginTop: 2,
+                      }}>
+                        {agentStatus}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Status + project badges */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              {selectedTask._isLive && (
+                <span style={{
+                  fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 6,
+                  background: 'rgba(255,107,61,0.15)', color: '#FF6B3D',
+                  border: '1.5px solid rgba(255,107,61,0.3)',
+                  fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+                }}>LIVE</span>
+              )}
+              {selectedTask.done && (
+                <span style={{
+                  fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 6,
+                  background: 'rgba(34,197,94,0.15)', color: '#4ADE80',
+                  border: '1.5px solid rgba(34,197,94,0.3)',
+                  fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+                }}>DONE</span>
+              )}
+              {!selectedTask.done && !selectedTask._isLive && (
+                <span style={{
+                  fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 6,
+                  background: `${selectedTask._cardColor || agentColor}15`,
+                  color: selectedTask._cardColor || agentColor,
+                  border: `1.5px solid ${selectedTask._cardColor || agentColor}30`,
+                  fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+                }}>OPEN</span>
+              )}
+              {(selectedTask.project || selectedTask._sectionName) && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 6,
+                  background: `${selectedTask._sectionColor || '#3B82F6'}15`,
+                  color: selectedTask._sectionColor || '#3B82F6',
+                  border: `1.5px solid ${selectedTask._sectionColor || '#3B82F6'}25`,
+                  fontFamily: "'Inter', sans-serif",
+                }}>{selectedTask.project || selectedTask._sectionName}</span>
+              )}
+            </div>
+
+            {/* Task text (large) */}
+            <div style={{
+              fontSize: 18, fontWeight: 500, lineHeight: 1.6,
+              color: selectedTask.done
+                ? (isDaytime ? '#6B8AB0' : '#475569')
+                : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
+              fontFamily: "'Inter', sans-serif",
+              textDecoration: selectedTask.done ? 'line-through' : 'none',
+              padding: '16px 14px',
+              background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.03)',
+              border: isDaytime ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 10,
+              marginBottom: 20,
+            }}>
+              {selectedTask.text}
+            </div>
+
+            {/* Notes section (placeholder) */}
+            <div style={{ marginBottom: 8 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 800, letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: isDaytime ? '#6B8AB0' : '#475569',
+                fontFamily: "'Inter', sans-serif",
+                marginBottom: 8,
+              }}>
+                Notes
+              </div>
+              <div style={{
+                padding: '12px 14px',
+                background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(255,255,255,0.02)',
+                border: isDaytime ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(255,255,255,0.04)',
+                borderRadius: 8,
+                fontSize: 14, fontWeight: 400, lineHeight: 1.5,
+                color: isDaytime ? '#6B8AB0' : '#475569',
+                fontFamily: "'Inter', sans-serif",
+                fontStyle: 'italic',
+                minHeight: 48,
+              }}>
+                No notes yet. Tap to add context.
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Filter pills row */}
       <div style={{
         display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto',
@@ -4415,7 +4563,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           {!collapsedSections.rightnow && liveRightNow.map((t, i) =>
             renderTaskCard(
               { id: t.id || `rn-${i}`, text: t.text || t.task || t.description || 'Running...', agent: t.agent },
-              { isLive: true, showAgent: true, idx: i }
+              { isLive: true, showAgent: true, idx: i, sectionName: 'Right Now', sectionColor: '#FF6B3D' }
             )
           )}
         </div>
@@ -4435,7 +4583,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             {!collapsedSections[section.section] && openTasks.map((t, i) =>
               renderTaskCard(
                 { id: t.id || `pl-${section.section}-${i}`, text: t.text, done: t.done, agent: t.agent, project: section.name },
-                { showAgent: !!t.agent && t.agent !== agentSlug, showProject: activeFilter === 'all', projectColor: section.color, idx: i }
+                { showAgent: !!t.agent && t.agent !== agentSlug, showProject: activeFilter === 'all', projectColor: section.color, idx: i, sectionName: section.name, sectionColor: section.color }
               )
             )}
           </div>
