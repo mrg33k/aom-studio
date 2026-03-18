@@ -759,6 +759,16 @@ function useIsMobile(bp = 768) {
   return m
 }
 
+// Detect PWA standalone mode or mobile to disable heavy Three.js rendering
+function useIsMobileOrPWA() {
+  return useMemo(() => {
+    if (typeof window === 'undefined') return false
+    const isMobile = window.innerWidth < 768 || ('ontouchstart' in window && window.innerWidth < 1024)
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches
+    return isMobile || isStandalone
+  }, [])
+}
+
 function useDashboardData(interval) {
   // Production: serve demo data immediately (thriving Garcia Construction office).
   // Local: fetch real data from local API with 2s polling.
@@ -7947,6 +7957,7 @@ export default function GameDashboard() {
 
   const { data, error, loading } = useDashboardData()
   const isMobile = useIsMobile()
+  const disableThreeJs = useIsMobileOrPWA() // Kill Three.js on mobile/PWA for performance
 
   // C3: WebSocket connection
   const wsHook = useWebSocket({
@@ -8415,13 +8426,80 @@ export default function GameDashboard() {
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
 
+      {/* Mobile floating notification badges -- top right, above game map */}
+      {isMobile && currentMode === 'game' && (() => {
+        const workingCount = Object.values(agentStatus).filter(a => a?.status === 'WORKING').length
+        const blockedCount = Object.values(agentStatus).filter(a => a?.status === 'BLOCKED').length
+        const rightNowCount = rightNowTasks.length
+        const hasBadges = workingCount > 0 || blockedCount > 0 || rightNowCount > 0
+        if (!hasBadges) return null
+        return (
+          <div style={{
+            position: 'fixed',
+            top: 'calc(52px + env(safe-area-inset-top, 0px))',
+            right: 8,
+            zIndex: 35,
+            display: 'flex',
+            gap: 6,
+            pointerEvents: 'none',
+          }}>
+            {workingCount > 0 && (
+              <div style={{
+                background: 'rgba(22,163,74,0.9)',
+                color: '#FFF',
+                borderRadius: 12,
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              }}>
+                {workingCount} active
+              </div>
+            )}
+            {blockedCount > 0 && (
+              <div style={{
+                background: 'rgba(239,68,68,0.9)',
+                color: '#FFF',
+                borderRadius: 12,
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              }}>
+                {blockedCount} blocked
+              </div>
+            )}
+            {rightNowCount > 0 && (
+              <div style={{
+                background: 'rgba(255,107,61,0.9)',
+                color: '#FFF',
+                borderRadius: 12,
+                padding: '4px 10px',
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              }}>
+                {rightNowCount} tasks
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 70 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 120 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
-              {currentMode === 'game' && <CrossyBackground isNightMode={isNightMode} />}
+              {/* Disabled on mobile/PWA for performance -- Three.js too heavy for mobile GPU */}
+              {currentMode === 'game' && !disableThreeJs && <CrossyBackground isNightMode={isNightMode} />}
               <CanvasOffice
                 ref={canvasOfficeRef}
                 agentStatus={agentStatus}
@@ -8432,6 +8510,7 @@ export default function GameDashboard() {
                 isNightMode={isNightMode}
                 drawerSnap={drawerSnap}
                 isMobile={isMobile}
+                initialFocusRoom={isMobile ? DEFAULT_AGENT : null}
               />
 
               {/* SimCity floating stats overlay (bottom-left of game viewport) */}
@@ -8543,7 +8622,7 @@ export default function GameDashboard() {
       {(
         <div style={{
           position: 'fixed',
-          bottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : 0,
+          bottom: isMobile ? 'calc(48px + env(safe-area-inset-bottom, 0px))' : 0,
           left: 0,
           right: (!isMobile && selectedRoom && ROOM_LOOKUP[selectedRoom]) ? (panelExtended ? '65%' : '30%') : 0,
           zIndex: 40,
@@ -8602,7 +8681,8 @@ export default function GameDashboard() {
         </div>
       )}
 
-      {/* Mobile mode tab bar: REMOVED per Patrik directive (Wave 5). All navigation through drawer/pills. */}
+      {/* Mobile mode tab bar: RESTORED -- nav was completely hidden on mobile without it */}
+      {isMobile && <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />}
 
       {/* Mobile fullscreen Checklist/Megaboard overlays */}
       {isMobile && currentMode === 'checklist' && (

@@ -853,6 +853,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   isNightMode = true,
   drawerSnap = null,
   isMobile = false,
+  initialFocusRoom = null, // If set, start camera focused on this room instead of overview
 }, ref) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
@@ -863,7 +864,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // Camera state
   const cameraRef = useRef({ x: 0, y: 0, zoom: 1.0 })
   const cameraAnimRef = useRef(null)
-  const [focusedRoom, setFocusedRoom] = useState(null)
+  const [focusedRoom, setFocusedRoom] = useState(initialFocusRoom || null)
+
 
   // ---- HEX GRID SHUFFLE STATE ----
   // slotOrder: array of roomIds indexed by slot position
@@ -953,7 +955,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
   useImperativeHandle(ref, () => ({
     triggerCelebration,
-  }), [triggerCelebration])
+    focusRoom: (roomId) => {
+      if (roomId && slotOrder.includes(roomId)) {
+        setFocusedRoom(roomId)
+      } else {
+        setFocusedRoom(null)
+      }
+    },
+  }), [triggerCelebration, slotOrder])
 
   // ---- AUTO-TEST: trigger celebration wave every 60 seconds ----
   useEffect(() => {
@@ -1059,9 +1068,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const pos = slotWorldPos(slotIdx, ORIGIN_X, ORIGIN_Y)
     const roomCX = pos.x + ROOM_SIZE / 2
     const roomCY = pos.y + ROOM_SIZE / 2
-    // 40% of viewport = focused room. Neighbors at the edges.
+    // Desktop: 40% of viewport = focused room. Neighbors at the edges.
+    // Mobile: 65% of viewport width so you see 3-4 rooms total, not the whole grid.
+    const isMobileView = viewW < 768
     const visibleRoomSize = ROOM_SIZE * 0.94
-    const targetScreenSize = Math.min(viewW, viewH) * 0.40
+    const targetScreenSize = isMobileView
+      ? viewW * 0.65
+      : Math.min(viewW, viewH) * 0.40
     const zoomFocus = targetScreenSize / visibleRoomSize
     const panX = viewW / 2 - roomCX * zoomFocus
 
@@ -1095,13 +1108,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   }, [])
 
   // ---- SET INITIAL CAMERA on mount ----
+  const initialCameraSet = useRef(false)
   useEffect(() => {
-    if (size.w > 0 && size.h > 0) {
-      const overview = getOverviewCamera(size.w, size.h)
-      cameraRef.current = { x: overview.x, y: overview.y, zoom: overview.zoom }
+    if (size.w > 0 && size.h > 0 && !initialCameraSet.current) {
+      initialCameraSet.current = true
+      if (focusedRoom && slotOrder.includes(focusedRoom)) {
+        // Start focused on the specified room (e.g. default agent on mobile)
+        const focusCam = getFocusCamera(focusedRoom, size.w, size.h)
+        cameraRef.current = { x: focusCam.x, y: focusCam.y, zoom: focusCam.zoom }
+      } else {
+        const overview = getOverviewCamera(size.w, size.h)
+        cameraRef.current = { x: overview.x, y: overview.y, zoom: overview.zoom }
+      }
       cameraAnimRef.current = null
     }
-  }, [size.w, size.h, getOverviewCamera])
+  }, [size.w, size.h, getOverviewCamera, getFocusCamera, focusedRoom, slotOrder])
 
   // ---- RECALCULATE CAMERA when focused room changes, viewport resizes, or drawer state changes ----
   useEffect(() => {

@@ -2167,6 +2167,7 @@ export default function GameHUD({
             <div style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: isMobile ? 'center' : 'flex-start',
               gap: 6,
               padding: isMobile ? '4px 0 2px' : '6px 0 2px',
               minHeight: isMobile ? 36 : 42,
@@ -2316,6 +2317,23 @@ export default function GameHUD({
           zIndex: 1,
           padding: isMobile ? 0 : '4px 0 6px',
         }}>
+          {/* Search toggle button -- LEFT of arrow nav */}
+          <motion.button
+            onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setSearchQuery('') }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            style={{
+              width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 8,
+              background: searchOpen ? `${hudAccent}22` : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.04)'),
+              border: `1px solid ${searchOpen ? hudAccent + '44' : hudDivider}`,
+              color: searchOpen ? hudAccent : hudTextMuted,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'all 150ms ease',
+            }}
+          >
+            <Search size={isMobile ? 18 : 15} />
+          </motion.button>
+
           {/* Left scroll arrow (44px touch target) */}
           <button
             onClick={() => {
@@ -2343,6 +2361,7 @@ export default function GameHUD({
             flex: 1,
             display: 'flex',
             alignItems: 'center',
+            justifyContent: isMobile ? 'center' : 'flex-start',
             gap: 8,
             padding: '2px 4px',
             overflowX: 'auto',
@@ -2352,22 +2371,6 @@ export default function GameHUD({
             msOverflowStyle: 'none',
             touchAction: 'pan-x',
           }} className="hud-pills-scroll">
-            {/* Search toggle button (opens search bar above) */}
-              <motion.button
-                onClick={() => { setSearchOpen(!searchOpen); if (searchOpen) setSearchQuery('') }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                style={{
-                  width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 8,
-                  background: searchOpen ? `${hudAccent}22` : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.04)'),
-                  border: `1px solid ${searchOpen ? hudAccent + '44' : hudDivider}`,
-                  color: searchOpen ? hudAccent : hudTextMuted,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, transition: 'all 150ms ease',
-                }}
-              >
-                <Search size={isMobile ? 18 : 15} />
-              </motion.button>
 
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
