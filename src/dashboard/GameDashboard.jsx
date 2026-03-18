@@ -8,7 +8,7 @@ import {
   ZoomIn, ZoomOut, Home, LayoutDashboard, Gamepad2, Command,
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
 } from 'lucide-react'
-import { GRID_SPEC, ROOM_MAP, AGENTS } from './gridSpec.js'
+import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
   ROOM_TARGETS as IMAGE_ROOM_TARGETS,
   DIAMOND_CLIP, DIAMOND_CLIP_WIDE,
@@ -80,6 +80,27 @@ const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
 const PALETTE = GRID_SPEC.colorPalette
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
+
+// ---- UNIFIED ROOM LOOKUP (agents + projects) ----
+// ROOM_MAP only has GRID_SPEC.rooms (agents + communal). Build a combined lookup
+// that also includes project rooms so clicks/sidebar work for ALL rooms on the grid.
+const ROOM_LOOKUP = { ...ROOM_MAP }
+for (const proj of PROJECTS) {
+  if (!ROOM_LOOKUP[proj.slug]) {
+    ROOM_LOOKUP[proj.slug] = {
+      id: proj.slug,
+      name: proj.name,
+      agent: proj.slug, // project rooms use their slug as "agent" for chat routing
+      role: 'Project',
+      agentColor: proj.color,
+      statusColors: proj.statusColors,
+      floor: proj.floor,
+      floorColor: proj.floorColor,
+      lightColor: proj.lightColor,
+      type: 'project',
+    }
+  }
+}
 
 // ---- PROJECT CONFIG (from corner-config.json, inlined for zero-fetch) ----
 const PROJECT_CONFIG = {
@@ -7405,8 +7426,12 @@ export default function GameDashboard() {
   }, [isOverview])
 
   const handleRoomClick = (roomId) => {
-    const room = ROOM_MAP[roomId]
-    if (!room || room.agent === null) return
+    // Use ROOM_LOOKUP which includes both agent rooms and project rooms
+    const room = ROOM_LOOKUP[roomId]
+    if (!room) return
+    // Skip communal rooms (main-hall, cafe, growth-zone) which have agent === null
+    // but allow project rooms (type === 'project') through
+    if (room.agent === null && room.type !== 'project') return
 
     // Always move camera to clicked room
     setCameraTarget(roomId)
@@ -7445,8 +7470,9 @@ export default function GameDashboard() {
   // Right-click context menu on rooms
   const handleRoomContextMenu = useCallback((e, roomId) => {
     e.preventDefault()
-    const room = ROOM_MAP[roomId]
-    if (!room || room.agent === null) return
+    const room = ROOM_LOOKUP[roomId]
+    if (!room) return
+    if (room.agent === null && room.type !== 'project') return
     setContextMenu({
       type: 'room',
       data: { roomId, agent: room.agent, label: `${room.agent}'s Room` },
@@ -7546,7 +7572,7 @@ export default function GameDashboard() {
   useEffect(() => {
     const handler = (e) => {
       const slug = e.detail?.agentSlug
-      if (slug && ROOM_MAP[slug]) {
+      if (slug && ROOM_LOOKUP[slug]) {
         setCameraTarget(slug)
         setSelectedRoom(slug)
         setChatAgent(slug)
@@ -7681,11 +7707,11 @@ export default function GameDashboard() {
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
           {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. [SURVIVES: Responsive layout. Engine canvas auto-scales, sidebar logic stays.] */}
           {/* TODO(steffen-design): Mobile bottom-sheet drawer UX -- design the swipe-up drawer for mobile. Should show: agent name/status at peek height, chat on half-pull, full panel on full-pull. Reference Steffen's c3-mobile-layout-spec.md. The notification cards currently overlap the bottom bar on mobile. [SURVIVES: Mobile UI design. Engine-independent.] */}
-          {!isMobile && selectedRoom && (selectedRoom === 'aom' || (ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null)) && (
+          {!isMobile && selectedRoom && (selectedRoom === 'aom' || ROOM_LOOKUP[selectedRoom]) && (
             <UnifiedPanel
               key={selectedRoom}
-              room={ROOM_MAP[selectedRoom]}
-              agent={AGENTS.find(a => a.slug === selectedRoom)}
+              room={ROOM_LOOKUP[selectedRoom]}
+              agent={AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom)}
               agentStatus={agentStatus[selectedRoom]}
               allAgentStatus={agentStatus}
               onClose={() => {}} // Panel always visible, no-op
@@ -7803,7 +7829,7 @@ export default function GameDashboard() {
           position: 'fixed',
           bottom: isMobile ? 'calc(48px + env(safe-area-inset-bottom, 0px))' : 0,
           left: 0,
-          right: (!isMobile && selectedRoom && ROOM_MAP[selectedRoom]?.agent !== null) ? (panelExtended ? '65%' : '30%') : 0,
+          right: (!isMobile && selectedRoom && ROOM_LOOKUP[selectedRoom]) ? (panelExtended ? '65%' : '30%') : 0,
           zIndex: 40,
           transition: 'right 250ms ease, bottom 200ms ease',
           pointerEvents: 'none',
@@ -7895,11 +7921,11 @@ export default function GameDashboard() {
       {/* Mobile bottom sheet */}
       {isMobile && (
         <AnimatePresence>
-          {selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+          {selectedRoom && ROOM_LOOKUP[selectedRoom] && (
             <MobileBottomSheet
               key={selectedRoom}
-              room={ROOM_MAP[selectedRoom]}
-              agent={AGENTS.find(a => a.slug === selectedRoom)}
+              room={ROOM_LOOKUP[selectedRoom]}
+              agent={AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom)}
               agentStatus={agentStatus[selectedRoom]}
               onClose={() => { setSelectedRoom(null); setIsOverview(true) }}
               onChat={handleChat}
@@ -7910,8 +7936,8 @@ export default function GameDashboard() {
         </AnimatePresence>
       )}
 
-      {/* Fullscreen mobile overlay (Chat / Tasks / Info / List / Board) */}
-      {isMobile && mobileChatOpen && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+      {/* Fullscreen mobile overlay (Live / List / Info) */}
+      {isMobile && mobileChatOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0,
@@ -7945,25 +7971,25 @@ export default function GameDashboard() {
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <SpriteAvatar agentSlug={selectedRoom} size={36} borderColor={ROOM_MAP[selectedRoom]?.agentColor || AGENTS.find(a => a.slug === selectedRoom)?.color || '#6B7280'} />
+            <SpriteAvatar agentSlug={selectedRoom} size={36} borderColor={ROOM_LOOKUP[selectedRoom]?.agentColor || AGENTS.find(a => a.slug === selectedRoom)?.color || PROJECTS.find(p => p.slug === selectedRoom)?.color || '#6B7280'} />
             <div style={{ flex: 1 }}>
               <div style={{ color: '#F1F5F9', fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
-                {AGENTS.find(a => a.slug === selectedRoom)?.name || selectedRoom}
+                {AGENTS.find(a => a.slug === selectedRoom)?.name || PROJECTS.find(p => p.slug === selectedRoom)?.name || selectedRoom}
               </div>
               <div style={{
                 fontSize: 11, fontWeight: 600, color: '#6B8AB0',
                 fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em',
               }}>
-                {AGENTS.find(a => a.slug === selectedRoom)?.role || ''}
+                {AGENTS.find(a => a.slug === selectedRoom)?.role || (ROOM_LOOKUP[selectedRoom]?.type === 'project' ? 'Project' : '')}
               </div>
             </div>
           </div>
-          {/* Full UnifiedPanel with all tabs (Chat/Tasks/Info/List/Board) */}
+          {/* Full UnifiedPanel with all tabs (Live / List / Info) */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <UnifiedPanel
               key={`mobile-panel-${selectedRoom}`}
-              room={ROOM_MAP[selectedRoom]}
-              agent={AGENTS.find(a => a.slug === selectedRoom)}
+              room={ROOM_LOOKUP[selectedRoom]}
+              agent={AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom)}
               agentStatus={agentStatus[selectedRoom]}
               allAgentStatus={agentStatus}
               onClose={() => { setMobileChatOpen(false); setMobileActiveTab('chat') }}
