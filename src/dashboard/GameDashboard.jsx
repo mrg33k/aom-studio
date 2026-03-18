@@ -2112,7 +2112,7 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 29,
-      height: 48,
+      minHeight: 48,
       background: 'rgba(10, 15, 30, 0.98)',
       backdropFilter: 'blur(16px)',
       borderTop: '1px solid rgba(255, 255, 255, 0.06)',
@@ -2131,10 +2131,10 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
               background: 'none', border: 'none', cursor: 'pointer',
               color: active ? '#3B9EFF' : '#6B7280',
-              minWidth: 48, minHeight: 48, // Touch target
+              minWidth: 48, minHeight: 48, // Touch target 44px+ met
             }}
           >
-            <Icon size={20} />
+            <Icon size={22} />
             {active && (
               <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#3B9EFF' }} />
             )}
@@ -2146,7 +2146,7 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
 }
 
 // ---- MOBILE BOTTOM SHEET (Steffen c3-mobile-layout-spec) --------------------
-function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTasks }) {
+function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTasks, onOpenMobileChat }) {
   const [expanded, setExpanded] = useState(false)
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
@@ -2176,9 +2176,9 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
       onTouchEnd={handleTouchEnd}
       style={{
         position: 'fixed',
-        bottom: 100, // above mode bar + chat bar
+        bottom: 'calc(48px + env(safe-area-inset-bottom, 0px))', // above MobileModeBar
         left: 0, right: 0,
-        height: expanded ? '60vh' : 200,
+        height: expanded ? '60vh' : 220,
         background: 'rgba(10, 15, 30, 0.98)',
         borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: '16px 16px 0 0',
@@ -2225,21 +2225,27 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
 
       {/* Action buttons */}
       <div style={{ display: 'flex', gap: 12, padding: '0 20px 16px' }}>
-        <button onClick={() => onChat(room?.id)} style={{
-          flex: 1, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        <button onClick={() => {
+          // Open fullscreen mobile chat, also set up room selection
+          onChat(room?.id)
+          onOpenMobileChat?.()
+        }} style={{
+          flex: 1, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           background: `${agentColor}26`, color: agentColor, border: `1px solid ${agentColor}40`,
-          borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
+          borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
+          minHeight: 44,
         }}>
-          <MessageSquare size={14} />
-          Chat with {agent?.name || 'Agent'}
+          <MessageSquare size={16} />
+          Chat
         </button>
         <button onClick={onViewTasks} style={{
-          flex: 1, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          flex: 1, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           background: 'rgba(255,255,255,0.04)', color: '#F0ECE6', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 8, fontSize: 13, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
+          borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: "'Inter', system-ui, sans-serif", cursor: 'pointer',
+          minHeight: 44,
         }}>
-          <ListTodo size={14} />
-          View Tasks
+          <ListTodo size={16} />
+          Tasks
         </button>
       </div>
 
@@ -6589,6 +6595,7 @@ export default function GameDashboard() {
   const [relayDebugData, setRelayDebugData] = useState(null)
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
+  const [mobileChatOpen, setMobileChatOpen] = useState(false) // Fullscreen mobile chat overlay
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
@@ -7569,7 +7576,7 @@ export default function GameDashboard() {
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : 52, paddingBottom: isMobile ? 48 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : 52, paddingBottom: isMobile ? 120 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
@@ -7763,11 +7770,11 @@ export default function GameDashboard() {
       {(
         <div style={{
           position: 'fixed',
-          bottom: 0,
+          bottom: isMobile ? 'calc(48px + env(safe-area-inset-bottom, 0px))' : 0,
           left: 0,
           right: (!isMobile && selectedRoom && ROOM_MAP[selectedRoom]?.agent !== null) ? (panelExtended ? '65%' : '30%') : 0,
           zIndex: 40,
-          transition: 'right 250ms ease',
+          transition: 'right 250ms ease, bottom 200ms ease',
           pointerEvents: 'none',
         }}>
         <div style={{ position: 'relative', width: '100%', height: 0, transform: 'translateZ(0)', pointerEvents: 'auto' }}>
@@ -7838,9 +7845,117 @@ export default function GameDashboard() {
               onClose={() => { setSelectedRoom(null); setIsOverview(true) }}
               onChat={handleChat}
               onViewTasks={() => { handleModeSwitch('checklist') }}
+              onOpenMobileChat={() => setMobileChatOpen(true)}
             />
           )}
         </AnimatePresence>
+      )}
+
+      {/* Fullscreen mobile chat overlay */}
+      {isMobile && mobileChatOpen && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(10,15,30,0.98)',
+          display: 'flex', flexDirection: 'column',
+        }}>
+          {/* Mobile chat header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 16px',
+            paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
+            borderBottom: '1px solid rgba(59,130,246,0.15)',
+            background: 'rgba(15,27,45,0.95)',
+            backdropFilter: 'blur(12px)',
+          }}>
+            <button
+              onClick={() => setMobileChatOpen(false)}
+              style={{
+                width: 44, height: 44, minWidth: 44, minHeight: 44,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)',
+                borderRadius: 8, cursor: 'pointer', color: '#8BA4C4',
+              }}
+            >
+              <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <SpriteAvatar agentSlug={selectedRoom} size={36} borderColor={ROOM_MAP[selectedRoom]?.agentColor || AGENTS.find(a => a.slug === selectedRoom)?.color || '#6B7280'} />
+            <div style={{ flex: 1 }}>
+              <div style={{ color: '#F1F5F9', fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>
+                {AGENTS.find(a => a.slug === selectedRoom)?.name || selectedRoom}
+              </div>
+              <div style={{
+                fontSize: 11, fontWeight: 600, color: '#6B8AB0',
+                fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.1em',
+              }}>
+                {AGENTS.find(a => a.slug === selectedRoom)?.role || ''}
+              </div>
+            </div>
+          </div>
+          {/* Chat body: reuse UnifiedPanel in chat-only mode */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <UnifiedPanel
+              key={`mobile-chat-${selectedRoom}`}
+              room={ROOM_MAP[selectedRoom]}
+              agent={AGENTS.find(a => a.slug === selectedRoom)}
+              agentStatus={agentStatus[selectedRoom]}
+              allAgentStatus={agentStatus}
+              onClose={() => setMobileChatOpen(false)}
+              onChat={handleChat}
+              chatMessages={panelMessages._all || []}
+              chatInput={panelChatInput}
+              onChatInputChange={handleAtInputChange}
+              streaming={panelStreaming}
+              chatLoading={panelChatLoading}
+              agentSlug={selectedRoom}
+              isExtended={false}
+              onToggleExtend={() => {}}
+              isMobile={true}
+              atMenuOpen={atMenuOpen}
+              filteredAtOptions={filteredAtOptions}
+              atMenuIndex={atMenuIndex}
+              onAtSelect={handleAtSelect}
+              onAtKeyDown={handleAtKeyDown}
+              cornerConfig={cornerConfig}
+              data={data}
+              activeTab="chat"
+              onActiveTabChange={() => {}}
+              isNightMode={isNightMode}
+              onAddToRightNow={addToRightNow}
+              rightNowTasks={rightNowTasks}
+              onSendMessage={(e) => {
+                e?.preventDefault()
+                setAtMenuOpen(false)
+                setAtMenuFilter('')
+                let text = panelChatInput?.trim()
+                if (!text || panelStreaming) return
+                setPanelChatInput('')
+                const sentTime = new Date().toISOString()
+                const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+                setAgentChats(prev => {
+                  const current = prev[selectedRoom] || { _all: [] }
+                  const msgs = [...(current._all || []), {
+                    role: 'user', content: text, time: sentTime,
+                    source: 'via dashboard', id: localId,
+                  }, {
+                    role: 'assistant', content: '', streaming: true,
+                    time: sentTime, id: `thinking-${localId}`,
+                  }]
+                  return { ...prev, [selectedRoom]: { _all: msgs } }
+                })
+                setPanelStreaming(true)
+                if (IS_LOCAL) {
+                  fetch('/api/local/relay-send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent: selectedRoom, message: text, source: 'corner-dashboard' }),
+                  }).catch(() => {})
+                }
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {/* Notification toasts */}
@@ -7865,7 +7980,7 @@ export default function GameDashboard() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           style={{
-            position: 'fixed', bottom: isMobile ? 70 : 80, right: 20, zIndex: 50,
+            position: 'fixed', bottom: isMobile ? 130 : 80, right: 20, zIndex: 50,
             minWidth: 44, height: 44, borderRadius: 22,
             background: '#E85D26',
             color: '#FFF', fontFamily: "'Inter Tight', sans-serif", fontWeight: 900, fontSize: 16,
@@ -8038,7 +8153,7 @@ export default function GameDashboard() {
       {/* Error / connection indicator */}
       {error && (
         <div style={{
-          position: 'fixed', bottom: isMobile ? 112 : 80, left: showMinimap ? 192 : 16,
+          position: 'fixed', bottom: isMobile ? 140 : 80, left: showMinimap ? 192 : 16,
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
           color: '#EF4444', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
           padding: '6px 12px', borderRadius: 4, zIndex: 50,
@@ -8051,7 +8166,7 @@ export default function GameDashboard() {
       {/* WebSocket connection indicator */}
       {wsHook.isReconnecting && (
         <div style={{
-          position: 'fixed', bottom: isMobile ? 112 : 80,
+          position: 'fixed', bottom: isMobile ? 140 : 80,
           right: 16, zIndex: 50,
           background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
           color: '#F59E0B', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',

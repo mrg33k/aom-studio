@@ -534,7 +534,7 @@ export function HUDBellButton({ onClick }) {
         whileTap={{ scale: 0.9 }}
         style={{
           position: 'relative',
-          width: 32, height: 32, borderRadius: 8,
+          width: 44, height: 44, borderRadius: 8,
           background: historyOpen ? 'rgba(59,158,255,0.2)' : totalCount > 0 ? 'rgba(59,158,255,0.12)' : 'rgba(100,180,255,0.04)',
           border: `1.5px solid ${historyOpen ? 'rgba(59,158,255,0.5)' : totalCount > 0 ? 'rgba(59,158,255,0.3)' : HUD_COLORS.divider}`,
           color: historyOpen ? HUD_COLORS.accent : totalCount > 0 ? HUD_COLORS.accent : HUD_COLORS.textMuted,

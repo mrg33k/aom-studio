@@ -927,10 +927,28 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode 
   }
   const tagStyle = isClient && project.statusTag ? STATUS_TAG_COLORS[project.statusTag] : null
 
+  // Long-press for mobile context menu
+  const longPressRef = useRef(null)
+  const handlePillTouchStart = useCallback((e) => {
+    const touch = e.touches[0]
+    longPressRef.current = setTimeout(() => {
+      onContextMenu?.({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {}, stopPropagation: () => {} }, project)
+    }, 500)
+  }, [onContextMenu, project])
+  const handlePillTouchEnd = useCallback(() => {
+    clearTimeout(longPressRef.current)
+  }, [])
+  const handlePillTouchMove = useCallback(() => {
+    clearTimeout(longPressRef.current)
+  }, [])
+
   return (
     <motion.button
       onClick={onClick}
       onContextMenu={(e) => onContextMenu?.(e, project)}
+      onTouchStart={handlePillTouchStart}
+      onTouchEnd={handlePillTouchEnd}
+      onTouchMove={handlePillTouchMove}
       whileHover={{ scale: 1.08, y: -6, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
       whileTap={{ scale: 0.88, y: 4, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
@@ -1196,6 +1214,15 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
   const [addingTask, setAddingTask] = useState(false)
   const [addTaskText, setAddTaskText] = useState('')
   const addTaskInputRef = useRef(null)
+  // Swipe-to-dismiss (mobile): track touch start Y, swipe down > 60px = close
+  const swipeStartY = useRef(0)
+  const handleSwipeTouchStart = useCallback((e) => {
+    swipeStartY.current = e.touches[0].clientY
+  }, [])
+  const handleSwipeTouchEnd = useCallback((e) => {
+    const deltaY = e.changedTouches[0].clientY - swipeStartY.current
+    if (deltaY > 60) onClose() // swipe down = dismiss
+  }, [onClose])
 
   const tasks = project.tasks
   const getTaskDone = (task, idx) => localToggles[idx] !== undefined ? localToggles[idx] : task.done
@@ -1254,18 +1281,31 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
       animate={{ height: 'auto', opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      onTouchStart={handleSwipeTouchStart}
+      onTouchEnd={handleSwipeTouchEnd}
       style={{
-        position: 'absolute', bottom: '100%', left: 16, right: 16,
+        position: 'absolute', bottom: '100%', left: 8, right: 8,
         background: tpBg,
         backdropFilter: 'blur(24px)',
         border: `2px solid ${tpBorder}`,
         borderBottom: 'none',
         borderRadius: '12px 12px 0 0',
         overflow: 'hidden',
-        maxHeight: 380,
+        maxHeight: 'min(380px, calc(100vh - 200px))',
         boxShadow: tpShadow,
       }}
     >
+      {/* Drag handle (mobile swipe indicator) */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', padding: '8px 0 4px',
+        cursor: 'grab',
+      }}>
+        <div style={{
+          width: 36, height: 4, borderRadius: 2,
+          background: isDaytime ? 'rgba(59,130,246,0.25)' : 'rgba(100,180,255,0.2)',
+        }} />
+      </div>
+
       {/* Inner glow at top */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 50,
@@ -1328,15 +1368,16 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
             onClick={onClose}
             style={{
               background: tpCloseBg, border: `1px solid ${tpDivider}`,
-              borderRadius: 6, cursor: 'pointer',
-              color: tpTextMuted, padding: '4px 4px',
+              borderRadius: 8, cursor: 'pointer',
+              color: tpTextMuted,
+              width: 44, height: 44, minWidth: 44, minHeight: 44,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 150ms ease',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = tpCloseHoverBg; e.currentTarget.style.color = isDaytime ? '#8BA4C4' : HUD.textSecondary }}
             onMouseLeave={e => { e.currentTarget.style.background = tpCloseBg; e.currentTarget.style.color = tpTextMuted }}
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
       </div>
@@ -1454,9 +1495,25 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                 e.stopPropagation()
                 onTaskContextMenu?.(e, task, project)
               }}
+              onTouchStart={(e) => {
+                // Long-press for mobile context menu (500ms)
+                const touch = e.touches[0]
+                const timer = setTimeout(() => {
+                  e.preventDefault?.()
+                  onTaskContextMenu?.({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {}, stopPropagation: () => {} }, task, project)
+                }, 500)
+                e.currentTarget._longPressTimer = timer
+              }}
+              onTouchEnd={(e) => {
+                clearTimeout(e.currentTarget._longPressTimer)
+              }}
+              onTouchMove={(e) => {
+                clearTimeout(e.currentTarget._longPressTimer)
+              }}
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '10px 8px',
+                padding: '12px 8px',
+                minHeight: 44,
                 borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 opacity: isDone ? 0.35 : 1,
                 transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
@@ -1473,7 +1530,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                     : '3px solid transparent',
               }}
             >
-              {/* Checkbox - CLICKABLE */}
+              {/* Checkbox - CLICKABLE (44px touch target via padding) */}
               <motion.div
                 onClick={() => {
                   if (task.isManual) {
@@ -1485,7 +1542,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.85 }}
                 style={{
-                  width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                  width: 24, height: 24, borderRadius: 6, flexShrink: 0, marginTop: 0,
                   border: isDone ? 'none' : `1.5px solid ${tpCheckboxBorder}`,
                   background: isDone ? (task.autoChecked ? '#22C55E' : project.color) : tpCheckboxBg,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1493,8 +1550,10 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                   cursor: 'pointer',
                   opacity: isSaving ? 0.5 : 1,
                   boxShadow: task.autoChecked ? '0 0 8px rgba(34,197,94,0.4)' : 'none',
+                  // 44px touch target via invisible padding (checkbox visual stays 24px, tap area 44px)
+                  padding: 10, margin: -10, boxSizing: 'content-box',
                 }}>
-                {isDone && <Check size={12} color="#FFF" strokeWidth={3} />}
+                {isDone && <Check size={14} color="#FFF" strokeWidth={3} />}
               </motion.div>
 
               {/* Task text - LARGER. Clickable if task has a project link. */}
@@ -2095,7 +2154,8 @@ export default function GameHUD({
                   className={task.done ? '' : (task.isLive ? 'ticker-task-live' : 'ticker-task-new')}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '4px 12px',
+                    padding: isMobile ? '10px 14px' : '4px 12px',
+                    minHeight: isMobile ? 44 : 'auto',
                     background: task.done
                       ? 'rgba(34,197,94,0.12)'
                       : task.isLive
@@ -2147,7 +2207,7 @@ export default function GameHUD({
           zIndex: 1,
           padding: isMobile ? 0 : '4px 0 6px',
         }}>
-          {/* Left scroll arrow */}
+          {/* Left scroll arrow (44px touch target) */}
           <button
             onClick={() => {
               const el = document.querySelector('.hud-pills-scroll')
@@ -2156,13 +2216,15 @@ export default function GameHUD({
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               color: isDaytime ? '#6B8AB0' : '#8BA4C4',
-              padding: '4px 2px', flexShrink: 0, display: 'flex', alignItems: 'center',
+              padding: isMobile ? '12px 6px' : '4px 2px',
+              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              minWidth: 44, minHeight: 44,
               transition: 'color 100ms',
             }}
             onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#60A5FA' : '#60A5FA'}
             onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#6B8AB0' : '#8BA4C4'}
           >
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+            <svg width={isMobile ? 20 : 16} height={isMobile ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
@@ -2180,15 +2242,14 @@ export default function GameHUD({
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }} className="hud-pills-scroll">
-            {/* Search toggle + input */}
-            {!isMobile && (
+            {/* Search toggle + input (available on all viewports) */}
               <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                 <AnimatePresence>
                   {searchOpen && (
                     <motion.input
                       ref={searchRef}
                       initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: 140, opacity: 1 }}
+                      animate={{ width: isMobile ? 120 : 140, opacity: 1 }}
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                       type="text"
@@ -2197,15 +2258,15 @@ export default function GameHUD({
                       onKeyDown={e => {
                         if (e.key === 'Escape') { setSearchQuery(''); setSearchOpen(false) }
                       }}
-                      placeholder="Filter projects..."
+                      placeholder="Filter..."
                       style={{
                         background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
                         border: `1px solid ${hudPanelBorder}`,
                         borderRadius: 10,
-                        height: 36,
+                        height: isMobile ? 40 : 36,
                         padding: '0 12px',
                         color: hudTextPrimary,
-                        fontSize: 14,
+                        fontSize: isMobile ? 16 : 14,
                         fontFamily: "'Inter', system-ui, sans-serif",
                         outline: 'none',
                         marginRight: 6,
@@ -2218,7 +2279,7 @@ export default function GameHUD({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   style={{
-                    width: 32, height: 32, borderRadius: 8,
+                    width: isMobile ? 44 : 32, height: isMobile ? 44 : 32, borderRadius: 8,
                     background: searchOpen ? `${hudAccent}22` : (isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.04)'),
                     border: `1px solid ${searchOpen ? hudAccent + '44' : hudDivider}`,
                     color: searchOpen ? hudAccent : hudTextMuted,
@@ -2226,10 +2287,9 @@ export default function GameHUD({
                     flexShrink: 0, transition: 'all 150ms ease',
                   }}
                 >
-                  <Search size={15} />
+                  <Search size={isMobile ? 18 : 15} />
                 </motion.button>
               </div>
-            )}
 
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
@@ -2260,7 +2320,7 @@ export default function GameHUD({
             )}
           </div>
 
-          {/* Right scroll arrow */}
+          {/* Right scroll arrow (44px touch target) */}
           <button
             onClick={() => {
               const el = document.querySelector('.hud-pills-scroll')
@@ -2269,13 +2329,15 @@ export default function GameHUD({
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               color: isDaytime ? '#6B8AB0' : '#8BA4C4',
-              padding: '4px 2px', flexShrink: 0, display: 'flex', alignItems: 'center',
+              padding: isMobile ? '12px 6px' : '4px 2px',
+              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              minWidth: 44, minHeight: 44,
               transition: 'color 100ms',
             }}
             onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#60A5FA' : '#60A5FA'}
             onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#6B8AB0' : '#8BA4C4'}
           >
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+            <svg width={isMobile ? 20 : 16} height={isMobile ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
