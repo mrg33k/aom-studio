@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
+import { ALL_ROOMS, PROJECTS } from './gridSpec.js'
 
 // CanvasOffice: MULTI-ROOM hex tessellation with wave crossfade transitions
 //
@@ -17,9 +18,11 @@ import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, f
 // 7. CHARACTER VISITING: Characters occasionally visit neighboring rooms (every 30-60s).
 //    Walk to edge -> cross gap (world space) -> wander neighbor -> walk home.
 //    Click room to recall its character home (hustle speed 1.6x). Visitors drawn at 85% opacity.
+// 8. PROJECT ROOMS: Projects from gridSpec.js appear on the grid alongside agent rooms.
+//    Dynamic hex grid grows to accommodate N rooms. Right-click to hide. "+ New Room" to create.
 //
 // CAMERA: Two-view system (Overview + Focus). No free pan/scroll zoom.
-//   View 1 (Overview): All 13 rooms visible, centered.
+//   View 1 (Overview): All N rooms visible, centered.
 //   View 2 (Focus): Click room -> smooth 400ms zoom, room ~40% viewport so neighbors visible.
 //   Escape or click empty space -> back to Overview.
 
@@ -49,73 +52,158 @@ const CAMERA_TRANSITION_MS = 400
 // Shuffle animation duration (ms)
 const SHUFFLE_ANIM_MS = 200
 
-// localStorage key for slot order
+// localStorage keys
 const SLOT_ORDER_KEY = 'corner-slot-order'
+const HIDDEN_ROOMS_KEY = 'corner-hidden-rooms'
+const CUSTOM_ROOMS_KEY = 'corner-custom-rooms'
 
-// ---- ALL 13 AGENT ROOMS (default order) ----
-const DEFAULT_ROOM_IDS = [
-  'elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex',
-  'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel',
-]
+// ---- ROOM DATA FROM gridSpec.js (ALL_ROOMS = agents + projects) ----
+// Build ROOM_META lookup from ALL_ROOMS so both agents and projects get names/colors
+const ROOM_META = {}
+ALL_ROOMS.forEach(r => {
+  ROOM_META[r.slug] = {
+    name: (r.name || r.slug).toUpperCase(),
+    color: r.color || '#60A5FA',
+    type: r.type || 'agent',
+  }
+})
 
-const ROOM_META = {
-  elon:    { name: 'ELON',    color: '#4CAF50' },
-  bobby:   { name: 'BOBBY',   color: '#E91E90' },
-  steffen: { name: 'STEFFEN', color: '#FFD700' },
-  steve:   { name: 'STEVE',   color: '#60A5FA' },
-  cleo:    { name: 'CLEO',    color: '#C084FC' },
-  alex:    { name: 'ALEX',    color: '#F97316' },
-  mom:     { name: 'MOM',     color: '#EC4899' },
-  tony:    { name: 'TONY',    color: '#22D3EE' },
-  colton:  { name: 'COLTON',  color: '#8B5CF6' },
-  jacob:   { name: 'JACOB',   color: '#A3E635' },
-  paige:   { name: 'PAIGE',   color: '#FB923C' },
-  elmo:    { name: 'ELMO',    color: '#F43F5E' },
-  pixel:   { name: 'PIXEL',   color: '#06B6D4' },
+// The default room order: all non-hidden rooms from ALL_ROOMS
+function getDefaultRoomIDs() {
+  return ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
 }
 
-// ---- HEX SLOT POSITIONS (diamond layout, indexed 0..12) ----
-// Organic diamond growth: 1 room centered, 2 side by side, up to 13 = full diamond.
-// These are the slot coordinates in hex-grid space (row, col).
-// Slot 0 is top-center, slots grow outward to form a diamond.
-const HEX_SLOTS = [
-  // Row 0: 1 room (shifted left)
-  { row: 0, col: -1 },
-  // Row 1: 2 rooms (shifted left)
-  { row: 1, col: -2 },
-  { row: 1, col: 0 },
-  // Row 2: 3 rooms (shifted left)
-  { row: 2, col: -3 },
-  { row: 2, col: -1 },
-  { row: 2, col: 1 },
-  // Row 3: 3 rooms (stays)
-  { row: 3, col: -2 },
-  { row: 3, col: 0 },
-  { row: 3, col: 2 },
-  // Row 4: 2 rooms (stays)
-  { row: 4, col: -1 },
-  { row: 4, col: 1 },
-  // Row 5: 2 rooms (stays)
-  { row: 5, col: -2 },
-  { row: 5, col: 0 },
-]
+// Load user-created custom rooms from localStorage
+function loadCustomRooms() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_ROOMS_KEY)
+    if (raw) {
+      const rooms = JSON.parse(raw)
+      if (Array.isArray(rooms)) return rooms
+    }
+  } catch (e) { /* ignore */ }
+  return []
+}
+
+// Save custom rooms to localStorage
+function saveCustomRooms(rooms) {
+  try {
+    localStorage.setItem(CUSTOM_ROOMS_KEY, JSON.stringify(rooms))
+  } catch (e) { /* ignore */ }
+}
+
+// Load hidden room IDs from localStorage
+function loadHiddenRooms() {
+  try {
+    const raw = localStorage.getItem(HIDDEN_ROOMS_KEY)
+    if (raw) {
+      const ids = JSON.parse(raw)
+      if (Array.isArray(ids)) return ids
+    }
+  } catch (e) { /* ignore */ }
+  return []
+}
+
+// Save hidden room IDs to localStorage
+function saveHiddenRooms(ids) {
+  try {
+    localStorage.setItem(HIDDEN_ROOMS_KEY, JSON.stringify(ids))
+  } catch (e) { /* ignore */ }
+}
+
+// Build the visible room ID list: ALL_ROOMS (non-hidden) + custom rooms (non-hidden) - user-hidden
+function buildVisibleRoomIDs(hiddenSet) {
+  const customRooms = loadCustomRooms()
+  // Register custom rooms in ROOM_META if not already there
+  customRooms.forEach(cr => {
+    if (!ROOM_META[cr.slug]) {
+      ROOM_META[cr.slug] = { name: cr.name.toUpperCase(), color: cr.color || '#60A5FA', type: 'custom' }
+    }
+  })
+  const allSlugs = [
+    ...ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug),
+    ...customRooms.map(cr => cr.slug),
+  ]
+  return allSlugs.filter(id => !hiddenSet.has(id))
+}
+
+// ---- DYNAMIC HEX SLOT GENERATION (diamond growth) ----
+// Generate hex slot positions for N rooms in a diamond pattern growing from center outward.
+// Pattern: center row is widest, rows above/below taper by 1 room each.
+// For hex staggering, odd rows are offset by half a column width.
+function generateHexSlots(n) {
+  if (n <= 0) return []
+  // Determine how many rows we need. Diamond shape: row widths go 1,2,3,...,maxW,...,3,2,1
+  // Total slots for a diamond of maxWidth W = W^2 (for perfect diamond)
+  // We grow rows until we have enough slots.
+  const slots = []
+
+  // Strategy: build rows from center outward (ring-based diamond)
+  // Row 0 = center. Rows grow by +1 width going down, -1 width going up.
+  // Simpler approach: just build concentric rings in hex grid order.
+
+  // Use the ring approach: ring 0 = 1 slot (center). ring 1 = up to 6 neighbors. ring 2 = up to 12. etc.
+  // For visual aesthetics, use a diamond/hexagonal packing.
+
+  // Simple diamond layout: row r has (maxPerRow - |r - centerRow|) rooms
+  // Center row index = floor(sqrt(n)) to get a reasonable diamond height
+  // Let's compute the minimum diamond that fits N rooms:
+
+  // Diamond with maxWidth W has total = W + 2*(1+2+...+(W-1)) = W + W*(W-1) = W^2 slots
+  // So we need W = ceil(sqrt(N))
+  let maxWidth = Math.ceil(Math.sqrt(n))
+  if (maxWidth < 1) maxWidth = 1
+
+  // Total rows = 2*maxWidth - 1
+  const totalRows = 2 * maxWidth - 1
+  const centerRow = maxWidth - 1 // 0-indexed center
+
+  let count = 0
+  for (let r = 0; r < totalRows && count < n; r++) {
+    const rowWidth = maxWidth - Math.abs(r - centerRow)
+    // Center the row: columns go from -(rowWidth-1) to (rowWidth-1) stepping by 2
+    const startCol = -(rowWidth - 1)
+    for (let c = 0; c < rowWidth && count < n; c++) {
+      slots.push({ row: r, col: startCol + c * 2 })
+      count++
+    }
+  }
+  return slots
+}
+
+// Keep a cached version so we don't regenerate every frame
+let _cachedSlotCount = 0
+let _cachedSlots = []
+function getHexSlots(n) {
+  if (n === _cachedSlotCount && _cachedSlots.length >= n) return _cachedSlots
+  _cachedSlots = generateHexSlots(n)
+  _cachedSlotCount = n
+  return _cachedSlots
+}
 
 // ---- IMAGE SOURCES ----
+// Rooms that have actual PNG folders (agents + projects)
+const AGENT_FOLDER_ROOMS = [
+  'elon', 'bobby', 'steffen', 'steve', 'alex', 'cleo', 'jacob', 'mom',
+  'tony', 'paige', 'elmo', 'colton', 'pixel',
+  'ambition-mechanical', 'corner', 'isa-energy', 'skylar', 'brandon-wiley',
+  'kohrs', 'nabi', 'outreach', 'ai-advisory', 'included-health',
+]
+
 function getRoomImageSources(id) {
-  const folderRooms = [
-    'elon', 'bobby', 'steffen', 'steve', 'alex', 'cleo', 'jacob', 'mom',
-    'tony', 'paige', 'elmo', 'colton', 'pixel',
-  ]
   const cacheBust = `?v=${Date.now()}`
-  if (folderRooms.includes(id)) {
+  if (AGENT_FOLDER_ROOMS.includes(id)) {
     return {
       working: `/corner/${id}-room/room-shell-working.png${cacheBust}`,
       idle: `/corner/${id}-room/room-shell-idle.png${cacheBust}`,
+      hasImages: true,
     }
   }
+  // Project rooms or custom rooms: no PNGs yet, use color placeholder
   return {
-    working: `/corner/${id}-room.png`,
-    idle: `/corner/${id}-room.png`,
+    working: null,
+    idle: null,
+    hasImages: false,
   }
 }
 
@@ -124,24 +212,34 @@ const ROOMS_WITH_CHARACTERS = [
   'elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'jacob', 'tony', 'colton', 'elmo', 'paige',
 ]
 
-// Preload ALL room images at module load
+// Preload room images. For project/custom rooms, we draw a colored hex placeholder on canvas.
 const roomImages = {}
-DEFAULT_ROOM_IDS.forEach((id) => {
+
+function ensureRoomImages(id) {
+  if (roomImages[id]) return
   const sources = getRoomImageSources(id)
-  const workImg = new Image()
-  workImg.crossOrigin = 'anonymous'
-  workImg.src = sources.working
-  const idleImg = new Image()
-  idleImg.crossOrigin = 'anonymous'
-  idleImg.src = sources.idle
-  let charImg = null
-  if (ROOMS_WITH_CHARACTERS.includes(id)) {
-    charImg = new Image()
-    charImg.crossOrigin = 'anonymous'
-    charImg.src = `/corner/${id}-room/character-layer.png`
+  if (sources.hasImages) {
+    const workImg = new Image()
+    workImg.crossOrigin = 'anonymous'
+    workImg.src = sources.working
+    const idleImg = new Image()
+    idleImg.crossOrigin = 'anonymous'
+    idleImg.src = sources.idle
+    let charImg = null
+    if (ROOMS_WITH_CHARACTERS.includes(id)) {
+      charImg = new Image()
+      charImg.crossOrigin = 'anonymous'
+      charImg.src = `/corner/${id}-room/character-layer.png`
+    }
+    roomImages[id] = { working: workImg, idle: idleImg, character: charImg, isPlaceholder: false }
+  } else {
+    // Placeholder: no actual images, drawRoom will render a colored hex
+    roomImages[id] = { working: null, idle: null, character: null, isPlaceholder: true }
   }
-  roomImages[id] = { working: workImg, idle: idleImg, character: charImg }
-})
+}
+
+// Preload all known rooms at module load
+ALL_ROOMS.forEach(r => ensureRoomImages(r.slug))
 
 // ---- SMOOTHSTEP ----
 function smoothstep(t) {
@@ -176,9 +274,14 @@ function hexPosition(row, col, originX, originY) {
   return { x, y }
 }
 
-// Get world-space position for a slot index
+// Module-level slot count -- updated whenever visible rooms change.
+// All slotWorldPos callers use this automatically.
+let _currentTotalSlots = 13
+
+// Get world-space position for a slot index (uses dynamic hex slots)
 function slotWorldPos(slotIndex, originX, originY) {
-  const slot = HEX_SLOTS[slotIndex]
+  const slots = getHexSlots(_currentTotalSlots)
+  const slot = slots[slotIndex]
   if (!slot) return { x: originX, y: originY }
   return hexPosition(slot.row, slot.col, originX, originY)
 }
@@ -223,20 +326,32 @@ function findNearestSlot(wx, wy, originX, originY, totalSlots) {
 }
 
 // ---- LOAD/SAVE SLOT ORDER FROM LOCALSTORAGE ----
+// Reconciles saved order with current visible rooms: removes rooms no longer visible,
+// appends new rooms that weren't in the saved order. Handles dynamic room counts.
 function loadSlotOrder() {
+  const hiddenSet = new Set(loadHiddenRooms())
+  const visibleIDs = buildVisibleRoomIDs(hiddenSet)
+
   try {
     const raw = localStorage.getItem(SLOT_ORDER_KEY)
     if (raw) {
-      const order = JSON.parse(raw)
-      if (Array.isArray(order) && order.length === DEFAULT_ROOM_IDS.length) {
-        const valid = DEFAULT_ROOM_IDS.every(id => order.includes(id))
-        if (valid) return order
+      const saved = JSON.parse(raw)
+      if (Array.isArray(saved)) {
+        const visibleSet = new Set(visibleIDs)
+        // Keep saved order for rooms that are still visible
+        const reconciled = saved.filter(id => visibleSet.has(id))
+        // Add any new rooms not in saved order
+        const reconciledSet = new Set(reconciled)
+        for (const id of visibleIDs) {
+          if (!reconciledSet.has(id)) reconciled.push(id)
+        }
+        if (reconciled.length > 0) return reconciled
       }
     }
   } catch (e) {
     // Ignore corrupt data
   }
-  return [...DEFAULT_ROOM_IDS]
+  return visibleIDs
 }
 
 function saveSlotOrder(order) {
@@ -714,10 +829,11 @@ function advanceVisitState(state, roomId, dt, slotOrder, originX, originY) {
   }
 }
 
-// ---- HEX DISTANCE (using slot positions) ----
+// ---- HEX DISTANCE (using dynamic slot positions) ----
 function slotDistance(slotA, slotB) {
-  const a = HEX_SLOTS[slotA]
-  const b = HEX_SLOTS[slotB]
+  const slots = getHexSlots(_currentTotalSlots)
+  const a = slots[slotA]
+  const b = slots[slotB]
   if (!a || !b) return 0
   const dr = Math.abs(a.row - b.row)
   const dc = Math.abs(a.col - b.col)
@@ -747,6 +863,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // ---- HEX GRID SHUFFLE STATE ----
   // slotOrder: array of roomIds indexed by slot position
   const [slotOrder, setSlotOrder] = useState(loadSlotOrder)
+  // Hidden rooms tracked in state for re-render on hide/show
+  const [hiddenRooms, setHiddenRooms] = useState(() => new Set(loadHiddenRooms()))
+  // New room creation modal
+  const [showNewRoomModal, setShowNewRoomModal] = useState(false)
+
+  // Keep the module-level slot count in sync with visible rooms
+  useEffect(() => {
+    _currentTotalSlots = slotOrder.length
+  }, [slotOrder])
 
   // Shuffle animation: tracks rooms transitioning between slots
   // Map<roomId, { fromX, fromY, toX, toY, startTime }>
@@ -793,7 +918,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   const celebrationRef = useRef({ active: false, sourceRoomId: null, startTime: 0 })
 
   const triggerCelebration = useCallback((roomId) => {
-    if (!DEFAULT_ROOM_IDS.includes(roomId)) return
+    if (!slotOrder.includes(roomId)) return
     celebrationRef.current = {
       active: true,
       sourceRoomId: roomId,
@@ -805,42 +930,54 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     triggerCelebration,
   }), [triggerCelebration])
 
-  // ---- AUTO-TEST: trigger celebration wave every 15 seconds ----
+  // ---- AUTO-TEST: trigger celebration wave every 60 seconds ----
   useEffect(() => {
     let roomIdx = 0
     const timer = setInterval(() => {
-      const id = DEFAULT_ROOM_IDS[roomIdx % DEFAULT_ROOM_IDS.length]
+      if (slotOrder.length === 0) return
+      const id = slotOrder[roomIdx % slotOrder.length]
       triggerCelebration(id)
       roomIdx++
     }, 60000)
     const initial = setTimeout(() => {
-      triggerCelebration(DEFAULT_ROOM_IDS[0])
-      roomIdx = 1
+      if (slotOrder.length > 0) {
+        triggerCelebration(slotOrder[0])
+        roomIdx = 1
+      }
     }, 3000)
     return () => { clearInterval(timer); clearTimeout(initial) }
-  }, [triggerCelebration])
+  }, [triggerCelebration, slotOrder])
 
   // Animation time reference
   const startTimeRef = useRef(performance.now())
 
-  // Track image loading
+  // Track image loading -- count agent rooms with actual images, skip placeholder project rooms
   useEffect(() => {
     let loadCount = 0
-    const totalImages = DEFAULT_ROOM_IDS.length * 2
+    let totalImages = 0
+    // Ensure all visible rooms have image entries
+    slotOrder.forEach(id => ensureRoomImages(id))
+    // Count only rooms with actual images
+    slotOrder.forEach(id => {
+      const imgs = roomImages[id]
+      if (imgs && !imgs.isPlaceholder) totalImages += 2
+    })
+    if (totalImages === 0) { setLoaded(true); return }
     const checkDone = () => {
       loadCount++
       if (loadCount >= totalImages) setLoaded(true)
     }
-    DEFAULT_ROOM_IDS.forEach((id) => {
+    slotOrder.forEach((id) => {
       const imgs = roomImages[id]
-      if (imgs.working.complete) checkDone()
-      else imgs.working.onload = checkDone
-      if (imgs.idle.complete) checkDone()
-      else imgs.idle.onload = checkDone
+      if (!imgs || imgs.isPlaceholder) return
+      if (imgs.working?.complete) checkDone()
+      else if (imgs.working) imgs.working.onload = checkDone
+      if (imgs.idle?.complete) checkDone()
+      else if (imgs.idle) imgs.idle.onload = checkDone
     })
     const fallback = setTimeout(() => setLoaded(true), 3000)
     return () => clearTimeout(fallback)
-  }, [])
+  }, [slotOrder])
 
   // Measure container
   useEffect(() => {
@@ -875,8 +1012,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // ---- OVERVIEW CAMERA ----
   const getOverviewCamera = useCallback((viewW, viewH) => {
     const bounds = getGridBounds()
-    const padX = bounds.w * 0.10
-    const padY = bounds.h * 0.10
+    // Mobile: tighter zoom (less padding) so rooms fill more of the screen
+    const isMobileView = viewW < 768
+    const padRatio = isMobileView ? 0.02 : 0.10
+    const padX = bounds.w * padRatio
+    const padY = bounds.h * padRatio
     const totalW = bounds.w + padX * 2
     const totalH = bounds.h + padY * 2
     const zoomFit = Math.min(viewW / totalW, viewH / totalH)
@@ -1053,7 +1193,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const draggedRoomId = drag.active ? drag.roomId : null
 
     // Build sorted render order: top rows first (background), bottom rows last (foreground)
-    const renderOrder = slotOrder.map((id, idx) => ({ id, slotIdx: idx, row: HEX_SLOTS[idx]?.row ?? 0 }))
+    const dynSlots = getHexSlots(slotOrder.length)
+    const renderOrder = slotOrder.map((id, idx) => ({ id, slotIdx: idx, row: dynSlots[idx]?.row ?? 0 }))
     renderOrder.sort((a, b) => a.row - b.row)
 
     // Helper: get room world position (handles shuffle animation)
@@ -1075,11 +1216,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
 
     for (const { id: roomId, slotIdx } of renderOrder) {
-      const roomId = slotOrder[slotIdx]
       if (roomId === draggedRoomId) continue // draw dragged room last
 
       const meta = ROOM_META[roomId]
       if (!meta) continue
+      // Ensure image entry exists (for dynamically added rooms)
+      ensureRoomImages(roomId)
       const imgs = roomImages[roomId]
       if (!imgs) continue
 
@@ -1092,7 +1234,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       // Wave blend: active rooms crossfade, inactive rooms locked on idle
       const alpha = isActive ? getWaveBlend(elapsed, slotIdx) : 1.0 // 1.0 = fully idle
 
-      const isHL = roomId === hover || roomId === selectedRoom || roomId === focusedRoom
+      const isCtxRoom = contextMenu?.roomId === roomId
+      const isHL = roomId === hover || roomId === selectedRoom || roomId === focusedRoom || isCtxRoom
 
       // Celebration wave offset
       let celebOffsetY = 0
@@ -1104,9 +1247,52 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         celebGlow = getCelebrationGlow(celebElapsed, roomDelay)
       }
 
-      // All rooms full brightness (dimming off for now, can be a setting later)
+      // Context menu pop-out: lift + scale the room
       ctx.save()
+      if (isCtxRoom) {
+        const popScale = 1.08
+        const centerX = posX + ROOM_SIZE / 2
+        const centerY = posY + ROOM_SIZE / 2 + celebOffsetY
+        ctx.translate(centerX, centerY)
+        ctx.scale(popScale, popScale)
+        ctx.translate(-centerX, -centerY)
+        // Slight lift
+        celebOffsetY -= 12
+      }
+
+      // All rooms full brightness (dimming off for now, can be a setting later)
       drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL, cam.zoom, celebGlow, walkPositions[roomId])
+
+      // Context menu dotted hex outline (drawn AFTER room, outside clip)
+      if (isCtxRoom) {
+        const S = ROOM_SIZE
+        const pad = 8 // outline offset outside hex
+        ctx.save()
+        ctx.translate(posX, posY + celebOffsetY)
+        ctx.beginPath()
+        ctx.moveTo(S * 0.50, -pad)
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.31 - pad * 0.5)
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.72 + pad * 0.5)
+        ctx.lineTo(S * 0.50, S * 0.99 + pad)
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.72 + pad * 0.5)
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.31 - pad * 0.5)
+        ctx.closePath()
+        // Animated dashed stroke
+        const dashLen = 14
+        const gapLen = 10
+        const dashOffset = (elapsed * 40) % (dashLen + gapLen)
+        ctx.setLineDash([dashLen, gapLen])
+        ctx.lineDashOffset = -dashOffset
+        ctx.strokeStyle = meta.color || '#60A5FA'
+        ctx.lineWidth = 3
+        ctx.shadowColor = meta.color || '#60A5FA'
+        ctx.shadowBlur = 12
+        ctx.stroke()
+        ctx.shadowBlur = 0
+        ctx.setLineDash([])
+        ctx.restore()
+      }
+
       ctx.restore()
     }
 
@@ -1221,7 +1407,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
     ctx.restore() // undo pan/zoom
 
-  }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, ORIGIN_X, ORIGIN_Y])
+  }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, ORIGIN_X, ORIGIN_Y, contextMenu])
 
   // ---- HELPER: Draw one room ----
   function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, charImg, alpha, nameText, nameColor, isHighlighted, currentZoom, celebGlow = 0, charWalkPos = null) {
@@ -1246,7 +1432,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     // Crossfade blend between working and idle
     // Use 9-arg drawImage to source-crop the navy border padding out of 1024x1024 PNGs.
     // This draws only the hex content region, stretched to fill ROOM_SIZE.
-    if (workImg?.complete && idleImg?.complete) {
+    const hasWorkImg = workImg?.complete
+    const hasIdleImg = idleImg?.complete
+
+    if (hasWorkImg && hasIdleImg) {
       const iw = workImg.naturalWidth || 1024
       const ih = workImg.naturalHeight || 1024
       // Only apply source crop to full-size (1024x1024) room images
@@ -1267,7 +1456,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.drawImage(idleImg, 0, 0, S, S)
       }
       ctx.restore()
-    } else if (workImg?.complete) {
+    } else if (hasWorkImg) {
       const iw = workImg.naturalWidth || 1024
       const ih = workImg.naturalHeight || 1024
       if (iw >= 1024 && ih >= 1024) {
@@ -1275,7 +1464,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       } else {
         ctx.drawImage(workImg, 0, 0, S, S)
       }
-    } else if (idleImg?.complete) {
+    } else if (hasIdleImg) {
       const iw = idleImg.naturalWidth || 1024
       const ih = idleImg.naturalHeight || 1024
       if (iw >= 1024 && ih >= 1024) {
@@ -1283,6 +1472,51 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       } else {
         ctx.drawImage(idleImg, 0, 0, S, S)
       }
+    } else {
+      // ---- PLACEHOLDER: colored hex for project/custom rooms without images ----
+      // Dark interior fill
+      ctx.save()
+      ctx.globalAlpha = parentAlpha
+      ctx.fillStyle = '#0D1225'
+      ctx.fill() // fill the existing hex clip path
+      // Colored accent fill (subtle)
+      ctx.fillStyle = nameColor + '30' // 30 = ~19% alpha hex
+      ctx.fill()
+      // Floor gradient from bottom
+      const floorGrad = ctx.createLinearGradient(S * 0.5, S * 0.3, S * 0.5, S * 0.99)
+      floorGrad.addColorStop(0, 'transparent')
+      floorGrad.addColorStop(1, nameColor + '40')
+      ctx.fillStyle = floorGrad
+      ctx.fill()
+      // Inner border glow
+      ctx.strokeStyle = nameColor + '50'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.moveTo(S * 0.50, S * 0.02)
+      ctx.lineTo(S * 0.97, S * 0.30)
+      ctx.lineTo(S * 0.97, S * 0.73)
+      ctx.lineTo(S * 0.50, S * 0.97)
+      ctx.lineTo(S * 0.03, S * 0.73)
+      ctx.lineTo(S * 0.03, S * 0.30)
+      ctx.closePath()
+      ctx.stroke()
+      // Project icon: folder shape in the center
+      const iconSize = S * 0.18
+      const ix = S * 0.5 - iconSize * 0.5
+      const iy = S * 0.45 - iconSize * 0.5
+      ctx.fillStyle = nameColor + '80'
+      // Simple folder shape
+      ctx.beginPath()
+      ctx.moveTo(ix, iy + iconSize * 0.2)
+      ctx.lineTo(ix + iconSize * 0.35, iy + iconSize * 0.2)
+      ctx.lineTo(ix + iconSize * 0.42, iy)
+      ctx.lineTo(ix + iconSize * 0.7, iy)
+      ctx.lineTo(ix + iconSize, iy + iconSize * 0.2)
+      ctx.lineTo(ix + iconSize, iy + iconSize)
+      ctx.lineTo(ix, iy + iconSize)
+      ctx.closePath()
+      ctx.fill()
+      ctx.restore()
     }
 
     // ---- CHARACTER LAYER (#5 + #6: walking animation, each on own timing) ----
@@ -1625,8 +1859,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   }, [showToast])
 
   const handleResetOrder = useCallback(() => {
-    setSlotOrder([...DEFAULT_ROOM_IDS])
-    saveSlotOrder([...DEFAULT_ROOM_IDS])
+    // Clear hidden rooms and reset order
+    setHiddenRooms(new Set())
+    saveHiddenRooms([])
+    const defaultOrder = buildVisibleRoomIDs(new Set())
+    setSlotOrder(defaultOrder)
+    saveSlotOrder(defaultOrder)
     showToast('Room order reset to default')
     setContextMenu(null)
   }, [showToast])
@@ -1636,6 +1874,75 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     onRoomClick?.(roomId)
     setContextMenu(null)
   }, [onRoomClick])
+
+  // ---- HIDE ROOM ----
+  const handleHideRoom = useCallback((roomId) => {
+    const newHidden = new Set(hiddenRooms)
+    newHidden.add(roomId)
+    setHiddenRooms(newHidden)
+    saveHiddenRooms([...newHidden])
+    // Remove from slot order
+    setSlotOrder(prev => {
+      const next = prev.filter(id => id !== roomId)
+      saveSlotOrder(next)
+      return next
+    })
+    if (focusedRoom === roomId) setFocusedRoom(null)
+    const meta = ROOM_META[roomId]
+    showToast(`${meta?.name || roomId} hidden`)
+    setContextMenu(null)
+  }, [hiddenRooms, focusedRoom, showToast])
+
+  // ---- SHOW ALL HIDDEN ROOMS ----
+  const handleShowHidden = useCallback(() => {
+    if (hiddenRooms.size === 0) {
+      showToast('No hidden rooms')
+      setContextMenu(null)
+      return
+    }
+    // Restore all hidden rooms
+    setHiddenRooms(new Set())
+    saveHiddenRooms([])
+    // Rebuild slot order with all rooms
+    const allVisible = buildVisibleRoomIDs(new Set())
+    setSlotOrder(prev => {
+      const prevSet = new Set(prev)
+      const newRooms = allVisible.filter(id => !prevSet.has(id))
+      const next = [...prev, ...newRooms]
+      saveSlotOrder(next)
+      return next
+    })
+    showToast(`${hiddenRooms.size} room${hiddenRooms.size > 1 ? 's' : ''} restored`)
+    setContextMenu(null)
+  }, [hiddenRooms, showToast])
+
+  // ---- CREATE NEW ROOM ----
+  const handleCreateRoom = useCallback((name, color) => {
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    if (!slug) { showToast('Invalid room name'); return }
+    if (slotOrder.includes(slug)) { showToast('Room already exists'); return }
+
+    // Save to custom rooms in localStorage
+    const customRooms = loadCustomRooms()
+    customRooms.push({ slug, name, color, type: 'custom' })
+    saveCustomRooms(customRooms)
+
+    // Register in ROOM_META
+    ROOM_META[slug] = { name: name.toUpperCase(), color, type: 'custom' }
+
+    // Ensure image entry
+    ensureRoomImages(slug)
+
+    // Add to slot order at end
+    setSlotOrder(prev => {
+      const next = [...prev, slug]
+      saveSlotOrder(next)
+      return next
+    })
+
+    showToast(`${name} room created`)
+    setShowNewRoomModal(false)
+  }, [slotOrder, showToast])
 
   // ---- TOUCH EVENTS ----
   const onTouchStart = useCallback((e) => {
@@ -1754,6 +2061,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         width: '100%', height: '100%',
         position: 'relative', overflow: 'hidden', cursor,
         background: 'transparent', zIndex: 1,
+        userSelect: 'none', WebkitUserSelect: 'none',
+        touchAction: 'none', WebkitTouchCallout: 'none',
       }}
       onMouseDown={onDown}
       onMouseMove={onMove}
@@ -1804,19 +2113,33 @@ const CanvasOffice = forwardRef(function CanvasOffice({
             {contextMenu.roomName}
           </div>
           <ContextMenuItem
+            label="View Agent"
+            icon="&#x2192;"
+            onClick={() => handleViewAgent(contextMenu.roomId)}
+          />
+          <ContextMenuItem
             label="Regenerate Room"
             icon="&#x21BB;"
             onClick={() => handleRegenerate(contextMenu.roomId, contextMenu.roomName)}
           />
           <ContextMenuItem
+            label="Hide Room"
+            icon="&#x2715;"
+            onClick={() => handleHideRoom(contextMenu.roomId)}
+          />
+          {/* Separator */}
+          <div style={{ height: 1, background: 'rgba(96, 165, 250, 0.12)', margin: '4px 0' }} />
+          {hiddenRooms.size > 0 && (
+            <ContextMenuItem
+              label={`Show Hidden (${hiddenRooms.size})`}
+              icon="&#x25CE;"
+              onClick={() => handleShowHidden()}
+            />
+          )}
+          <ContextMenuItem
             label="Reset Room Order"
             icon="&#x2316;"
             onClick={() => handleResetOrder()}
-          />
-          <ContextMenuItem
-            label="View Agent"
-            icon="&#x2192;"
-            onClick={() => handleViewAgent(contextMenu.roomId)}
           />
         </div>
       )}
@@ -1843,6 +2166,45 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         }}>
           {toast}
         </div>
+      )}
+
+      {/* ---- + NEW ROOM BUTTON ---- */}
+      <div
+        onClick={() => setShowNewRoomModal(true)}
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          zIndex: 50,
+          width: 44,
+          height: 44,
+          borderRadius: 10,
+          background: 'rgba(12, 16, 30, 0.85)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(96, 165, 250, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          fontSize: 22,
+          color: 'rgba(96, 165, 250, 0.8)',
+          fontWeight: 300,
+          transition: 'all 0.15s ease',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(96, 165, 250, 0.2)'; e.currentTarget.style.color = '#fff' }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(12, 16, 30, 0.85)'; e.currentTarget.style.color = 'rgba(96, 165, 250, 0.8)' }}
+        title="Create new room"
+      >
+        +
+      </div>
+
+      {/* ---- NEW ROOM MODAL ---- */}
+      {showNewRoomModal && (
+        <NewRoomModal
+          onClose={() => setShowNewRoomModal(false)}
+          onCreate={handleCreateRoom}
+        />
       )}
 
       {/* ---- LOADING OVERLAY ---- */}
@@ -1906,6 +2268,135 @@ function ContextMenuItem({ label, icon, onClick }) {
         {icon}
       </span>
       {label}
+    </div>
+  )
+}
+
+// ---- NEW ROOM MODAL COMPONENT ----
+const PRESET_COLORS = [
+  '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+  '#EC4899', '#06B6D4', '#F97316', '#4CAF50', '#AB47BC',
+  '#26A69A', '#78909C',
+]
+
+function NewRoomModal({ onClose, onCreate }) {
+  const [name, setName] = useState('')
+  const [color, setColor] = useState(PRESET_COLORS[0])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (name.trim()) onCreate(name.trim(), color)
+  }
+
+  return (
+    <div
+      style={{
+        position: 'absolute', inset: 0, zIndex: 200,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'rgba(12, 16, 30, 0.97)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(96, 165, 250, 0.3)',
+          borderRadius: 12,
+          padding: 24,
+          minWidth: 280,
+          boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+          fontFamily: "'Inter', system-ui, sans-serif",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{
+          fontSize: 14, fontWeight: 700, color: '#EDF2FA',
+          marginBottom: 16, letterSpacing: '0.02em',
+        }}>
+          NEW ROOM
+        </div>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Room name..."
+            autoFocus
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(96, 165, 250, 0.2)',
+              borderRadius: 6,
+              color: '#EDF2FA',
+              fontSize: 14,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              outline: 'none',
+              marginBottom: 14,
+              boxSizing: 'border-box',
+            }}
+            onFocus={(e) => { e.target.style.borderColor = 'rgba(96, 165, 250, 0.5)' }}
+            onBlur={(e) => { e.target.style.borderColor = 'rgba(96, 165, 250, 0.2)' }}
+          />
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#78716C', marginBottom: 8, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Color
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {PRESET_COLORS.map(c => (
+                <div
+                  key={c}
+                  onClick={() => setColor(c)}
+                  style={{
+                    width: 28, height: 28,
+                    borderRadius: 6,
+                    background: c,
+                    cursor: 'pointer',
+                    border: color === c ? '2px solid #fff' : '2px solid transparent',
+                    transition: 'border-color 0.1s',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                flex: 1, padding: '8px 0',
+                background: 'transparent',
+                border: '1px solid rgba(96, 165, 250, 0.2)',
+                borderRadius: 6,
+                color: '#A8A29E',
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim()}
+              style={{
+                flex: 1, padding: '8px 0',
+                background: name.trim() ? color : 'rgba(255,255,255,0.06)',
+                border: 'none',
+                borderRadius: 6,
+                color: name.trim() ? '#fff' : '#78716C',
+                fontSize: 13, fontWeight: 700,
+                cursor: name.trim() ? 'pointer' : 'default',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                transition: 'all 0.15s',
+              }}
+            >
+              Create
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
