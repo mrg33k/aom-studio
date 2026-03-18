@@ -2111,9 +2111,9 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 56, left: 0, right: 0, zIndex: 29,
-      height: 44,
-      background: 'rgba(10, 15, 30, 0.95)',
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 29,
+      height: 48,
+      background: 'rgba(10, 15, 30, 0.98)',
       backdropFilter: 'blur(16px)',
       borderTop: '1px solid rgba(255, 255, 255, 0.06)',
       display: 'flex', alignItems: 'center',
@@ -2127,16 +2127,16 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
             key={mode.id}
             onClick={() => onModeSwitch(mode.id)}
             style={{
-              flex: 1, height: 44,
+              flex: 1, height: 48,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: active ? '#E85D26' : '#6B7280',
-              minWidth: 44, minHeight: 44, // Touch target
+              color: active ? '#3B9EFF' : '#6B7280',
+              minWidth: 48, minHeight: 48, // Touch target
             }}
           >
             <Icon size={20} />
             {active && (
-              <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#E85D26' }} />
+              <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#3B9EFF' }} />
             )}
           </button>
         )
@@ -6575,6 +6575,8 @@ export default function GameDashboard() {
   const [showMinimap, setShowMinimap] = useState(true)
   const [notifications, setNotifications] = useState([])
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [showRelayDebug, setShowRelayDebug] = useState(false) // Toggle with Ctrl+Shift+D
+  const [relayDebugData, setRelayDebugData] = useState(null)
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
@@ -7475,6 +7477,32 @@ export default function GameDashboard() {
     return () => window.removeEventListener('corner-navigate-agent', handler)
   }, [])
 
+  // Ctrl+Shift+D: Toggle relay debug overlay
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault()
+        setShowRelayDebug(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  // Fetch relay debug data when debug panel is open (poll every 5s)
+  useEffect(() => {
+    if (!showRelayDebug || !IS_LOCAL) return
+    const fetchDebug = () => {
+      fetch('/api/local/relay-debug')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setRelayDebugData(data) })
+        .catch(() => {})
+    }
+    fetchDebug()
+    const interval = setInterval(fetchDebug, 5000)
+    return () => clearInterval(interval)
+  }, [showRelayDebug])
+
   if (!authed) {
     return <PasswordGate onAuth={() => setAuthed(true)} />
   }
@@ -7492,13 +7520,14 @@ export default function GameDashboard() {
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',
       transition: 'background 500ms ease',
+      overscrollBehavior: 'none', touchAction: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : 52, paddingBottom: isMobile ? 100 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : 52, paddingBottom: isMobile ? 48 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
@@ -7846,6 +7875,109 @@ export default function GameDashboard() {
           <ShortcutsOverlay onClose={() => setShowShortcuts(false)} />
         )}
       </AnimatePresence>
+
+      {/* Relay Debug Overlay (Ctrl+Shift+D) */}
+      {showRelayDebug && relayDebugData && (
+        <div style={{
+          position: 'fixed', top: 60, right: 16, zIndex: 9999,
+          background: 'rgba(0,0,0,0.92)', border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: 8, padding: 16, maxWidth: 480, maxHeight: 'calc(100vh - 120px)',
+          overflow: 'auto', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+          color: '#E5E7EB', backdropFilter: 'blur(12px)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#FFD87A' }}>RELAY DEBUG</span>
+            <button onClick={() => setShowRelayDebug(false)} style={{
+              background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 16,
+            }}>x</button>
+          </div>
+
+          {/* Pipeline Issues */}
+          {relayDebugData.pipeline?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4, textTransform: 'uppercase' }}>Pipeline Issues</div>
+              {relayDebugData.pipeline.map((issue, i) => (
+                <div key={i} style={{
+                  padding: '4px 8px', marginBottom: 2, borderRadius: 4, fontSize: 10,
+                  background: issue.level === 'warn' ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.1)',
+                  color: issue.level === 'warn' ? '#EF4444' : '#60A5FA',
+                  border: `1px solid ${issue.level === 'warn' ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.2)'}`,
+                }}>{issue.message}</div>
+              ))}
+            </div>
+          )}
+
+          {/* Hooks Status */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4, textTransform: 'uppercase' }}>Hooks</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+              <span style={{ color: '#9CA3AF' }}>Active Persona:</span>
+              <span style={{ color: '#FFD87A' }}>{relayDebugData.hooks?.activePersona || 'none'}</span>
+              <span style={{ color: '#9CA3AF' }}>Auto-Responding:</span>
+              <span style={{ color: relayDebugData.hooks?.autoResponding ? '#EF4444' : '#10B981' }}>
+                {relayDebugData.hooks?.autoResponding || 'false'}
+              </span>
+              <span style={{ color: '#9CA3AF' }}>Pending Prompt:</span>
+              <span style={{ color: relayDebugData.hooks?.pendingUserPrompt ? '#F59E0B' : '#10B981' }}>
+                {relayDebugData.hooks?.pendingUserPrompt ? 'YES' : 'no'}
+              </span>
+            </div>
+          </div>
+
+          {/* Relay Stats */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4, textTransform: 'uppercase' }}>Relay Files</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+              <span style={{ color: '#9CA3AF' }}>main.jsonl:</span>
+              <span>{relayDebugData.relay?.main?.totalMessages || 0} msgs</span>
+              <span style={{ color: '#9CA3AF' }}>aom-internal:</span>
+              <span>{relayDebugData.relay?.['aom-internal']?.totalMessages || 0} msgs</span>
+              <span style={{ color: '#9CA3AF' }}>Inbox pending:</span>
+              <span style={{ color: relayDebugData.relay?.inbox?.pending > 0 ? '#EF4444' : '#10B981' }}>
+                {relayDebugData.relay?.inbox?.pending || 0}
+              </span>
+              <span style={{ color: '#9CA3AF' }}>Outbox total:</span>
+              <span>{relayDebugData.relay?.outbox?.total || 0}</span>
+            </div>
+          </div>
+
+          {/* Agent Conversation Files */}
+          <div>
+            <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 4, textTransform: 'uppercase' }}>
+              Agent Conversations ({Object.values(relayDebugData.agents || {}).filter(a => a.totalMessages > 0).length}/{Object.keys(relayDebugData.agents || {}).length} active)
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {Object.entries(relayDebugData.agents || {}).map(([slug, info]) => {
+                const statusColor = info.status === 'EMPTY' ? '#EF4444' : info.status === 'LOW' ? '#F59E0B' : '#10B981'
+                return (
+                  <div key={slug} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '3px 6px',
+                    background: info.status === 'EMPTY' ? 'rgba(239,68,68,0.08)' : 'transparent',
+                    borderRadius: 3, borderLeft: `3px solid ${statusColor}`,
+                  }}>
+                    <span style={{ width: 70, color: statusColor, fontWeight: 600 }}>{slug}</span>
+                    <span style={{ color: '#9CA3AF', minWidth: 50 }}>{info.totalMessages} msgs</span>
+                    <span style={{ color: '#6B7280', fontSize: 9 }}>
+                      {info.totalMessages > 0 ? `${info.userMessages}u/${info.assistantMessages}a` : ''}
+                    </span>
+                    <span style={{ color: '#6B7280', fontSize: 9, marginLeft: 'auto' }}>
+                      {info.totalMessages > 0 && info.sources ? Object.keys(info.sources).join(', ') : ''}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Timestamp */}
+          <div style={{ marginTop: 8, fontSize: 9, color: '#6B7280', textAlign: 'right' }}>
+            Updated: {new Date(relayDebugData.timestamp).toLocaleTimeString()} (5s poll)
+          </div>
+          <div style={{ marginTop: 4, fontSize: 9, color: '#4B5563', textAlign: 'center' }}>
+            Ctrl+Shift+D to close
+          </div>
+        </div>
+      )}
 
       {/* Error / connection indicator */}
       {error && (

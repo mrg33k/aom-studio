@@ -543,6 +543,8 @@ function localDashboardPlugin() {
                     const cd = resolve(AOM_EA_ROOT, 'conversations')
                     try { fs.appendFileSync(resolve(cd, 'agents', `${slug}.jsonl`), line) } catch {}
                     try { fs.appendFileSync(resolve(cd, 'main.jsonl'), line) } catch {}
+                    // Also write to AOM master chat (all messages flow here)
+                    try { fs.appendFileSync(resolve(cd, 'projects', 'aom-internal.jsonl'), line) } catch {}
                     // Clear auto-responding marker
                     try { fs.unlinkSync(resolve(AOM_EA_ROOT, 'context', '.auto-responding')) } catch {}
                   })
@@ -757,6 +759,110 @@ function localDashboardPlugin() {
             res.end(JSON.stringify({ error: err.message }))
           }
         })
+      })
+
+      // ---- RELAY DEBUG ENDPOINT ----
+      // Returns full relay system health: per-agent conversation file stats,
+      // relay inbox/outbox status, hook status, active persona, pipeline trace.
+      server.middlewares.use('/api/local/relay-debug', (req, res) => {
+        const result = { timestamp: new Date().toISOString(), agents: {}, relay: {}, hooks: {}, pipeline: [] }
+        const convDir = resolve(AOM_EA_ROOT, 'conversations')
+        const agentSlugs = ['bobby','colton','steffen','jacob','elon','alex','steve','cleo','tony','paige','pixel','mom','elmo']
+
+        // Per-agent conversation file stats
+        for (const slug of agentSlugs) {
+          const filePath = resolve(convDir, 'agents', `${slug}.jsonl`)
+          let lineCount = 0, lastTimestamp = null, userCount = 0, assistantCount = 0, sources = {}
+          try {
+            if (fs.existsSync(filePath)) {
+              const lines = fs.readFileSync(filePath, 'utf-8').split('\n').filter(l => l.trim())
+              lineCount = lines.length
+              for (const line of lines) {
+                try {
+                  const m = JSON.parse(line)
+                  if (m.role === 'user') userCount++
+                  if (m.role === 'assistant') assistantCount++
+                  if (m.source) sources[m.source] = (sources[m.source] || 0) + 1
+                  if (m.timestamp) lastTimestamp = m.timestamp
+                } catch {}
+              }
+            }
+          } catch {}
+          result.agents[slug] = {
+            totalMessages: lineCount,
+            userMessages: userCount,
+            assistantMessages: assistantCount,
+            lastTimestamp,
+            sources,
+            status: lineCount === 0 ? 'EMPTY' : lineCount < 5 ? 'LOW' : 'ACTIVE',
+          }
+        }
+
+        // Main + aom-internal stats
+        for (const [name, path] of [['main', resolve(convDir, 'main.jsonl')], ['aom-internal', resolve(convDir, 'projects', 'aom-internal.jsonl')]]) {
+          try {
+            const lines = fs.existsSync(path) ? fs.readFileSync(path, 'utf-8').split('\n').filter(l => l.trim()) : []
+            result.relay[name] = { totalMessages: lines.length }
+          } catch { result.relay[name] = { totalMessages: 0 } }
+        }
+
+        // Relay inbox/outbox status
+        for (const [label, filePath] of [['inbox', RELAY_INBOX_PATH], ['outbox', RELAY_OUTBOX_PATH]]) {
+          try {
+            const lines = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8').split('\n').filter(l => l.trim()) : []
+            let pending = 0, read = 0, sent = 0, echoed = 0
+            for (const line of lines.slice(-50)) {
+              try {
+                const m = JSON.parse(line)
+                if (m.status === 'pending') pending++
+                else if (m.status === 'read') read++
+                else if (m.status === 'sent') sent++
+                else if (m.status === 'echoed') echoed++
+              } catch {}
+            }
+            result.relay[label] = { total: lines.length, pending, read, sent, echoed }
+          } catch { result.relay[label] = { total: 0 } }
+        }
+
+        // Active persona
+        try {
+          const personaPath = resolve(AOM_EA_ROOT, 'context', '.active-persona')
+          result.hooks.activePersona = fs.existsSync(personaPath) ? fs.readFileSync(personaPath, 'utf-8').trim() : 'not set'
+        } catch { result.hooks.activePersona = 'error' }
+
+        // Auto-responding marker
+        try {
+          const markerPath = resolve(AOM_EA_ROOT, 'context', '.auto-responding')
+          result.hooks.autoResponding = fs.existsSync(markerPath) ? fs.readFileSync(markerPath, 'utf-8').trim() : false
+        } catch { result.hooks.autoResponding = 'error' }
+
+        // Session checkpoint
+        try {
+          const cpPath = resolve(AOM_EA_ROOT, 'context', 'session-checkpoint.json')
+          if (fs.existsSync(cpPath)) {
+            const cp = JSON.parse(fs.readFileSync(cpPath, 'utf-8'))
+            result.hooks.sessionCheckpoint = { persona: cp.active_persona, label: cp.active_persona_label }
+          }
+        } catch {}
+
+        // Pending user prompt
+        try {
+          const ppPath = resolve(AOM_EA_ROOT, 'context', '.pending-user-prompt')
+          result.hooks.pendingUserPrompt = fs.existsSync(ppPath)
+        } catch {}
+
+        // Pipeline health summary
+        const issues = []
+        const emptyAgents = agentSlugs.filter(s => result.agents[s].totalMessages === 0)
+        if (emptyAgents.length > 0) issues.push({ level: 'info', message: `${emptyAgents.length} agents have empty conversation files: ${emptyAgents.join(', ')}` })
+        if (result.relay.inbox?.pending > 0) issues.push({ level: 'warn', message: `${result.relay.inbox.pending} pending messages in inbox waiting for processing` })
+        if (result.hooks.autoResponding) issues.push({ level: 'warn', message: `Auto-responder active for: ${result.hooks.autoResponding}` })
+        if (result.hooks.pendingUserPrompt) issues.push({ level: 'warn', message: 'Pending user prompt not yet consumed by Stop hook' })
+        result.pipeline = issues
+
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        res.end(JSON.stringify(result, null, 2))
       })
 
       // Notifications endpoint
