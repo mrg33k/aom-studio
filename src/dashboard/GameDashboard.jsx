@@ -2166,9 +2166,9 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
   )
 }
 
-// ---- MOBILE BOTTOM SHEET DRAWER (iOS-style, 3 snap points) ------------------
 // Snap points: HIDDEN (off-screen), HALF (~50% screen), FULL (100% screen)
-// Uses framer-motion useMotionValue + animate for spring physics
+// Anchored to bottom of screen. Animates HEIGHT with spring physics.
+// Content (chat input, task lists) always fills the visible area correctly.
 
 function MobileDrawer({
   room, agent, agentStatus, onClose, agentSlug,
@@ -2182,6 +2182,7 @@ function MobileDrawer({
   const sheetRef = useRef(null)
   const dragStartY = useRef(0)
   const dragStartTime = useRef(0)
+  const dragStartHeight = useRef(0)
   const isDraggingHandle = useRef(false)
   const [activeTab, setActiveTab] = useState('chat')
   const [mobileViewportHeight, setMobileViewportHeight] = useState(null)
@@ -2190,34 +2191,31 @@ function MobileDrawer({
   const status = agentStatus?.status || 'IDLE'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
 
-  // Compute snap Y positions (distance from top of viewport)
-  // HIDDEN = fully below viewport
-  // HALF = sheet top at ~50% viewport height
-  // FULL = sheet top at ~0 (status bar area)
-  const getSnapPositions = useCallback(() => {
-    const vh = window.innerHeight
-    const modeBarHeight = 48
+  // Compute snap heights (sheet height from bottom)
+  // MobileModeBar = 48px + safe-area. Sheet sits ABOVE it.
+  const getSnapHeights = useCallback(() => {
+    const vh = mobileViewportHeight || window.innerHeight
     return {
-      hidden: vh + 20, // off screen with a little extra
-      half: Math.round(vh * 0.48), // sheet top sits at about 48% from top
-      full: 0,
+      hidden: 0,
+      half: Math.round(vh * 0.52), // ~52% of viewport
+      full: vh, // full viewport height
     }
-  }, [])
+  }, [mobileViewportHeight])
 
-  // Motion value for the sheet's `top` position
-  const sheetY = useMotionValue(getSnapPositions().half)
+  // Motion value for sheet height (animated)
+  const sheetHeight = useMotionValue(getSnapHeights().half)
 
-  // Animate to snap position when snap prop changes
+  // Animate to snap height when snap prop changes
   useEffect(() => {
-    const positions = getSnapPositions()
-    const target = positions[snap] ?? positions.half
-    fmAnimate(sheetY, target, {
+    const heights = getSnapHeights()
+    const target = heights[snap] ?? heights.half
+    fmAnimate(sheetHeight, target, {
       type: 'spring',
       stiffness: 300,
       damping: 32,
       mass: 0.8,
     })
-  }, [snap]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [snap, mobileViewportHeight]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // iOS keyboard awareness
   useEffect(() => {
@@ -2225,39 +2223,43 @@ function MobileDrawer({
     const handler = () => {
       const vvh = window.visualViewport.height
       const wh = window.innerHeight
-      setMobileViewportHeight(vvh < wh - 50 ? vvh : null)
+      if (vvh < wh - 50) {
+        setMobileViewportHeight(vvh)
+      } else {
+        setMobileViewportHeight(null)
+      }
     }
     window.visualViewport.addEventListener('resize', handler)
     return () => window.visualViewport.removeEventListener('resize', handler)
   }, [])
 
-  // Snap to nearest position based on current Y + velocity
-  const snapToNearest = useCallback((currentY, velocityY) => {
-    const positions = getSnapPositions()
+  // Snap to nearest height based on current height + velocity
+  const snapToNearest = useCallback((currentHeight, velocityY) => {
+    const heights = getSnapHeights()
     let targetSnap
 
+    // velocityY: negative = swiping up (increasing height), positive = swiping down
     if (Math.abs(velocityY) > 400) {
-      // Fast swipe: go in swipe direction
       if (velocityY > 0) {
-        // Swiping down
+        // Swiping down (decreasing height)
         targetSnap = snap === 'full' ? 'half' : 'hidden'
       } else {
-        // Swiping up
+        // Swiping up (increasing height)
         targetSnap = snap === 'half' ? 'full' : 'half'
       }
     } else {
       // Slow drag: snap to closest
       const dists = [
-        { key: 'full', d: Math.abs(currentY - positions.full) },
-        { key: 'half', d: Math.abs(currentY - positions.half) },
-        { key: 'hidden', d: Math.abs(currentY - positions.hidden) },
+        { key: 'full', d: Math.abs(currentHeight - heights.full) },
+        { key: 'half', d: Math.abs(currentHeight - heights.half) },
+        { key: 'hidden', d: Math.abs(currentHeight - heights.hidden) },
       ]
       dists.sort((a, b) => a.d - b.d)
       targetSnap = dists[0].key
     }
 
-    const targetY = positions[targetSnap] ?? positions.half
-    fmAnimate(sheetY, targetY, {
+    const targetH = heights[targetSnap] ?? heights.half
+    fmAnimate(sheetHeight, targetH, {
       type: 'spring',
       stiffness: 300,
       damping: 32,
@@ -2269,25 +2271,26 @@ function MobileDrawer({
     } else {
       onSnapChange(targetSnap)
     }
-  }, [snap, getSnapPositions, sheetY, onClose, onSnapChange])
+  }, [snap, getSnapHeights, sheetHeight, onClose, onSnapChange])
 
   // Drag handle touch handlers
   const handleDragStart = useCallback((e) => {
     dragStartY.current = e.touches[0].clientY
     dragStartTime.current = Date.now()
+    dragStartHeight.current = sheetHeight.get()
     isDraggingHandle.current = true
-  }, [])
+  }, [sheetHeight])
 
   const handleDragMove = useCallback((e) => {
     if (!isDraggingHandle.current) return
     e.preventDefault()
     const touch = e.touches[0]
-    const delta = touch.clientY - dragStartY.current
-    const positions = getSnapPositions()
-    const baseY = positions[snap] ?? positions.half
-    const newY = Math.max(positions.full - 30, Math.min(positions.hidden, baseY + delta))
-    sheetY.set(newY)
-  }, [sheetY, getSnapPositions, snap])
+    // Dragging UP (negative deltaY) = increasing height
+    const deltaY = touch.clientY - dragStartY.current
+    const heights = getSnapHeights()
+    const newHeight = Math.max(0, Math.min(heights.full + 30, dragStartHeight.current - deltaY))
+    sheetHeight.set(newHeight)
+  }, [sheetHeight, getSnapHeights])
 
   const handleDragEnd = useCallback((e) => {
     if (!isDraggingHandle.current) return
@@ -2295,15 +2298,18 @@ function MobileDrawer({
     const endY = e.changedTouches[0].clientY
     const totalDelta = endY - dragStartY.current
     const elapsed = Math.max(1, Date.now() - dragStartTime.current)
-    const velocityY = (totalDelta / elapsed) * 1000 // px/sec
-    snapToNearest(sheetY.get(), velocityY)
-  }, [sheetY, snapToNearest])
+    const velocityY = (totalDelta / elapsed) * 1000 // px/sec (positive = down)
+    snapToNearest(sheetHeight.get(), velocityY)
+  }, [sheetHeight, snapToNearest])
 
   const tabs = [
     { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'tasks', label: 'List', icon: ListTodo },
     { id: 'info', label: 'Info', icon: Activity },
   ]
+
+  // At FULL snap, the sheet covers the mode bar so we need safe-area at bottom
+  const isFullSnap = snap === 'full'
 
   return (
     <motion.div
@@ -2312,13 +2318,11 @@ function MobileDrawer({
         position: 'fixed',
         left: 0,
         right: 0,
-        top: 0,
-        bottom: 0,
-        y: sheetY,
-        height: '100vh',
-        zIndex: snap === 'full' ? 200 : 38,
+        bottom: isFullSnap ? 0 : 'calc(48px + env(safe-area-inset-bottom, 0px))',
+        height: sheetHeight,
+        zIndex: isFullSnap ? 200 : 38,
         background: 'rgba(10, 15, 30, 0.98)',
-        borderRadius: snap === 'full' ? 0 : '16px 16px 0 0',
+        borderRadius: isFullSnap ? 0 : '16px 16px 0 0',
         boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.6)',
         display: 'flex',
         flexDirection: 'column',
@@ -2335,7 +2339,7 @@ function MobileDrawer({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: snap === 'full' ? 'calc(10px + env(safe-area-inset-top, 0px)) 0 6px' : '10px 0 6px',
+          padding: isFullSnap ? 'calc(10px + env(safe-area-inset-top, 0px)) 0 6px' : '10px 0 6px',
           cursor: 'grab',
           touchAction: 'none',
           flexShrink: 0,
@@ -2422,11 +2426,12 @@ function MobileDrawer({
         })}
       </div>
 
-      {/* Tab content (fills remaining height) */}
+      {/* Tab content (fills remaining height, content is always within visible area) */}
       <div style={{
         flex: 1, overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
         touchAction: 'auto',
+        paddingBottom: isFullSnap ? 'env(safe-area-inset-bottom, 0px)' : 0,
       }}>
         {activeTab === 'chat' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -8090,8 +8095,8 @@ export default function GameDashboard() {
         </div>
       )}
 
-      {/* Mobile mode tab bar */}
-      {isMobile && (
+      {/* Mobile mode tab bar (hidden when drawer is at full screen) */}
+      {isMobile && !(drawerSnap === 'full') && (
         <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />
       )}
 
@@ -8121,6 +8126,22 @@ export default function GameDashboard() {
             <MegaboardMode agentStatus={agentStatus} data={data} isMobile={isMobile} />
           </Suspense>
         </div>
+      )}
+
+      {/* Drawer backdrop scrim (dims map when drawer is open) */}
+      {isMobile && drawerOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: drawerSnap === 'full' ? 0.6 : 0.3 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={() => { setDrawerSnap(null); setSelectedRoom(null); setIsOverview(true) }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 37,
+            background: '#000',
+            touchAction: 'none',
+          }}
+        />
       )}
 
       {/* Mobile bottom sheet drawer (iOS-style, 3 snap points) */}
