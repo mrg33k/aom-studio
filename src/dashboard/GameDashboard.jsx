@@ -7172,23 +7172,50 @@ export default function GameDashboard() {
           if (!data?.messages?.length) return
           setAgentChats(prev => {
             const currentMsgs = (prev[selectedRoom]?._all || []).filter(m => !m.streaming)
-            if (data.messages.length === currentMsgs.length) return prev // no change
-            const msgs = data.messages.map(m => ({
+            const serverMsgs = data.messages.map(m => ({
               role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
               content: m.text || '',
               time: m.timestamp || '',
               source: m.source || 'file',
               id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
             })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
-            // New messages arrived - clear streaming/thinking indicator
-            if (msgs.length > currentMsgs.length) setPanelStreaming(false)
-            return { ...prev, [selectedRoom]: { _all: msgs } }
+
+            // MERGE instead of replace: keep local-only optimistic messages
+            // that haven't appeared in server data yet (file write is slow).
+            // This prevents the "message vanishes then reappears" bug.
+            const serverIds = new Set(serverMsgs.map(m => m.id))
+            // Also match by content+role for messages where server assigned a different ID
+            const serverContentKeys = new Set(serverMsgs.map(m => `${m.role}:${m.content?.slice(0, 80)}`))
+            const localOnly = currentMsgs.filter(m => {
+              // Already on server by ID? Skip (server version wins)
+              if (m.id && serverIds.has(m.id)) return false
+              // Already on server by content match? Skip
+              const contentKey = `${m.role}:${m.content?.slice(0, 80)}`
+              if (serverContentKeys.has(contentKey)) return false
+              // Local optimistic message not yet on server: keep it,
+              // but only if it's less than 10 seconds old (stale guard)
+              const msgTime = m.time ? new Date(m.time).getTime() : 0
+              const age = Date.now() - msgTime
+              return age < 10000
+            })
+
+            const merged = [...serverMsgs, ...localOnly].sort(safeTimeSort)
+
+            // New messages arrived from server - clear streaming/thinking indicator
+            if (serverMsgs.length > currentMsgs.filter(m => !m.id?.startsWith('dash-') || serverIds.has(m.id)).length) {
+              setPanelStreaming(false)
+            }
+
+            // Skip update if nothing actually changed (avoid unnecessary re-renders)
+            if (merged.length === currentMsgs.length && serverMsgs.length === currentMsgs.length) return prev
+
+            return { ...prev, [selectedRoom]: { _all: merged } }
           })
         })
         .catch(() => {})
     }, 3000)
     return () => clearInterval(poll)
-  }, [selectedRoom])
+  }, [selectedRoom, safeTimeSort])
 
   useEffect(() => {
     sessionStorage.setItem('corner-panel-tab', panelActiveTab || 'chat')
