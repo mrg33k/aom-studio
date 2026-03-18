@@ -5,10 +5,48 @@ import * as THREE from 'three'
 // Features: stars, sun/moon orb, lumpy grass ground, city skyline with glowing windows,
 // animated trees, volumetric fog, mouse-parallax camera
 //
+// MOBILE OPTIMIZATION (Mar 18, 2026):
+// Detects mobile via screen width + touch. Reduces scene complexity:
+// - 20 buildings (not 70), 40 trees (not 145), 500 stars (not 2000)
+// - Shadows disabled entirely on mobile
+// - antialias: false on mobile
+// - Pixel ratio capped at 1.5 on mobile (not 2)
+// - Animation capped at ~30fps on mobile (setTimeout wrapper)
+// - Window flicker animation skipped on mobile
+//
 // Renders BEHIND CanvasOffice (lower z-index). CanvasOffice sits on top with transparent bg.
 // Uses real Arizona time (America/Phoenix, no DST) to determine day/night.
 // Accepts isNightMode prop for external override:
 //   true = force night, false = force day, undefined/null = use real time.
+
+// ---- MOBILE DETECTION (runs once at module level) ----
+const IS_MOBILE = (() => {
+  if (typeof window === 'undefined') return false
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+  const narrowScreen = window.innerWidth < 768
+  // Also catch tablets in portrait
+  const isSmallDevice = window.innerWidth < 1024 && hasTouch
+  return narrowScreen || isSmallDevice
+})()
+
+// ---- SCENE COMPLEXITY KNOBS ----
+const SCENE = {
+  buildings: IS_MOBILE ? 20 : 70,
+  windowsPerBuilding: IS_MOBILE ? 6 : 15,
+  backgroundTrees: IS_MOBILE ? 30 : 120,
+  foregroundTrees: IS_MOBILE ? 10 : 25,
+  stars: IS_MOBILE ? 500 : 2000,
+  clouds: IS_MOBILE ? 6 : 13,
+  airplanes: IS_MOBILE ? 1 : 2,
+  shadowsEnabled: !IS_MOBILE,
+  shadowMapSize: IS_MOBILE ? 512 : 2048,
+  antialias: !IS_MOBILE,
+  maxPixelRatio: IS_MOBILE ? 1.5 : 2,
+  targetFps: IS_MOBILE ? 30 : 60,
+  windowFlicker: !IS_MOBILE,
+  // Foreground fill lights (skip on mobile to save draw calls)
+  extraFillLights: !IS_MOBILE,
+}
 
 /**
  * Get current dayRatio (0 = full night, 1 = full day) based on Arizona time.
@@ -98,11 +136,13 @@ export default function CrossyBackground({ isNightMode }) {
       0.1,
       1000
     )
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+    const renderer = new THREE.WebGLRenderer({ antialias: SCENE.antialias, alpha: false })
     renderer.setSize(container.clientWidth, container.clientHeight)
-    renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.shadowMap.enabled = SCENE.shadowsEnabled
+    if (SCENE.shadowsEnabled) {
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, SCENE.maxPixelRatio))
     container.appendChild(renderer.domElement)
 
     scene.fog = new THREE.FogExp2(colors.nightFog.clone(), 0.0025)
@@ -114,19 +154,21 @@ export default function CrossyBackground({ isNightMode }) {
 
     const celestialLight = new THREE.DirectionalLight(colors.sunLight.clone(), 1)
     celestialLight.position.set(50, 100, -50)
-    celestialLight.castShadow = true
-    celestialLight.shadow.camera.left = -150
-    celestialLight.shadow.camera.right = 150
-    celestialLight.shadow.camera.top = 150
-    celestialLight.shadow.camera.bottom = -150
-    celestialLight.shadow.mapSize.width = 2048
-    celestialLight.shadow.mapSize.height = 2048
+    celestialLight.castShadow = SCENE.shadowsEnabled
+    if (SCENE.shadowsEnabled) {
+      celestialLight.shadow.camera.left = -150
+      celestialLight.shadow.camera.right = 150
+      celestialLight.shadow.camera.top = 150
+      celestialLight.shadow.camera.bottom = -150
+      celestialLight.shadow.mapSize.width = SCENE.shadowMapSize
+      celestialLight.shadow.mapSize.height = SCENE.shadowMapSize
+    }
     scene.add(celestialLight)
 
     // ---- STARS ----
     const starGeo = new THREE.BufferGeometry()
     const starCoords = []
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < SCENE.stars; i++) {
       starCoords.push(
         (Math.random() - 0.5) * 1000,
         Math.random() * 500,
@@ -144,13 +186,17 @@ export default function CrossyBackground({ isNightMode }) {
     scene.add(stars)
 
     // ---- SUN / MOON ORB ----
-    const orbGeo = new THREE.SphereGeometry(5, 32, 32)
+    // Fewer segments on mobile (16 vs 32)
+    const orbSegments = IS_MOBILE ? 16 : 32
+    const orbGeo = new THREE.SphereGeometry(5, orbSegments, orbSegments)
     const orbMat = new THREE.MeshBasicMaterial({ color: 0xfff1b5 })
     const orb = new THREE.Mesh(orbGeo, orbMat)
     scene.add(orb)
 
     // ---- GROUND (lumpy grass) ----
-    const groundGeometry = new THREE.PlaneGeometry(600, 600, 100, 100)
+    // Fewer subdivisions on mobile (50 vs 100)
+    const groundSubs = IS_MOBILE ? 50 : 100
+    const groundGeometry = new THREE.PlaneGeometry(600, 600, groundSubs, groundSubs)
     const pos = groundGeometry.attributes.position
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i)
@@ -162,14 +208,14 @@ export default function CrossyBackground({ isNightMode }) {
     const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x1e3d1a, roughness: 0.9 })
     const ground = new THREE.Mesh(groundGeometry, groundMaterial)
     ground.rotation.x = -Math.PI / 2
-    ground.receiveShadow = true
+    ground.receiveShadow = SCENE.shadowsEnabled
     scene.add(ground)
 
     // ---- CITY SKYLINE ----
     const cityGroup = new THREE.Group()
     const windowPlanes = []
 
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < SCENE.buildings; i++) {
       const w = 12 + Math.random() * 15
       const h = 40 + Math.random() * 100
       const d = 12 + Math.random() * 15
@@ -183,12 +229,12 @@ export default function CrossyBackground({ isNightMode }) {
         h / 2 - 2,
         -180 - Math.random() * 100
       )
-      building.castShadow = true
-      building.receiveShadow = true
+      building.castShadow = SCENE.shadowsEnabled
+      building.receiveShadow = SCENE.shadowsEnabled
       cityGroup.add(building)
 
       // Windows on each building
-      for (let j = 0; j < 15; j++) {
+      for (let j = 0; j < SCENE.windowsPerBuilding; j++) {
         const winGeo = new THREE.PlaneGeometry(1.5, 2.5)
         const winMat = new THREE.MeshBasicMaterial({
           color: colors.windowGlow.clone(),
@@ -211,13 +257,15 @@ export default function CrossyBackground({ isNightMode }) {
     // ---- TREES ----
     const trees = []
     const treeGroup = new THREE.Group()
+    // Fewer segments on mobile (4 vs default)
+    const treeSphereDetail = IS_MOBILE ? 4 : 8
     const trunkGeo = new THREE.CylinderGeometry(0.4, 0.8, 5)
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2d1b0c })
-    const leafGeo = new THREE.SphereGeometry(4, 8, 8)
+    const leafGeo = new THREE.SphereGeometry(4, treeSphereDetail, treeSphereDetail)
     const leafMat = new THREE.MeshStandardMaterial({ color: 0x1a4a18 })
 
     // Background trees (behind rooms)
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < SCENE.backgroundTrees; i++) {
       const tree = new THREE.Group()
       const trunk = new THREE.Mesh(trunkGeo, trunkMat)
       trunk.position.y = 2.5
@@ -238,12 +286,12 @@ export default function CrossyBackground({ isNightMode }) {
         tree.userData.phase = Math.random() * Math.PI * 2
         treeGroup.add(tree)
         trees.push(tree)
-        tree.castShadow = true
+        tree.castShadow = SCENE.shadowsEnabled
       }
     }
 
     // Foreground trees (in front of camera, closer/larger, frame the scene)
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < SCENE.foregroundTrees; i++) {
       const tree = new THREE.Group()
       const trunk = new THREE.Mesh(trunkGeo, trunkMat)
       trunk.position.y = 2.5
@@ -262,7 +310,7 @@ export default function CrossyBackground({ isNightMode }) {
         tree.userData.phase = Math.random() * Math.PI * 2
         treeGroup.add(tree)
         trees.push(tree)
-        tree.castShadow = true
+        tree.castShadow = SCENE.shadowsEnabled
       }
     }
 
@@ -280,8 +328,8 @@ export default function CrossyBackground({ isNightMode }) {
 
     function makeCloud(scale) {
       const cloud = new THREE.Group()
-      // Each cloud is 5-9 chunky boxes clustered together
-      const count = 5 + Math.floor(Math.random() * 5)
+      // Each cloud is 5-9 chunky boxes clustered together (fewer on mobile)
+      const count = IS_MOBILE ? (3 + Math.floor(Math.random() * 3)) : (5 + Math.floor(Math.random() * 5))
       for (let i = 0; i < count; i++) {
         const w = (3 + Math.random() * 5) * scale
         const h = (2 + Math.random() * 3) * scale
@@ -299,7 +347,7 @@ export default function CrossyBackground({ isNightMode }) {
     }
 
     const clouds = []
-    for (let i = 0; i < 13; i++) {
+    for (let i = 0; i < SCENE.clouds; i++) {
       const scale = 0.6 + Math.random() * 1.0
       const cloud = makeCloud(scale)
       cloud.position.set(
@@ -347,7 +395,7 @@ export default function CrossyBackground({ isNightMode }) {
     }
 
     const airplanes = []
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < SCENE.airplanes; i++) {
       const airplane = makeAirplane()
       airplane.scale.setScalar(0.7)
       const startX = -300 + i * 200
@@ -365,30 +413,48 @@ export default function CrossyBackground({ isNightMode }) {
     }
     scene.add(planeGroup)
 
-    // ---- FOREGROUND LIGHT (park lamp right on the trees) ----
+    // ---- FOREGROUND LIGHTS (park lamp right on the trees) ----
     const fgLight = new THREE.PointLight(0xffeedd, 14.0, 180, 1.0)
     fgLight.position.set(0, 10, 32) // Right on the foreground trees
     scene.add(fgLight)
 
-    // Second fill light spread wider for the edges
-    const fgLight2 = new THREE.PointLight(0xddeeff, 7.0, 150, 1.2)
-    fgLight2.position.set(-30, 8, 38)
-    scene.add(fgLight2)
+    // Extra fill lights only on desktop (save draw calls on mobile)
+    if (SCENE.extraFillLights) {
+      // Second fill light spread wider for the edges
+      const fgLight2 = new THREE.PointLight(0xddeeff, 7.0, 150, 1.2)
+      fgLight2.position.set(-30, 8, 38)
+      scene.add(fgLight2)
 
-    // Third fill light for right side
-    const fgLight3 = new THREE.PointLight(0xddeeff, 7.0, 150, 1.2)
-    fgLight3.position.set(30, 8, 38)
-    scene.add(fgLight3)
+      // Third fill light for right side
+      const fgLight3 = new THREE.PointLight(0xddeeff, 7.0, 150, 1.2)
+      fgLight3.position.set(30, 8, 38)
+      scene.add(fgLight3)
+    }
 
     // ---- ANIMATION ----
     const clock = new THREE.Clock()
     let animFrameId = null
+    let timeoutId = null
 
     // Temp colors for lerp (avoid allocating in the loop)
     const tempColor1 = new THREE.Color()
 
+    // Frame interval for mobile fps cap (33ms = ~30fps)
+    const frameInterval = SCENE.targetFps < 60 ? (1000 / SCENE.targetFps) : 0
+
     function animate() {
-      animFrameId = requestAnimationFrame(animate)
+      if (frameInterval > 0) {
+        // Mobile: use setTimeout to cap at target fps, then rAF for vsync
+        timeoutId = setTimeout(() => {
+          animFrameId = requestAnimationFrame(renderFrame)
+        }, frameInterval)
+      } else {
+        // Desktop: full speed rAF
+        animFrameId = requestAnimationFrame(renderFrame)
+      }
+    }
+
+    function renderFrame() {
       const elapsed = clock.getElapsedTime()
 
       // Day/night ratio from real Arizona time (or prop override)
@@ -438,11 +504,20 @@ export default function CrossyBackground({ isNightMode }) {
       stars.rotation.y += 0.0005
 
       // Window glow (brighter at night)
-      const windowOpacityTarget = Math.max(0, 1 - dayRatio * 1.5)
-      for (let i = 0; i < windowPlanes.length; i++) {
-        const win = windowPlanes[i]
-        const flicker = Math.sin(elapsed * 2 + win.userData.flickerOffset) * 0.1
-        win.material.opacity = Math.max(0, windowOpacityTarget + flicker)
+      // Mobile: skip per-window flicker (static opacity), saves CPU per frame
+      if (SCENE.windowFlicker) {
+        const windowOpacityTarget = Math.max(0, 1 - dayRatio * 1.5)
+        for (let i = 0; i < windowPlanes.length; i++) {
+          const win = windowPlanes[i]
+          const flicker = Math.sin(elapsed * 2 + win.userData.flickerOffset) * 0.1
+          win.material.opacity = Math.max(0, windowOpacityTarget + flicker)
+        }
+      } else {
+        // Mobile: set all windows to static glow (no per-frame sin calc)
+        const windowOpacityTarget = Math.max(0, 1 - dayRatio * 1.5)
+        for (let i = 0; i < windowPlanes.length; i++) {
+          windowPlanes[i].material.opacity = windowOpacityTarget
+        }
       }
 
       // Tree sway
@@ -475,18 +550,26 @@ export default function CrossyBackground({ isNightMode }) {
       }
 
       // Camera with mouse parallax
+      // Mobile: raise camera + lookAt to pull city skyline up for perspective parity
+      const isMobileView = container.clientWidth < 768
+      const baseY = isMobileView ? 42 : 28
+      const lookAtY = isMobileView ? 50 : 35
       const targetX = mouseRef.current.x * 5
-      const targetY = 28 + mouseRef.current.y * 2 + Math.sin(elapsed * 0.4) * 0.5
+      const targetY = baseY + mouseRef.current.y * 2 + Math.sin(elapsed * 0.4) * 0.5
 
       camera.position.x += (targetX - camera.position.x) * 0.02
       camera.position.y += (targetY - camera.position.y) * 0.02
       camera.position.z = 35 + Math.cos(elapsed * 0.2) * 2
 
-      camera.lookAt(0, 35, -100)
+      camera.lookAt(0, lookAtY, -100)
 
       renderer.render(scene, camera)
+
+      // Schedule next frame
+      animate()
     }
 
+    // Kick off the loop
     animate()
 
     // ---- MOUSE TRACKING ----
@@ -510,6 +593,7 @@ export default function CrossyBackground({ isNightMode }) {
     // ---- CLEANUP ----
     return () => {
       if (animFrameId) cancelAnimationFrame(animFrameId)
+      if (timeoutId) clearTimeout(timeoutId)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('resize', onResize)
 
