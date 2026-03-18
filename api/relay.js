@@ -61,7 +61,7 @@ export default async function handler(req, res) {
   try {
     // POST: send a message (append to inbox)
     if (req.method === 'POST') {
-      const { message } = req.body
+      const { message, agent } = req.body
       if (!message || !message.trim()) {
         return res.status(400).json({ error: 'Message required' })
       }
@@ -70,9 +70,10 @@ export default async function handler(req, res) {
       const entry = {
         id,
         timestamp: new Date().toISOString(),
-        source: 'dashboard',
+        source: 'corner-dashboard',
         message: message.trim(),
         status: 'pending',
+        agent: agent || null,
       }
 
       const file = await fetchGitHubFile(INBOX_PATH)
@@ -84,6 +85,33 @@ export default async function handler(req, res) {
 
       const ok = await writeGitHubFile(INBOX_PATH, newContent, file.sha, `relay: dashboard message ${id.slice(0, 8)}`)
       if (!ok) return res.status(500).json({ error: 'Failed to write inbox' })
+
+      // Also write to conversation JSONL so message appears in chat history immediately
+      if (agent) {
+        const convPath = `conversations/agents/${agent}.jsonl`
+        // Strip @agent prefix from message for clean conversation display
+        const cleanMsg = message.trim().replace(/^@\S+\s*/, '')
+        if (cleanMsg) {
+          const convEntry = {
+            id: `dash-${id.slice(0, 12)}`,
+            timestamp: entry.timestamp,
+            role: 'user',
+            sender: 'patrik',
+            text: cleanMsg,
+            source: 'corner-dashboard',
+            agent,
+          }
+          try {
+            const convFile = await fetchGitHubFile(convPath)
+            const convContent = convFile?.content
+              ? convFile.content.trimEnd() + '\n' + JSON.stringify(convEntry) + '\n'
+              : JSON.stringify(convEntry) + '\n'
+            await writeGitHubFile(convPath, convContent, convFile?.sha, `conv: dashboard msg to ${agent}`)
+          } catch {
+            // Non-critical: message is in inbox, conversation write is best-effort
+          }
+        }
+      }
 
       return res.status(200).json({ ok: true, id })
     }

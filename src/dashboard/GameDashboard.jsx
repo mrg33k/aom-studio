@@ -79,6 +79,10 @@ const MODES = {
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
 const PALETTE = GRID_SPEC.colorPalette
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+// Conversation API: local Vite middleware on localhost, Vercel serverless on production
+const CONV_API_BASE = IS_LOCAL ? '/api/local/conversations' : '/api/conversations'
+// Relay send: local middleware on localhost, Vercel serverless on production
+const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/relay'
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
 
 // ---- UNIFIED ROOM LOOKUP (agents + projects) ----
@@ -7007,8 +7011,8 @@ export default function GameDashboard() {
   // Per-agent chat history: server files are source of truth
   // localStorage is DISABLED for chat. Every agent switch loads fresh from server.
   const [agentChats, setAgentChats] = useState(() => {
-    if (!IS_LOCAL) return { _demo: demoChatMessages }
     // Always start empty. Server files load on agent switch. No localStorage.
+    // Production uses /api/conversations (GitHub-backed). Local uses /api/local/conversations (file-backed).
     try { localStorage.removeItem('corner-agent-chats') } catch {}
     return {}
   })
@@ -7416,14 +7420,15 @@ export default function GameDashboard() {
     }
     // CRITICAL FIX: Clear conversation immediately to prevent stale data flash.
     // Set loading state so the UI shows a brief loading indicator instead of wrong data.
-    if (IS_LOCAL && selectedRoom) {
+    // Works on both localhost (Vite middleware) and production (Vercel API via GitHub).
+    if (selectedRoom) {
       setPanelChatLoading(true)
       setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: [] } }))
 
       const isProject = selectedRoom === 'aom' || selectedRoom.includes('-')
       const convTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
       const convType = isProject ? 'project' : 'agent'
-      fetch(`/api/local/conversations?target=${convTarget}&type=${convType}&limit=50`)
+      fetch(`${CONV_API_BASE}?target=${convTarget}&type=${convType}&limit=50`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           const msgs = (data?.messages || []).map(m => ({
@@ -7444,14 +7449,16 @@ export default function GameDashboard() {
     }
   }, [selectedRoom])
 
-  // Poll conversation file every 3s for new messages (live updates without full page refresh)
+  // Poll conversation file for new messages (live updates without full page refresh)
+  // Local: 3s (fast, file-backed). Production: 8s (GitHub API rate limit awareness).
   useEffect(() => {
-    if (!IS_LOCAL || !selectedRoom) return
+    if (!selectedRoom) return
     const isProj = selectedRoom === 'aom' || selectedRoom.includes('-')
     const pollTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
     const pollType = isProj ? 'project' : 'agent'
+    const pollInterval = IS_LOCAL ? 3000 : 8000
     const poll = setInterval(() => {
-      fetch(`/api/local/conversations?target=${pollTarget}&type=${pollType}&limit=50`)
+      fetch(`${CONV_API_BASE}?target=${pollTarget}&type=${pollType}&limit=50`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (!data?.messages?.length) return
@@ -7498,7 +7505,7 @@ export default function GameDashboard() {
           })
         })
         .catch(() => {})
-    }, 3000)
+    }, pollInterval)
     return () => clearInterval(poll)
   }, [selectedRoom, safeTimeSort])
 
@@ -7755,6 +7762,7 @@ export default function GameDashboard() {
       return { ...prev, [selectedRoom]: { _all: msgs } }
     })
     setPanelStreaming(true)
+    // Send message via relay (local Vite middleware or Vercel serverless)
     if (IS_LOCAL) {
       const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard' }
       if (atPrefixMatch) {
@@ -7771,6 +7779,26 @@ export default function GameDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sendBody),
+      }).catch(() => {})
+    } else {
+      // Production: send via Vercel /api/relay (writes to GitHub relay-inbox.jsonl)
+      fetch('/api/relay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `@${selectedRoom} ${text}`, agent: selectedRoom }),
+      }).then(() => {
+        // Production: after 15s, update streaming indicator to "busy" phase
+        // (message delivered to relay, waiting for terminal to process)
+        setTimeout(() => {
+          setAgentChats(prev => {
+            const current = prev[selectedRoom]?._all || []
+            const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
+            if (thinkingIdx === -1) return prev // already cleared by poll
+            const updated = [...current]
+            updated[thinkingIdx] = { ...updated[thinkingIdx], streamPhase: 'busy' }
+            return { ...prev, [selectedRoom]: { _all: updated } }
+          })
+        }, 15000)
       }).catch(() => {})
     }
   }, [panelChatInput, panelStreaming, selectedRoom, atOptions])
