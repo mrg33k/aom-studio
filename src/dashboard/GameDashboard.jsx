@@ -2718,6 +2718,10 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
       touchAction: 'auto',
+      paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
+      background: isNightMode
+        ? 'rgba(15,27,45,0.95)'
+        : 'rgba(18, 42, 75, 0.96)',
     }}>
       {/* Top bar */}
       <div style={{
@@ -2736,6 +2740,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         display: 'flex', alignItems: 'center',
         padding: '0 20px',
         gap: 12,
+        overflow: 'hidden',
       }}>
         {/* Corner. logo */}
         <div style={{
@@ -2798,6 +2803,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
               color: isNightMode ? '#E2E8F0' : '#E2E8F0',
               fontFamily: "'Inter', sans-serif",
               textTransform: 'uppercase', letterSpacing: '0.04em',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              maxWidth: isMobile ? 80 : 160,
             }}>
               {teamName}
             </span>
@@ -3263,14 +3270,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           })
         }
 
-        {/* + New Team button (next to team pill) */}
+        {/* + New Team button (next to team pill) -- hidden on mobile to prevent overflow */}
         <button
           onClick={() => {
             // Future: create new team / add friend world
             alert('New Team coming soon')
           }}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
+            display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 6,
             background: 'transparent',
             border: isNightMode ? '1.5px dashed rgba(59,130,246,0.25)' : '1.5px dashed rgba(59,130,246,0.3)',
             borderRadius: 10, padding: '6px 14px',
@@ -6473,6 +6480,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             {/* Chat input */}
             <div style={{
               padding: '16px 20px',
+              paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
               borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
               background: isNightMode
                 ? 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)'
@@ -6906,16 +6914,20 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 }
 
 // ---- CAMERA CONTROLS (floating, right side) --------------------------------
-function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, cameraTarget, setCameraTarget, onHomeRoom, panelVisible }) {
+function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, cameraTarget, setCameraTarget, onHomeRoom, panelVisible, isMobile, drawerOpen }) {
+  const btnSize = isMobile ? 44 : 32
+  const iconSize = isMobile ? 20 : 16
   return (
     <div style={{
-      position: 'absolute', top: 16, right: panelVisible ? 396 : 16, zIndex: 32,
-      transition: 'right 300ms ease',
+      position: 'absolute', top: isMobile ? 60 : 16, right: panelVisible ? 396 : 16, zIndex: 32,
+      transition: 'right 300ms ease, opacity 200ms ease',
       display: 'flex', flexDirection: 'column', gap: 4,
       background: 'rgba(10,15,30,0.85)',
       border: '1px solid rgba(255,255,255,0.08)',
       borderRadius: 8,
       padding: 4,
+      opacity: (isMobile && drawerOpen) ? 0 : 1,
+      pointerEvents: (isMobile && drawerOpen) ? 'none' : 'auto',
     }}>
       {/* Zoom in (snap to next preset) */}
       <button onClick={() => setCameraZoom(z => {
@@ -6925,20 +6937,22 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
         })}
         title="Zoom in (+)"
         style={{
-          width: 32, height: 32, background: 'transparent', border: 'none',
+          width: btnSize, height: btnSize, background: 'transparent', border: 'none',
           color: '#A0A0A0', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'color 150ms, background 150ms',
         }}
         onMouseEnter={e => { e.currentTarget.style.color = '#FDF6EC'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.background = 'transparent' }}
       >
-        <ZoomIn size={16} />
+        <ZoomIn size={iconSize} />
       </button>
 
-      {/* Zoom level label: ALL (overview) or ROOM (detail) */}
-      <span style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textAlign: 'center', padding: '2px 0' }}>
-        {cameraZoom <= 0.9 ? 'ALL' : 'ROOM'}
-      </span>
+      {/* Zoom level label: ALL (overview) or ROOM (detail) -- hidden on mobile (icon-only) */}
+      {!isMobile && (
+        <span style={{ color: '#6B7280', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', textAlign: 'center', padding: '2px 0' }}>
+          {cameraZoom <= 0.9 ? 'ALL' : 'ROOM'}
+        </span>
+      )}
 
       {/* Zoom out (snap to previous preset) */}
       <button onClick={() => setCameraZoom(z => {
@@ -6948,14 +6962,14 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
         })}
         title="Zoom out (-)"
         style={{
-          width: 32, height: 32, background: 'transparent', border: 'none',
+          width: btnSize, height: btnSize, background: 'transparent', border: 'none',
           color: '#A0A0A0', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'color 150ms, background 150ms',
         }}
         onMouseEnter={e => { e.currentTarget.style.color = '#FDF6EC'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.background = 'transparent' }}
       >
-        <ZoomOut size={16} />
+        <ZoomOut size={iconSize} />
       </button>
 
       {/* Divider */}
@@ -6965,7 +6979,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
       <button onClick={onHomeRoom}
         title={`Go to ${DEFAULT_AGENT} (H)`}
         style={{
-          width: 32, height: 32, background: 'transparent', border: 'none',
+          width: btnSize, height: btnSize, background: 'transparent', border: 'none',
           color: cameraTarget === DEFAULT_AGENT && !isOverview ? '#E85D26' : '#A0A0A0',
           cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'color 150ms, background 150ms',
@@ -6973,14 +6987,14 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
       >
-        <Home size={16} />
+        <Home size={iconSize} />
       </button>
 
       {/* Overview toggle */}
       <button onClick={() => setIsOverview(o => !o)}
         title="Overview (O)"
         style={{
-          width: 32, height: 32, background: isOverview ? 'rgba(232,93,38,0.15)' : 'transparent', border: 'none',
+          width: btnSize, height: btnSize, background: isOverview ? 'rgba(232,93,38,0.15)' : 'transparent', border: 'none',
           color: isOverview ? '#E85D26' : '#A0A0A0',
           cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'color 150ms, background 150ms',
@@ -6988,7 +7002,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
         onMouseEnter={e => { if (!isOverview) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
         onMouseLeave={e => { if (!isOverview) e.currentTarget.style.background = 'transparent' }}
       >
-        <MapIcon size={16} />
+        <MapIcon size={iconSize} />
       </button>
     </div>
   )
@@ -7997,7 +8011,7 @@ export default function GameDashboard() {
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : 52, paddingBottom: isMobile ? 70 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 70 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
@@ -8049,6 +8063,8 @@ export default function GameDashboard() {
                 setCameraTarget={setCameraTarget}
                 onHomeRoom={handleHomeRoom}
                 panelVisible={false}
+                isMobile={isMobile}
+                drawerOpen={drawerOpen}
               />
 
               {/* Ambient vignette overlay for Elon room focus (dark bg, subtle server-green glow) */}

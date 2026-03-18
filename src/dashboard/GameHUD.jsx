@@ -959,7 +959,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
       whileTap={{ scale: 0.88, y: 4, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
         display: 'flex', alignItems: 'center', gap: 14,
-        height: 56, padding: '0 24px',
+        height: 56, padding: '0 24px', minWidth: 80,
         background: isDaytime
           ? (isExpanded
               ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
@@ -1057,6 +1057,9 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
           ? '#FFFFFF'
           : isDaytime ? '#F1F5F9' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        maxWidth: 140,
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',
         textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.3)' : (isSchedule ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
