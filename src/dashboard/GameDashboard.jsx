@@ -5765,8 +5765,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   </div>
                 </div>
               )}
-              {/* TODAY separator */}
-              {chatMessages && chatMessages.length > 0 && (
+              {/* TODAY separator -- hidden during loading to prevent stale data flash */}
+              {!chatLoading && chatMessages && chatMessages.length > 0 && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   margin: '4px 0 8px',
@@ -5780,7 +5780,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.1)' }} />
                 </div>
               )}
-              {chatMessages && chatMessages.map((msg, i) => {
+              {!chatLoading && chatMessages && chatMessages.map((msg, i) => {
                 if (!msg || typeof msg !== 'object') return null // guard: skip null/malformed msgs
                 const isUser = msg.role === 'user'
                 // Only show source label on first message in a consecutive sequence from the same source
