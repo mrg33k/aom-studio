@@ -2202,8 +2202,8 @@ function MobileDrawer({
     }
   }, [mobileViewportHeight])
 
-  // Motion value for sheet height (animated)
-  const sheetHeight = useMotionValue(getSnapHeights().half)
+  // Motion value for sheet height (start at 0 so it animates UP on first render)
+  const sheetHeight = useMotionValue(0)
 
   // Animate to snap height when snap prop changes
   useEffect(() => {
@@ -5895,8 +5895,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       </div>
 
       {/* ---- TAB BAR (3 tabs: Live / List / Info) ---- */}
+      {/* Hidden on mobile: MobileDrawer has its own tab bar */}
       <div style={{
-        display: 'flex',
+        display: isMobile ? 'none' : 'flex',
         borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
         flexShrink: 0,
         position: 'relative',
