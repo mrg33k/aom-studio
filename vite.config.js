@@ -467,6 +467,7 @@ function localDashboardPlugin() {
                 agent: agentName,
                 source: 'dashboard',
                 text: data.message,
+                reply_to: '',
               }
               const convLine = JSON.stringify(convEntry) + '\n'
               // Write to main log + agent/project-specific log
@@ -1169,30 +1170,65 @@ function webSocketServerPlugin() {
                 return
               }
 
-              // Handle chat messages (forward to relay inbox so EA hook picks them up)
+              // Handle chat messages (forward to relay inbox + write to conversation files)
               if (data.type === 'chat_message') {
+                const wsId = crypto.randomUUID()
+                const wsTs = new Date().toISOString()
+                const agentName = data.agent || 'elon'
                 const entry = {
-                  id: crypto.randomUUID(),
-                  agent: data.agent,
+                  id: wsId,
+                  agent: agentName,
                   message: data.content,
                   source: 'corner-websocket',
-                  status: 'pending',
+                  // Use 'read' to match HTTP relay-send behavior.
+                  // 'pending' caused double-processing: relay hook AND auto-responder both fired.
+                  status: 'read',
                   chat_id: null,
-                  timestamp: new Date().toISOString(),
+                  timestamp: wsTs,
                 }
                 const line = JSON.stringify(entry) + '\n'
-                // Write to both paths so the hook picks it up
-                fs.appendFileSync(RELAY_INBOX_PATH, line)
-                if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) {
-                  fs.appendFileSync(REPO_INBOX_PATH, line)
+                // Write to both relay inbox paths
+                withFileLock(RELAY_INBOX_PATH, () => {
+                  fs.appendFileSync(RELAY_INBOX_PATH, line)
+                  if (RELAY_INBOX_PATH !== REPO_INBOX_PATH) {
+                    fs.appendFileSync(REPO_INBOX_PATH, line)
+                  }
+                })
+
+                // Write to conversation files (same as HTTP relay-send)
+                if (data.content) {
+                  const convEntry = {
+                    id: wsId,
+                    timestamp: wsTs,
+                    role: 'user',
+                    agent: agentName,
+                    source: 'dashboard',
+                    text: data.content,
+                    reply_to: '',
+                  }
+                  const convLine = JSON.stringify(convEntry) + '\n'
+                  const convDir = resolve(AOM_EA_ROOT, 'conversations')
+                  const isProjectMsg = agentName === 'aom' || agentName.includes('-')
+                  const convSubDir = isProjectMsg ? resolve(convDir, 'projects') : resolve(convDir, 'agents')
+                  const convFileName = agentName === 'aom' ? 'aom-internal' : agentName
+                  try {
+                    fs.mkdirSync(convSubDir, { recursive: true })
+                    fs.appendFileSync(resolve(convDir, 'main.jsonl'), convLine)
+                    fs.appendFileSync(resolve(convSubDir, `${convFileName}.jsonl`), convLine)
+                    if (convFileName !== 'aom-internal') {
+                      fs.appendFileSync(resolve(convDir, 'projects', 'aom-internal.jsonl'), convLine)
+                    }
+                  } catch (err) {
+                    console.log(`[WebSocket] Conv log write failed: ${err.message}`)
+                  }
                 }
 
                 // Broadcast agent state change: thinking
                 broadcast({
                   type: 'agent_state_change',
-                  agent: data.agent,
+                  agent: agentName,
                   state: 'thinking',
-                  timestamp: new Date().toISOString(),
+                  timestamp: wsTs,
                 })
               }
             } catch {
