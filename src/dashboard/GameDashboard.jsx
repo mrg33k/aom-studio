@@ -6605,7 +6605,27 @@ export default function GameDashboard() {
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
   const [mobileChatOpen, setMobileChatOpen] = useState(false) // Fullscreen mobile chat overlay
   const [mobileActiveTab, setMobileActiveTab] = useState('chat') // Mobile overlay tab (chat/tasks/info/checklist/megaboard)
+  const [mobileViewportHeight, setMobileViewportHeight] = useState(null) // iOS keyboard-aware viewport height
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
+
+  // iOS keyboard-aware viewport: when the keyboard opens, visualViewport shrinks.
+  // Adjust the mobile overlay height so the chat input stays visible above the keyboard.
+  useEffect(() => {
+    if (!mobileChatOpen || !window.visualViewport) return
+    const handler = () => {
+      const vvh = window.visualViewport.height
+      const wh = window.innerHeight
+      // Keyboard is open when visual viewport is significantly smaller than inner height
+      if (vvh < wh - 50) {
+        setMobileViewportHeight(vvh)
+      } else {
+        setMobileViewportHeight(null)
+      }
+    }
+    window.visualViewport.addEventListener('resize', handler)
+    return () => window.visualViewport.removeEventListener('resize', handler)
+  }, [mobileChatOpen])
+
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
   // @ routing: corner config + autocomplete state
@@ -7893,10 +7913,15 @@ export default function GameDashboard() {
       {/* Fullscreen mobile overlay (Chat / Tasks / Info / List / Board) */}
       {isMobile && mobileChatOpen && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 200,
+          position: 'fixed',
+          top: 0, left: 0, right: 0,
+          // When keyboard opens, shrink to visualViewport height so input stays visible
+          height: mobileViewportHeight ? `${mobileViewportHeight}px` : '100%',
+          zIndex: 200,
           background: 'rgba(10,15,30,0.98)',
           display: 'flex', flexDirection: 'column',
           touchAction: 'auto',
+          transition: 'height 100ms ease',
         }}>
           {/* Mobile header: back + agent info */}
           <div style={{
