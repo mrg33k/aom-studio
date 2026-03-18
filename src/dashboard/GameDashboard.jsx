@@ -2190,6 +2190,8 @@ function MobileDrawer({
   const isDraggingHandle = useRef(false)
   const [activeTab, setActiveTab] = useState('chat')
   const [mobileViewportHeight, setMobileViewportHeight] = useState(null)
+  const [keyboardOpen, setKeyboardOpen] = useState(false)
+  const preKeyboardSnapRef = useRef(null)
 
   const agentColor = room?.agentColor || agent?.color || '#6B7280'
   const status = agentStatus?.status || 'IDLE'
@@ -2202,7 +2204,7 @@ function MobileDrawer({
     return {
       hidden: 0,
       half: Math.round(vh * 0.52), // ~52% of viewport
-      full: vh, // full viewport height
+      full: vh, // full viewport height (shrinks to visualViewport when keyboard is open)
     }
   }, [mobileViewportHeight])
 
@@ -2221,21 +2223,45 @@ function MobileDrawer({
     })
   }, [snap, mobileViewportHeight]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // iOS keyboard awareness
+  // iOS keyboard awareness: auto-snap to FULL when keyboard opens, restore on close
   useEffect(() => {
     if (!window.visualViewport) return
     const handler = () => {
       const vvh = window.visualViewport.height
       const wh = window.innerHeight
-      if (vvh < wh - 50) {
+      const kbOpen = vvh < wh - 50
+      if (kbOpen) {
+        // Keyboard just opened
         setMobileViewportHeight(vvh)
+        if (!keyboardOpen) {
+          // Save current snap so we can restore it when keyboard closes
+          preKeyboardSnapRef.current = snap
+          setKeyboardOpen(true)
+          // Auto-snap to full so chat input stays visible above keyboard
+          onSnapChange('full')
+        } else {
+          // Keyboard height changed (e.g. predictive bar toggled)
+          // Re-animate to new full height
+          const newFull = vvh
+          fmAnimate(sheetHeight, newFull, {
+            type: 'spring', stiffness: 300, damping: 32, mass: 0.8,
+          })
+        }
       } else {
+        // Keyboard closed
         setMobileViewportHeight(null)
+        if (keyboardOpen) {
+          setKeyboardOpen(false)
+          // Restore previous snap point
+          const restoreSnap = preKeyboardSnapRef.current || 'half'
+          preKeyboardSnapRef.current = null
+          onSnapChange(restoreSnap)
+        }
       }
     }
     window.visualViewport.addEventListener('resize', handler)
     return () => window.visualViewport.removeEventListener('resize', handler)
-  }, [])
+  }, [keyboardOpen, snap]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Snap to nearest height based on current height + velocity
   const snapToNearest = useCallback((currentHeight, velocityY) => {
@@ -2315,6 +2341,12 @@ function MobileDrawer({
   // At FULL snap, the sheet covers the mode bar so we need safe-area at bottom
   const isFullSnap = snap === 'full'
 
+  // When keyboard is open, position drawer so it sits above the keyboard
+  // visualViewport.offsetTop gives the scroll offset from keyboard push
+  const kbBottomOffset = keyboardOpen
+    ? (window.innerHeight - (window.visualViewport?.height || window.innerHeight))
+    : 0
+
   return (
     <motion.div
       ref={sheetRef}
@@ -2322,11 +2354,11 @@ function MobileDrawer({
         position: 'fixed',
         left: 0,
         right: 0,
-        bottom: isFullSnap ? 0 : 'calc(48px + env(safe-area-inset-bottom, 0px))',
+        bottom: keyboardOpen ? kbBottomOffset : (isFullSnap ? 0 : 'env(safe-area-inset-bottom, 0px)'),
         height: sheetHeight,
-        zIndex: isFullSnap ? 200 : 38,
+        zIndex: isFullSnap || keyboardOpen ? 200 : 38,
         background: 'rgba(10, 15, 30, 0.98)',
-        borderRadius: isFullSnap ? 0 : '16px 16px 0 0',
+        borderRadius: (isFullSnap || keyboardOpen) ? 0 : '16px 16px 0 0',
         boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.6)',
         display: 'flex',
         flexDirection: 'column',
@@ -7968,13 +8000,17 @@ export default function GameDashboard() {
       fontFamily: 'Inter, system-ui, sans-serif',
       transition: 'background 500ms ease',
       overscrollBehavior: 'none', touchAction: 'none',
+      // Suppress iOS text selection on long-press (FIX 3, Wave 5)
+      WebkitTouchCallout: 'none',
+      WebkitUserSelect: 'none',
+      userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : 52, paddingBottom: isMobile ? 120 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 48 : 52, paddingBottom: isMobile ? 70 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
@@ -7987,6 +8023,8 @@ export default function GameDashboard() {
                 hoveredRoom={hoveredRoom}
                 setHoveredRoom={setHoveredRoom}
                 isNightMode={isNightMode}
+                drawerSnap={drawerSnap}
+                isMobile={isMobile}
               />
 
               {/* SimCity floating stats overlay (bottom-left of game viewport) */}
@@ -8093,7 +8131,7 @@ export default function GameDashboard() {
       {(
         <div style={{
           position: 'fixed',
-          bottom: isMobile ? 'calc(48px + env(safe-area-inset-bottom, 0px))' : 0,
+          bottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : 0,
           left: 0,
           right: (!isMobile && selectedRoom && ROOM_LOOKUP[selectedRoom]) ? (panelExtended ? '65%' : '30%') : 0,
           zIndex: 40,
@@ -8152,16 +8190,13 @@ export default function GameDashboard() {
         </div>
       )}
 
-      {/* Mobile mode tab bar (hidden when drawer is at full screen) */}
-      {isMobile && !(drawerSnap === 'full') && (
-        <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />
-      )}
+      {/* Mobile mode tab bar: REMOVED per Patrik directive (Wave 5). All navigation through drawer/pills. */}
 
       {/* Mobile fullscreen Checklist/Megaboard overlays */}
       {isMobile && currentMode === 'checklist' && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 45,
-          paddingTop: 48, paddingBottom: 'calc(48px + env(safe-area-inset-bottom, 0px))',
+          paddingTop: 48, paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           background: isNightMode ? '#0A0D1A' : '#141E30',
           overflow: 'hidden',
           touchAction: 'auto',
@@ -8174,7 +8209,7 @@ export default function GameDashboard() {
       {isMobile && currentMode === 'megaboard' && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 45,
-          paddingTop: 48, paddingBottom: 'calc(48px + env(safe-area-inset-bottom, 0px))',
+          paddingTop: 48, paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           background: isNightMode ? '#0A0D1A' : '#141E30',
           overflow: 'hidden',
           touchAction: 'auto',
@@ -8254,7 +8289,7 @@ export default function GameDashboard() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           style={{
-            position: 'fixed', bottom: isMobile ? 130 : 80, right: 20, zIndex: 50,
+            position: 'fixed', bottom: isMobile ? 82 : 80, right: 20, zIndex: 50,
             minWidth: 44, height: 44, borderRadius: 22,
             background: '#E85D26',
             color: '#FFF', fontFamily: "'Inter Tight', sans-serif", fontWeight: 900, fontSize: 16,
@@ -8427,7 +8462,7 @@ export default function GameDashboard() {
       {/* Error / connection indicator */}
       {error && (
         <div style={{
-          position: 'fixed', bottom: isMobile ? 140 : 80, left: showMinimap ? 192 : 16,
+          position: 'fixed', bottom: isMobile ? 92 : 80, left: showMinimap ? 192 : 16,
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
           color: '#EF4444', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
           padding: '6px 12px', borderRadius: 4, zIndex: 50,
@@ -8440,7 +8475,7 @@ export default function GameDashboard() {
       {/* WebSocket connection indicator */}
       {wsHook.isReconnecting && (
         <div style={{
-          position: 'fixed', bottom: isMobile ? 140 : 80,
+          position: 'fixed', bottom: isMobile ? 92 : 80,
           right: 16, zIndex: 50,
           background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
           color: '#F59E0B', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
@@ -8584,6 +8619,12 @@ export default function GameDashboard() {
         }
         /* Touch action for game viewport */
         .game-viewport { touch-action: none; }
+        /* FIX 3 Wave 5: Allow text selection in inputs/textareas despite root user-select:none */
+        input, textarea, [contenteditable="true"] {
+          -webkit-touch-callout: default !important;
+          -webkit-user-select: text !important;
+          user-select: text !important;
+        }
       `}</style>
     </div>
   )

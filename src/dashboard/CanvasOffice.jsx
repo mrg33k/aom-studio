@@ -851,6 +851,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   hoveredRoom: extHover,
   setHoveredRoom: setExtHover,
   isNightMode = true,
+  drawerSnap = null,
+  isMobile = false,
 }, ref) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
@@ -1050,6 +1052,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
   // ---- FOCUS CAMERA (neighbors visible) ----
   // Zoom so focused room fills ~40% viewport (not 60%) so neighbors are visible around it
+  // On mobile with drawer open, offset Y so room centers in the visible area ABOVE the drawer
   const getFocusCamera = useCallback((roomId, viewW, viewH) => {
     const slotIdx = slotOrder.indexOf(roomId)
     if (slotIdx < 0) return getOverviewCamera(viewW, viewH)
@@ -1061,9 +1064,24 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const targetScreenSize = Math.min(viewW, viewH) * 0.40
     const zoomFocus = targetScreenSize / visibleRoomSize
     const panX = viewW / 2 - roomCX * zoomFocus
-    const panY = viewH / 2 - roomCY * zoomFocus
+
+    // Mobile drawer offset: when drawer is at 'half' (~52% of screen), center the room
+    // in the top ~48% of the viewport instead of dead center
+    let panY = viewH / 2 - roomCY * zoomFocus
+    if (isMobile && drawerSnap === 'half') {
+      // Drawer covers ~52% of viewport from bottom. Visible area = top ~48%.
+      // Center of visible area = viewH * 0.48 / 2 = viewH * 0.24
+      const visibleCenterY = viewH * 0.24
+      panY = visibleCenterY - roomCY * zoomFocus
+    } else if (isMobile && drawerSnap === 'full') {
+      // Full drawer covers everything, but user can still see the top sliver
+      // Keep room centered in top ~20%
+      const visibleCenterY = viewH * 0.10
+      panY = visibleCenterY - roomCY * zoomFocus
+    }
+
     return { x: panX, y: panY, zoom: zoomFocus }
-  }, [slotOrder, ORIGIN_X, ORIGIN_Y, getOverviewCamera])
+  }, [slotOrder, ORIGIN_X, ORIGIN_Y, getOverviewCamera, isMobile, drawerSnap])
 
   // ---- ANIMATE CAMERA TRANSITION ----
   const animateCamera = useCallback((targetCamera) => {
@@ -1085,7 +1103,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
   }, [size.w, size.h, getOverviewCamera])
 
-  // ---- RECALCULATE CAMERA when focused room changes or viewport resizes ----
+  // ---- RECALCULATE CAMERA when focused room changes, viewport resizes, or drawer state changes ----
   useEffect(() => {
     if (size.w <= 0 || size.h <= 0) return
     if (focusedRoom) {
@@ -1093,7 +1111,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     } else {
       animateCamera(getOverviewCamera(size.w, size.h))
     }
-  }, [focusedRoom, size.w, size.h, animateCamera, getFocusCamera, getOverviewCamera])
+  }, [focusedRoom, size.w, size.h, animateCamera, getFocusCamera, getOverviewCamera, drawerSnap])
 
   // ---- DRAW ----
   const draw = useCallback(() => {
