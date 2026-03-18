@@ -5440,22 +5440,22 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   return (
     <div
       style={{
-        flex: isExtended ? '0 0 65%' : '0 0 30%',
-        width: isExtended ? '65%' : '30%',
-        minWidth: 300,
-        maxWidth: isExtended ? '65%' : '40%',
+        ...(isMobile
+          ? { flex: 1, width: '100%', minWidth: 0, maxWidth: '100%' }
+          : { flex: isExtended ? '0 0 65%' : '0 0 30%', width: isExtended ? '65%' : '30%', minWidth: 300, maxWidth: isExtended ? '65%' : '40%' }
+        ),
         flexShrink: 0,
         height: '100%',
         background: isNightMode
           ? 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)'
           : 'linear-gradient(180deg, rgba(20,40,70,0.97) 0%, rgba(24,48,82,0.96) 50%, rgba(20,40,70,0.97) 100%)',
-        borderLeft: isNightMode
+        borderLeft: isMobile ? 'none' : (isNightMode
           ? '2px solid rgba(59, 130, 246, 0.35)'
-          : '2px solid rgba(59, 130, 246, 0.35)',
+          : '2px solid rgba(59, 130, 246, 0.35)'),
         display: 'flex', flexDirection: 'column',
-        boxShadow: isNightMode
+        boxShadow: isMobile ? 'none' : (isNightMode
           ? '-6px 0 30px rgba(0,0,0,0.6), -1px 0 0 rgba(59,130,246,0.1)'
-          : '-8px 0 32px rgba(0,0,0,0.4), -1px 0 0 rgba(59,130,246,0.15)',
+          : '-8px 0 32px rgba(0,0,0,0.4), -1px 0 0 rgba(59,130,246,0.15)'),
         transition: 'width 250ms ease, background 500ms ease',
         position: 'relative',
         overflow: 'hidden',
@@ -5472,6 +5472,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       }} />
 
       {/* ---- AGENT CARD (chunky, game-scale, 64px avatar) ---- */}
+      {/* Hidden on mobile: mobile overlay header already shows agent info */}
       <div style={{
         padding: '20px 24px',
         background: isNightMode
@@ -5479,7 +5480,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           : 'linear-gradient(180deg, rgba(59,130,246,0.12) 0%, transparent 100%)',
         borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.15)' : '2px solid rgba(59,130,246,0.25)',
         flexShrink: 0,
-        display: 'flex', alignItems: 'center', gap: 16,
+        display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 16,
       }}>
         {/* 64px avatar with agent color ring + status dot */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -5577,21 +5578,25 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       </div>
 
       {/* ---- 4 TOP SQUARES (interactive, alive -- replaces stat pills) ---- */}
-      <TopSquares
-        allAgentStatus={allAgentStatus}
-        workingCount={workingCount}
-        blockedCount={blockedCount}
-        overallProgress={overallProgress}
-        isNightMode={isNightMode}
-        isDaytime={isDaytime}
-        data={data}
-        pipeData={pipeData}
-        rightNowTasksProp={rightNowTasks}
-      />
+      {/* Hidden on mobile: saves vertical space, agent info in header */}
+      {!isMobile && (
+        <TopSquares
+          allAgentStatus={allAgentStatus}
+          workingCount={workingCount}
+          blockedCount={blockedCount}
+          overallProgress={overallProgress}
+          isNightMode={isNightMode}
+          isDaytime={isDaytime}
+          data={data}
+          pipeData={pipeData}
+          rightNowTasksProp={rightNowTasks}
+        />
+      )}
 
       {/* ---- "TALKING TO" INDICATOR (subtle channel context above tabs) ---- */}
+      {/* Hidden on mobile: header already shows who you're talking to */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
+        display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 6,
         padding: '6px 24px',
         borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.12)',
         flexShrink: 0,
@@ -5670,8 +5675,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
               style={{
                 flex: 1, textAlign: 'center',
-                padding: '14px 0',
-                fontSize: 16, fontWeight: 900,
+                padding: isMobile ? '12px 0' : '14px 0',
+                minHeight: isMobile ? 44 : 'auto',
+                fontSize: isMobile ? 13 : 16, fontWeight: 900,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
                 color: active ? (isNightMode ? '#F1F5F9' : '#60A5FA') : (isNightMode ? '#475569' : '#6B8AB0'),
@@ -5703,9 +5709,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 />
               )}
-              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? 0 : 6 }}>
                 {tab.label}
-                {tab.key && (
+                {tab.key && !isMobile && (
                   <span style={{
                     background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.06)',
                     border: isDaytime ? '1px solid rgba(59,130,246,0.18)' : '1px solid rgba(255,255,255,0.1)',
@@ -6598,6 +6604,7 @@ export default function GameDashboard() {
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
   const [mobileChatOpen, setMobileChatOpen] = useState(false) // Fullscreen mobile chat overlay
+  const [mobileActiveTab, setMobileActiveTab] = useState('chat') // Mobile overlay tab (chat/tasks/info/checklist/megaboard)
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
@@ -7883,7 +7890,7 @@ export default function GameDashboard() {
         </AnimatePresence>
       )}
 
-      {/* Fullscreen mobile chat overlay */}
+      {/* Fullscreen mobile overlay (Chat / Tasks / Info / List / Board) */}
       {isMobile && mobileChatOpen && selectedRoom && ROOM_MAP[selectedRoom] && ROOM_MAP[selectedRoom].agent !== null && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 200,
@@ -7891,17 +7898,17 @@ export default function GameDashboard() {
           display: 'flex', flexDirection: 'column',
           touchAction: 'auto',
         }}>
-          {/* Mobile chat header */}
+          {/* Mobile header: back + agent info */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '12px 16px',
-            paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
-            borderBottom: '1px solid rgba(59,130,246,0.15)',
+            padding: '10px 16px',
+            paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))',
             background: 'rgba(15,27,45,0.95)',
             backdropFilter: 'blur(12px)',
+            flexShrink: 0,
           }}>
             <button
-              onClick={() => setMobileChatOpen(false)}
+              onClick={() => { setMobileChatOpen(false); setMobileActiveTab('chat') }}
               style={{
                 width: 44, height: 44, minWidth: 44, minHeight: 44,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -7926,15 +7933,15 @@ export default function GameDashboard() {
               </div>
             </div>
           </div>
-          {/* Chat body: reuse UnifiedPanel in chat-only mode */}
+          {/* Full UnifiedPanel with all tabs (Chat/Tasks/Info/List/Board) */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <UnifiedPanel
-              key={`mobile-chat-${selectedRoom}`}
+              key={`mobile-panel-${selectedRoom}`}
               room={ROOM_MAP[selectedRoom]}
               agent={AGENTS.find(a => a.slug === selectedRoom)}
               agentStatus={agentStatus[selectedRoom]}
               allAgentStatus={agentStatus}
-              onClose={() => setMobileChatOpen(false)}
+              onClose={() => { setMobileChatOpen(false); setMobileActiveTab('chat') }}
               onChat={handleChat}
               chatMessages={panelMessages._all || []}
               chatInput={panelChatInput}
@@ -7942,7 +7949,7 @@ export default function GameDashboard() {
               streaming={panelStreaming}
               chatLoading={panelChatLoading}
               agentSlug={selectedRoom}
-              isExtended={false}
+              isExtended={mobileActiveTab === 'checklist' || mobileActiveTab === 'megaboard'}
               onToggleExtend={() => {}}
               isMobile={true}
               atMenuOpen={atMenuOpen}
@@ -7952,8 +7959,8 @@ export default function GameDashboard() {
               onAtKeyDown={handleAtKeyDown}
               cornerConfig={cornerConfig}
               data={data}
-              activeTab="chat"
-              onActiveTabChange={() => {}}
+              activeTab={mobileActiveTab}
+              onActiveTabChange={setMobileActiveTab}
               isNightMode={isNightMode}
               onAddToRightNow={addToRightNow}
               rightNowTasks={rightNowTasks}
