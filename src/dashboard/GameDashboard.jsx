@@ -2187,6 +2187,7 @@ function MobileBottomSheet({ room, agent, agentStatus, onClose, onChat, onViewTa
         overflow: 'hidden',
         transition: 'height 300ms ease',
         display: 'flex', flexDirection: 'column',
+        touchAction: 'auto',
       }}
     >
       {/* Drag handle */}
@@ -2410,6 +2411,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 35,
+      touchAction: 'auto',
     }}>
       {/* Top bar */}
       <div style={{
@@ -6205,8 +6207,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   }}
                 />
                 <button type="submit" disabled={!chatInput?.trim() || streaming} style={{
-                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-                  width: 38, height: 38, borderRadius: 11,
+                  position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                  width: 44, height: 44, borderRadius: 12,
                   background: chatInput?.trim() ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' : 'rgba(59,130,246,0.12)',
                   border: chatInput?.trim() ? '2px solid rgba(59,130,246,0.6)' : '2px solid rgba(59,130,246,0.2)',
                   color: '#FFF',
@@ -7300,9 +7302,11 @@ export default function GameDashboard() {
   // Preload all idle sprites for instant display
   usePreloadSprites()
 
-  // Mode switching handler: modes live in sidebar tabs only.
-  // Game is always the main viewport. Keys 1/2/3 switch the sidebar tab.
+  // Mode switching handler: modes live in sidebar tabs on desktop.
+  // On mobile: modes switch full-screen views via currentMode state.
+  // Game is always the main viewport. Keys 1/2/3 switch the sidebar tab (desktop).
   const handleModeSwitch = useCallback((mode) => {
+    setCurrentMode(mode)
     if (mode === 'game') {
       // Key 1: switch sidebar to chat tab
       setPanelActiveTab('chat')
@@ -7833,6 +7837,34 @@ export default function GameDashboard() {
         <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />
       )}
 
+      {/* Mobile fullscreen Checklist/Megaboard overlays */}
+      {isMobile && currentMode === 'checklist' && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 45,
+          paddingTop: 48, paddingBottom: 'calc(48px + env(safe-area-inset-bottom, 0px))',
+          background: isNightMode ? '#0A0D1A' : '#141E30',
+          overflow: 'hidden',
+          touchAction: 'auto',
+        }}>
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280' }}>Loading...</div>}>
+            <ChecklistMode agentStatus={agentStatus} isMobile={isMobile} data={data} />
+          </Suspense>
+        </div>
+      )}
+      {isMobile && currentMode === 'megaboard' && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 45,
+          paddingTop: 48, paddingBottom: 'calc(48px + env(safe-area-inset-bottom, 0px))',
+          background: isNightMode ? '#0A0D1A' : '#141E30',
+          overflow: 'hidden',
+          touchAction: 'auto',
+        }}>
+          <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6B7280' }}>Loading...</div>}>
+            <MegaboardMode agentStatus={agentStatus} data={data} isMobile={isMobile} />
+          </Suspense>
+        </div>
+      )}
+
       {/* Mobile bottom sheet */}
       {isMobile && (
         <AnimatePresence>
@@ -7857,6 +7889,7 @@ export default function GameDashboard() {
           position: 'fixed', inset: 0, zIndex: 200,
           background: 'rgba(10,15,30,0.98)',
           display: 'flex', flexDirection: 'column',
+          touchAction: 'auto',
         }}>
           {/* Mobile chat header */}
           <div style={{

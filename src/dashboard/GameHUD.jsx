@@ -1386,6 +1386,8 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
       <div style={{
         padding: '8px 16px 16px',
         overflowY: 'auto', maxHeight: 300,
+        touchAction: 'pan-y',
+        WebkitOverflowScrolling: 'touch',
       }} className="hud-scroll">
         {sortedTasks.map((task, i) => {
           const isDone = getTaskDone(task, task.origIdx)
@@ -1444,8 +1446,8 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                         background: isDaytime ? 'rgba(255,107,61,0.06)' : 'rgba(255,107,61,0.08)',
                         border: `1.5px solid rgba(255,107,61,0.3)`,
                         borderRadius: 8,
-                        padding: '6px 12px',
-                        fontSize: 15, fontWeight: 500,
+                        padding: '8px 12px',
+                        fontSize: 16, fontWeight: 500,
                         fontFamily: "'Inter', system-ui, sans-serif",
                         color: tpTextPrimary,
                         outline: 'none',
@@ -2077,6 +2079,8 @@ export default function GameHUD({
           margin: isMobile ? 0 : '0 12px',
           // Mobile: flush bottom with no gap
           ...(isMobile ? { borderRadius: 0 } : {}),
+          // Override parent's touchAction:none so HUD scrollables work
+          touchAction: 'auto',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
@@ -2130,6 +2134,7 @@ export default function GameHUD({
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
+              touchAction: 'pan-x',
             }} className="hud-ticker-scroll">
               <Zap size={14} color="#FF6B3D" style={{ flexShrink: 0, marginLeft: 4, filter: 'drop-shadow(0 0 6px rgba(255,107,61,0.6))' }} />
               <span style={{
@@ -2241,6 +2246,7 @@ export default function GameHUD({
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
+            touchAction: 'pan-x',
           }} className="hud-pills-scroll">
             {/* Search toggle + input (available on all viewports) */}
               <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
