@@ -190,12 +190,15 @@ const AGENT_FOLDER_ROOMS = [
   'kohrs', 'nabi', 'outreach', 'ai-advisory', 'included-health',
 ]
 
+// Static version string for room images. Increment when room PNGs are updated.
+// Using Date.now() previously caused EVERY mount to re-download all PNGs (never cached).
+const ROOM_IMAGE_VERSION = '1'
+
 function getRoomImageSources(id) {
-  const cacheBust = `?v=${Date.now()}`
   if (AGENT_FOLDER_ROOMS.includes(id)) {
     return {
-      working: `/corner/${id}-room/room-shell-working.png${cacheBust}`,
-      idle: `/corner/${id}-room/room-shell-idle.png${cacheBust}`,
+      working: `/corner/${id}-room/room-shell-working.png?v=${ROOM_IMAGE_VERSION}`,
+      idle: `/corner/${id}-room/room-shell-idle.png?v=${ROOM_IMAGE_VERSION}`,
       hasImages: true,
     }
   }
