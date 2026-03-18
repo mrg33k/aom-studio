@@ -896,6 +896,22 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   })
   const mouseDownRef = useRef({ active: false, didDrag: false, startX: 0, startY: 0 })
 
+  // ---- MAP PAN STATE (touch drag on empty space) ----
+  // Stores pan velocity and animation frame for momentum/inertia after finger lifts.
+  // panRef.offset is the user's current pan delta added on top of the camera's base position.
+  const panRef = useRef({
+    active: false,
+    startCamX: 0, startCamY: 0,     // camera position when pan started
+    startTouchX: 0, startTouchY: 0, // initial touch position
+    lastTouchX: 0, lastTouchY: 0,   // last touch position (for velocity)
+    lastTouchTime: 0,               // timestamp of last touch move
+    velX: 0, velY: 0,               // velocity in px/frame
+    momentumFrame: null,             // requestAnimationFrame ID for momentum
+  })
+
+  // Touch-specific drag threshold (higher than mouse to prevent accidental pans from taps)
+  const TOUCH_DRAG_THRESHOLD = 10
+
   // Long-press timer for touch context menu (500ms threshold)
   const longPressTimerRef = useRef(null)
   const longPressFiredRef = useRef(false)
@@ -1051,6 +1067,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
   // ---- ANIMATE CAMERA TRANSITION ----
   const animateCamera = useCallback((targetCamera) => {
+    // Cancel any ongoing pan momentum when a room-focus animation starts
+    if (panRef.current.momentumFrame) {
+      cancelAnimationFrame(panRef.current.momentumFrame)
+      panRef.current.momentumFrame = null
+    }
     const from = { ...cameraRef.current }
     cameraAnimRef.current = { from, to: targetCamera, startTime: performance.now(), duration: CAMERA_TRANSITION_MS }
   }, [])
@@ -1685,6 +1706,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // ---- MOUSE DOWN ----
   const onDown = useCallback((e) => {
     setContextMenu(null)
+    // Cancel any running momentum animation
+    if (panRef.current.momentumFrame) {
+      cancelAnimationFrame(panRef.current.momentumFrame)
+      panRef.current.momentumFrame = null
+    }
+
     const rect = containerRef.current?.getBoundingClientRect()
     if (!rect) return
 
@@ -1717,6 +1744,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         totalMovement: 0,
       }
     }
+
+    // Prepare pan state for empty-space drag
+    panRef.current = {
+      active: false,
+      startCamX: cam.x,
+      startCamY: cam.y,
+      startTouchX: e.clientX,
+      startTouchY: e.clientY,
+      lastTouchX: e.clientX,
+      lastTouchY: e.clientY,
+      lastTouchTime: performance.now(),
+      velX: 0,
+      velY: 0,
+      momentumFrame: null,
+    }
   }, [ORIGIN_X, ORIGIN_Y, slotOrder])
 
   // ---- MOUSE MOVE ----
@@ -1737,7 +1779,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     if (!mouseDownRef.current.active) return
 
     const drag = dragStateRef.current
-    if (drag.roomId && !drag.active) {
+    const pan = panRef.current
+
+    if (drag.roomId && !drag.active && !pan.active) {
       const dx = e.clientX - drag.startClientX
       const dy = e.clientY - drag.startClientY
       drag.totalMovement = Math.sqrt(dx * dx + dy * dy)
@@ -1747,7 +1791,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       }
     }
 
-    // If dragging: update world position + check for slot shuffle
+    // If dragging a room: update world position + check for slot shuffle
     if (drag.active && drag.roomId) {
       const rect = containerRef.current?.getBoundingClientRect()
       if (rect) {
@@ -1766,12 +1810,44 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           shuffleToSlot(drag.roomId, nearestSlot)
         }
       }
+      return
+    }
+
+    // Mouse pan on empty space
+    if (!drag.roomId) {
+      const totalDx = e.clientX - mouseDownRef.current.startX
+      const totalDy = e.clientY - mouseDownRef.current.startY
+      const totalDist = Math.sqrt(totalDx * totalDx + totalDy * totalDy)
+      if (totalDist >= DRAG_THRESHOLD) {
+        if (!pan.active) {
+          pan.active = true
+          mouseDownRef.current.didDrag = true
+          cameraAnimRef.current = null
+        }
+        // Track velocity for momentum
+        const now = performance.now()
+        const dt = now - pan.lastTouchTime
+        if (dt > 0) {
+          const ivx = (e.clientX - pan.lastTouchX) / dt * 16.67
+          const ivy = (e.clientY - pan.lastTouchY) / dt * 16.67
+          pan.velX = pan.velX * 0.2 + ivx * 0.8
+          pan.velY = pan.velY * 0.2 + ivy * 0.8
+        }
+        pan.lastTouchX = e.clientX
+        pan.lastTouchY = e.clientY
+        pan.lastTouchTime = now
+        // Apply pan
+        cameraRef.current.x = pan.startCamX + (e.clientX - pan.startTouchX)
+        cameraRef.current.y = pan.startCamY + (e.clientY - pan.startTouchY)
+      }
     }
   }, [hover, setExtHover, ORIGIN_X, ORIGIN_Y, slotOrder, shuffleToSlot])
 
   // ---- MOUSE UP ----
   const onUp = useCallback(() => {
     const drag = dragStateRef.current
+    const pan = panRef.current
+
     if (drag.active && drag.roomId) {
       setSlotOrder(prev => {
         saveSlotOrder(prev)
@@ -1782,6 +1858,30 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     } else {
       drag.roomId = null
     }
+
+    // Start momentum after mouse pan
+    if (pan.active) {
+      pan.active = false
+      const FRICTION = 0.94
+      const MIN_VELOCITY = 0.3
+      if (Math.abs(pan.velX) > MIN_VELOCITY || Math.abs(pan.velY) > MIN_VELOCITY) {
+        let vx = pan.velX
+        let vy = pan.velY
+        const applyMomentum = () => {
+          vx *= FRICTION
+          vy *= FRICTION
+          if (Math.abs(vx) < MIN_VELOCITY && Math.abs(vy) < MIN_VELOCITY) {
+            pan.momentumFrame = null
+            return
+          }
+          cameraRef.current.x += vx
+          cameraRef.current.y += vy
+          pan.momentumFrame = requestAnimationFrame(applyMomentum)
+        }
+        pan.momentumFrame = requestAnimationFrame(applyMomentum)
+      }
+    }
+
     mouseDownRef.current.active = false
   }, [])
 
@@ -1957,6 +2057,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     // Clear any previous long-press timer
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
     longPressFiredRef.current = false
+    // Cancel any running momentum animation
+    if (panRef.current.momentumFrame) {
+      cancelAnimationFrame(panRef.current.momentumFrame)
+      panRef.current.momentumFrame = null
+    }
 
     if (e.touches.length === 1) {
       const t = e.touches[0]
@@ -2003,6 +2108,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
             }
           }, 500)
         }
+
+        // Always prepare pan state (used if touch moves to empty space or started on empty space)
+        panRef.current = {
+          active: false,
+          startCamX: cam.x,
+          startCamY: cam.y,
+          startTouchX: t.clientX,
+          startTouchY: t.clientY,
+          lastTouchX: t.clientX,
+          lastTouchY: t.clientY,
+          lastTouchTime: performance.now(),
+          velX: 0,
+          velY: 0,
+          momentumFrame: null,
+        }
       }
       mouseDownRef.current = {
         active: true,
@@ -2018,10 +2138,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const t = e.touches[0]
 
     const drag = dragStateRef.current
-    if (drag.roomId && !drag.active) {
-      const dx = t.clientX - drag.startClientX
-      const dy = t.clientY - drag.startClientY
-      drag.totalMovement = Math.sqrt(dx * dx + dy * dy)
+    const pan = panRef.current
+    const totalDx = t.clientX - mouseDownRef.current.startX
+    const totalDy = t.clientY - mouseDownRef.current.startY
+    const totalDist = Math.sqrt(totalDx * totalDx + totalDy * totalDy)
+
+    // Room drag (shuffling rooms on the grid)
+    if (drag.roomId && !drag.active && !pan.active) {
+      drag.totalMovement = totalDist
       if (drag.totalMovement >= DRAG_THRESHOLD) {
         drag.active = true
         mouseDownRef.current.didDrag = true
@@ -2048,6 +2172,42 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           shuffleToSlot(drag.roomId, nearestSlot)
         }
       }
+      return
+    }
+
+    // Map pan (touch drag on empty space -- Clash of Clans / Civilization feel)
+    if (!drag.roomId && totalDist >= TOUCH_DRAG_THRESHOLD) {
+      if (!pan.active) {
+        pan.active = true
+        mouseDownRef.current.didDrag = true
+        // Cancel any camera animation so pan feels immediate
+        cameraAnimRef.current = null
+        // Cancel long-press on pan
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current)
+          longPressTimerRef.current = null
+        }
+      }
+
+      // Track velocity for momentum (weighted moving average)
+      const now = performance.now()
+      const dt = now - pan.lastTouchTime
+      if (dt > 0) {
+        const instantVelX = (t.clientX - pan.lastTouchX) / dt * 16.67 // normalize to ~60fps frame
+        const instantVelY = (t.clientY - pan.lastTouchY) / dt * 16.67
+        // Smooth velocity (80% new, 20% old) for natural feel
+        pan.velX = pan.velX * 0.2 + instantVelX * 0.8
+        pan.velY = pan.velY * 0.2 + instantVelY * 0.8
+      }
+      pan.lastTouchX = t.clientX
+      pan.lastTouchY = t.clientY
+      pan.lastTouchTime = now
+
+      // Apply pan offset directly to camera
+      const dx = t.clientX - pan.startTouchX
+      const dy = t.clientY - pan.startTouchY
+      cameraRef.current.x = pan.startCamX + dx
+      cameraRef.current.y = pan.startCamY + dy
     }
   }, [ORIGIN_X, ORIGIN_Y, slotOrder, shuffleToSlot])
 
@@ -2060,6 +2220,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
     if (e.touches.length === 0) {
       const drag = dragStateRef.current
+      const pan = panRef.current
+
       if (drag.active && drag.roomId) {
         setSlotOrder(prev => {
           saveSlotOrder(prev)
@@ -2069,6 +2231,32 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         drag.roomId = null
       } else {
         drag.roomId = null
+      }
+
+      // Start momentum animation after map pan (Clash of Clans feel)
+      if (pan.active) {
+        pan.active = false
+        const FRICTION = 0.94       // Deceleration factor per frame (higher = longer coast)
+        const MIN_VELOCITY = 0.3    // Stop threshold
+        const startVelX = pan.velX
+        const startVelY = pan.velY
+
+        if (Math.abs(startVelX) > MIN_VELOCITY || Math.abs(startVelY) > MIN_VELOCITY) {
+          let vx = startVelX
+          let vy = startVelY
+          const applyMomentum = () => {
+            vx *= FRICTION
+            vy *= FRICTION
+            if (Math.abs(vx) < MIN_VELOCITY && Math.abs(vy) < MIN_VELOCITY) {
+              pan.momentumFrame = null
+              return
+            }
+            cameraRef.current.x += vx
+            cameraRef.current.y += vy
+            pan.momentumFrame = requestAnimationFrame(applyMomentum)
+          }
+          pan.momentumFrame = requestAnimationFrame(applyMomentum)
+        }
       }
 
       // Skip tap action if long-press already fired (context menu shown)
