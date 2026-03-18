@@ -893,6 +893,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   })
   const mouseDownRef = useRef({ active: false, didDrag: false, startX: 0, startY: 0 })
 
+  // Long-press timer for touch context menu (500ms threshold)
+  const longPressTimerRef = useRef(null)
+  const longPressFiredRef = useRef(false)
+
   // Context menu state
   const [contextMenu, setContextMenu] = useState(null)
 
@@ -1947,6 +1951,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // ---- TOUCH EVENTS ----
   const onTouchStart = useCallback((e) => {
     setContextMenu(null)
+    // Clear any previous long-press timer
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+    longPressFiredRef.current = false
+
     if (e.touches.length === 1) {
       const t = e.touches[0]
       const rect = containerRef.current?.getBoundingClientRect()
@@ -1971,6 +1979,26 @@ const CanvasOffice = forwardRef(function CanvasOffice({
             startClientY: t.clientY,
             totalMovement: 0,
           }
+
+          // Start long-press timer (500ms) for context menu
+          const touchClientX = t.clientX
+          const touchClientY = t.clientY
+          longPressTimerRef.current = setTimeout(() => {
+            // Only fire if we haven't dragged
+            if (mouseDownRef.current.active && !mouseDownRef.current.didDrag) {
+              longPressFiredRef.current = true
+              const meta = ROOM_META[hitRoom]
+              const r = containerRef.current?.getBoundingClientRect()
+              if (r) {
+                setContextMenu({
+                  x: touchClientX - r.left,
+                  y: touchClientY - r.top,
+                  roomId: hitRoom,
+                  roomName: meta?.name || hitRoom,
+                })
+              }
+            }
+          }, 500)
         }
       }
       mouseDownRef.current = {
@@ -1994,6 +2022,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       if (drag.totalMovement >= DRAG_THRESHOLD) {
         drag.active = true
         mouseDownRef.current.didDrag = true
+        // Cancel long-press on drag
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current)
+          longPressTimerRef.current = null
+        }
       }
     }
 
@@ -2016,6 +2049,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   }, [ORIGIN_X, ORIGIN_Y, slotOrder, shuffleToSlot])
 
   const onTouchEnd = useCallback((e) => {
+    // Clear long-press timer on any touch end
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+
     if (e.touches.length === 0) {
       const drag = dragStateRef.current
       if (drag.active && drag.roomId) {
@@ -2029,7 +2068,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         drag.roomId = null
       }
 
-      if (!mouseDownRef.current.didDrag) {
+      // Skip tap action if long-press already fired (context menu shown)
+      if (!mouseDownRef.current.didDrag && !longPressFiredRef.current) {
         const rect = containerRef.current?.getBoundingClientRect()
         if (rect) {
           const cam = cameraRef.current
@@ -2046,6 +2086,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           }
         }
       }
+      longPressFiredRef.current = false
       mouseDownRef.current = { active: false, didDrag: false, startX: 0, startY: 0 }
     }
   }, [onRoomClick, ORIGIN_X, ORIGIN_Y, slotOrder])
