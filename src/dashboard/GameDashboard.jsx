@@ -7,6 +7,8 @@ import {
   ListTodo, FolderKanban, Calendar, Plus, ArrowLeft, Map as MapIcon,
   ZoomIn, ZoomOut, Home, LayoutDashboard, Gamepad2, Command,
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
+  BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
+  CalendarDays, Sparkles, Users, Search,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
@@ -84,6 +86,374 @@ const CONV_API_BASE = IS_LOCAL ? '/api/local/conversations' : '/api/conversation
 // Relay send: local middleware on localhost, Vercel serverless on production
 const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/relay'
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
+
+// ---- POWERUP MENU CONFIG ----
+const POWERUPS = [
+  { id: 'htt', name: 'Hold That Thought', slash: '/htt', icon: BookmarkPlus, color: '#D97706', subtitle: 'park an idea' },
+  { id: 'gbit', name: 'Time Travel', slash: '/gbit', icon: History, color: '#7C3AED', subtitle: 'search history' },
+  { id: 'eyes', name: 'Eyes & Ears', slash: '/eyes-and-ears', icon: ScanEye, color: '#0D9488', subtitle: 'analyze media' },
+  { id: 'resolve', name: 'Push to Resolve', slash: '/push-to-resolve', icon: Film, color: '#DC2626', subtitle: 'send to resolve' },
+  { id: 'plan', name: 'Plan My Day', slash: '/plan-my-day', icon: CalendarCheck, color: '#16A34A', subtitle: 'daily planner' },
+  { id: 'status', name: 'Status Radar', slash: '/status', icon: Radar, color: '#3B82F6', subtitle: 'system scan' },
+  { id: 'calendar', name: 'Calendar', slash: '/calendar', icon: CalendarDays, color: '#EA580C', subtitle: 'quick access' },
+  { id: 'wash', name: 'Wash Face', slash: '/wash-your-face', icon: Sparkles, color: '#CA8A04', subtitle: 'cleanup run' },
+  { id: 'council', name: 'Council', slash: '/council', icon: Users, color: '#9333EA', subtitle: 'agent brief' },
+  { id: 'look', name: 'Look', slash: '/look', icon: Search, color: '#06B6D4', subtitle: 'visual search' },
+]
+
+// ---- POWERUP MENU COMPONENT ----
+function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode }) {
+  const panelRef = useRef(null)
+  const [particles, setParticles] = useState([])
+
+  // Close on click outside (desktop only)
+  useEffect(() => {
+    if (!isOpen || isMobile) return
+    const handler = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        onToggle(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [isOpen, isMobile, onToggle])
+
+  // Cmd+K / Ctrl+K keyboard shortcut
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        onToggle(!isOpen)
+      }
+      if (isOpen && e.key === 'Escape') {
+        e.preventDefault()
+        onToggle(false)
+      }
+      // Number keys 1-0 activate powerups when menu is open
+      if (isOpen && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const num = e.key === '0' ? 10 : parseInt(e.key)
+        if (num >= 1 && num <= 10) {
+          e.preventDefault()
+          const pu = POWERUPS[num - 1]
+          if (pu) handleActivate(pu)
+        }
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [isOpen, onToggle]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleActivate = useCallback((powerup) => {
+    // Particle burst at trigger button position
+    const newParticles = Array.from({ length: 4 }, (_, i) => ({
+      id: `${powerup.id}-${Date.now()}-${i}`,
+      color: powerup.color,
+      angle: (Math.PI * 2 * i) / 4 + Math.random() * 0.5,
+    }))
+    setParticles(newParticles)
+    setTimeout(() => setParticles([]), 500)
+
+    onActivate(powerup.slash)
+    onToggle(false)
+  }, [onActivate, onToggle])
+
+  return (
+    <div ref={panelRef} style={{ position: 'relative', flexShrink: 0 }}>
+      {/* Trigger Button */}
+      <motion.button
+        onClick={() => onToggle(!isOpen)}
+        animate={{ rotate: isOpen ? 45 : 0 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+        whileTap={{ scale: 0.92 }}
+        aria-label={isOpen ? 'Close powerup menu' : 'Open powerup menu'}
+        style={{
+          width: 44, height: 44, borderRadius: 14,
+          background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
+          border: '2px solid rgba(124, 58, 237, 0.4)',
+          boxShadow: '0 2px 12px rgba(124, 58, 237, 0.25)',
+          color: '#FFFFFF',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'box-shadow 200ms ease',
+          animation: isOpen ? 'none' : 'powerupPulse 3s ease-in-out infinite',
+          position: 'relative',
+          zIndex: 2,
+        }}
+        onMouseEnter={e => { if (!isMobile) e.currentTarget.style.boxShadow = '0 4px 20px rgba(124, 58, 237, 0.4)' }}
+        onMouseLeave={e => { if (!isMobile) e.currentTarget.style.boxShadow = '0 2px 12px rgba(124, 58, 237, 0.25)' }}
+      >
+        <Sparkles size={20} />
+      </motion.button>
+
+      {/* Particle burst on activation */}
+      <AnimatePresence>
+        {particles.map(p => (
+          <motion.div
+            key={p.id}
+            initial={{ scale: 0.3, opacity: 1, x: 22, y: 22 }}
+            animate={{
+              scale: 0,
+              opacity: 0,
+              x: 22 + Math.cos(p.angle) * 40,
+              y: 22 + Math.sin(p.angle) * 40,
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            style={{
+              position: 'absolute',
+              width: 8, height: 8, borderRadius: '50%',
+              background: p.color,
+              pointerEvents: 'none',
+              zIndex: 3,
+            }}
+          />
+        ))}
+      </AnimatePresence>
+
+      {/* Expanded Panel */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Mobile scrim */}
+            {isMobile && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                onClick={() => onToggle(false)}
+                style={{
+                  position: 'fixed', inset: 0,
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  zIndex: 149,
+                }}
+              />
+            )}
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{
+                type: 'spring',
+                stiffness: 400,
+                damping: 28,
+              }}
+              role="menu"
+              aria-label="Powerup skills menu"
+              style={{
+                position: 'absolute',
+                bottom: 'calc(100% + 8px)',
+                left: 0,
+                width: isMobile ? 'calc(100vw - 32px)' : 320,
+                maxHeight: 400,
+                overflowY: 'auto',
+                background: 'rgba(15, 23, 42, 0.97)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                border: '2px solid rgba(59, 130, 246, 0.2)',
+                borderRadius: 16,
+                boxShadow: '0 -8px 40px rgba(0, 0, 0, 0.5), 0 -2px 12px rgba(124, 58, 237, 0.15)',
+                zIndex: 150,
+                transformOrigin: 'bottom left',
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                height: 40, padding: '0 14px',
+                borderBottom: '1px solid rgba(59, 130, 246, 0.12)',
+              }}>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 12, fontWeight: 700,
+                  color: '#6B8AB0',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                }}>
+                  POWERUPS
+                </span>
+                <button
+                  onClick={() => onToggle(false)}
+                  aria-label="Close powerup menu"
+                  style={{
+                    width: 32, height: 32,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'none', border: 'none',
+                    color: '#6B7280', cursor: 'pointer',
+                    borderRadius: 8,
+                    padding: 6,
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 10,
+                padding: 12,
+              }}>
+                {POWERUPS.map((pu, idx) => (
+                  <PowerupTile
+                    key={pu.id}
+                    powerup={pu}
+                    index={idx}
+                    onActivate={handleActivate}
+                    isMobile={isMobile}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* CSS animation for idle pulse */}
+      <style>{`
+        @keyframes powerupPulse {
+          0%, 100% { box-shadow: 0 2px 12px rgba(124, 58, 237, 0.25); }
+          50% { box-shadow: 0 2px 12px rgba(124, 58, 237, 0.15); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// ---- POWERUP TILE ----
+function PowerupTile({ powerup, index, onActivate, isMobile }) {
+  const [pressed, setPressed] = useState(false)
+  const [flashing, setFlashing] = useState(false)
+  const [showTooltip, setShowTooltip] = useState(false)
+  const tooltipTimer = useRef(null)
+  const Icon = powerup.icon
+
+  const handleClick = () => {
+    setFlashing(true)
+    setTimeout(() => setFlashing(false), 200)
+    onActivate(powerup)
+  }
+
+  const handleMouseEnter = () => {
+    if (isMobile) return
+    tooltipTimer.current = setTimeout(() => setShowTooltip(true), 500)
+  }
+  const handleMouseLeave = () => {
+    if (tooltipTimer.current) clearTimeout(tooltipTimer.current)
+    setShowTooltip(false)
+  }
+
+  const bgColor = flashing
+    ? `${powerup.color}66`
+    : pressed
+      ? `${powerup.color}1A`
+      : 'rgba(59, 130, 246, 0.04)'
+
+  const borderColor = flashing
+    ? `${powerup.color}80`
+    : pressed
+      ? `${powerup.color}4D`
+      : 'rgba(59, 130, 246, 0.08)'
+
+  return (
+    <motion.button
+      role="menuitem"
+      aria-label={`Activate ${powerup.name} powerup`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03, type: 'spring', stiffness: 400, damping: 28 }}
+      onClick={handleClick}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => { setPressed(false); handleMouseLeave() }}
+      onMouseEnter={handleMouseEnter}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12,
+        minHeight: 72,
+        padding: '12px 14px',
+        background: bgColor,
+        border: `1.5px solid ${borderColor}`,
+        borderRadius: 14,
+        cursor: 'pointer',
+        transition: 'background 120ms ease, border-color 120ms ease, transform 120ms ease',
+        transform: pressed ? 'scale(0.97)' : 'scale(1)',
+        position: 'relative',
+        textAlign: 'left',
+      }}
+    >
+      {/* Icon container */}
+      <div style={{
+        width: 44, height: 44,
+        borderRadius: 12,
+        background: `${powerup.color}26`,
+        border: `1.5px solid ${powerup.color}40`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={22} color={powerup.color} strokeWidth={2} />
+      </div>
+
+      {/* Label stack */}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{
+          fontFamily: "'Inter', system-ui, sans-serif",
+          fontSize: 15, fontWeight: 700,
+          color: '#F1F5F9',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          lineHeight: 1.2,
+        }}>
+          {powerup.name}
+        </div>
+        <div style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11, fontWeight: 600,
+          color: '#6B8AB0',
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          marginTop: 3,
+        }}>
+          {powerup.slash}
+        </div>
+      </div>
+
+      {/* Desktop hover tooltip */}
+      <AnimatePresence>
+        {showTooltip && !isMobile && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'absolute',
+              bottom: 'calc(100% + 6px)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(15, 23, 42, 0.95)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              borderRadius: 8,
+              padding: '6px 10px',
+              maxWidth: 200,
+              whiteSpace: 'nowrap',
+              zIndex: 160,
+            }}
+          >
+            <span style={{
+              fontFamily: "'Inter', system-ui, sans-serif",
+              fontSize: 13, fontWeight: 500,
+              color: '#E2E8F0',
+            }}>
+              {powerup.subtitle}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.button>
+  )
+}
 
 // ---- UNIFIED ROOM LOOKUP (agents + projects) ----
 // ROOM_MAP only has GRID_SPEC.rooms (agents + communal). Build a combined lookup
@@ -2180,6 +2550,8 @@ function MobileDrawer({
   chatMessages, chatInput, onChatInputChange, onSendMessage, streaming, chatLoading,
   allAgentStatus, data, isNightMode, onAddToRightNow, rightNowTasks,
   atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig,
+  // Powerup props
+  powerupOpen, onPowerupToggle, onPowerupActivate,
   // Snap state (controlled from parent)
   snap, onSnapChange,
 }) {
@@ -2512,6 +2884,9 @@ function MobileDrawer({
               onAddToRightNow={onAddToRightNow}
               rightNowTasks={rightNowTasks}
               onSendMessage={onSendMessage}
+              powerupOpen={powerupOpen}
+              onPowerupToggle={onPowerupToggle}
+              onPowerupActivate={onPowerupActivate}
             />
           </div>
         )}
@@ -5765,7 +6140,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -6487,10 +6862,19 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 : 'transparent',
               flexShrink: 0,
             }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+              {/* Powerup trigger button */}
+              <PowerupMenu
+                isOpen={powerupOpen || false}
+                onToggle={(v) => onPowerupToggle?.(v)}
+                onActivate={(slash) => onPowerupActivate?.(slash)}
+                isMobile={isMobile}
+                isNightMode={isNightMode}
+              />
               <form onSubmit={(e) => {
                 isUserTypingRef.current = false
                 onSendMessage(e)
-              }} style={{ position: 'relative' }}>
+              }} style={{ position: 'relative', flex: 1 }}>
                 {/* @ autocomplete dropdown (floats above input) */}
                 {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
                   <div style={{
@@ -6577,6 +6961,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 <input type="text" value={chatInput || ''} onChange={e => {
                     isUserTypingRef.current = true
                     onChatInputChange?.(e.target.value)
+                    if (powerupOpen) onPowerupToggle?.(false)
                   }}
                   onKeyDown={e => {
                     // @ autocomplete keyboard navigation
@@ -6642,6 +7027,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   {streaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                 </button>
               </form>
+              </div>{/* end powerup + form flex row */}
             </div>
           </>
           </ChatErrorBoundary>
@@ -7053,6 +7439,9 @@ export default function GameDashboard() {
 
   // Panel chat state (for unified panel inline chat)
   const [panelChatInput, setPanelChatInput] = useState('')
+  // Powerup menu state
+  const [powerupOpen, setPowerupOpen] = useState(false)
+  const powerupPendingRef = useRef(null) // slash command to auto-submit
   // @ routing: corner config + autocomplete state
   const [cornerConfig, setCornerConfig] = useState(null)
   const [atMenuOpen, setAtMenuOpen] = useState(false)
@@ -7836,6 +8225,23 @@ export default function GameDashboard() {
     }
   }, [panelChatInput, panelStreaming, selectedRoom, atOptions])
 
+  // Powerup activation: inject slash command and auto-submit
+  const handlePowerupActivate = useCallback((slash) => {
+    setPowerupOpen(false)
+    // Set the input to the slash command and queue auto-submit
+    setPanelChatInput(slash)
+    powerupPendingRef.current = slash
+  }, [])
+
+  // Auto-submit when powerup pending (runs after panelChatInput state update)
+  useEffect(() => {
+    if (powerupPendingRef.current && panelChatInput === powerupPendingRef.current) {
+      powerupPendingRef.current = null
+      // Simulate form submit by calling the send handler directly
+      handlePanelSendMessage({ preventDefault: () => {} })
+    }
+  }, [panelChatInput, handlePanelSendMessage])
+
   // Right-click context menu on rooms
   const handleRoomContextMenu = useCallback((e, roomId) => {
     e.preventDefault()
@@ -8120,6 +8526,9 @@ export default function GameDashboard() {
               onAddToRightNow={addToRightNow}
               rightNowTasks={rightNowTasks}
               onSendMessage={handlePanelSendMessage}
+              powerupOpen={powerupOpen}
+              onPowerupToggle={setPowerupOpen}
+              onPowerupActivate={handlePowerupActivate}
             />
           )}
       </div>
@@ -8267,6 +8676,9 @@ export default function GameDashboard() {
           onAtSelect={handleAtSelect}
           onAtKeyDown={handleAtKeyDown}
           cornerConfig={cornerConfig}
+          powerupOpen={powerupOpen}
+          onPowerupToggle={setPowerupOpen}
+          onPowerupActivate={handlePowerupActivate}
         />
       )}
 
