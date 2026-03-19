@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.99.2",
     "d3-force": "^3.0.0",
     "firebase": "^10.8.0",
     "framer-motion": "^11.0.0",

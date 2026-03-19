@@ -28,6 +28,7 @@ import CrossyBackground from './CrossyBackground.jsx'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import briefsIndex from '../data/briefs-index.json'
+import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -7873,22 +7874,50 @@ export default function GameDashboard() {
     sessionStorage.setItem('corner-selected-room', selectedRoom || '')
   }, [selectedRoom])
 
-  // On agent switch: clear stale data immediately, show loading, then fetch fresh conversation
+  // On agent switch: clear stale data immediately, show loading, then fetch fresh conversation.
+  // Production: reads from Supabase messages table (fast, no GitHub rate limits).
+  // Local: reads from filesystem via /api/local/conversations.
   useEffect(() => {
     setPanelStreaming(false)
     if (panelRelayPollRef.current) {
       clearInterval(panelRelayPollRef.current)
       panelRelayPollRef.current = null
     }
-    // CRITICAL FIX: Clear conversation immediately to prevent stale data flash.
-    // Set loading state so the UI shows a brief loading indicator instead of wrong data.
-    // Works on both localhost (Vite middleware) and production (Vercel API via GitHub).
-    if (selectedRoom) {
-      setPanelChatLoading(true)
-      setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: [] } }))
+    if (!selectedRoom) return
 
-      const isProject = selectedRoom === 'aom' || selectedRoom.includes('-')
-      const convTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
+    setPanelChatLoading(true)
+    setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: [] } }))
+
+    const room = selectedRoom // capture for async safety
+
+    if (!IS_LOCAL && supabase) {
+      // PRODUCTION + Supabase: load from messages table
+      supabase
+        .from('messages')
+        .select('*')
+        .eq('agent', room)
+        .order('created_at', { ascending: true })
+        .limit(100)
+        .then(({ data, error }) => {
+          if (error) {
+            console.warn('[Corner] Supabase load error, falling back to GitHub:', error.message)
+            // Fallback to GitHub-backed endpoint
+            return loadFromGitHub(room)
+          }
+          const msgs = (data || []).map(mapSupabaseMsg).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+          console.log(`[Corner] Supabase: loaded ${msgs.length} msgs for ${room}`)
+          setAgentChats(prev => ({ ...prev, [room]: { _all: msgs } }))
+          setPanelChatLoading(false)
+        })
+        .catch(() => loadFromGitHub(room))
+    } else {
+      // LOCAL or no Supabase client: filesystem API
+      loadFromGitHub(room)
+    }
+
+    function loadFromGitHub(slug) {
+      const isProject = slug === 'aom' || slug.includes('-')
+      const convTarget = slug === 'aom' ? 'aom-internal' : slug
       const convType = isProject ? 'project' : 'agent'
       fetch(`${CONV_API_BASE}?target=${convTarget}&type=${convType}&limit=50`)
         .then(res => res.ok ? res.json() : null)
@@ -7900,26 +7929,74 @@ export default function GameDashboard() {
             source: m.source || 'file',
             id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
           })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
-          console.log(`[Corner] Loaded ${msgs.length} msgs for ${selectedRoom} (${msgs.filter(m=>m.role==='user').length} user, ${msgs.filter(m=>m.role==='assistant').length} asst)`)
-          setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: msgs } }))
+          console.log(`[Corner] GitHub: loaded ${msgs.length} msgs for ${slug}`)
+          setAgentChats(prev => ({ ...prev, [slug]: { _all: msgs } }))
           setPanelChatLoading(false)
         })
         .catch(() => {
-          setAgentChats(prev => ({ ...prev, [selectedRoom]: { _all: [] } }))
+          setAgentChats(prev => ({ ...prev, [slug]: { _all: [] } }))
           setPanelChatLoading(false)
         })
     }
   }, [selectedRoom])
 
-  // Poll conversation file for new messages (SINGLE SOURCE OF TRUTH)
-  // This is now the ONLY read path for chat messages (Wave 6 flicker fix).
-  // Local: 1.5s (fast, file-backed, replaces old 500ms relay poll). Production: 8s (GitHub API rate limit).
+  // Chat message updates: Supabase Realtime on production, polling on localhost.
+  //
+  // PRODUCTION path (Supabase Realtime):
+  //   Subscribe to INSERT events on messages table filtered by agent slug.
+  //   New assistant messages push in instantly -- no polling delay, no GitHub rate limits.
+  //
+  // LOCAL path (file poll):
+  //   Keep existing 1.5s poll of /api/local/conversations (file-backed, fast).
   useEffect(() => {
     if (!selectedRoom) return
+
+    // --- PRODUCTION: Supabase Realtime ---
+    if (!IS_LOCAL && supabase) {
+      const room = selectedRoom
+      const channel = supabase
+        .channel(`chat-${room}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `agent=eq.${room}`,
+          },
+          (payload) => {
+            const newMsg = payload.new
+            if (!newMsg) return
+            // Only add assistant messages (user messages are already optimistic in state)
+            if (newMsg.role !== 'assistant') return
+            if (!newMsg.text) return
+            const msg = mapSupabaseMsg(newMsg)
+            setAgentChats(prev => {
+              const current = prev[room]?._all || []
+              // Dedup by ID
+              if (current.some(m => m.id === msg.id)) return prev
+              // Clear streaming indicator when first assistant message arrives
+              const filtered = current.filter(m => !m.streaming)
+              return { ...prev, [room]: { _all: [...filtered, msg] } }
+            })
+            setPanelStreaming(false)
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`[Corner] Supabase Realtime subscribed: ${room}`)
+          }
+        })
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }
+
+    // --- LOCAL: file-backed poll ---
     const isProj = selectedRoom === 'aom' || selectedRoom.includes('-')
     const pollTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
     const pollType = isProj ? 'project' : 'agent'
-    const pollInterval = IS_LOCAL ? 1500 : 5000
     const poll = setInterval(() => {
       fetch(`${CONV_API_BASE}?target=${pollTarget}&type=${pollType}&limit=50`)
         .then(res => res.ok ? res.json() : null)
@@ -7936,39 +8013,27 @@ export default function GameDashboard() {
             })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
 
             // MERGE instead of replace: keep local-only optimistic messages
-            // that haven't appeared in server data yet (file write is slow).
-            // This prevents the "message vanishes then reappears" bug.
             const serverIds = new Set(serverMsgs.map(m => m.id))
-            // Also match by content+role for messages where server assigned a different ID
             const serverContentKeys = new Set(serverMsgs.map(m => `${m.role}:${m.content?.slice(0, 80)}`))
             const localOnly = currentMsgs.filter(m => {
-              // Already on server by ID? Skip (server version wins)
               if (m.id && serverIds.has(m.id)) return false
-              // Already on server by content match? Skip
               const contentKey = `${m.role}:${m.content?.slice(0, 80)}`
               if (serverContentKeys.has(contentKey)) return false
-              // Local optimistic message not yet on server: keep it,
-              // but only if it's less than 10 seconds old (stale guard)
               const msgTime = m.time ? new Date(m.time).getTime() : 0
-              const age = Date.now() - msgTime
-              return age < 10000
+              return Date.now() - msgTime < 10000
             })
 
             const merged = [...serverMsgs, ...localOnly].sort(safeTimeSort)
 
-            // New messages arrived from server - clear streaming/thinking indicator
             if (serverMsgs.length > currentMsgs.filter(m => !m.id?.startsWith('dash-') || serverIds.has(m.id)).length) {
               setPanelStreaming(false)
             }
-
-            // Skip update if nothing actually changed (avoid unnecessary re-renders)
             if (merged.length === currentMsgs.length && serverMsgs.length === currentMsgs.length) return prev
-
             return { ...prev, [selectedRoom]: { _all: merged } }
           })
         })
         .catch(() => {})
-    }, pollInterval)
+    }, 1500)
     return () => clearInterval(poll)
   }, [selectedRoom, safeTimeSort])
 
@@ -8249,22 +8314,39 @@ export default function GameDashboard() {
         body: JSON.stringify(sendBody),
       }).catch(() => {})
     } else {
-      // Production: send via Vercel /api/relay (writes to GitHub relay-inbox.jsonl)
+      // Production: write to Supabase messages table + relay inbox (GitHub).
+      // Supabase write = persistent record in the messages table.
+      // Relay write = delivers to terminal/Telegram bot for Claude to process.
+      const agent = selectedRoom
+
+      // 1. Write user message to Supabase (fire and forget -- optimistic msg already in state)
+      fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent,
+          text,
+          role: 'user',
+          source: 'corner-dashboard',
+          status: 'pending',
+        }),
+      }).catch(() => {})
+
+      // 2. Write to relay inbox so the terminal/Claude picks it up
       fetch('/api/relay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `@${selectedRoom} ${text}`, agent: selectedRoom }),
+        body: JSON.stringify({ message: `@${agent} ${text}`, agent }),
       }).then(() => {
-        // Production: after 15s, update streaming indicator to "busy" phase
-        // (message delivered to relay, waiting for terminal to process)
+        // After 15s with no reply, flip thinking indicator to "busy" phase
         setTimeout(() => {
           setAgentChats(prev => {
-            const current = prev[selectedRoom]?._all || []
+            const current = prev[agent]?._all || []
             const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
-            if (thinkingIdx === -1) return prev // already cleared by poll
+            if (thinkingIdx === -1) return prev
             const updated = [...current]
             updated[thinkingIdx] = { ...updated[thinkingIdx], streamPhase: 'busy' }
-            return { ...prev, [selectedRoom]: { _all: updated } }
+            return { ...prev, [agent]: { _all: updated } }
           })
         }, 15000)
       }).catch(() => {})
