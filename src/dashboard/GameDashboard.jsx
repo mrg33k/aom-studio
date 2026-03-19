@@ -7951,9 +7951,12 @@ export default function GameDashboard() {
   useEffect(() => {
     if (!selectedRoom) return
 
-    // --- PRODUCTION: Supabase Realtime ---
+    // --- PRODUCTION: Supabase Realtime + REST poll fallback ---
     if (!IS_LOCAL && supabase) {
       const room = selectedRoom
+      let lastSeenTs = new Date().toISOString()
+
+      // Realtime subscription (instant when WebSocket works)
       const channel = supabase
         .channel(`chat-${room}`)
         .on(
@@ -7967,15 +7970,13 @@ export default function GameDashboard() {
           (payload) => {
             const newMsg = payload.new
             if (!newMsg) return
-            // Only add assistant messages (user messages are already optimistic in state)
             if (newMsg.role !== 'assistant') return
             if (!newMsg.text) return
             const msg = mapSupabaseMsg(newMsg)
+            lastSeenTs = newMsg.timestamp || new Date().toISOString()
             setAgentChats(prev => {
               const current = prev[room]?._all || []
-              // Dedup by ID
               if (current.some(m => m.id === msg.id)) return prev
-              // Clear streaming indicator when first assistant message arrives
               const filtered = current.filter(m => !m.streaming)
               return { ...prev, [room]: { _all: [...filtered, msg] } }
             })
@@ -7988,8 +7989,42 @@ export default function GameDashboard() {
           }
         })
 
+      // REST poll fallback (catches messages when WebSocket is down)
+      const poll = setInterval(async () => {
+        try {
+          const { data } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('agent', room)
+            .eq('role', 'assistant')
+            .gt('timestamp', lastSeenTs)
+            .order('timestamp', { ascending: true })
+            .limit(10)
+          if (data?.length) {
+            lastSeenTs = data[data.length - 1].timestamp
+            setAgentChats(prev => {
+              const current = prev[room]?._all || []
+              let updated = [...current]
+              let changed = false
+              for (const row of data) {
+                const msg = mapSupabaseMsg(row)
+                if (!updated.some(m => m.id === msg.id)) {
+                  updated = updated.filter(m => !m.streaming)
+                  updated.push(msg)
+                  changed = true
+                }
+              }
+              if (!changed) return prev
+              return { ...prev, [room]: { _all: updated } }
+            })
+            setPanelStreaming(false)
+          }
+        } catch {}
+      }, 3000)
+
       return () => {
         supabase.removeChannel(channel)
+        clearInterval(poll)
       }
     }
 

@@ -588,13 +588,37 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     loadHistory()
   }, [])
 
-  // ── SUPABASE REALTIME: Subscribe to new assistant messages (production only) ──
-  // When supabase is available, listen for INSERT events on the messages table.
-  // This replaces polling for responses on production. On localhost (supabase=null),
-  // this effect is a no-op and the existing polling paths handle everything.
+  // ── SUPABASE REALTIME + REST POLL FALLBACK (production only) ──
+  // Realtime gives instant responses when WebSocket works.
+  // REST poll every 3s catches responses when WebSocket is down.
   useEffect(() => {
     if (!supabase) return // Local dev: skip, polling handles it
 
+    let lastSeenTs = new Date().toISOString()
+
+    const addResponse = (row) => {
+      const mapped = mapSupabaseMsg(row)
+      const cleaned = sanitizeRelayMessage(mapped.content)
+      if (!cleaned) return
+      lastSeenTs = row.timestamp || new Date().toISOString()
+
+      setMessages(prev => {
+        if (prev.some(m => m.id === mapped.id)) return prev
+        const filtered = prev.filter(m => !m.streaming)
+        filtered.push({ ...mapped, content: cleaned })
+        filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
+        return deduplicateMessages(filtered.slice(-100))
+      })
+
+      setStreaming(false)
+      clearChatTimeout()
+      if (relayPollRef.current) {
+        clearInterval(relayPollRef.current)
+        relayPollRef.current = null
+      }
+    }
+
+    // Realtime subscription
     const channel = supabase
       .channel(`chat-${agent.slug}`)
       .on('postgres_changes', {
@@ -604,35 +628,31 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         filter: `role=eq.assistant`,
       }, (payload) => {
         const row = payload.new
-        // Only show messages for the current agent
         if (row.agent !== agent.slug) return
-
-        const mapped = mapSupabaseMsg(row)
-        const cleaned = sanitizeRelayMessage(mapped.content)
-        if (!cleaned) return
-
-        setMessages(prev => {
-          // Deduplicate: skip if we already have this message ID
-          if (prev.some(m => m.id === mapped.id)) return prev
-          // Remove streaming placeholders, add the real message
-          const filtered = prev.filter(m => !m.streaming)
-          filtered.push({ ...mapped, content: cleaned })
-          filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
-          return deduplicateMessages(filtered.slice(-100))
-        })
-
-        // Clear streaming/typing state since we got a real response
-        setStreaming(false)
-        clearChatTimeout()
-        if (relayPollRef.current) {
-          clearInterval(relayPollRef.current)
-          relayPollRef.current = null
-        }
+        addResponse(row)
       })
       .subscribe()
 
+    // REST poll fallback
+    const poll = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('agent', agent.slug)
+          .eq('role', 'assistant')
+          .gt('timestamp', lastSeenTs)
+          .order('timestamp', { ascending: true })
+          .limit(10)
+        if (data?.length) {
+          for (const row of data) addResponse(row)
+        }
+      } catch {}
+    }, 3000)
+
     return () => {
       supabase.removeChannel(channel)
+      clearInterval(poll)
     }
   }, [agent.slug])
 
