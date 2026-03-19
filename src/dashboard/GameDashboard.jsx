@@ -8314,42 +8314,99 @@ export default function GameDashboard() {
         body: JSON.stringify(sendBody),
       }).catch(() => {})
     } else {
-      // Production: write to Supabase messages table + relay inbox (GitHub).
-      // Supabase write = persistent record in the messages table.
-      // Relay write = delivers to terminal/Telegram bot for Claude to process.
+      // Production: call /api/dashboard/chat for SSE response from Claude API
       const agent = selectedRoom
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 
-      // 1. Write user message to Supabase (fire and forget -- optimistic msg already in state)
-      fetch('/api/dashboard/supabase-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agent,
-          text,
-          role: 'user',
-          source: 'corner-dashboard',
-          status: 'pending',
-        }),
-      }).catch(() => {})
+      try {
+        const res = await fetch('/api/dashboard/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug: agent, message: text, history: [] }),
+        })
 
-      // 2. Write to relay inbox so the terminal/Claude picks it up
-      fetch('/api/relay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: `@${agent} ${text}`, agent }),
-      }).then(() => {
-        // After 15s with no reply, flip thinking indicator to "busy" phase
-        setTimeout(() => {
+        const contentType = res.headers.get('content-type') || ''
+
+        if (contentType.includes('text/event-stream') && !isSafari) {
+          // Chrome/Firefox: stream chunks
+          const reader = res.body.getReader()
+          const decoder = new TextDecoder()
+          let buffer = ''
+          let fullText = ''
+
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split('\n')
+            buffer = lines.pop() || ''
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.type === 'text') {
+                  fullText += data.text
+                  setAgentChats(prev => {
+                    const current = prev[agent]?._all || []
+                    const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
+                    if (thinkingIdx === -1) return prev
+                    const updated = [...current]
+                    updated[thinkingIdx] = { ...updated[thinkingIdx], text: fullText, streamPhase: 'streaming' }
+                    return { ...prev, [agent]: { _all: updated } }
+                  })
+                }
+              } catch {}
+            }
+          }
+
+          // Replace thinking bubble with final response
           setAgentChats(prev => {
             const current = prev[agent]?._all || []
             const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
             if (thinkingIdx === -1) return prev
             const updated = [...current]
-            updated[thinkingIdx] = { ...updated[thinkingIdx], streamPhase: 'busy' }
+            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', text: fullText, time: new Date().toISOString() }
             return { ...prev, [agent]: { _all: updated } }
           })
-        }, 15000)
-      }).catch(() => {})
+        } else {
+          // Safari or non-SSE: read full response then display
+          const text = contentType.includes('text/event-stream') ? await res.text() : ''
+          let fullText = ''
+
+          if (text) {
+            for (const line of text.split('\n')) {
+              if (!line.startsWith('data: ')) continue
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.type === 'text') fullText += data.text
+              } catch {}
+            }
+          } else {
+            const data = await res.json()
+            fullText = data.reply || data.error || 'No response'
+          }
+
+          setAgentChats(prev => {
+            const current = prev[agent]?._all || []
+            const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
+            if (thinkingIdx === -1) return prev
+            const updated = [...current]
+            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', text: fullText, time: new Date().toISOString() }
+            return { ...prev, [agent]: { _all: updated } }
+          })
+        }
+      } catch (err) {
+        setAgentChats(prev => {
+          const current = prev[agent]?._all || []
+          const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
+          if (thinkingIdx === -1) return prev
+          const updated = [...current]
+          updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', text: `Error: ${err.message}`, time: new Date().toISOString() }
+          return { ...prev, [agent]: { _all: updated } }
+        })
+      }
+
+      setPanelStreaming(false)
     }
   }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap])
 
