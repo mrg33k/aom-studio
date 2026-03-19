@@ -661,7 +661,7 @@ export default function BriefFullscreenSite() {
                 <li className="font-body text-sm text-white/50">Mouse wheel / swipe: advance one slide (snap handles it)</li>
                 <li className="font-body text-sm text-white/50">Arrow Down / Page Down: advance. Up / Page Up: go back.</li>
                 <li className="font-body text-sm text-white/50">Home: Slide 1. End: Slide 8. Escape: close drawer/modal.</li>
-                <li className="font-body text-sm text-white/50">URL hash updates via history.replaceState on >50% visible</li>
+                <li className="font-body text-sm text-white/50">URL hash updates via history.replaceState on &gt;50% visible</li>
               </ul>
             </motion.div>
           </div>
