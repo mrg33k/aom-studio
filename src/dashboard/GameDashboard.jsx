@@ -7890,22 +7890,16 @@ export default function GameDashboard() {
 
     const room = selectedRoom // capture for async safety
 
-    if (!IS_LOCAL && supabase) {
-      // PRODUCTION + Supabase: load from messages table
-      supabase
-        .from('messages')
-        .select('*')
-        .eq('agent', room)
-        .order('timestamp', { ascending: true })
-        .limit(100)
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('[Corner] Supabase load error, falling back to GitHub:', error.message)
-            // Fallback to GitHub-backed endpoint
-            return loadFromGitHub(room)
-          }
-          const msgs = (data || []).map(mapSupabaseMsg).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
-          console.log(`[Corner] Supabase: loaded ${msgs.length} msgs for ${room}`)
+    if (!IS_LOCAL) {
+      // PRODUCTION: load chat history via Vercel proxy (bypasses Supabase JS client issues)
+      fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          const msgs = (data?.messages || []).map(m => ({
+            id: m.id, role: m.role || 'assistant', content: m.text || '',
+            time: m.timestamp || '', source: m.source || 'supabase',
+          })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+          console.log(`[Corner] Proxy: loaded ${msgs.length} msgs for ${room}`)
           setAgentChats(prev => ({ ...prev, [room]: { _all: msgs } }))
           setPanelChatLoading(false)
         })
@@ -7951,63 +7945,26 @@ export default function GameDashboard() {
   useEffect(() => {
     if (!selectedRoom) return
 
-    // --- PRODUCTION: Supabase Realtime + REST poll fallback ---
-    if (!IS_LOCAL && supabase) {
+    // --- PRODUCTION: Poll via Vercel proxy (bypasses Supabase JS client WebSocket issues) ---
+    if (!IS_LOCAL) {
       const room = selectedRoom
       let lastSeenTs = new Date().toISOString()
 
-      // Realtime subscription (instant when WebSocket works)
-      const channel = supabase
-        .channel(`chat-${room}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `agent=eq.${room}`,
-          },
-          (payload) => {
-            const newMsg = payload.new
-            if (!newMsg) return
-            if (newMsg.role !== 'assistant') return
-            if (!newMsg.text) return
-            const msg = mapSupabaseMsg(newMsg)
-            lastSeenTs = newMsg.timestamp || new Date().toISOString()
-            setAgentChats(prev => {
-              const current = prev[room]?._all || []
-              if (current.some(m => m.id === msg.id)) return prev
-              const filtered = current.filter(m => !m.streaming)
-              return { ...prev, [room]: { _all: [...filtered, msg] } }
-            })
-            setPanelStreaming(false)
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`[Corner] Supabase Realtime subscribed: ${room}`)
-          }
-        })
-
-      // REST poll fallback (catches messages when WebSocket is down)
       const poll = setInterval(async () => {
         try {
-          const { data } = await supabase
-            .from('messages')
-            .select('*')
-            .eq('agent', room)
-            .eq('role', 'assistant')
-            .gt('timestamp', lastSeenTs)
-            .order('timestamp', { ascending: true })
-            .limit(10)
-          if (data?.length) {
-            lastSeenTs = data[data.length - 1].timestamp
+          const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20`)
+          if (!res.ok) return
+          const data = await res.json()
+          const newMsgs = (data?.messages || [])
+            .filter(m => m.role === 'assistant' && m.timestamp > lastSeenTs)
+          if (newMsgs.length) {
+            lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
             setAgentChats(prev => {
               const current = prev[room]?._all || []
               let updated = [...current]
               let changed = false
-              for (const row of data) {
-                const msg = mapSupabaseMsg(row)
+              for (const row of newMsgs) {
+                const msg = { id: row.id, role: 'assistant', content: row.text || '', time: row.timestamp, source: row.source || 'supabase' }
                 if (!updated.some(m => m.id === msg.id)) {
                   updated = updated.filter(m => !m.streaming)
                   updated.push(msg)
@@ -8022,10 +7979,7 @@ export default function GameDashboard() {
         } catch {}
       }, 3000)
 
-      return () => {
-        supabase.removeChannel(channel)
-        clearInterval(poll)
-      }
+      return () => clearInterval(poll)
     }
 
     // --- LOCAL: file-backed poll ---
@@ -8348,21 +8302,17 @@ export default function GameDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sendBody),
       }).catch(() => {})
-    } else if (supabase) {
-      // Production + Supabase: write directly to messages table.
-      // Mac listener picks this up via Realtime and routes to the agent.
-      // Response comes back via Supabase Realtime subscription.
+    } else {
+      // Production: send via Vercel proxy (writes to Supabase with service key server-side)
       const agent = selectedRoom
       try {
-        const { error: insertErr } = await supabase.from('messages').insert({
-          id: crypto.randomUUID(),
-          agent: agent,
-          role: 'user',
-          text: text,
-          source: 'corner-dashboard',
+        const res = await fetch('/api/dashboard/supabase-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard' }),
         })
-        if (insertErr) throw new Error(`Supabase insert failed: ${insertErr.message}`)
-        // Response arrives via Realtime subscription, no polling needed
+        if (!res.ok) throw new Error(`Send failed: ${res.status}`)
+        // Response arrives via poll (3s interval)
       } catch (err) {
         setAgentChats(prev => {
           const current = prev[agent]?._all || []
