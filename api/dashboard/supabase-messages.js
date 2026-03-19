@@ -47,7 +47,7 @@ export default async function handler(req, res) {
 
   // ---- POST: write a new message (user send from dashboard) ---------------
   if (req.method === 'POST') {
-    const { agent, text, role = 'user', source = 'corner-dashboard', status = 'pending' } = req.body || {}
+    const { agent, text, role = 'user', source = 'corner-dashboard' } = req.body || {}
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
     const payload = {
@@ -55,7 +55,6 @@ export default async function handler(req, res) {
       role,
       text: text.trim(),
       source,
-      status,
     }
 
     const url = `${SUPABASE_URL}/rest/v1/messages`
