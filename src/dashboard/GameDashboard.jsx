@@ -8313,47 +8313,21 @@ export default function GameDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sendBody),
       }).catch(() => {})
-    } else {
-      // Production: Mac relay path (Option B). Message → Supabase → Mac listener → claude --continue → response
+    } else if (supabase) {
+      // Production + Supabase: write directly to messages table.
+      // Mac listener picks this up via Realtime and routes to the agent.
+      // Response comes back via Supabase Realtime subscription.
       const agent = selectedRoom
       try {
-        const relayRes = await fetch('/api/dashboard/mac-relay', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: agent, message: text }),
+        const { error: insertErr } = await supabase.from('messages').insert({
+          id: crypto.randomUUID(),
+          agent: agent,
+          role: 'user',
+          text: text,
+          source: 'corner-dashboard',
         })
-        if (!relayRes.ok) throw new Error(`Relay failed: ${relayRes.status}`)
-        const { id: msgId, timestamp: msgTs } = await relayRes.json()
-
-        // Poll for Mac response (median ~13s, timeout 90s)
-        let responseText = null
-        const pollStart = Date.now()
-        while (Date.now() - pollStart < 90000) {
-          await new Promise(r => setTimeout(r, 2000))
-          try {
-            const checkRes = await fetch(`/api/dashboard/mac-response?id=${msgId}&since=${encodeURIComponent(msgTs)}&agent=${encodeURIComponent(agent)}`)
-            if (checkRes.ok) {
-              const data = await checkRes.json()
-              if (data.found) {
-                responseText = data.text
-                break
-              }
-            }
-          } catch {}
-        }
-
-        setAgentChats(prev => {
-          const current = prev[agent]?._all || []
-          const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
-          if (thinkingIdx === -1) return prev
-          const updated = [...current]
-          updated[thinkingIdx] = {
-            id: `resp-${localId}`, role: 'assistant',
-            content: responseText || 'Message delivered. Elon is working on it.',
-            time: new Date().toISOString()
-          }
-          return { ...prev, [agent]: { _all: updated } }
-        })
+        if (insertErr) throw new Error(`Supabase insert failed: ${insertErr.message}`)
+        // Response arrives via Realtime subscription, no polling needed
       } catch (err) {
         setAgentChats(prev => {
           const current = prev[agent]?._all || []
