@@ -736,6 +736,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     isNearBottomRef.current = true
   }, [])
 
+  // Auto-scroll chat to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
   // Focus input on open
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 300)
