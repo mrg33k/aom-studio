@@ -361,6 +361,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [streamStartTime, setStreamStartTime] = useState(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [thinkingPhrase, setThinkingPhrase] = useState(0)
+  const [motivationalPhrase, setMotivationalPhrase] = useState(0)
   const [isSending, setIsSending] = useState(false)
 
   // Fun rotating thinking phrases
@@ -373,6 +374,18 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     'Building...',
     'In the zone...',
     'Running it...',
+  ], [agent.name])
+
+  // Motivational phrases for the work wait
+  const motivationalPhrases = useMemo(() => [
+    `Give ${agent.name} a minute. He's actually doing shit.`,
+    'He\'s working hard. Real work takes time.',
+    `${agent.name}'s cooking. This might take a bit.`,
+    'The system works, just not instantly.',
+    'He\'s doing real work behind the scenes.',
+    'No rush. Quality over speed.',
+    `${agent.name} doesn't cut corners.`,
+    'Real work happening right now.',
   ], [agent.name])
 
   // Elapsed timer: counts up every second while streaming
@@ -398,6 +411,18 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     }, 3000)
     return () => clearInterval(interval)
   }, [streaming, thinkingPhrases.length])
+
+  // Rotate motivational phrases every 5 seconds while streaming
+  useEffect(() => {
+    if (!streaming) {
+      setMotivationalPhrase(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setMotivationalPhrase(prev => (prev + 1) % motivationalPhrases.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [streaming, motivationalPhrases.length])
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
@@ -1181,26 +1206,32 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           // Typing indicator (streaming placeholder with no content yet)
           if (msg.streaming && !msg.content) {
             return (
-              <div key={msg.id || `typing-indicator-${i}`} className="flex items-end gap-2.5 flex-row">
-                <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 border-[#C026D3]/50 bg-[#C026D3]/10 text-[#C026D3]">
-                  {agentInitial}
-                </div>
-                <div className="bg-[#1C1C1A] border border-[#2A2A28] rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#78716C] text-xs font-mono">{thinkingPhrases[thinkingPhrase]}</span>
-                    {elapsedSeconds > 0 && (
-                      <span className="text-[#78716C]/50 text-xs font-mono">{elapsedSeconds}s</span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      {[0, 1, 2].map(j => (
-                        <span
-                          key={j}
-                          className="inline-block w-1.5 h-1.5 rounded-full bg-[#C026D3]/60"
-                          style={{ animation: `chatBounce 1.4s ease-in-out ${j * 0.2}s infinite` }}
-                        />
-                      ))}
-                    </span>
+              <div key={msg.id || `typing-indicator-${i}`} className="flex flex-col gap-1 flex-start">
+                <div className="flex items-end gap-2.5 flex-row">
+                  <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 border-[#C026D3]/50 bg-[#C026D3]/10 text-[#C026D3]">
+                    {agentInitial}
                   </div>
+                  <div className="bg-[#1C1C1A] border border-[#2A2A28] rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#78716C] text-xs font-mono">{thinkingPhrases[thinkingPhrase]}</span>
+                      {elapsedSeconds > 0 && (
+                        <span className="text-[#78716C]/50 text-xs font-mono">{elapsedSeconds}s</span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        {[0, 1, 2].map(j => (
+                          <span
+                            key={j}
+                            className="inline-block w-1.5 h-1.5 rounded-full bg-[#C026D3]/60"
+                            style={{ animation: `chatBounce 1.4s ease-in-out ${j * 0.2}s infinite` }}
+                          />
+                        ))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {/* Motivational text under the bubble */}
+                <div className="ml-11 text-[#78716C]/70 text-xs font-mono leading-relaxed">
+                  {motivationalPhrases[motivationalPhrase]}
                 </div>
               </div>
             )
