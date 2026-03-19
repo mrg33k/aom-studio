@@ -144,7 +144,9 @@ export default async function handler(req, res) {
 
   try {
     // Write user message to Supabase (wakes Mac listener + syncs conversation)
-    const userMsgId = await writeToSupabase('user', slug, message, 'dashboard')
+    // Fire-and-forget: don't block the chat response
+    const userMsgId = crypto.randomUUID()
+    writeToSupabase('user', slug, message, 'dashboard').catch(() => {})
 
     // Load agent context from GitHub
     const { agentMd, lastConvo, priorities } = await loadAgentContext(slug)
@@ -239,8 +241,9 @@ export default async function handler(req, res) {
     }
 
     // Write assistant response to Supabase (syncs conversation to Mac)
+    // Fire-and-forget
     if (fullResponse) {
-      writeToSupabase('assistant', slug, fullResponse, 'dashboard-api', userMsgId)
+      writeToSupabase('assistant', slug, fullResponse, 'dashboard-api', userMsgId).catch(() => {})
     }
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
