@@ -4129,6 +4129,9 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
   }
 
   // Typing indicator: 3 dots pulsing in agent's color
+  const thinkingTexts = ['eloning...', 'crushing it...', 'flexing...', 'plotting...', 'cooking...', 'brewing...', 'scheming...']
+  const [thinkingText] = useState(() => thinkingTexts[Math.floor(Math.random() * thinkingTexts.length)])
+
   const TypingIndicator = () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 2px' }}>
       {[0, 1, 2].map(i => (
@@ -4261,12 +4264,13 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                       animation: streaming ? 'chatTypingDot 1.2s ease-in-out infinite' : (status === 'WORKING' ? 'statusPulse 1.5s ease-in-out infinite' : 'none'),
                     }} />
                     <span style={{ color: '#8A847C', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
-                      {streaming ? 'typing...' : (status === 'WORKING' ? 'Active' : status === 'WAITING' ? 'Thinking...' : 'Online')}
+                      {streaming ? thinkingText : (status === 'WORKING' ? 'Active' : status === 'WAITING' ? 'Thinking...' : 'Online')}
                     </span>
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {streaming && <ChatTimeoutRing streaming={streaming} agentColor={agentColor} agentName={currentAgent?.name} />}
                 {!fullscreen && (
                   <button onClick={() => setFullscreen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, borderRadius: 4, transition: 'color 150ms' }}
                     onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
@@ -4312,9 +4316,18 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
               )}
 
               {/* Message list */}
-              {currentMessages.map((msg, i) => {
-                const isUser = msg.role === 'user'
-                return (
+              {(() => {
+                let lastStreamingIdx = -1
+                for (let j = currentMessages.length - 1; j >= 0; j--) {
+                  if (currentMessages[j].streaming && !currentMessages[j].content) {
+                    lastStreamingIdx = j
+                    break
+                  }
+                }
+                return currentMessages.map((msg, i) => {
+                  const isUser = msg.role === 'user'
+                  const isLastStreaming = msg.streaming && !msg.content && i === lastStreamingIdx
+                  return (
                   <motion.div
                     key={`${agentSlug}-${i}`}
                     initial={{ opacity: 0, y: 8 }}
@@ -4348,7 +4361,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                             {msg.streaming && msg.content && <StreamingCursor />}
                           </div>
                         )}
-                        {msg.streaming && !msg.content && <TypingIndicator />}
+                        {isLastStreaming && <TypingIndicator />}
                       </div>
                       <div style={{
                         fontSize: 12, color: '#6B728088', marginTop: 4,
@@ -4359,8 +4372,9 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                       </div>
                     </div>
                   </motion.div>
-                )
-              })}
+                  )
+                })
+              })()}
               <div ref={messagesEndRef} />
             </div>
 
