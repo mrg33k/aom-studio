@@ -7030,6 +7030,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     color: isNightMode ? '#F1F5F9' : '#E2E8F0',
                     outline: 'none',
                     transition: 'border-color 200ms ease, box-shadow 200ms ease',
+                    // iOS Safari: override parent userSelect:none so text can be selected/typed
+                    userSelect: 'text',
+                    WebkitUserSelect: 'text',
+                    // Allow normal tap behavior (focus + keyboard) even under parent touchAction:manipulation
+                    touchAction: 'manipulation',
+                    // Remove gray tap flash on iOS
+                    WebkitTapHighlightColor: 'transparent',
                   }}
                   onFocus={e => {
                     isUserTypingRef.current = true
@@ -8509,8 +8516,12 @@ export default function GameDashboard() {
       overflow: 'hidden',
       fontFamily: 'Inter, system-ui, sans-serif',
       transition: 'background 500ms ease',
-      overscrollBehavior: 'none', touchAction: 'none',
+      overscrollBehavior: 'none',
+      // Mobile: 'manipulation' allows input focus + tap events while still preventing double-tap zoom.
+      // Desktop: 'none' prevents accidental scroll/swipe on canvas. Input focus works fine on desktop.
+      touchAction: isMobile ? 'manipulation' : 'none',
       // Suppress iOS text selection on long-press (FIX 3, Wave 5)
+      // NOTE: inputs/textareas override this locally with userSelect:'text' so typing still works.
       WebkitTouchCallout: 'none',
       WebkitUserSelect: 'none',
       userSelect: 'none',
