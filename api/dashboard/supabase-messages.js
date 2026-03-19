@@ -33,13 +33,15 @@ export default async function handler(req, res) {
     const { agent, limit = 100 } = req.query
     if (!agent) return res.status(400).json({ error: 'agent required' })
 
-    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}&order=timestamp.asc&limit=${limit}`
+    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}&order=timestamp.desc&limit=${limit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()
       return res.status(sbRes.status).json({ error: err })
     }
     const messages = await sbRes.json()
+    // Reverse so oldest first (fetched desc to get the LATEST N, display asc)
+    messages.reverse()
     return res.status(200).json({ messages })
   }
 
