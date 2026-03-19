@@ -8314,87 +8314,46 @@ export default function GameDashboard() {
         body: JSON.stringify(sendBody),
       }).catch(() => {})
     } else {
-      // Production: call /api/dashboard/chat for SSE response from Claude API
+      // Production: Mac relay path (Option B). Message → Supabase → Mac listener → claude --continue → response
       const agent = selectedRoom
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-
       try {
-        const res = await fetch('/api/dashboard/chat', {
+        const relayRes = await fetch('/api/dashboard/mac-relay', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: agent, message: text, history: [] }),
+          body: JSON.stringify({ slug: agent, message: text }),
         })
+        if (!relayRes.ok) throw new Error(`Relay failed: ${relayRes.status}`)
+        const { id: msgId } = await relayRes.json()
 
-        const contentType = res.headers.get('content-type') || ''
-
-        if (contentType.includes('text/event-stream') && !isSafari) {
-          // Chrome/Firefox: stream chunks
-          const reader = res.body.getReader()
-          const decoder = new TextDecoder()
-          let buffer = ''
-          let fullText = ''
-
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            buffer += decoder.decode(value, { stream: true })
-            const lines = buffer.split('\n')
-            buffer = lines.pop() || ''
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue
-              try {
-                const data = JSON.parse(line.slice(6))
-                if (data.type === 'text') {
-                  fullText += data.text
-                  setAgentChats(prev => {
-                    const current = prev[agent]?._all || []
-                    const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
-                    if (thinkingIdx === -1) return prev
-                    const updated = [...current]
-                    updated[thinkingIdx] = { ...updated[thinkingIdx], content: fullText, streamPhase: 'streaming' }
-                    return { ...prev, [agent]: { _all: updated } }
-                  })
-                }
-              } catch {}
+        // Poll for Mac response (median ~13s, timeout 90s)
+        let responseText = null
+        const pollStart = Date.now()
+        while (Date.now() - pollStart < 90000) {
+          await new Promise(r => setTimeout(r, 2000))
+          try {
+            const checkRes = await fetch(`/api/dashboard/mac-response?id=${msgId}`)
+            if (checkRes.ok) {
+              const data = await checkRes.json()
+              if (data.found) {
+                responseText = data.text
+                break
+              }
             }
-          }
-
-          // Replace thinking bubble with final response
-          setAgentChats(prev => {
-            const current = prev[agent]?._all || []
-            const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
-            if (thinkingIdx === -1) return prev
-            const updated = [...current]
-            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', content: fullText, time: new Date().toISOString() }
-            return { ...prev, [agent]: { _all: updated } }
-          })
-        } else {
-          // Safari or non-SSE: read full response then display
-          const text = contentType.includes('text/event-stream') ? await res.text() : ''
-          let fullText = ''
-
-          if (text) {
-            for (const line of text.split('\n')) {
-              if (!line.startsWith('data: ')) continue
-              try {
-                const data = JSON.parse(line.slice(6))
-                if (data.type === 'text') fullText += data.text
-              } catch {}
-            }
-          } else {
-            const data = await res.json()
-            fullText = data.reply || data.error || 'No response'
-          }
-
-          setAgentChats(prev => {
-            const current = prev[agent]?._all || []
-            const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
-            if (thinkingIdx === -1) return prev
-            const updated = [...current]
-            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', content: fullText, time: new Date().toISOString() }
-            return { ...prev, [agent]: { _all: updated } }
-          })
+          } catch {}
         }
+
+        setAgentChats(prev => {
+          const current = prev[agent]?._all || []
+          const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
+          if (thinkingIdx === -1) return prev
+          const updated = [...current]
+          updated[thinkingIdx] = {
+            id: `resp-${localId}`, role: 'assistant',
+            content: responseText || 'Message delivered. Elon is working on it.',
+            time: new Date().toISOString()
+          }
+          return { ...prev, [agent]: { _all: updated } }
+        })
       } catch (err) {
         setAgentChats(prev => {
           const current = prev[agent]?._all || []
