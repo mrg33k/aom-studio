@@ -7472,21 +7472,17 @@ export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
   const [hudOpen, setHudOpen] = useState(false)
 
-  // Right Now manual tasks (user-created, persisted to localStorage)
-  const [rightNowTasks, setRightNowTasks] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]') } catch { return [] }
-  })
-  useEffect(() => {
-    try { localStorage.setItem('corner-right-now-tasks', JSON.stringify(rightNowTasks)) } catch {}
-  }, [rightNowTasks])
+  // Right Now tasks: wire to useDataPipe (real-time from task-status.jsonl + agent-notifications.md)
+  // No longer using localStorage -- this is now live data from the server
+  const pipeData = useDataPipe(parsePunchListSidebar)
+  const rightNowTasks = pipeData?.rightNow || []
   const addToRightNow = useCallback((task) => {
-    setRightNowTasks(prev => {
-      if (prev.some(t => t.id === task.id)) return prev
-      return [...prev, { ...task, addedAt: new Date().toISOString() }]
-    })
+    // For future interactive features: could add temp override in local state
+    // For now, RIGHT NOW is read-only from pipeData
   }, [])
   const removeFromRightNow = useCallback((id) => {
-    setRightNowTasks(prev => prev.filter(t => t.id !== id))
+    // For future: could add removal logic that writes back to server
+    // For now, RIGHT NOW is read-only from pipeData
   }, [])
   // HMR state recovery: restore selected room + tab from sessionStorage if HMR just reloaded
   const [selectedRoom, setSelectedRoom] = useState(() => {

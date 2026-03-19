@@ -310,17 +310,50 @@ export function useDataPipe(parsePunchList) {
     if (IS_LOCAL) {
       // LOCAL: read from filesystem APIs
       try {
-        const [notifRes, punchRes, missionsRes] = await Promise.all([
+        const [notifRes, punchRes, missionsRes, taskStatusRes] = await Promise.all([
           fetch('/api/local/file?path=context/agent-notifications.md').then(r => r.ok ? r.json() : null).catch(() => null),
           fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null),
           fetch('/api/local/file?path=context/active-missions.md').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/local/file?path=context/task-status.jsonl').then(r => r.ok ? r.json() : null).catch(() => null),
         ])
 
         const notifContent = notifRes?.content || ''
         const punchContent = punchRes?.content || ''
         const missionsContent = missionsRes?.content || ''
+        const taskStatusContent = taskStatusRes?.content || ''
 
-        setRightNow(parseRightNow(missionsContent, notifContent))
+        // Parse task-status.jsonl: each line is JSON with status: STARTED, WORKING, QUEUED, FINISHED
+        let taskStatusTasks = []
+        if (taskStatusContent) {
+          const lines = taskStatusContent.trim().split('\n').filter(line => line && !line.startsWith('#'))
+          for (const line of lines) {
+            try {
+              const task = JSON.parse(line)
+              if (task.status === 'STARTED' || task.status === 'WORKING') {
+                taskStatusTasks.push({
+                  text: task.description || task.task || task.text || 'Running...',
+                  agent: task.agent || 'system',
+                  done: false,
+                  isLive: true,
+                  taskId: task.id,
+                })
+              }
+            } catch {
+              // Skip malformed lines
+            }
+          }
+        }
+
+        // Merge task-status tasks with notifications-based tasks (task-status takes priority)
+        const notifTasks = parseRightNow(missionsContent, notifContent)
+        const mergedTasks = [...taskStatusTasks]
+        for (const task of notifTasks) {
+          if (!mergedTasks.some(t => t.agent === task.agent)) {
+            mergedTasks.push(task)
+          }
+        }
+
+        setRightNow(mergedTasks)
         setCompletedFeed(parseCompletedFeed(notifContent))
         keywordsRef.current = buildAutoCheckKeywords(notifContent)
 
