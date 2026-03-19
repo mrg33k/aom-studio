@@ -8351,7 +8351,7 @@ export default function GameDashboard() {
                     const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
                     if (thinkingIdx === -1) return prev
                     const updated = [...current]
-                    updated[thinkingIdx] = { ...updated[thinkingIdx], text: fullText, streamPhase: 'streaming' }
+                    updated[thinkingIdx] = { ...updated[thinkingIdx], content: fullText, streamPhase: 'streaming' }
                     return { ...prev, [agent]: { _all: updated } }
                   })
                 }
@@ -8365,7 +8365,7 @@ export default function GameDashboard() {
             const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
             if (thinkingIdx === -1) return prev
             const updated = [...current]
-            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', text: fullText, time: new Date().toISOString() }
+            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', content: fullText, time: new Date().toISOString() }
             return { ...prev, [agent]: { _all: updated } }
           })
         } else {
@@ -8391,7 +8391,7 @@ export default function GameDashboard() {
             const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
             if (thinkingIdx === -1) return prev
             const updated = [...current]
-            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', text: fullText, time: new Date().toISOString() }
+            updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', content: fullText, time: new Date().toISOString() }
             return { ...prev, [agent]: { _all: updated } }
           })
         }
@@ -8401,7 +8401,7 @@ export default function GameDashboard() {
           const thinkingIdx = current.findIndex(m => m.id === `thinking-${localId}`)
           if (thinkingIdx === -1) return prev
           const updated = [...current]
-          updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', text: `Error: ${err.message}`, time: new Date().toISOString() }
+          updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', content: `Error: ${err.message}`, time: new Date().toISOString() }
           return { ...prev, [agent]: { _all: updated } }
         })
       }
