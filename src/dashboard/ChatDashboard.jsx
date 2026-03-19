@@ -940,7 +940,6 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           role: 'user',
           text: text,
           source: 'corner-dashboard',
-          status: 'pending',
         })
         if (insertErr) throw new Error(`Supabase insert failed: ${insertErr.message}`)
         // No need to start relay poll: Realtime subscription handles incoming responses
