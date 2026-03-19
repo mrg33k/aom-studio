@@ -1,8 +1,10 @@
 // GET  /api/dashboard/supabase-messages?agent={slug}&limit=100
-// POST /api/dashboard/supabase-messages  { agent, text, role, source, status }
+// POST /api/dashboard/supabase-messages  { agent, text, role, source }
 //
 // Server-side Supabase proxy. Uses service role key for writes.
-// Client uses anon key for realtime subscriptions directly.
+// The ONLY production chat endpoint. No Supabase JS client in browser.
+
+import crypto from 'crypto'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
@@ -51,6 +53,7 @@ export default async function handler(req, res) {
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
 
     const payload = {
+      id: crypto.randomUUID(),
       agent,
       role,
       text: text.trim(),
