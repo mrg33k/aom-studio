@@ -2900,6 +2900,9 @@ function MobileDrawer({
               powerupOpen={powerupOpen}
               onPowerupToggle={onPowerupToggle}
               onPowerupActivate={onPowerupActivate}
+              onInputFocus={() => {
+                if (snap === 'half') onSnapChange('full')
+              }}
             />
           </div>
         )}
@@ -2930,6 +2933,9 @@ function MobileDrawer({
               onAddToRightNow={onAddToRightNow}
               rightNowTasks={rightNowTasks}
               cornerConfig={cornerConfig}
+              onInputFocus={() => {
+                if (snap === 'half') onSnapChange('full')
+              }}
             />
           </div>
         )}
@@ -2960,6 +2966,9 @@ function MobileDrawer({
               onAddToRightNow={onAddToRightNow}
               rightNowTasks={rightNowTasks}
               cornerConfig={cornerConfig}
+              onInputFocus={() => {
+                if (snap === 'half') onSnapChange('full')
+              }}
             />
           </div>
         )}
@@ -6182,7 +6191,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -7056,6 +7065,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     isUserTypingRef.current = true
                     e.target.style.borderColor = agentColor + '88'
                     e.target.style.boxShadow = `0 0 0 3px ${agentColor}25, 0 0 16px ${agentColor}15`
+                    onInputFocus?.()
                   }}
                   onBlur={e => {
                     setTimeout(() => { isUserTypingRef.current = false }, 300)
