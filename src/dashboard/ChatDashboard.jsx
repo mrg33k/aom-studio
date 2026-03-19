@@ -1177,7 +1177,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           // Typing indicator (streaming placeholder with no content yet)
           if (msg.streaming && !msg.content) {
             return (
-              <div key="typing-indicator" className="flex items-end gap-2.5 flex-row">
+              <div key={msg.id || `typing-indicator-${i}`} className="flex items-end gap-2.5 flex-row">
                 <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 border-[#C026D3]/50 bg-[#C026D3]/10 text-[#C026D3]">
                   {agentInitial}
                 </div>
