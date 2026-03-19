@@ -10,6 +10,7 @@ import {
   Search as SearchIcon,
 } from 'lucide-react'
 import { marked } from 'marked'
+import { supabase, mapSupabaseMsg } from './lib/supabase'
 
 // Configure marked for safe, minimal rendering
 marked.setOptions({
@@ -487,8 +488,68 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
 
           setRelayConnected(true)
+        } else if (supabase) {
+          // Production + Supabase available: load history from Supabase messages table
+          try {
+            const { data: rows, error: sbErr } = await supabase
+              .from('messages')
+              .select('*')
+              .eq('agent', agent.slug)
+              .order('timestamp', { ascending: true })
+              .limit(100)
+
+            if (sbErr) throw sbErr
+
+            if (rows && rows.length > 0) {
+              const all = []
+              for (const row of rows) {
+                const mapped = mapSupabaseMsg(row)
+                const cleaned = sanitizeRelayMessage(mapped.content)
+                if (!cleaned) continue
+                all.push({ ...mapped, content: cleaned })
+              }
+              const deduped = deduplicateMessages(all)
+              const recent = deduped.slice(-100)
+              if (recent.length > 0) {
+                setMessages(recent)
+                lastConvTimestampRef.current = recent[recent.length - 1].time
+              }
+            }
+            setRelayConnected(true)
+          } catch (sbErr) {
+            console.warn('Supabase history load failed, falling back to conversations API:', sbErr)
+            // Fallback to GitHub-backed conversations API
+            try {
+              const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50`)
+              if (convRes.ok) {
+                const convData = await convRes.json()
+                const convMsgs = convData.messages || []
+                const all = convMsgs.map(msg => {
+                  const cleaned = sanitizeRelayMessage(msg.text || msg.message)
+                  if (!cleaned) return null
+                  return {
+                    role: msg.role || (msg.sender === 'patrik' ? 'user' : 'assistant'),
+                    content: cleaned,
+                    time: msg.timestamp,
+                    source: msg.source || 'unknown',
+                    id: msg.id,
+                  }
+                }).filter(Boolean)
+                all.sort((a, b) => new Date(a.time) - new Date(b.time))
+                const deduped = deduplicateMessages(all)
+                const recent = deduped.slice(-50)
+                if (recent.length > 0) {
+                  setMessages(recent)
+                  lastConvTimestampRef.current = recent[recent.length - 1].time
+                }
+                setRelayConnected(true)
+              }
+            } catch (prodErr) {
+              console.warn('Production conversations endpoint also failed:', prodErr)
+            }
+          }
         } else {
-          // Production: use Vercel /api/conversations (GitHub-backed JSONL)
+          // Production without Supabase: use Vercel /api/conversations (GitHub-backed JSONL)
           try {
             const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50`)
             if (convRes.ok) {
@@ -526,6 +587,54 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
     loadHistory()
   }, [])
+
+  // ── SUPABASE REALTIME: Subscribe to new assistant messages (production only) ──
+  // When supabase is available, listen for INSERT events on the messages table.
+  // This replaces polling for responses on production. On localhost (supabase=null),
+  // this effect is a no-op and the existing polling paths handle everything.
+  useEffect(() => {
+    if (!supabase) return // Local dev: skip, polling handles it
+
+    const channel = supabase
+      .channel(`chat-${agent.slug}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `role=eq.assistant`,
+      }, (payload) => {
+        const row = payload.new
+        // Only show messages for the current agent
+        if (row.agent !== agent.slug) return
+
+        const mapped = mapSupabaseMsg(row)
+        const cleaned = sanitizeRelayMessage(mapped.content)
+        if (!cleaned) return
+
+        setMessages(prev => {
+          // Deduplicate: skip if we already have this message ID
+          if (prev.some(m => m.id === mapped.id)) return prev
+          // Remove streaming placeholders, add the real message
+          const filtered = prev.filter(m => !m.streaming)
+          filtered.push({ ...mapped, content: cleaned })
+          filtered.sort((a, b) => new Date(a.time) - new Date(b.time))
+          return deduplicateMessages(filtered.slice(-100))
+        })
+
+        // Clear streaming/typing state since we got a real response
+        setStreaming(false)
+        clearChatTimeout()
+        if (relayPollRef.current) {
+          clearInterval(relayPollRef.current)
+          relayPollRef.current = null
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [agent.slug])
 
   // Track whether new messages arrived (for "new messages" indicator button only)
   const hasNewMessagesRef = useRef(false)
@@ -592,9 +701,13 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   useEffect(() => { streamingRef.current = streaming }, [streaming])
 
   // PRIMARY POLL: Conversation JSONL endpoint (unified source of truth)
-  // Local: 2.5s. Production: 5s (GitHub API rate limit friendly).
+  // Local: 2.5s. Production without Supabase: 5s (GitHub API rate limit friendly).
+  // When Supabase Realtime is active (production), skip this poll entirely.
   // Picks up ALL messages from all sources (terminal, telegram, dashboard, auto-responder).
   useEffect(() => {
+    // Production + Supabase: Realtime subscription handles incoming messages, no polling needed
+    if (!IS_LOCAL && supabase) return
+
     const pollInterval = IS_LOCAL ? 2500 : 5000
 
     convPollRef.current = setInterval(async () => {
@@ -818,8 +931,21 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         })
         if (!res.ok) throw new Error('Failed to write to relay')
         startRelayPoll(sentTime)
+      } else if (supabase) {
+        // Production + Supabase: write directly to messages table
+        // The Mac listener picks this up and routes to the agent.
+        // Response comes back via Realtime subscription (no polling needed).
+        const { error: insertErr } = await supabase.from('messages').insert({
+          agent: agent.slug,
+          role: 'user',
+          text: text,
+          source: 'corner-dashboard',
+          status: 'pending',
+        })
+        if (insertErr) throw new Error(`Supabase insert failed: ${insertErr.message}`)
+        // No need to start relay poll: Realtime subscription handles incoming responses
       } else {
-        // Production: use the Vercel relay API (writes to GitHub relay-inbox + conversation JSONL)
+        // Production without Supabase: use the Vercel relay API (writes to GitHub relay-inbox + conversation JSONL)
         const res = await fetch(RELAY_SEND_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -892,10 +1018,10 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           <SearchIcon className="w-4 h-4" />
         </button>
         {/* Relay connection indicator */}
-        <div className="flex items-center gap-1.5 shrink-0" title={IS_LOCAL ? 'Local relay (direct file I/O)' : 'Remote relay (GitHub API)'}>
+        <div className="flex items-center gap-1.5 shrink-0" title={IS_LOCAL ? 'Local relay (direct file I/O)' : supabase ? 'Supabase Realtime (live)' : 'Remote relay (GitHub API)'}>
           <Radio className={`w-3 h-3 ${relayConnected ? 'text-[#22C55E]' : 'text-[#78716C]'}`} />
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#78716C]">
-            {IS_LOCAL ? 'LOCAL' : 'RELAY'}
+            {IS_LOCAL ? 'LOCAL' : supabase ? 'LIVE' : 'RELAY'}
           </span>
         </div>
       </div>
