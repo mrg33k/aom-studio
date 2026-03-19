@@ -936,6 +936,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         // The Mac listener picks this up and routes to the agent.
         // Response comes back via Realtime subscription (no polling needed).
         const { error: insertErr } = await supabase.from('messages').insert({
+          id: crypto.randomUUID(),
           agent: agent.slug,
           role: 'user',
           text: text,
