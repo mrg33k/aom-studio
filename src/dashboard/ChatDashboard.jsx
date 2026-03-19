@@ -358,6 +358,45 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [streamStartTime, setStreamStartTime] = useState(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [thinkingPhrase, setThinkingPhrase] = useState(0)
+
+  // Fun rotating thinking phrases
+  const thinkingPhrases = useMemo(() => [
+    `${agent.name}ing...`,
+    'Crushing it...',
+    'Flexing...',
+    'Making moves...',
+    'Cooking...',
+    'Building...',
+    'In the zone...',
+    'Running it...',
+  ], [agent.name])
+
+  // Elapsed timer: counts up every second while streaming
+  useEffect(() => {
+    if (!streaming || !streamStartTime) {
+      setElapsedSeconds(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - streamStartTime) / 1000))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [streaming, streamStartTime])
+
+  // Rotate thinking phrases every 3 seconds while streaming
+  useEffect(() => {
+    if (!streaming) {
+      setThinkingPhrase(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setThinkingPhrase(prev => (prev + 1) % thinkingPhrases.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [streaming, thinkingPhrases.length])
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
@@ -611,6 +650,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       })
 
       setStreaming(false)
+      setStreamStartTime(null)
       clearChatTimeout()
       if (relayPollRef.current) {
         clearInterval(relayPollRef.current)
@@ -775,6 +815,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         const hasNewAssistant = newMsgs.some(m => m.role === 'assistant')
         if (hasNewAssistant && streamingRef.current) {
           setStreaming(false)
+          setStreamStartTime(null)
           clearChatTimeout()
           if (relayPollRef.current) {
             clearInterval(relayPollRef.current)
@@ -872,6 +913,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               return filtered
             })
             setStreaming(false)
+            setStreamStartTime(null)
             clearChatTimeout()
             lastOutboxCheckRef.current = latest.timestamp
             if (relayPollRef.current) {
@@ -902,6 +944,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         return updated
       })
       setStreaming(false)
+      setStreamStartTime(null)
       if (relayPollRef.current) {
         clearInterval(relayPollRef.current)
         relayPollRef.current = null
@@ -919,21 +962,28 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const sendMessage = async (e) => {
     e?.preventDefault()
     const text = input.trim()
-    if (!text || streaming) return
+    if (!text) return
 
     const sentTime = new Date().toISOString()
     setInput('')
     // Clear typing state (no auto-scroll -- user controls scroll position)
     isUserTypingRef.current = false
     if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
-    // Single state update: user message sorted + streaming placeholder at end
-    // Prevents React batching race that groups messages by sender
+    // Add user message + streaming placeholder (only if not already streaming)
     setMessages(prev => {
       const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard' }]
       sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
-      sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
+      // Only add a streaming placeholder if one doesn't already exist
+      const hasStreamingMsg = sorted.some(m => m.streaming)
+      if (!hasStreamingMsg) {
+        sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
+      }
       return sorted
     })
+    if (!streaming) {
+      setStreamStartTime(Date.now())
+      setThinkingPhrase(0)
+    }
     setStreaming(true)
     startChatTimeout()
 
@@ -989,6 +1039,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         return updated
       })
       setStreaming(false)
+      setStreamStartTime(null)
       clearChatTimeout()
     }
   }
@@ -1127,7 +1178,10 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                 </div>
                 <div className="bg-[#1C1C1A] border border-[#2A2A28] rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <span className="text-[#78716C] text-xs font-mono">{agent.name} is thinking</span>
+                    <span className="text-[#78716C] text-xs font-mono">{thinkingPhrases[thinkingPhrase]}</span>
+                    {elapsedSeconds > 0 && (
+                      <span className="text-[#78716C]/50 text-xs font-mono">{elapsedSeconds}s</span>
+                    )}
                     <span className="flex items-center gap-1">
                       {[0, 1, 2].map(j => (
                         <span
@@ -1237,20 +1291,15 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               // Delay clearing so send doesn't race with blur
               setTimeout(() => { isUserTypingRef.current = false }, 300)
             }}
-            placeholder={streaming ? 'Waiting for response...' : `Talk to ${agent.name}...`}
-            disabled={streaming}
-            className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60 disabled:opacity-50"
+            placeholder={streaming ? `Add more for ${agent.name}...` : `Talk to ${agent.name}...`}
+            className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60"
           />
           <button
             type="submit"
-            disabled={!input.trim() || streaming}
+            disabled={!input.trim()}
             className="w-9 h-9 flex items-center justify-center bg-[#3B82F6] text-white rounded-full hover:bg-[#2563EB] disabled:opacity-20 disabled:cursor-not-allowed transition-all shrink-0"
           >
-            {streaming ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4 ml-0.5" />
-            )}
+            <Send className="w-4 h-4 ml-0.5" />
           </button>
         </div>
       </form>
