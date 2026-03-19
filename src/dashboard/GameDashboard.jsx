@@ -8244,7 +8244,7 @@ export default function GameDashboard() {
   }
 
   // ---- SHARED SEND MESSAGE HANDLER (used by both desktop sidebar and mobile drawer) ----
-  const handlePanelSendMessage = useCallback((e) => {
+  const handlePanelSendMessage = useCallback(async (e) => {
     e?.preventDefault()
     setAtMenuOpen(false)
     setAtMenuFilter('')
