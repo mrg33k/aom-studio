@@ -8323,7 +8323,7 @@ export default function GameDashboard() {
           body: JSON.stringify({ slug: agent, message: text }),
         })
         if (!relayRes.ok) throw new Error(`Relay failed: ${relayRes.status}`)
-        const { id: msgId } = await relayRes.json()
+        const { id: msgId, timestamp: msgTs } = await relayRes.json()
 
         // Poll for Mac response (median ~13s, timeout 90s)
         let responseText = null
@@ -8331,7 +8331,7 @@ export default function GameDashboard() {
         while (Date.now() - pollStart < 90000) {
           await new Promise(r => setTimeout(r, 2000))
           try {
-            const checkRes = await fetch(`/api/dashboard/mac-response?id=${msgId}`)
+            const checkRes = await fetch(`/api/dashboard/mac-response?id=${msgId}&since=${encodeURIComponent(msgTs)}&agent=${encodeURIComponent(agent)}`)
             if (checkRes.ok) {
               const data = await checkRes.json()
               if (data.found) {

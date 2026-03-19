@@ -29,34 +29,38 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' })
   }
 
+  const { since, agent } = req.query
+
   try {
-    const url = `${SUPABASE_URL}/rest/v1/messages?reply_to=eq.${encodeURIComponent(id)}&role=eq.assistant&order=timestamp.asc&limit=1`
-    const supaRes = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_SERVICE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-        Accept: 'application/json',
-      },
-    })
-
-    if (!supaRes.ok) {
-      const errText = await supaRes.text()
-      console.error('mac-response Supabase error:', supaRes.status, errText)
-      return res.status(500).json({ error: 'Supabase query failed' })
+    const headers = {
+      apikey: SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      Accept: 'application/json',
     }
 
-    const rows = await supaRes.json()
-
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return res.status(200).json({ found: false })
+    // Primary: look for response with reply_to matching our message id
+    const url1 = `${SUPABASE_URL}/rest/v1/messages?reply_to=eq.${encodeURIComponent(id)}&role=eq.assistant&order=timestamp.asc&limit=1`
+    const r1 = await fetch(url1, { headers })
+    if (r1.ok) {
+      const rows = await r1.json()
+      if (Array.isArray(rows) && rows.length > 0) {
+        return res.status(200).json({ found: true, text: rows[0].text || '', timestamp: rows[0].timestamp || '' })
+      }
     }
 
-    const row = rows[0]
-    return res.status(200).json({
-      found: true,
-      text: row.text || '',
-      timestamp: row.timestamp || new Date().toISOString(),
-    })
+    // Fallback: any recent assistant message after 'since' timestamp (when terminal handles via relay)
+    if (since && agent) {
+      const url2 = `${SUPABASE_URL}/rest/v1/messages?role=eq.assistant&agent=eq.${encodeURIComponent(agent)}&timestamp=gt.${encodeURIComponent(since)}&order=timestamp.asc&limit=1`
+      const r2 = await fetch(url2, { headers })
+      if (r2.ok) {
+        const rows = await r2.json()
+        if (Array.isArray(rows) && rows.length > 0) {
+          return res.status(200).json({ found: true, text: rows[0].text || '', timestamp: rows[0].timestamp || '' })
+        }
+      }
+    }
+
+    return res.status(200).json({ found: false })
   } catch (err) {
     console.error('mac-response error:', err)
     return res.status(500).json({ error: 'Query failed: ' + err.message })
