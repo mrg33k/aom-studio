@@ -308,3 +308,25 @@ AGENTS.push(
   { slug: 'paige', name: 'Paige', role: 'Client Success', color: '#66BB6A', statusColors: { active: '#66BB6A', idle: '#3A7A3A', offline: '#1A401A' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#FFB74D', monitorColor: '#A5D6A7' },
   { slug: 'pixel', name: 'Pixel', role: 'Extension', color: '#8B5CF6', statusColors: { active: '#8B5CF6', idle: '#5A3AA0', offline: '#2A1A50' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#CE93D8', monitorColor: '#B0BEC5' },
 )
+
+// ─── PROJECT ROOMS ──────────────────────────────────────────────────────────
+// Project cubes on the grid alongside agent rooms. Use existing room styles
+// until Steffen designs proper project spaces. hidden=true to toggle off.
+export const PROJECTS = [
+  { slug: 'ambition-mechanical', name: 'Ambition', type: 'project', color: '#E85D26', statusColors: { active: '#E85D26', idle: '#8A5A3A', offline: '#3D2A1A' }, floor: 'wood-walnut', floorColor: '#8B6D4A', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['bobby', 'steffen', 'tony', 'cleo'] },
+  { slug: 'corner', name: 'Corner', type: 'project', color: '#3B82F6', statusColors: { active: '#3B82F6', idle: '#2A5090', offline: '#1A2A50' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#90CAF9', monitorColor: '#90CAF9', hidden: false, team: ['bobby', 'elon', 'steve', 'steffen'] },
+  { slug: 'isa-energy', name: 'ISA Energy', type: 'project', color: '#4CAF50', statusColors: { active: '#4CAF50', idle: '#2E7D32', offline: '#1B5E20' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#A5D6A7', monitorColor: '#A5D6A7', hidden: false, team: ['cleo', 'paige'] },
+  { slug: 'skylar', name: 'Skylar', type: 'project', color: '#AB47BC', statusColors: { active: '#AB47BC', idle: '#7B1FA2', offline: '#4A148C' }, floor: 'wood-walnut', floorColor: '#8B6D4A', lightColor: '#CE93D8', monitorColor: '#CE93D8', hidden: false, team: ['cleo'] },
+  { slug: 'brandon-wiley', name: 'Brandon Wiley', type: 'project', color: '#EF5350', statusColors: { active: '#EF5350', idle: '#C62828', offline: '#7F1D1D' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#EF9A9A', monitorColor: '#EF9A9A', hidden: false, team: ['cleo', 'paige'] },
+  { slug: 'kohrs', name: 'KOHRS', type: 'project', color: '#FDD835', statusColors: { active: '#FDD835', idle: '#F9A825', offline: '#F57F17' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFF59D', monitorColor: '#FFF59D', hidden: false, team: ['tony', 'cleo'] },
+  { slug: 'nabi', name: 'NABI', type: 'project', color: '#FFB300', statusColors: { active: '#FFB300', idle: '#FF8F00', offline: '#E65100' }, floor: 'wood-walnut', floorColor: '#8B6D4A', lightColor: '#FFE082', monitorColor: '#FFE082', hidden: false, team: ['cleo', 'paige'] },
+  { slug: 'outreach', name: 'Outreach', type: 'project', color: '#26A69A', statusColors: { active: '#26A69A', idle: '#00897B', offline: '#00695C' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#80CBC4', monitorColor: '#80CBC4', hidden: false, team: ['jacob', 'alex'] },
+  { slug: 'ai-advisory', name: 'AI Advisory', type: 'project', color: '#29B6F6', statusColors: { active: '#29B6F6', idle: '#0288D1', offline: '#01579B' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81D4FA', monitorColor: '#81D4FA', hidden: false, team: ['steve', 'elon', 'alex'] },
+  { slug: 'included-health', name: 'Included Health', type: 'project', color: '#78909C', statusColors: { active: '#78909C', idle: '#546E7A', offline: '#37474F' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#B0BEC5', monitorColor: '#B0BEC5', hidden: true, team: ['paige'] },
+]
+
+// All rooms (agents + visible projects) for grid rendering
+export const ALL_ROOMS = [
+  ...AGENTS.map(a => ({ ...a, type: 'agent', hidden: false })),
+  ...PROJECTS,
+]

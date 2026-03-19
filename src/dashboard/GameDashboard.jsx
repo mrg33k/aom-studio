@@ -7919,7 +7919,7 @@ export default function GameDashboard() {
     const isProj = selectedRoom === 'aom' || selectedRoom.includes('-')
     const pollTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
     const pollType = isProj ? 'project' : 'agent'
-    const pollInterval = IS_LOCAL ? 1500 : 8000
+    const pollInterval = IS_LOCAL ? 1500 : 5000
     const poll = setInterval(() => {
       fetch(`${CONV_API_BASE}?target=${pollTarget}&type=${pollType}&limit=50`)
         .then(res => res.ok ? res.json() : null)

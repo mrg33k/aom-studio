@@ -384,6 +384,43 @@ function localDashboardPlugin() {
         res.end(JSON.stringify({ slug, agentMd, latestResult, timestamp: new Date().toISOString() }))
       })
 
+      // Conversation JSONL endpoint -- unified source of truth for all messages
+      // Reads from conversations/agents/{slug}.jsonl which contains BOTH user + assistant messages
+      // from ALL sources (terminal, dashboard, telegram, auto-responder).
+      server.middlewares.use('/api/local/conversations', (req, res) => {
+        const url = new URL(req.url, 'http://localhost')
+        const slug = url.searchParams.get('agent')
+        const since = url.searchParams.get('since')
+        const limit = parseInt(url.searchParams.get('limit') || '100', 10)
+
+        if (!slug) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Missing agent parameter' }))
+          return
+        }
+
+        const convFile = resolve(AOM_EA_ROOT, 'conversations', 'agents', `${slug}.jsonl`)
+        const messages = []
+        try {
+          if (fs.existsSync(convFile)) {
+            const lines = fs.readFileSync(convFile, 'utf-8').split('\n').filter(l => l.trim())
+            // Read from the end for efficiency (most recent messages)
+            const startIdx = Math.max(0, lines.length - limit)
+            for (let i = startIdx; i < lines.length; i++) {
+              try {
+                const msg = JSON.parse(lines[i])
+                if (since && msg.timestamp && msg.timestamp <= since) continue
+                messages.push(msg)
+              } catch {}
+            }
+          }
+        } catch {}
+
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ messages, agent: slug, timestamp: new Date().toISOString() }))
+      })
+
       // Relay inbox (for chat)
       // Reads from BOTH App Support and repo inbox, merges and deduplicates by id.
       // App Support is where Telegram/watchdog writes; repo is where dashboard writes.
@@ -434,10 +471,10 @@ function localDashboardPlugin() {
               timestamp: new Date().toISOString(),
               source,
               message: data.message,
-              // Corner-dashboard messages are already displayed in the UI,
-              // so mark as 'read' to prevent them piling up as 'pending'.
-              // Only Telegram messages (which need async processing) should be 'pending'.
-              status: source === 'corner-dashboard' ? 'read' : 'pending',
+              // Dashboard messages need 'pending' so the terminal relay hook picks them up.
+              // The auto-responder (12s delay) checks if terminal already responded before firing,
+              // so there's no double-processing risk when terminal is active.
+              status: 'pending',
               chat_id: null,
               agent: data.agent || null,
             }
@@ -459,8 +496,39 @@ function localDashboardPlugin() {
 
             // Write to conversation log files (file-backed chat history)
             if (source === 'corner-dashboard' && data.message) {
-              const agentName = data.agent || 'elon'
-              const projectSlug = data.project || null // e.g. 'ambition-mechanical'
+              // @ routing: parse @target from message to route to correct conversation
+              // @bobby -> agent conversation, @ambition -> project conversation
+              let agentName = data.agent || 'elon'
+              const VALID_AGENTS = new Set(['elon','bobby','steffen','steve','alex','jacob','cleo','tony','paige','colton','elmo','mom'])
+              const PROJECT_SLUGS = {
+                'ambition': 'ambition-mechanical', 'isa': 'isa-energy', 'skylar': 'skylar',
+                'brandon': 'brandon-wiley', 'kohrs': 'kohrs', 'nabi': 'nabi',
+                'corner': 'corner', 'outreach': 'outreach', 'advisory': 'ai-advisory',
+                'ih': 'included-health',
+              }
+              let projectTarget = data.project || null
+              let isAll = false
+              const atMatch = data.message.trim().match(/^@(\w+)\b/)
+              if (atMatch) {
+                const target = atMatch[1].toLowerCase()
+                if (target === 'all') {
+                  isAll = true
+                } else if (VALID_AGENTS.has(target)) {
+                  agentName = target
+                } else if (PROJECT_SLUGS[target]) {
+                  projectTarget = PROJECT_SLUGS[target]
+                }
+              }
+
+              // Load project teams for @project routing
+              let projectTeams = {}
+              try {
+                const teamsPath = resolve(AOM_EA_ROOT, 'context', 'project-teams.json')
+                if (fs.existsSync(teamsPath)) {
+                  projectTeams = JSON.parse(fs.readFileSync(teamsPath, 'utf-8'))
+                }
+              } catch {}
+
               const convEntry = {
                 id,
                 timestamp: new Date().toISOString(),
@@ -469,27 +537,38 @@ function localDashboardPlugin() {
                 source: 'dashboard',
                 text: data.message,
                 reply_to: '',
-                ...(projectSlug ? { project: projectSlug } : {}),
+                ...(projectTarget ? { project: projectTarget } : {}),
+                ...(isAll ? { broadcast: 'all' } : {}),
               }
               const convLine = JSON.stringify(convEntry) + '\n'
               const convDir = resolve(AOM_EA_ROOT, 'conversations')
+              const agentsDir = resolve(convDir, 'agents')
+              const projectsDir = resolve(convDir, 'projects')
+              fs.mkdirSync(agentsDir, { recursive: true })
+              fs.mkdirSync(projectsDir, { recursive: true })
               try {
-                // Always write to main log
+                // Always write to main + aom-internal (once each)
                 fs.appendFileSync(resolve(convDir, 'main.jsonl'), convLine)
-                // Always write to agent-specific log
-                const agentsDir = resolve(convDir, 'agents')
-                fs.mkdirSync(agentsDir, { recursive: true })
-                fs.appendFileSync(resolve(agentsDir, `${agentName}.jsonl`), convLine)
-                // If project slug provided, also write to project conversation file
-                if (projectSlug) {
-                  const projectsDir = resolve(convDir, 'projects')
-                  fs.mkdirSync(projectsDir, { recursive: true })
-                  fs.appendFileSync(resolve(projectsDir, `${projectSlug}.jsonl`), convLine)
+                fs.appendFileSync(resolve(projectsDir, 'aom-internal.jsonl'), convLine)
+
+                if (isAll) {
+                  // @all: write to EVERY agent's conversation file
+                  for (const slug of VALID_AGENTS) {
+                    fs.appendFileSync(resolve(agentsDir, `${slug}.jsonl`), convLine)
+                  }
+                } else if (projectTarget) {
+                  // @project: write to project file + every team member
+                  fs.appendFileSync(resolve(projectsDir, `${projectTarget}.jsonl`), convLine)
+                  const team = projectTeams[projectTarget] || []
+                  for (const member of team) {
+                    if (VALID_AGENTS.has(member)) {
+                      fs.appendFileSync(resolve(agentsDir, `${member}.jsonl`), convLine)
+                    }
+                  }
+                } else {
+                  // Regular: write to one agent's file
+                  fs.appendFileSync(resolve(agentsDir, `${agentName}.jsonl`), convLine)
                 }
-                // Also write to AOM master chat (all messages flow here)
-                const aomChat = resolve(convDir, 'projects', 'aom-internal.jsonl')
-                fs.mkdirSync(resolve(convDir, 'projects'), { recursive: true })
-                fs.appendFileSync(aomChat, convLine)
               } catch (err) {
                 console.log(`[Relay] Conv log write failed: ${err.message}`)
               }
@@ -523,6 +602,26 @@ function localDashboardPlugin() {
                   if (!p) return
 
                   console.log(`[AutoRespond] Checking for ${p.agent} response after ${AUTO_RESPOND_DELAY_MS/1000}s...`)
+
+                  // Check if terminal session is active (relay-session-lock)
+                  const sessionLock = resolve(AOM_EA_ROOT, 'context', '.relay-session-lock')
+                  try {
+                    if (fs.existsSync(sessionLock)) {
+                      const lockContent = fs.readFileSync(sessionLock, 'utf-8').trim()
+                      const pidMatch = lockContent.match(/pid=(\d+)/)
+                      if (pidMatch) {
+                        // Check if PID is alive
+                        try {
+                          process.kill(parseInt(pidMatch[1]), 0) // signal 0 = check existence
+                          console.log(`[AutoRespond] Terminal session active (PID ${pidMatch[1]}), skipping auto-respond.`)
+                          return
+                        } catch {
+                          // PID not running, terminal is dead, proceed with auto-respond
+                          console.log(`[AutoRespond] Session lock stale (PID ${pidMatch[1]} dead), proceeding.`)
+                        }
+                      }
+                    }
+                  } catch {}
 
                   // Check if terminal already responded
                   const convFile = resolve(AOM_EA_ROOT, 'conversations', 'agents', `${p.agent}.jsonl`)
@@ -593,6 +692,21 @@ function localDashboardPlugin() {
                       try { fs.appendFileSync(resolve(cd, 'agents', `${slug}.jsonl`), line) } catch {}
                       try { fs.appendFileSync(resolve(cd, 'main.jsonl'), line) } catch {}
                       try { fs.appendFileSync(resolve(cd, 'projects', 'aom-internal.jsonl'), line) } catch {}
+                      // Write to relay-outbox so dashboard sees the response via outbox polling
+                      const outboxEntry = JSON.stringify({
+                        id: crypto.randomUUID(),
+                        timestamp: new Date().toISOString(),
+                        message: resp,
+                        status: 'pending',
+                        source: 'dashboard-auto',
+                        reply_to: p.msgId,
+                      }) + '\n'
+                      withFileLock(RELAY_OUTBOX_PATH, () => {
+                        try { fs.appendFileSync(RELAY_OUTBOX_PATH, outboxEntry) } catch {}
+                        if (RELAY_OUTBOX_PATH !== REPO_OUTBOX_PATH) {
+                          try { fs.appendFileSync(REPO_OUTBOX_PATH, outboxEntry) } catch {}
+                        }
+                      })
                       try { fs.unlinkSync(markerPath) } catch {}
                     })
                     child.on('error', () => {
@@ -934,6 +1048,85 @@ function localDashboardPlugin() {
         res.end(JSON.stringify({ notifications, timestamp: new Date().toISOString() }))
       })
 
+      // ---- TASK ASSIGN (Right Now routing) --------
+      // When a task moves to Right Now, auto-assign to an agent and notify them.
+      // This makes Right Now ACTIONABLE, not just a display list.
+      server.middlewares.use('/api/local/task-assign', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'POST only' }))
+          return
+        }
+        let body = ''
+        req.on('data', chunk => { body += chunk })
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body)
+            const { task, agent, project, blocked } = data
+            // task = text description, agent = slug (optional, auto-pick if missing),
+            // project = project slug (optional), blocked = true if blocked on Patrik
+
+            if (!task) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: 'Missing task' }))
+              return
+            }
+
+            const ts = new Date().toISOString()
+            const VALID_AGENTS = new Set(['elon','bobby','steffen','steve','alex','jacob','cleo','tony','paige','colton','elmo','mom'])
+
+            // Determine assignee
+            let assignee = agent || null
+            if (!assignee && project) {
+              // Look up project team, pick first member as default
+              try {
+                const teamsPath = resolve(AOM_EA_ROOT, 'context', 'project-teams.json')
+                if (fs.existsSync(teamsPath)) {
+                  const teams = JSON.parse(fs.readFileSync(teamsPath, 'utf-8'))
+                  const team = teams[project] || []
+                  if (team.length > 0) assignee = team[0]
+                }
+              } catch {}
+            }
+            if (!assignee) assignee = 'elon' // default: Elon triages
+
+            if (!VALID_AGENTS.has(assignee)) assignee = 'elon'
+
+            const status = blocked ? 'BLOCKED on Patrik' : `ASSIGNED to ${assignee}`
+
+            // Write to agent-notifications.md
+            const notifPath = resolve(AOM_EA_ROOT, 'context', 'agent-notifications.md')
+            const notifLine = `[${ts.slice(0, 10)}] TASK RIGHT NOW: ${task} -- ${status}\n`
+            fs.appendFileSync(notifPath, notifLine)
+
+            // Write to agent's conversation file (so they see it on next session)
+            if (!blocked) {
+              const convDir = resolve(AOM_EA_ROOT, 'conversations', 'agents')
+              const convEntry = JSON.stringify({
+                id: crypto.randomUUID(),
+                timestamp: ts,
+                role: 'system',
+                agent: assignee,
+                source: 'task-router',
+                text: `[TASK ASSIGNED] "${task}" moved to Right Now and assigned to you.${project ? ` Project: ${project}` : ''}`,
+                reply_to: '',
+              }) + '\n'
+              try {
+                fs.mkdirSync(convDir, { recursive: true })
+                fs.appendFileSync(resolve(convDir, `${assignee}.jsonl`), convEntry)
+              } catch {}
+            }
+
+            console.log(`[TaskAssign] "${task}" -> ${status}`)
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ ok: true, task, assignee, blocked: !!blocked, timestamp: ts }))
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+        })
+      })
+
       // ---- SYSTEM QUEUE ENDPOINT (real-time system state for Checklist) --------
       // Parses: launch-queue.md, active-missions.md, agent-notifications.md,
       //         and projects/[agent]/latest-result.md
@@ -1193,9 +1386,9 @@ function webSocketServerPlugin() {
                   agent: agentName,
                   message: data.content,
                   source: 'corner-websocket',
-                  // Use 'read' to match HTTP relay-send behavior.
-                  // 'pending' caused double-processing: relay hook AND auto-responder both fired.
-                  status: 'read',
+                  // Use 'pending' so terminal relay hook picks up dashboard messages.
+                  // Auto-responder checks session-lock + JSONL to avoid double-processing.
+                  status: 'pending',
                   chat_id: null,
                   timestamp: wsTs,
                 }

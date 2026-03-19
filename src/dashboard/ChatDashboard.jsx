@@ -126,6 +126,10 @@ function extractAgentSource(msg) {
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const DASHBOARD_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD || 'aomhq'
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+// Conversation API: local Vite middleware on localhost, Vercel serverless on production
+const CONV_API_BASE = IS_LOCAL ? '/api/local/conversations' : '/api/conversations'
+// Relay send: local Vite middleware on localhost, Vercel serverless on production
+const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/relay'
 
 const AGENTS = [
   { slug: 'bobby',   name: 'Bobby',   role: 'Web Dev',           img: '/corner/bobby-room.png' },
@@ -359,6 +363,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const searchInputRef = useRef(null)
   const relayPollRef = useRef(null)
   const lastOutboxCheckRef = useRef(null)
+  const lastConvTimestampRef = useRef(null)
   const chatTimeoutRef = useRef(null)
   const historyLoadedRef = useRef(false)
   const isNearBottomRef = useRef(true)
@@ -396,7 +401,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   // Get agent initial for avatar
   const agentInitial = agent.name.charAt(0).toUpperCase()
 
-  // Load recent relay history on mount (both inbox + outbox, last 30 messages)
+  // Load conversation history on mount from unified JSONL endpoint (primary)
+  // Falls back to relay-inbox + relay-outbox if conversations endpoint fails
   useEffect(() => {
     if (historyLoadedRef.current) return
     historyLoadedRef.current = true
@@ -404,95 +410,112 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     const loadHistory = async () => {
       try {
         if (IS_LOCAL) {
-          const [inboxRes, outboxRes] = await Promise.all([
-            fetch('/api/local/relay-inbox'),
-            fetch('/api/local/relay-outbox'),
-          ])
-          const inbox = inboxRes.ok ? await inboxRes.json() : { messages: [] }
-          const outbox = outboxRes.ok ? await outboxRes.json() : { messages: [] }
-
-          // Merge inbox (user messages) and outbox (agent responses) by timestamp
-          const all = []
-
-          // Inbox: messages from dashboard or telegram are "user" messages
-          for (const msg of inbox.messages) {
-            // Skip watchdog ghost messages -- these are auto-responses from the daemon, not real user messages
-            if (msg.status === 'watchdog-responded') continue
-            const cleaned = sanitizeRelayMessage(msg.message)
-            if (!cleaned) continue
-            all.push({
-              role: 'user',
-              content: cleaned,
-              time: msg.timestamp,
-              source: msg.source || 'unknown',
-              id: msg.id,
-            })
-          }
-
-          // Outbox: agent responses (filter out dashboard-originated messages that leaked into outbox)
-          for (const msg of outbox.messages) {
-            if (!msg.message?.trim()) continue
-            // Messages from corner-dashboard/corner-websocket in outbox are user messages, not agent responses
-            const isDashboardOrigin = msg.source === 'corner-dashboard' || msg.source === 'corner-websocket'
-            if (isDashboardOrigin) {
-              // Only add if not already in inbox (avoid duplicates)
-              if (!all.some(m => m.id === msg.id)) {
-                const cleaned = sanitizeRelayMessage(msg.message)
-                if (!cleaned) continue
-                all.push({
-                  role: 'user',
-                  content: cleaned,
-                  time: msg.timestamp,
-                  source: 'dashboard',
-                  id: msg.id,
-                })
+          // Primary: unified conversation JSONL (has ALL messages from all sources)
+          let loaded = false
+          try {
+            const convRes = await fetch(`/api/local/conversations?agent=${agent.slug}&limit=100`)
+            if (convRes.ok) {
+              const convData = await convRes.json()
+              const convMsgs = (convData.messages || [])
+              if (convMsgs.length > 0) {
+                const all = []
+                for (const msg of convMsgs) {
+                  const cleaned = sanitizeRelayMessage(msg.text || msg.message)
+                  if (!cleaned) continue
+                  all.push({
+                    role: msg.role || (msg.source === 'corner-dashboard' || msg.source === 'telegram' ? 'user' : 'assistant'),
+                    content: cleaned,
+                    time: msg.timestamp,
+                    source: msg.source || 'unknown',
+                    id: msg.id,
+                  })
+                }
+                all.sort((a, b) => new Date(a.time) - new Date(b.time))
+                const deduped = deduplicateMessages(all)
+                const recent = deduped.slice(-100)
+                if (recent.length > 0) {
+                  setMessages(recent)
+                  // Track last conversation timestamp for incremental polling
+                  lastConvTimestampRef.current = recent[recent.length - 1].time
+                  loaded = true
+                }
               }
-              continue
             }
-            const cleaned = sanitizeRelayMessage(msg.message)
-            if (!cleaned) continue
-            all.push({
-              role: 'assistant',
-              content: cleaned,
-              time: msg.timestamp,
-              source: extractAgentSource(msg) || 'system',
-              id: msg.id,
-            })
+          } catch (convErr) {
+            console.warn('Conversations endpoint failed, falling back to relay:', convErr)
           }
 
-          // Sort by timestamp, deduplicate echoed messages, take last 50
-          all.sort((a, b) => new Date(a.time) - new Date(b.time))
-          const deduped = deduplicateMessages(all)
-          const recent = deduped.slice(-50)
+          // Fallback: relay-inbox + relay-outbox (if conversations endpoint had no data)
+          if (!loaded) {
+            const [inboxRes, outboxRes] = await Promise.all([
+              fetch('/api/local/relay-inbox'),
+              fetch('/api/local/relay-outbox'),
+            ])
+            const inbox = inboxRes.ok ? await inboxRes.json() : { messages: [] }
+            const outbox = outboxRes.ok ? await outboxRes.json() : { messages: [] }
 
-          if (recent.length > 0) {
-            setMessages(recent)
-            // Set last outbox check to the latest outbox timestamp
-            const lastOutbox = outbox.messages[outbox.messages.length - 1]
-            if (lastOutbox?.timestamp) {
-              lastOutboxCheckRef.current = lastOutbox.timestamp
+            const all = []
+            for (const msg of inbox.messages) {
+              if (msg.status === 'watchdog-responded') continue
+              const cleaned = sanitizeRelayMessage(msg.message)
+              if (!cleaned) continue
+              all.push({ role: 'user', content: cleaned, time: msg.timestamp, source: msg.source || 'unknown', id: msg.id })
+            }
+            for (const msg of outbox.messages) {
+              if (!msg.message?.trim()) continue
+              const isDashboardOrigin = msg.source === 'corner-dashboard' || msg.source === 'corner-websocket'
+              if (isDashboardOrigin) {
+                if (!all.some(m => m.id === msg.id)) {
+                  const cleaned = sanitizeRelayMessage(msg.message)
+                  if (!cleaned) continue
+                  all.push({ role: 'user', content: cleaned, time: msg.timestamp, source: 'dashboard', id: msg.id })
+                }
+                continue
+              }
+              const cleaned = sanitizeRelayMessage(msg.message)
+              if (!cleaned) continue
+              all.push({ role: 'assistant', content: cleaned, time: msg.timestamp, source: extractAgentSource(msg) || 'system', id: msg.id })
+            }
+            all.sort((a, b) => new Date(a.time) - new Date(b.time))
+            const deduped = deduplicateMessages(all)
+            const recent = deduped.slice(-50)
+            if (recent.length > 0) {
+              setMessages(recent)
+              const lastOutbox = outbox.messages[outbox.messages.length - 1]
+              if (lastOutbox?.timestamp) lastOutboxCheckRef.current = lastOutbox.timestamp
             }
           }
 
           setRelayConnected(true)
         } else {
-          // Production: use the Vercel relay API
-          const res = await fetch('/api/relay')
-          if (res.ok) {
-            const data = await res.json()
-            const all = (data.messages || []).map(msg => {
-              const cleaned = sanitizeRelayMessage(msg.message)
-              if (!cleaned) return null
-              return {
-                role: msg.type === 'response' ? 'assistant' : 'user',
-                content: cleaned,
-                time: msg.timestamp,
-                source: msg.source || msg.agent || 'unknown',
-                id: msg.id,
+          // Production: use Vercel /api/conversations (GitHub-backed JSONL)
+          try {
+            const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50`)
+            if (convRes.ok) {
+              const convData = await convRes.json()
+              const convMsgs = convData.messages || []
+              const all = convMsgs.map(msg => {
+                const cleaned = sanitizeRelayMessage(msg.text || msg.message)
+                if (!cleaned) return null
+                return {
+                  role: msg.role || (msg.sender === 'patrik' ? 'user' : 'assistant'),
+                  content: cleaned,
+                  time: msg.timestamp,
+                  source: msg.source || 'unknown',
+                  id: msg.id,
+                }
+              }).filter(Boolean)
+              all.sort((a, b) => new Date(a.time) - new Date(b.time))
+              const deduped = deduplicateMessages(all)
+              const recent = deduped.slice(-50)
+              if (recent.length > 0) {
+                setMessages(recent)
+                lastConvTimestampRef.current = recent[recent.length - 1].time
               }
-            }).filter(Boolean).slice(-30)
-            setMessages(all)
-            setRelayConnected(true)
+              setRelayConnected(true)
+            }
+          } catch (prodErr) {
+            console.warn('Production conversations endpoint failed:', prodErr)
           }
         }
       } catch (err) {
@@ -551,145 +574,55 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
   // Clean up on unmount
   const bgPollRef = useRef(null)
+  const convPollRef = useRef(null)
   useEffect(() => {
     return () => {
       if (relayPollRef.current) clearInterval(relayPollRef.current)
       if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
       if (bgPollRef.current) clearInterval(bgPollRef.current)
+      if (convPollRef.current) clearInterval(convPollRef.current)
       if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
     }
   }, [])
 
-  // Continuous background poll: picks up ALL new messages from any source
-  // (terminal, telegram, dashboard) even when not actively waiting for a response.
-  // This ensures the dashboard shows the same conversation as the terminal.
-  const bgLastInboxCheck = useRef(null)
-  const bgLastOutboxCheck = useRef(null)
+  // Track streaming state in a ref so the poll interval callback can read it
+  // without needing streaming in the useEffect dependency array (which would
+  // cause interval re-creation on every streaming state change).
+  const streamingRef = useRef(false)
+  useEffect(() => { streamingRef.current = streaming }, [streaming])
+
+  // PRIMARY POLL: Conversation JSONL endpoint (unified source of truth)
+  // Local: 2.5s. Production: 5s (GitHub API rate limit friendly).
+  // Picks up ALL messages from all sources (terminal, telegram, dashboard, auto-responder).
   useEffect(() => {
-    if (!IS_LOCAL) return
+    const pollInterval = IS_LOCAL ? 2500 : 5000
 
-    // Initialize timestamps
-    const init = async () => {
+    convPollRef.current = setInterval(async () => {
       try {
-        const [inRes, outRes] = await Promise.all([
-          fetch('/api/local/relay-inbox'),
-          fetch('/api/local/relay-outbox'),
-        ])
-        if (inRes.ok) {
-          const d = await inRes.json()
-          const msgs = d.messages || []
-          bgLastInboxCheck.current = msgs.length > 0 ? msgs[msgs.length - 1].timestamp : new Date().toISOString()
-        }
-        if (outRes.ok) {
-          const d = await outRes.json()
-          const msgs = (d.messages || []).filter(m => m.source !== 'corner-dashboard' && m.source !== 'corner-websocket')
-          bgLastOutboxCheck.current = msgs.length > 0 ? msgs[msgs.length - 1].timestamp : new Date().toISOString()
-        }
-      } catch {}
-    }
-    init()
+        const sinceParam = lastConvTimestampRef.current
+          ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}`
+          : ''
+        const convRes = await fetch(`${CONV_API_BASE}?target=${agent.slug}&type=agent&limit=50${sinceParam}`)
+        if (!convRes.ok) return
+        const convData = await convRes.json()
+        const newMsgs = convData.messages || []
+        if (newMsgs.length === 0) return
 
-    bgPollRef.current = setInterval(async () => {
-      // Don't poll if we're already polling from a send
-      if (relayPollRef.current) return
-
-      try {
-        // Poll inbox for new messages from terminal/telegram
-        if (bgLastInboxCheck.current) {
-          const inRes = await fetch('/api/local/relay-inbox')
-          if (inRes.ok) {
-            const data = await inRes.json()
-            const allMsgs = data.messages || []
-            const newInbox = allMsgs.filter(m =>
-              m.timestamp && new Date(m.timestamp) > new Date(bgLastInboxCheck.current) &&
-              m.source !== 'corner-dashboard' && m.source !== 'corner-websocket' &&
-              m.status !== 'watchdog-responded' &&
-              m.message?.trim()
-            )
-            if (newInbox.length > 0) {
-              bgLastInboxCheck.current = allMsgs[allMsgs.length - 1].timestamp
-              setMessages(prev => {
-                const updated = [...prev]
-                for (const msg of newInbox) {
-                  if (updated.some(m => m.id === msg.id)) continue
-                  const cleaned = sanitizeRelayMessage(msg.message)
-                  if (!cleaned) continue
-                  updated.push({
-                    role: 'user',
-                    content: cleaned,
-                    time: msg.timestamp,
-                    source: msg.source || 'unknown',
-                    id: msg.id,
-                  })
-                }
-                updated.sort((a, b) => new Date(a.time) - new Date(b.time))
-                return deduplicateMessages(updated)
-              })
-            }
-          }
-        }
-
-        // Poll outbox for new responses
-        if (bgLastOutboxCheck.current) {
-          const since = encodeURIComponent(bgLastOutboxCheck.current)
-          const outRes = await fetch(`/api/local/relay-outbox?since=${since}`)
-          if (outRes.ok) {
-            const data = await outRes.json()
-            const newOutbox = (data.messages || []).filter(m =>
-              m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
-            )
-            if (newOutbox.length > 0) {
-              const latest = newOutbox[newOutbox.length - 1]
-              bgLastOutboxCheck.current = latest.timestamp
-              setMessages(prev => {
-                const updated = [...prev]
-                for (const msg of newOutbox) {
-                  if (updated.some(m => m.id === msg.id)) continue
-                  const cleaned = sanitizeRelayMessage(msg.message)
-                  if (!cleaned) continue
-                  updated.push({
-                    role: 'assistant',
-                    content: cleaned,
-                    time: msg.timestamp || new Date().toISOString(),
-                    source: extractAgentSource(msg) || 'system',
-                    id: msg.id,
-                  })
-                }
-                updated.sort((a, b) => new Date(a.time) - new Date(b.time))
-                return deduplicateMessages(updated)
-              })
-            }
-          }
-        }
-      } catch {}
-    }, 500) // Local: 500ms for near-instant relay display
-
-    // BACKFILL: Every 30s, do a full re-read of inbox + outbox and fill any gaps.
-    // This catches messages missed during polling gaps, page stalls, or out-of-order timestamps.
-    const backfillRef = { current: null }
-    backfillRef.current = setInterval(async () => {
-      try {
-        const [inRes, outRes] = await Promise.all([
-          fetch('/api/local/relay-inbox'),
-          fetch('/api/local/relay-outbox'),
-        ])
-        if (!inRes.ok || !outRes.ok) return
-        const inbox = await inRes.json()
-        const outbox = await outRes.json()
+        // Update the last seen timestamp
+        const latestTs = newMsgs[newMsgs.length - 1].timestamp
+        if (latestTs) lastConvTimestampRef.current = latestTs
 
         setMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id).filter(Boolean))
           let added = 0
           const updated = [...prev]
 
-          // Check inbox for missing messages
-          for (const msg of (inbox.messages || [])) {
-            if (msg.status === 'watchdog-responded') continue
+          for (const msg of newMsgs) {
             if (existingIds.has(msg.id)) continue
-            const cleaned = sanitizeRelayMessage(msg.message)
+            const cleaned = sanitizeRelayMessage(msg.text || msg.message)
             if (!cleaned) continue
             updated.push({
-              role: 'user',
+              role: msg.role || 'assistant',
               content: cleaned,
               time: msg.timestamp,
               source: msg.source || 'unknown',
@@ -698,11 +631,48 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             added++
           }
 
-          // Check outbox for missing messages
-          for (const msg of (outbox.messages || [])) {
-            if (!msg.message?.trim()) continue
-            const isDashboardOrigin = msg.source === 'corner-dashboard' || msg.source === 'corner-websocket'
-            if (isDashboardOrigin) continue
+          if (added === 0) return prev // No changes, skip re-render
+          // Remove streaming placeholders if a real response came in
+          const withoutStreaming = updated.filter(m => !m.streaming || added === 0)
+          withoutStreaming.sort((a, b) => new Date(a.time) - new Date(b.time))
+          return deduplicateMessages(withoutStreaming.slice(-100))
+        })
+
+        // If we got a new assistant message while streaming, clear the streaming state
+        const hasNewAssistant = newMsgs.some(m => m.role === 'assistant')
+        if (hasNewAssistant && streamingRef.current) {
+          setStreaming(false)
+          clearChatTimeout()
+          if (relayPollRef.current) {
+            clearInterval(relayPollRef.current)
+            relayPollRef.current = null
+          }
+        }
+      } catch {}
+    }, pollInterval)
+
+    // FAST-PATH OUTBOX POLL: 500ms poll of relay-outbox for immediate response display (local only)
+    // On production, the conversation JSONL is the single source (relay-outbox is local file only)
+    if (IS_LOCAL) {
+    bgPollRef.current = setInterval(async () => {
+      // Only poll outbox if we're NOT actively polling from a send (startRelayPoll handles that)
+      if (relayPollRef.current) return
+
+      try {
+        const outRes = await fetch('/api/local/relay-outbox')
+        if (!outRes.ok) return
+        const data = await outRes.json()
+        const outMsgs = (data.messages || []).filter(m =>
+          m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
+        )
+        if (outMsgs.length === 0) return
+
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id).filter(Boolean))
+          let added = 0
+          const updated = [...prev]
+
+          for (const msg of outMsgs) {
             if (existingIds.has(msg.id)) continue
             const cleaned = sanitizeRelayMessage(msg.message)
             if (!cleaned) continue
@@ -716,18 +686,19 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             added++
           }
 
-          if (added === 0) return prev // No changes, skip re-render
+          if (added === 0) return prev
           updated.sort((a, b) => new Date(a.time) - new Date(b.time))
-          return deduplicateMessages(updated.slice(-50)) // Keep last 50
+          return deduplicateMessages(updated)
         })
       } catch {}
-    }, 30000) // Every 30 seconds
+    }, 500) // 500ms for near-instant outbox relay display
+    } // end IS_LOCAL block for fast-path outbox poll
 
     return () => {
+      if (convPollRef.current) clearInterval(convPollRef.current)
       if (bgPollRef.current) clearInterval(bgPollRef.current)
-      if (backfillRef.current) clearInterval(backfillRef.current)
     }
-  }, [])
+  }, [agent.slug])
 
   // Poll relay-outbox for new responses after sending a message
   const startRelayPoll = (sentTimestamp) => {
@@ -848,14 +819,15 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
         if (!res.ok) throw new Error('Failed to write to relay')
         startRelayPoll(sentTime)
       } else {
-        // Production: use the Vercel relay API
-        const res = await fetch('/api/relay', {
+        // Production: use the Vercel relay API (writes to GitHub relay-inbox + conversation JSONL)
+        const res = await fetch(RELAY_SEND_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text }),
+          body: JSON.stringify({ message: `@${agent.slug} ${text}`, agent: agent.slug }),
         })
         if (!res.ok) throw new Error('Failed to send via relay API')
-        startRelayPoll(sentTime)
+        // Production: the conversation JSONL poll will pick up responses (no fast-path outbox)
+        // The convPoll runs every 5s, so response appears within ~15-20s after terminal processes it
       }
     } catch (err) {
       setMessages(prev => {
