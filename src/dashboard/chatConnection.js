@@ -22,17 +22,24 @@ class SSEConnection {
   async send({ slug, message, history }) {
     this.abortController = new AbortController()
 
+    // Detect Safari: fetch ReadableStream doesn't support incremental reads
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+
     try {
       const res = await fetch('/api/dashboard/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(isSafari ? { 'X-No-Stream': '1' } : {}),
+        },
         body: JSON.stringify({ slug, message, history }),
         signal: this.abortController.signal,
       })
 
       const contentType = res.headers.get('content-type') || ''
 
-      if (contentType.includes('text/event-stream')) {
+      if (contentType.includes('text/event-stream') && !isSafari) {
+        // Chrome/Firefox: stream chunks incrementally
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -58,6 +65,29 @@ class SSEConnection {
               }
             } catch {}
           }
+        }
+      } else if (contentType.includes('text/event-stream') && isSafari) {
+        // Safari: read the full buffered response then parse all events at once
+        const text = await res.text()
+        const lines = text.split('\n')
+        let fullText = ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const data = JSON.parse(line.slice(6))
+            if (data.type === 'text') {
+              fullText += data.text
+            } else if (data.type === 'error') {
+              this.onError(data.error)
+              return
+            }
+          } catch {}
+        }
+
+        if (fullText) {
+          this.onMessage(fullText)
+          this.onDone()
         }
       } else {
         const data = await res.json()
