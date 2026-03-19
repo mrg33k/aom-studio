@@ -361,6 +361,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [streamStartTime, setStreamStartTime] = useState(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [thinkingPhrase, setThinkingPhrase] = useState(0)
+  const [isSending, setIsSending] = useState(false)
 
   // Fun rotating thinking phrases
   const thinkingPhrases = useMemo(() => [
@@ -969,6 +970,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     const text = input.trim()
     if (!text) return
 
+    setIsSending(true)
     const sentTime = new Date().toISOString()
     setInput('')
     // Clear typing state (no auto-scroll -- user controls scroll position)
@@ -1046,6 +1048,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       setStreaming(false)
       setStreamStartTime(null)
       clearChatTimeout()
+    } finally {
+      setIsSending(false)
     }
   }
 
@@ -1302,10 +1306,14 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           />
           <button
             type="submit"
-            disabled={!input.trim()}
+            disabled={!input.trim() || isSending}
             className="w-9 h-9 flex items-center justify-center bg-[#3B82F6] text-white rounded-full hover:bg-[#2563EB] disabled:opacity-20 disabled:cursor-not-allowed transition-all shrink-0"
           >
-            <Send className="w-4 h-4 ml-0.5" />
+            {isSending ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Send className="w-4 h-4 ml-0.5" />
+            )}
           </button>
         </div>
       </form>
