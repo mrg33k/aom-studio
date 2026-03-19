@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const { agent, limit = 100 } = req.query
     if (!agent) return res.status(400).json({ error: 'agent required' })
 
-    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}&order=created_at.asc&limit=${limit}`
+    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}&order=timestamp.asc&limit=${limit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()

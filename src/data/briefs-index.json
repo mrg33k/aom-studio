@@ -1,5 +1,5 @@
 {
-  "generated": "2026-03-16T23:10:20.857Z",
+  "generated": "2026-03-19T05:01:28.412Z",
   "categories": [
     {
       "name": "Strategy",
@@ -327,6 +327,16 @@
           "dateFormatted": "Mar 17",
           "summary": "Line-by-line gap analysis between visual targets and current code. Bobby reads this directly. Updated v9: Invisible hotspot spec replaces diamond overlays. Council chat spec (one stream, all agents). Dream HUD implementation checklist. Priority order v10.",
           "path": "/briefs/hud-todo-manifest",
+          "hasPage": true
+        },
+        {
+          "title": "Sidebar Overhaul Spec - Unified Blue Glass Panel",
+          "slug": "sidebar-overhaul-spec",
+          "agent": "Steffen",
+          "date": "2026-03-17",
+          "dateFormatted": "Mar 17",
+          "summary": "Complete visual spec for the right sidebar. Same blue glass design language as the bottom HUD. Night mode is already close; daytime mode is the broken one. Every CSS value Bobby needs.",
+          "path": "/briefs/sidebar-overhaul-spec",
           "hasPage": true
         },
         {

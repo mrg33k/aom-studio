@@ -7896,7 +7896,7 @@ export default function GameDashboard() {
         .from('messages')
         .select('*')
         .eq('agent', room)
-        .order('created_at', { ascending: true })
+        .order('timestamp', { ascending: true })
         .limit(100)
         .then(({ data, error }) => {
           if (error) {

@@ -15,7 +15,7 @@ export const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY)
 
 // messages table schema:
 //   id          uuid primary key default gen_random_uuid()
-//   created_at  timestamptz default now()
+//   timestamp  timestamptz default now()
 //   agent       text  -- agent slug e.g. "elon", "bobby"
 //   role        text  -- "user" | "assistant"
 //   text        text  -- message content
@@ -27,7 +27,7 @@ export function mapSupabaseMsg(m) {
     id:      m.id,
     role:    m.role || 'assistant',
     content: m.text || '',
-    time:    m.created_at || '',
+    time:    m.timestamp || '',
     source:  m.source || 'supabase',
   }
 }
