@@ -1277,7 +1277,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
       {/* Input */}
       <form onSubmit={sendMessage} className="shrink-0 px-4 py-3 border-t border-[#292524]/50 bg-[#0F0F0D]">
-        <div className="flex items-center gap-3 bg-[#1A1A17] border border-[#292524] rounded-full px-4 py-1 focus-within:border-[#3B82F6]/40 focus-within:shadow-[0_0_0_2px_rgba(59,130,246,0.1)] transition-all">
+        <div className="flex items-center gap-3 bg-[#1A1A17] border border-[#292524] rounded-full px-4 py-1 focus-within:border-[#3B82F6]/40 focus-within:shadow-[0_0_0_2px_rgba(59,130,246,0.1)] transition-all" style={{ touchAction: 'auto' }}>
           <input
             ref={inputRef}
             type="text"
@@ -1298,6 +1298,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             }}
             placeholder={streaming ? `Add more for ${agent.name}...` : `Talk to ${agent.name}...`}
             className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60"
+            style={{ touchAction: 'manipulation', WebkitUserSelect: 'text' }}
           />
           <button
             type="submit"
