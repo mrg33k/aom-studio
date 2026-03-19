@@ -4,8 +4,38 @@
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const REPO = 'mrg33k/AOM-EA'
 const BRANCH = 'master'
+
+// Write a message to Supabase so the Mac listener can wake up and stay in sync
+async function writeToSupabase(role, agent, text, source = 'dashboard', replyTo = '') {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null
+  const id = crypto.randomUUID()
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        id,
+        timestamp: new Date().toISOString(),
+        role,
+        agent,
+        source,
+        text,
+        project: '',
+        reply_to: replyTo,
+      }),
+    })
+  } catch {}
+  return id
+}
 
 const AGENT_META = {
   bobby:   { name: 'Bobby',   role: 'Web Dev',           folder: 'bobby' },
@@ -113,6 +143,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Write user message to Supabase (wakes Mac listener + syncs conversation)
+    const userMsgId = await writeToSupabase('user', slug, message, 'dashboard')
+
     // Load agent context from GitHub
     const { agentMd, lastConvo, priorities } = await loadAgentContext(slug)
     const systemPrompt = buildSystemPrompt(meta, agentMd, lastConvo, priorities)
@@ -157,10 +190,11 @@ export default async function handler(req, res) {
       return
     }
 
-    // Pipe the Anthropic SSE stream to the client
+    // Pipe the Anthropic SSE stream to the client, collect full response
     const reader = anthropicRes.body.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    let fullResponse = ''
 
     while (true) {
       const { done, value } = await reader.read()
@@ -179,6 +213,7 @@ export default async function handler(req, res) {
           const parsed = JSON.parse(data)
 
           if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+            fullResponse += parsed.delta.text
             res.write(`data: ${JSON.stringify({ type: 'text', text: parsed.delta.text })}\n\n`)
           } else if (parsed.type === 'message_stop') {
             res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
@@ -197,9 +232,15 @@ export default async function handler(req, res) {
       try {
         const parsed = JSON.parse(data)
         if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+          fullResponse += parsed.delta.text
           res.write(`data: ${JSON.stringify({ type: 'text', text: parsed.delta.text })}\n\n`)
         }
       } catch {}
+    }
+
+    // Write assistant response to Supabase (syncs conversation to Mac)
+    if (fullResponse) {
+      writeToSupabase('assistant', slug, fullResponse, 'dashboard-api', userMsgId)
     }
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
