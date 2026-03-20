@@ -495,6 +495,10 @@ export function useDataPipe(parsePunchList) {
             { name: 'ISA', section: 'isa', color: '#F97316', icon: 'project' },
             { name: 'Skylar', section: 'skylar', color: '#EC4899', icon: 'project' },
             { name: 'Outreach', section: 'outreach', color: '#EF4444', icon: 'project' },
+            { name: 'IH', section: 'ih', color: '#EF4444', icon: 'client' },
+            { name: 'Brandon Wiley', section: 'brandon-wiley', color: '#9C27B0', icon: 'project' },
+            { name: 'NABI', section: 'nabi', color: '#F97316', icon: 'project' },
+            { name: 'LBX', section: 'lbx', color: '#9C27B0', icon: 'project' },
           ]
           for (const dp of DEFAULT_PROJECTS) {
             if (!projectMap.has(dp.section)) {

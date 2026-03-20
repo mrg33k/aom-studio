@@ -1910,6 +1910,10 @@ export default function GameHUD({
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
   const [overflowOpen, setOverflowOpen] = useState(false) // +N overflow popover
   const overflowRef = useRef(null)
+  const overflowButtonRef = useRef(null) // anchor for fixed-position popover
+  const [overflowPos, setOverflowPos] = useState({ bottom: 0, right: 0 }) // popover anchor coords
+  // Track viewport width so desktop (>=1280px) skips the MAX_VISIBLE pill cap
+  const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1280)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const searchRef = useRef(null)
@@ -2288,6 +2292,13 @@ export default function GameHUD({
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
+  // Track viewport width for desktop pill cap bypass
+  useEffect(() => {
+    const handler = () => setWindowWidth(window.innerWidth)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
   const totalTasks = filteredProjects.reduce((sum, p) => sum + p.tasks.length, 0)
   const totalDone = filteredProjects.reduce((sum, p) => sum + p.tasks.filter(t => t.done).length, 0)
   const overallProgress = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0
@@ -2631,9 +2642,11 @@ export default function GameHUD({
                 {searchQuery ? 'No matches' : 'No task data'}
               </span>
             ) : (() => {
+              // Desktop (>=1280px) shows ALL pills -- no cap. Mobile/tablet caps at 8 with overflow.
+              const isDesktop = windowWidth >= 1280
               const MAX_VISIBLE = 8
-              const visiblePills = filteredProjects.slice(0, MAX_VISIBLE)
-              const overflowPills = filteredProjects.slice(MAX_VISIBLE)
+              const visiblePills = isDesktop ? filteredProjects : filteredProjects.slice(0, MAX_VISIBLE)
+              const overflowPills = isDesktop ? [] : filteredProjects.slice(MAX_VISIBLE)
               return (
                 <>
                   {visiblePills.map(project => (
@@ -2695,11 +2708,20 @@ export default function GameHUD({
                       />
                     </div>
                   ))}
-                  {/* +N overflow button */}
+                  {/* +N overflow button -- fixed position popover so it's never clipped by overflow:hidden parents */}
                   {overflowPills.length > 0 && (
                     <div ref={overflowRef} style={{ position: 'relative', flexShrink: 0 }}>
                       <motion.button
-                        onClick={() => setOverflowOpen(o => !o)}
+                        ref={overflowButtonRef}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (!overflowOpen) {
+                            // Capture button position for fixed popover anchor
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setOverflowPos({ bottom: window.innerHeight - rect.top + 6, right: window.innerWidth - rect.right })
+                          }
+                          setOverflowOpen(o => !o)
+                        }}
                         whileHover={{ scale: 1.08 }}
                         whileTap={{ scale: 0.92 }}
                         style={{
@@ -2721,7 +2743,7 @@ export default function GameHUD({
                       >
                         +{overflowPills.length}
                       </motion.button>
-                      {/* Overflow popover -- appears above the pill bar */}
+                      {/* Overflow popover -- fixed position so it escapes overflow:hidden parents */}
                       <AnimatePresence>
                         {overflowOpen && (
                           <motion.div
@@ -2730,9 +2752,9 @@ export default function GameHUD({
                             exit={{ opacity: 0, y: 8, scale: 0.96 }}
                             transition={{ type: 'spring', damping: 22, stiffness: 350 }}
                             style={{
-                              position: 'absolute',
-                              bottom: 'calc(100% + 6px)',
-                              right: 0,
+                              position: 'fixed',
+                              bottom: overflowPos.bottom,
+                              right: overflowPos.right,
                               background: isDaytime ? 'rgba(12, 28, 55, 0.97)' : 'rgba(8, 16, 32, 0.97)',
                               backdropFilter: 'blur(20px)',
                               border: `1.5px solid ${isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(100,180,255,0.2)'}`,
@@ -2742,7 +2764,7 @@ export default function GameHUD({
                               display: 'grid',
                               gridTemplateColumns: overflowPills.length > 3 ? 'repeat(3, auto)' : `repeat(${overflowPills.length}, auto)`,
                               gap: 4,
-                              zIndex: 100,
+                              zIndex: 9999,
                               minWidth: 140,
                               maxWidth: 320,
                             }}
