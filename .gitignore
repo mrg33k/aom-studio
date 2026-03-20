@@ -5,3 +5,5 @@ dist
 .DS_Store
 .vercel
 .env.vercel.local
+.env.prod
+.env.seed

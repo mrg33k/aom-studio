@@ -7740,7 +7740,7 @@ export default function GameDashboard() {
     if (!IS_LOCAL) {
       // 1. Update the TASK status: todo -> active
       const taskParam = task.taskId || task.id ? `id=${encodeURIComponent(task.taskId || task.id)}` : `agent=${encodeURIComponent(task.agent || 'elon')}`
-      fetch(`/api/dashboard/task-update?${taskParam}&status=active`, { method: 'PATCH' }).catch(() => {})
+      fetch(`/api/dashboard/agent-status?table=tasks&${taskParam}&status=active`, { method: 'PATCH' }).catch(() => {})
       // 2. Update the AGENT status: idle -> active
       fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(task.agent || 'elon')}&status=active&current_task=${encodeURIComponent(task.text || '')}`, { method: 'PATCH' }).catch(() => {})
       // 3. Notify relay so Elon auto-assigns
