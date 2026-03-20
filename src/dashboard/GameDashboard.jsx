@@ -5009,7 +5009,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           {!collapsedSections.rightnow && liveRightNow.map((t, i) =>
             renderTaskCard(
               { id: t.id || `rn-${i}`, text: t.text || t.task || t.description || 'Running...', agent: t.agent },
-              { isLive: true, showAgent: true, idx: i, sectionName: 'Inbox', sectionColor: '#FF6B3D' }
+              { isLive: true, showAgent: true, idx: i, sectionName: 'Right Now', sectionColor: '#FF6B3D' }
             )
           )}
         </div>
@@ -5389,8 +5389,8 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
     return agents
   }, [liveAgents, allAgentStatus, rightNowTasks])
 
-  // LIVE count: live agents + Right Now manual tasks
-  const liveCount = (pipeData?.pillCounts?.rightNow ?? 0) + rightNowTasks.length
+  // LIVE count: mergedAgents is already deduped (liveAgents + rightNowTasks, no double-count)
+  const liveCount = mergedAgents.length
 
   // YOUR TODOS: real count from useDataPipe (punch-list [Patrik] tags), not blocked agents
   const todoCount = pipeData?.pillCounts?.yourTodos ?? blockedCount ?? 0

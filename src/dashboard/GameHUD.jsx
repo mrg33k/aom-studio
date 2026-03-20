@@ -1883,7 +1883,7 @@ export default function GameHUD({
     // Always show add prompt at the end
     rightNowTasks.push({ text: '+ Add task...', done: false, agent: null, raw: '', isLive: false, isAddPrompt: true })
     merged.push({
-      name: 'Inbox',
+      name: 'Right Now',
       section: 'rightnow',
       color: '#FF6B3D',
       icon: 'zap',
@@ -2356,7 +2356,7 @@ export default function GameHUD({
             </svg>
           </button>
 
-          {/* Scrollable project pills -- THE WHOLE BAR. Left-aligned so Inbox pill is always visible first. */}
+          {/* Scrollable project pills -- THE WHOLE BAR. Left-aligned so Right Now pill is always visible first. */}
           <div style={{
             flex: 1,
             display: 'flex',
