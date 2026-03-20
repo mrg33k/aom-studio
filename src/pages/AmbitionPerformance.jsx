@@ -449,9 +449,39 @@ function SocialSection() {
           </h2>
         </FadeIn>
         <FadeIn delay={0.15}>
-          <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
-            Organic growth across three platforms. Every post hand-crafted. No bots, no paid followers, no shortcuts. Real content. Real engagement.
+          <p className="font-body text-lg mb-8 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
+            Every post is free advertising. You're paying for video production, but every view, like, and share is an eyeball on Ambition's brand at zero additional cost.
           </p>
+        </FadeIn>
+
+        {/* Impressions Banner */}
+        <FadeIn delay={0.2}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            <div className="p-6 text-center" style={{ background: `${ORANGE}10`, border: `1px solid ${ORANGE}33` }}>
+              <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: ORANGE }}>~600K+</p>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Est. Total Views</p>
+            </div>
+            <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>21.6K</p>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>TikTok Likes</p>
+            </div>
+            <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>4,912</p>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Total Followers</p>
+            </div>
+            <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>$0</p>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Ad Spend</p>
+            </div>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.25}>
+          <div className="p-5 mb-12" style={{ background: `${ORANGE}08`, borderLeft: `3px solid ${ORANGE}` }}>
+            <p className="font-body text-base" style={{ color: TEXT, lineHeight: 1.6 }}>
+              <strong style={{ color: CREAM }}>The eyeball math:</strong> TikTok's 21.6K likes at a ~4% engagement rate = roughly 540,000 video views. Add Instagram reach across 57 posts to 1,646 followers, plus LinkedIn impressions. All organic. All free. Every view is a potential service call that cost Ambition nothing beyond the retainer.
+            </p>
+          </div>
         </FadeIn>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -588,68 +618,75 @@ function SocialSection() {
 // ═══════════════════════════════════════════════════════════════════════════════
 //  5. BRANDED VIDEO LIBRARY
 // ═══════════════════════════════════════════════════════════════════════════════
-function VideoLibrarySection() {
+const sitesVisited = [
+  { name: 'Apple Store Chandler', type: 'Retail', visits: 2 },
+  { name: 'Ritz Carlton', type: 'Luxury Hospitality', visits: 1 },
+  { name: 'Tiffany\'s', type: 'Luxury Retail', visits: 1 },
+  { name: 'Din Tai Fung, Scottsdale', type: 'Restaurant', visits: 3 },
+  { name: 'Roka Akor', type: 'Restaurant', visits: 1 },
+  { name: 'INEOS Grenadier', type: 'Industrial', visits: 1 },
+  { name: 'Louis Vuitton, Fashion Square', type: 'Luxury Retail', visits: 3 },
+  { name: 'Loro Piano', type: 'Luxury Retail', visits: 1 },
+  { name: 'Teleferic Barcelona', type: 'Restaurant', visits: 1 },
+  { name: 'Memorial Tower Senior Apts', type: 'Healthcare', visits: 9 },
+  { name: 'Abrazo Healthcare', type: 'Healthcare', visits: 1 },
+  { name: 'Banner Health', type: 'Healthcare', visits: 1 },
+  { name: 'Primrose', type: 'Healthcare', visits: 1 },
+  { name: 'Esplanade', type: 'Luxury Property', visits: 1 },
+  { name: 'Novus Place / The Melt', type: 'Restaurant', visits: 2 },
+  { name: 'Sossaman Warehouse', type: 'Commercial', visits: 1 },
+  { name: 'Arrowhead', type: 'Industrial', visits: 1 },
+  { name: 'Breakthrough', type: 'Commercial', visits: 1 },
+  { name: 'CEVA', type: 'Industrial', visits: 1 },
+  { name: 'Refined Gardens', type: 'Luxury Residential', visits: 2 },
+  { name: 'LifeSkills', type: 'Commercial', visits: 2 },
+  { name: 'Gilmore', type: 'Commercial', visits: 1 },
+  { name: 'O\'Reilly Auto Parts', type: 'Retail', visits: 1 },
+  { name: 'Crown', type: 'Mixed Use', visits: 1 },
+  { name: 'Ambition Office', type: 'Brand / Team', visits: 1 },
+]
+
+function SitesVisitedSection() {
   return (
     <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: BG }}>
       <FilmGrain />
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
         <FadeIn>
           <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
-            Branded Video Library
+            Sites Visited
           </span>
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
             style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-            23 Finished Productions.
+            25+ Locations. 37 Shoots.
           </h2>
         </FadeIn>
         <FadeIn delay={0.15}>
           <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
-            18 branded videos covering every aspect of Ambition Mechanical's work, plus 5 Memorial Tower social edits. Each one edited, color-graded, and ready for deployment.
+            Every one of these locations has been professionally documented with cinema cameras, drone aerials, and professional audio. This is Ambition's portfolio brought to life.
           </p>
         </FadeIn>
 
-        {/* 18 Branded Videos */}
-        <FadeIn delay={0.2}>
-          <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: ORANGE }}>
-            18 Branded Videos
-          </p>
-        </FadeIn>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
-          {brandedVideos.map((v, i) => (
-            <FadeIn key={v.title} delay={Math.min(i * 0.04, 0.5)}>
-              <div className="flex items-center gap-3 p-4 transition-all duration-200"
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {sitesVisited.map((site, i) => (
+            <FadeIn key={site.name} delay={Math.min(i * 0.03, 0.5)}>
+              <div className="flex items-start gap-3 p-5 transition-all duration-200"
                 style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}44` }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
               >
-                <Play size={16} style={{ color: videoCategoryColors[v.category] || ORANGE, flexShrink: 0 }} />
+                <MapPin size={16} style={{ color: ORANGE, flexShrink: 0, marginTop: 3 }} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-body font-semibold text-sm uppercase tracking-wide truncate" style={{ color: TEXT }}>{v.title}</p>
-                  <p className="font-mono text-xs uppercase tracking-[0.1em] mt-0.5"
-                    style={{ color: videoCategoryColors[v.category] || MUTED }}>{v.category}</p>
-                </div>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-
-        {/* Memorial Tower */}
-        <FadeIn delay={0.3}>
-          <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: '#F59E0B' }}>
-            5 Memorial Tower Social Edits
-          </p>
-        </FadeIn>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {memorialTowerEdits.map((v, i) => (
-            <FadeIn key={v.title} delay={Math.min(0.3 + i * 0.05, 0.6)}>
-              <div className="flex items-center gap-3 p-4"
-                style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-                <Play size={16} style={{ color: '#F59E0B', flexShrink: 0 }} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-body font-semibold text-sm uppercase tracking-wide truncate" style={{ color: TEXT }}>{v.title}</p>
-                  <p className="font-mono text-xs uppercase tracking-[0.1em] mt-0.5" style={{ color: '#F59E0B' }}>{v.category}</p>
+                  <p className="font-body font-semibold text-base" style={{ color: CREAM }}>{site.name}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="font-mono text-xs uppercase tracking-[0.1em]" style={{ color: MUTED }}>{site.type}</span>
+                    {site.visits > 1 && (
+                      <span className="font-mono text-xs font-bold px-2 py-0.5" style={{ color: ORANGE, background: `${ORANGE}15`, borderRadius: 3 }}>
+                        {site.visits} visits
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </FadeIn>
@@ -1484,7 +1521,7 @@ export default function AmbitionPerformance() {
       <HeroSection />
       <StatsSection />
       <SocialSection />
-      <VideoLibrarySection />
+      <SitesVisitedSection />
       <ContentStrategySection />
       <ClientsSection />
       <ShootsSection />
