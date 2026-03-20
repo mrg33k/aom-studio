@@ -1842,7 +1842,7 @@ export default function GameHUD({
   const addProjectTask = useCallback(async (text, sectionSlug, sectionName) => {
     // Silently write to Supabase tasks table with project slug
     try {
-      await fetch('/api/dashboard/supabase-tasks', {
+      await fetch('/api/dashboard/agent-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
