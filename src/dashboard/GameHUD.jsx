@@ -1146,7 +1146,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, onMarkInboxRead, highlightedTask }) {
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjectTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, onMarkInboxRead, highlightedTask }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
@@ -1340,6 +1340,98 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
         </div>
       </div>
 
+      {/* Inline add-task input -- TOP of every expanded pill (except inbox + completed) */}
+      {!project.isInbox && !project.isCompletedFeed && (
+        <div style={{
+          padding: '8px 16px 4px',
+          borderBottom: `1px solid ${tpDivider}`,
+        }}>
+          {addingTask ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                border: `1.5px solid ${project.color}66`,
+                background: `${project.color}12`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ color: project.color, fontSize: 13, fontWeight: 800, lineHeight: 1 }}>+</span>
+              </div>
+              <input
+                ref={addTaskInputRef}
+                autoFocus
+                value={addTaskText}
+                onChange={e => setAddTaskText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && addTaskText.trim()) {
+                    if (project.section === 'rightnow') {
+                      onAddManualTask?.(addTaskText.trim())
+                    } else {
+                      onAddProjectTask?.(addTaskText.trim(), project.section, project.name)
+                    }
+                    setAddTaskText('')
+                    setAddingTask(false)
+                  }
+                  if (e.key === 'Escape') {
+                    setAddTaskText('')
+                    setAddingTask(false)
+                  }
+                }}
+                onBlur={() => {
+                  if (addTaskText.trim()) {
+                    if (project.section === 'rightnow') {
+                      onAddManualTask?.(addTaskText.trim())
+                    } else {
+                      onAddProjectTask?.(addTaskText.trim(), project.section, project.name)
+                    }
+                  }
+                  setAddTaskText('')
+                  setAddingTask(false)
+                }}
+                placeholder="Add a task, hit Enter..."
+                style={{
+                  flex: 1,
+                  background: `${project.color}08`,
+                  border: `1.5px solid ${project.color}44`,
+                  borderRadius: 7,
+                  padding: '6px 10px',
+                  fontSize: 14, fontWeight: 500,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  color: tpTextPrimary,
+                  outline: 'none',
+                  caretColor: project.color,
+                }}
+              />
+            </div>
+          ) : (
+            <motion.div
+              onClick={() => setAddingTask(true)}
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                cursor: 'pointer', padding: '4px 0',
+              }}
+            >
+              <div style={{
+                width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                border: `1.5px dashed ${project.color}44`,
+                background: `${project.color}08`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ color: project.color, fontSize: 13, fontWeight: 800, lineHeight: 1 }}>+</span>
+              </div>
+              <span style={{
+                fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 500,
+                color: `${project.color}88`,
+                fontStyle: 'italic',
+              }}>
+                Add task...
+              </span>
+            </motion.div>
+          )}
+        </div>
+      )}
+
       {/* Task list */}
       <div style={{
         padding: '8px 16px 16px',
@@ -1350,99 +1442,6 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
         {sortedTasks.map((task, i) => {
           const isDone = getTaskDone(task, task.origIdx)
           const isSaving = saving === task.origIdx
-
-          // DONE(bobby2): isAddPrompt renders as inline input for adding manual tasks to Right Now
-          if (task.isAddPrompt) {
-            return (
-              <motion.div
-                key="add-prompt"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.03, duration: 0.15 }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 8px',
-                  borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
-                }}
-              >
-                {addingTask ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-                    <div style={{
-                      width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-                      border: `1.5px solid rgba(255,107,61,0.4)`,
-                      background: 'rgba(255,107,61,0.08)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <span style={{ color: '#FF6B3D', fontSize: 14, fontWeight: 800, lineHeight: 1 }}>+</span>
-                    </div>
-                    <input
-                      ref={addTaskInputRef}
-                      autoFocus
-                      value={addTaskText}
-                      onChange={e => setAddTaskText(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && addTaskText.trim()) {
-                          onAddManualTask?.(addTaskText.trim())
-                          setAddTaskText('')
-                          setAddingTask(false)
-                        }
-                        if (e.key === 'Escape') {
-                          setAddTaskText('')
-                          setAddingTask(false)
-                        }
-                      }}
-                      onBlur={() => {
-                        if (addTaskText.trim()) {
-                          onAddManualTask?.(addTaskText.trim())
-                        }
-                        setAddTaskText('')
-                        setAddingTask(false)
-                      }}
-                      placeholder="Type a task, hit Enter..."
-                      style={{
-                        flex: 1,
-                        background: isDaytime ? 'rgba(255,107,61,0.06)' : 'rgba(255,107,61,0.08)',
-                        border: `1.5px solid rgba(255,107,61,0.3)`,
-                        borderRadius: 8,
-                        padding: '8px 12px',
-                        fontSize: 16, fontWeight: 500,
-                        fontFamily: "'Inter', system-ui, sans-serif",
-                        color: tpTextPrimary,
-                        outline: 'none',
-                        caretColor: '#FF6B3D',
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <motion.div
-                    onClick={() => setAddingTask(true)}
-                    whileHover={{ scale: 1.02, x: 4 }}
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8, flex: 1,
-                      cursor: 'pointer', padding: '4px 0',
-                    }}
-                  >
-                    <div style={{
-                      width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-                      border: `1.5px dashed rgba(255,107,61,0.35)`,
-                      background: 'rgba(255,107,61,0.05)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <span style={{ color: '#FF6B3D', fontSize: 14, fontWeight: 800, lineHeight: 1 }}>+</span>
-                    </div>
-                    <span style={{
-                      fontFamily: "'Inter', system-ui, sans-serif", fontSize: 15, fontWeight: 500,
-                      color: isDaytime ? 'rgba(255,107,61,0.7)' : 'rgba(255,107,61,0.6)',
-                      fontStyle: 'italic',
-                    }}>
-                      Add task...
-                    </span>
-                  </motion.div>
-                )}
-              </motion.div>
-            )
-          }
 
           // INBOX CARD: agent message preview with colored left edge + click to navigate
           // Read cards: opacity 0.5, strikethrough on agent name, greyed text, still clickable
@@ -1839,6 +1838,23 @@ export default function GameHUD({
     setManualTasks(prev => [...prev, { id: Date.now(), text, done: false, createdAt: new Date().toISOString() }])
   }, [])
 
+  // Add a task to a project pill (not Right Now) -- writes to Supabase tasks table with project context
+  const addProjectTask = useCallback(async (text, sectionSlug, sectionName) => {
+    // Silently write to Supabase tasks table with project slug
+    try {
+      await fetch('/api/dashboard/supabase-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          project: sectionSlug || sectionName || null,
+          agent: 'elon',
+          status: 'todo',
+        }),
+      })
+    } catch {}
+  }, [])
+
   const toggleManualTask = useCallback((id) => {
     setManualTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
   }, [])
@@ -1928,8 +1944,7 @@ export default function GameHUD({
         manualId: t.id,
       })
     })
-    // Always show add prompt at the end
-    rightNowTasks.push({ text: '+ Add task...', done: false, agent: null, raw: '', isLive: false, isAddPrompt: true })
+    // Note: add-task input now lives at the TOP of every expanded TaskPanel (not as a list item)
     merged.push({
       name: 'Right Now',
       section: 'rightnow',
@@ -2162,6 +2177,7 @@ export default function GameHUD({
             onClose={() => setExpandedProject(null)}
             isNightMode={isNightMode}
             onAddManualTask={addManualTask}
+            onAddProjectTask={addProjectTask}
             onToggleManualTask={toggleManualTask}
             onDeleteManualTask={deleteManualTask}
             allProjects={projects}
