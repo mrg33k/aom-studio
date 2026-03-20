@@ -127,7 +127,7 @@ const heroStats = [
   { number: 3138, suffix: '', label: 'Video Files Captured', context: '3 TB of raw + finished footage' },
   { number: 713, suffix: '', label: 'Professional Photos', context: 'Stills, aerials, DNG raws' },
   { number: 23, suffix: '', label: 'Finished Video Exports', context: 'Edited, color-graded, delivered' },
-  { number: 22, suffix: '+', label: 'Job Sites Documented', context: 'Premium client locations' },
+  { number: 25, suffix: '+', label: 'Job Sites Documented', context: 'Premium client locations across Phoenix metro' },
   { number: 1, suffix: '', label: 'Custom Website', context: 'Built and launched March 2026' },
 ]
 
@@ -996,7 +996,7 @@ function EquipmentSection() {
 function ValueSection() {
   const [ref, visible] = useIntersect()
   const marketValue = useCountUp(78000, 2000, visible)
-  const amountPaid = useCountUp(22000, 1800, visible)
+  const amountPaid = useCountUp(25000, 1800, visible)
 
   return (
     <section ref={ref} className="relative py-24 md:py-32" style={{ background: CARD_BG }}>
@@ -1083,7 +1083,7 @@ function ValueSection() {
         <FadeIn delay={0.4}>
           <div className="text-center mt-12">
             <div className="inline-block p-6 px-12" style={{ background: BG, border: `2px solid ${ORANGE}` }}>
-              <p className="font-headline font-extrabold" style={{ fontSize: 'clamp(48px, 6vw, 72px)', color: ORANGE }}>3.5x</p>
+              <p className="font-headline font-extrabold" style={{ fontSize: 'clamp(48px, 6vw, 72px)', color: ORANGE }}>3x</p>
               <p className="font-headline font-extrabold text-base uppercase tracking-wide mt-2" style={{ color: CREAM }}>Return on Investment</p>
             </div>
           </div>
@@ -1138,7 +1138,7 @@ function HoursSection() {
             style={{ background: CARD_BG, border: `2px solid ${ORANGE}` }}>
             <div>
               <p className="font-headline font-extrabold text-xl uppercase" style={{ color: CREAM }}>Total Estimated Hours</p>
-              <p className="font-body text-base mt-1" style={{ color: MUTED }}>Effective rate: ~$44.62/hour (market rate: $100-200/hr)</p>
+              <p className="font-body text-base mt-1" style={{ color: MUTED }}>Effective rate: ~$50.71/hour (market rate: $100-200/hr)</p>
             </div>
             <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(48px, 6vw, 64px)', color: ORANGE, fontVariantNumeric: 'tabular-nums' }}>
               ~{visible ? totalHours : 0}
