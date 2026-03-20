@@ -186,20 +186,21 @@ const equipment = [
 ]
 
 const contentArsenal = [
-  { number: 48, label: 'Branded Video Templates', desc: 'Custom motion graphics system' },
-  { number: 17, label: 'Professional Video Edits', desc: 'Polished edit iterations' },
-  { number: 18, label: 'Branded Post Designs', desc: 'On-brand social content' },
-  { number: 14, label: 'Voiceover Recordings', desc: 'Professional narration' },
-  { number: 30, label: 'Day Content Calendar', desc: 'With 28 planned pieces' },
-  { number: 6, label: 'Content Pillars Defined', desc: 'Strategic framework' },
+  { number: 23, label: 'Finished Video Exports', desc: '18 branded social + 5 Memorial Tower edits' },
+  { number: 57, label: 'Instagram Posts Published', desc: 'Reels, carousels, and static posts' },
+  { number: 14, label: 'Professional Voiceovers', desc: 'Custom narration recordings' },
+  { number: 30, label: 'Day Content Calendar', desc: 'Planned and ready to execute' },
+  { number: 3, label: 'Brand Guidelines Versions', desc: 'Visual identity documentation' },
+  { number: 6, label: 'Content Pillars Defined', desc: 'Strategic framework for all platforms' },
 ]
 
 const valueComparison = [
   { item: '37 Professional Shoots', rate: '$800 avg per shoot', value: '$29,600' },
-  { item: '88+ Video Edits', rate: '$300 avg per edit', value: '$26,400' },
+  { item: '23 Finished Video Exports', rate: '$500 avg per video', value: '$11,500' },
   { item: 'Custom Website', rate: 'Design + Dev + CMS', value: '$6,000' },
   { item: 'Brand & Content Strategy', rate: 'Guidelines + Pillars + Calendar', value: '$5,000' },
-  { item: 'Social Media Management', rate: '11 months of posting', value: '$11,000' },
+  { item: 'Social Media Management', rate: '11 months across 3 platforms', value: '$11,000' },
+  { item: '3,138 Raw Files + 713 Photos', rate: 'Post-production archive', value: '$15,000' },
 ]
 
 const hoursBreakdown = [
@@ -429,8 +430,8 @@ function StatsSection() {
 function SocialSection() {
   const [ref, visible] = useIntersect()
   const postCount = useCountUp(57, 1400, visible)
-  const followerCount = useCountUp(1537, 1400, visible)
-  const followingCount = useCountUp(1229, 1400, visible)
+  const followerCount = useCountUp(1646, 1400, visible)
+  const followingCount = useCountUp(1181, 1400, visible)
 
   return (
     <section ref={ref} className="relative py-24 md:py-32 overflow-hidden" style={{ background: CARD_BG }}>
@@ -508,9 +509,20 @@ function SocialSection() {
               </div>
               <p className="font-mono text-xs mb-6" style={{ color: MUTED }}>@ambitionmech</p>
 
-              <p className="font-body text-base mb-6" style={{ color: TEXT, lineHeight: 1.6 }}>
-                Active account with HVAC-focused content. Short-form video optimized for discoverability in the trades space.
-              </p>
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div>
+                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>3,119</p>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Followers</p>
+                </div>
+                <div>
+                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>21.6K</p>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Likes</p>
+                </div>
+                <div>
+                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>317</p>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Following</p>
+                </div>
+              </div>
 
               <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16 }}>
                 <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: '#F59E0B' }}>Content Types</p>
@@ -520,12 +532,6 @@ function SocialSection() {
                       style={{ color: TEXT, background: 'rgba(255,255,255,0.06)', borderRadius: 4 }}>{tag}</span>
                   ))}
                 </div>
-              </div>
-
-              <div className="mt-5 p-4" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, borderRadius: 4 }}>
-                <p className="font-body text-sm" style={{ color: TEXT, lineHeight: 1.5 }}>
-                  Cross-posting pipeline built and ready. All Instagram content automatically formatted for TikTok distribution.
-                </p>
               </div>
             </div>
           </FadeIn>
@@ -540,8 +546,13 @@ function SocialSection() {
               </div>
               <p className="font-mono text-xs mb-6" style={{ color: MUTED }}>Ambition Mechanical Services</p>
 
-              <p className="font-body text-base mb-6" style={{ color: TEXT, lineHeight: 1.6 }}>
-                Company page established and active. Authority post strategy positions Mo as the go-to commercial HVAC expert in Phoenix.
+              <div className="mb-6">
+                <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>147</p>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Followers</p>
+              </div>
+
+              <p className="font-body text-sm mb-6" style={{ color: TEXT, lineHeight: 1.6 }}>
+                Company page established. Authority post strategy positions Mo as the go-to commercial HVAC expert in Phoenix. 11-50 employees. Tempe, AZ.
               </p>
 
               <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16 }}>
@@ -995,7 +1006,7 @@ function EquipmentSection() {
 // ═══════════════════════════════════════════════════════════════════════════════
 function ValueSection() {
   const [ref, visible] = useIntersect()
-  const marketValue = useCountUp(78000, 2000, visible)
+  const marketValue = useCountUp(78100, 2000, visible)
   const amountPaid = useCountUp(25000, 1800, visible)
 
   return (
@@ -1049,7 +1060,7 @@ function ValueSection() {
                     <span className="font-headline font-extrabold text-xl uppercase" style={{ color: CREAM }}>Estimated Market Value</span>
                   </td>
                   <td className="p-5 text-right">
-                    <span className="font-headline font-extrabold text-2xl" style={{ color: ORANGE }}>$78,000+</span>
+                    <span className="font-headline font-extrabold text-2xl" style={{ color: ORANGE }}>$78,100+</span>
                   </td>
                 </tr>
               </tbody>
