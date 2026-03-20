@@ -1198,7 +1198,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, highlightedTask }) {
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, onMarkInboxRead, highlightedTask }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
@@ -1497,6 +1497,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
           }
 
           // INBOX CARD: agent message preview with colored left edge + click to navigate
+          // Read cards: opacity 0.5, strikethrough on agent name, greyed text, still clickable
           if (task.isInboxCard) {
             const INBOX_AGENT_COLORS = {
               elon: '#4CAF50', bobby: '#3B82F6', steffen: '#F59E0B', steve: '#EC4899',
@@ -1506,23 +1507,28 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
             const agentColor = INBOX_AGENT_COLORS[task.agent] || '#3B9EFF'
             const agentName = task.agent ? task.agent.charAt(0).toUpperCase() + task.agent.slice(1) : 'Agent'
             const relTime = task.timestamp ? formatRelativeTime(task.timestamp) : ''
+            const isRead = !!task.isRead
             return (
               <motion.div
                 key={task.id || `inbox-${task.agent}-${i}`}
                 initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
+                animate={{ opacity: isRead ? 0.5 : 1, x: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.15 }}
-                onClick={() => onNavigateToAgent?.(task.agent)}
+                onClick={() => {
+                  onMarkInboxRead?.(task.id)
+                  onNavigateToAgent?.(task.agent)
+                }}
                 whileHover={{ x: 3, transition: { type: 'spring', stiffness: 400, damping: 20 } }}
                 whileTap={{ scale: 0.98 }}
                 style={{
                   display: 'flex', flexDirection: 'column', gap: 4,
                   padding: '10px 12px',
                   borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
-                  borderLeft: `3px solid ${agentColor}`,
+                  borderLeft: `3px solid ${isRead ? `${agentColor}60` : agentColor}`,
                   cursor: 'pointer',
                   borderRadius: 4,
                   transition: 'background 150ms ease',
+                  opacity: isRead ? 0.5 : 1,
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,158,255,0.1)' : 'rgba(59,158,255,0.08)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
@@ -1530,7 +1536,8 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{
                     fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700,
-                    color: tpTextPrimary,
+                    color: isRead ? tpTextMuted : tpTextPrimary,
+                    textDecoration: isRead ? 'line-through' : 'none',
                   }}>
                     {agentName}
                   </span>
@@ -1543,6 +1550,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
                 <span style={{
                   fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12,
                   color: tpTextMuted, lineHeight: 1.4,
+                  textDecoration: isRead ? 'line-through' : 'none',
                 }}>
                   {task.text || '(no preview)'}
                 </span>
@@ -1889,6 +1897,38 @@ export default function GameHUD({
     setManualTasks(prev => prev.filter(t => t.id !== id))
   }, [])
 
+  // INBOX READ STATE: track read message IDs in localStorage
+  // read IDs are stored as { id, readAt } -- readAt used for ordering (oldest read = first to archive)
+  const [readInboxIds, setReadInboxIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('corner-inbox-read')
+      return saved ? JSON.parse(saved) : []
+    } catch { return [] }
+  })
+  // Sync to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem('corner-inbox-read', JSON.stringify(readInboxIds))
+    } catch {}
+  }, [readInboxIds])
+  // Mark an inbox message as read -- adds id to set, auto-prunes oldest beyond max
+  const MAX_READ_VISIBLE = 5
+  const markInboxRead = useCallback((id) => {
+    if (!id) return
+    setReadInboxIds(prev => {
+      if (prev.some(r => r.id === id)) return prev // already read
+      const next = [...prev, { id, readAt: Date.now() }]
+      // Keep only the most recent MAX_READ_VISIBLE + some buffer for archiving
+      // Oldest beyond MAX_READ_VISIBLE auto-archive (disappear from inbox entirely)
+      if (next.length > MAX_READ_VISIBLE) {
+        // Sort oldest first, drop oldest beyond cap
+        next.sort((a, b) => a.readAt - b.readAt)
+        return next.slice(next.length - MAX_READ_VISIBLE)
+      }
+      return next
+    })
+  }, [])
+
   // Detect new Right Now tasks and trigger wiggle animation
   useEffect(() => {
     const currentCount = liveRightNowTasks.length + manualTasks.length
@@ -1949,19 +1989,25 @@ export default function GameHUD({
     })
 
     // INBOX: Unread assistant messages from Supabase (one card per agent)
+    // Split into unread (top) and read (bottom, max 5). Read items beyond 5 auto-archive (dropped).
+    const readIdSet = new Set((readInboxIds || []).map(r => r.id))
+    const allInboxCards = (inboxItems || []).map(item => ({
+      text: item.text,
+      agent: item.agent,
+      timestamp: item.timestamp,
+      id: item.id,
+      done: readIdSet.has(item.id), // read = "done" for pill count purposes
+      isRead: readIdSet.has(item.id),
+      isInboxCard: true,
+    }))
+    const unreadCards = allInboxCards.filter(c => !c.isRead)
+    const readCards = allInboxCards.filter(c => c.isRead).slice(0, MAX_READ_VISIBLE)
     merged.push({
       name: 'Inbox',
       section: 'inbox',
       color: '#3B9EFF',
       icon: 'mail',
-      tasks: (inboxItems || []).map(item => ({
-        text: item.text,
-        agent: item.agent,
-        timestamp: item.timestamp,
-        id: item.id,
-        done: false,
-        isInboxCard: true,
-      })),
+      tasks: [...unreadCards, ...readCards],
       isInbox: true,
     })
 
@@ -2064,7 +2110,7 @@ export default function GameHUD({
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, inboxItems, isAutoChecked, patrikTodos, checkingInTasks, manualTasks])
+  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, inboxItems, isAutoChecked, patrikTodos, checkingInTasks, manualTasks, readInboxIds])
 
   // Keep ref in sync for navigateToProject callback
   projectsRef.current = projects
@@ -2174,6 +2220,7 @@ export default function GameHUD({
               setExpandedProject(null)
               onNavigateToAgent?.(slug)
             }}
+            onMarkInboxRead={markInboxRead}
             highlightedTask={highlightedTask}
           />
         )}
