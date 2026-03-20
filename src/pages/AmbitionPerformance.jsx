@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
   ChevronDown, Camera, Video, Globe, Phone, Mail,
-  CheckCircle2, ArrowRight, Calendar, Image,
+  CheckCircle2, ArrowRight, Check, Calendar, Image,
   Users, Clock, DollarSign, TrendingUp, MapPin,
   Play, Flame, Layers, FileText, Star, Zap,
   BarChart3, Target, Shield, Megaphone
@@ -189,7 +189,7 @@ const contentArsenal = [
   { number: 23, label: 'Finished Video Exports', desc: '18 branded social + 5 Memorial Tower edits' },
   { number: 57, label: 'Instagram Posts Published', desc: 'Reels, carousels, and static posts' },
   { number: 14, label: 'Professional Voiceovers', desc: 'Custom narration recordings' },
-  { number: 30, label: 'Day Content Calendar', desc: 'Planned and ready to execute' },
+  { number: 30, label: 'Story-Driven Posts Planned', desc: 'Content mapped to real project narratives' },
   { number: 3, label: 'Brand Guidelines Versions', desc: 'Visual identity documentation' },
   { number: 6, label: 'Content Pillars Defined', desc: 'Strategic framework for all platforms' },
 ]
@@ -410,7 +410,7 @@ function StatsSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-12"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             11 Months of Output.
           </h2>
         </FadeIn>
@@ -444,7 +444,7 @@ function SocialSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             Building the Brand Online.
           </h2>
         </FadeIn>
@@ -458,19 +458,19 @@ function SocialSection() {
         <FadeIn delay={0.2}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
             <div className="p-6 text-center" style={{ background: `${ORANGE}10`, border: `1px solid ${ORANGE}33` }}>
-              <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: ORANGE }}>~600K+</p>
+              <p className="font-headline font-extrabold text-4xl md:text-5xl" style={{ color: ORANGE }}>~600K+</p>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Est. Total Views</p>
             </div>
             <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
-              <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>21.6K</p>
+              <p className="font-headline font-extrabold text-4xl md:text-5xl" style={{ color: CREAM }}>21.6K</p>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>TikTok Likes</p>
             </div>
             <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
-              <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>4,912</p>
+              <p className="font-headline font-extrabold text-4xl md:text-5xl" style={{ color: CREAM }}>4,912</p>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Total Followers</p>
             </div>
             <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
-              <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>$0</p>
+              <p className="font-headline font-extrabold text-4xl md:text-5xl" style={{ color: CREAM }}>$0</p>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Ad Spend</p>
             </div>
           </div>
@@ -481,6 +481,54 @@ function SocialSection() {
             <p className="font-body text-base" style={{ color: TEXT, lineHeight: 1.6 }}>
               <strong style={{ color: CREAM }}>The eyeball math:</strong> TikTok's 21.6K likes at a ~4% engagement rate = roughly 540,000 video views. Add Instagram reach across 57 posts to 1,646 followers, plus LinkedIn impressions. All organic. All free. Every view is a potential service call that cost Ambition nothing beyond the retainer.
             </p>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.3}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            {/* Done Well */}
+            <div className="p-8" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <p className="font-mono text-sm font-bold uppercase tracking-[0.15em] mb-6" style={{ color: '#22C55E' }}>
+                What We've Done Well
+              </p>
+              <div className="flex flex-col gap-4">
+                {[
+                  'Built a library of 3,138 real video files across 25+ premium locations',
+                  'Grew TikTok to 3,119 followers and 21.6K likes organically',
+                  'Instagram at 1,646 followers with 57 published posts',
+                  'Documented every major project with cinema-grade equipment',
+                  'Created a complete brand identity and content strategy',
+                  'Built and launched ambitionac.com from scratch',
+                  "Captured footage at Apple, Ritz Carlton, Tiffany's, Din Tai Fung, and other premium clients",
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <Check size={18} style={{ color: '#22C55E', flexShrink: 0, marginTop: 2 }} />
+                    <p className="font-body text-base" style={{ color: TEXT, lineHeight: 1.5 }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Can Improve */}
+            <div className="p-8" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <p className="font-mono text-sm font-bold uppercase tracking-[0.15em] mb-6" style={{ color: '#F59E0B' }}>
+                Where We Can Improve
+              </p>
+              <div className="flex flex-col gap-4">
+                {[
+                  'Posting consistency -- content exists but deployment has been inconsistent',
+                  'LinkedIn authority posts have not been published at the planned 2/week cadence',
+                  'Cross-posting pipeline between platforms not fully activated',
+                  'Google Business Profile not yet optimized with project photos and videos',
+                  'No paid advertising strategy deployed yet (wide open opportunity)',
+                  'Story-driven posting over volume -- every post should follow a real project narrative',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <ArrowRight size={18} style={{ color: '#F59E0B', flexShrink: 0, marginTop: 2 }} />
+                    <p className="font-body text-base" style={{ color: TEXT, lineHeight: 1.5 }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </FadeIn>
 
@@ -541,15 +589,15 @@ function SocialSection() {
 
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div>
-                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>3,119</p>
+                  <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>3,119</p>
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Followers</p>
                 </div>
                 <div>
-                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>21.6K</p>
+                  <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>21.6K</p>
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Likes</p>
                 </div>
                 <div>
-                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>317</p>
+                  <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>317</p>
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Following</p>
                 </div>
               </div>
@@ -577,7 +625,7 @@ function SocialSection() {
               <p className="font-mono text-xs mb-6" style={{ color: MUTED }}>Ambition Mechanical Services</p>
 
               <div className="mb-6">
-                <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>147</p>
+                <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>147</p>
                 <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Followers</p>
               </div>
 
@@ -604,7 +652,7 @@ function SocialSection() {
 
               <div className="mt-5 p-4" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, borderRadius: 4 }}>
                 <p className="font-body text-sm" style={{ color: TEXT, lineHeight: 1.5 }}>
-                  Content calendar built. Authority post drafts written and ready for publishing cycle.
+                  Authority post drafts written and ready. Every post follows a real insight or project story.
                 </p>
               </div>
             </div>
@@ -658,7 +706,7 @@ function SitesVisitedSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             25+ Locations. 37 Shoots.
           </h2>
         </FadeIn>
@@ -712,7 +760,7 @@ function ContentStrategySection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             6 Pillars. Infinite Content.
           </h2>
         </FadeIn>
@@ -765,7 +813,7 @@ function ClientsSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             Names That Speak for Themselves.
           </h2>
         </FadeIn>
@@ -811,7 +859,7 @@ function ShootsSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             37 Shoots. 11 Months. Zero Missed.
           </h2>
         </FadeIn>
@@ -889,7 +937,7 @@ function ContentArsenalSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             Ready to Deploy.
           </h2>
         </FadeIn>
@@ -918,7 +966,7 @@ function ContentArsenalSection() {
           <div className="mt-10 p-8 max-w-[600px]" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
             <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: MUTED }}>Also Delivered</p>
             <div className="flex flex-col gap-3">
-              {['Brand guidelines documentation (3 versions)', 'LinkedIn authority post drafts', 'Content strategy blueprint', '30-day content calendar with 28 planned pieces'].map((item, i) => (
+              {['Brand guidelines documentation (3 versions)', 'LinkedIn authority post drafts', 'Content strategy blueprint', '30 story-driven posts planned and mapped to real projects'].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <ArrowRight size={16} style={{ color: ORANGE, flexShrink: 0, marginTop: 2 }} />
                   <span className="font-body text-base" style={{ color: TEXT, lineHeight: 1.5 }}>{item}</span>
@@ -947,7 +995,7 @@ function WebsiteSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-12"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             A Website Built From Scratch.
           </h2>
         </FadeIn>
@@ -983,7 +1031,7 @@ function WebsiteSection() {
                 <p className="font-headline font-extrabold text-2xl uppercase" style={{ color: CREAM }}>March 6, 2026</p>
                 <div className="w-12 h-0.5 my-4" style={{ background: ORANGE }} />
                 <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-2" style={{ color: MUTED }}>Market Value</p>
-                <p className="font-headline font-extrabold text-4xl" style={{ color: ORANGE }}>$4,000 - $8,000</p>
+                <p className="font-headline font-extrabold text-4xl" style={{ color: CREAM }}>$4,000 - $8,000</p>
               </div>
             </div>
           </div>
@@ -1008,7 +1056,7 @@ function EquipmentSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-12"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             Professional-Grade Tools.
           </h2>
         </FadeIn>
@@ -1057,7 +1105,7 @@ function ValueSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             What This is Worth.
           </h2>
         </FadeIn>
@@ -1097,7 +1145,7 @@ function ValueSection() {
                     <span className="font-headline font-extrabold text-xl uppercase" style={{ color: CREAM }}>Estimated Market Value</span>
                   </td>
                   <td className="p-5 text-right">
-                    <span className="font-headline font-extrabold text-2xl" style={{ color: ORANGE }}>$78,100+</span>
+                    <span className="font-headline font-extrabold text-2xl" style={{ color: CREAM }}>$78,100+</span>
                   </td>
                 </tr>
               </tbody>
@@ -1119,7 +1167,7 @@ function ValueSection() {
             </div>
             <div className="text-center p-8" style={{ background: 'rgba(255,255,255,0.03)', border: `2px solid ${ORANGE}` }}>
               <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: MUTED }}>Amount Paid</p>
-              <p className="font-headline font-extrabold" style={{ fontSize: 'clamp(36px, 5vw, 56px)', color: ORANGE }}>
+              <p className="font-headline font-extrabold" style={{ fontSize: 'clamp(36px, 5vw, 56px)', color: CREAM }}>
                 ${visible ? amountPaid.toLocaleString() : '0'}
               </p>
               <p className="font-body text-sm mt-2" style={{ color: MUTED }}>11 months x $2,000/month</p>
@@ -1159,7 +1207,7 @@ function HoursSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-12"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             Nearly 500 Hours of Work.
           </h2>
         </FadeIn>
@@ -1215,7 +1263,7 @@ function ServiceCallPlanSection() {
         </FadeIn>
         <FadeIn delay={0.1}>
           <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
-            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
             A Content-First Approach to Service Calls.
           </h2>
         </FadeIn>
@@ -1293,7 +1341,7 @@ function ServiceCallPlanSection() {
               <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: MUTED }}>Weeks 1-4 | $0 Additional Cost</p>
               <div className="flex flex-col gap-3">
                 {[
-                  'Deploy the 18 branded videos to Instagram + TikTok (5/week)',
+                  'Deploy the 18 branded videos to Instagram + TikTok when each story is worth telling',
                   'Launch LinkedIn authority posting (2/week)',
                   'Optimize Google Business Profile with project photos + videos',
                   'SEO-driven content targeting "commercial HVAC repair Phoenix," "restaurant refrigeration Phoenix"',
@@ -1387,7 +1435,7 @@ function ServiceCallPlanSection() {
                   </div>
                   <div className="flex justify-between items-center p-4" style={{ background: `${ORANGE}10`, border: `1px solid ${ORANGE}33` }}>
                     <span className="font-body text-base" style={{ color: TEXT }}>5 converted calls at $500-2,000 avg</span>
-                    <span className="font-headline font-extrabold text-lg" style={{ color: ORANGE }}>$2,500-10,000/mo</span>
+                    <span className="font-headline font-extrabold text-lg" style={{ color: CREAM }}>$2,500-10,000/mo</span>
                   </div>
                 </div>
               </div>
@@ -1455,7 +1503,86 @@ function ServiceCallPlanSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  15. FOOTER
+//  15. WHAT'S NEXT
+// ═══════════════════════════════════════════════════════════════════════════════
+function WhatsNextSection() {
+  const nextSteps = [
+    {
+      number: '01',
+      title: 'Story-Driven Posting',
+      desc: 'Every post follows a real project narrative. No posting for the sake of posting. When there\'s a story worth telling, we tell it right.',
+      color: ORANGE,
+    },
+    {
+      number: '02',
+      title: 'Google Business Profile Optimization',
+      desc: 'Upload project photos and videos to Google Business Profile. Free visibility to anyone searching for HVAC services in Phoenix.',
+      color: '#60A5FA',
+    },
+    {
+      number: '03',
+      title: 'Targeted Ad Campaign (When Ready)',
+      desc: 'Use existing footage to run Facebook/Instagram ads targeting restaurants and facility managers. $0.69/click vs $29+ on Google. The content is already shot.',
+      color: '#F59E0B',
+    },
+    {
+      number: '04',
+      title: 'Monthly Performance Reporting',
+      desc: 'Transparent data on what\'s working. Views, engagement, leads. No vanity metrics.',
+      color: '#22C55E',
+    },
+  ]
+
+  return (
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: WARM_BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            What's Next
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            Quality Over Volume.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
+            The foundation is built. The content exists. These are the four moves that turn production assets into inbound service calls.
+          </p>
+        </FadeIn>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {nextSteps.map((step, i) => (
+            <FadeIn key={step.number} delay={i * 0.1}>
+              <div className="p-8 relative overflow-hidden h-full transition-all duration-200"
+                style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${step.color}44` }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
+              >
+                <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: step.color }} />
+                <div className="flex items-start gap-5">
+                  <span className="font-mono font-bold text-4xl leading-none flex-shrink-0" style={{ color: `${step.color}33` }}>
+                    {step.number}
+                  </span>
+                  <div>
+                    <h3 className="font-headline font-extrabold text-xl uppercase mb-3" style={{ color: CREAM }}>{step.title}</h3>
+                    <p className="font-body text-base" style={{ color: MUTED, lineHeight: 1.6 }}>{step.desc}</p>
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  16. FOOTER
 // ═══════════════════════════════════════════════════════════════════════════════
 function FooterSection() {
   return (
@@ -1465,7 +1592,7 @@ function FooterSection() {
           <div className="w-12 h-0.5 mx-auto mb-6" style={{ background: ORANGE }} />
         </FadeIn>
         <FadeIn delay={0.1}>
-          <h2 className="font-headline font-extrabold uppercase text-2xl md:text-3xl tracking-tight"
+          <h2 className="font-headline font-extrabold uppercase text-3xl md:text-4xl tracking-tight"
             style={{ color: CREAM, letterSpacing: '-0.02em' }}>
             Built by AOM. Built to Last.
           </h2>
@@ -1531,6 +1658,7 @@ export default function AmbitionPerformance() {
       <ValueSection />
       <HoursSection />
       <ServiceCallPlanSection />
+      <WhatsNextSection />
       <FooterSection />
     </div>
   )
