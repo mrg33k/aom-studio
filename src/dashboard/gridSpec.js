@@ -323,6 +323,8 @@ export const PROJECTS = [
   { slug: 'outreach', name: 'Outreach', type: 'project', color: '#26A69A', statusColors: { active: '#26A69A', idle: '#00897B', offline: '#00695C' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#80CBC4', monitorColor: '#80CBC4', hidden: false, team: ['jacob', 'alex'] },
   { slug: 'ai-advisory', name: 'AI Advisory', type: 'project', color: '#29B6F6', statusColors: { active: '#29B6F6', idle: '#0288D1', offline: '#01579B' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81D4FA', monitorColor: '#81D4FA', hidden: false, team: ['steve', 'elon', 'alex'] },
   { slug: 'included-health', name: 'Included Health', type: 'project', color: '#78909C', statusColors: { active: '#78909C', idle: '#546E7A', offline: '#37474F' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#B0BEC5', monitorColor: '#B0BEC5', hidden: true, team: ['paige'] },
+  // ── Special rooms ──────────────────────────────────────────────────────────
+  { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'pixel'] },
 ]
 
 // All rooms (agents + visible projects) for grid rendering

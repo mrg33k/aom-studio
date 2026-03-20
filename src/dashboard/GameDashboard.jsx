@@ -469,13 +469,13 @@ for (const proj of PROJECTS) {
       id: proj.slug,
       name: proj.name,
       agent: proj.slug, // project rooms use their slug as "agent" for chat routing
-      role: 'Project',
+      role: proj.type === 'special' ? 'Team Channel' : 'Project',
       agentColor: proj.color,
       statusColors: proj.statusColors,
       floor: proj.floor,
       floorColor: proj.floorColor,
       lightColor: proj.lightColor,
-      type: 'project',
+      type: proj.type || 'project',
     }
   }
 }
