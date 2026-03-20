@@ -9,6 +9,7 @@ import {
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
   BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
   CalendarDays, Sparkles, Users, Search, Folder,
+  CornerDownLeft, Copy, RotateCcw, Reply,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
@@ -2274,11 +2275,18 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
         ]
       case 'project':
         return [
-          { id: 'expand', label: 'View Tasks', icon: ListTodo, accent: true },
-          { id: 'add', label: 'Add Task', icon: Plus },
+          { id: 'add', label: 'Add Task', icon: Plus, accent: true },
+          { id: 'expand', label: 'View Tasks', icon: ListTodo },
           { divider: true },
-          { id: 'timeline', label: 'Timeline', icon: Calendar },
-          { id: 'archive', label: 'Archive Project', icon: ArrowRight },
+          { id: 'archive', label: 'Archive Pill', icon: ArrowRight },
+        ]
+      case 'message':
+        return [
+          { id: 'create-task', label: 'Create Task from Message', icon: Plus, accent: true },
+          { id: 'reply', label: 'Reply', icon: Reply },
+          { id: 'copy', label: 'Copy Text', icon: Copy },
+          { divider: true },
+          { id: 'resend', label: 'Resend', icon: RotateCcw },
         ]
       default:
         return []
@@ -6318,7 +6326,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -6336,6 +6344,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const [agentSwitcherOpen, setAgentSwitcherOpen] = useState(false)
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
   const switcherRef = useRef(null)
+  // Reply-to state: { id, content } | null
+  const [replyTo, setReplyTo] = useState(null)
+  // Long-press timer for message context menu (mobile)
+  const msgLongPressRef = useRef(null)
 
   // Close switcher dropdowns on outside click
   useEffect(() => {
@@ -7082,10 +7094,25 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 }
 
                 return (
-                  <div key={msg.id || i} style={{
-                    display: 'flex', gap: 10, alignItems: 'flex-start',
-                    flexDirection: isUser ? 'row-reverse' : 'row',
-                  }}>
+                  <div key={msg.id || i}
+                    style={{
+                      display: 'flex', gap: 10, alignItems: 'flex-start',
+                      flexDirection: isUser ? 'row-reverse' : 'row',
+                      position: 'relative',
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      onMessageContextMenu?.(e, msg)
+                    }}
+                    onTouchStart={() => {
+                      clearTimeout(msgLongPressRef.current)
+                      msgLongPressRef.current = setTimeout(() => {
+                        onMessageContextMenu?.({ clientX: 0, clientY: 0, preventDefault: () => {}, _msgLongPress: true }, msg)
+                      }, 500)
+                    }}
+                    onTouchEnd={() => clearTimeout(msgLongPressRef.current)}
+                    onTouchMove={() => clearTimeout(msgLongPressRef.current)}
+                  >
                     {/* Avatar -- 36px with colored ring per Steffen target */}
                     {isUser ? (
                       <div style={{
@@ -7112,28 +7139,69 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
                     {/* Message content */}
                     <div style={{ maxWidth: '80%' }}>
-                      <div style={{
-                        padding: isUser ? '8px 12px' : '7px 11px',
-                        borderRadius: 8,
-                        fontSize: 13, fontWeight: 500, lineHeight: 1.4,
-                        fontFamily: "'Inter', system-ui, sans-serif",
-                        ...(isUser
-                          ? {
-                              background: isNightMode
-                                ? 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)'
-                                : 'linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0.10) 100%)',
-                              border: '1px solid rgba(59,130,246,0.25)',
-                              color: '#F1F5F9',
-                              borderTopRightRadius: 4,
-                            }
-                          : {
-                              background: '#0F1B2D',
-                              border: `1px solid ${msg.streaming ? agentColor + '40' : 'rgba(255,255,255,0.08)'}`,
-                              color: '#F1F5F9',
-                              borderTopLeftRadius: 4,
-                            }
-                        ),
-                      }}>
+                      {/* Name + timestamp above bubble */}
+                      {!msg.streaming && (
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          marginBottom: 3, padding: '0 2px',
+                          flexDirection: isUser ? 'row-reverse' : 'row',
+                        }}>
+                          <span style={{
+                            fontSize: 11, fontWeight: 600,
+                            color: isUser ? '#F59E0B' : agentColor,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                          }}>
+                            {isUser ? 'Patrik' : (agent?.name || agentSlug)}
+                          </span>
+                          {msg.time && (
+                            <span style={{
+                              fontSize: 11, color: '#4A6080',
+                              fontFamily: "'JetBrains Mono', monospace",
+                            }}>
+                              {formatChatTime(msg.time)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {/* Reply-to preview inside bubble if this message has a reply_to */}
+                      {msg.reply_to && chatMessages && (() => {
+                        const parent = chatMessages.find(m => m.id === msg.reply_to)
+                        if (!parent) return null
+                        return (
+                          <div style={{
+                            borderLeft: `3px solid ${agentColor}80`,
+                            paddingLeft: 8, marginBottom: 6,
+                            color: '#8BA4C4', fontSize: 11,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            opacity: 0.8,
+                          }}>
+                            {(parent.content || '').slice(0, 80)}{(parent.content || '').length > 80 ? '...' : ''}
+                          </div>
+                        )
+                      })()}
+                      <div
+                        className="msg-bubble"
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 12,
+                          fontSize: 13, fontWeight: 500, lineHeight: 1.4,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          ...(isUser
+                            ? {
+                                background: '#1a3a5c',
+                                border: '1px solid rgba(59,130,246,0.3)',
+                                color: '#fff',
+                                borderBottomRightRadius: 3,
+                              }
+                            : {
+                                background: '#0F1B2D',
+                                border: `1px solid ${msg.streaming ? agentColor + '40' : 'rgba(255,255,255,0.08)'}`,
+                                color: '#F1F5F9',
+                                borderBottomLeftRadius: 3,
+                              }
+                          ),
+                          position: 'relative',
+                        }}>
                         {msg.content && typeof msg.content === 'string' && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
                         {msg.streaming && !msg.content && (
                           <div style={{ display: 'flex', gap: 5, padding: '4px 0', alignItems: 'center' }}>
@@ -7147,22 +7215,35 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             ))}
                           </div>
                         )}
+                        {/* Hover Reply button */}
+                        {!msg.streaming && msg.content && (
+                          <button
+                            className="msg-reply-btn"
+                            onClick={() => setReplyTo({ id: msg.id || `msg-${i}`, content: msg.content })}
+                            style={{
+                              display: 'none', // shown via CSS hover on parent
+                              position: 'absolute',
+                              ...(isUser ? { left: -32 } : { right: -32 }),
+                              top: '50%', transform: 'translateY(-50%)',
+                              background: 'rgba(15,27,45,0.9)',
+                              border: '1px solid rgba(100,180,255,0.2)',
+                              borderRadius: 6, width: 26, height: 26,
+                              cursor: 'pointer', color: '#8BA4C4',
+                              alignItems: 'center', justifyContent: 'center',
+                              padding: 0,
+                            }}
+                          >
+                            <CornerDownLeft size={13} />
+                          </button>
+                        )}
                       </div>
-                      {/* Meta row: timestamp + source pill */}
-                      {!msg.streaming && (
+                      {/* Meta row: source pill only (timestamp moved above) */}
+                      {!msg.streaming && sourceLabel && (
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: 8,
-                          marginTop: 4, padding: '0 4px',
+                          marginTop: 3, padding: '0 4px',
                           flexDirection: isUser ? 'row-reverse' : 'row',
                         }}>
-                          {msg.time && (
-                            <span style={{
-                              fontSize: 10, fontWeight: 500, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
-                              fontFamily: "'JetBrains Mono', monospace",
-                            }}>
-                              {formatChatTime(msg.time)}
-                            </span>
-                          )}
                           {sourceLabel && (
                             <span style={{
                               fontSize: 9, fontWeight: 500, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
@@ -7280,6 +7361,34 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 : 'transparent',
               flexShrink: 0,
             }}>
+              {/* Reply-to banner */}
+              {replyTo && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  marginBottom: 8, padding: '6px 10px',
+                  background: 'rgba(59,130,246,0.08)',
+                  border: '1px solid rgba(59,130,246,0.2)',
+                  borderRadius: 8,
+                  fontSize: 12, color: '#8BA4C4',
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                }}>
+                  <CornerDownLeft size={12} color="#4A8FD4" style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    Replying to: {(replyTo.content || '').slice(0, 60)}{(replyTo.content || '').length > 60 ? '...' : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setReplyTo(null)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: '#4A6080', padding: 0, lineHeight: 1,
+                      display: 'flex', alignItems: 'center',
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 0 : 10 }}>
               {/* Powerup menu: desktop shows full trigger button. Mobile hides trigger (dual-purpose send/powerup button in input). */}
               <PowerupMenu
@@ -7292,7 +7401,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               />
               <form onSubmit={(e) => {
                 isUserTypingRef.current = false
-                onSendMessage(e)
+                onSendMessage(e, replyTo?.id)
+                setReplyTo(null)
               }} style={{ position: 'relative', flex: 1 }}>
                 {/* @ autocomplete dropdown (floats above input) */}
                 {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
@@ -8234,6 +8344,17 @@ export default function GameDashboard() {
   // Task right-click context menu state (separate from room/agent context menu)
   const [taskContextMenu, setTaskContextMenu] = useState(null) // { position: {x,y}, task }
 
+  // Message context menu state
+  const [msgContextMenu, setMsgContextMenu] = useState(null) // { position: {x,y}, msg }
+
+  // Handle message right-click / long-press
+  const handleMessageContextMenu = useCallback((e, msg) => {
+    e.preventDefault?.()
+    const x = e._msgLongPress ? window.innerWidth / 2 - 110 : e.clientX
+    const y = e._msgLongPress ? window.innerHeight / 2 - 60 : e.clientY
+    setMsgContextMenu({ position: { x, y }, msg })
+  }, [])
+
   // Checkbox state for task context menu actions (toggle done)
   const [sidebarCheckedTasks, setSidebarCheckedTasks] = useState(() => {
     try {
@@ -8662,7 +8783,7 @@ export default function GameDashboard() {
   }
 
   // ---- SHARED SEND MESSAGE HANDLER (used by both desktop sidebar and mobile drawer) ----
-  const handlePanelSendMessage = useCallback(async (e) => {
+  const handlePanelSendMessage = useCallback(async (e, replyToId) => {
     e?.preventDefault()
     setAtMenuOpen(false)
     setAtMenuFilter('')
@@ -8702,6 +8823,7 @@ export default function GameDashboard() {
       const msgs = [...(current._all || []), {
         role: 'user', content: text, time: sentTime,
         source: 'via dashboard', id: localId,
+        ...(replyToId ? { reply_to: replyToId } : {}),
       }, {
         role: 'assistant', content: '', streaming: true,
         time: sentTime, id: `thinking-${localId}`,
@@ -8715,7 +8837,7 @@ export default function GameDashboard() {
     }
     // Send message via relay (local Vite middleware or Vercel serverless)
     if (IS_LOCAL) {
-      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard' }
+      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard', ...(replyToId ? { reply_to: replyToId } : {}) }
       if (atPrefixMatch) {
         const matchedOpt = atOptions.find(opt =>
           opt.slug === atPrefixMatch[1].toLowerCase() ||
@@ -8738,7 +8860,7 @@ export default function GameDashboard() {
         const res = await fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard' }),
+          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', ...(replyToId ? { reply_to: replyToId } : {}) }),
         })
         if (!res.ok) throw new Error(`Send failed: ${res.status}`)
         // Response arrives via poll (3s interval)
@@ -8832,6 +8954,41 @@ export default function GameDashboard() {
         break
     }
   }, [handleModeSwitch])
+
+  // Message context menu action handler
+  const handleMsgContextAction = useCallback((actionId, data) => {
+    const msg = data
+    switch (actionId) {
+      case 'copy':
+        if (msg?.content) {
+          try { navigator.clipboard.writeText(msg.content) } catch {}
+        }
+        break
+      case 'create-task': {
+        if (!msg?.content) break
+        const taskText = msg.content.slice(0, 120)
+        try {
+          const saved = JSON.parse(localStorage.getItem('corner-manual-tasks') || '[]')
+          saved.push({ text: taskText, agent: selectedRoom, done: false, id: `msg-task-${Date.now()}` })
+          localStorage.setItem('corner-manual-tasks', JSON.stringify(saved))
+        } catch {}
+        break
+      }
+      case 'reply':
+        // This triggers the reply banner -- handled by the panel's replyTo state via setReplyTo
+        // We pass the message to a shared state here but replyTo lives inside UnifiedPanel.
+        // For now just signal via a custom event that the panel can listen to.
+        break
+      case 'resend':
+        if (msg?.content && msg?.role === 'user') {
+          setPanelChatInput(msg.content)
+          setPanelActiveTab('chat')
+        }
+        break
+      default:
+        break
+    }
+  }, [selectedRoom])
 
   // Mini-map room click -> move camera
   const handleMinimapRoomClick = (roomId) => {
@@ -9088,6 +9245,7 @@ export default function GameDashboard() {
               onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }}
               onSelectProject={setSelectedProject}
               selectedProject={selectedProject}
+              onMessageContextMenu={handleMessageContextMenu}
             />
           )}
       </div>
@@ -9249,6 +9407,7 @@ export default function GameDashboard() {
           powerupOpen={powerupOpen}
           onPowerupToggle={setPowerupOpen}
           onPowerupActivate={handlePowerupActivate}
+          onMessageContextMenu={handleMessageContextMenu}
         />
       )}
 
@@ -9330,6 +9489,20 @@ export default function GameDashboard() {
             onAction={handleSidebarContextAction}
             isNightMode={isNightMode}
             projects={pipeData?.punchData?.projects || []}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Right-click context menu (chat messages) */}
+      <AnimatePresence>
+        {msgContextMenu && (
+          <ContextMenu
+            key={`msg-ctx-${msgContextMenu.position.x}-${msgContextMenu.position.y}`}
+            type="message"
+            data={msgContextMenu.msg}
+            position={msgContextMenu.position}
+            onClose={() => setMsgContextMenu(null)}
+            onAction={(actionId, data) => { handleMsgContextAction(actionId, data); setMsgContextMenu(null) }}
           />
         )}
       </AnimatePresence>
@@ -9613,6 +9786,10 @@ export default function GameDashboard() {
           -webkit-touch-callout: default !important;
           -webkit-user-select: text !important;
           user-select: text !important;
+        }
+        /* Message bubble hover: show reply button */
+        .msg-bubble:hover .msg-reply-btn {
+          display: flex !important;
         }
       `}</style>
     </div>
