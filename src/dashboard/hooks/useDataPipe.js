@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { getClientId } from '../lib/clientConfig'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -372,7 +373,8 @@ export function useDataPipe(parsePunchList) {
     } else {
       // PRODUCTION: read from Supabase via API
       try {
-        const res = await fetch('/api/dashboard/supabase-status')
+        const clientId = getClientId()
+        const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
         if (!res.ok) return
         const data = await res.json()
 
