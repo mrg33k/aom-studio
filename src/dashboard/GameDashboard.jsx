@@ -4556,6 +4556,27 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     setActiveFilter('all')
   }, [TASKS_KEY])
 
+  // Load persisted tasks from Supabase on mount (production only)
+  useEffect(() => {
+    if (IS_LOCAL) return
+    fetch(`/api/dashboard/supabase-status`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.tasks) return
+        const agentTasks = data.tasks
+          .filter(t => t.agent === agentSlug && t.status !== 'done')
+          .map(t => ({ id: t.id, text: t.text, done: t.status === 'completed', agent: t.agent }))
+        if (agentTasks.length > 0) {
+          setTasks(prev => {
+            const existingIds = new Set(prev.map(t => String(t.id)))
+            const newTasks = agentTasks.filter(t => !existingIds.has(String(t.id)))
+            return [...prev, ...newTasks]
+          })
+        }
+      })
+      .catch(() => {})
+  }, [agentSlug])
+
   // Close context menu on outside click
   useEffect(() => {
     if (!taskCtx) return
@@ -8487,7 +8508,7 @@ export default function GameDashboard() {
         fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(agent)}&status=active&current_task=${encodeURIComponent('Responding to message...')}`, { method: 'PATCH' }).catch(() => {})
         // Auto-idle after 60s if no real task update changes the status first
         setTimeout(() => {
-          fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(agent)}&status=idle`, { method: 'PATCH' }).catch(() => {})
+          fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(agent)}&status=stuck`, { method: 'PATCH' }).catch(() => {})
         }, 60000)
       } catch (err) {
         setAgentChats(prev => {
