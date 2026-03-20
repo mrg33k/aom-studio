@@ -796,8 +796,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   // When Supabase Realtime is active (production), skip this poll entirely.
   // Picks up ALL messages from all sources (terminal, telegram, dashboard, auto-responder).
   useEffect(() => {
-    // Production + Supabase: Realtime subscription handles incoming messages, no polling needed
-    if (!IS_LOCAL && supabase) return
+    // NOTE: Supabase Realtime is broken on Safari/iOS with sb_publishable_ keys.
+    // Always poll via Vercel proxy regardless. Poll is the reliable path.
 
     const pollInterval = IS_LOCAL ? 2500 : 5000
 
