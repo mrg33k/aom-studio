@@ -6741,31 +6741,24 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     {/* Message content */}
                     <div style={{ maxWidth: '80%' }}>
                       <div style={{
-                        padding: '12px 16px',
-                        borderRadius: 14,
-                        fontSize: 16, fontWeight: 500, lineHeight: 1.45,
+                        padding: isUser ? '10px 14px' : '8px 12px',
+                        borderRadius: 8,
+                        fontSize: 14, fontWeight: 500, lineHeight: 1.45,
                         fontFamily: "'Inter', system-ui, sans-serif",
                         ...(isUser
                           ? {
                               background: isNightMode
                                 ? 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)'
                                 : 'linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0.10) 100%)',
-                              border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '2px solid rgba(59,130,246,0.25)',
+                              border: '1px solid rgba(59,130,246,0.25)',
                               color: '#F1F5F9',
                               borderTopRightRadius: 4,
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.2), 0 1px 2px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.04)',
                             }
                           : {
-                              background: isNightMode
-                                ? `linear-gradient(180deg, ${agentColor}14 0%, ${agentColor}08 100%)`
-                                : `linear-gradient(180deg, ${agentColor}18 0%, ${agentColor}0A 100%)`,
-                              border: isNightMode
-                                ? `2px solid ${msg.streaming ? agentColor + '35' : agentColor + '22'}`
-                                : `2px solid ${msg.streaming ? agentColor + '30' : agentColor + '20'}`,
+                              background: '#0F1B2D',
+                              border: `1px solid ${msg.streaming ? agentColor + '40' : 'rgba(255,255,255,0.08)'}`,
                               color: '#F1F5F9',
                               borderTopLeftRadius: 4,
-                              borderLeft: `3px solid ${agentColor}`,
-                              boxShadow: `0 2px 8px rgba(0,0,0,0.2), 0 1px 2px ${agentColor}10, inset 0 1px 0 rgba(255,255,255,0.04)`,
                             }
                         ),
                       }}>
@@ -8350,8 +8343,9 @@ export default function GameDashboard() {
           return { ...prev, [agent]: { _all: updated } }
         })
       }
-
-      setPanelStreaming(false)
+      // Note: setPanelStreaming(false) intentionally removed here.
+      // Polling clears streaming state when a real assistant response arrives (lines 8004, 8045).
+      // Clearing immediately after POST would kill the thinking indicator within milliseconds.
     }
   }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap])
 
