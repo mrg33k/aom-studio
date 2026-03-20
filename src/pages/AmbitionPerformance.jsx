@@ -1,149 +1,126 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
-import { ChevronDown, Camera, Film, Globe, Instagram, Linkedin, MapPin, Calendar, Clock, DollarSign, TrendingUp, Video, Image, Mic, FileText, ArrowRight, Star, Flame, Zap, Play, Hash, Users, BarChart3, Layers, Eye, Monitor } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react'
+import { motion } from 'framer-motion'
+import {
+  ChevronDown, Camera, Video, Globe, Phone, Mail,
+  CheckCircle2, ArrowRight, Calendar, Image,
+  Users, Clock, DollarSign, TrendingUp, MapPin,
+  Play, Flame, Layers, FileText, Star, Zap,
+  BarChart3, Target, Shield, Megaphone
+} from 'lucide-react'
 
-/* ================================================================== */
-/*  GOOGLE FONTS -- Barlow Condensed + Inter                           */
-/* ================================================================== */
-const fontLink = document.createElement('link');
-fontLink.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap';
-fontLink.rel = 'stylesheet';
-if (!document.querySelector('link[href*="Barlow+Condensed"]')) {
-  document.head.appendChild(fontLink);
+// ─── BRAND CONSTANTS (Q Proposal tokens) ────────────────────────────────────
+const ORANGE = '#E85D26'
+const BG = '#0A0A0A'
+const CARD_BG = '#151515'
+const WARM_BG = '#1A1A17'
+const CREAM = '#FDF6EC'
+const TEXT = '#F0ECE6'
+const MUTED = '#8A847C'
+const BORDER = 'rgba(255,255,255,0.08)'
+
+// ─── GOOGLE FONTS ────────────────────────────────────────────────────────────
+const fontLink = document.createElement('link')
+fontLink.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
+fontLink.rel = 'stylesheet'
+if (!document.querySelector('link[href*="Syne"]')) {
+  document.head.appendChild(fontLink)
 }
 
-/* ================================================================== */
-/*  AMBITION BRAND DESIGN TOKENS                                       */
-/* ================================================================== */
-const C = {
-  navy950: '#070b1e',
-  navy900: '#0a0e2a',
-  navy800: '#111638',
-  navy700: '#1a1f45',
-  navy600: '#1a237e',
-  navy500: '#283593',
-  navy400: '#3949ab',
-  navy300: '#5c6bc0',
-  red700: '#991b1b',
-  red600: '#b91c1c',
-  red500: '#dc2626',
-  red400: '#ef4444',
-  red300: '#f87171',
-  flame500: '#ea580c',
-  flame400: '#f97316',
-  white: '#ffffff',
-  offWhite: '#f8fafc',
-  gray100: '#f3f4f6',
-  gray200: '#e5e7eb',
-  gray300: '#d1d5db',
-  gray400: '#9ca3af',
-  gray500: '#6b7280',
-  gray600: '#4b5563',
-  navyBorder: 'rgba(57,73,171,0.25)',
-  navyBorderLight: 'rgba(57,73,171,0.12)',
-};
+// ─── FONT CLASSES (injected as style tag) ────────────────────────────────────
+const styleTag = document.createElement('style')
+styleTag.textContent = `
+  .font-headline { font-family: 'Syne', sans-serif; }
+  .font-body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+`
+if (!document.querySelector('style[data-ambition-fonts]')) {
+  styleTag.setAttribute('data-ambition-fonts', 'true')
+  document.head.appendChild(styleTag)
+}
 
-const F = {
-  display: "'Barlow Condensed', sans-serif",
-  body: "'Inter', system-ui, sans-serif",
-};
-
-/* ── SEO ────────────────────────────────────────────────────────── */
+// ─── SEO ─────────────────────────────────────────────────────────────────────
 function useSEO() {
   useEffect(() => {
-    document.title = 'Ambition Mechanical Services | Performance Report';
+    document.title = 'Ambition Mechanical | Performance Report + Growth Plan'
     const setMeta = (name, content, property = false) => {
-      const attr = property ? 'property' : 'name';
-      let el = document.querySelector(`meta[${attr}="${name}"]`);
-      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
-      el.setAttribute('content', content);
-    };
-    setMeta('description', 'Ambition Mechanical Services x AOM: 11-month performance report. 37 shoots. 3,138 video files. 3 TB of footage. $78k+ in delivered value.');
-    setMeta('og:title', 'Ambition Mechanical Services | Performance Report', true);
-    setMeta('og:description', '37 shoots. 3,138 video files. 713 photos. 3 TB of footage. 1 custom website. 11 months of creative production.', true);
-    setMeta('og:type', 'article', true);
-  }, []);
+      const attr = property ? 'property' : 'name'
+      let el = document.querySelector(`meta[${attr}="${name}"]`)
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el) }
+      el.setAttribute('content', content)
+    }
+    setMeta('description', 'Ambition Mechanical x AOM: 11-month performance report + service call growth plan. 37 shoots. 3,138 video files. 3 TB of footage. $78k+ in delivered value.')
+    setMeta('og:title', 'Ambition Mechanical | Performance Report + Growth Plan', true)
+    setMeta('og:description', '37 shoots. 3,138 video files. 713 photos. 3 TB of footage. 1 custom website. Plus: the plan to get the phone ringing.', true)
+    setMeta('og:type', 'article', true)
+  }, [])
 }
 
-/* ── Noise overlay ─────────────────────────────────────────────── */
-function NoiseOverlay({ opacity = 0.03 }) {
-  return (
-    <div
-      className="absolute inset-0 pointer-events-none z-[1]"
-      style={{
-        opacity,
-        mixBlendMode: 'overlay',
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-        backgroundRepeat: 'repeat',
-        backgroundSize: '256px 256px',
-      }}
-    />
-  );
+// ─── INTERSECTION OBSERVER HOOK ─────────────────────────────────────────────
+function useIntersect(options = {}) {
+  const ref = useRef(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { threshold: 0.15, ...options }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  return [ref, visible]
 }
 
-/* ── Scroll reveal wrapper ─────────────────────────────────────── */
-function Reveal({ children, delay = 0, className = '' }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-60px' });
-  const prefersReduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
+// ─── FADE-IN WRAPPER ────────────────────────────────────────────────────────
+function FadeIn({ children, delay = 0, y = 20, className = '' }) {
+  const [ref, visible] = useIntersect()
   return (
     <motion.div
       ref={ref}
-      initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 30 }}
-      animate={isInView ? { opacity: 1, y: 0 } : undefined}
-      transition={{ duration: prefersReduced ? 0 : 0.7, delay: prefersReduced ? 0 : delay, ease: 'easeOut' }}
+      initial={{ opacity: 0, y }}
+      animate={visible ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay, ease: 'easeOut' }}
       className={className}
     >
       {children}
     </motion.div>
-  );
+  )
 }
 
-/* ── Count-up hook ─────────────────────────────────────────────── */
+// ─── COUNT-UP HOOK ──────────────────────────────────────────────────────────
 function useCountUp(end, duration = 1400, inView = false) {
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(0)
   useEffect(() => {
-    if (!inView) return;
-    const startTime = performance.now();
+    if (!inView) return
+    const startTime = performance.now()
     const step = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * end));
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [end, duration, inView]);
-  return value;
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setValue(Math.round(eased * end))
+      if (progress < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [end, duration, inView])
+  return value
 }
 
-/* ── Section Label ─────────────────────────────────────────────── */
-function SectionLabel({ label, centered = false }) {
+// ─── FILM GRAIN ─────────────────────────────────────────────────────────────
+function FilmGrain() {
   return (
-    <div className={centered ? 'text-center' : ''} style={{ marginBottom: 24 }}>
-      <p style={{
-        fontFamily: F.display,
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: '0.25em',
-        textTransform: 'uppercase',
-        color: C.red500,
-        marginBottom: 12,
-      }}>{label}</p>
-      <div style={{
-        width: 48,
-        height: 2,
-        background: C.red500,
-        margin: centered ? '0 auto' : 0,
-      }} />
-    </div>
-  );
+    <svg className="absolute inset-0 w-full h-full pointer-events-none z-[5]" style={{ opacity: 0.03, mixBlendMode: 'overlay' }}>
+      <filter id="grain">
+        <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#grain)" />
+    </svg>
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   DATA
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════════════════════════════
 
 const heroStats = [
   { number: 37, suffix: '', label: 'Professional Video Shoots', context: 'May 2025 through March 2026' },
@@ -152,7 +129,7 @@ const heroStats = [
   { number: 23, suffix: '', label: 'Finished Video Exports', context: 'Edited, color-graded, delivered' },
   { number: 22, suffix: '+', label: 'Job Sites Documented', context: 'Premium client locations' },
   { number: 1, suffix: '', label: 'Custom Website', context: 'Built and launched March 2026' },
-];
+]
 
 const shoots = [
   { month: 'May 2025', name: 'Fashion Square, Scottsdale', details: 'Retail HVAC, drone + handheld', type: 'Commercial' },
@@ -192,12 +169,12 @@ const shoots = [
   { month: 'Feb 2026', name: 'Memorial Tower Insulation', details: '87 cinema clips, 157 photos', type: 'Healthcare' },
   { month: 'Feb 2026', name: 'Roka Akor', details: 'Premium restaurant shoot', type: 'Restaurant' },
   { month: 'Mar 2026', name: 'Crown / Memorial Tower', details: 'Most recent production', type: 'Healthcare' },
-];
+]
 
 const highProfileClients = [
   'Apple Store', 'Ritz Carlton', 'Tiffany\'s', 'INEOS Grenadier', 'Roka Akor',
   'Din Tai Fung', 'Abrazo Healthcare', 'Banner Health', 'Louis Vuitton', 'Loro Piano', 'Memorial Tower',
-];
+]
 
 const equipment = [
   { name: 'DJI Air 3 / Air 3S', type: 'Drone', detail: '25+ aerial sessions' },
@@ -206,7 +183,7 @@ const equipment = [
   { name: 'DJI OSMO Action 3', type: 'Action Cam', detail: 'Dynamic POV coverage' },
   { name: 'BlackMagic Camera App', type: 'Mobile Cinema', detail: 'Professional mobile capture' },
   { name: 'DJI Mic', type: 'Professional Audio', detail: 'Crystal-clear interviews' },
-];
+]
 
 const contentArsenal = [
   { number: 48, label: 'Branded Video Templates', desc: 'Custom motion graphics system' },
@@ -215,7 +192,7 @@ const contentArsenal = [
   { number: 14, label: 'Voiceover Recordings', desc: 'Professional narration' },
   { number: 30, label: 'Day Content Calendar', desc: 'With 28 planned pieces' },
   { number: 6, label: 'Content Pillars Defined', desc: 'Strategic framework' },
-];
+]
 
 const valueComparison = [
   { item: '37 Professional Shoots', rate: '$800 avg per shoot', value: '$29,600' },
@@ -223,7 +200,7 @@ const valueComparison = [
   { item: 'Custom Website', rate: 'Design + Dev + CMS', value: '$6,000' },
   { item: 'Brand & Content Strategy', rate: 'Guidelines + Pillars + Calendar', value: '$5,000' },
   { item: 'Social Media Management', rate: '11 months of posting', value: '$11,000' },
-];
+]
 
 const hoursBreakdown = [
   { activity: 'On-Site Production', calc: '37 shoots x 4hrs avg', hours: 148 },
@@ -232,7 +209,7 @@ const hoursBreakdown = [
   { activity: 'Website Design & Dev', calc: 'React + Firebase + Tailwind', hours: 80 },
   { activity: 'Content Strategy', calc: 'Planning + guidelines', hours: 40 },
   { activity: 'Social Media Management', calc: 'Posting + scheduling', hours: 40 },
-];
+]
 
 const brandedVideos = [
   { title: 'Rooftop Unit Signs', category: 'Education' },
@@ -253,7 +230,7 @@ const brandedVideos = [
   { title: 'Day on Roof', category: 'The Work' },
   { title: 'The Shop', category: 'Team' },
   { title: 'Year in Review', category: 'Brand' },
-];
+]
 
 const memorialTowerEdits = [
   { title: 'Memorial Tower v1', category: 'Project Showcase' },
@@ -261,7 +238,7 @@ const memorialTowerEdits = [
   { title: 'Memorial Tower v3', category: 'Project Showcase' },
   { title: 'Memorial Tower v4', category: 'Project Showcase' },
   { title: 'AE-13 The Drop', category: 'Social Edit' },
-];
+]
 
 const contentPillars = [
   { name: 'The Work', desc: 'Jobs completed, equipment installed, rooftop units, pipe runs', icon: Flame },
@@ -270,1077 +247,674 @@ const contentPillars = [
   { name: 'Team / Trust', desc: 'Crew introductions, behind-the-scenes, company culture', icon: Users },
   { name: 'Local / Phoenix', desc: 'Desert context, Phoenix market, community presence', icon: MapPin },
   { name: 'Social Proof', desc: 'Reviews, testimonials, industry events, client wins', icon: Star },
-];
+]
 
 const typeColors = {
-  Commercial: C.red500,
-  Restaurant: C.flame400,
-  Team: C.navy300,
-  Retail: C.red400,
-  Healthcare: C.navy300,
-  Brand: C.red500,
-  Industrial: C.gray400,
-  Luxury: C.flame400,
-};
+  Commercial: ORANGE,
+  Restaurant: '#F59E0B',
+  Team: '#60A5FA',
+  Retail: '#F87171',
+  Healthcare: '#60A5FA',
+  Brand: ORANGE,
+  Industrial: MUTED,
+  Luxury: '#F59E0B',
+}
 
 const videoCategoryColors = {
-  'Education': C.navy300,
-  'The Work': C.red500,
-  'Local': C.flame400,
-  'Social Proof': C.gray400,
-  'Team': C.navy400,
-  'Brand': C.red400,
-  'Project Showcase': C.navy300,
-  'Social Edit': C.flame500,
-};
-
-/* ════════════════════════════════════════════════════════════════
-   NAV (Ambition Standalone)
-   ════════════════════════════════════════════════════════════════ */
-function AmbitionNav() {
-  return (
-    <nav style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 100,
-      background: 'rgba(7,11,30,0.92)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: `1px solid ${C.navyBorder}`,
-    }}>
-      <div style={{
-        maxWidth: 1200,
-        margin: '0 auto',
-        padding: '16px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{
-            fontFamily: F.display,
-            fontSize: 22,
-            fontWeight: 800,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            color: C.white,
-          }}>AMBITION</span>
-          <span style={{
-            fontFamily: F.display,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-            color: C.gray500,
-          }}>MECHANICAL SERVICES</span>
-        </div>
-        <span style={{
-          fontFamily: F.display,
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          color: C.red500,
-          border: `1px solid ${C.red500}`,
-          borderRadius: 100,
-          padding: '6px 16px',
-        }}>PERFORMANCE REPORT</span>
-      </div>
-    </nav>
-  );
+  'Education': '#60A5FA',
+  'The Work': ORANGE,
+  'Local': '#F59E0B',
+  'Social Proof': MUTED,
+  'Team': '#60A5FA',
+  'Brand': ORANGE,
+  'Project Showcase': '#60A5FA',
+  'Social Edit': '#F59E0B',
 }
 
-/* ════════════════════════════════════════════════════════════════
-   HERO
-   ════════════════════════════════════════════════════════════════ */
-function HeroSection() {
-  const scrollToNext = () => {
-    const el = document.getElementById('section-stats');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
+// ═══════════════════════════════════════════════════════════════════════════════
+//  1. NAV
+// ═══════════════════════════════════════════════════════════════════════════════
+function NavBar() {
   return (
-    <section style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-      background: C.navy950,
-    }}>
-      <NoiseOverlay />
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        background: `radial-gradient(ellipse 60% 40% at 50% 20%, rgba(220,38,38,0.08), transparent)`,
-      }} />
-
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 900, margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
-        <Reveal>
-          <p style={{
-            fontFamily: F.display,
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: '0.3em',
-            textTransform: 'uppercase',
-            color: C.gray500,
-            marginBottom: 16,
-          }}>CLIENT PERFORMANCE REPORT</p>
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <div style={{ width: 48, height: 2, background: C.red500, margin: '0 auto 28px' }} />
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p style={{
-            fontFamily: F.display,
-            fontSize: 14,
-            fontWeight: 600,
-            letterSpacing: '0.15em',
-            color: C.red500,
-            marginBottom: 24,
-          }}>APRIL 2025 &mdash; MARCH 2026</p>
-        </Reveal>
-
-        <Reveal delay={0.2}>
-          <h1 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(48px, 8vw, 96px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 0.95,
-            letterSpacing: '-0.02em',
-            margin: 0,
-          }}>
-            AMBITION<br />MECHANICAL<br />SERVICES
-          </h1>
-        </Reveal>
-
-        <Reveal delay={0.35}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            marginTop: 32,
-            maxWidth: 640,
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            lineHeight: 1.7,
-          }}>
-            11 months of creative production partnership. 37 shoots. 3,138 video files. 3 TB of footage. 713 photos. 1 custom website. Here's everything we've built together.
-          </p>
-        </Reveal>
-
-        <Reveal delay={0.45}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 24 }}>
-            <span style={{ fontFamily: F.display, fontSize: 11, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.gray500 }}>Produced by</span>
-            <span style={{ fontFamily: F.display, fontSize: 14, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.red500 }}>AOM</span>
-            <span style={{ color: C.gray500, fontSize: 11 }}>|</span>
-            <span style={{ fontFamily: F.display, fontSize: 11, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.gray500 }}>Phoenix, AZ</span>
-          </div>
-        </Reveal>
-      </div>
-
-      <button
-        onClick={scrollToNext}
-        style={{
-          position: 'absolute',
-          bottom: 32,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 8,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          opacity: 0.5,
-          zIndex: 10,
-        }}
-      >
-        <span style={{ fontFamily: F.display, fontSize: 10, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.gray500 }}>
-          SEE THE RESULTS
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-16 px-6 md:px-12"
+      style={{ background: 'rgba(10,10,10,0.85)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${BORDER}` }}>
+      <div className="flex items-center gap-3">
+        <span className="font-headline font-extrabold text-xl tracking-tight uppercase" style={{ color: CREAM }}>
+          Ambition Mechanical
         </span>
-        <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}>
-          <ChevronDown size={16} color={C.gray500} />
-        </motion.div>
-      </button>
-    </section>
-  );
+      </div>
+      <span className="font-mono text-xs font-bold uppercase tracking-[0.2em] px-3 py-1.5"
+        style={{ color: ORANGE, border: `1px solid ${ORANGE}`, borderRadius: 100 }}>
+        Performance Report
+      </span>
+    </nav>
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   BY THE NUMBERS
-   ════════════════════════════════════════════════════════════════ */
-function StatCard({ number, suffix = '', prefix = '', label, context, index }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-  const countValue = useCountUp(number, 1400, isInView);
+// ═══════════════════════════════════════════════════════════════════════════════
+//  2. HERO
+// ═══════════════════════════════════════════════════════════════════════════════
+function HeroSection() {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      style={{ background: 'linear-gradient(180deg, #0A0A0A 0%, #151510 50%, #0A0A0A 100%)' }}>
+      <FilmGrain />
+
+      {/* Dot pattern */}
+      <div className="absolute inset-0 z-[1] opacity-[0.03]"
+        style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+
+      <div className="relative z-10 text-center px-6 max-w-[900px] mx-auto">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <span className="inline-block font-mono text-sm font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ORANGE }}>
+            Client Performance Report
+          </span>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+          <span className="font-mono text-xs font-bold uppercase tracking-[0.15em]" style={{ color: MUTED }}>
+            April 2025 - March 2026
+          </span>
+        </motion.div>
+
+        <motion.h1
+          className="font-headline font-extrabold uppercase leading-[0.92] tracking-tight mt-6 mb-6"
+          style={{ color: CREAM, fontSize: 'clamp(40px, 8vw, 84px)', letterSpacing: '-0.03em' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          Ambition<br />Mechanical<br />Services
+        </motion.h1>
+
+        <motion.p
+          className="font-body text-lg md:text-xl max-w-[640px] mx-auto mb-4"
+          style={{ color: MUTED, lineHeight: 1.6 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          11 months of creative production partnership. 37 shoots. 3,138 video files. 3 TB of footage. 713 photos. 1 custom website. Here is everything we have built together.
+        </motion.p>
+
+        <motion.div
+          className="flex items-center justify-center gap-3 mt-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.45 }}
+        >
+          <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]" style={{ color: MUTED }}>Produced by</span>
+          <span className="font-headline font-extrabold text-sm uppercase tracking-wide" style={{ color: ORANGE }}>AOM</span>
+          <span style={{ color: MUTED, fontSize: 11 }}>|</span>
+          <span className="font-mono text-xs font-bold uppercase tracking-[0.2em]" style={{ color: MUTED }}>Phoenix, AZ</span>
+        </motion.div>
+      </div>
+
+      <motion.div
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 cursor-pointer"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8, duration: 0.4 }}
+        onClick={() => document.getElementById('section-stats')?.scrollIntoView({ behavior: 'smooth' })}
+      >
+        <span className="font-body text-xs uppercase tracking-[0.08em]" style={{ color: MUTED }}>See the results</span>
+        <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}>
+          <ChevronDown size={24} style={{ color: MUTED }} />
+        </motion.div>
+      </motion.div>
+    </section>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  3. BY THE NUMBERS
+// ═══════════════════════════════════════════════════════════════════════════════
+function StatCard({ number, suffix = '', label, context, index }) {
+  const [ref, visible] = useIntersect()
+  const countValue = useCountUp(number, 1400, visible)
 
   return (
-    <Reveal delay={index * 0.1}>
-      <div ref={ref} style={{
-        textAlign: 'center',
-        padding: 32,
-        background: C.navy800,
-        border: `1px solid ${C.navyBorder}`,
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'border-color 0.4s',
-      }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.red500 }} />
-        <div style={{
-          fontFamily: F.display,
-          fontSize: 'clamp(48px, 5vw, 72px)',
-          fontWeight: 900,
-          lineHeight: 1,
-          color: C.white,
-          fontVariantNumeric: 'tabular-nums',
-        }}>
-          {prefix}{isInView ? countValue : 0}{suffix}
+    <FadeIn delay={index * 0.1}>
+      <div ref={ref} className="text-center p-8 relative overflow-hidden transition-all duration-200"
+        style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}44` }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
+      >
+        <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: ORANGE }} />
+        <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(36px, 5vw, 64px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          {visible ? countValue.toLocaleString() : 0}{suffix}
         </div>
-        <p style={{
-          fontFamily: F.display,
-          fontSize: 14,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: C.red500,
-          marginTop: 16,
-        }}>{label}</p>
+        <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mt-4" style={{ color: ORANGE }}>
+          {label}
+        </p>
         {context && (
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 15,
-            color: C.gray400,
-            marginTop: 8,
-            lineHeight: 1.5,
-          }}>{context}</p>
+          <p className="font-body text-base mt-2" style={{ color: MUTED, lineHeight: 1.5 }}>
+            {context}
+          </p>
         )}
       </div>
-    </Reveal>
-  );
+    </FadeIn>
+  )
 }
 
 function StatsSection() {
   return (
-    <section id="section-stats" style={{ position: 'relative', background: C.navy950, padding: '80px 0 96px' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="BY THE NUMBERS" />
-        </Reveal>
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            letterSpacing: '-0.01em',
-            marginBottom: 48,
-          }}>11 MONTHS OF OUTPUT.</h2>
-        </Reveal>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+    <section id="section-stats" className="relative py-24 md:py-32" style={{ background: BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            By the Numbers
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-12"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            11 Months of Output.
+          </h2>
+        </FadeIn>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {heroStats.map((stat, i) => (
             <StatCard key={stat.label} {...stat} index={i} />
           ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SOCIAL MEDIA PERFORMANCE
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  4. SOCIAL MEDIA PERFORMANCE
+// ═══════════════════════════════════════════════════════════════════════════════
 function SocialSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-  const postCount = useCountUp(57, 1400, isInView);
-  const followerCount = useCountUp(1537, 1400, isInView);
-  const followingCount = useCountUp(1229, 1400, isInView);
-
-  const cardStyle = {
-    background: C.navy800,
-    border: `1px solid ${C.navyBorder}`,
-    padding: 32,
-    position: 'relative',
-    overflow: 'hidden',
-  };
+  const [ref, visible] = useIntersect()
+  const postCount = useCountUp(57, 1400, visible)
+  const followerCount = useCountUp(1537, 1400, visible)
+  const followingCount = useCountUp(1229, 1400, visible)
 
   return (
-    <section ref={ref} style={{ position: 'relative', background: C.navy900, padding: '96px 0', overflow: 'hidden' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="SOCIAL MEDIA PERFORMANCE" />
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 16,
-          }}>BUILDING THE BRAND ONLINE.</h2>
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 700,
-            marginBottom: 48,
-          }}>
+    <section ref={ref} className="relative py-24 md:py-32 overflow-hidden" style={{ background: CARD_BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Social Media Performance
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            Building the Brand Online.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
             Organic growth across three platforms. Every post hand-crafted. No bots, no paid followers, no shortcuts. Real content. Real engagement.
           </p>
-        </Reveal>
+        </FadeIn>
 
-        {/* Three Platform Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
-
-          {/* Instagram -- The big one */}
-          <Reveal delay={0.2}>
-            <div style={{ ...cardStyle }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.red500 }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <Instagram size={22} color={C.red500} />
-                <span style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, textTransform: 'uppercase', color: C.white }}>Instagram</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Instagram */}
+          <FadeIn delay={0.2}>
+            <div className="p-8 relative overflow-hidden h-full" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: ORANGE }} />
+              <div className="flex items-center gap-3 mb-2">
+                <Globe size={22} style={{ color: ORANGE }} />
+                <span className="font-headline font-extrabold text-lg uppercase" style={{ color: CREAM }}>Instagram</span>
               </div>
-              <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray400, marginBottom: 24 }}>@ambition_air_conditioning</p>
+              <p className="font-mono text-xs mb-6" style={{ color: MUTED }}>@ambition_air_conditioning</p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+              <div className="grid grid-cols-3 gap-4 mb-6">
                 <div>
-                  <div style={{ fontFamily: F.display, fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 900, color: C.white, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                    {isInView ? postCount : 0}
+                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(28px, 4vw, 42px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                    {visible ? postCount : 0}
                   </div>
-                  <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginTop: 6 }}>POSTS</p>
+                  <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Posts</p>
                 </div>
                 <div>
-                  <div style={{ fontFamily: F.display, fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 900, color: C.white, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                    {isInView ? followerCount.toLocaleString() : 0}
+                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(28px, 4vw, 42px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                    {visible ? followerCount.toLocaleString() : 0}
                   </div>
-                  <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginTop: 6 }}>FOLLOWERS</p>
+                  <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Followers</p>
                 </div>
                 <div>
-                  <div style={{ fontFamily: F.display, fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 900, color: C.white, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-                    {isInView ? followingCount.toLocaleString() : 0}
+                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(28px, 4vw, 42px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                    {visible ? followingCount.toLocaleString() : 0}
                   </div>
-                  <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginTop: 6 }}>FOLLOWING</p>
+                  <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Following</p>
                 </div>
               </div>
 
-              <div style={{ borderTop: `1px solid ${C.navyBorder}`, paddingTop: 16 }}>
-                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.red500, marginBottom: 10 }}>CONTENT MIX</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16 }}>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: ORANGE }}>Content Mix</p>
+                <div className="flex flex-wrap gap-2">
                   {['Project Showcases', 'Before/After', 'Equipment', 'Team', 'Drone Aerials', 'Job Sites'].map(tag => (
-                    <span key={tag} style={{
-                      fontFamily: F.body,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      color: C.gray300,
-                      background: C.navy700,
-                      padding: '4px 12px',
-                      borderRadius: 4,
-                    }}>{tag}</span>
+                    <span key={tag} className="font-body text-xs font-medium px-3 py-1"
+                      style={{ color: TEXT, background: 'rgba(255,255,255,0.06)', borderRadius: 4 }}>{tag}</span>
                   ))}
                 </div>
               </div>
-
-              <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, marginTop: 16 }}>100% organic growth. Zero paid promotion.</p>
+              <p className="font-body text-sm mt-4" style={{ color: MUTED }}>100% organic growth. Zero paid promotion.</p>
             </div>
-          </Reveal>
+          </FadeIn>
 
           {/* TikTok */}
-          <Reveal delay={0.3}>
-            <div style={{ ...cardStyle }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.flame400 }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <Video size={22} color={C.flame400} />
-                <span style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, textTransform: 'uppercase', color: C.white }}>TikTok</span>
+          <FadeIn delay={0.3}>
+            <div className="p-8 relative overflow-hidden h-full" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: '#F59E0B' }} />
+              <div className="flex items-center gap-3 mb-2">
+                <Video size={22} style={{ color: '#F59E0B' }} />
+                <span className="font-headline font-extrabold text-lg uppercase" style={{ color: CREAM }}>TikTok</span>
               </div>
-              <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray400, marginBottom: 24 }}>@ambitionmech</p>
+              <p className="font-mono text-xs mb-6" style={{ color: MUTED }}>@ambitionmech</p>
 
-              <p style={{ fontFamily: F.body, fontSize: 18, color: C.gray300, lineHeight: 1.7, marginBottom: 24 }}>
+              <p className="font-body text-base mb-6" style={{ color: TEXT, lineHeight: 1.6 }}>
                 Active account with HVAC-focused content. Short-form video optimized for discoverability in the trades space.
               </p>
 
-              <div style={{ borderTop: `1px solid ${C.navyBorder}`, paddingTop: 16 }}>
-                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.flame400, marginBottom: 10 }}>CONTENT TYPES</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16 }}>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: '#F59E0B' }}>Content Types</p>
+                <div className="flex flex-wrap gap-2">
                   {['HVAC Repairs', 'Project Showcases', 'Behind-the-Scenes', 'Equipment Installs'].map(tag => (
-                    <span key={tag} style={{
-                      fontFamily: F.body,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      color: C.gray300,
-                      background: C.navy700,
-                      padding: '4px 12px',
-                      borderRadius: 4,
-                    }}>{tag}</span>
+                    <span key={tag} className="font-body text-xs font-medium px-3 py-1"
+                      style={{ color: TEXT, background: 'rgba(255,255,255,0.06)', borderRadius: 4 }}>{tag}</span>
                   ))}
                 </div>
               </div>
 
-              <div style={{ marginTop: 20, padding: '12px 16px', background: C.navy700, border: `1px solid ${C.navyBorder}`, borderRadius: 4 }}>
-                <p style={{ fontFamily: F.body, fontSize: 13, color: C.gray300, lineHeight: 1.5 }}>
+              <div className="mt-5 p-4" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, borderRadius: 4 }}>
+                <p className="font-body text-sm" style={{ color: TEXT, lineHeight: 1.5 }}>
                   Cross-posting pipeline built and ready. All Instagram content automatically formatted for TikTok distribution.
                 </p>
               </div>
             </div>
-          </Reveal>
+          </FadeIn>
 
           {/* LinkedIn */}
-          <Reveal delay={0.4}>
-            <div style={{ ...cardStyle }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.navy300 }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <Linkedin size={22} color={C.navy300} />
-                <span style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, textTransform: 'uppercase', color: C.white }}>LinkedIn</span>
+          <FadeIn delay={0.4}>
+            <div className="p-8 relative overflow-hidden h-full" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: '#60A5FA' }} />
+              <div className="flex items-center gap-3 mb-2">
+                <Users size={22} style={{ color: '#60A5FA' }} />
+                <span className="font-headline font-extrabold text-lg uppercase" style={{ color: CREAM }}>LinkedIn</span>
               </div>
-              <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray400, marginBottom: 24 }}>Ambition Mechanical Services</p>
+              <p className="font-mono text-xs mb-6" style={{ color: MUTED }}>Ambition Mechanical Services</p>
 
-              <p style={{ fontFamily: F.body, fontSize: 18, color: C.gray300, lineHeight: 1.7, marginBottom: 24 }}>
+              <p className="font-body text-base mb-6" style={{ color: TEXT, lineHeight: 1.6 }}>
                 Company page established and active. Authority post strategy positions Mo as the go-to commercial HVAC expert in Phoenix.
               </p>
 
-              <div style={{ borderTop: `1px solid ${C.navyBorder}`, paddingTop: 16 }}>
-                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.navy300, marginBottom: 10 }}>STRATEGY</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16 }}>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: '#60A5FA' }}>Strategy</p>
+                <div className="flex flex-col gap-2">
                   {[
                     { label: 'Frequency', value: '2 posts/week' },
                     { label: 'Focus', value: 'HVAC business insights' },
                     { label: 'Positioning', value: 'Phoenix market authority' },
                     { label: 'Content', value: 'Industry expertise + project wins' },
                   ].map(item => (
-                    <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontFamily: F.body, fontSize: 13, color: C.gray500 }}>{item.label}</span>
-                      <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.gray300 }}>{item.value}</span>
+                    <div key={item.label} className="flex justify-between items-center">
+                      <span className="font-body text-sm" style={{ color: MUTED }}>{item.label}</span>
+                      <span className="font-body text-sm font-semibold" style={{ color: TEXT }}>{item.value}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={{ marginTop: 20, padding: '12px 16px', background: C.navy700, border: `1px solid ${C.navyBorder}`, borderRadius: 4 }}>
-                <p style={{ fontFamily: F.body, fontSize: 13, color: C.gray300, lineHeight: 1.5 }}>
+              <div className="mt-5 p-4" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, borderRadius: 4 }}>
+                <p className="font-body text-sm" style={{ color: TEXT, lineHeight: 1.5 }}>
                   Content calendar built. Authority post drafts written and ready for publishing cycle.
                 </p>
               </div>
             </div>
-          </Reveal>
+          </FadeIn>
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   BRANDED VIDEO LIBRARY
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  5. BRANDED VIDEO LIBRARY
+// ═══════════════════════════════════════════════════════════════════════════════
 function VideoLibrarySection() {
   return (
-    <section style={{ position: 'relative', background: C.navy950, padding: '96px 0', overflow: 'hidden' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="BRANDED VIDEO LIBRARY" />
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 16,
-          }}>23 FINISHED PRODUCTIONS.</h2>
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 700,
-            marginBottom: 48,
-          }}>
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Branded Video Library
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            23 Finished Productions.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
             18 branded videos covering every aspect of Ambition Mechanical's work, plus 5 Memorial Tower social edits. Each one edited, color-graded, and ready for deployment.
           </p>
-        </Reveal>
+        </FadeIn>
 
         {/* 18 Branded Videos */}
-        <Reveal delay={0.2}>
-          <p style={{
-            fontFamily: F.display,
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-            color: C.red500,
-            marginBottom: 16,
-          }}>18 BRANDED VIDEOS</p>
-        </Reveal>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, marginBottom: 40 }}>
+        <FadeIn delay={0.2}>
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: ORANGE }}>
+            18 Branded Videos
+          </p>
+        </FadeIn>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
           {brandedVideos.map((v, i) => (
-            <Reveal key={v.title} delay={Math.min(i * 0.04, 0.5)}>
-              <div style={{
-                background: C.navy800,
-                border: `1px solid ${C.navyBorder}`,
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                transition: 'border-color 0.3s',
-              }}>
-                <Play size={16} color={videoCategoryColors[v.category] || C.red500} />
-                <div style={{ flex: 1 }}>
-                  <p style={{
-                    fontFamily: F.display,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: C.white,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.02em',
-                  }}>{v.title}</p>
-                  <p style={{
-                    fontFamily: F.body,
-                    fontSize: 11,
-                    color: videoCategoryColors[v.category] || C.gray500,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    marginTop: 2,
-                  }}>{v.category}</p>
+            <FadeIn key={v.title} delay={Math.min(i * 0.04, 0.5)}>
+              <div className="flex items-center gap-3 p-4 transition-all duration-200"
+                style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}44` }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
+              >
+                <Play size={16} style={{ color: videoCategoryColors[v.category] || ORANGE, flexShrink: 0 }} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-body font-semibold text-sm uppercase tracking-wide truncate" style={{ color: TEXT }}>{v.title}</p>
+                  <p className="font-mono text-xs uppercase tracking-[0.1em] mt-0.5"
+                    style={{ color: videoCategoryColors[v.category] || MUTED }}>{v.category}</p>
                 </div>
               </div>
-            </Reveal>
+            </FadeIn>
           ))}
         </div>
 
-        {/* Memorial Tower Edits */}
-        <Reveal delay={0.3}>
-          <p style={{
-            fontFamily: F.display,
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-            color: C.flame400,
-            marginBottom: 16,
-          }}>5 MEMORIAL TOWER SOCIAL EDITS</p>
-        </Reveal>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+        {/* Memorial Tower */}
+        <FadeIn delay={0.3}>
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: '#F59E0B' }}>
+            5 Memorial Tower Social Edits
+          </p>
+        </FadeIn>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {memorialTowerEdits.map((v, i) => (
-            <Reveal key={v.title} delay={Math.min(0.3 + i * 0.05, 0.6)}>
-              <div style={{
-                background: C.navy800,
-                border: `1px solid ${C.navyBorder}`,
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-              }}>
-                <Play size={16} color={C.flame400} />
-                <div style={{ flex: 1 }}>
-                  <p style={{
-                    fontFamily: F.display,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: C.white,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.02em',
-                  }}>{v.title}</p>
-                  <p style={{
-                    fontFamily: F.body,
-                    fontSize: 11,
-                    color: C.flame400,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    marginTop: 2,
-                  }}>{v.category}</p>
+            <FadeIn key={v.title} delay={Math.min(0.3 + i * 0.05, 0.6)}>
+              <div className="flex items-center gap-3 p-4"
+                style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+                <Play size={16} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-body font-semibold text-sm uppercase tracking-wide truncate" style={{ color: TEXT }}>{v.title}</p>
+                  <p className="font-mono text-xs uppercase tracking-[0.1em] mt-0.5" style={{ color: '#F59E0B' }}>{v.category}</p>
                 </div>
               </div>
-            </Reveal>
+            </FadeIn>
           ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   CONTENT STRATEGY (6 Pillars)
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  6. CONTENT STRATEGY (6 Pillars)
+// ═══════════════════════════════════════════════════════════════════════════════
 function ContentStrategySection() {
   return (
-    <section style={{ position: 'relative', background: C.navy900, padding: '96px 0', overflow: 'hidden' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="CONTENT STRATEGY" />
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 16,
-          }}>6 PILLARS. INFINITE CONTENT.</h2>
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 700,
-            marginBottom: 48,
-          }}>
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: WARM_BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Content Strategy
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            6 Pillars. Infinite Content.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
             Every piece of content maps to one of six strategic pillars. This framework ensures Ambition Mechanical's social presence is balanced, intentional, and always on-brand.
           </p>
-        </Reveal>
+        </FadeIn>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {contentPillars.map((pillar, i) => {
-            const Icon = pillar.icon;
+            const Icon = pillar.icon
             return (
-              <Reveal key={pillar.name} delay={i * 0.08}>
-                <div style={{
-                  background: C.navy800,
-                  border: `1px solid ${C.navyBorder}`,
-                  padding: 28,
-                  position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'border-color 0.3s',
-                }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.red500 }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                    <div style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 8,
-                      background: `${C.red500}15`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <Icon size={20} color={C.red500} />
+              <FadeIn key={pillar.name} delay={i * 0.08}>
+                <div className="p-8 relative overflow-hidden h-full transition-all duration-200"
+                  style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}44` }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: ORANGE }} />
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: `${ORANGE}15` }}>
+                      <Icon size={20} style={{ color: ORANGE }} />
                     </div>
-                    <h3 style={{
-                      fontFamily: F.display,
-                      fontSize: 20,
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      color: C.white,
-                      letterSpacing: '0.02em',
-                    }}>{pillar.name}</h3>
+                    <h3 className="font-headline font-extrabold text-lg uppercase" style={{ color: CREAM }}>{pillar.name}</h3>
                   </div>
-                  <p style={{
-                    fontFamily: F.body,
-                    fontSize: 16,
-                    color: C.gray300,
-                    lineHeight: 1.7,
-                  }}>{pillar.desc}</p>
+                  <p className="font-body text-base" style={{ color: MUTED, lineHeight: 1.6 }}>{pillar.desc}</p>
                 </div>
-              </Reveal>
-            );
+              </FadeIn>
+            )
           })}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   HIGH-PROFILE CLIENTS
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  7. HIGH-PROFILE CLIENTS
+// ═══════════════════════════════════════════════════════════════════════════════
 function ClientsSection() {
   return (
-    <section style={{ position: 'relative', background: C.navy950, padding: '96px 0', overflow: 'hidden' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
-        <Reveal>
-          <SectionLabel label="WHERE WE'VE SHOT" centered />
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 16,
-          }}>NAMES THAT SPEAK FOR THEMSELVES.</h2>
-        </Reveal>
-
-        <Reveal delay={0.2}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 700,
-            margin: '0 auto 40px',
-          }}>
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1000px] mx-auto px-6 md:px-12 text-center">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Where We Have Shot
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            Names That Speak for Themselves.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-10 max-w-[700px] mx-auto" style={{ color: MUTED, lineHeight: 1.6 }}>
             Ambition Mechanical's client roster includes some of the most recognized brands in hospitality, retail, healthcare, and luxury. AOM has documented work at all of them.
           </p>
-        </Reveal>
+        </FadeIn>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
+        <div className="flex flex-wrap justify-center gap-3">
           {highProfileClients.map((client, i) => (
-            <Reveal key={client} delay={i * 0.06}>
-              <div style={{
-                background: C.navy800,
-                border: `1px solid ${C.navyBorder}`,
-                padding: '12px 24px',
-                fontFamily: F.display,
-                fontSize: 16,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.02em',
-                color: C.white,
-                transition: 'border-color 0.3s',
-              }}>{client}</div>
-            </Reveal>
+            <FadeIn key={client} delay={i * 0.06}>
+              <div className="px-6 py-3 font-headline font-extrabold text-base uppercase tracking-wide transition-all duration-200"
+                style={{ background: CARD_BG, border: `1px solid ${BORDER}`, color: CREAM }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}44` }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
+              >
+                {client}
+              </div>
+            </FadeIn>
           ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   37 SHOOTS TIMELINE
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  8. 37 SHOOTS TIMELINE
+// ═══════════════════════════════════════════════════════════════════════════════
 function ShootsSection() {
-  const [expanded, setExpanded] = useState(false);
-  const visibleShoots = expanded ? shoots : shoots.slice(0, 12);
+  const [expanded, setExpanded] = useState(false)
+  const visibleShoots = expanded ? shoots : shoots.slice(0, 12)
 
   return (
-    <section style={{ position: 'relative', background: C.navy900, padding: '96px 0' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="PRODUCTION LOG" />
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 16,
-          }}>37 SHOOTS. 11 MONTHS. ZERO MISSED.</h2>
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 700,
-            marginBottom: 48,
-          }}>
+    <section className="relative py-24 md:py-32" style={{ background: CARD_BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Production Log
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            37 Shoots. 11 Months. Zero Missed.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
             Every shoot logged, organized, and delivered. From the first day at Fashion Square to the latest Memorial Tower session.
           </p>
-        </Reveal>
+        </FadeIn>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {visibleShoots.map((shoot, i) => (
-            <Reveal key={`${shoot.name}-${i}`} delay={Math.min(i * 0.04, 0.5)}>
-              <div style={{
-                background: C.navy800,
-                border: `1px solid ${C.navyBorder}`,
-                padding: 20,
-                position: 'relative',
-                overflow: 'hidden',
-                transition: 'border-color 0.3s',
-              }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: typeColors[shoot.type] || C.red500 }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <span style={{
-                    fontFamily: F.display,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    color: C.gray500,
-                  }}>{shoot.month}</span>
-                  <span style={{
-                    fontFamily: F.display,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: typeColors[shoot.type] || C.red500,
-                    border: `1px solid ${typeColors[shoot.type] || C.red500}`,
-                    padding: '2px 8px',
-                  }}>{shoot.type}</span>
+            <FadeIn key={`${shoot.name}-${i}`} delay={Math.min(i * 0.04, 0.5)}>
+              <div className="p-5 relative overflow-hidden transition-all duration-200"
+                style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}44` }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
+              >
+                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: typeColors[shoot.type] || ORANGE }} />
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-mono text-xs font-bold uppercase tracking-[0.15em]" style={{ color: MUTED }}>{shoot.month}</span>
+                  <span className="font-mono text-xs font-bold uppercase tracking-[0.1em] px-2 py-0.5"
+                    style={{ color: typeColors[shoot.type] || ORANGE, border: `1px solid ${typeColors[shoot.type] || ORANGE}` }}>
+                    {shoot.type}
+                  </span>
                 </div>
-                <h3 style={{
-                  fontFamily: F.display,
-                  fontSize: 16,
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  color: C.white,
-                  marginBottom: 4,
-                  letterSpacing: '0.01em',
-                }}>{shoot.name}</h3>
-                <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray400, lineHeight: 1.5 }}>{shoot.details}</p>
+                <h3 className="font-headline font-extrabold text-base uppercase tracking-wide mb-1" style={{ color: CREAM }}>{shoot.name}</h3>
+                <p className="font-body text-sm" style={{ color: MUTED, lineHeight: 1.5 }}>{shoot.details}</p>
               </div>
-            </Reveal>
+            </FadeIn>
           ))}
         </div>
 
         {!expanded && (
-          <Reveal delay={0.3}>
-            <div style={{ textAlign: 'center', marginTop: 32 }}>
-              <button
-                onClick={() => setExpanded(true)}
-                style={{
-                  fontFamily: F.display,
-                  fontSize: 14,
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  color: C.red500,
-                  background: 'none',
-                  border: `2px solid ${C.red500}`,
-                  padding: '14px 36px',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  transition: 'all 0.3s',
-                }}
+          <FadeIn delay={0.3}>
+            <div className="text-center mt-8">
+              <button onClick={() => setExpanded(true)}
+                className="font-headline font-extrabold text-sm uppercase tracking-wide inline-flex items-center gap-2 px-8 py-4 transition-all duration-200 cursor-pointer"
+                style={{ color: ORANGE, background: 'none', border: `2px solid ${ORANGE}` }}
+                onMouseEnter={e => { e.currentTarget.style.background = ORANGE; e.currentTarget.style.color = CREAM }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = ORANGE }}
               >
-                VIEW ALL 37 SHOOTS
+                View All 37 Shoots
                 <ChevronDown size={18} />
               </button>
             </div>
-          </Reveal>
+          </FadeIn>
         )}
 
         {expanded && (
-          <div style={{ textAlign: 'center', marginTop: 24 }}>
-            <button
-              onClick={() => setExpanded(false)}
-              style={{
-                fontFamily: F.display,
-                fontSize: 12,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: C.gray500,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >COLLAPSE</button>
+          <div className="text-center mt-6">
+            <button onClick={() => setExpanded(false)}
+              className="font-body text-sm uppercase tracking-wide cursor-pointer"
+              style={{ color: MUTED, background: 'none', border: 'none' }}>
+              Collapse
+            </button>
           </div>
         )}
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   CONTENT ARSENAL
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  9. CONTENT ARSENAL
+// ═══════════════════════════════════════════════════════════════════════════════
 function ContentArsenalSection() {
   return (
-    <section style={{ position: 'relative', background: C.navy950, padding: '96px 0', overflow: 'hidden' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="CONTENT ARSENAL" />
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 16,
-          }}>READY TO DEPLOY.</h2>
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 700,
-            marginBottom: 48,
-          }}>
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Content Arsenal
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            Ready to Deploy.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
             Beyond shoots and edits, AOM has built a complete content system for Ambition Mechanical. Templates, strategies, calendars, and voice recordings, all designed to scale.
           </p>
-        </Reveal>
+        </FadeIn>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {contentArsenal.map((item, i) => (
-            <Reveal key={item.label} delay={i * 0.08}>
-              <div style={{
-                background: C.navy800,
-                border: `1px solid ${C.navyBorder}`,
-                padding: 28,
-                position: 'relative',
-                overflow: 'hidden',
-              }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: C.red500 }} />
-                <div style={{
-                  fontFamily: F.display,
-                  fontSize: 48,
-                  fontWeight: 900,
-                  color: C.white,
-                  lineHeight: 1,
-                }}>
+            <FadeIn key={item.label} delay={i * 0.08}>
+              <div className="p-8 relative overflow-hidden" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+                <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: ORANGE }} />
+                <div className="font-headline font-extrabold" style={{ fontSize: 48, color: CREAM, lineHeight: 1 }}>
                   {item.number}
                 </div>
-                <p style={{
-                  fontFamily: F.display,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  color: C.red500,
-                  marginTop: 12,
-                }}>{item.label}</p>
-                <p style={{ fontFamily: F.body, fontSize: 15, color: C.gray400, marginTop: 8 }}>{item.desc}</p>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mt-3" style={{ color: ORANGE }}>{item.label}</p>
+                <p className="font-body text-base mt-2" style={{ color: MUTED }}>{item.desc}</p>
               </div>
-            </Reveal>
+            </FadeIn>
           ))}
         </div>
 
-        {/* Also Delivered */}
-        <Reveal delay={0.4} className="mt-10">
-          <div style={{
-            background: C.navy800,
-            border: `1px solid ${C.navyBorder}`,
-            padding: 32,
-            maxWidth: 600,
-            marginTop: 40,
-          }}>
-            <p style={{
-              fontFamily: F.display,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              color: C.gray500,
-              marginBottom: 16,
-            }}>ALSO DELIVERED</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <FadeIn delay={0.4}>
+          <div className="mt-10 p-8 max-w-[600px]" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: MUTED }}>Also Delivered</p>
+            <div className="flex flex-col gap-3">
               {['Brand guidelines documentation (3 versions)', 'LinkedIn authority post drafts', 'Content strategy blueprint', '30-day content calendar with 28 planned pieces'].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <ArrowRight size={16} color={C.red500} style={{ flexShrink: 0, marginTop: 2 }} />
-                  <span style={{ fontFamily: F.body, fontSize: 15, color: C.gray300, lineHeight: 1.5 }}>{item}</span>
+                <div key={i} className="flex items-start gap-3">
+                  <ArrowRight size={16} style={{ color: ORANGE, flexShrink: 0, marginTop: 2 }} />
+                  <span className="font-body text-base" style={{ color: TEXT, lineHeight: 1.5 }}>{item}</span>
                 </div>
               ))}
             </div>
           </div>
-        </Reveal>
+        </FadeIn>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   THE WEBSITE
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  10. THE WEBSITE
+// ═══════════════════════════════════════════════════════════════════════════════
 function WebsiteSection() {
   return (
-    <section style={{ position: 'relative', background: C.navy900, padding: '96px 0' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="WEB DEVELOPMENT" />
-        </Reveal>
+    <section className="relative py-24 md:py-32" style={{ background: WARM_BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1000px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Web Development
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-12"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            A Website Built From Scratch.
+          </h2>
+        </FadeIn>
 
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 48,
-          }}>A WEBSITE BUILT FROM SCRATCH.</h2>
-        </Reveal>
-
-        <Reveal delay={0.2}>
-          <div style={{
-            background: C.navy800,
-            border: `1px solid ${C.navyBorder}`,
-            padding: 40,
-            position: 'relative',
-            overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.red500 }} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 40 }}>
+        <FadeIn delay={0.2}>
+          <div className="p-10 relative overflow-hidden" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: ORANGE }} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div>
-                <p style={{
-                  fontFamily: F.display,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: C.gray500,
-                  marginBottom: 16,
-                }}>CUSTOM-BUILT FOR AMBITION</p>
-                <h3 style={{
-                  fontFamily: F.display,
-                  fontSize: 32,
-                  fontWeight: 900,
-                  textTransform: 'uppercase',
-                  color: C.white,
-                  marginBottom: 16,
-                }}>ambitionac.com</h3>
-                <p style={{
-                  fontFamily: F.body,
-                  fontSize: 18,
-                  color: C.gray300,
-                  lineHeight: 1.7,
-                  marginBottom: 24,
-                }}>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: MUTED }}>Custom-Built for Ambition</p>
+                <h3 className="font-headline font-extrabold text-3xl uppercase mb-4" style={{ color: CREAM }}>ambitionac.com</h3>
+                <p className="font-body text-lg mb-6" style={{ color: MUTED, lineHeight: 1.6 }}>
                   A modern, mobile-first website showcasing Ambition Mechanical's services, projects, and team. Built with enterprise-grade technology and launched in March 2026.
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="flex flex-col gap-3">
                   {[
                     'React + Firebase + Tailwind CSS',
                     'CMS admin panel for content updates',
@@ -1349,577 +923,553 @@ function WebsiteSection() {
                     'Contact form with lead capture',
                     'Projects showcase with photo galleries',
                   ].map((feature, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 6, height: 6, background: C.red500, flexShrink: 0 }} />
-                      <span style={{ fontFamily: F.body, fontSize: 15, color: C.gray300 }}>{feature}</span>
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 flex-shrink-0" style={{ background: ORANGE }} />
+                      <span className="font-body text-base" style={{ color: TEXT }}>{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginBottom: 8 }}>LAUNCHED</p>
-                <p style={{ fontFamily: F.display, fontSize: 28, fontWeight: 900, color: C.white }}>MARCH 6, 2026</p>
-                <div style={{ width: 48, height: 2, background: C.red500, margin: '16px auto' }} />
-                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginBottom: 8 }}>MARKET VALUE</p>
-                <p style={{ fontFamily: F.display, fontSize: 40, fontWeight: 900, color: C.red500 }}>$4,000 - $8,000</p>
+              <div className="flex flex-col justify-center items-center text-center">
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-2" style={{ color: MUTED }}>Launched</p>
+                <p className="font-headline font-extrabold text-2xl uppercase" style={{ color: CREAM }}>March 6, 2026</p>
+                <div className="w-12 h-0.5 my-4" style={{ background: ORANGE }} />
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-2" style={{ color: MUTED }}>Market Value</p>
+                <p className="font-headline font-extrabold text-4xl" style={{ color: ORANGE }}>$4,000 - $8,000</p>
               </div>
             </div>
           </div>
-        </Reveal>
+        </FadeIn>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   EQUIPMENT
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  11. EQUIPMENT
+// ═══════════════════════════════════════════════════════════════════════════════
 function EquipmentSection() {
   return (
-    <section style={{ position: 'relative', background: C.navy950, padding: '96px 0', overflow: 'hidden' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="PRODUCTION GEAR" />
-        </Reveal>
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1000px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Production Gear
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-12"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            Professional-Grade Tools.
+          </h2>
+        </FadeIn>
 
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 48,
-          }}>PROFESSIONAL-GRADE TOOLS.</h2>
-        </Reveal>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {equipment.map((item, i) => (
-            <Reveal key={item.name} delay={i * 0.08}>
-              <div style={{
-                background: C.navy800,
-                border: `1px solid ${C.navyBorder}`,
-                padding: 24,
-                transition: 'border-color 0.3s',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                  <Camera size={20} color={C.red500} />
+            <FadeIn key={item.name} delay={i * 0.08}>
+              <div className="p-6 transition-all duration-200"
+                style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${ORANGE}44` }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER }}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <Camera size={20} style={{ color: ORANGE }} />
                   <div>
-                    <h3 style={{
-                      fontFamily: F.display,
-                      fontSize: 16,
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      color: C.white,
-                    }}>{item.name}</h3>
-                    <p style={{
-                      fontFamily: F.display,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: '0.15em',
-                      textTransform: 'uppercase',
-                      color: C.red500,
-                    }}>{item.type}</p>
+                    <h3 className="font-headline font-extrabold text-base uppercase" style={{ color: CREAM }}>{item.name}</h3>
+                    <p className="font-mono text-xs font-bold uppercase tracking-[0.15em]" style={{ color: ORANGE }}>{item.type}</p>
                   </div>
                 </div>
-                <p style={{ fontFamily: F.body, fontSize: 15, color: C.gray400 }}>{item.detail}</p>
+                <p className="font-body text-base" style={{ color: MUTED }}>{item.detail}</p>
               </div>
-            </Reveal>
+            </FadeIn>
           ))}
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   MARKET VALUE ANALYSIS
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  12. MARKET VALUE ANALYSIS
+// ═══════════════════════════════════════════════════════════════════════════════
 function ValueSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-  const marketValue = useCountUp(78000, 2000, isInView);
-  const amountPaid = useCountUp(22000, 1800, isInView);
+  const [ref, visible] = useIntersect()
+  const marketValue = useCountUp(78000, 2000, visible)
+  const amountPaid = useCountUp(22000, 1800, visible)
 
   return (
-    <section ref={ref} style={{ position: 'relative', background: C.navy800, padding: '96px 0' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="VALUE ANALYSIS" />
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 16,
-          }}>WHAT THIS IS WORTH.</h2>
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 700,
-            marginBottom: 48,
-          }}>
-            At standard Phoenix market rates, here's the value AOM has delivered in 11 months.
+    <section ref={ref} className="relative py-24 md:py-32" style={{ background: CARD_BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Value Analysis
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            What This is Worth.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-12 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
+            At standard Phoenix market rates, here is the value AOM has delivered in 11 months.
           </p>
-        </Reveal>
+        </FadeIn>
 
         {/* Table */}
-        <Reveal delay={0.2}>
-          <div style={{ overflow: 'hidden', border: `1px solid ${C.navyBorder}` }}>
+        <FadeIn delay={0.2}>
+          <div className="overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th style={{
-                    background: C.navy950,
-                    fontFamily: F.display,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    color: C.gray400,
-                    padding: '16px 24px',
-                    textAlign: 'left',
-                  }}>Deliverable</th>
-                  <th style={{
-                    background: C.navy950,
-                    fontFamily: F.display,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    color: C.gray400,
-                    padding: '16px 24px',
-                    textAlign: 'left',
-                  }}>Market Rate</th>
-                  <th style={{
-                    background: C.red500,
-                    fontFamily: F.display,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    color: C.white,
-                    padding: '16px 24px',
-                    textAlign: 'right',
-                  }}>Value</th>
+                  <th className="font-mono text-xs font-bold uppercase tracking-[0.15em] text-left p-5" style={{ background: BG, color: MUTED }}>Deliverable</th>
+                  <th className="font-mono text-xs font-bold uppercase tracking-[0.15em] text-left p-5" style={{ background: BG, color: MUTED }}>Market Rate</th>
+                  <th className="font-mono text-xs font-bold uppercase tracking-[0.15em] text-right p-5" style={{ background: ORANGE, color: CREAM }}>Value</th>
                 </tr>
               </thead>
               <tbody>
                 {valueComparison.map((row, i) => (
-                  <tr key={row.item} style={{ background: i % 2 === 0 ? C.navy900 : C.navy950 }}>
-                    <td style={{ padding: '14px 24px', borderBottom: `1px solid ${C.navyBorderLight}` }}>
-                      <span style={{ fontFamily: F.body, fontSize: 15, fontWeight: 600, color: C.white }}>{row.item}</span>
+                  <tr key={row.item} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : BG }}>
+                    <td className="p-4" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <span className="font-body text-base font-semibold" style={{ color: TEXT }}>{row.item}</span>
                     </td>
-                    <td style={{ padding: '14px 24px', borderBottom: `1px solid ${C.navyBorderLight}` }}>
-                      <span style={{ fontFamily: F.body, fontSize: 14, color: C.gray400 }}>{row.rate}</span>
+                    <td className="p-4" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <span className="font-body text-sm" style={{ color: MUTED }}>{row.rate}</span>
                     </td>
-                    <td style={{ padding: '14px 24px', borderBottom: `1px solid ${C.navyBorderLight}`, textAlign: 'right' }}>
-                      <span style={{ fontFamily: F.display, fontSize: 18, fontWeight: 900, color: C.white }}>{row.value}</span>
+                    <td className="p-4 text-right" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                      <span className="font-headline font-extrabold text-lg" style={{ color: CREAM }}>{row.value}</span>
                     </td>
                   </tr>
                 ))}
-                <tr style={{ background: C.navy950 }}>
-                  <td colSpan={2} style={{ padding: '20px 24px' }}>
-                    <span style={{ fontFamily: F.display, fontSize: 22, fontWeight: 900, color: C.white }}>ESTIMATED MARKET VALUE</span>
+                <tr style={{ background: BG }}>
+                  <td colSpan={2} className="p-5">
+                    <span className="font-headline font-extrabold text-xl uppercase" style={{ color: CREAM }}>Estimated Market Value</span>
                   </td>
-                  <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                    <span style={{ fontFamily: F.display, fontSize: 28, fontWeight: 900, color: C.red500 }}>$78,000+</span>
+                  <td className="p-5 text-right">
+                    <span className="font-headline font-extrabold text-2xl" style={{ color: ORANGE }}>$78,000+</span>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </Reveal>
+        </FadeIn>
 
         {/* Big Comparison */}
-        <Reveal delay={0.3}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: 24,
-            alignItems: 'center',
-            marginTop: 60,
-          }}>
-            <div style={{
-              textAlign: 'center',
-              padding: 32,
-              background: C.navy900,
-              border: `1px solid ${C.navyBorder}`,
-            }}>
-              <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginBottom: 12 }}>MARKET VALUE</p>
-              <p style={{
-                fontFamily: F.display,
-                fontSize: 'clamp(36px, 5vw, 56px)',
-                fontWeight: 900,
-                color: C.white,
-              }}>
-                ${isInView ? marketValue.toLocaleString() : '0'}+
+        <FadeIn delay={0.3}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center mt-16">
+            <div className="text-center p-8" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: MUTED }}>Market Value</p>
+              <p className="font-headline font-extrabold" style={{ fontSize: 'clamp(36px, 5vw, 56px)', color: CREAM }}>
+                ${visible ? marketValue.toLocaleString() : '0'}+
               </p>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontFamily: F.display, fontSize: 28, fontWeight: 900, color: C.gray500 }}>vs</p>
+            <div className="text-center">
+              <p className="font-headline font-extrabold text-2xl" style={{ color: MUTED }}>vs</p>
             </div>
-            <div style={{
-              textAlign: 'center',
-              padding: 32,
-              background: C.navy900,
-              border: `2px solid ${C.red500}`,
-            }}>
-              <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginBottom: 12 }}>AMOUNT PAID</p>
-              <p style={{
-                fontFamily: F.display,
-                fontSize: 'clamp(36px, 5vw, 56px)',
-                fontWeight: 900,
-                color: C.red500,
-              }}>
-                ${isInView ? amountPaid.toLocaleString() : '0'}
+            <div className="text-center p-8" style={{ background: 'rgba(255,255,255,0.03)', border: `2px solid ${ORANGE}` }}>
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: MUTED }}>Amount Paid</p>
+              <p className="font-headline font-extrabold" style={{ fontSize: 'clamp(36px, 5vw, 56px)', color: ORANGE }}>
+                ${visible ? amountPaid.toLocaleString() : '0'}
               </p>
-              <p style={{ fontFamily: F.body, fontSize: 13, color: C.gray500, marginTop: 8 }}>11 months x $2,000/month</p>
+              <p className="font-body text-sm mt-2" style={{ color: MUTED }}>11 months x $2,000/month</p>
             </div>
           </div>
-        </Reveal>
+        </FadeIn>
 
         {/* ROI */}
-        <Reveal delay={0.4}>
-          <div style={{ textAlign: 'center', marginTop: 48 }}>
-            <div style={{
-              display: 'inline-block',
-              background: C.navy950,
-              border: `2px solid ${C.red500}`,
-              padding: '24px 48px',
-            }}>
-              <p style={{ fontFamily: F.display, fontSize: 'clamp(48px, 6vw, 72px)', fontWeight: 900, color: C.red500 }}>3.5x</p>
-              <p style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.white, marginTop: 8 }}>RETURN ON INVESTMENT</p>
+        <FadeIn delay={0.4}>
+          <div className="text-center mt-12">
+            <div className="inline-block p-6 px-12" style={{ background: BG, border: `2px solid ${ORANGE}` }}>
+              <p className="font-headline font-extrabold" style={{ fontSize: 'clamp(48px, 6vw, 72px)', color: ORANGE }}>3.5x</p>
+              <p className="font-headline font-extrabold text-base uppercase tracking-wide mt-2" style={{ color: CREAM }}>Return on Investment</p>
             </div>
           </div>
-        </Reveal>
+        </FadeIn>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   HOURS INVESTED
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  13. HOURS INVESTED
+// ═══════════════════════════════════════════════════════════════════════════════
 function HoursSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-  const totalHours = useCountUp(493, 1800, isInView);
+  const [ref, visible] = useIntersect()
+  const totalHours = useCountUp(493, 1800, visible)
 
   return (
-    <section ref={ref} style={{ position: 'relative', background: C.navy950, padding: '96px 0' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="TIME INVESTED" />
-        </Reveal>
+    <section ref={ref} className="relative py-24 md:py-32" style={{ background: BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1000px] mx-auto px-6 md:px-12">
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Time Invested
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-12"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            Nearly 500 Hours of Work.
+          </h2>
+        </FadeIn>
 
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 48,
-          }}>NEARLY 500 HOURS OF WORK.</h2>
-        </Reveal>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex flex-col gap-3">
           {hoursBreakdown.map((item, i) => (
-            <Reveal key={item.activity} delay={i * 0.08}>
-              <div style={{
-                background: C.navy800,
-                border: `1px solid ${C.navyBorder}`,
-                padding: '20px 24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 12,
-              }}>
+            <FadeIn key={item.activity} delay={i * 0.08}>
+              <div className="p-5 flex items-center justify-between flex-wrap gap-3"
+                style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
                 <div>
-                  <h3 style={{
-                    fontFamily: F.display,
-                    fontSize: 16,
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    color: C.white,
-                  }}>{item.activity}</h3>
-                  <p style={{ fontFamily: F.body, fontSize: 13, color: C.gray500, marginTop: 4 }}>{item.calc}</p>
+                  <h3 className="font-headline font-extrabold text-base uppercase" style={{ color: CREAM }}>{item.activity}</h3>
+                  <p className="font-body text-sm mt-1" style={{ color: MUTED }}>{item.calc}</p>
                 </div>
-                <div style={{
-                  fontFamily: F.display,
-                  fontSize: 32,
-                  fontWeight: 900,
-                  color: C.red500,
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
-                  {item.hours}<span style={{ fontSize: 16, color: C.gray500, marginLeft: 4 }}>hrs</span>
+                <div className="font-headline font-extrabold text-3xl" style={{ color: ORANGE, fontVariantNumeric: 'tabular-nums' }}>
+                  {item.hours}<span className="text-base ml-1" style={{ color: MUTED }}>hrs</span>
                 </div>
               </div>
-            </Reveal>
+            </FadeIn>
           ))}
         </div>
 
-        {/* Total */}
-        <Reveal delay={0.5}>
-          <div style={{
-            background: C.navy800,
-            border: `2px solid ${C.red500}`,
-            padding: 32,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 16,
-            marginTop: 24,
-          }}>
+        <FadeIn delay={0.5}>
+          <div className="mt-6 p-8 flex items-center justify-between flex-wrap gap-4"
+            style={{ background: CARD_BG, border: `2px solid ${ORANGE}` }}>
             <div>
-              <p style={{ fontFamily: F.display, fontSize: 20, fontWeight: 900, textTransform: 'uppercase', color: C.white }}>TOTAL ESTIMATED HOURS</p>
-              <p style={{ fontFamily: F.body, fontSize: 15, color: C.gray400, marginTop: 4 }}>Effective rate: ~$44.62/hour (market rate: $100-200/hr)</p>
+              <p className="font-headline font-extrabold text-xl uppercase" style={{ color: CREAM }}>Total Estimated Hours</p>
+              <p className="font-body text-base mt-1" style={{ color: MUTED }}>Effective rate: ~$44.62/hour (market rate: $100-200/hr)</p>
             </div>
-            <div style={{
-              fontFamily: F.display,
-              fontSize: 'clamp(48px, 6vw, 64px)',
-              fontWeight: 900,
-              color: C.red500,
-              fontVariantNumeric: 'tabular-nums',
-            }}>
-              ~{isInView ? totalHours : 0}
+            <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(48px, 6vw, 64px)', color: ORANGE, fontVariantNumeric: 'tabular-nums' }}>
+              ~{visible ? totalHours : 0}
             </div>
           </div>
-        </Reveal>
+        </FadeIn>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   WHAT'S NEXT
-   ════════════════════════════════════════════════════════════════ */
-function WhatsNextSection() {
-  const nextSteps = [
-    { title: 'FULL SOCIAL MEDIA DEPLOYMENT', desc: 'The content pipeline is built and tested. 48 templates and a 30-day calendar are ready for immediate execution across Instagram and LinkedIn.' },
-    { title: 'CONTINUED MONTHLY PRODUCTION', desc: 'Regular on-site video production documenting new projects, building a growing library of premium visual content.' },
-    { title: 'KITCHEN & RESTAURANT AD CAMPAIGNS', desc: 'Targeted campaign capability for driving service calls, leveraging the extensive restaurant project footage already captured.' },
-    { title: 'LINKEDIN AUTHORITY BUILDING', desc: 'Positioning Ambition Mechanical as the premium HVAC contractor in the Phoenix metro through consistent, professional content.' },
-  ];
-
+// ═══════════════════════════════════════════════════════════════════════════════
+//  14. GETTING THE PHONE TO RING (SERVICE CALL PLAN)
+// ═══════════════════════════════════════════════════════════════════════════════
+function ServiceCallPlanSection() {
   return (
-    <section style={{ position: 'relative', background: C.navy900, padding: '96px 0', overflow: 'hidden' }}>
-      <NoiseOverlay />
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <SectionLabel label="WHAT'S NEXT" />
-        </Reveal>
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: WARM_BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
 
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(36px, 5vw, 64px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            lineHeight: 1,
-            marginBottom: 16,
-          }}>THE FOUNDATION IS BUILT. NOW WE SCALE.</h2>
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 20,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 700,
-            marginBottom: 48,
-          }}>
-            11 months of production work has created a massive content arsenal. The shoots are done, the templates are built, and the strategy is locked. The next phase is about putting all of it to work.
+        {/* Header */}
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Getting the Phone to Ring
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(32px, 5vw, 56px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            A Content-First Approach to Service Calls.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-16 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
+            Ambition wants the phone ringing for service calls, especially from kitchens, restaurants, and commercial facilities before summer. Here is the plan to make that happen.
           </p>
-        </Reveal>
+        </FadeIn>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 16 }}>
-          {nextSteps.map((step, i) => (
-            <Reveal key={step.title} delay={i * 0.1}>
-              <div style={{
-                background: C.navy800,
-                border: `1px solid ${C.navyBorder}`,
-                padding: 28,
-                position: 'relative',
-                overflow: 'hidden',
-              }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: C.red500 }} />
-                <h3 style={{
-                  fontFamily: F.display,
-                  fontSize: 18,
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  color: C.white,
-                  marginBottom: 10,
-                  paddingLeft: 8,
-                }}>{step.title}</h3>
-                <p style={{
-                  fontFamily: F.body,
-                  fontSize: 16,
-                  color: C.gray300,
-                  lineHeight: 1.7,
-                  paddingLeft: 8,
-                }}>{step.desc}</p>
+        {/* The Competitive Edge Card */}
+        <FadeIn delay={0.2}>
+          <div className="p-8 md:p-10 mb-12 relative overflow-hidden" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: ORANGE }} />
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] mb-6" style={{ color: ORANGE }}>
+              The Competitive Edge
+            </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 className="font-headline font-extrabold text-2xl uppercase mb-6" style={{ color: CREAM }}>
+                  Your Competitors Are Already Running Ads. You Have Better Ammunition.
+                </h3>
+                <p className="font-body text-base mb-6" style={{ color: MUTED, lineHeight: 1.6 }}>
+                  We scraped the Meta Ad Library on March 10, 2026. Here is what we found across the top 10 Arizona HVAC companies.
+                </p>
+                <div className="flex flex-col gap-3">
+                  {[
+                    '7 out of 10 major AZ HVAC companies are running Meta ads right now',
+                    'Ambition is NOT running any. Wide open lane.',
+                    'Most competitors use stock photos and generic copy',
+                    'Ambition has 3,138 real video files from 37 actual job sites',
+                    'Authentic footage converts 2-3x better than stock',
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <CheckCircle2 size={18} style={{ color: ORANGE, flexShrink: 0, marginTop: 2 }} />
+                      <span className="font-body text-base" style={{ color: TEXT, lineHeight: 1.5 }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </Reveal>
-          ))}
+              <div className="flex flex-col gap-4">
+                {/* Cost comparison cards */}
+                <div className="p-6" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+                  <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: '#60A5FA' }}>Facebook Ads</p>
+                  <div className="font-headline font-extrabold text-4xl mb-1" style={{ color: CREAM }}>$0.69</div>
+                  <p className="font-body text-base" style={{ color: MUTED }}>Average cost per click</p>
+                  <p className="font-body text-base mt-2" style={{ color: TEXT }}>$18-45 cost per lead</p>
+                </div>
+                <div className="p-6" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+                  <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: '#F87171' }}>Google Ads</p>
+                  <div className="font-headline font-extrabold text-4xl mb-1" style={{ color: CREAM }}>$29-33</div>
+                  <p className="font-body text-base" style={{ color: MUTED }}>Average cost per click (42x more expensive)</p>
+                  <p className="font-body text-base mt-2" style={{ color: TEXT }}>$100-250 cost per lead</p>
+                </div>
+                <div className="p-4 text-center" style={{ background: `${ORANGE}15`, border: `1px solid ${ORANGE}33` }}>
+                  <p className="font-headline font-extrabold text-lg uppercase" style={{ color: ORANGE }}>
+                    Facebook is 42x cheaper per click than Google
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Three Phases */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-12">
+          {/* Phase 1 */}
+          <FadeIn delay={0.3}>
+            <div className="p-8 relative overflow-hidden h-full" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: ORANGE }} />
+              <div className="flex items-center gap-3 mb-2">
+                <Megaphone size={22} style={{ color: ORANGE }} />
+                <span className="font-mono text-xs font-bold uppercase tracking-[0.15em]" style={{ color: ORANGE }}>Phase 1</span>
+              </div>
+              <h3 className="font-headline font-extrabold text-xl uppercase mb-2" style={{ color: CREAM }}>Content-First</h3>
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: MUTED }}>Weeks 1-4 | $0 Additional Cost</p>
+              <div className="flex flex-col gap-3">
+                {[
+                  'Deploy the 18 branded videos to Instagram + TikTok (5/week)',
+                  'Launch LinkedIn authority posting (2/week)',
+                  'Optimize Google Business Profile with project photos + videos',
+                  'SEO-driven content targeting "commercial HVAC repair Phoenix," "restaurant refrigeration Phoenix"',
+                  'Leverage the 3,138 clips and 713 photos already captured',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: ORANGE }} />
+                    <span className="font-body text-sm" style={{ color: TEXT, lineHeight: 1.5 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Phase 2 */}
+          <FadeIn delay={0.4}>
+            <div className="p-8 relative overflow-hidden h-full" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: '#F59E0B' }} />
+              <div className="flex items-center gap-3 mb-2">
+                <Target size={22} style={{ color: '#F59E0B' }} />
+                <span className="font-mono text-xs font-bold uppercase tracking-[0.15em]" style={{ color: '#F59E0B' }}>Phase 2</span>
+              </div>
+              <h3 className="font-headline font-extrabold text-xl uppercase mb-2" style={{ color: CREAM }}>Targeted Ads</h3>
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: MUTED }}>Weeks 4-8 | $500-1,500/mo Ad Spend</p>
+              <div className="flex flex-col gap-3">
+                {[
+                  'Facebook/Instagram ads using existing professional footage',
+                  'Video ads using real job site footage (not stock photos)',
+                  'Target: Restaurant owners, facility managers, property managers within 30 miles',
+                  'Most HVAC companies use stock photos. Ambition has 37 real shoots.',
+                  'Ad formats: video ads, carousel, lead forms',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: '#F59E0B' }} />
+                    <span className="font-body text-sm" style={{ color: TEXT, lineHeight: 1.5 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Phase 3 */}
+          <FadeIn delay={0.5}>
+            <div className="p-8 relative overflow-hidden h-full" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: '#60A5FA' }} />
+              <div className="flex items-center gap-3 mb-2">
+                <TrendingUp size={22} style={{ color: '#60A5FA' }} />
+                <span className="font-mono text-xs font-bold uppercase tracking-[0.15em]" style={{ color: '#60A5FA' }}>Phase 3</span>
+              </div>
+              <h3 className="font-headline font-extrabold text-xl uppercase mb-2" style={{ color: CREAM }}>Scale</h3>
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: MUTED }}>Month 3+ | Based on Results</p>
+              <div className="flex flex-col gap-3">
+                {[
+                  'Retarget website visitors',
+                  'Lookalike audiences from service call leads',
+                  'Seasonal push for summer cooling season',
+                  'Landing pages for each service vertical (restaurants, kitchens, cold storage)',
+                  'Scale what is working, cut what is not',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: '#60A5FA' }} />
+                    <span className="font-body text-sm" style={{ color: TEXT, lineHeight: 1.5 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
         </div>
+
+        {/* Recommended Budget + ROI Projection */}
+        <FadeIn delay={0.55}>
+          <div className="p-8 md:p-10 relative overflow-hidden" style={{ background: CARD_BG, border: `2px solid ${ORANGE}` }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <div>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ORANGE }}>
+                  Recommended Monthly Ad Budget
+                </p>
+                <div className="font-headline font-extrabold mb-4" style={{ fontSize: 'clamp(36px, 5vw, 56px)', color: CREAM }}>
+                  $500 - $1,500
+                </div>
+                <p className="font-body text-base" style={{ color: MUTED, lineHeight: 1.6 }}>per month in ad spend</p>
+
+                <div className="mt-6 flex flex-col gap-3">
+                  <div className="flex justify-between items-center p-4" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+                    <span className="font-body text-base" style={{ color: MUTED }}>At $0.69 CPC</span>
+                    <span className="font-headline font-extrabold text-lg" style={{ color: CREAM }}>725-2,174 clicks/mo</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+                    <span className="font-body text-base" style={{ color: MUTED }}>At $18-45 CPL</span>
+                    <span className="font-headline font-extrabold text-lg" style={{ color: CREAM }}>11-83 leads/mo</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4" style={{ background: `${ORANGE}10`, border: `1px solid ${ORANGE}33` }}>
+                    <span className="font-body text-base" style={{ color: TEXT }}>5 converted calls at $500-2,000 avg</span>
+                    <span className="font-headline font-extrabold text-lg" style={{ color: ORANGE }}>$2,500-10,000/mo</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col justify-center">
+                <div className="p-8 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+                  <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ORANGE }}>
+                    The Bottom Line
+                  </p>
+                  <p className="font-body text-lg mb-6" style={{ color: TEXT, lineHeight: 1.6 }}>
+                    You already have the ammunition. The 37 shoots and 3,138 video files ARE the ad library.
+                  </p>
+                  <div className="p-4" style={{ background: `${ORANGE}10`, border: `1px solid ${ORANGE}33` }}>
+                    <p className="font-body text-base font-semibold" style={{ color: CREAM, lineHeight: 1.5 }}>
+                      Most companies spend $5,000-15,000 just getting the footage you already have. That investment is done. Now it is time to put it to work.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Who is advertising */}
+        <FadeIn delay={0.6}>
+          <div className="mt-10 p-8" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] mb-6" style={{ color: ORANGE }}>
+              Live Data: Arizona HVAC Companies Running Meta Ads (March 2026)
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                { name: 'George Brazil', ads: '4 active campaigns', status: 'running' },
+                { name: 'Chas Roberts', ads: '2 active campaigns', status: 'running' },
+                { name: 'American Home Water & Air', ads: '4 active campaigns', status: 'running' },
+                { name: "Brewer's AC & Heating", ads: '5 active campaigns', status: 'running' },
+                { name: 'Ideal Air Conditioning', ads: '6 active (18+ months)', status: 'running' },
+                { name: 'Ambient Edge HVAC', ads: '4 active campaigns', status: 'running' },
+                { name: "Francisco's Cooling", ads: '1 active campaign', status: 'running' },
+                { name: 'Pueblo Mechanical', ads: 'Just launched', status: 'running' },
+                { name: 'Parker & Sons ($210M+)', ads: 'No active ads', status: 'none' },
+                { name: 'Ambition Mechanical', ads: 'Not running any', status: 'opportunity' },
+              ].map((company, i) => (
+                <div key={i} className="flex items-center justify-between p-4"
+                  style={{
+                    background: company.status === 'opportunity' ? `${ORANGE}10` : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${company.status === 'opportunity' ? ORANGE + '44' : BORDER}`,
+                  }}>
+                  <div>
+                    <span className="font-body text-sm font-semibold" style={{ color: company.status === 'opportunity' ? ORANGE : TEXT }}>{company.name}</span>
+                  </div>
+                  <span className="font-mono text-xs font-bold uppercase tracking-[0.1em]"
+                    style={{ color: company.status === 'opportunity' ? ORANGE : company.status === 'none' ? MUTED : '#60A5FA' }}>
+                    {company.ads}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="font-body text-sm mt-4" style={{ color: MUTED }}>
+              Source: Meta Ad Library, live data pulled March 10, 2026
+            </p>
+          </div>
+        </FadeIn>
       </div>
     </section>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   FOOTER (Ambition Standalone)
-   ════════════════════════════════════════════════════════════════ */
-function AmbitionFooter() {
+// ═══════════════════════════════════════════════════════════════════════════════
+//  15. FOOTER
+// ═══════════════════════════════════════════════════════════════════════════════
+function FooterSection() {
   return (
-    <footer style={{
-      background: C.navy950,
-      borderTop: `1px solid ${C.navyBorder}`,
-      padding: '64px 0',
-    }}>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
-        <Reveal>
-          <div style={{ width: 48, height: 2, background: C.red500, margin: '0 auto 24px' }} />
-        </Reveal>
-
-        <Reveal delay={0.1}>
-          <h2 style={{
-            fontFamily: F.display,
-            fontSize: 'clamp(28px, 4vw, 40px)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            color: C.white,
-            marginBottom: 16,
-          }}>BUILT BY AOM. BUILT TO LAST.</h2>
-        </Reveal>
-
-        <Reveal delay={0.2}>
-          <p style={{
-            fontFamily: F.body,
-            fontSize: 18,
-            color: C.gray300,
-            lineHeight: 1.7,
-            maxWidth: 540,
-            margin: '0 auto 32px',
-          }}>
+    <footer className="relative py-16 text-center" style={{ background: BG, borderTop: `1px solid ${BORDER}` }}>
+      <div className="max-w-[600px] mx-auto px-6">
+        <FadeIn>
+          <div className="w-12 h-0.5 mx-auto mb-6" style={{ background: ORANGE }} />
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase text-2xl md:text-3xl tracking-tight"
+            style={{ color: CREAM, letterSpacing: '-0.02em' }}>
+            Built by AOM. Built to Last.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.2}>
+          <p className="font-body text-lg mt-4 max-w-[540px] mx-auto" style={{ color: MUTED, lineHeight: 1.6 }}>
             This is what 11 months of dedicated creative production looks like. One team. One vision. Hundreds of hours of work invested in making Ambition Mechanical look as good as the work they do.
           </p>
-        </Reveal>
-
-        <Reveal delay={0.3}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 16, marginBottom: 40 }}>
+        </FadeIn>
+        <FadeIn delay={0.3}>
+          <div className="flex flex-wrap justify-center gap-4 mt-8">
             <a
               href="https://www.instagram.com/ambition_air_conditioning/"
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                fontFamily: F.display,
-                fontSize: 14,
-                fontWeight: 800,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: C.white,
-                border: `2px solid ${C.white}`,
-                padding: '14px 28px',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                transition: 'all 0.3s',
-              }}
+              className="font-headline font-extrabold text-sm uppercase tracking-wide px-7 py-3.5 transition-all duration-200"
+              style={{ color: CREAM, border: `2px solid ${CREAM}`, textDecoration: 'none' }}
+              onMouseEnter={e => { e.currentTarget.style.background = CREAM; e.currentTarget.style.color = BG }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = CREAM }}
             >
-              <Instagram size={18} />
-              FOLLOW ON INSTAGRAM
+              Instagram
             </a>
             <a
-              href="https://www.linkedin.com/company/ambition-mechanical-services"
+              href="https://ambitionac.com"
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                fontFamily: F.display,
-                fontSize: 14,
-                fontWeight: 800,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: C.red500,
-                border: `2px solid ${C.red500}`,
-                padding: '14px 28px',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                transition: 'all 0.3s',
-              }}
+              className="font-headline font-extrabold text-sm uppercase tracking-wide px-7 py-3.5 transition-all duration-200"
+              style={{ color: BG, background: ORANGE, border: `2px solid ${ORANGE}`, textDecoration: 'none' }}
             >
-              <Linkedin size={18} />
-              CONNECT ON LINKEDIN
+              ambitionac.com
             </a>
           </div>
-        </Reveal>
-
-        <Reveal delay={0.4}>
-          <div style={{ borderTop: `1px solid ${C.navyBorder}`, paddingTop: 24 }}>
-            <p style={{
-              fontFamily: F.display,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              color: C.gray500,
-            }}>
-              PRODUCED BY AOM &bull; AHEAD OF MARKET &bull; PHOENIX, AZ
-            </p>
-            <a
-              href="https://aheadofmarket.com"
-              style={{
-                display: 'inline-block',
-                marginTop: 8,
-                fontFamily: F.body,
-                fontSize: 14,
-                color: C.red500,
-                textDecoration: 'none',
-              }}
-            >
-              aheadofmarket.com
-            </a>
-          </div>
-        </Reveal>
+        </FadeIn>
+        <FadeIn delay={0.4}>
+          <p className="font-body text-xs mt-12" style={{ color: MUTED, opacity: 0.4 }}>
+            &copy; {new Date().getFullYear()} AOM (Ahead of Market). Prepared for Ambition Mechanical Services.
+          </p>
+        </FadeIn>
       </div>
     </footer>
-  );
+  )
 }
 
-/* ════════════════════════════════════════════════════════════════
-   MAIN PAGE EXPORT
-   ════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════════════════════
+//  MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 export default function AmbitionPerformance() {
-  useSEO();
+  useSEO()
 
   return (
-    <div style={{ background: C.navy950, minHeight: '100vh' }}>
-      <AmbitionNav />
+    <div className="min-h-screen" style={{ background: BG }}>
+      <NavBar />
       <HeroSection />
       <StatsSection />
       <SocialSection />
@@ -1932,8 +1482,8 @@ export default function AmbitionPerformance() {
       <EquipmentSection />
       <ValueSection />
       <HoursSection />
-      <WhatsNextSection />
-      <AmbitionFooter />
+      <ServiceCallPlanSection />
+      <FooterSection />
     </div>
-  );
+  )
 }
