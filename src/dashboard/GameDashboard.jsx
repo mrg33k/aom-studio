@@ -767,10 +767,10 @@ function useIsMobile(bp = 768) {
 function useIsTablet() {
   const [t, setT] = useState(() => {
     if (typeof window === 'undefined') return false
-    return window.innerWidth >= 768 && window.innerWidth <= 1024
+    return window.innerWidth >= 768 && window.innerWidth <= 1280
   })
   useEffect(() => {
-    const c = () => setT(window.innerWidth >= 768 && window.innerWidth <= 1024)
+    const c = () => setT(window.innerWidth >= 768 && window.innerWidth <= 1280)
     window.addEventListener('resize', c)
     return () => window.removeEventListener('resize', c)
   }, [])
