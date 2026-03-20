@@ -247,11 +247,20 @@ function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, i
               role="menu"
               aria-label="Powerup skills menu"
               style={{
-                position: 'absolute',
-                bottom: 'calc(100% + 8px)',
-                left: 0,
-                width: isMobile ? 'calc(100vw - 32px)' : 320,
-                maxHeight: 400,
+                // Mobile: fixed to viewport so it never causes page scroll
+                // Desktop: absolute relative to trigger button
+                position: isMobile ? 'fixed' : 'absolute',
+                ...(isMobile ? {
+                  bottom: 80, // above the chat input bar
+                  left: 16,
+                  right: 16,
+                  width: 'auto',
+                } : {
+                  bottom: 'calc(100% + 8px)',
+                  left: 0,
+                  width: 320,
+                }),
+                maxHeight: isMobile ? '50vh' : 400,
                 overflowY: 'auto',
                 background: 'rgba(15, 23, 42, 0.97)',
                 backdropFilter: 'blur(20px)',
@@ -259,8 +268,8 @@ function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, i
                 border: '2px solid rgba(59, 130, 246, 0.2)',
                 borderRadius: 16,
                 boxShadow: '0 -8px 40px rgba(0, 0, 0, 0.5), 0 -2px 12px rgba(124, 58, 237, 0.15)',
-                zIndex: 150,
-                transformOrigin: 'bottom left',
+                zIndex: 200,
+                transformOrigin: isMobile ? 'bottom center' : 'bottom left',
               }}
             >
               {/* Header */}
@@ -2304,6 +2313,7 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
           { id: 'create-task', label: 'Create Task from Message', icon: Plus, accent: true },
           { id: 'reply', label: 'Reply', icon: Reply },
           { id: 'copy', label: 'Copy Text', icon: Copy },
+          { id: 'send-to', label: 'Send to...', icon: Send },
           { divider: true },
           { id: 'resend', label: 'Resend', icon: RotateCcw },
         ]
@@ -2374,6 +2384,178 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
           </button>
         )
       })}
+    </motion.div>
+  )
+}
+
+// ---- SEND-TO SMART PICKER ----
+// Shows recent agents (from localStorage history) + search. Appears at message position.
+function SendToMenu({ position, onClose, onSelect, currentAgent }) {
+  const menuRef = useRef(null)
+  const [search, setSearch] = useState('')
+  const inputRef = useRef(null)
+
+  // Get recently visited agents from localStorage
+  const recentAgents = useMemo(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('corner-recent-agents') || '[]')
+      return raw
+        .filter(slug => slug !== currentAgent)
+        .slice(0, 3)
+        .map(slug => AGENTS.find(a => a.slug === slug))
+        .filter(Boolean)
+    } catch {
+      return []
+    }
+  }, [currentAgent])
+
+  // All agents filtered by search
+  const filteredAgents = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    if (!q) return AGENTS.filter(a => a.slug !== currentAgent && !recentAgents.some(r => r.slug === a.slug))
+    return AGENTS.filter(a =>
+      a.slug !== currentAgent &&
+      (a.slug.includes(q) || (a.name || '').toLowerCase().includes(q) || (a.role || '').toLowerCase().includes(q))
+    )
+  }, [search, currentAgent, recentAgents])
+
+  // Focus input on mount
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }, [])
+
+  // Close on click outside / Escape
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
+    }
+    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose])
+
+  // Viewport-clamp position
+  const [adjusted, setAdjusted] = useState(position)
+  useEffect(() => {
+    if (menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect()
+      const newPos = { ...position }
+      if (rect.right > window.innerWidth - 8) newPos.x = window.innerWidth - rect.width - 8
+      if (rect.bottom > window.innerHeight - 8) newPos.y = window.innerHeight - rect.height - 8
+      if (newPos.x < 8) newPos.x = 8
+      if (newPos.y < 8) newPos.y = 8
+      setAdjusted(newPos)
+    }
+  }, [position])
+
+  const AgentRow = ({ agent }) => (
+    <button
+      key={agent.slug}
+      onClick={() => { onSelect(agent); onClose() }}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+        padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer',
+        color: '#D0D8E8', fontSize: 13, fontWeight: 500,
+        fontFamily: "'Inter', system-ui, sans-serif", textAlign: 'left',
+        transition: 'background 80ms ease',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+    >
+      <SpriteAvatar agentSlug={agent.slug} size={22} borderColor={agent.agentColor || agent.color || '#6B7280'} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#E8ECF0' }}>{agent.name || agent.slug}</div>
+        {agent.role && <div style={{ fontSize: 10, color: '#4A6080', fontFamily: "'JetBrains Mono', monospace" }}>{agent.role}</div>}
+      </div>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: agent.agentColor || agent.color || '#6B7280', flexShrink: 0 }} />
+    </button>
+  )
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.92, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.12, ease: [0.2, 0.9, 0.3, 1] }}
+      style={{
+        position: 'fixed',
+        left: adjusted.x,
+        top: adjusted.y,
+        zIndex: 210,
+        width: 240,
+        background: 'rgba(10, 16, 30, 0.97)',
+        backdropFilter: 'blur(20px)',
+        border: '2px solid rgba(100, 180, 255, 0.18)',
+        borderRadius: 10,
+        boxShadow: '0 12px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(100,180,255,0.06)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        padding: '8px 14px 6px',
+        fontSize: 10, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+        color: '#4A6080', textTransform: 'uppercase', letterSpacing: '0.12em',
+        borderBottom: '1px solid rgba(100,180,255,0.08)',
+      }}>
+        Send to...
+      </div>
+
+      {/* Search */}
+      <div style={{ padding: '6px 10px' }}>
+        <input
+          ref={inputRef}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search agent..."
+          style={{
+            width: '100%', padding: '6px 10px',
+            background: 'rgba(100,180,255,0.06)',
+            border: '1px solid rgba(100,180,255,0.15)',
+            borderRadius: 6, fontSize: 12, fontWeight: 500,
+            color: '#E2E8F0', fontFamily: "'Inter', sans-serif",
+            outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+      </div>
+
+      {/* Recent agents (when no search) */}
+      {!search && recentAgents.length > 0 && (
+        <div>
+          <div style={{
+            padding: '4px 14px 2px',
+            fontSize: 9, fontWeight: 800, color: '#4A6080',
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            Recent
+          </div>
+          {recentAgents.map(a => <AgentRow key={a.slug} agent={a} />)}
+        </div>
+      )}
+
+      {/* Divider if recent + more */}
+      {!search && recentAgents.length > 0 && filteredAgents.length > 0 && (
+        <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '2px 10px' }} />
+      )}
+
+      {/* All agents / search results */}
+      <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+        {(!search ? filteredAgents : filteredAgents).slice(0, 12).map(a => <AgentRow key={a.slug} agent={a} />)}
+        {filteredAgents.length === 0 && (
+          <div style={{
+            padding: '10px 14px', fontSize: 12, color: '#4A6080',
+            fontFamily: "'Inter', sans-serif", fontStyle: 'italic',
+          }}>
+            No agents found
+          </div>
+        )}
+      </div>
     </motion.div>
   )
 }
@@ -4717,10 +4899,12 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [taskCtx, setTaskCtx] = useState(null)
   const [dragIdx, setDragIdx] = useState(null)
   const [dragOverIdx, setDragOverIdx] = useState(null)
+  const [dragOverTaskId, setDragOverTaskId] = useState(null) // Track sub-task drop target (drag ON a task)
   const [activeFilter, setActiveFilter] = useState('all')
   const [collapsedSections, setCollapsedSections] = useState({})
   const [selectedTask, setSelectedTask] = useState(null) // Task detail view
   const [expandedTaskId, setExpandedTaskId] = useState(null) // Accordion expand state
+  const [collapsedParents, setCollapsedParents] = useState({}) // Track collapsed sub-task groups
 
   // Load/save per-task context notes from localStorage
   const getTaskContext = (id) => {
@@ -4813,19 +4997,49 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     } catch {}
   }
 
-  // Drag and drop reorder
+  // Drag and drop reorder + sub-task nesting
   const handleDragStart = (idx) => setDragIdx(idx)
-  const handleDragOver = (e, idx) => { e.preventDefault(); setDragOverIdx(idx) }
-  const handleDrop = (idx) => {
-    if (dragIdx === null || dragIdx === idx) { setDragIdx(null); setDragOverIdx(null); return }
-    setTasks(prev => {
-      const copy = [...prev]
-      const [moved] = copy.splice(dragIdx, 1)
-      copy.splice(idx, 0, moved)
-      return copy
-    })
+  const handleDragOver = (e, idx, taskId) => {
+    e.preventDefault()
+    setDragOverIdx(idx)
+    // Track when hovering directly over a task card (for sub-task drop)
+    setDragOverTaskId(taskId || null)
+  }
+  const handleDragLeave = () => {
+    setDragOverTaskId(null)
+  }
+  const handleDrop = (idx, targetTaskId) => {
+    if (dragIdx === null) { setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null); return }
+    // If dropping ON a different task (not self), make it a sub-task
+    if (dragOverTaskId && dragIdx !== idx) {
+      const draggedTask = tasks[dragIdx]
+      if (!draggedTask || draggedTask.id === targetTaskId) {
+        setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null); return
+      }
+      // Prevent circular: don't make a parent a sub-task of its own child
+      if (draggedTask.parentId === targetTaskId) {
+        setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null); return
+      }
+      setTasks(prev => prev.map(t => t.id === draggedTask.id ? { ...t, parentId: targetTaskId } : t))
+      try {
+        const subKey = `corner-task-subtasks-${targetTaskId}`
+        const existing = JSON.parse(localStorage.getItem(subKey) || '[]')
+        if (!existing.includes(draggedTask.id)) {
+          localStorage.setItem(subKey, JSON.stringify([...existing, draggedTask.id]))
+        }
+      } catch {}
+    } else if (dragIdx !== idx) {
+      // Normal reorder
+      setTasks(prev => {
+        const copy = [...prev]
+        const [moved] = copy.splice(dragIdx, 1)
+        copy.splice(idx, 0, moved)
+        return copy
+      })
+    }
     setDragIdx(null)
     setDragOverIdx(null)
+    setDragOverTaskId(null)
   }
 
   const toggleSection = (key) => {
@@ -4942,15 +5156,17 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     const cardColor = isLive ? '#FF6B3D' : (cardAgent?.agentColor || cardAgent?.color || agentColor)
     const cardKey = t.id || `task-${idx}`
     const isExpanded = expandedTaskId === cardKey
+    const isDropTarget = dragOverTaskId === t.id && dragIdx !== null && tasks[dragIdx]?.id !== t.id
 
     return (
       <div
         key={cardKey}
         draggable={isDraggable && !isExpanded}
         onDragStart={isDraggable && !isExpanded ? () => handleDragStart(idx) : undefined}
-        onDragOver={isDraggable && !isExpanded ? (e) => handleDragOver(e, idx) : undefined}
-        onDrop={isDraggable && !isExpanded ? () => handleDrop(idx) : undefined}
-        onDragEnd={isDraggable && !isExpanded ? () => { setDragIdx(null); setDragOverIdx(null) } : undefined}
+        onDragOver={isDraggable && !isExpanded ? (e) => handleDragOver(e, idx, t.id) : undefined}
+        onDragLeave={isDraggable && !isExpanded ? handleDragLeave : undefined}
+        onDrop={isDraggable && !isExpanded ? () => handleDrop(idx, t.id) : undefined}
+        onDragEnd={isDraggable && !isExpanded ? () => { setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null) } : undefined}
         onContextMenu={ctxHandler}
         style={{
           marginBottom: isMobile ? 10 : 6,
@@ -4958,12 +5174,16 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
             : t.done
               ? (isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(255,255,255,0.02)')
-              : (isDaytime ? `${cardColor}0A` : `${cardColor}06`),
+              : isDropTarget
+                ? (isDaytime ? `${cardColor}20` : `${cardColor}18`)
+                : (isDaytime ? `${cardColor}0A` : `${cardColor}06`),
           border: isLive
             ? '1px solid rgba(255,107,61,0.2)'
             : t.done
               ? (isDaytime ? '1px solid rgba(59,130,246,0.06)' : '1px solid rgba(255,255,255,0.03)')
-              : `1px solid ${cardColor}18`,
+              : isDropTarget
+                ? `2px dashed ${cardColor}60`
+                : `1px solid ${cardColor}18`,
           borderLeft: isLive
             ? '3px solid #FF6B3D'
             : t.done
@@ -5376,23 +5596,78 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         <div style={{ marginBottom: 12 }}>
           {renderSectionHeader(
             agent?.name || agentSlug?.toUpperCase() || 'TASKS',
-            tasks.filter(t => !t.done).length,
+            tasks.filter(t => !t.done && !t.parentId).length,
             agentColor,
             'local',
             false,
             tasks.length > 0 ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 0
           )}
-          {!collapsedSections.local && tasks.map((t, idx) =>
-            renderTaskCard(t, {
-              onToggle: toggleTask,
-              draggable: true,
-              idx,
-              onContextMenu: (e) => {
-                e.preventDefault()
-                setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
-              },
+          {!collapsedSections.local && tasks
+            .filter(t => !t.parentId) // Only top-level tasks
+            .map((t, idx) => {
+              const subTasks = tasks.filter(sub => sub.parentId === t.id)
+              const parentCollapsed = collapsedParents[t.id]
+              return (
+                <div key={t.id || `task-${idx}`}>
+                  {renderTaskCard(t, {
+                    onToggle: toggleTask,
+                    draggable: true,
+                    idx: tasks.indexOf(t),
+                    onContextMenu: (e) => {
+                      e.preventDefault()
+                      setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
+                    },
+                  })}
+                  {/* Sub-tasks */}
+                  {subTasks.length > 0 && (
+                    <div>
+                      {/* Sub-task toggle */}
+                      <div
+                        onClick={() => setCollapsedParents(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          paddingLeft: 20, marginBottom: 4, cursor: 'pointer',
+                          fontSize: 10, fontWeight: 700, color: isDaytime ? '#6B8AB0' : '#475569',
+                          fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em',
+                        }}
+                      >
+                        <ChevronDown size={10} style={{ transform: parentCollapsed ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 150ms' }} />
+                        {subTasks.length} sub-task{subTasks.length !== 1 ? 's' : ''}
+                      </div>
+                      {!parentCollapsed && (
+                        <div style={{
+                          marginLeft: 16,
+                          paddingLeft: 12,
+                          borderLeft: `2px solid ${agentColor}30`,
+                        }}>
+                          {subTasks.map((sub, subIdx) =>
+                            <div key={sub.id || `sub-${subIdx}`} style={{ position: 'relative' }}>
+                              {/* Connecting dot */}
+                              <div style={{
+                                position: 'absolute', left: -17, top: 14,
+                                width: 6, height: 6, borderRadius: '50%',
+                                background: isDaytime ? `${agentColor}60` : `${agentColor}40`,
+                                flexShrink: 0,
+                              }} />
+                              {renderTaskCard(sub, {
+                                onToggle: toggleTask,
+                                draggable: true,
+                                idx: tasks.indexOf(sub),
+                                onContextMenu: (e) => {
+                                  e.preventDefault()
+                                  setTaskCtx({ id: sub.id, x: e.clientX, y: e.clientY, text: sub.text })
+                                },
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
             })
-          )}
+          }
         </div>
       )}
 
@@ -8720,6 +8995,8 @@ export default function GameDashboard() {
 
   // Message context menu state
   const [msgContextMenu, setMsgContextMenu] = useState(null) // { position: {x,y}, msg }
+  // Send-to smart picker state
+  const [sendToMenu, setSendToMenu] = useState(null) // { position: {x,y}, msg }
 
   // Handle message right-click / long-press
   const handleMessageContextMenu = useCallback((e, msg) => {
@@ -8728,6 +9005,16 @@ export default function GameDashboard() {
     const y = e._msgLongPress ? window.innerHeight / 2 - 60 : e.clientY
     setMsgContextMenu({ position: { x, y }, msg })
   }, [])
+
+  // Track recently visited agents in localStorage
+  useEffect(() => {
+    if (!selectedRoom) return
+    try {
+      const recent = JSON.parse(localStorage.getItem('corner-recent-agents') || '[]')
+      const filtered = recent.filter(s => s !== selectedRoom)
+      localStorage.setItem('corner-recent-agents', JSON.stringify([selectedRoom, ...filtered].slice(0, 10)))
+    } catch {}
+  }, [selectedRoom])
 
   // Checkbox state for task context menu actions (toggle done)
   const [sidebarCheckedTasks, setSidebarCheckedTasks] = useState(() => {
@@ -9398,6 +9685,12 @@ export default function GameDashboard() {
         // We pass the message to a shared state here but replyTo lives inside UnifiedPanel.
         // For now just signal via a custom event that the panel can listen to.
         break
+      case 'send-to': {
+        // Show the SendToMenu picker at the context menu position
+        const pos = msgContextMenu?.position || { x: window.innerWidth / 2 - 120, y: window.innerHeight / 2 - 100 }
+        setSendToMenu({ position: pos, msg })
+        break
+      }
       case 'resend':
         if (msg?.content && msg?.role === 'user') {
           setPanelChatInput(msg.content)
@@ -9407,7 +9700,7 @@ export default function GameDashboard() {
       default:
         break
     }
-  }, [selectedRoom])
+  }, [selectedRoom, msgContextMenu])
 
   // Mini-map room click -> move camera
   const handleMinimapRoomClick = (roomId) => {
@@ -9951,7 +10244,34 @@ export default function GameDashboard() {
             data={msgContextMenu.msg}
             position={msgContextMenu.position}
             onClose={() => setMsgContextMenu(null)}
-            onAction={(actionId, data) => { handleMsgContextAction(actionId, data); setMsgContextMenu(null) }}
+            onAction={(actionId, data) => { handleMsgContextAction(actionId, data); if (actionId !== 'send-to') setMsgContextMenu(null) }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Send-to smart destination picker */}
+      <AnimatePresence>
+        {sendToMenu && (
+          <SendToMenu
+            key={`send-to-${sendToMenu.position.x}-${sendToMenu.position.y}`}
+            position={sendToMenu.position}
+            currentAgent={selectedRoom}
+            onClose={() => setSendToMenu(null)}
+            onSelect={(targetAgent) => {
+              const msg = sendToMenu.msg
+              if (!msg?.content) return
+              // Switch to target agent and prefill input with forwarded message
+              const targetSlug = targetAgent.slug
+              const targetRoom = ROOM_LOOKUP[targetSlug]
+              if (targetRoom || targetSlug) {
+                setSelectedRoom(targetSlug)
+                setCameraTarget(targetSlug)
+                setIsOverview(false)
+                setPanelActiveTab('chat')
+                // Prefill chat with forwarded message (quoted)
+                setPanelChatInput(`> ${msg.content.slice(0, 200)}`)
+              }
+            }}
           />
         )}
       </AnimatePresence>
