@@ -6503,9 +6503,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  const idx = AGENTS.findIndex(a => a.id === (room?.id || agentSlug))
+                  const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
                   const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
-                  if (prev) onSelectAgent?.(prev.id)
+                  if (prev) onSelectAgent?.(prev.slug)
                 }}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
@@ -6529,9 +6529,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  const idx = AGENTS.findIndex(a => a.id === (room?.id || agentSlug))
+                  const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
                   const next = AGENTS[(idx + 1) % AGENTS.length]
-                  if (next) onSelectAgent?.(next.id)
+                  if (next) onSelectAgent?.(next.slug)
                 }}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
@@ -6549,9 +6549,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    const idx = AGENTS.findIndex(a => a.id === (room?.id || agentSlug))
+                    const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
                     const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
-                    if (prev) onSelectAgent?.(prev.id)
+                    if (prev) onSelectAgent?.(prev.slug)
                   }}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
@@ -6578,9 +6578,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    const idx = AGENTS.findIndex(a => a.id === (room?.id || agentSlug))
+                    const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
                     const next = AGENTS[(idx + 1) % AGENTS.length]
-                    if (next) onSelectAgent?.(next.id)
+                    if (next) onSelectAgent?.(next.slug)
                   }}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
@@ -7845,10 +7845,20 @@ export default function GameDashboard() {
   const rightNowTasks = pipeData?.rightNow || []
   const addToRightNow = useCallback((task) => {
     if (!task) return
+    console.log('[addToRightNow] task:', task)
     if (!IS_LOCAL) {
       // 1. Update the TASK status: todo -> active
-      const taskParam = task.taskId || task.id ? `id=${encodeURIComponent(task.taskId || task.id)}` : `agent=${encodeURIComponent(task.agent || 'elon')}`
-      fetch(`/api/dashboard/agent-status?table=tasks&${taskParam}&status=active`, { method: 'PATCH' }).catch(() => {})
+      // Only use ID-based lookup if it looks like a real Supabase UUID (36 chars with hyphens).
+      // localStorage-generated IDs (e.g. 'dash-1234567890') are not Supabase UUIDs -- fall back to agent lookup.
+      const rawId = task.taskId || task.id
+      const isSupabaseUuid = rawId && typeof rawId === 'string' && /^[0-9a-f-]{36}$/i.test(rawId)
+      const taskParam = isSupabaseUuid
+        ? `id=${encodeURIComponent(rawId)}`
+        : `agent=${encodeURIComponent(task.agent || 'elon')}`
+      console.log('[addToRightNow] PATCH param:', taskParam, 'rawId:', rawId, 'isUuid:', isSupabaseUuid)
+      fetch(`/api/dashboard/agent-status?table=tasks&${taskParam}&status=active`, { method: 'PATCH' })
+        .then(r => console.log('[addToRightNow] task PATCH status:', r.status))
+        .catch(err => console.warn('[addToRightNow] task PATCH failed:', err))
       // 2. Update the AGENT status: idle -> active
       fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(task.agent || 'elon')}&status=active&current_task=${encodeURIComponent(task.text || '')}`, { method: 'PATCH' }).catch(() => {})
       // 3. Notify relay so Elon auto-assigns
