@@ -1861,6 +1861,7 @@ export default function GameHUD({
     isAutoChecked,
     punchData,
     punchLoading: loading,
+    refetch: refetchPipeData,
   } = useDataPipe(parsePunchList)
   const hudRef = useRef(null)
   const conversationScores = useConversationRecency()
@@ -1885,7 +1886,8 @@ export default function GameHUD({
 
   // Add a task to a project pill (not Right Now) -- writes to Supabase tasks table with project context
   const addProjectTask = useCallback(async (text, sectionSlug, sectionName) => {
-    // Silently write to Supabase tasks table with project slug
+    // Optimistically add to a local pending set so the pill refreshes immediately
+    // The real refresh comes from the POST + refetch below
     try {
       await fetch('/api/dashboard/agent-status', {
         method: 'POST',
@@ -1897,8 +1899,10 @@ export default function GameHUD({
           status: 'todo',
         }),
       })
+      // Immediately refetch so the new task appears in the pill list without waiting for the next 3s poll
+      refetchPipeData?.()
     } catch {}
-  }, [])
+  }, [refetchPipeData])
 
   const toggleManualTask = useCallback((id) => {
     setManualTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))

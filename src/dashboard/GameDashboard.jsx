@@ -105,7 +105,7 @@ const POWERUPS = [
 ]
 
 // ---- POWERUP MENU COMPONENT ----
-function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hideTrigger }) {
+function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, isNightMode, hideTrigger }) {
   const panelRef = useRef(null)
   const [particles, setParticles] = useState([])
 
@@ -147,7 +147,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
   }, [isOpen, onToggle]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleActivate = useCallback((powerup) => {
-    // Particle burst at trigger button position
+    // Particle burst
     const newParticles = Array.from({ length: 4 }, (_, i) => ({
       id: `${powerup.id}-${Date.now()}-${i}`,
       color: powerup.color,
@@ -156,9 +156,10 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
     setParticles(newParticles)
     setTimeout(() => setParticles([]), 500)
 
-    onActivate(powerup.slash)
-    onToggle(false)
-  }, [onActivate, onToggle])
+    // Toggle this skill in the selected list -- menu stays open for multi-select
+    onActivate(powerup)
+    // Do NOT call onToggle(false) -- user explicitly closes the menu
+  }, [onActivate])
 
   return (
     <div ref={panelRef} style={{ position: 'relative', flexShrink: 0, ...(hideTrigger ? { width: 0, height: 0, overflow: 'visible' } : {}) }}>
@@ -307,6 +308,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
                     index={idx}
                     onActivate={handleActivate}
                     isMobile={isMobile}
+                    isSelected={selectedSkills?.some(s => s.id === pu.id) || false}
                   />
                 ))}
               </div>
@@ -327,7 +329,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
 }
 
 // ---- POWERUP TILE ----
-function PowerupTile({ powerup, index, onActivate, isMobile }) {
+function PowerupTile({ powerup, index, onActivate, isMobile, isSelected }) {
   const [pressed, setPressed] = useState(false)
   const [flashing, setFlashing] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
@@ -349,22 +351,26 @@ function PowerupTile({ powerup, index, onActivate, isMobile }) {
     setShowTooltip(false)
   }
 
-  const bgColor = flashing
-    ? `${powerup.color}66`
-    : pressed
-      ? `${powerup.color}1A`
-      : 'rgba(59, 130, 246, 0.04)'
+  const bgColor = isSelected
+    ? `${powerup.color}22`
+    : flashing
+      ? `${powerup.color}66`
+      : pressed
+        ? `${powerup.color}1A`
+        : 'rgba(59, 130, 246, 0.04)'
 
-  const borderColor = flashing
+  const borderColor = isSelected
     ? `${powerup.color}80`
-    : pressed
-      ? `${powerup.color}4D`
-      : 'rgba(59, 130, 246, 0.08)'
+    : flashing
+      ? `${powerup.color}80`
+      : pressed
+        ? `${powerup.color}4D`
+        : 'rgba(59, 130, 246, 0.08)'
 
   return (
     <motion.button
       role="menuitem"
-      aria-label={`Activate ${powerup.name} powerup`}
+      aria-label={`${isSelected ? 'Deselect' : 'Select'} ${powerup.name} powerup`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03, type: 'spring', stiffness: 400, damping: 28 }}
@@ -389,6 +395,20 @@ function PowerupTile({ powerup, index, onActivate, isMobile }) {
         textAlign: 'left',
       }}
     >
+      {/* Selected checkmark badge */}
+      {isSelected && (
+        <div style={{
+          position: 'absolute', top: 6, right: 6,
+          width: 16, height: 16, borderRadius: '50%',
+          background: powerup.color,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+
       {/* Icon container */}
       <div style={{
         width: 44, height: 44,
@@ -2587,7 +2607,7 @@ function MobileDrawer({
   allAgentStatus, data, isNightMode, onAddToRightNow, rightNowTasks,
   atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig,
   // Powerup props
-  powerupOpen, onPowerupToggle, onPowerupActivate,
+  powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup,
   // Snap state (controlled from parent)
   snap, onSnapChange,
 }) {
@@ -2926,6 +2946,8 @@ function MobileDrawer({
               powerupOpen={powerupOpen}
               onPowerupToggle={onPowerupToggle}
               onPowerupActivate={onPowerupActivate}
+              selectedPowerups={selectedPowerups}
+              onRemovePowerup={onRemovePowerup}
               onInputFocus={() => {
                 if (snap !== 'full') {
                   // Save current snap BEFORE changing so keyboard-close restores correctly
@@ -6536,7 +6558,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -7599,12 +7621,56 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   </button>
                 </div>
               )}
+              {/* Selected skill badges -- shown above input when skills are queued */}
+              {selectedPowerups && selectedPowerups.length > 0 && (
+                <div style={{
+                  display: 'flex', flexWrap: 'wrap', gap: 6,
+                  marginBottom: 8,
+                }}>
+                  {selectedPowerups.map(skill => (
+                    <div
+                      key={skill.id}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 8px 3px 6px',
+                        background: `${skill.color}20`,
+                        border: `1px solid ${skill.color}50`,
+                        borderRadius: 20,
+                        fontSize: 10, fontWeight: 700,
+                        color: skill.color,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: 9, opacity: 0.75 }}>/</span>
+                      {skill.slash.replace('/', '')}
+                      <button
+                        type="button"
+                        onClick={() => onRemovePowerup?.(skill.id)}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: skill.color, padding: 0, lineHeight: 1,
+                          display: 'flex', alignItems: 'center',
+                          opacity: 0.7,
+                          marginLeft: 2,
+                        }}
+                        aria-label={`Remove ${skill.name} skill`}
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 0 : 10 }}>
               {/* Powerup menu: desktop shows full trigger button. Mobile hides trigger (dual-purpose send/powerup button in input). */}
               <PowerupMenu
                 isOpen={powerupOpen || false}
                 onToggle={(v) => onPowerupToggle?.(v)}
-                onActivate={(slash) => onPowerupActivate?.(slash)}
+                onActivate={(powerup) => onPowerupActivate?.(powerup)}
+                selectedSkills={selectedPowerups || []}
                 isMobile={isMobile}
                 isNightMode={isNightMode}
                 hideTrigger={isMobile}
@@ -8220,7 +8286,9 @@ export default function GameDashboard() {
   const [panelChatInput, setPanelChatInput] = useState('')
   // Powerup menu state
   const [powerupOpen, setPowerupOpen] = useState(false)
-  const powerupPendingRef = useRef(null) // slash command to auto-submit
+  const powerupPendingRef = useRef(null) // slash command to auto-submit (legacy single-skill path)
+  // Multi-select powerup skills: array of skill objects (from POWERUPS)
+  const [selectedPowerups, setSelectedPowerups] = useState([])
   // @ routing: corner config + autocomplete state
   const [cornerConfig, setCornerConfig] = useState(null)
   const [atMenuOpen, setAtMenuOpen] = useState(false)
@@ -9026,6 +9094,13 @@ export default function GameDashboard() {
       }
     }
     setPanelChatInput('')
+    // Append selected powerup skills to message text, then clear selection
+    if (selectedPowerups.length > 0) {
+      const skillsList = selectedPowerups.map(s => s.slash).join(', ')
+      text = `${text}\n\nSkills: ${skillsList}`
+      setSelectedPowerups([])
+      setPowerupOpen(false)
+    }
     const sentTime = new Date().toISOString()
     const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     setAgentChats(prev => {
@@ -9094,24 +9169,18 @@ export default function GameDashboard() {
       // Polling clears streaming state when a real assistant response arrives (lines 8004, 8045).
       // Clearing immediately after POST would kill the thinking indicator within milliseconds.
     }
-  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap])
+  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups])
 
-  // Powerup activation: inject slash command and auto-submit
-  const handlePowerupActivate = useCallback((slash) => {
-    setPowerupOpen(false)
-    // Set the input to the slash command and queue auto-submit
-    setPanelChatInput(slash)
-    powerupPendingRef.current = slash
+  // Powerup v2: toggle skill in selectedPowerups (multi-select, menu stays open)
+  const handlePowerupActivate = useCallback((powerup) => {
+    setSelectedPowerups(prev => {
+      const already = prev.some(s => s.id === powerup.id)
+      return already ? prev.filter(s => s.id !== powerup.id) : [...prev, powerup]
+    })
   }, [])
 
-  // Auto-submit when powerup pending (runs after panelChatInput state update)
-  useEffect(() => {
-    if (powerupPendingRef.current && panelChatInput === powerupPendingRef.current) {
-      powerupPendingRef.current = null
-      // Simulate form submit by calling the send handler directly
-      handlePanelSendMessage({ preventDefault: () => {} })
-    }
-  }, [panelChatInput, handlePanelSendMessage])
+  // Clear powerup pending ref on mount (legacy safety net)
+  useEffect(() => { powerupPendingRef.current = null }, [])
 
   // Right-click context menu on rooms
   const handleRoomContextMenu = useCallback((e, roomId) => {
@@ -9452,6 +9521,8 @@ export default function GameDashboard() {
               powerupOpen={powerupOpen}
               onPowerupToggle={setPowerupOpen}
               onPowerupActivate={handlePowerupActivate}
+              selectedPowerups={selectedPowerups}
+              onRemovePowerup={(id) => setSelectedPowerups(prev => prev.filter(s => s.id !== id))}
               onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }}
               onSelectProject={setSelectedProject}
               selectedProject={selectedProject}
@@ -9617,6 +9688,8 @@ export default function GameDashboard() {
           powerupOpen={powerupOpen}
           onPowerupToggle={setPowerupOpen}
           onPowerupActivate={handlePowerupActivate}
+          selectedPowerups={selectedPowerups}
+          onRemovePowerup={(id) => setSelectedPowerups(prev => prev.filter(s => s.id !== id))}
           onMessageContextMenu={handleMessageContextMenu}
         />
       )}
