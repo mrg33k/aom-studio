@@ -6496,19 +6496,121 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
         {/* Name + role/status -- stacked on desktop, inline on tablet */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: isTablet ? 6 : 0, flexWrap: isTablet ? 'nowrap' : undefined }}>
-          <div style={{
-            color: isNightMode ? '#F1F5F9' : '#E8ECF0',
-            fontSize: isTablet ? 13 : 22,
-            fontWeight: 900,
-            fontFamily: "'Inter', system-ui, sans-serif",
-            letterSpacing: '0.01em', lineHeight: 1.1,
-            flexShrink: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            maxWidth: isTablet ? 90 : undefined,
-            ...(isTablet ? {} : { width: '100%', marginBottom: 2 }),
-          }}>
-            {agent?.name || room?.agent}
-          </div>
+          {/* Quick-switch arrows + name block */}
+          {isTablet ? (
+            // Tablet: arrows inline with name
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, maxWidth: 130 }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const idx = AGENTS.findIndex(a => a.id === (room?.id || agentSlug))
+                  const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
+                  if (prev) onSelectAgent?.(prev.id)
+                }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                  color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                  fontSize: 14, lineHeight: 1, flexShrink: 0,
+                  display: 'flex', alignItems: 'center',
+                }}
+                title="Previous agent"
+              >&#8249;</button>
+              <div style={{
+                color: isNightMode ? '#F1F5F9' : '#E8ECF0',
+                fontSize: 13,
+                fontWeight: 900,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                letterSpacing: '0.01em', lineHeight: 1.1,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                maxWidth: 80,
+              }}>
+                {agent?.name || room?.agent}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const idx = AGENTS.findIndex(a => a.id === (room?.id || agentSlug))
+                  const next = AGENTS[(idx + 1) % AGENTS.length]
+                  if (next) onSelectAgent?.(next.id)
+                }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                  color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                  fontSize: 14, lineHeight: 1, flexShrink: 0,
+                  display: 'flex', alignItems: 'center',
+                }}
+                title="Next agent"
+              >&#8250;</button>
+            </div>
+          ) : (
+            // Desktop: name row with arrows, then subtitle below
+            <div style={{ width: '100%', marginBottom: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const idx = AGENTS.findIndex(a => a.id === (room?.id || agentSlug))
+                    const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
+                    if (prev) onSelectAgent?.(prev.id)
+                  }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                    color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                    fontSize: 18, lineHeight: 1, flexShrink: 0,
+                    display: 'flex', alignItems: 'center',
+                    opacity: 0.7, transition: 'opacity 120ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.7' }}
+                  title="Previous agent"
+                >&#8249;</button>
+                <div style={{
+                  color: isNightMode ? '#F1F5F9' : '#E8ECF0',
+                  fontSize: 22,
+                  fontWeight: 900,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  letterSpacing: '0.01em', lineHeight: 1.1,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  flex: 1,
+                }}>
+                  {agent?.name || room?.agent}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const idx = AGENTS.findIndex(a => a.id === (room?.id || agentSlug))
+                    const next = AGENTS[(idx + 1) % AGENTS.length]
+                    if (next) onSelectAgent?.(next.id)
+                  }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                    color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                    fontSize: 18, lineHeight: 1, flexShrink: 0,
+                    display: 'flex', alignItems: 'center',
+                    opacity: 0.7, transition: 'opacity 120ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.7' }}
+                  title="Next agent"
+                >&#8250;</button>
+              </div>
+              {/* Current task subtitle */}
+              {(() => {
+                const activeTask = liveAgents?.find(t => t.agent === agentSlug)
+                const subtitle = activeTask?.text || (status === 'WORKING' ? 'Active' : 'Idle')
+                return (
+                  <div style={{
+                    fontSize: 10, fontStyle: 'italic', color: '#8BA4C4',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    maxWidth: '100%', marginTop: 2, lineHeight: 1.3,
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                  }}>
+                    {subtitle}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
           {!isTablet && (
             <div style={{
               color: agentColor, fontSize: 13, fontWeight: 700,
@@ -7011,9 +7113,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     {/* Message content */}
                     <div style={{ maxWidth: '80%' }}>
                       <div style={{
-                        padding: isUser ? '10px 14px' : '8px 12px',
+                        padding: isUser ? '8px 12px' : '7px 11px',
                         borderRadius: 8,
-                        fontSize: 14, fontWeight: 500, lineHeight: 1.45,
+                        fontSize: 13, fontWeight: 500, lineHeight: 1.4,
                         fontFamily: "'Inter', system-ui, sans-serif",
                         ...(isUser
                           ? {
