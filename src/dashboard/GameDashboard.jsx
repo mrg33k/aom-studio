@@ -31,6 +31,7 @@ import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskCo
 import BoardView from './BoardView.jsx'
 import briefsIndex from '../data/briefs-index.json'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
+import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -3353,7 +3354,7 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, currentUser, onSignOut }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
   const [teamName, setTeamName] = useState(() => {
@@ -4079,6 +4080,61 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
+
+        {/* User display + sign-out (only when Supabase auth active) */}
+        {currentUser && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+          }}>
+            {!isMobile && (
+              <span style={{
+                fontSize: 12, fontWeight: 500,
+                color: isNightMode ? '#475569' : '#6B8AB0',
+                fontFamily: "'Inter', sans-serif",
+                maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {currentUser.email}
+              </span>
+            )}
+            <button
+              title="Sign out"
+              onClick={onSignOut}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'transparent',
+                border: isNightMode ? '1.5px solid rgba(239,68,68,0.2)' : '1.5px solid rgba(239,68,68,0.25)',
+                borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
+                cursor: 'pointer', transition: 'all 150ms ease', flexShrink: 0,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(239,68,68,0.1)'
+                e.currentTarget.style.borderColor = 'rgba(239,68,68,0.45)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.borderColor = isNightMode ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.25)'
+              }}
+            >
+              {/* Log-out icon (arrow right out of box) */}
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
+                stroke="#F87171" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              {!isMobile && (
+                <span style={{
+                  fontSize: 12, fontWeight: 600,
+                  color: '#F87171',
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  Sign out
+                </span>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* View mode toggle: Game | Board */}
         <div style={{
@@ -8664,7 +8720,23 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
 // ---- MAIN GAME DASHBOARD ---------------------------------------------------
 export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
+  const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
+
+  // Load Supabase user on mount + watch for auth state changes
+  useEffect(() => {
+    getCurrentUser().then(user => { if (user) setCurrentUser(user) })
+    const unsubscribe = onAuthStateChange((session) => {
+      setCurrentUser(session?.user || null)
+    })
+    return unsubscribe
+  }, [])
+
+  const handleSignOut = useCallback(async () => {
+    await authSignOut()
+    sessionStorage.removeItem('dash-auth')
+    window.location.href = '/login'
+  }, [])
 
   // Right Now tasks: wire to useDataPipe (real-time from task-status.jsonl + agent-notifications.md)
   // No longer using localStorage -- this is now live data from the server
@@ -9919,7 +9991,7 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} currentUser={currentUser} onSignOut={handleSignOut} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 

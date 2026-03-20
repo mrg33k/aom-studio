@@ -1,6 +1,8 @@
-import React, { lazy, Suspense, useEffect } from 'react'
+import React, { lazy, Suspense, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import Login from './pages/Login.jsx'
+import { onAuthStateChange } from './dashboard/lib/auth.js'
 import App from './App.jsx'
 import BrandGuidelines from './pages/BrandGuidelines.jsx'
 import BrandsHub from './pages/BrandsHub.jsx'
@@ -67,6 +69,43 @@ function BrandRedirect() {
   return null
 }
 
+// AuthGuard: checks Supabase session before rendering dashboard routes.
+// Falls through immediately if Supabase is not configured (localhost without env vars).
+function AuthGuard({ children }) {
+  const navigate = useNavigate()
+  const [checked, setChecked] = useState(false)
+  const [authed, setAuthed] = useState(false)
+
+  useEffect(() => {
+    // onAuthStateChange fires immediately with current session, then on changes.
+    const unsubscribe = onAuthStateChange((session) => {
+      if (session) {
+        setAuthed(true)
+        setChecked(true)
+      } else {
+        setAuthed(false)
+        setChecked(true)
+        navigate('/login', { replace: true })
+      }
+    })
+    return unsubscribe
+  }, [navigate])
+
+  if (!checked) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#0A0F1A',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', borderTop: '2px solid #E85D26', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  return authed ? children : null
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
@@ -112,15 +151,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/settings" element={<Settings />} />
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
-          <Route path="/dashboard" element={<GameDashboard />} />
-          <Route path="/dashboard/agent/:slug" element={<GameDashboard />} />
-          <Route path="/dashboard/checklist" element={<GameDashboard />} />
-          <Route path="/dashboard/checklist/:slug" element={<GameDashboard />} />
-          <Route path="/dashboard/megaboard" element={<GameDashboard />} />
-          <Route path="/dashboard/megaboard/agent/:slug" element={<GameDashboard />} />
-          <Route path="/dashboard/chat" element={<ChatDashboard />} />
-          <Route path="/dashboard/chat/agent/:slug" element={<ChatDashboard />} />
-          <Route path="/dashboard/v1" element={<DashboardV2 />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard/checklist" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard/checklist/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard/megaboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard/megaboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
+          <Route path="/dashboard/chat" element={<AuthGuard><ChatDashboard /></AuthGuard>} />
+          <Route path="/dashboard/chat/agent/:slug" element={<AuthGuard><ChatDashboard /></AuthGuard>} />
+          <Route path="/dashboard/v1" element={<AuthGuard><DashboardV2 /></AuthGuard>} />
         </Routes>
       </Suspense>
     </BrowserRouter>
