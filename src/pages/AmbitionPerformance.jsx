@@ -1,13 +1,57 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { ChevronDown, Camera, Film, Globe, Instagram, Linkedin, MapPin, Calendar, Clock, DollarSign, TrendingUp, Video, Image, Mic, FileText, ArrowRight, Star, Flame, Zap } from 'lucide-react';
-import SiteNav from '../components/SiteNav';
-import SiteFooter from '../components/SiteFooter';
+import { ChevronDown, Camera, Film, Globe, Instagram, Linkedin, MapPin, Calendar, Clock, DollarSign, TrendingUp, Video, Image, Mic, FileText, ArrowRight, Star, Flame, Zap, Play, Hash, Users, BarChart3, Layers, Eye, Monitor } from 'lucide-react';
+
+/* ================================================================== */
+/*  GOOGLE FONTS -- Barlow Condensed + Inter                           */
+/* ================================================================== */
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap';
+fontLink.rel = 'stylesheet';
+if (!document.querySelector('link[href*="Barlow+Condensed"]')) {
+  document.head.appendChild(fontLink);
+}
+
+/* ================================================================== */
+/*  AMBITION BRAND DESIGN TOKENS                                       */
+/* ================================================================== */
+const C = {
+  navy950: '#070b1e',
+  navy900: '#0a0e2a',
+  navy800: '#111638',
+  navy700: '#1a1f45',
+  navy600: '#1a237e',
+  navy500: '#283593',
+  navy400: '#3949ab',
+  navy300: '#5c6bc0',
+  red700: '#991b1b',
+  red600: '#b91c1c',
+  red500: '#dc2626',
+  red400: '#ef4444',
+  red300: '#f87171',
+  flame500: '#ea580c',
+  flame400: '#f97316',
+  white: '#ffffff',
+  offWhite: '#f8fafc',
+  gray100: '#f3f4f6',
+  gray200: '#e5e7eb',
+  gray300: '#d1d5db',
+  gray400: '#9ca3af',
+  gray500: '#6b7280',
+  gray600: '#4b5563',
+  navyBorder: 'rgba(57,73,171,0.25)',
+  navyBorderLight: 'rgba(57,73,171,0.12)',
+};
+
+const F = {
+  display: "'Barlow Condensed', sans-serif",
+  body: "'Inter', system-ui, sans-serif",
+};
 
 /* ── SEO ────────────────────────────────────────────────────────── */
 function useSEO() {
   useEffect(() => {
-    document.title = 'Ambition Mechanical Services | Performance Report | AOM';
+    document.title = 'Ambition Mechanical Services | Performance Report';
     const setMeta = (name, content, property = false) => {
       const attr = property ? 'property' : 'name';
       let el = document.querySelector(`meta[${attr}="${name}"]`);
@@ -18,18 +62,17 @@ function useSEO() {
     setMeta('og:title', 'Ambition Mechanical Services | Performance Report', true);
     setMeta('og:description', '37 shoots. 3,138 video files. 713 photos. 3 TB of footage. 1 custom website. 11 months of creative production.', true);
     setMeta('og:type', 'article', true);
-    setMeta('og:url', 'https://aheadofmarket.com/brands/ambition/performance', true);
   }, []);
 }
 
 /* ── Noise overlay ─────────────────────────────────────────────── */
-function NoiseOverlay({ opacity = 0.03, blend = 'overlay' }) {
+function NoiseOverlay({ opacity = 0.03 }) {
   return (
     <div
       className="absolute inset-0 pointer-events-none z-[1]"
       style={{
         opacity,
-        mixBlendMode: blend,
+        mixBlendMode: 'overlay',
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
         backgroundRepeat: 'repeat',
         backgroundSize: '256px 256px',
@@ -38,36 +81,17 @@ function NoiseOverlay({ opacity = 0.03, blend = 'overlay' }) {
   );
 }
 
-/* ── Section label ─────────────────────────────────────────────── */
-function SectionLabel({ label, centered = false }) {
-  return (
-    <div className={centered ? 'text-center' : ''}>
-      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-4">
-        {label}
-      </p>
-      <div className={`w-12 h-[2px] bg-[#E85D26] mb-8 ${centered ? 'mx-auto' : ''}`} />
-    </div>
-  );
-}
-
 /* ── Scroll reveal wrapper ─────────────────────────────────────── */
-function Reveal({ children, delay = 0, className = '', direction = 'y' }) {
+function Reveal({ children, delay = 0, className = '' }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-60px' });
   const prefersReduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-  const initial = prefersReduced
-    ? { opacity: 1 }
-    : { opacity: 0, ...(direction === 'y' ? { y: 30 } : { x: -20 }) };
-  const animate = isInView
-    ? { opacity: 1, y: 0, x: 0 }
-    : initial;
-
   return (
     <motion.div
       ref={ref}
-      initial={initial}
-      animate={animate}
+      initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 30 }}
+      animate={isInView ? { opacity: 1, y: 0 } : undefined}
       transition={{ duration: prefersReduced ? 0 : 0.7, delay: prefersReduced ? 0 : delay, ease: 'easeOut' }}
       className={className}
     >
@@ -79,11 +103,8 @@ function Reveal({ children, delay = 0, className = '', direction = 'y' }) {
 /* ── Count-up hook ─────────────────────────────────────────────── */
 function useCountUp(end, duration = 1400, inView = false) {
   const [value, setValue] = useState(0);
-  const prefersReduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
   useEffect(() => {
     if (!inView) return;
-    if (prefersReduced) { setValue(end); return; }
     const startTime = performance.now();
     const step = (now) => {
       const elapsed = now - startTime;
@@ -93,34 +114,30 @@ function useCountUp(end, duration = 1400, inView = false) {
       if (progress < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
-  }, [end, duration, inView, prefersReduced]);
-
+  }, [end, duration, inView]);
   return value;
 }
 
-/* ── Stat Card ─────────────────────────────────────────────────── */
-function StatCard({ number, suffix = '', prefix = '', label, context, index }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-  const countValue = useCountUp(number, 1400, isInView);
-
+/* ── Section Label ─────────────────────────────────────────────── */
+function SectionLabel({ label, centered = false }) {
   return (
-    <Reveal delay={index * 0.1}>
-      <div ref={ref} className="text-center p-6 md:p-8 relative border border-[#292524] bg-[#1A1A17] overflow-hidden group hover:border-[#E85D26]/30 transition-all duration-500">
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E85D26]" />
-        <div className="font-headline text-5xl md:text-6xl lg:text-7xl font-extrabold italic leading-none tabular-nums text-[#F5F0EB]">
-          {prefix}{isInView ? countValue : 0}{suffix}
-        </div>
-        <p className="font-headline text-sm font-bold uppercase tracking-tight mt-4 text-[#E85D26]">
-          {label}
-        </p>
-        {context && (
-          <p className="text-sm font-body mt-2 text-[#78716C]">
-            {context}
-          </p>
-        )}
-      </div>
-    </Reveal>
+    <div className={centered ? 'text-center' : ''} style={{ marginBottom: 24 }}>
+      <p style={{
+        fontFamily: F.display,
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.25em',
+        textTransform: 'uppercase',
+        color: C.red500,
+        marginBottom: 12,
+      }}>{label}</p>
+      <div style={{
+        width: 48,
+        height: 2,
+        background: C.red500,
+        margin: centered ? '0 auto' : 0,
+      }} />
+    </div>
   );
 }
 
@@ -135,12 +152,6 @@ const heroStats = [
   { number: 23, suffix: '', label: 'Finished Video Exports', context: 'Edited, color-graded, delivered' },
   { number: 22, suffix: '+', label: 'Job Sites Documented', context: 'Premium client locations' },
   { number: 1, suffix: '', label: 'Custom Website', context: 'Built and launched March 2026' },
-];
-
-const socialStats = [
-  { platform: 'Instagram', handle: '@ambition_air_conditioning', posts: 57, followers: 1537, following: 1229 },
-  { platform: 'TikTok', handle: '@ambitionmech', posts: null, followers: null, following: null },
-  { platform: 'LinkedIn', handle: 'Ambition Mechanical Services', posts: null, followers: null, following: null },
 ];
 
 const shoots = [
@@ -189,12 +200,12 @@ const highProfileClients = [
 ];
 
 const equipment = [
-  { name: 'DJI Air 3 / Air 3S', type: 'Drone', detail: '25+ aerial sessions', icon: '🔺' },
-  { name: 'DJI Ronin 4D', type: 'Cinema Camera', detail: 'Feature-film grade footage', icon: '🎬' },
-  { name: 'Panasonic S5IIX', type: 'Photo/Video', detail: 'Hybrid stills and motion', icon: '📷' },
-  { name: 'DJI OSMO Action 3', type: 'Action Cam', detail: 'Dynamic POV coverage', icon: '🏃' },
-  { name: 'BlackMagic Camera App', type: 'Mobile Cinema', detail: 'Professional mobile capture', icon: '📱' },
-  { name: 'DJI Mic', type: 'Professional Audio', detail: 'Crystal-clear interviews', icon: '🎙️' },
+  { name: 'DJI Air 3 / Air 3S', type: 'Drone', detail: '25+ aerial sessions' },
+  { name: 'DJI Ronin 4D', type: 'Cinema Camera', detail: 'Feature-film grade footage' },
+  { name: 'Panasonic S5IIX', type: 'Photo/Video', detail: 'Hybrid stills and motion' },
+  { name: 'DJI OSMO Action 3', type: 'Action Cam', detail: 'Dynamic POV coverage' },
+  { name: 'BlackMagic Camera App', type: 'Mobile Cinema', detail: 'Professional mobile capture' },
+  { name: 'DJI Mic', type: 'Professional Audio', detail: 'Crystal-clear interviews' },
 ];
 
 const contentArsenal = [
@@ -204,10 +215,6 @@ const contentArsenal = [
   { number: 14, label: 'Voiceover Recordings', desc: 'Professional narration' },
   { number: 30, label: 'Day Content Calendar', desc: 'With 28 planned pieces' },
   { number: 6, label: 'Content Pillars Defined', desc: 'Strategic framework' },
-];
-
-const contentPillars = [
-  'The Work', 'Before / After', 'Education', 'Team', 'Local', 'Social Proof',
 ];
 
 const valueComparison = [
@@ -227,8 +234,125 @@ const hoursBreakdown = [
   { activity: 'Social Media Management', calc: 'Posting + scheduling', hours: 40 },
 ];
 
+const brandedVideos = [
+  { title: 'Rooftop Unit Signs', category: 'Education' },
+  { title: 'Pressure Test', category: 'The Work' },
+  { title: '25 vs 40 Ton', category: 'Education' },
+  { title: 'Startup Checklist', category: 'Education' },
+  { title: 'Crane Day Prep', category: 'The Work' },
+  { title: 'Inspection Signoff', category: 'The Work' },
+  { title: '12-Story Pipe Run', category: 'The Work' },
+  { title: 'PHX HVAC Numbers', category: 'Local' },
+  { title: 'HVAC Lead Times', category: 'Education' },
+  { title: 'Data Centers', category: 'The Work' },
+  { title: 'Refrigerant Rules', category: 'Education' },
+  { title: 'GC Expo', category: 'Social Proof' },
+  { title: 'ABA Mixer', category: 'Social Proof' },
+  { title: 'ACCA Conference', category: 'Social Proof' },
+  { title: 'Crew / 500 Projects', category: 'Team' },
+  { title: 'Day on Roof', category: 'The Work' },
+  { title: 'The Shop', category: 'Team' },
+  { title: 'Year in Review', category: 'Brand' },
+];
+
+const memorialTowerEdits = [
+  { title: 'Memorial Tower v1', category: 'Project Showcase' },
+  { title: 'Memorial Tower v2', category: 'Project Showcase' },
+  { title: 'Memorial Tower v3', category: 'Project Showcase' },
+  { title: 'Memorial Tower v4', category: 'Project Showcase' },
+  { title: 'AE-13 The Drop', category: 'Social Edit' },
+];
+
+const contentPillars = [
+  { name: 'The Work', desc: 'Jobs completed, equipment installed, rooftop units, pipe runs', icon: Flame },
+  { name: 'Before / After', desc: 'Project transformations that show the impact of the work', icon: Layers },
+  { name: 'Education / Tips', desc: 'Seasonal HVAC knowledge, maintenance tips, industry insights', icon: FileText },
+  { name: 'Team / Trust', desc: 'Crew introductions, behind-the-scenes, company culture', icon: Users },
+  { name: 'Local / Phoenix', desc: 'Desert context, Phoenix market, community presence', icon: MapPin },
+  { name: 'Social Proof', desc: 'Reviews, testimonials, industry events, client wins', icon: Star },
+];
+
+const typeColors = {
+  Commercial: C.red500,
+  Restaurant: C.flame400,
+  Team: C.navy300,
+  Retail: C.red400,
+  Healthcare: C.navy300,
+  Brand: C.red500,
+  Industrial: C.gray400,
+  Luxury: C.flame400,
+};
+
+const videoCategoryColors = {
+  'Education': C.navy300,
+  'The Work': C.red500,
+  'Local': C.flame400,
+  'Social Proof': C.gray400,
+  'Team': C.navy400,
+  'Brand': C.red400,
+  'Project Showcase': C.navy300,
+  'Social Edit': C.flame500,
+};
+
 /* ════════════════════════════════════════════════════════════════
-   HERO SECTION
+   NAV (Ambition Standalone)
+   ════════════════════════════════════════════════════════════════ */
+function AmbitionNav() {
+  return (
+    <nav style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 100,
+      background: 'rgba(7,11,30,0.92)',
+      backdropFilter: 'blur(12px)',
+      borderBottom: `1px solid ${C.navyBorder}`,
+    }}>
+      <div style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: '16px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{
+            fontFamily: F.display,
+            fontSize: 22,
+            fontWeight: 800,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: C.white,
+          }}>AMBITION</span>
+          <span style={{
+            fontFamily: F.display,
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: C.gray500,
+          }}>MECHANICAL SERVICES</span>
+        </div>
+        <span style={{
+          fontFamily: F.display,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color: C.red500,
+          border: `1px solid ${C.red500}`,
+          borderRadius: 100,
+          padding: '6px 16px',
+        }}>PERFORMANCE REPORT</span>
+      </div>
+    </nav>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HERO
    ════════════════════════════════════════════════════════════════ */
 function HeroSection() {
   const scrollToNext = () => {
@@ -237,66 +361,114 @@ function HeroSection() {
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0C0C0C]">
+    <section style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      background: C.navy950,
+    }}>
       <NoiseOverlay />
-      <div
-        className="absolute inset-0 pointer-events-none z-[2]"
-        style={{
-          background: 'radial-gradient(ellipse 60% 40% at 50% 20%, rgba(232, 93, 38, 0.06), transparent)',
-        }}
-      />
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        background: `radial-gradient(ellipse 60% 40% at 50% 20%, rgba(220,38,38,0.08), transparent)`,
+      }} />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 900, margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
         <Reveal>
-          <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-4">
-            CLIENT PERFORMANCE REPORT
-          </p>
+          <p style={{
+            fontFamily: F.display,
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: '0.3em',
+            textTransform: 'uppercase',
+            color: C.gray500,
+            marginBottom: 16,
+          }}>CLIENT PERFORMANCE REPORT</p>
         </Reveal>
 
         <Reveal delay={0.1}>
-          <div className="w-12 h-[2px] bg-[#E85D26] mx-auto mb-8" />
+          <div style={{ width: 48, height: 2, background: C.red500, margin: '0 auto 28px' }} />
         </Reveal>
 
         <Reveal delay={0.15}>
-          <p className="font-mono text-sm text-[#E85D26] tracking-wide mb-6">
-            APRIL 2025 &mdash; MARCH 2026
-          </p>
+          <p style={{
+            fontFamily: F.display,
+            fontSize: 14,
+            fontWeight: 600,
+            letterSpacing: '0.15em',
+            color: C.red500,
+            marginBottom: 24,
+          }}>APRIL 2025 &mdash; MARCH 2026</p>
         </Reveal>
 
         <Reveal delay={0.2}>
-          <h1 className="font-headline text-5xl md:text-6xl lg:text-7xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB] leading-[0.95]">
+          <h1 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(48px, 8vw, 96px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 0.95,
+            letterSpacing: '-0.02em',
+            margin: 0,
+          }}>
             AMBITION<br />MECHANICAL<br />SERVICES
           </h1>
         </Reveal>
 
         <Reveal delay={0.35}>
-          <p className="text-[#A8A29E] text-lg md:text-xl text-center mt-8 max-w-2xl mx-auto leading-relaxed font-body">
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            marginTop: 32,
+            maxWidth: 640,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            lineHeight: 1.7,
+          }}>
             11 months of creative production partnership. 37 shoots. 3,138 video files. 3 TB of footage. 713 photos. 1 custom website. Here's everything we've built together.
           </p>
         </Reveal>
 
         <Reveal delay={0.45}>
-          <div className="flex items-center justify-center gap-3 mt-6">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">Produced by</span>
-            <span className="font-headline text-sm font-extrabold uppercase tracking-tight text-[#E85D26]">AOM</span>
-            <span className="text-[10px] font-mono text-[#78716C]">|</span>
-            <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">Phoenix, AZ</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 24 }}>
+            <span style={{ fontFamily: F.display, fontSize: 11, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.gray500 }}>Produced by</span>
+            <span style={{ fontFamily: F.display, fontSize: 14, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: C.red500 }}>AOM</span>
+            <span style={{ color: C.gray500, fontSize: 11 }}>|</span>
+            <span style={{ fontFamily: F.display, fontSize: 11, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.gray500 }}>Phoenix, AZ</span>
           </div>
         </Reveal>
       </div>
 
       <button
         onClick={scrollToNext}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50 hover:opacity-100 transition-opacity z-10 cursor-pointer"
+        style={{
+          position: 'absolute',
+          bottom: 32,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          opacity: 0.5,
+          zIndex: 10,
+        }}
       >
-        <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C]">
+        <span style={{ fontFamily: F.display, fontSize: 10, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', color: C.gray500 }}>
           SEE THE RESULTS
         </span>
-        <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}
-        >
-          <ChevronDown size={16} className="text-[#78716C]" />
+        <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}>
+          <ChevronDown size={16} color={C.gray500} />
         </motion.div>
       </button>
     </section>
@@ -306,22 +478,77 @@ function HeroSection() {
 /* ════════════════════════════════════════════════════════════════
    BY THE NUMBERS
    ════════════════════════════════════════════════════════════════ */
+function StatCard({ number, suffix = '', prefix = '', label, context, index }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.2 });
+  const countValue = useCountUp(number, 1400, isInView);
+
+  return (
+    <Reveal delay={index * 0.1}>
+      <div ref={ref} style={{
+        textAlign: 'center',
+        padding: 32,
+        background: C.navy800,
+        border: `1px solid ${C.navyBorder}`,
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'border-color 0.4s',
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.red500 }} />
+        <div style={{
+          fontFamily: F.display,
+          fontSize: 'clamp(48px, 5vw, 72px)',
+          fontWeight: 900,
+          lineHeight: 1,
+          color: C.white,
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          {prefix}{isInView ? countValue : 0}{suffix}
+        </div>
+        <p style={{
+          fontFamily: F.display,
+          fontSize: 14,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          color: C.red500,
+          marginTop: 16,
+        }}>{label}</p>
+        {context && (
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 15,
+            color: C.gray400,
+            marginTop: 8,
+            lineHeight: 1.5,
+          }}>{context}</p>
+        )}
+      </div>
+    </Reveal>
+  );
+}
+
 function StatsSection() {
   return (
-    <section id="section-stats" className="relative bg-[#0C0C0C] py-16 md:py-24 lg:py-32">
+    <section id="section-stats" style={{ position: 'relative', background: C.navy950, padding: '80px 0 96px' }}>
       <NoiseOverlay />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
           <SectionLabel label="BY THE NUMBERS" />
         </Reveal>
-
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            11 MONTHS OF OUTPUT.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            letterSpacing: '-0.01em',
+            marginBottom: 48,
+          }}>11 MONTHS OF OUTPUT.</h2>
         </Reveal>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-16">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
           {heroStats.map((stat, i) => (
             <StatCard key={stat.label} {...stat} index={i} />
           ))}
@@ -332,82 +559,416 @@ function StatsSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SOCIAL MEDIA PRESENCE
+   SOCIAL MEDIA PERFORMANCE
    ════════════════════════════════════════════════════════════════ */
 function SocialSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
   const postCount = useCountUp(57, 1400, isInView);
   const followerCount = useCountUp(1537, 1400, isInView);
+  const followingCount = useCountUp(1229, 1400, isInView);
+
+  const cardStyle = {
+    background: C.navy800,
+    border: `1px solid ${C.navyBorder}`,
+    padding: 32,
+    position: 'relative',
+    overflow: 'hidden',
+  };
 
   return (
-    <section ref={ref} className="relative bg-[#141412] py-16 md:py-24 lg:py-28 overflow-hidden">
+    <section ref={ref} style={{ position: 'relative', background: C.navy900, padding: '96px 0', overflow: 'hidden' }}>
       <NoiseOverlay />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
-          <SectionLabel label="SOCIAL MEDIA PRESENCE" />
+          <SectionLabel label="SOCIAL MEDIA PERFORMANCE" />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            BUILDING THE BRAND ONLINE.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 16,
+          }}>BUILDING THE BRAND ONLINE.</h2>
         </Reveal>
 
         <Reveal delay={0.15}>
-          <p className="text-[#A8A29E] text-base md:text-lg leading-relaxed max-w-3xl mt-6 font-body">
-            Organic growth across three platforms. Every post hand-crafted. No bots, no paid followers, no shortcuts.
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 700,
+            marginBottom: 48,
+          }}>
+            Organic growth across three platforms. Every post hand-crafted. No bots, no paid followers, no shortcuts. Real content. Real engagement.
           </p>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 mt-12">
-          {/* Instagram */}
+        {/* Three Platform Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+
+          {/* Instagram -- The big one */}
           <Reveal delay={0.2}>
-            <div className="bg-[#1A1A17] border border-[#292524] p-6 md:p-8 relative overflow-hidden group hover:border-[#E85D26]/30 transition-all duration-500">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E85D26]" />
-              <div className="flex items-center gap-2 mb-4">
-                <Instagram size={20} className="text-[#E85D26]" />
-                <span className="font-headline text-xs font-bold uppercase tracking-tight text-[#78716C]">Instagram</span>
+            <div style={{ ...cardStyle }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.red500 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <Instagram size={22} color={C.red500} />
+                <span style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, textTransform: 'uppercase', color: C.white }}>Instagram</span>
               </div>
-              <p className="font-mono text-xs text-[#A8A29E] mb-4">@ambition_air_conditioning</p>
-              <div className="grid grid-cols-2 gap-4">
+              <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray400, marginBottom: 24 }}>@ambition_air_conditioning</p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
                 <div>
-                  <div className="font-headline text-3xl md:text-4xl font-extrabold italic text-[#F5F0EB] tabular-nums">{isInView ? postCount : 0}</div>
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C] mt-1">POSTS</p>
+                  <div style={{ fontFamily: F.display, fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 900, color: C.white, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                    {isInView ? postCount : 0}
+                  </div>
+                  <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginTop: 6 }}>POSTS</p>
                 </div>
                 <div>
-                  <div className="font-headline text-3xl md:text-4xl font-extrabold italic text-[#F5F0EB] tabular-nums">{isInView ? followerCount.toLocaleString() : 0}</div>
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C] mt-1">FOLLOWERS</p>
+                  <div style={{ fontFamily: F.display, fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 900, color: C.white, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                    {isInView ? followerCount.toLocaleString() : 0}
+                  </div>
+                  <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginTop: 6 }}>FOLLOWERS</p>
+                </div>
+                <div>
+                  <div style={{ fontFamily: F.display, fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 900, color: C.white, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                    {isInView ? followingCount.toLocaleString() : 0}
+                  </div>
+                  <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginTop: 6 }}>FOLLOWING</p>
                 </div>
               </div>
+
+              <div style={{ borderTop: `1px solid ${C.navyBorder}`, paddingTop: 16 }}>
+                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.red500, marginBottom: 10 }}>CONTENT MIX</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {['Project Showcases', 'Before/After', 'Equipment', 'Team', 'Drone Aerials', 'Job Sites'].map(tag => (
+                    <span key={tag} style={{
+                      fontFamily: F.body,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: C.gray300,
+                      background: C.navy700,
+                      padding: '4px 12px',
+                      borderRadius: 4,
+                    }}>{tag}</span>
+                  ))}
+                </div>
+              </div>
+
+              <p style={{ fontFamily: F.body, fontSize: 12, color: C.gray500, marginTop: 16 }}>100% organic growth. Zero paid promotion.</p>
             </div>
           </Reveal>
 
           {/* TikTok */}
           <Reveal delay={0.3}>
-            <div className="bg-[#1A1A17] border border-[#292524] p-6 md:p-8 relative overflow-hidden group hover:border-[#E85D26]/30 transition-all duration-500">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#C9A84C]" />
-              <div className="flex items-center gap-2 mb-4">
-                <Video size={20} className="text-[#C9A84C]" />
-                <span className="font-headline text-xs font-bold uppercase tracking-tight text-[#78716C]">TikTok</span>
+            <div style={{ ...cardStyle }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.flame400 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <Video size={22} color={C.flame400} />
+                <span style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, textTransform: 'uppercase', color: C.white }}>TikTok</span>
               </div>
-              <p className="font-mono text-xs text-[#A8A29E] mb-4">@ambitionmech</p>
-              <p className="text-[#A8A29E] text-sm leading-relaxed font-body">Active account with HVAC content, project showcases, and behind-the-scenes footage. Cross-posting pipeline ready.</p>
+              <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray400, marginBottom: 24 }}>@ambitionmech</p>
+
+              <p style={{ fontFamily: F.body, fontSize: 18, color: C.gray300, lineHeight: 1.7, marginBottom: 24 }}>
+                Active account with HVAC-focused content. Short-form video optimized for discoverability in the trades space.
+              </p>
+
+              <div style={{ borderTop: `1px solid ${C.navyBorder}`, paddingTop: 16 }}>
+                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.flame400, marginBottom: 10 }}>CONTENT TYPES</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {['HVAC Repairs', 'Project Showcases', 'Behind-the-Scenes', 'Equipment Installs'].map(tag => (
+                    <span key={tag} style={{
+                      fontFamily: F.body,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: C.gray300,
+                      background: C.navy700,
+                      padding: '4px 12px',
+                      borderRadius: 4,
+                    }}>{tag}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginTop: 20, padding: '12px 16px', background: C.navy700, border: `1px solid ${C.navyBorder}`, borderRadius: 4 }}>
+                <p style={{ fontFamily: F.body, fontSize: 13, color: C.gray300, lineHeight: 1.5 }}>
+                  Cross-posting pipeline built and ready. All Instagram content automatically formatted for TikTok distribution.
+                </p>
+              </div>
             </div>
           </Reveal>
 
           {/* LinkedIn */}
           <Reveal delay={0.4}>
-            <div className="bg-[#1A1A17] border border-[#292524] p-6 md:p-8 relative overflow-hidden group hover:border-[#E85D26]/30 transition-all duration-500">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#7C9A72]" />
-              <div className="flex items-center gap-2 mb-4">
-                <Linkedin size={20} className="text-[#7C9A72]" />
-                <span className="font-headline text-xs font-bold uppercase tracking-tight text-[#78716C]">LinkedIn</span>
+            <div style={{ ...cardStyle }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.navy300 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <Linkedin size={22} color={C.navy300} />
+                <span style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, textTransform: 'uppercase', color: C.white }}>LinkedIn</span>
               </div>
-              <p className="font-mono text-xs text-[#A8A29E] mb-4">Ambition Mechanical Services</p>
-              <p className="text-[#A8A29E] text-sm leading-relaxed font-body">Company page established. Authority post strategy built: 2 posts/week positioning Mo as the industry expert. Content calendar ready.</p>
+              <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray400, marginBottom: 24 }}>Ambition Mechanical Services</p>
+
+              <p style={{ fontFamily: F.body, fontSize: 18, color: C.gray300, lineHeight: 1.7, marginBottom: 24 }}>
+                Company page established and active. Authority post strategy positions Mo as the go-to commercial HVAC expert in Phoenix.
+              </p>
+
+              <div style={{ borderTop: `1px solid ${C.navyBorder}`, paddingTop: 16 }}>
+                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.navy300, marginBottom: 10 }}>STRATEGY</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { label: 'Frequency', value: '2 posts/week' },
+                    { label: 'Focus', value: 'HVAC business insights' },
+                    { label: 'Positioning', value: 'Phoenix market authority' },
+                    { label: 'Content', value: 'Industry expertise + project wins' },
+                  ].map(item => (
+                    <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontFamily: F.body, fontSize: 13, color: C.gray500 }}>{item.label}</span>
+                      <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.gray300 }}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginTop: 20, padding: '12px 16px', background: C.navy700, border: `1px solid ${C.navyBorder}`, borderRadius: 4 }}>
+                <p style={{ fontFamily: F.body, fontSize: 13, color: C.gray300, lineHeight: 1.5 }}>
+                  Content calendar built. Authority post drafts written and ready for publishing cycle.
+                </p>
+              </div>
             </div>
           </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BRANDED VIDEO LIBRARY
+   ════════════════════════════════════════════════════════════════ */
+function VideoLibrarySection() {
+  return (
+    <section style={{ position: 'relative', background: C.navy950, padding: '96px 0', overflow: 'hidden' }}>
+      <NoiseOverlay />
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
+        <Reveal>
+          <SectionLabel label="BRANDED VIDEO LIBRARY" />
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 16,
+          }}>23 FINISHED PRODUCTIONS.</h2>
+        </Reveal>
+
+        <Reveal delay={0.15}>
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 700,
+            marginBottom: 48,
+          }}>
+            18 branded videos covering every aspect of Ambition Mechanical's work, plus 5 Memorial Tower social edits. Each one edited, color-graded, and ready for deployment.
+          </p>
+        </Reveal>
+
+        {/* 18 Branded Videos */}
+        <Reveal delay={0.2}>
+          <p style={{
+            fontFamily: F.display,
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: C.red500,
+            marginBottom: 16,
+          }}>18 BRANDED VIDEOS</p>
+        </Reveal>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, marginBottom: 40 }}>
+          {brandedVideos.map((v, i) => (
+            <Reveal key={v.title} delay={Math.min(i * 0.04, 0.5)}>
+              <div style={{
+                background: C.navy800,
+                border: `1px solid ${C.navyBorder}`,
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                transition: 'border-color 0.3s',
+              }}>
+                <Play size={16} color={videoCategoryColors[v.category] || C.red500} />
+                <div style={{ flex: 1 }}>
+                  <p style={{
+                    fontFamily: F.display,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: C.white,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.02em',
+                  }}>{v.title}</p>
+                  <p style={{
+                    fontFamily: F.body,
+                    fontSize: 11,
+                    color: videoCategoryColors[v.category] || C.gray500,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    marginTop: 2,
+                  }}>{v.category}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        {/* Memorial Tower Edits */}
+        <Reveal delay={0.3}>
+          <p style={{
+            fontFamily: F.display,
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: C.flame400,
+            marginBottom: 16,
+          }}>5 MEMORIAL TOWER SOCIAL EDITS</p>
+        </Reveal>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+          {memorialTowerEdits.map((v, i) => (
+            <Reveal key={v.title} delay={Math.min(0.3 + i * 0.05, 0.6)}>
+              <div style={{
+                background: C.navy800,
+                border: `1px solid ${C.navyBorder}`,
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+              }}>
+                <Play size={16} color={C.flame400} />
+                <div style={{ flex: 1 }}>
+                  <p style={{
+                    fontFamily: F.display,
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: C.white,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.02em',
+                  }}>{v.title}</p>
+                  <p style={{
+                    fontFamily: F.body,
+                    fontSize: 11,
+                    color: C.flame400,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    marginTop: 2,
+                  }}>{v.category}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CONTENT STRATEGY (6 Pillars)
+   ════════════════════════════════════════════════════════════════ */
+function ContentStrategySection() {
+  return (
+    <section style={{ position: 'relative', background: C.navy900, padding: '96px 0', overflow: 'hidden' }}>
+      <NoiseOverlay />
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
+        <Reveal>
+          <SectionLabel label="CONTENT STRATEGY" />
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 16,
+          }}>6 PILLARS. INFINITE CONTENT.</h2>
+        </Reveal>
+
+        <Reveal delay={0.15}>
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 700,
+            marginBottom: 48,
+          }}>
+            Every piece of content maps to one of six strategic pillars. This framework ensures Ambition Mechanical's social presence is balanced, intentional, and always on-brand.
+          </p>
+        </Reveal>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+          {contentPillars.map((pillar, i) => {
+            const Icon = pillar.icon;
+            return (
+              <Reveal key={pillar.name} delay={i * 0.08}>
+                <div style={{
+                  background: C.navy800,
+                  border: `1px solid ${C.navyBorder}`,
+                  padding: 28,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'border-color 0.3s',
+                }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.red500 }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      background: `${C.red500}15`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Icon size={20} color={C.red500} />
+                    </div>
+                    <h3 style={{
+                      fontFamily: F.display,
+                      fontSize: 20,
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      color: C.white,
+                      letterSpacing: '0.02em',
+                    }}>{pillar.name}</h3>
+                  </div>
+                  <p style={{
+                    fontFamily: F.body,
+                    fontSize: 16,
+                    color: C.gray300,
+                    lineHeight: 1.7,
+                  }}>{pillar.desc}</p>
+                </div>
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -419,32 +980,53 @@ function SocialSection() {
    ════════════════════════════════════════════════════════════════ */
 function ClientsSection() {
   return (
-    <section className="relative bg-[#141412] py-16 md:py-24 lg:py-28 overflow-hidden">
+    <section style={{ position: 'relative', background: C.navy950, padding: '96px 0', overflow: 'hidden' }}>
       <NoiseOverlay />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-500/[0.02] to-transparent pointer-events-none" />
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
         <Reveal>
           <SectionLabel label="WHERE WE'VE SHOT" centered />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            NAMES THAT SPEAK FOR THEMSELVES.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 16,
+          }}>NAMES THAT SPEAK FOR THEMSELVES.</h2>
         </Reveal>
 
         <Reveal delay={0.2}>
-          <p className="text-[#A8A29E] text-base md:text-lg leading-relaxed max-w-3xl mx-auto mt-6 font-body">
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 700,
+            margin: '0 auto 40px',
+          }}>
             Ambition Mechanical's client roster includes some of the most recognized brands in hospitality, retail, healthcare, and luxury. AOM has documented work at all of them.
           </p>
         </Reveal>
 
-        <div className="flex flex-wrap justify-center gap-3 md:gap-4 mt-12">
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
           {highProfileClients.map((client, i) => (
             <Reveal key={client} delay={i * 0.06}>
-              <div className="bg-[#1A1A17] border border-[#292524] px-5 py-3 md:px-6 md:py-3.5 font-headline text-sm md:text-base font-bold uppercase tracking-tight text-[#F5F0EB] hover:border-[#E85D26]/40 transition-colors duration-300">
-                {client}
-              </div>
+              <div style={{
+                background: C.navy800,
+                border: `1px solid ${C.navyBorder}`,
+                padding: '12px 24px',
+                fontFamily: F.display,
+                fontSize: 16,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.02em',
+                color: C.white,
+                transition: 'border-color 0.3s',
+              }}>{client}</div>
             </Reveal>
           ))}
         </div>
@@ -456,62 +1038,85 @@ function ClientsSection() {
 /* ════════════════════════════════════════════════════════════════
    37 SHOOTS TIMELINE
    ════════════════════════════════════════════════════════════════ */
-
-const typeColors = {
-  Commercial: '#E85D26',
-  Restaurant: '#C9A84C',
-  Team: '#7C9A72',
-  Retail: '#E85D26',
-  Healthcare: '#7C9A72',
-  Brand: '#E85D26',
-  Industrial: '#A8A29E',
-  Luxury: '#C9A84C',
-};
-
 function ShootsSection() {
   const [expanded, setExpanded] = useState(false);
   const visibleShoots = expanded ? shoots : shoots.slice(0, 12);
 
   return (
-    <section className="relative bg-[#0C0C0C] py-16 md:py-24 lg:py-32">
+    <section style={{ position: 'relative', background: C.navy900, padding: '96px 0' }}>
       <NoiseOverlay />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
           <SectionLabel label="PRODUCTION LOG" />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            37 SHOOTS. 11 MONTHS. ZERO MISSED.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 16,
+          }}>37 SHOOTS. 11 MONTHS. ZERO MISSED.</h2>
         </Reveal>
 
         <Reveal delay={0.15}>
-          <p className="text-[#A8A29E] text-base md:text-lg leading-relaxed max-w-3xl mt-6 font-body">
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 700,
+            marginBottom: 48,
+          }}>
             Every shoot logged, organized, and delivered. From the first day at Fashion Square to the latest Memorial Tower session.
           </p>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mt-12">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 12 }}>
           {visibleShoots.map((shoot, i) => (
-            <Reveal key={`${shoot.name}-${i}`} delay={Math.min(i * 0.05, 0.5)}>
-              <div className="bg-[#1A1A17] border border-[#292524] p-5 relative overflow-hidden group hover:border-[#44403C] transition-colors duration-300">
-                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ backgroundColor: typeColors[shoot.type] || '#E85D26' }} />
-                <div className="flex items-start justify-between mb-2">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">
-                    {shoot.month}
-                  </span>
-                  <span
-                    className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] px-2 py-0.5 border"
-                    style={{ borderColor: typeColors[shoot.type] || '#E85D26', color: typeColors[shoot.type] || '#E85D26' }}
-                  >
-                    {shoot.type}
-                  </span>
+            <Reveal key={`${shoot.name}-${i}`} delay={Math.min(i * 0.04, 0.5)}>
+              <div style={{
+                background: C.navy800,
+                border: `1px solid ${C.navyBorder}`,
+                padding: 20,
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'border-color 0.3s',
+              }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: typeColors[shoot.type] || C.red500 }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <span style={{
+                    fontFamily: F.display,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: C.gray500,
+                  }}>{shoot.month}</span>
+                  <span style={{
+                    fontFamily: F.display,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: typeColors[shoot.type] || C.red500,
+                    border: `1px solid ${typeColors[shoot.type] || C.red500}`,
+                    padding: '2px 8px',
+                  }}>{shoot.type}</span>
                 </div>
-                <h3 className="font-headline text-sm font-extrabold italic uppercase tracking-tight text-[#F5F0EB] mb-1">
-                  {shoot.name}
-                </h3>
-                <p className="text-[#A8A29E] text-xs leading-relaxed font-body">{shoot.details}</p>
+                <h3 style={{
+                  fontFamily: F.display,
+                  fontSize: 16,
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  color: C.white,
+                  marginBottom: 4,
+                  letterSpacing: '0.01em',
+                }}>{shoot.name}</h3>
+                <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray400, lineHeight: 1.5 }}>{shoot.details}</p>
               </div>
             </Reveal>
           ))}
@@ -519,29 +1124,50 @@ function ShootsSection() {
 
         {!expanded && (
           <Reveal delay={0.3}>
-            <div className="text-center mt-8">
+            <div style={{ textAlign: 'center', marginTop: 32 }}>
               <button
                 onClick={() => setExpanded(true)}
-                className="inline-flex items-center gap-2 font-headline text-sm font-extrabold uppercase tracking-tight px-8 py-3 border border-[#E85D26] text-[#E85D26] hover:bg-[#E85D26] hover:text-white transition-all duration-300 cursor-pointer"
+                style={{
+                  fontFamily: F.display,
+                  fontSize: 14,
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: C.red500,
+                  background: 'none',
+                  border: `2px solid ${C.red500}`,
+                  padding: '14px 36px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'all 0.3s',
+                }}
               >
                 VIEW ALL 37 SHOOTS
-                <ChevronDown size={16} />
+                <ChevronDown size={18} />
               </button>
             </div>
           </Reveal>
         )}
 
         {expanded && (
-          <Reveal>
-            <div className="text-center mt-8">
-              <button
-                onClick={() => setExpanded(false)}
-                className="inline-flex items-center gap-2 font-mono text-xs text-[#78716C] hover:text-[#A8A29E] transition-colors cursor-pointer"
-              >
-                COLLAPSE
-              </button>
-            </div>
-          </Reveal>
+          <div style={{ textAlign: 'center', marginTop: 24 }}>
+            <button
+              onClick={() => setExpanded(false)}
+              style={{
+                fontFamily: F.display,
+                fontSize: 12,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: C.gray500,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >COLLAPSE</button>
+          </div>
         )}
       </div>
     </section>
@@ -551,75 +1177,101 @@ function ShootsSection() {
 /* ════════════════════════════════════════════════════════════════
    CONTENT ARSENAL
    ════════════════════════════════════════════════════════════════ */
-function ContentSection() {
+function ContentArsenalSection() {
   return (
-    <section className="relative bg-[#141412] py-16 md:py-24 lg:py-32 overflow-hidden">
+    <section style={{ position: 'relative', background: C.navy950, padding: '96px 0', overflow: 'hidden' }}>
       <NoiseOverlay />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-500/[0.03] to-transparent pointer-events-none" />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
           <SectionLabel label="CONTENT ARSENAL" />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            READY TO DEPLOY.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 16,
+          }}>READY TO DEPLOY.</h2>
         </Reveal>
 
         <Reveal delay={0.15}>
-          <p className="text-[#A8A29E] text-base md:text-lg leading-relaxed max-w-3xl mt-6 font-body">
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 700,
+            marginBottom: 48,
+          }}>
             Beyond shoots and edits, AOM has built a complete content system for Ambition Mechanical. Templates, strategies, calendars, and voice recordings, all designed to scale.
           </p>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-12">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
           {contentArsenal.map((item, i) => (
-            <Reveal key={item.label} delay={i * 0.1}>
-              <div className="bg-[#1A1A17] border border-[#292524] p-6 relative overflow-hidden hover:border-[#44403C] transition-colors duration-300">
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E85D26]" />
-                <div className="font-headline text-4xl md:text-5xl font-extrabold italic text-[#F5F0EB] leading-none">
+            <Reveal key={item.label} delay={i * 0.08}>
+              <div style={{
+                background: C.navy800,
+                border: `1px solid ${C.navyBorder}`,
+                padding: 28,
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: C.red500 }} />
+                <div style={{
+                  fontFamily: F.display,
+                  fontSize: 48,
+                  fontWeight: 900,
+                  color: C.white,
+                  lineHeight: 1,
+                }}>
                   {item.number}
                 </div>
-                <p className="font-headline text-sm font-bold uppercase tracking-tight text-[#E85D26] mt-3">
-                  {item.label}
-                </p>
-                <p className="text-[#A8A29E] text-sm font-body mt-2">{item.desc}</p>
+                <p style={{
+                  fontFamily: F.display,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: C.red500,
+                  marginTop: 12,
+                }}>{item.label}</p>
+                <p style={{ fontFamily: F.body, fontSize: 15, color: C.gray400, marginTop: 8 }}>{item.desc}</p>
               </div>
             </Reveal>
           ))}
         </div>
 
-        {/* Content Pillars */}
-        <Reveal delay={0.3} className="mt-16">
-          <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-6">
-            6 CONTENT PILLARS
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {contentPillars.map((pillar, i) => (
-              <Reveal key={pillar} delay={0.3 + i * 0.06}>
-                <div className="bg-[#0C0C0C] border border-[#292524] px-5 py-3 font-headline text-sm font-bold uppercase tracking-tight text-[#F5F0EB]">
-                  {pillar}
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </Reveal>
-
-        {/* Brand Guidelines */}
+        {/* Also Delivered */}
         <Reveal delay={0.4} className="mt-10">
-          <div className="bg-[#1A1A17] border border-[#292524] p-6 md:p-8 max-w-2xl">
-            <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-3">
-              ALSO DELIVERED
-            </p>
-            <ul className="space-y-2">
+          <div style={{
+            background: C.navy800,
+            border: `1px solid ${C.navyBorder}`,
+            padding: 32,
+            maxWidth: 600,
+            marginTop: 40,
+          }}>
+            <p style={{
+              fontFamily: F.display,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: C.gray500,
+              marginBottom: 16,
+            }}>ALSO DELIVERED</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {['Brand guidelines documentation (3 versions)', 'LinkedIn authority post drafts', 'Content strategy blueprint', '30-day content calendar with 28 planned pieces'].map((item, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <ArrowRight size={14} className="text-[#E85D26] shrink-0 mt-1" />
-                  <span className="text-[#A8A29E] text-sm font-body">{item}</span>
-                </li>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <ArrowRight size={16} color={C.red500} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ fontFamily: F.body, fontSize: 15, color: C.gray300, lineHeight: 1.5 }}>{item}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </Reveal>
       </div>
@@ -632,34 +1284,63 @@ function ContentSection() {
    ════════════════════════════════════════════════════════════════ */
 function WebsiteSection() {
   return (
-    <section className="relative bg-[#0C0C0C] py-16 md:py-24 lg:py-32">
+    <section style={{ position: 'relative', background: C.navy900, padding: '96px 0' }}>
       <NoiseOverlay />
-      <div className="relative z-10 max-w-5xl mx-auto px-6">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
           <SectionLabel label="WEB DEVELOPMENT" />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            A WEBSITE BUILT FROM SCRATCH.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 48,
+          }}>A WEBSITE BUILT FROM SCRATCH.</h2>
         </Reveal>
 
         <Reveal delay={0.2}>
-          <div className="bg-[#1A1A17] border border-[#292524] p-8 md:p-10 mt-12 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E85D26]" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div style={{
+            background: C.navy800,
+            border: `1px solid ${C.navyBorder}`,
+            padding: 40,
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.red500 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 40 }}>
               <div>
-                <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-4">
-                  CUSTOM-BUILT FOR AMBITION
-                </p>
-                <h3 className="font-headline text-2xl md:text-3xl font-extrabold italic uppercase tracking-tight text-[#F5F0EB] mb-4">
-                  ambitionac.com
-                </h3>
-                <p className="text-[#A8A29E] text-base leading-relaxed font-body mb-6">
+                <p style={{
+                  fontFamily: F.display,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  color: C.gray500,
+                  marginBottom: 16,
+                }}>CUSTOM-BUILT FOR AMBITION</p>
+                <h3 style={{
+                  fontFamily: F.display,
+                  fontSize: 32,
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  color: C.white,
+                  marginBottom: 16,
+                }}>ambitionac.com</h3>
+                <p style={{
+                  fontFamily: F.body,
+                  fontSize: 18,
+                  color: C.gray300,
+                  lineHeight: 1.7,
+                  marginBottom: 24,
+                }}>
                   A modern, mobile-first website showcasing Ambition Mechanical's services, projects, and team. Built with enterprise-grade technology and launched in March 2026.
                 </p>
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[
                     'React + Firebase + Tailwind CSS',
                     'CMS admin panel for content updates',
@@ -668,21 +1349,19 @@ function WebsiteSection() {
                     'Contact form with lead capture',
                     'Projects showcase with photo galleries',
                   ].map((feature, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="w-1.5 h-1.5 bg-[#E85D26] shrink-0" />
-                      <span className="text-[#A8A29E] text-sm font-body">{feature}</span>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 6, height: 6, background: C.red500, flexShrink: 0 }} />
+                      <span style={{ fontFamily: F.body, fontSize: 15, color: C.gray300 }}>{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="flex flex-col justify-center items-center">
-                <div className="text-center">
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-2">LAUNCHED</p>
-                  <p className="font-headline text-2xl font-extrabold italic text-[#F5F0EB]">MARCH 6, 2026</p>
-                  <div className="w-12 h-[2px] bg-[#E85D26] mx-auto my-4" />
-                  <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-2">MARKET VALUE</p>
-                  <p className="font-headline text-3xl md:text-4xl font-extrabold italic text-[#E85D26]">$4,000 - $8,000</p>
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginBottom: 8 }}>LAUNCHED</p>
+                <p style={{ fontFamily: F.display, fontSize: 28, fontWeight: 900, color: C.white }}>MARCH 6, 2026</p>
+                <div style={{ width: 48, height: 2, background: C.red500, margin: '16px auto' }} />
+                <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginBottom: 8 }}>MARKET VALUE</p>
+                <p style={{ fontFamily: F.display, fontSize: 40, fontWeight: 900, color: C.red500 }}>$4,000 - $8,000</p>
               </div>
             </div>
           </div>
@@ -697,35 +1376,55 @@ function WebsiteSection() {
    ════════════════════════════════════════════════════════════════ */
 function EquipmentSection() {
   return (
-    <section className="relative bg-[#141412] py-16 md:py-24 lg:py-28 overflow-hidden">
+    <section style={{ position: 'relative', background: C.navy950, padding: '96px 0', overflow: 'hidden' }}>
       <NoiseOverlay />
-      <div className="relative z-10 max-w-5xl mx-auto px-6">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
           <SectionLabel label="PRODUCTION GEAR" />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            PROFESSIONAL-GRADE TOOLS.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 48,
+          }}>PROFESSIONAL-GRADE TOOLS.</h2>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {equipment.map((item, i) => (
-            <Reveal key={item.name} delay={i * 0.1}>
-              <div className="bg-[#1A1A17] border border-[#292524] p-5 hover:border-[#44403C] transition-colors duration-300">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-2xl">{item.icon}</span>
+            <Reveal key={item.name} delay={i * 0.08}>
+              <div style={{
+                background: C.navy800,
+                border: `1px solid ${C.navyBorder}`,
+                padding: 24,
+                transition: 'border-color 0.3s',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <Camera size={20} color={C.red500} />
                   <div>
-                    <h3 className="font-headline text-sm font-extrabold italic uppercase tracking-tight text-[#F5F0EB]">
-                      {item.name}
-                    </h3>
-                    <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#E85D26]">
-                      {item.type}
-                    </p>
+                    <h3 style={{
+                      fontFamily: F.display,
+                      fontSize: 16,
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      color: C.white,
+                    }}>{item.name}</h3>
+                    <p style={{
+                      fontFamily: F.display,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: '0.15em',
+                      textTransform: 'uppercase',
+                      color: C.red500,
+                    }}>{item.type}</p>
                   </div>
                 </div>
-                <p className="text-[#A8A29E] text-sm font-body">{item.detail}</p>
+                <p style={{ fontFamily: F.body, fontSize: 15, color: C.gray400 }}>{item.detail}</p>
               </div>
             </Reveal>
           ))}
@@ -736,7 +1435,7 @@ function EquipmentSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   MARKET VALUE COMPARISON (LIGHT SECTION)
+   MARKET VALUE ANALYSIS
    ════════════════════════════════════════════════════════════════ */
 function ValueSection() {
   const ref = useRef(null);
@@ -745,117 +1444,166 @@ function ValueSection() {
   const amountPaid = useCountUp(22000, 1800, isInView);
 
   return (
-    <section ref={ref} className="relative bg-[#F5F0EB] py-16 md:py-24 lg:py-32">
-      <NoiseOverlay opacity={0.02} blend="soft-light" />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
+    <section ref={ref} style={{ position: 'relative', background: C.navy800, padding: '96px 0' }}>
+      <NoiseOverlay />
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
           <SectionLabel label="VALUE ANALYSIS" />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#0C0C0C]">
-            WHAT THIS IS WORTH.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 16,
+          }}>WHAT THIS IS WORTH.</h2>
         </Reveal>
 
         <Reveal delay={0.15}>
-          <p className="text-[#57534E] text-base md:text-lg leading-relaxed max-w-3xl mt-6 font-body">
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 700,
+            marginBottom: 48,
+          }}>
             At standard Phoenix market rates, here's the value AOM has delivered in 11 months.
           </p>
         </Reveal>
 
-        {/* Comparison Table -- Desktop */}
-        <Reveal delay={0.2} className="mt-12">
-          <div className="hidden md:block overflow-hidden border border-[#A8A29E]/20 rounded-sm">
-            <table className="w-full bg-white">
+        {/* Table */}
+        <Reveal delay={0.2}>
+          <div style={{ overflow: 'hidden', border: `1px solid ${C.navyBorder}` }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th className="bg-[#0C0C0C] text-[#F5F0EB] text-[10px] font-mono font-bold uppercase tracking-[0.3em] px-6 py-4 text-left">
-                    Deliverable
-                  </th>
-                  <th className="bg-[#0C0C0C] text-[#F5F0EB] text-[10px] font-mono font-bold uppercase tracking-[0.3em] px-6 py-4 text-left">
-                    Market Rate
-                  </th>
-                  <th className="bg-[#E85D26] text-white text-[10px] font-mono font-bold uppercase tracking-[0.3em] px-6 py-4 text-right">
-                    Value
-                  </th>
+                  <th style={{
+                    background: C.navy950,
+                    fontFamily: F.display,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: C.gray400,
+                    padding: '16px 24px',
+                    textAlign: 'left',
+                  }}>Deliverable</th>
+                  <th style={{
+                    background: C.navy950,
+                    fontFamily: F.display,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: C.gray400,
+                    padding: '16px 24px',
+                    textAlign: 'left',
+                  }}>Market Rate</th>
+                  <th style={{
+                    background: C.red500,
+                    fontFamily: F.display,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: C.white,
+                    padding: '16px 24px',
+                    textAlign: 'right',
+                  }}>Value</th>
                 </tr>
               </thead>
               <tbody>
                 {valueComparison.map((row, i) => (
-                  <tr key={row.item} className={i % 2 === 1 ? 'bg-[#F9F7F4]' : 'bg-white'}>
-                    <td className="px-6 py-4 border-b border-[#A8A29E]/10">
-                      <span className="font-body text-sm font-semibold text-[#0C0C0C]">{row.item}</span>
+                  <tr key={row.item} style={{ background: i % 2 === 0 ? C.navy900 : C.navy950 }}>
+                    <td style={{ padding: '14px 24px', borderBottom: `1px solid ${C.navyBorderLight}` }}>
+                      <span style={{ fontFamily: F.body, fontSize: 15, fontWeight: 600, color: C.white }}>{row.item}</span>
                     </td>
-                    <td className="px-6 py-4 border-b border-[#A8A29E]/10">
-                      <span className="font-mono text-sm text-[#57534E]">{row.rate}</span>
+                    <td style={{ padding: '14px 24px', borderBottom: `1px solid ${C.navyBorderLight}` }}>
+                      <span style={{ fontFamily: F.body, fontSize: 14, color: C.gray400 }}>{row.rate}</span>
                     </td>
-                    <td className="px-6 py-4 border-b border-[#A8A29E]/10 text-right">
-                      <span className="font-headline text-base font-extrabold italic text-[#0C0C0C]">{row.value}</span>
+                    <td style={{ padding: '14px 24px', borderBottom: `1px solid ${C.navyBorderLight}`, textAlign: 'right' }}>
+                      <span style={{ fontFamily: F.display, fontSize: 18, fontWeight: 900, color: C.white }}>{row.value}</span>
                     </td>
                   </tr>
                 ))}
-                <tr className="bg-[#0C0C0C]">
-                  <td colSpan={2} className="px-6 py-5">
-                    <span className="font-headline text-xl font-extrabold italic text-[#F5F0EB]">ESTIMATED MARKET VALUE</span>
+                <tr style={{ background: C.navy950 }}>
+                  <td colSpan={2} style={{ padding: '20px 24px' }}>
+                    <span style={{ fontFamily: F.display, fontSize: 22, fontWeight: 900, color: C.white }}>ESTIMATED MARKET VALUE</span>
                   </td>
-                  <td className="px-6 py-5 text-right">
-                    <span className="font-headline text-2xl font-extrabold italic text-[#E85D26]">$78,000+</span>
+                  <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                    <span style={{ fontFamily: F.display, fontSize: 28, fontWeight: 900, color: C.red500 }}>$78,000+</span>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
-            {valueComparison.map((row) => (
-              <div key={row.item} className="bg-white p-5 border border-[#A8A29E]/10">
-                <p className="font-headline text-sm font-bold uppercase text-[#0C0C0C] mb-2">{row.item}</p>
-                <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs text-[#57534E]">{row.rate}</span>
-                  <span className="font-headline text-base font-extrabold italic text-[#0C0C0C]">{row.value}</span>
-                </div>
-              </div>
-            ))}
-            <div className="bg-[#0C0C0C] p-5 text-center">
-              <p className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C] mb-1">ESTIMATED MARKET VALUE</p>
-              <p className="font-headline text-2xl font-extrabold italic text-[#E85D26]">$78,000+</p>
-            </div>
-          </div>
         </Reveal>
 
-        {/* The Big Comparison */}
-        <Reveal delay={0.3} className="mt-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-            <div className="text-center p-8 bg-white border border-[#A8A29E]/20">
-              <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-3">MARKET VALUE</p>
-              <p className="font-headline text-4xl md:text-5xl font-extrabold italic text-[#0C0C0C]">
+        {/* Big Comparison */}
+        <Reveal delay={0.3}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 24,
+            alignItems: 'center',
+            marginTop: 60,
+          }}>
+            <div style={{
+              textAlign: 'center',
+              padding: 32,
+              background: C.navy900,
+              border: `1px solid ${C.navyBorder}`,
+            }}>
+              <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginBottom: 12 }}>MARKET VALUE</p>
+              <p style={{
+                fontFamily: F.display,
+                fontSize: 'clamp(36px, 5vw, 56px)',
+                fontWeight: 900,
+                color: C.white,
+              }}>
                 ${isInView ? marketValue.toLocaleString() : '0'}+
               </p>
             </div>
-            <div className="text-center">
-              <p className="font-headline text-2xl font-extrabold italic text-[#78716C]">vs</p>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontFamily: F.display, fontSize: 28, fontWeight: 900, color: C.gray500 }}>vs</p>
             </div>
-            <div className="text-center p-8 bg-white border-2 border-[#E85D26]">
-              <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C] mb-3">AMOUNT PAID</p>
-              <p className="font-headline text-4xl md:text-5xl font-extrabold italic text-[#E85D26]">
+            <div style={{
+              textAlign: 'center',
+              padding: 32,
+              background: C.navy900,
+              border: `2px solid ${C.red500}`,
+            }}>
+              <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.gray500, marginBottom: 12 }}>AMOUNT PAID</p>
+              <p style={{
+                fontFamily: F.display,
+                fontSize: 'clamp(36px, 5vw, 56px)',
+                fontWeight: 900,
+                color: C.red500,
+              }}>
                 ${isInView ? amountPaid.toLocaleString() : '0'}
               </p>
-              <p className="text-[10px] font-mono text-[#78716C] mt-2">11 months x $2,000/month</p>
+              <p style={{ fontFamily: F.body, fontSize: 13, color: C.gray500, marginTop: 8 }}>11 months x $2,000/month</p>
             </div>
           </div>
         </Reveal>
 
-        {/* ROI Callout */}
-        <Reveal delay={0.4} className="mt-12 text-center">
-          <div className="inline-block bg-[#0C0C0C] px-10 py-6">
-            <p className="font-headline text-5xl md:text-6xl font-extrabold italic text-[#E85D26]">
-              3.5x
-            </p>
-            <p className="font-headline text-base font-bold uppercase tracking-tight text-[#F5F0EB] mt-2">
-              RETURN ON INVESTMENT
-            </p>
+        {/* ROI */}
+        <Reveal delay={0.4}>
+          <div style={{ textAlign: 'center', marginTop: 48 }}>
+            <div style={{
+              display: 'inline-block',
+              background: C.navy950,
+              border: `2px solid ${C.red500}`,
+              padding: '24px 48px',
+            }}>
+              <p style={{ fontFamily: F.display, fontSize: 'clamp(48px, 6vw, 72px)', fontWeight: 900, color: C.red500 }}>3.5x</p>
+              <p style={{ fontFamily: F.display, fontSize: 16, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.white, marginTop: 8 }}>RETURN ON INVESTMENT</p>
+            </div>
           </div>
         </Reveal>
       </div>
@@ -872,31 +1620,56 @@ function HoursSection() {
   const totalHours = useCountUp(493, 1800, isInView);
 
   return (
-    <section ref={ref} className="relative bg-[#0C0C0C] py-16 md:py-24 lg:py-32">
+    <section ref={ref} style={{ position: 'relative', background: C.navy950, padding: '96px 0' }}>
       <NoiseOverlay />
-      <div className="relative z-10 max-w-5xl mx-auto px-6">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
           <SectionLabel label="TIME INVESTED" />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            NEARLY 500 HOURS OF WORK.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 48,
+          }}>NEARLY 500 HOURS OF WORK.</h2>
         </Reveal>
 
-        <div className="mt-12 space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {hoursBreakdown.map((item, i) => (
             <Reveal key={item.activity} delay={i * 0.08}>
-              <div className="bg-[#1A1A17] border border-[#292524] p-5 flex flex-col md:flex-row md:items-center justify-between gap-2">
-                <div className="flex-1">
-                  <h3 className="font-headline text-sm font-extrabold italic uppercase tracking-tight text-[#F5F0EB]">
-                    {item.activity}
-                  </h3>
-                  <p className="text-[#78716C] text-xs font-mono mt-1">{item.calc}</p>
+              <div style={{
+                background: C.navy800,
+                border: `1px solid ${C.navyBorder}`,
+                padding: '20px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12,
+              }}>
+                <div>
+                  <h3 style={{
+                    fontFamily: F.display,
+                    fontSize: 16,
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    color: C.white,
+                  }}>{item.activity}</h3>
+                  <p style={{ fontFamily: F.body, fontSize: 13, color: C.gray500, marginTop: 4 }}>{item.calc}</p>
                 </div>
-                <div className="font-headline text-2xl md:text-3xl font-extrabold italic text-[#E85D26] tabular-nums">
-                  {item.hours}<span className="text-base text-[#78716C] ml-1">hrs</span>
+                <div style={{
+                  fontFamily: F.display,
+                  fontSize: 32,
+                  fontWeight: 900,
+                  color: C.red500,
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                  {item.hours}<span style={{ fontSize: 16, color: C.gray500, marginLeft: 4 }}>hrs</span>
                 </div>
               </div>
             </Reveal>
@@ -904,17 +1677,29 @@ function HoursSection() {
         </div>
 
         {/* Total */}
-        <Reveal delay={0.5} className="mt-8">
-          <div className="bg-[#1A1A17] border-2 border-[#E85D26] p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <Reveal delay={0.5}>
+          <div style={{
+            background: C.navy800,
+            border: `2px solid ${C.red500}`,
+            padding: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 16,
+            marginTop: 24,
+          }}>
             <div>
-              <p className="font-headline text-lg font-extrabold italic uppercase tracking-tight text-[#F5F0EB]">
-                TOTAL ESTIMATED HOURS
-              </p>
-              <p className="text-[#78716C] text-sm font-body mt-1">
-                Effective rate: ~$44.62/hour (market rate: $100-200/hr)
-              </p>
+              <p style={{ fontFamily: F.display, fontSize: 20, fontWeight: 900, textTransform: 'uppercase', color: C.white }}>TOTAL ESTIMATED HOURS</p>
+              <p style={{ fontFamily: F.body, fontSize: 15, color: C.gray400, marginTop: 4 }}>Effective rate: ~$44.62/hour (market rate: $100-200/hr)</p>
             </div>
-            <div className="font-headline text-5xl md:text-6xl font-extrabold italic text-[#E85D26] tabular-nums">
+            <div style={{
+              fontFamily: F.display,
+              fontSize: 'clamp(48px, 6vw, 64px)',
+              fontWeight: 900,
+              color: C.red500,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
               ~{isInView ? totalHours : 0}
             </div>
           </div>
@@ -936,35 +1721,65 @@ function WhatsNextSection() {
   ];
 
   return (
-    <section className="relative bg-[#141412] py-16 md:py-24 lg:py-32 overflow-hidden">
+    <section style={{ position: 'relative', background: C.navy900, padding: '96px 0', overflow: 'hidden' }}>
       <NoiseOverlay />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-500/[0.03] to-transparent pointer-events-none" />
-      <div className="relative z-10 max-w-5xl mx-auto px-6">
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1000, margin: '0 auto', padding: '0 24px' }}>
         <Reveal>
           <SectionLabel label="WHAT'S NEXT" />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            THE FOUNDATION IS BUILT. NOW WE SCALE.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(36px, 5vw, 64px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            lineHeight: 1,
+            marginBottom: 16,
+          }}>THE FOUNDATION IS BUILT. NOW WE SCALE.</h2>
         </Reveal>
 
         <Reveal delay={0.15}>
-          <p className="text-[#A8A29E] text-base md:text-lg leading-relaxed max-w-3xl mt-6 font-body">
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 20,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 700,
+            marginBottom: 48,
+          }}>
             11 months of production work has created a massive content arsenal. The shoots are done, the templates are built, and the strategy is locked. The next phase is about putting all of it to work.
           </p>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mt-12">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 16 }}>
           {nextSteps.map((step, i) => (
-            <Reveal key={step.title} delay={i * 0.12}>
-              <div className="bg-[#1A1A17] border border-[#292524] p-6 relative overflow-hidden hover:border-[#E85D26]/30 transition-colors duration-300">
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#E85D26]" />
-                <h3 className="font-headline text-base font-extrabold italic uppercase tracking-tight text-[#F5F0EB] mb-3 pl-2">
-                  {step.title}
-                </h3>
-                <p className="text-[#A8A29E] text-sm leading-relaxed font-body pl-2">{step.desc}</p>
+            <Reveal key={step.title} delay={i * 0.1}>
+              <div style={{
+                background: C.navy800,
+                border: `1px solid ${C.navyBorder}`,
+                padding: 28,
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: C.red500 }} />
+                <h3 style={{
+                  fontFamily: F.display,
+                  fontSize: 18,
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  color: C.white,
+                  marginBottom: 10,
+                  paddingLeft: 8,
+                }}>{step.title}</h3>
+                <p style={{
+                  fontFamily: F.body,
+                  fontSize: 16,
+                  color: C.gray300,
+                  lineHeight: 1.7,
+                  paddingLeft: 8,
+                }}>{step.desc}</p>
               </div>
             </Reveal>
           ))}
@@ -975,36 +1790,65 @@ function WhatsNextSection() {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   FOOTER CTA
+   FOOTER (Ambition Standalone)
    ════════════════════════════════════════════════════════════════ */
-function FooterCTA() {
+function AmbitionFooter() {
   return (
-    <section className="relative bg-[#0C0C0C] py-20 md:py-28">
-      <NoiseOverlay />
-      <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
+    <footer style={{
+      background: C.navy950,
+      borderTop: `1px solid ${C.navyBorder}`,
+      padding: '64px 0',
+    }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 24px', textAlign: 'center' }}>
         <Reveal>
-          <SectionLabel label="PARTNERSHIP" centered />
+          <div style={{ width: 48, height: 2, background: C.red500, margin: '0 auto 24px' }} />
         </Reveal>
 
         <Reveal delay={0.1}>
-          <h2 className="font-headline text-2xl md:text-3xl lg:text-4xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
-            BUILT BY AOM. BUILT TO LAST.
-          </h2>
+          <h2 style={{
+            fontFamily: F.display,
+            fontSize: 'clamp(28px, 4vw, 40px)',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            color: C.white,
+            marginBottom: 16,
+          }}>BUILT BY AOM. BUILT TO LAST.</h2>
         </Reveal>
 
         <Reveal delay={0.2}>
-          <p className="text-[#A8A29E] text-lg mt-6 max-w-xl mx-auto font-body leading-relaxed">
+          <p style={{
+            fontFamily: F.body,
+            fontSize: 18,
+            color: C.gray300,
+            lineHeight: 1.7,
+            maxWidth: 540,
+            margin: '0 auto 32px',
+          }}>
             This is what 11 months of dedicated creative production looks like. One team. One vision. Hundreds of hours of work invested in making Ambition Mechanical look as good as the work they do.
           </p>
         </Reveal>
 
         <Reveal delay={0.3}>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 16, marginBottom: 40 }}>
             <a
               href="https://www.instagram.com/ambition_air_conditioning/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 font-headline text-sm font-extrabold uppercase tracking-tight px-8 py-4 border border-[#F5F0EB] text-[#F5F0EB] hover:bg-[#F5F0EB] hover:text-[#0C0C0C] transition-all duration-300"
+              style={{
+                fontFamily: F.display,
+                fontSize: 14,
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: C.white,
+                border: `2px solid ${C.white}`,
+                padding: '14px 28px',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'all 0.3s',
+              }}
             >
               <Instagram size={18} />
               FOLLOW ON INSTAGRAM
@@ -1013,7 +1857,21 @@ function FooterCTA() {
               href="https://www.linkedin.com/company/ambition-mechanical-services"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 font-headline text-sm font-extrabold uppercase tracking-tight px-8 py-4 border border-[#E85D26] text-[#E85D26] hover:bg-[#E85D26] hover:text-white transition-all duration-300"
+              style={{
+                fontFamily: F.display,
+                fontSize: 14,
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: C.red500,
+                border: `2px solid ${C.red500}`,
+                padding: '14px 28px',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'all 0.3s',
+              }}
             >
               <Linkedin size={18} />
               CONNECT ON LINKEDIN
@@ -1022,20 +1880,34 @@ function FooterCTA() {
         </Reveal>
 
         <Reveal delay={0.4}>
-          <div className="mt-12 pt-8 border-t border-[#292524]">
-            <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-[#78716C]">
+          <div style={{ borderTop: `1px solid ${C.navyBorder}`, paddingTop: 24 }}>
+            <p style={{
+              fontFamily: F.display,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: C.gray500,
+            }}>
               PRODUCED BY AOM &bull; AHEAD OF MARKET &bull; PHOENIX, AZ
             </p>
             <a
               href="https://aheadofmarket.com"
-              className="inline-block mt-3 text-[#E85D26] text-sm font-body hover:underline transition-all duration-200"
+              style={{
+                display: 'inline-block',
+                marginTop: 8,
+                fontFamily: F.body,
+                fontSize: 14,
+                color: C.red500,
+                textDecoration: 'none',
+              }}
             >
               aheadofmarket.com
             </a>
           </div>
         </Reveal>
       </div>
-    </section>
+    </footer>
   );
 }
 
@@ -1046,21 +1918,22 @@ export default function AmbitionPerformance() {
   useSEO();
 
   return (
-    <div className="bg-[#0C0C0C] min-h-screen">
-      <SiteNav transparent />
+    <div style={{ background: C.navy950, minHeight: '100vh' }}>
+      <AmbitionNav />
       <HeroSection />
       <StatsSection />
       <SocialSection />
+      <VideoLibrarySection />
+      <ContentStrategySection />
       <ClientsSection />
       <ShootsSection />
-      <ContentSection />
+      <ContentArsenalSection />
       <WebsiteSection />
       <EquipmentSection />
       <ValueSection />
       <HoursSection />
       <WhatsNextSection />
-      <FooterCTA />
-      <SiteFooter />
+      <AmbitionFooter />
     </div>
   );
 }
