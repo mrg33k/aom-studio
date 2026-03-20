@@ -55,7 +55,7 @@ import {
   Search, AlertCircle, UserCheck, History,
 } from 'lucide-react'
 import { AGENTS, GRID_SPEC } from './gridSpec.js'
-import { HUDBellButton, HUDToasts, HUD_NOTIFICATION_STYLES } from './HUDNotifications.jsx'
+// HUDNotifications kept for potential future use; bell/toasts removed (Inbox pill is the notification system now)
 import { useDataPipe, formatRelativeTime } from './hooks/useDataPipe.js'
 
 // ---- PALETTE ----------------------------------------------------------------
@@ -959,8 +959,8 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
       whileHover={{ scale: 1.08, y: -6, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
       whileTap={{ scale: 0.88, y: 4, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 14,
-        height: 56, padding: '0 24px', minWidth: isRightNow ? 120 : 80,
+        display: 'flex', alignItems: 'center', gap: 5,
+        height: 28, padding: '2px 6px', minWidth: isRightNow ? 70 : 50,
         background: isDaytime
           ? (isExpanded
               ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
@@ -979,7 +979,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
         border: isDaytime
           ? `2px solid ${isExpanded ? `${project.color}40` : isClient ? `${project.color}25` : isSchedule ? 'rgba(255,107,61,0.2)' : 'rgba(59,130,246,0.15)'}`
           : `2px solid ${isExpanded ? `${project.color}55` : isClient ? `${project.color}30` : isSchedule ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
-        borderRadius: 16,
+        borderRadius: 8,
         cursor: 'pointer',
         flexShrink: 0,
         position: 'relative',
@@ -1001,195 +1001,143 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
                   : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
       }}
     >
-      {/* Bottom progress fill - THICKER */}
+      {/* Bottom progress fill */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0,
-        width: `${progress}%`, height: 6,
+        width: `${progress}%`, height: 2,
         background: `linear-gradient(90deg, ${project.color}70, ${project.color})`,
         transition: 'width 500ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-        borderRadius: '0 0 14px 14px',
-        boxShadow: `0 0 8px ${project.color}44`,
+        borderRadius: '0 0 7px 7px',
       }} />
 
-      {/* Side accent for Right Now, Schedule, Your TODOs, or RED clients - THICKER */}
+      {/* Side accent for Right Now, Schedule, Your TODOs, or RED clients */}
       {(isRightNow || isSchedule || isTodoList || (isClient && project.statusTag === 'RED')) && (
         <div style={{
-          position: 'absolute', left: 0, top: 6, bottom: 6,
-          width: 4, borderRadius: 2,
+          position: 'absolute', left: 0, top: 4, bottom: 4,
+          width: 2, borderRadius: 1,
           background: isTodoList ? '#EF4444' : isRightNow ? project.color : isSchedule ? project.color : '#EF4444',
-          boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isSchedule) ? project.color : 'rgba(239,68,68,0.6)'}88`,
           animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
         }} />
       )}
 
       {/* Project indicator - BIGGER. Icons per section type. */}
       {isRightNow ? (
-        <Zap size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+        <Zap size={10} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
       ) : isTodoList ? (
-        <AlertCircle size={18} color="#EF4444" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.6))' }} />
+        <AlertCircle size={10} color="#EF4444" style={{ flexShrink: 0 }} />
       ) : isFinishThese ? (
-        <History size={18} color="#94A3B8" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.4))' }} />
+        <History size={10} color="#94A3B8" style={{ flexShrink: 0 }} />
       ) : isSchedule ? (
-        <Flame size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
+        <Flame size={10} color={project.color} style={{ flexShrink: 0 }} />
       ) : isClient ? (
         <div style={{
-          width: 14, height: 14, borderRadius: '50%',
+          width: 7, height: 7, borderRadius: '50%',
           background: project.color,
-          boxShadow: `0 0 10px ${project.color}55`,
+          boxShadow: `0 0 6px ${project.color}55`,
           flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 900, color: '#FFF',
-          fontFamily: "'Inter Tight', sans-serif",
-        }}>$</div>
+        }} />
       ) : (
         <div style={{
-          width: 12, height: 12, borderRadius: 4,
+          width: 7, height: 7, borderRadius: 2,
           background: allDone ? `${project.color}60` : project.color,
-          boxShadow: allDone ? 'none' : `0 0 12px ${project.color}55`,
+          boxShadow: allDone ? 'none' : `0 0 6px ${project.color}55`,
           flexShrink: 0,
         }} />
       )}
 
-      {/* Name - VEGAS SIZE. Font weight 900. Patrik directive. */}
+      {/* Name - compact pill label */}
       <span style={{
         fontFamily: "'Inter', system-ui, sans-serif",
-        fontSize: 20, fontWeight: 900,
+        fontSize: 11, fontWeight: 700,
         color: isExpanded
           ? '#FFFFFF'
           : isDaytime ? '#F1F5F9' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        maxWidth: 140,
-        letterSpacing: '-0.02em',
+        maxWidth: 90,
+        letterSpacing: '-0.01em',
         textTransform: 'uppercase',
-        textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.3)' : (isSchedule ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
+        textShadow: 'none',
       }}>
         {project.name}
       </span>
 
-      {/* LIVE badge for Right Now pill */}
+      {/* LIVE dot for Right Now pill */}
       {isRightNow && hasLiveTasks && (
         <span style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, fontWeight: 800,
-          color: '#FF6B3D',
-          background: 'rgba(255,107,61,0.12)',
-          padding: '3px 8px', borderRadius: 6,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          border: '1.5px solid rgba(255,107,61,0.3)',
-          whiteSpace: 'nowrap',
-          animation: 'statusPulse 2s ease-in-out infinite',
-        }}>
-          <span style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: '#FF6B3D',
-            boxShadow: '0 0 6px rgba(255,107,61,0.6)',
-            animation: 'statusPulse 1.5s ease-in-out infinite',
-          }} />
-          LIVE
-        </span>
+          width: 5, height: 5, borderRadius: '50%',
+          background: '#FF6B3D',
+          boxShadow: '0 0 4px rgba(255,107,61,0.7)',
+          animation: 'statusPulse 1.5s ease-in-out infinite',
+          flexShrink: 0,
+        }} />
       )}
 
-      {/* NEEDS YOU badge for Your TODOs pill */}
+      {/* NEEDS YOU dot for Your TODOs pill */}
       {isTodoList && remaining > 0 && (
         <span style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, fontWeight: 800,
-          color: '#EF4444',
-          background: 'rgba(239,68,68,0.10)',
-          padding: '3px 8px', borderRadius: 6,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          border: '1.5px solid rgba(239,68,68,0.25)',
-          whiteSpace: 'nowrap',
+          width: 5, height: 5, borderRadius: '50%',
+          background: '#EF4444',
+          flexShrink: 0,
           animation: 'statusPulse 2.5s ease-in-out infinite',
-        }}>
-          <AlertCircle size={10} />
-          NEEDS YOU
-        </span>
+        }} />
       )}
 
-      {/* STALE badge for Finish These pill */}
+      {/* STALE dot for Finish These pill */}
       {isFinishThese && remaining > 0 && (
         <span style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, fontWeight: 700,
-          color: '#6B8AB0',
-          background: 'rgba(148,163,184,0.08)',
-          padding: '3px 8px', borderRadius: 6,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          border: '1.5px solid rgba(148,163,184,0.2)',
-          whiteSpace: 'nowrap',
-        }}>
-          <History size={10} />
-          STALE
-        </span>
+          width: 5, height: 5, borderRadius: '50%',
+          background: '#6B8AB0',
+          flexShrink: 0,
+        }} />
       )}
 
-      {/* Revenue badge for clients */}
+      {/* Revenue badge for clients -- compact */}
       {isClient && project.revenue && (
         <span style={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 14, fontWeight: 700,
+          fontSize: 9, fontWeight: 700,
           color: project.color,
           background: `${project.color}15`,
-          padding: '3px 10px', borderRadius: 6,
+          padding: '1px 4px', borderRadius: 3,
           letterSpacing: '0.02em',
           whiteSpace: 'nowrap',
-          border: `1.5px solid ${project.color}30`,
+          border: `1px solid ${project.color}30`,
         }}>
           {project.revenue}
         </span>
       )}
 
-      {/* Category tag for pills -- shows WHAT it is (client/project/outreach), not the color.
-          Color already communicates status visually. Text label tells you the category. */}
+      {/* Status dot for tagged pills (client status) */}
       {tagStyle && (
         <span style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 12, fontWeight: 800,
-          color: tagStyle.text,
-          background: tagStyle.bg,
-          padding: '3px 8px', borderRadius: 5,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          border: `1.5px solid ${tagStyle.border}`,
-          whiteSpace: 'nowrap',
-          boxShadow: tagStyle.glow !== 'none' ? `0 0 10px ${tagStyle.glow}` : 'none',
+          width: 5, height: 5, borderRadius: '50%',
+          background: tagStyle.text,
+          flexShrink: 0,
+          boxShadow: tagStyle.glow !== 'none' ? `0 0 5px ${tagStyle.glow}` : 'none',
           animation: project.statusTag === 'RED' ? 'statusPulse 2.5s ease-in-out infinite' : 'none',
-        }}>
-          {project.section === 'outreach' ? 'OUTREACH'
-            : project.icon === 'client' || project.isClient ? 'CLIENT'
-            : 'PROJECT'}
-        </span>
+        }} />
       )}
 
-      {/* Task count badge - VEGAS. Oversized. Casino chip energy. LABELED. */}
+      {/* Task count badge - compact */}
       {remaining > 0 && !isClient && (
         <span style={{
           fontFamily: "'Inter Tight', JetBrains Mono, monospace",
-          fontSize: 18, fontWeight: 900,
+          fontSize: 9, fontWeight: 800,
           color: '#FFF',
-          background: `linear-gradient(135deg, ${project.color}, ${project.color}DD)`,
-          padding: '5px 14px', borderRadius: 12,
-          letterSpacing: '-0.01em',
+          background: project.color,
+          padding: '1px 4px', borderRadius: 4,
           lineHeight: 1,
-          boxShadow: `0 3px 12px ${project.color}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
-          minWidth: 32, textAlign: 'center',
+          minWidth: 14, textAlign: 'center',
           whiteSpace: 'nowrap',
         }}>
-          {remaining} <span style={{ fontSize: 12, fontWeight: 700, opacity: 0.85, letterSpacing: '0.04em' }}>tasks</span>
+          {remaining}
         </span>
       )}
 
       {allDone && (
-        <CheckCircle2 size={18} color={project.color} strokeWidth={2.5} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}44)` }} />
+        <CheckCircle2 size={10} color={project.color} strokeWidth={2.5} style={{ flexShrink: 0 }} />
       )}
     </motion.button>
   )
@@ -1849,6 +1797,8 @@ export default function GameHUD({
   const hudAccent = isDaytime ? '#60A5FA' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
+  const [overflowOpen, setOverflowOpen] = useState(false) // +N overflow popover
+  const overflowRef = useRef(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const searchRef = useRef(null)
@@ -2151,6 +2101,10 @@ export default function GameHUD({
       if (hudRef.current && !hudRef.current.contains(e.target)) {
         setExpandedProject(null)
       }
+      // Close overflow popover if clicking outside it
+      if (overflowRef.current && !overflowRef.current.contains(e.target)) {
+        setOverflowOpen(false)
+      }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -2432,11 +2386,11 @@ export default function GameHUD({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? 6 : 10,
-          minHeight: isMobile ? 52 : 68,
+          gap: isMobile ? 4 : 6,
+          minHeight: isMobile ? 40 : 44,
           position: 'relative',
           zIndex: 1,
-          padding: isMobile ? 0 : '4px 0 6px',
+          padding: isMobile ? '2px 0' : '4px 0',
         }}>
           {/* Search toggle button -- LEFT of arrow nav */}
           <motion.button
@@ -2494,33 +2448,113 @@ export default function GameHUD({
           }} className="hud-pills-scroll">
 
             {loading ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
-                <Loader2 size={16} style={{ color: hudTextMuted, animation: 'spin 1s linear infinite' }} />
-                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: hudTextMuted }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px' }}>
+                <Loader2 size={12} style={{ color: hudTextMuted, animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: hudTextMuted }}>
                   Loading...
                 </span>
               </div>
             ) : filteredProjects.length === 0 ? (
-              <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: hudTextMuted, padding: '0 8px' }}>
+              <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12, color: hudTextMuted, padding: '0 8px' }}>
                 {searchQuery ? 'No matches' : 'No task data'}
               </span>
-            ) : (
-              filteredProjects.map(project => (
-                <ProjectCard
-                  key={project.section}
-                  project={project}
-                  isExpanded={expandedProject?.section === project.section}
-                  onClick={() => {
-                    setExpandedProject(
-                      expandedProject?.section === project.section ? null : project
-                    )
-                  }}
-                  onContextMenu={onProjectContextMenu}
-                  isNightMode={isNightMode}
-                  wiggle={project.section === 'rightnow' && rightNowWiggle}
-                />
-              ))
-            )}
+            ) : (() => {
+              const MAX_VISIBLE = 8
+              const visiblePills = filteredProjects.slice(0, MAX_VISIBLE)
+              const overflowPills = filteredProjects.slice(MAX_VISIBLE)
+              return (
+                <>
+                  {visiblePills.map(project => (
+                    <ProjectCard
+                      key={project.section}
+                      project={project}
+                      isExpanded={expandedProject?.section === project.section}
+                      onClick={() => {
+                        setExpandedProject(
+                          expandedProject?.section === project.section ? null : project
+                        )
+                      }}
+                      onContextMenu={onProjectContextMenu}
+                      isNightMode={isNightMode}
+                      wiggle={project.section === 'rightnow' && rightNowWiggle}
+                    />
+                  ))}
+                  {/* +N overflow button */}
+                  {overflowPills.length > 0 && (
+                    <div ref={overflowRef} style={{ position: 'relative', flexShrink: 0 }}>
+                      <motion.button
+                        onClick={() => setOverflowOpen(o => !o)}
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.92 }}
+                        style={{
+                          height: 28, padding: '2px 8px',
+                          background: overflowOpen
+                            ? (isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.14)')
+                            : (isDaytime ? 'rgba(59,130,246,0.07)' : 'rgba(100,180,255,0.06)'),
+                          border: `1.5px solid ${overflowOpen ? (isDaytime ? 'rgba(59,130,246,0.45)' : 'rgba(100,180,255,0.35)') : hudDivider}`,
+                          borderRadius: 8,
+                          cursor: 'pointer',
+                          color: overflowOpen ? hudAccent : hudTextMuted,
+                          fontFamily: "'Inter Tight', sans-serif",
+                          fontSize: 11, fontWeight: 800,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 150ms ease',
+                          whiteSpace: 'nowrap',
+                          letterSpacing: '-0.01em',
+                        }}
+                      >
+                        +{overflowPills.length}
+                      </motion.button>
+                      {/* Overflow popover -- appears above the pill bar */}
+                      <AnimatePresence>
+                        {overflowOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                            transition={{ type: 'spring', damping: 22, stiffness: 350 }}
+                            style={{
+                              position: 'absolute',
+                              bottom: 'calc(100% + 6px)',
+                              right: 0,
+                              background: isDaytime ? 'rgba(12, 28, 55, 0.97)' : 'rgba(8, 16, 32, 0.97)',
+                              backdropFilter: 'blur(20px)',
+                              border: `1.5px solid ${isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(100,180,255,0.2)'}`,
+                              borderRadius: 10,
+                              boxShadow: '0 -8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(100,180,255,0.05)',
+                              padding: '8px',
+                              display: 'grid',
+                              gridTemplateColumns: overflowPills.length > 3 ? 'repeat(3, auto)' : `repeat(${overflowPills.length}, auto)`,
+                              gap: 4,
+                              zIndex: 100,
+                              minWidth: 140,
+                              maxWidth: 320,
+                            }}
+                          >
+                            {overflowPills.map(project => (
+                              <ProjectCard
+                                key={project.section}
+                                project={project}
+                                isExpanded={expandedProject?.section === project.section}
+                                onClick={() => {
+                                  setOverflowOpen(false)
+                                  setExpandedProject(
+                                    expandedProject?.section === project.section ? null : project
+                                  )
+                                }}
+                                onContextMenu={onProjectContextMenu}
+                                isNightMode={isNightMode}
+                                wiggle={false}
+                              />
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
 
           {/* Right scroll arrow (44px touch target) */}
@@ -2545,8 +2579,7 @@ export default function GameHUD({
             </svg>
           </button>
 
-          {/* Lightning bolt notification button (was bell) */}
-          <HUDBellButton onClick={onExpandChat} />
+          {/* Notification bell removed -- Inbox pill IS the notification system now */}
         </div>
       </div>
 
@@ -2641,11 +2674,7 @@ export default function GameHUD({
           0%, 100% { opacity: 1; border-color: #EF4444; }
           50% { opacity: 0.7; border-color: #FF6B6B; }
         }
-        ${HUD_NOTIFICATION_STYLES}
       `}</style>
-
-      {/* HUD toast notifications (slide in from right, above HUD strip) */}
-      <HUDToasts />
 
       {/* Task right-click context menu (rendered outside all overflow containers) */}
       {hudTaskCtx && (
