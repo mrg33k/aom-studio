@@ -500,6 +500,7 @@ function HeroSection() {
       position: 'relative',
       overflow: 'hidden',
       paddingTop: 60,
+      paddingBottom: 80,
     }}>
       <BlueprintPattern opacity={0.06} />
 
@@ -569,7 +570,7 @@ function HeroSection() {
         <div
           style={{
             position: 'absolute',
-            bottom: 36, left: '50%',
+            bottom: 16, left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
             cursor: 'pointer', opacity: 0,
