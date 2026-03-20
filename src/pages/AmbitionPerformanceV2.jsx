@@ -205,19 +205,21 @@ function MaxWidth({ children, style: s = {} }) {
 
 function SectionLabel({ children, dark = true }) {
   return (
-    <span style={{
-      display: 'inline-block',
-      fontFamily: F.display,
-      fontSize: 11,
-      fontWeight: 700,
-      letterSpacing: '0.18em',
-      textTransform: 'uppercase',
-      color: C.red500,
-      border: `1px solid ${C.red500}`,
-      borderRadius: 100,
-      padding: '4px 14px',
-      marginBottom: 16,
-    }}>{children}</span>
+    <div style={{ textAlign: 'center' }}>
+      <span style={{
+        display: 'inline-block',
+        fontFamily: F.display,
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.18em',
+        textTransform: 'uppercase',
+        color: C.red500,
+        border: `1px solid ${C.red500}`,
+        borderRadius: 100,
+        padding: '4px 14px',
+        marginBottom: 16,
+      }}>{children}</span>
+    </div>
   )
 }
 
@@ -237,6 +239,7 @@ function Heading({ children, dark = true, style: s = {} }) {
       color: dark ? C.white : C.navy900,
       marginTop: 8,
       marginBottom: 0,
+      textAlign: 'center',
       ...s,
     }}>{children}</h2>
   )
@@ -247,9 +250,13 @@ function Subheading({ children, dark = true, style: s = {} }) {
     <p style={{
       fontFamily: F.body,
       fontSize: 17,
+      textAlign: 'center',
+      marginTop: 16,
+      marginBottom: 0,
+      marginLeft: 'auto',
+      marginRight: 'auto',
       lineHeight: 1.65,
       color: dark ? C.gray400 : C.gray500,
-      marginTop: 16,
       maxWidth: 680,
       ...s,
     }}>{children}</p>
@@ -649,7 +656,7 @@ function StatsSection() {
             Every number here represents real production work delivered for Ambition Mechanical. Shoots, files, photos, edits, and a website built from scratch.
           </Subheading>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2, marginTop: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 28, marginTop: 48 }}>
           {heroStats.map((stat, i) => (
             <StatCard key={stat.label} {...stat} index={i} />
           ))}
@@ -737,7 +744,7 @@ function SocialSection() {
 
         {/* Top impact numbers */}
         <FadeIn delay={0.15}>
-          <div ref={ref} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2, marginTop: 40, marginBottom: 40 }}>
+          <div ref={ref} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 28, marginTop: 40, marginBottom: 40 }}>
             {[
               { val: '~600K+', label: 'Est. Total Views', accent: true },
               { val: '21.6K', label: 'TikTok Likes' },
@@ -773,7 +780,7 @@ function SocialSection() {
 
         {/* Done Well / Can Improve */}
         <FadeIn delay={0.25}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 2, marginBottom: 40 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 28, marginBottom: 40 }}>
             <div style={{ padding: 32, background: C.navy900, border: `1px solid ${C.navyBorder}` }}>
               <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#22c55e', marginBottom: 24 }}>
                 What We've Done Well
@@ -815,7 +822,7 @@ function SocialSection() {
         </FadeIn>
 
         {/* Platform cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 2 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 28 }}>
           {platforms.map((p, i) => {
             const Icon = p.icon
             return (
@@ -882,7 +889,7 @@ function ContentStrategySection() {
             Every piece of content maps to one of six strategic pillars. This framework ensures Ambition Mechanical's social presence is balanced, intentional, and always on-brand.
           </Subheading>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2, marginTop: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 28, marginTop: 48 }}>
           {contentPillars.map((pillar, i) => {
             const Icon = pillar.icon
             return (
@@ -972,7 +979,7 @@ function ShootsSection() {
             Every shoot logged, organized, and delivered. From the first day at Fashion Square to the latest Memorial Tower session.
           </Subheading>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 2, marginTop: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 28, marginTop: 48 }}>
           {visibleShoots.map((shoot, i) => (
             <FadeIn key={`${shoot.name}-${i}`} delay={Math.min(i * 0.03, 0.4)}>
               <div style={{
@@ -1057,7 +1064,7 @@ function SitesSection() {
             Every one of these locations has been professionally documented with cinema cameras, drone aerials, and professional audio. This is Ambition's portfolio brought to life.
           </Subheading>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2, marginTop: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 28, marginTop: 48 }}>
           {sitesVisited.map((site, i) => (
             <FadeIn key={site.name} delay={Math.min(i * 0.025, 0.4)}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px', background: C.offWhite, border: `1px solid ${C.gray200}`, transition: 'border-color 200ms' }}
@@ -1101,7 +1108,7 @@ function ContentArsenalSection() {
             Beyond shoots and edits, AOM has built a complete content system for Ambition Mechanical. Templates, strategies, calendars, and voice recordings, all designed to scale.
           </Subheading>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 2, marginTop: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 28, marginTop: 48 }}>
           {contentArsenal.map((item, i) => (
             <FadeIn key={item.label} delay={i * 0.07}>
               <div style={{ padding: '32px 28px', background: C.navy800, border: `1px solid ${C.navyBorder}`, position: 'relative' }}>
@@ -1114,7 +1121,7 @@ function ContentArsenalSection() {
           ))}
         </div>
         <FadeIn delay={0.4}>
-          <div style={{ marginTop: 12, padding: '28px 32px', background: C.navy800, border: `1px solid ${C.navyBorder}` }}>
+          <div style={{ marginTop: 28, padding: '28px 32px', background: C.navy800, border: `1px solid ${C.navyBorder}` }}>
             <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.gray500, marginBottom: 16 }}>Also Delivered</p>
             {[
               'Brand guidelines documentation (3 versions)',
@@ -1202,7 +1209,7 @@ function EquipmentSection() {
           <SectionLabel>Production Gear</SectionLabel>
           <Heading>Professional-Grade Tools.</Heading>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2, marginTop: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 28, marginTop: 48 }}>
           {equipment.map((item, i) => (
             <FadeIn key={item.name} delay={i * 0.07}>
               <div style={{ padding: '24px 24px', background: C.navy800, border: `1px solid ${C.navyBorder}`, transition: 'border-color 200ms' }}
@@ -1284,7 +1291,7 @@ function ValueSection() {
         </FadeIn>
 
         <FadeIn delay={0.3}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 2, alignItems: 'center', marginTop: 48 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 28, alignItems: 'center', marginTop: 48 }}>
             <div style={{ textAlign: 'center', padding: '32px 24px', background: C.offWhite, border: `1px solid ${C.gray200}` }}>
               <p style={{ fontFamily: F.display, fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.gray500, marginBottom: 10 }}>Market Value</p>
               <p style={{ fontFamily: F.display, fontWeight: 900, fontSize: 'clamp(32px, 5vw, 52px)', color: C.navy900, lineHeight: 1 }}>
@@ -1333,7 +1340,7 @@ function HoursSection() {
           <SectionLabel>Time Invested</SectionLabel>
           <Heading>Nearly 500 Hours of Work.</Heading>
         </FadeIn>
-        <div ref={ref} style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 48 }}>
+        <div ref={ref} style={{ display: 'flex', flexDirection: 'column', gap: 28, marginTop: 48 }}>
           {hoursBreakdown.map((item, i) => (
             <FadeIn key={item.activity} delay={i * 0.07}>
               <div style={{ padding: '20px 24px', background: C.navy800, border: `1px solid ${C.navyBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -1350,7 +1357,7 @@ function HoursSection() {
           ))}
         </div>
         <FadeIn delay={0.5}>
-          <div style={{ marginTop: 2, padding: '28px 32px', background: C.navy800, border: `2px solid ${C.red500}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ marginTop: 16, padding: '28px 32px', background: C.navy800, border: `2px solid ${C.red500}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <p style={{ fontFamily: F.display, fontWeight: 800, fontSize: 18, textTransform: 'uppercase', color: C.white, margin: '0 0 4px' }}>Total Estimated Hours</p>
               <p style={{ fontFamily: F.body, fontSize: 14, color: C.gray500 }}>Effective rate: ~$50.71/hour (market rate: $100-200/hr)</p>
@@ -1439,7 +1446,7 @@ function MonthlyPlansSection() {
             </p>
           </div>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 2 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 28 }}>
           {plans.map((plan, i) => (
             <FadeIn key={plan.name} delay={0.2 + i * 0.1}>
               <div style={{
@@ -1543,7 +1550,7 @@ function ServiceCallPlanSection() {
         </FadeIn>
 
         {/* Three Phases */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 2, marginTop: 40, marginBottom: 40 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 28, marginTop: 40, marginBottom: 40 }}>
           {[
             {
               phase: 'Phase 1', color: C.red500, icon: Megaphone, title: 'Content-First', timeline: 'Weeks 1-4 | $0 Additional Cost',
@@ -1647,7 +1654,7 @@ function ServiceCallPlanSection() {
             <p style={{ fontFamily: F.display, fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.red500, marginBottom: 24 }}>
               Live Data: Arizona HVAC Companies Running Meta Ads (March 2026)
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
               {[
                 { name: 'George Brazil', ads: '4 active campaigns', status: 'running' },
                 { name: 'Chas Roberts', ads: '2 active campaigns', status: 'running' },
@@ -1757,7 +1764,7 @@ function WhatsNextSection() {
             The foundation is built. The content exists. These are the four moves that turn production assets into inbound service calls.
           </Subheading>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2, marginTop: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 28, marginTop: 48 }}>
           {nextSteps.map((step, i) => (
             <FadeIn key={step.number} delay={i * 0.1}>
               <div style={{
