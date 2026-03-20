@@ -321,7 +321,7 @@ function parsePunchList(markdown) {
   }
 
   return {
-    projects: projects.filter(p => p.tasks.length > 0),
+    projects: projects,  // Show all project pills even if empty (user adds tasks from the pill)
     todayTasks,
   }
 }

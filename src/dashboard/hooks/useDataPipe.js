@@ -485,6 +485,20 @@ export function useDataPipe(parsePunchList) {
             }
           }
 
+          // Ensure default project pills always exist even without tasks
+          const DEFAULT_PROJECTS = [
+            { name: 'Corner', section: 'corner', color: '#3B9EFF', icon: 'project' },
+            { name: 'Ambition', section: 'ambition', color: '#F59E0B', icon: 'project' },
+            { name: 'KOHRS', section: 'kohrs', color: '#EF4444', icon: 'project' },
+            { name: 'ISA', section: 'isa', color: '#F97316', icon: 'project' },
+            { name: 'Skylar', section: 'skylar', color: '#EC4899', icon: 'project' },
+            { name: 'Outreach', section: 'outreach', color: '#EF4444', icon: 'project' },
+          ]
+          for (const dp of DEFAULT_PROJECTS) {
+            if (!projectMap.has(dp.section)) {
+              projectMap.set(dp.section, { ...dp, tasks: [] })
+            }
+          }
           setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
         } else {
           setPunchData({ projects: [], todayTasks: [] })
