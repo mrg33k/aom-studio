@@ -1134,7 +1134,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
   // Origin for hex layout
   const ORIGIN_X = ROOM_SIZE * 1.5
-  const ORIGIN_Y = ROOM_SIZE * 0.1
+  const ORIGIN_Y = ROOM_SIZE * 0.1 - 100
 
   // ---- COMPUTE GRID BOUNDING BOX ----
   const getGridBounds = useCallback(() => {
