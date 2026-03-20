@@ -1,100 +1,154 @@
-// BoardView.jsx -- Trello/Kanban alternative view for Corner dashboard
-// Three columns: Right Now (active) | To Do (queued) | Done (completed)
-// Data source: pipeData from useDataPipe hook
-// Design: dark #0F1B2D, card borders match agent colors, 16px+ text
+// BoardView.jsx -- Full Trello/Kanban view for Corner dashboard
+// Columns: one per agent + one per project + Right Now + Completed
+// Features: filter bar, search, horizontal scroll, drag-and-drop between columns
+// Data source: pipeData from useDataPipe hook (rightNow, completedFeed, punchData)
 
-import { AGENTS } from './gridSpec.js'
+import { useState, useRef, useCallback, useMemo } from 'react'
+import { AGENTS, PROJECTS } from './gridSpec.js'
 
-// Resolve agent color by slug
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+
 function getAgentColor(slug) {
   if (!slug) return '#6B7280'
   const agent = AGENTS.find(a => a.slug === slug?.toLowerCase())
-  return agent?.color || '#6B7280'
+  if (agent) return agent.color
+  const proj = PROJECTS.find(p => p.slug === slug?.toLowerCase())
+  return proj?.color || '#6B7280'
 }
 
-// Column header colors (status-based, matching game theme)
-const COLUMN_CONFIG = {
-  rightNow: {
-    label: 'Right Now',
-    color: '#F97316',   // orange
-    bg: 'rgba(249,115,22,0.12)',
-    border: 'rgba(249,115,22,0.35)',
-  },
-  toDo: {
-    label: 'To Do',
-    color: '#3B82F6',   // blue
-    bg: 'rgba(59,130,246,0.12)',
-    border: 'rgba(59,130,246,0.35)',
-  },
-  done: {
-    label: 'Done',
-    color: '#22C55E',   // green
-    bg: 'rgba(34,197,94,0.12)',
-    border: 'rgba(34,197,94,0.35)',
-  },
+function getAgentName(slug) {
+  if (!slug) return null
+  const agent = AGENTS.find(a => a.slug === slug?.toLowerCase())
+  if (agent) return agent.name
+  const proj = PROJECTS.find(p => p.slug === slug?.toLowerCase())
+  return proj?.name || (slug.charAt(0).toUpperCase() + slug.slice(1))
 }
 
-// Single kanban card
-function BoardCard({ entry, columnKey }) {
+// ── COLUMN CONFIGS ─────────────────────────────────────────────────────────
+
+const STATUS_COLS = {
+  rightnow: { key: 'rightnow', label: 'Right Now', color: '#F97316', type: 'status' },
+  completed: { key: 'completed', label: 'Completed', color: '#22C55E', type: 'status' },
+}
+
+// Build agent columns from AGENTS list
+const AGENT_COLS = AGENTS.map(a => ({
+  key: a.slug,
+  label: a.name,
+  color: a.color,
+  type: 'agent',
+}))
+
+// Build project columns from PROJECTS list (exclude hidden)
+const PROJECT_COLS = PROJECTS.filter(p => !p.hidden).map(p => ({
+  key: p.slug,
+  label: p.name,
+  color: p.color,
+  type: 'project',
+}))
+
+// Default order for localStorage
+const DEFAULT_ORDER = [
+  'rightnow',
+  'completed',
+  ...AGENT_COLS.map(c => c.key),
+  ...PROJECT_COLS.map(c => c.key),
+]
+
+// All col configs by key
+const ALL_COLS = {
+  ...STATUS_COLS,
+  ...Object.fromEntries(AGENT_COLS.map(c => [c.key, c])),
+  ...Object.fromEntries(PROJECT_COLS.map(c => [c.key, c])),
+}
+
+function loadColOrder() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('board-col-order') || 'null')
+    if (Array.isArray(stored) && stored.length > 0) {
+      // Merge: keep stored order, append any new cols not yet in stored
+      const extra = DEFAULT_ORDER.filter(k => !stored.includes(k))
+      return [...stored.filter(k => DEFAULT_ORDER.includes(k)), ...extra]
+    }
+  } catch {}
+  return [...DEFAULT_ORDER]
+}
+
+function saveColOrder(order) {
+  try { localStorage.setItem('board-col-order', JSON.stringify(order)) } catch {}
+}
+
+// ── BOARD CARD ──────────────────────────────────────────────────────────────
+
+function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex }) {
   const agentSlug = entry.agent?.toLowerCase()
   const agentColor = getAgentColor(agentSlug)
   const taskText = entry.text || entry.description || entry.currentTask || 'No task'
-  const agentName = entry.agent
-    ? entry.agent.charAt(0).toUpperCase() + entry.agent.slice(1)
-    : null
+  const agentName = entry.agent ? getAgentName(agentSlug) : null
   const projectTag = entry.project || null
 
+  // Only show agent badge if it differs from the column we're in
+  const showAgentBadge = agentName && agentSlug !== columnKey
+
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderLeft: `3px solid ${agentColor}`,
-      borderRadius: 8,
-      padding: '12px 14px',
-      marginBottom: 8,
-      transition: 'background 150ms ease, border-color 150ms ease',
-      cursor: 'default',
-    }}
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', JSON.stringify({ entry, fromCol: columnKey, taskIndex }))
+        onDragStart?.()
+      }}
+      onDragEnd={() => onDragEnd?.()}
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderLeft: `3px solid ${agentColor}`,
+        borderRadius: 8,
+        padding: '10px 12px',
+        marginBottom: 7,
+        transition: 'background 150ms ease, box-shadow 150ms ease, opacity 150ms ease',
+        cursor: 'grab',
+        opacity: isDragging ? 0.4 : 1,
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+      }}
       onMouseEnter={e => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.07)'
-        e.currentTarget.style.borderColor = `rgba(255,255,255,0.14)`
+        if (!isDragging) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+          e.currentTarget.style.boxShadow = `0 0 0 1px ${agentColor}30`
+        }
       }}
       onMouseLeave={e => {
         e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-        e.currentTarget.style.borderColor = `rgba(255,255,255,0.08)`
+        e.currentTarget.style.boxShadow = 'none'
       }}
     >
-      {/* Task text */}
       <div style={{
         fontFamily: "'Inter', system-ui, sans-serif",
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: 500,
         color: '#F1F5F9',
         lineHeight: 1.45,
-        marginBottom: agentName || projectTag ? 10 : 0,
+        marginBottom: (showAgentBadge || projectTag) ? 8 : 0,
         wordBreak: 'break-word',
       }}>
         {taskText}
       </div>
 
-      {/* Footer: agent + project tag */}
-      {(agentName || projectTag) && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          flexWrap: 'wrap',
-        }}>
-          {agentName && (
+      {(showAgentBadge || projectTag) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {showAgentBadge && (
             <span style={{
               fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              fontWeight: 600,
+              fontSize: 10,
+              fontWeight: 700,
               color: agentColor,
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.07em',
               background: `${agentColor}18`,
               border: `1px solid ${agentColor}30`,
               borderRadius: 4,
-              padding: '2px 6px',
+              padding: '1px 5px',
               flexShrink: 0,
             }}>
               {agentName}
@@ -103,27 +157,32 @@ function BoardCard({ entry, columnKey }) {
           {projectTag && (
             <span style={{
               fontFamily: "'Inter', system-ui, sans-serif",
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 500,
               color: '#64748B',
               background: 'rgba(100,116,139,0.1)',
               border: '1px solid rgba(100,116,139,0.2)',
               borderRadius: 4,
-              padding: '2px 6px',
+              padding: '1px 5px',
               flexShrink: 0,
             }}>
               {projectTag}
             </span>
           )}
-          {entry.timestamp && (
+          {entry.isLive && (
             <span style={{
-              fontFamily: "'Inter', system-ui, sans-serif",
-              fontSize: 11,
-              color: '#475569',
-              marginLeft: 'auto',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              fontWeight: 700,
+              color: '#F97316',
+              background: 'rgba(249,115,22,0.15)',
+              border: '1px solid rgba(249,115,22,0.35)',
+              borderRadius: 4,
+              padding: '1px 5px',
+              letterSpacing: '0.05em',
               flexShrink: 0,
             }}>
-              {entry.timestamp}
+              LIVE
             </span>
           )}
         </div>
@@ -132,83 +191,152 @@ function BoardCard({ entry, columnKey }) {
   )
 }
 
-// Single column
-function BoardColumn({ columnKey, cards }) {
-  const config = COLUMN_CONFIG[columnKey]
+// ── BOARD COLUMN ────────────────────────────────────────────────────────────
+
+function BoardColumn({
+  colKey,
+  cards,
+  isDropTarget,
+  onDragOver,
+  onDrop,
+  onDragLeave,
+  onCardDragStart,
+  onCardDragEnd,
+  draggingKey,
+  isVisible,
+  taskOrder,
+  onTaskReorder,
+}) {
+  const config = ALL_COLS[colKey] || { label: colKey, color: '#6B7280', type: 'other' }
+  const dragInsertRef = useRef(null)
+
+  // Sort cards by stored task order
+  const sortedCards = useMemo(() => {
+    if (!taskOrder || taskOrder.length === 0) return cards
+    const indexMap = new Map(taskOrder.map((t, i) => [t, i]))
+    return [...cards].sort((a, b) => {
+      const ia = indexMap.has(a.text) ? indexMap.get(a.text) : 9999
+      const ib = indexMap.has(b.text) ? indexMap.get(b.text) : 9999
+      return ia - ib
+    })
+  }, [cards, taskOrder])
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    onDragOver(colKey)
+  }, [colKey, onDragOver])
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault()
+    const raw = e.dataTransfer.getData('text/plain')
+    try {
+      const payload = JSON.parse(raw)
+      onDrop(colKey, payload)
+    } catch {}
+  }, [colKey, onDrop])
+
+  if (!isVisible) return null
+
   return (
-    <div style={{
-      flex: '1 1 0',
-      minWidth: 260,
-      maxWidth: 400,
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <div
+      style={{
+        flex: '0 0 260px',
+        width: 260,
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0,
+      }}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          onDragLeave()
+        }
+      }}
+    >
       {/* Column header */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        background: config.bg,
-        border: `2px solid ${config.border}`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        background: `${config.color}12`,
+        border: `2px solid ${config.color}38`,
         borderRadius: '10px 10px 0 0',
-        padding: '10px 16px',
-        marginBottom: 0,
+        padding: '9px 14px',
       }}>
         <div style={{
-          width: 10, height: 10, borderRadius: '50%',
+          width: 8, height: 8, borderRadius: '50%',
           background: config.color,
-          boxShadow: `0 0 6px ${config.color}80`,
+          boxShadow: `0 0 5px ${config.color}80`,
           flexShrink: 0,
         }} />
         <span style={{
           fontFamily: "'Inter', system-ui, sans-serif",
-          fontSize: 14,
+          fontSize: 12,
           fontWeight: 800,
           color: config.color,
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
         }}>
           {config.label}
         </span>
         <span style={{
-          marginLeft: 'auto',
           fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 13,
-          fontWeight: 600,
+          fontSize: 11,
+          fontWeight: 700,
           color: config.color,
           background: `${config.color}20`,
           border: `1px solid ${config.color}40`,
-          borderRadius: 6,
-          padding: '1px 8px',
+          borderRadius: 5,
+          padding: '0 6px',
+          lineHeight: '18px',
           flexShrink: 0,
         }}>
-          {cards.length}
+          {sortedCards.length}
         </span>
       </div>
 
-      {/* Card stack */}
+      {/* Card stack / drop zone */}
       <div style={{
         flex: 1,
-        background: 'rgba(255,255,255,0.02)',
-        border: `1px solid ${config.border}`,
+        background: isDropTarget ? `${config.color}08` : 'rgba(255,255,255,0.015)',
+        border: `1.5px solid ${isDropTarget ? config.color : `${config.color}28`}`,
         borderTop: 'none',
         borderRadius: '0 0 10px 10px',
-        padding: '12px',
+        padding: '10px',
         overflowY: 'auto',
-        minHeight: 120,
+        minHeight: 100,
+        transition: 'background 150ms ease, border-color 150ms ease',
+        boxShadow: isDropTarget ? `inset 0 0 12px ${config.color}15` : 'none',
       }}>
-        {cards.length === 0 ? (
+        {sortedCards.length === 0 ? (
           <div style={{
             fontFamily: "'Inter', system-ui, sans-serif",
-            fontSize: 14,
-            color: '#334155',
+            fontSize: 13,
+            color: '#2D3F55',
             textAlign: 'center',
-            paddingTop: 24,
+            paddingTop: 20,
             fontStyle: 'italic',
           }}>
-            Nothing here
+            {isDropTarget ? 'Drop here' : 'Nothing here'}
           </div>
         ) : (
-          cards.map((card, i) => (
-            <BoardCard key={`${columnKey}-${i}`} entry={card} columnKey={columnKey} />
+          sortedCards.map((card, i) => (
+            <BoardCard
+              key={`${colKey}-${card.text?.slice(0, 20)}-${i}`}
+              entry={card}
+              columnKey={colKey}
+              taskIndex={i}
+              isDragging={draggingKey === `${colKey}-${i}`}
+              onDragStart={() => onCardDragStart(`${colKey}-${i}`)}
+              onDragEnd={() => onCardDragEnd()}
+            />
           ))
         )}
       </div>
@@ -216,67 +344,412 @@ function BoardColumn({ columnKey, cards }) {
   )
 }
 
-// Main BoardView component
+// ── FILTER TOGGLE PILL ──────────────────────────────────────────────────────
+
+function FilterPill({ label, active, color, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        height: 26,
+        padding: '0 10px',
+        borderRadius: 13,
+        background: active ? `${color}22` : 'rgba(255,255,255,0.04)',
+        border: `1.5px solid ${active ? color : 'rgba(255,255,255,0.1)'}`,
+        color: active ? color : '#64748B',
+        fontFamily: "'Inter', system-ui, sans-serif",
+        fontSize: 11,
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        cursor: 'pointer',
+        transition: 'all 150ms ease',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => {
+        if (!active) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.07)'
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'
+          e.currentTarget.style.color = '#94A3B8'
+        }
+      }}
+      onMouseLeave={e => {
+        if (!active) {
+          e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+          e.currentTarget.style.color = '#64748B'
+        }
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+// ── MAIN BOARD VIEW ─────────────────────────────────────────────────────────
+
 export default function BoardView({ pipeData, isMobile, isNightMode }) {
   const rightNow = pipeData?.rightNow || []
   const completedFeed = pipeData?.completedFeed || []
   const punchData = pipeData?.punchData
 
-  // To Do: tasks from punchData that are queued (not in rightNow by agent slug)
-  const activeAgentSlugs = new Set(rightNow.map(t => t.agent?.toLowerCase()).filter(Boolean))
+  // Filter state: which types are visible
+  const [showStatus, setShowStatus] = useState(true)
+  const [showAgents, setShowAgents] = useState(true)
+  const [showProjects, setShowProjects] = useState(true)
 
-  let toDo = []
-  if (punchData?.projects) {
-    for (const project of punchData.projects) {
-      // Skip done-only sections
-      if (['done', 'completed'].includes(project.section)) continue
-      for (const task of project.tasks) {
-        if (task.done) continue
-        // Skip tasks from agents already in Right Now
-        const taskAgent = (task.agent || '').toLowerCase()
-        if (taskAgent && activeAgentSlugs.has(taskAgent)) continue
-        toDo.push({
-          text: task.text,
-          agent: task.agent || null,
-          project: project.name,
-          projectSection: project.section,
-          done: false,
-        })
+  // Search
+  const [search, setSearch] = useState('')
+
+  // Column order (drag to reorder columns later -- currently just stored)
+  const [colOrder, setColOrder] = useState(() => loadColOrder())
+
+  // Drag state
+  const [draggingCard, setDraggingCard] = useState(null) // key like "rightnow-0"
+  const [dropTargetCol, setDropTargetCol] = useState(null)
+
+  // Per-column task order (for within-column reordering)
+  const [taskOrders, setTaskOrders] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('board-task-orders') || '{}')
+    } catch { return {} }
+  })
+
+  const saveTaskOrders = useCallback((orders) => {
+    setTaskOrders(orders)
+    try { localStorage.setItem('board-task-orders', JSON.stringify(orders)) } catch {}
+  }, [])
+
+  // ── Build cards per column ─────────────────────────────────────────────
+
+  // Track which tasks are "overridden" to a different column by drag-and-drop
+  const [cardOverrides, setCardOverrides] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('board-card-overrides') || '{}')
+    } catch { return {} }
+  })
+
+  const saveCardOverrides = useCallback((overrides) => {
+    setCardOverrides(overrides)
+    try { localStorage.setItem('board-card-overrides', JSON.stringify(overrides)) } catch {}
+  }, [])
+
+  // Build the base card map (column -> cards[])
+  const baseCardMap = useMemo(() => {
+    const map = {}
+
+    // Init all columns
+    for (const key of DEFAULT_ORDER) {
+      map[key] = []
+    }
+
+    // Right Now column
+    for (const task of rightNow) {
+      map['rightnow'].push({ ...task, _id: `rn-${task.agent}-${task.text?.slice(0, 20)}` })
+    }
+
+    // Completed column
+    for (const task of completedFeed.slice(0, 30)) {
+      map['completed'].push({ ...task, _id: `done-${task.agent}-${task.text?.slice(0, 20)}` })
+    }
+
+    // Agent and project columns from punch-list
+    if (punchData?.projects) {
+      for (const project of punchData.projects) {
+        if (['done', 'completed'].includes(project.section)) continue
+        for (const task of project.tasks) {
+          if (task.done) continue
+
+          const agentSlug = task.agent?.toLowerCase()
+          const cardData = {
+            text: task.text,
+            agent: task.agent,
+            project: project.name,
+            done: false,
+            _id: `punch-${project.section}-${task.text?.slice(0, 20)}`,
+          }
+
+          // Put in agent column if agent matches a known column
+          if (agentSlug && map[agentSlug] !== undefined) {
+            map[agentSlug].push(cardData)
+          }
+
+          // Also put in project column if the section maps to a project slug
+          const projSlug = PROJECT_COLS.find(p =>
+            p.label.toLowerCase() === project.name?.toLowerCase() ||
+            p.key === project.section
+          )?.key
+          if (projSlug && map[projSlug] !== undefined && projSlug !== agentSlug) {
+            map[projSlug].push({ ...cardData, _id: cardData._id + '-proj' })
+          }
+        }
       }
     }
-  }
-  // Cap at 20 to avoid overwhelming the column
-  toDo = toDo.slice(0, 20)
 
-  const topPadding = isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : '52px'
+    return map
+  }, [rightNow, completedFeed, punchData])
+
+  // Apply overrides
+  const cardMap = useMemo(() => {
+    const map = {}
+    for (const key of DEFAULT_ORDER) {
+      map[key] = [...(baseCardMap[key] || [])]
+    }
+    // Apply card moves
+    for (const [cardId, { toCol, card }] of Object.entries(cardOverrides)) {
+      // Remove from any column that has this card
+      for (const key of Object.keys(map)) {
+        map[key] = map[key].filter(c => c._id !== cardId)
+      }
+      // Add to target column
+      if (map[toCol]) {
+        map[toCol].push(card)
+      }
+    }
+    return map
+  }, [baseCardMap, cardOverrides])
+
+  // ── Filter logic ───────────────────────────────────────────────────────
+
+  const visibleColKeys = useMemo(() => {
+    return colOrder.filter(key => {
+      const col = ALL_COLS[key]
+      if (!col) return false
+      if (col.type === 'status' && !showStatus) return false
+      if (col.type === 'agent' && !showAgents) return false
+      if (col.type === 'project' && !showProjects) return false
+
+      // Search filter: only show columns that have matching cards (or if no search)
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        const cards = cardMap[key] || []
+        const colMatchesName = col.label.toLowerCase().includes(q)
+        const hasMatchingCard = cards.some(c =>
+          (c.text || '').toLowerCase().includes(q) ||
+          (c.agent || '').toLowerCase().includes(q) ||
+          (c.project || '').toLowerCase().includes(q)
+        )
+        if (!colMatchesName && !hasMatchingCard) return false
+      }
+
+      return true
+    })
+  }, [colOrder, showStatus, showAgents, showProjects, search, cardMap])
+
+  // Filter cards by search within visible columns
+  const filteredCardMap = useMemo(() => {
+    if (!search.trim()) return cardMap
+    const q = search.toLowerCase()
+    const result = {}
+    for (const key of visibleColKeys) {
+      result[key] = (cardMap[key] || []).filter(c =>
+        (c.text || '').toLowerCase().includes(q) ||
+        (c.agent || '').toLowerCase().includes(q) ||
+        (c.project || '').toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [cardMap, visibleColKeys, search])
+
+  // ── Drag handlers ──────────────────────────────────────────────────────
+
+  const handleCardDrop = useCallback((toCol, payload) => {
+    const { entry, fromCol, taskIndex } = payload
+    setDropTargetCol(null)
+    setDraggingCard(null)
+
+    if (fromCol === toCol) {
+      // Within same column -- reorder not implemented at card level yet
+      return
+    }
+
+    // Move card to new column
+    const cardId = entry._id || `override-${entry.text?.slice(0, 20)}-${Date.now()}`
+    const card = { ...entry, _id: cardId }
+    const newOverrides = { ...cardOverrides, [cardId]: { toCol, card } }
+    saveCardOverrides(newOverrides)
+  }, [cardOverrides, saveCardOverrides])
+
+  const handleDragOver = useCallback((colKey) => {
+    setDropTargetCol(colKey)
+  }, [])
+
+  const handleDragLeave = useCallback(() => {
+    setDropTargetCol(null)
+  }, [])
+
+  // ── Layout ─────────────────────────────────────────────────────────────
+
+  const topPadding = isMobile
+    ? 'calc(48px + env(safe-area-inset-top, 0px))'
+    : '52px'
+
+  const bgColor = isNightMode ? '#0A0F1E' : '#0F1B2D'
 
   return (
     <div style={{
       position: 'fixed',
       inset: 0,
       top: 0,
-      background: isNightMode ? '#0A0F1E' : '#0F1B2D',
+      background: bgColor,
       paddingTop: topPadding,
-      paddingBottom: isMobile ? 80 : 20,
+      paddingBottom: isMobile ? 80 : 12,
       display: 'flex',
       flexDirection: 'column',
       zIndex: 15,
       overflow: 'hidden',
     }}>
-      {/* Board container */}
+
+      {/* ── TOOLBAR: filter toggles + search ─────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: isMobile ? '8px 12px' : '10px 20px',
+        flexShrink: 0,
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+      }}>
+        {/* Filter pills */}
+        <FilterPill
+          label="Status"
+          active={showStatus}
+          color="#F97316"
+          onClick={() => setShowStatus(s => !s)}
+        />
+        <FilterPill
+          label="Agents"
+          active={showAgents}
+          color="#3B82F6"
+          onClick={() => setShowAgents(s => !s)}
+        />
+        <FilterPill
+          label="Projects"
+          active={showProjects}
+          color="#22C55E"
+          onClick={() => setShowProjects(s => !s)}
+        />
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+
+        {/* Search */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          background: 'rgba(255,255,255,0.05)',
+          border: '1.5px solid rgba(255,255,255,0.1)',
+          borderRadius: 8,
+          padding: '4px 10px',
+          flex: '0 1 220px',
+          minWidth: 120,
+        }}>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.4 }}>
+            <circle cx="6.5" cy="6.5" r="5" stroke="#fff" strokeWidth="1.5"/>
+            <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search cards..."
+            style={{
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: '#F1F5F9',
+              fontFamily: "'Inter', system-ui, sans-serif",
+              fontSize: 12,
+              fontWeight: 400,
+              width: '100%',
+              caretColor: '#3B82F6',
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#64748B', padding: 0, display: 'flex', alignItems: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Column count */}
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 10,
+          fontWeight: 600,
+          color: '#334155',
+          flexShrink: 0,
+          marginLeft: 'auto',
+          whiteSpace: 'nowrap',
+        }}>
+          {visibleColKeys.length} columns
+        </span>
+      </div>
+
+      {/* ── KANBAN BOARD: horizontal scroll ─────────────────────────── */}
       <div style={{
         flex: 1,
-        padding: isMobile ? '16px 12px' : '20px 24px',
         display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: 16,
-        overflowX: isMobile ? 'visible' : 'auto',
-        overflowY: isMobile ? 'auto' : 'hidden',
-        alignItems: isMobile ? 'stretch' : 'flex-start',
+        flexDirection: 'row',
+        gap: 12,
+        padding: isMobile ? '12px' : '16px 20px',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        alignItems: 'flex-start',
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'rgba(59,130,246,0.2) transparent',
       }}>
-        <BoardColumn columnKey="rightNow" cards={rightNow} />
-        <BoardColumn columnKey="toDo" cards={toDo} />
-        <BoardColumn columnKey="done" cards={completedFeed} />
+        {visibleColKeys.map(key => (
+          <BoardColumn
+            key={key}
+            colKey={key}
+            cards={filteredCardMap[key] || []}
+            isDropTarget={dropTargetCol === key}
+            onDragOver={handleDragOver}
+            onDrop={handleCardDrop}
+            onDragLeave={handleDragLeave}
+            onCardDragStart={setDraggingCard}
+            onCardDragEnd={() => setDraggingCard(null)}
+            draggingKey={draggingCard}
+            isVisible={true}
+            taskOrder={taskOrders[key] || []}
+            onTaskReorder={(newOrder) => {
+              const updated = { ...taskOrders, [key]: newOrder }
+              saveTaskOrders(updated)
+            }}
+          />
+        ))}
+
+        {visibleColKeys.length === 0 && (
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#334155',
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: 14,
+            fontStyle: 'italic',
+          }}>
+            {search ? 'No cards match your search' : 'No columns visible -- turn on a filter above'}
+          </div>
+        )}
       </div>
     </div>
   )

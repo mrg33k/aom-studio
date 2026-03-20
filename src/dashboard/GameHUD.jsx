@@ -1172,6 +1172,16 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
   const [addingTask, setAddingTask] = useState(false)
   const [addTaskText, setAddTaskText] = useState('')
   const addTaskInputRef = useRef(null)
+  // Task drag-and-drop reorder within this pill
+  const [taskDragOrder, setTaskDragOrder] = useState(() => {
+    try {
+      const key = `hud-task-order-${project.section}`
+      const saved = JSON.parse(localStorage.getItem(key) || 'null')
+      return Array.isArray(saved) ? saved : null
+    } catch { return null }
+  })
+  const [draggingTaskIdx, setDraggingTaskIdx] = useState(null)
+  const [taskDropIdx, setTaskDropIdx] = useState(null)
   // Swipe-to-dismiss (mobile): track touch start Y, swipe down > 60px = close
   const swipeStartY = useRef(0)
   const handleSwipeTouchStart = useCallback((e) => {
@@ -1189,13 +1199,26 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
 
   const sortedTasks = useMemo(() => {
-    return tasks.map((t, i) => ({ ...t, origIdx: i })).sort((a, b) => {
-      const aDone = getTaskDone(a, a.origIdx)
-      const bDone = getTaskDone(b, b.origIdx)
-      if (aDone === bDone) return 0
-      return aDone ? 1 : -1
-    })
-  }, [tasks, localToggles])
+    let base = tasks.map((t, i) => ({ ...t, origIdx: i }))
+    // Apply custom drag order if set
+    if (taskDragOrder && taskDragOrder.length > 0) {
+      const indexMap = new Map(taskDragOrder.map((txt, i) => [txt, i]))
+      base = [...base].sort((a, b) => {
+        const ia = indexMap.has(a.text) ? indexMap.get(a.text) : 9999
+        const ib = indexMap.has(b.text) ? indexMap.get(b.text) : 9999
+        return ia - ib
+      })
+    } else {
+      // Default: done tasks to bottom
+      base = base.sort((a, b) => {
+        const aDone = getTaskDone(a, a.origIdx)
+        const bDone = getTaskDone(b, b.origIdx)
+        if (aDone === bDone) return 0
+        return aDone ? 1 : -1
+      })
+    }
+    return base
+  }, [tasks, localToggles, taskDragOrder])
 
   // Toggle checkbox: write to punch-list.md via API
   const toggleTask = useCallback(async (task, origIdx) => {
@@ -1509,8 +1532,33 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
             <motion.div
               key={task.isManual ? `manual-${task.manualId}` : task.origIdx}
               initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
+              animate={{ opacity: draggingTaskIdx === i ? 0.4 : 1, x: 0 }}
               transition={{ delay: i * 0.03, duration: 0.15 }}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = 'move'
+                e.dataTransfer.setData('text/plain', String(i))
+                setDraggingTaskIdx(i)
+              }}
+              onDragEnd={() => { setDraggingTaskIdx(null); setTaskDropIdx(null) }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'move'
+                if (i !== draggingTaskIdx) setTaskDropIdx(i)
+              }}
+              onDragLeave={() => setTaskDropIdx(null)}
+              onDrop={(e) => {
+                e.preventDefault()
+                const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10)
+                if (isNaN(fromIdx) || fromIdx === i) { setDraggingTaskIdx(null); setTaskDropIdx(null); return }
+                const current = sortedTasks.map(t => t.text)
+                const reordered = [...current]
+                const [moved] = reordered.splice(fromIdx, 1)
+                reordered.splice(i, 0, moved)
+                setTaskDragOrder(reordered)
+                try { localStorage.setItem(`hud-task-order-${project.section}`, JSON.stringify(reordered)) } catch {}
+                setDraggingTaskIdx(null); setTaskDropIdx(null)
+              }}
               onContextMenu={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -1536,8 +1584,10 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
                 padding: '12px 8px',
                 minHeight: 44,
                 borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
+                borderTop: taskDropIdx === i ? `2px solid ${project.color || '#3B9EFF'}` : '2px solid transparent',
                 opacity: isDone ? 0.35 : 1,
-                transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
+                transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease, border-top 100ms ease',
+                cursor: 'grab',
                 // Highlight when navigated-to OR context menu open
                 background: highlightedTask && task.text === highlightedTask.text
                   ? (isDaytime ? 'rgba(59,158,255,0.25)' : 'rgba(59,158,255,0.2)')
@@ -1849,6 +1899,12 @@ export default function GameHUD({
   // Track Right Now pill count for wiggle animation on new tasks
   const prevRightNowCountRef = useRef(0)
   const [rightNowWiggle, setRightNowWiggle] = useState(false)
+  // Pill drag-and-drop: custom ordering saved in localStorage
+  const [pillCustomOrder, setPillCustomOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('hud-pill-order') || 'null') || null } catch { return null }
+  })
+  const [draggingPill, setDraggingPill] = useState(null) // section key being dragged
+  const [pillDropTarget, setPillDropTarget] = useState(null) // section key of drop target
   // navigateToProject uses a ref so it doesn't depend on projects useMemo (avoids ordering issue)
   const projectsRef = useRef([]);
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
@@ -2159,16 +2215,28 @@ export default function GameHUD({
     setTimeout(() => setHighlightedTask(null), 2500)
   }, [])
 
-  // Filter projects by search query
+  // Filter projects by search query, then apply custom pill order
   const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) return projects
-    const q = searchQuery.toLowerCase()
-    return projects.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.section.toLowerCase().includes(q) ||
-      p.tasks.some(t => t.text.toLowerCase().includes(q))
-    )
-  }, [projects, searchQuery])
+    let list = projects
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      list = projects.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.section.toLowerCase().includes(q) ||
+        p.tasks.some(t => t.text.toLowerCase().includes(q))
+      )
+    }
+    // Apply custom drag order (only when no search active, so search shows natural order)
+    if (!searchQuery.trim() && pillCustomOrder && pillCustomOrder.length > 0) {
+      const indexMap = new Map(pillCustomOrder.map((s, i) => [s, i]))
+      return [...list].sort((a, b) => {
+        const ia = indexMap.has(a.section) ? indexMap.get(a.section) : 9999
+        const ib = indexMap.has(b.section) ? indexMap.get(b.section) : 9999
+        return ia - ib
+      })
+    }
+    return list
+  }, [projects, searchQuery, pillCustomOrder])
 
   // Focus search input when opened
   useEffect(() => {
@@ -2547,19 +2615,63 @@ export default function GameHUD({
               return (
                 <>
                   {visiblePills.map(project => (
-                    <ProjectCard
+                    <div
                       key={project.section}
-                      project={project}
-                      isExpanded={expandedProject?.section === project.section}
-                      onClick={() => {
-                        setExpandedProject(
-                          expandedProject?.section === project.section ? null : project
-                        )
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = 'move'
+                        e.dataTransfer.setData('text/plain', project.section)
+                        setDraggingPill(project.section)
                       }}
-                      onContextMenu={onProjectContextMenu}
-                      isNightMode={isNightMode}
-                      wiggle={project.section === 'rightnow' && rightNowWiggle}
-                    />
+                      onDragEnd={() => {
+                        setDraggingPill(null)
+                        setPillDropTarget(null)
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.dataTransfer.dropEffect = 'move'
+                        if (project.section !== draggingPill) setPillDropTarget(project.section)
+                      }}
+                      onDragLeave={() => setPillDropTarget(null)}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        const fromSection = e.dataTransfer.getData('text/plain')
+                        if (!fromSection || fromSection === project.section) {
+                          setDraggingPill(null); setPillDropTarget(null); return
+                        }
+                        // Reorder: move fromSection to before project.section
+                        const currentOrder = filteredProjects.map(p => p.section)
+                        const fromIdx = currentOrder.indexOf(fromSection)
+                        const toIdx = currentOrder.indexOf(project.section)
+                        if (fromIdx === -1 || toIdx === -1) { setDraggingPill(null); setPillDropTarget(null); return }
+                        const reordered = [...currentOrder]
+                        reordered.splice(fromIdx, 1)
+                        reordered.splice(toIdx, 0, fromSection)
+                        setPillCustomOrder(reordered)
+                        try { localStorage.setItem('hud-pill-order', JSON.stringify(reordered)) } catch {}
+                        setDraggingPill(null); setPillDropTarget(null)
+                      }}
+                      style={{
+                        opacity: draggingPill === project.section ? 0.45 : 1,
+                        outline: pillDropTarget === project.section ? '2px solid rgba(59,130,246,0.6)' : 'none',
+                        borderRadius: 8,
+                        transition: 'opacity 120ms ease, outline 120ms ease',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ProjectCard
+                        project={project}
+                        isExpanded={expandedProject?.section === project.section}
+                        onClick={() => {
+                          setExpandedProject(
+                            expandedProject?.section === project.section ? null : project
+                          )
+                        }}
+                        onContextMenu={onProjectContextMenu}
+                        isNightMode={isNightMode}
+                        wiggle={project.section === 'rightnow' && rightNowWiggle}
+                      />
+                    </div>
                   ))}
                   {/* +N overflow button */}
                   {overflowPills.length > 0 && (
