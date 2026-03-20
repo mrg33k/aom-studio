@@ -96,9 +96,10 @@ function AuthGuard({ children }) {
           setChecked(true)
         }
       } else {
-        setAuthed(false)
+        // No session -- allow dashboard anyway (auth is optional for now).
+        // Multi-tenant data isolation still works via getClientId() fallback.
+        setAuthed(true)
         setChecked(true)
-        navigate('/login', { replace: true })
       }
     })
     return unsubscribe
