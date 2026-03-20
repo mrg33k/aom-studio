@@ -7706,12 +7706,22 @@ export default function GameDashboard() {
   const pipeData = useDataPipe(parsePunchListSidebar)
   const rightNowTasks = pipeData?.rightNow || []
   const addToRightNow = useCallback((task) => {
-    // For future interactive features: could add temp override in local state
-    // For now, RIGHT NOW is read-only from pipeData
+    if (!task) return
+    // Update task status in Supabase: todo -> active (shows in Right Now)
+    if (!IS_LOCAL && task.id) {
+      fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(task.agent || 'elon')}&status=active&current_task=${encodeURIComponent(task.text || '')}`, { method: 'PATCH' }).catch(() => {})
+    }
+    // Write to relay so Elon sees the promotion and can auto-assign
+    if (!IS_LOCAL) {
+      fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: task.agent || 'elon', text: `[PROMOTE] ${task.text}`, role: 'user', source: 'corner-dashboard-task' }),
+      }).catch(() => {})
+    }
   }, [])
   const removeFromRightNow = useCallback((id) => {
-    // For future: could add removal logic that writes back to server
-    // For now, RIGHT NOW is read-only from pipeData
+    // For future: removal logic
   }, [])
   // HMR state recovery: restore selected room + tab from sessionStorage if HMR just reloaded
   const [selectedRoom, setSelectedRoom] = useState(() => {
