@@ -1146,7 +1146,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjectTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, onMarkInboxRead, highlightedTask }) {
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjectTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, onAddToRightNow, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, onMarkInboxRead, highlightedTask }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
@@ -1613,6 +1613,44 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
                 )}
               </span>
 
+              {/* RTN button -- visible tap target for mobile/iPad. Right-click context menu handles desktop. */}
+              {!isDone && onAddToRightNow && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onAddToRightNow(task)
+                  }}
+                  onTouchEnd={(e) => {
+                    // Prevent long-press timer from also triggering
+                    e.stopPropagation()
+                  }}
+                  title="Send to Right Now"
+                  style={{
+                    flexShrink: 0,
+                    background: 'none',
+                    border: '1px solid rgba(255,107,61,0.3)',
+                    borderRadius: 5,
+                    padding: '2px 6px',
+                    cursor: 'pointer',
+                    color: '#FF6B3D',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    letterSpacing: '0.04em',
+                    opacity: 0.55,
+                    transition: 'opacity 150ms, border-color 150ms',
+                    // 44px tap target via padding on touch
+                    minHeight: 28,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.borderColor = 'rgba(255,107,61,0.7)' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.55'; e.currentTarget.style.borderColor = 'rgba(255,107,61,0.3)' }}
+                >
+                  →
+                </button>
+              )}
+
               {/* LIVE badge for live agent tasks */}
               {task.isLive && (
                 <span style={{
@@ -1762,7 +1800,9 @@ export default function GameHUD({
   const [hudTaskCtx, setHudTaskCtx] = useState(null)
   useEffect(() => {
     if (!hudTaskCtx) return
-    // Delay listener so the originating right-click event doesn't immediately close the menu
+    // Delay listener so the originating right-click/long-press event doesn't immediately close the menu.
+    // Use a longer delay (150ms) for touch so the touchend from the long-press clears before we listen.
+    const delay = 150
     const timer = setTimeout(() => {
       const handler = (e) => {
         // Don't close if clicking inside the menu itself
@@ -1771,9 +1811,14 @@ export default function GameHUD({
         setHudTaskCtx(null)
       }
       document.addEventListener('mousedown', handler)
+      // Also dismiss on touchstart outside (iPad/mobile -- mousedown doesn't fire reliably)
+      document.addEventListener('touchstart', handler, { passive: true })
       // Store cleanup ref
-      hudTaskCtx._cleanup = () => document.removeEventListener('mousedown', handler)
-    }, 50)
+      hudTaskCtx._cleanup = () => {
+        document.removeEventListener('mousedown', handler)
+        document.removeEventListener('touchstart', handler)
+      }
+    }, delay)
     return () => {
       clearTimeout(timer)
       hudTaskCtx._cleanup?.()
@@ -1861,6 +1906,22 @@ export default function GameHUD({
 
   const deleteManualTask = useCallback((id) => {
     setManualTasks(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  // Add any task to Right Now (mobile-friendly alternative to right-click context menu)
+  const addToRightNow = useCallback((task) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
+      if (!saved.some(t => t.text === task.text)) {
+        saved.push({
+          id: Date.now(),
+          text: task.text,
+          agent: task.agent || 'patrik',
+          addedAt: new Date().toISOString(),
+        })
+        localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved))
+      }
+    } catch {}
   }, [])
 
   // INBOX READ STATE: track read message IDs in localStorage
@@ -2180,6 +2241,7 @@ export default function GameHUD({
             onAddProjectTask={addProjectTask}
             onToggleManualTask={toggleManualTask}
             onDeleteManualTask={deleteManualTask}
+            onAddToRightNow={addToRightNow}
             allProjects={projects}
             hudTaskCtxId={hudTaskCtx?.taskId}
             onTaskContextMenu={(e, task, proj) => {
@@ -2730,13 +2792,7 @@ export default function GameHUD({
           </button>
 
           <button onClick={() => {
-            try {
-              const saved = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
-              if (!saved.some(t => t.text === hudTaskCtx.task.text)) {
-                saved.push({ id: Date.now(), text: hudTaskCtx.task.text, agent: hudTaskCtx.task.agent || 'patrik', addedAt: new Date().toISOString() })
-                localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved))
-              }
-            } catch {}
+            addToRightNow(hudTaskCtx.task)
             setHudTaskCtx(null)
           }} style={{ ...hudCtxBtn(isNightMode), color: '#FF6B3D', fontWeight: 700 }}>
             Send to Right Now
