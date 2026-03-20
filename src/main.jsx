@@ -31,6 +31,7 @@ import GuideAmbitionCrown from './pages/GuideAmbitionCrown.jsx'
 import GuideAmbitionMemorialTower from './pages/GuideAmbitionMemorialTower.jsx'
 import ROICalculator from './pages/ROICalculator.jsx'
 import CaseStudy from './pages/CaseStudy.jsx'
+import AmbitionPerformance from './pages/AmbitionPerformance.jsx'
 import Corner from './pages/Corner.jsx'
 import BriefPage from './pages/BriefPage.jsx'
 import Skills from './pages/Skills.jsx'
@@ -76,6 +77,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/brands" element={<BrandsHub />} />
           <Route path="/brands/ambition" element={<AmbitionBrandGuidelinesV2 />} />
           <Route path="/brands/ambition/v1" element={<AmbitionBrandGuidelines />} />
+          <Route path="/brands/ambition/performance" element={<AmbitionPerformance />} />
           <Route path="/social" element={<Social />} />
           <Route path="/research/hvac-ads-arizona" element={<ResearchHVAC />} />
           <Route path="/briefs" element={<BriefsHub />} />
