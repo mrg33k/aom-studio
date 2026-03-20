@@ -327,8 +327,51 @@ export const PROJECTS = [
   { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'pixel'] },
 ]
 
-// All rooms (agents + visible projects) for grid rendering
+// ---- GROUPED HEX GRID LAYOUT ORDER ----
+// ALL_ROOMS order controls default room positions on the hex grid.
+// Matches the ROW_SIZES config in CanvasOffice.jsx:
+//   Row 0 (3): Command team    -- Elon, Bobby, Mom
+//   Row 1 (4): Creative        -- Steffen, Cleo, Steve, Alex
+//   Row 2 (6): Support         -- Tony, Jacob, Colton, Paige, Elmo, Pixel
+//   Row 3 (2): Special         -- AOM Team, Patrik
+//   Row 4 (6): Top projects    -- Corner, Ambition, KOHRS, ISA, Skylar, Brandon Wiley
+//   Row 5 (3): More projects   -- NABI, Outreach, AI Advisory
+// Hidden rooms appended last (not rendered).
+
+const _AGENT_MAP = Object.fromEntries(AGENTS.map(a => [a.slug, { ...a, type: 'agent', hidden: false }]))
+const _PROJECT_MAP = Object.fromEntries(PROJECTS.map(p => [p.slug, p]))
+
 export const ALL_ROOMS = [
-  ...AGENTS.map(a => ({ ...a, type: 'agent', hidden: false })),
-  ...PROJECTS,
-]
+  // Row 0 -- Command team
+  _AGENT_MAP['elon'],
+  _AGENT_MAP['bobby'],
+  _AGENT_MAP['mom'],
+  // Row 1 -- Creative agents
+  _AGENT_MAP['steffen'],
+  _AGENT_MAP['cleo'],
+  _AGENT_MAP['steve'],
+  _AGENT_MAP['alex'],
+  // Row 2 -- Support agents
+  _AGENT_MAP['tony'],
+  _AGENT_MAP['jacob'],
+  _AGENT_MAP['colton'],
+  _AGENT_MAP['paige'],
+  _AGENT_MAP['elmo'],
+  _AGENT_MAP['pixel'],
+  // Row 3 -- Special rooms
+  _PROJECT_MAP['aom-team'],
+  _AGENT_MAP['patrik'],
+  // Row 4 -- Active projects
+  _PROJECT_MAP['corner'],
+  _PROJECT_MAP['ambition-mechanical'],
+  _PROJECT_MAP['kohrs'],
+  _PROJECT_MAP['isa-energy'],
+  _PROJECT_MAP['skylar'],
+  _PROJECT_MAP['brandon-wiley'],
+  // Row 5 -- More projects
+  _PROJECT_MAP['nabi'],
+  _PROJECT_MAP['outreach'],
+  _PROJECT_MAP['ai-advisory'],
+  // Hidden (not rendered in grid)
+  _PROJECT_MAP['included-health'],
+].filter(Boolean)

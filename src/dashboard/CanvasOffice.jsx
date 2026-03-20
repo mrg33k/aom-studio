@@ -148,46 +148,37 @@ function buildVisibleRoomIDs(hiddenSet) {
   return allSlugs.filter(id => !hiddenSet.has(id))
 }
 
-// ---- DYNAMIC HEX SLOT GENERATION (diamond growth) ----
-// Generate hex slot positions for N rooms in a diamond pattern growing from center outward.
-// Pattern: center row is widest, rows above/below taper by 1 room each.
-// For hex staggering, odd rows are offset by half a column width.
+// ---- ROW-GROUPED HEX SLOT GENERATION ----
+// Generates hex slot positions using explicit row widths so rooms cluster by group.
+// Row widths match the ALL_ROOMS order in gridSpec.js:
+//   Row 0 (3): Command team   -- Elon, Bobby, Mom
+//   Row 1 (4): Creative       -- Steffen, Cleo, Steve, Alex
+//   Row 2 (6): Support        -- Tony, Jacob, Colton, Paige, Elmo, Pixel
+//   Row 3 (2): Special        -- AOM Team, Patrik
+//   Row 4 (6): Top projects   -- Corner, Ambition, KOHRS, ISA, Skylar, Brandon Wiley
+//   Row 5 (3): More projects  -- NABI, Outreach, AI Advisory
+//   Row 6+: overflow rows     -- 6 per row (custom rooms, future agents)
+// Hex stagger: each row col is centered at 0, step 2, giving offset-column hex packing.
+const ROW_SIZES = [3, 4, 6, 2, 6, 3]
+const OVERFLOW_ROW_SIZE = 6
+
 function generateHexSlots(n) {
   if (n <= 0) return []
-  // Determine how many rows we need. Diamond shape: row widths go 1,2,3,...,maxW,...,3,2,1
-  // Total slots for a diamond of maxWidth W = W^2 (for perfect diamond)
-  // We grow rows until we have enough slots.
   const slots = []
+  let remaining = n
 
-  // Strategy: build rows from center outward (ring-based diamond)
-  // Row 0 = center. Rows grow by +1 width going down, -1 width going up.
-  // Simpler approach: just build concentric rings in hex grid order.
+  for (let row = 0; remaining > 0; row++) {
+    const rowWidth = row < ROW_SIZES.length
+      ? Math.min(ROW_SIZES[row], remaining)
+      : Math.min(OVERFLOW_ROW_SIZE, remaining)
 
-  // Use the ring approach: ring 0 = 1 slot (center). ring 1 = up to 6 neighbors. ring 2 = up to 12. etc.
-  // For visual aesthetics, use a diamond/hexagonal packing.
-
-  // Simple diamond layout: row r has (maxPerRow - |r - centerRow|) rooms
-  // Center row index = floor(sqrt(n)) to get a reasonable diamond height
-  // Let's compute the minimum diamond that fits N rooms:
-
-  // Diamond with maxWidth W has total = W + 2*(1+2+...+(W-1)) = W + W*(W-1) = W^2 slots
-  // So we need W = ceil(sqrt(N))
-  let maxWidth = Math.ceil(Math.sqrt(n))
-  if (maxWidth < 1) maxWidth = 1
-
-  // Total rows = 2*maxWidth - 1
-  const totalRows = 2 * maxWidth - 1
-  const centerRow = maxWidth - 1 // 0-indexed center
-
-  let count = 0
-  for (let r = 0; r < totalRows && count < n; r++) {
-    const rowWidth = maxWidth - Math.abs(r - centerRow)
-    // Center the row: columns go from -(rowWidth-1) to (rowWidth-1) stepping by 2
+    // Center the row at col 0 with step-2 columns
+    // e.g. width 3 -> cols [-2, 0, 2], width 4 -> cols [-3, -1, 1, 3]
     const startCol = -(rowWidth - 1)
-    for (let c = 0; c < rowWidth && count < n; c++) {
-      slots.push({ row: r, col: startCol + c * 2 })
-      count++
+    for (let c = 0; c < rowWidth; c++) {
+      slots.push({ row, col: startCol + c * 2 })
     }
+    remaining -= rowWidth
   }
   return slots
 }
@@ -1056,9 +1047,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       }
     },
     resetLayout: () => {
-      // Clear all free-position overrides, rooms snap back to default hex grid slots
+      // Clear free-position overrides AND saved slot order so rooms snap back to
+      // default grouped layout defined by ALL_ROOMS order in gridSpec.js
       try { localStorage.removeItem(FREE_POSITIONS_KEY) } catch {}
+      try { localStorage.removeItem(SLOT_ORDER_KEY) } catch {}
       freePositionsRef.current = {}
+      // Reload slot order from defaults (triggers re-render so rooms visually snap)
+      setSlotOrder(loadSlotOrder())
     },
   }), [triggerCelebration, slotOrder])
 
