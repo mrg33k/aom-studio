@@ -4551,11 +4551,26 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     return () => document.removeEventListener('click', handler)
   }, [taskCtx])
 
-  const addTask = () => {
+  const addTask = async () => {
     const text = taskInput.trim()
     if (!text) return
-    setTasks(prev => [...prev, { id: Date.now(), text, done: false, agent: agentSlug }])
+    const taskId = `dash-${Date.now()}`
+    setTasks(prev => [...prev, { id: taskId, text, done: false, agent: agentSlug }])
     setTaskInput('')
+
+    // Write to Supabase for persistence + backend visibility
+    try {
+      await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: agentSlug || 'elon',
+          text: `[TASK] ${text}`,
+          role: 'user',
+          source: 'corner-dashboard-task',
+        }),
+      })
+    } catch {}
   }
 
   const toggleTask = (id) => {
