@@ -726,8 +726,36 @@ function ChatPanel({ isMobile, onRefresh }) {
   const [messages, setMessages] = useState([])
   const [sending, setSending] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [selectedAgent, setSelectedAgent] = useState(() => localStorage.getItem('aom_chat_agent') || 'All')
+  const [selectedProject, setSelectedProject] = useState(() => localStorage.getItem('aom_chat_project') || 'None')
+  const [replyingTo, setReplyingTo] = useState(null)
+  const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false)
   const inputRef = useRef(null)
   const messagesEndRef = useRef(null)
+  const dropdownRef = useRef(null)
+
+  const agents = ['All', 'Bobby', 'Elon', 'Steffen', 'Cleo', 'Alex', 'Jacob', 'Tony', 'Steve', 'Mom', 'Paige']
+  const projects = ['None', 'corner', 'ambition-mechanical', 'isa-energy', 'skylar', 'brandon-wiley', 'content-agent']
+
+  useEffect(() => {
+    localStorage.setItem('aom_chat_agent', selectedAgent)
+  }, [selectedAgent])
+
+  useEffect(() => {
+    localStorage.setItem('aom_chat_project', selectedProject)
+  }, [selectedProject])
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setAgentDropdownOpen(false)
+        setProjectDropdownOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     if (messagesEndRef.current) messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
@@ -740,19 +768,33 @@ function ChatPanel({ isMobile, onRefresh }) {
     setSending(true)
     setExpanded(true)
 
-    setMessages(m => [...m, { role: 'user', text }])
+    const messageObj = { role: 'user', text, agent: selectedAgent, project: selectedProject, id: Date.now() }
+    if (replyingTo) messageObj.parentId = replyingTo
+    setMessages(m => [...m, messageObj])
+    setReplyingTo(null)
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'chat', message: text, agent: 'All' }),
+        body: JSON.stringify({
+          action: 'chat',
+          message: text,
+          agent: selectedAgent,
+          project: selectedProject,
+          parentId: replyingTo,
+        }),
       })
       const data = await res.json()
       if (data.error) {
         setMessages(m => [...m, { role: 'system', text: data.error, isError: true }])
       } else {
-        setMessages(m => [...m, { role: 'assistant', text: data.reply || 'No response.', agent: data.agent || 'System' }])
+        setMessages(m => [...m, {
+          role: 'assistant',
+          text: data.reply || 'No response.',
+          agent: data.agent || 'System',
+          id: Date.now() + 1,
+        }])
         if (data.actions_taken?.length > 0) setTimeout(onRefresh, 2000)
       }
     } catch {
@@ -798,21 +840,112 @@ function ChatPanel({ isMobile, onRefresh }) {
     }}>
       {/* Header */}
       <div
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => !agentDropdownOpen && !projectDropdownOpen && setExpanded(!expanded)}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: isMobile ? '14px 16px' : '14px 32px', cursor: 'pointer',
           borderBottom: expanded ? `1px solid ${C.border}` : 'none',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }} ref={dropdownRef}>
           <div style={{
             fontSize: 12, letterSpacing: '0.2em', color: C.textMuted,
             textTransform: 'uppercase', fontWeight: 700,
             fontFamily: '"Inter", system-ui, sans-serif',
           }}>
-            System Chat
+            Chat
           </div>
+
+          {/* Agent Selector */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setAgentDropdownOpen(!agentDropdownOpen)
+                setProjectDropdownOpen(false)
+              }}
+              style={{
+                background: C.surface, border: `1px solid ${C.border}`,
+                borderRadius: 2, padding: '6px 10px', fontSize: 11, color: C.textSecondary,
+                cursor: 'pointer', fontWeight: 600, fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              }}
+            >
+              {selectedAgent} &#9660;
+            </button>
+            {agentDropdownOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, marginTop: 4,
+                background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
+                zIndex: 1000, minWidth: 140, maxHeight: 240, overflowY: 'auto',
+              }}>
+                {agents.map(a => (
+                  <div
+                    key={a}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedAgent(a)
+                      setAgentDropdownOpen(false)
+                    }}
+                    style={{
+                      padding: '8px 12px', fontSize: 11, color: selectedAgent === a ? C.orange : C.textSecondary,
+                      cursor: 'pointer', fontWeight: selectedAgent === a ? 700 : 500,
+                      background: selectedAgent === a ? C.surface : 'transparent',
+                      borderBottom: `1px solid ${C.border}`,
+                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    }}
+                  >
+                    {a}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Project Selector */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setProjectDropdownOpen(!projectDropdownOpen)
+                setAgentDropdownOpen(false)
+              }}
+              style={{
+                background: C.surface, border: `1px solid ${C.border}`,
+                borderRadius: 2, padding: '6px 10px', fontSize: 11, color: C.textSecondary,
+                cursor: 'pointer', fontWeight: 600, fontFamily: '"Space Grotesk", system-ui, sans-serif',
+              }}
+            >
+              {selectedProject === 'None' ? 'Project' : selectedProject} &#9660;
+            </button>
+            {projectDropdownOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, marginTop: 4,
+                background: C.card, border: `1px solid ${C.border}`, borderRadius: 2,
+                zIndex: 1000, minWidth: 160, maxHeight: 240, overflowY: 'auto',
+              }}>
+                {projects.map(p => (
+                  <div
+                    key={p}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedProject(p)
+                      setProjectDropdownOpen(false)
+                    }}
+                    style={{
+                      padding: '8px 12px', fontSize: 11, color: selectedProject === p ? C.blue : C.textSecondary,
+                      cursor: 'pointer', fontWeight: selectedProject === p ? 700 : 500,
+                      background: selectedProject === p ? C.surface : 'transparent',
+                      borderBottom: `1px solid ${C.border}`,
+                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                    }}
+                  >
+                    {p === 'None' ? '(No Project)' : p}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {messages.length > 0 && (
             <span style={{
               fontSize: 12, color: C.orange, background: C.orangeMuted,
@@ -836,37 +969,60 @@ function ChatPanel({ isMobile, onRefresh }) {
           padding: isMobile ? '12px 16px' : '12px 32px',
           display: 'flex', flexDirection: 'column', gap: 10,
         }}>
-          {messages.map((m, i) => (
-            <div key={i} style={{
-              display: 'flex', gap: 8, alignItems: 'flex-start',
-              flexDirection: m.role === 'user' ? 'row-reverse' : 'row',
-            }}>
-              {m.role === 'assistant' && <AgentDot name={m.agent || 'System'} size={22} />}
-              <div style={{
-                maxWidth: '85%', padding: '10px 14px', borderRadius: 2,
-                fontSize: 14, lineHeight: 1.5,
-                fontFamily: '"Inter", system-ui, sans-serif',
-                background: m.role === 'user' ? C.orangeMuted
-                  : m.isError ? C.redMuted
-                  : m.isSuccess ? C.greenMuted
-                  : 'rgba(255,255,255,0.03)',
-                color: m.role === 'user' ? '#ffb38a'
-                  : m.isError ? '#fca5a5'
-                  : m.isSuccess ? '#86efac'
-                  : C.textSecondary,
-                border: `1px solid ${m.role === 'user' ? 'rgba(232,93,38,0.2)' : C.border}`,
-                whiteSpace: 'pre-wrap',
-              }}>
-                {m.role === 'assistant' && (
+          {messages.map((m, i) => {
+            const parentMessage = m.parentId ? messages.find(msg => msg.id === m.parentId) : null
+            return (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {/* Reply thread indicator */}
+                {parentMessage && (
                   <div style={{
-                    fontSize: 12, color: AGENT_COLORS[m.agent] || C.textMuted,
-                    fontWeight: 700, marginBottom: 4, letterSpacing: '0.06em',
-                  }}>{m.agent}</div>
+                    fontSize: 11, color: C.textMuted, paddingLeft: 30,
+                    fontStyle: 'italic', fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                  }}>
+                    ↪ Reply to: {parentMessage.text.substring(0, 50)}...
+                  </div>
                 )}
-                {m.text}
+                <div style={{
+                  display: 'flex', gap: 8, alignItems: 'flex-start',
+                  flexDirection: m.role === 'user' ? 'row-reverse' : 'row',
+                  marginLeft: m.parentId ? 16 : 0,
+                  borderLeft: m.parentId ? `2px solid ${C.border}` : 'none',
+                  paddingLeft: m.parentId ? 12 : 0,
+                }}>
+                  {m.role === 'assistant' && <AgentDot name={m.agent || 'System'} size={22} />}
+                  <div
+                    onClick={() => m.role === 'user' && m.id && setReplyingTo(m.id)}
+                    style={{
+                      maxWidth: '85%', padding: '10px 14px', borderRadius: 2,
+                      fontSize: 14, lineHeight: 1.5,
+                      fontFamily: '"Space Grotesk", system-ui, sans-serif',
+                      background: m.role === 'user' ? C.orangeMuted
+                        : m.isError ? C.redMuted
+                        : m.isSuccess ? C.greenMuted
+                        : 'rgba(255,255,255,0.03)',
+                      color: m.role === 'user' ? '#ffb38a'
+                        : m.isError ? '#fca5a5'
+                        : m.isSuccess ? '#86efac'
+                        : C.textSecondary,
+                      border: `1px solid ${m.role === 'user' ? 'rgba(232,93,38,0.2)' : C.border}`,
+                      whiteSpace: 'pre-wrap',
+                      cursor: m.role === 'user' ? 'pointer' : 'default',
+                      opacity: replyingTo === m.id ? 0.8 : 1,
+                      boxShadow: replyingTo === m.id ? `0 0 0 2px ${C.orange}` : 'none',
+                      transition: 'all 0.2s',
+                    }}>
+                    {m.role === 'assistant' && (
+                      <div style={{
+                        fontSize: 12, color: AGENT_COLORS[m.agent] || C.textMuted,
+                        fontWeight: 700, marginBottom: 4, letterSpacing: '0.06em',
+                      }}>{m.agent}</div>
+                    )}
+                    {m.text}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
           {sending && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <AgentDot name="Bobby" size={22} />
