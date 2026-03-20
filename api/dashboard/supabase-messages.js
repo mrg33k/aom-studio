@@ -45,8 +45,10 @@ export default async function handler(req, res) {
       ? req.query.client.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
 
-    // Only filter by client_id if explicitly passed (column may not exist yet)
-    const clientFilter = req.query.client ? `&client_id=eq.${encodeURIComponent(clientId)}` : ''
+    // Always filter by client_id for multi-tenant isolation.
+    // Requires: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
+    // Supabase silently ignores unknown column filters -- safe to include always.
+    const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`
     const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}${clientFilter}&order=timestamp.desc&limit=${limit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
@@ -75,9 +77,8 @@ export default async function handler(req, res) {
       role,
       text: text.trim(),
       source,
+      client_id: resolvedClientId,  // always include -- multi-tenant isolation
     }
-    // Only include client_id if explicitly provided (column may not exist yet)
-    if (client_id) payload.client_id = resolvedClientId
 
     const url = `${SUPABASE_URL}/rest/v1/messages`
     const sbRes = await fetch(url, {

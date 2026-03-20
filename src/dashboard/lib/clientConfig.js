@@ -1,23 +1,46 @@
 // clientConfig.js -- Multi-tenant client identity layer.
 //
 // Priority order for resolving client_id:
-//   1. URL param: ?client=acme
-//   2. localStorage: corner_client_id
-//   3. Default: 'aom' (us)
+//   1. Supabase auth user metadata: user.user_metadata.world
+//   2. URL param: ?client=acme
+//   3. localStorage: corner_client_id
+//   4. Default: 'aom' (us)
 //
 // This is the FOUNDATION layer only. No Supabase schema changes required here.
 // The client_id flows into API calls so each tenant's data is isolated.
 
 const DEFAULT_CLIENT_ID = 'aom'
 
+// In-memory cache: populated by setClientIdFromUser() after auth loads.
+// Synchronous reads from getClientId() see this immediately.
+let _authClientId = null
+
+/**
+ * setClientIdFromUser(user) -- call this after Supabase auth resolves.
+ * Reads user.user_metadata.world and caches it for synchronous getClientId() calls.
+ * Also persists to localStorage so refreshes stay scoped to the right tenant.
+ */
+export function setClientIdFromUser(user) {
+  const world = user?.user_metadata?.world
+  if (world && world.trim()) {
+    _authClientId = world.trim().toLowerCase()
+    setClientId(_authClientId)
+  } else {
+    _authClientId = null
+  }
+}
+
 /**
  * getClientId() -- resolve the active client.
- * Safe to call on server (returns default) or client (reads URL + localStorage).
+ * Safe to call on server (returns default) or client (reads auth cache, URL, localStorage).
  */
 export function getClientId() {
   if (typeof window === 'undefined') return DEFAULT_CLIENT_ID
 
-  // 1. URL param takes highest priority (useful for previewing a client's view)
+  // 1. Auth-derived client_id (set by setClientIdFromUser after login)
+  if (_authClientId) return _authClientId
+
+  // 2. URL param takes priority for preview / admin overrides
   try {
     const params = new URLSearchParams(window.location.search)
     const urlClient = params.get('client')
@@ -26,7 +49,7 @@ export function getClientId() {
     // ignore
   }
 
-  // 2. localStorage persistence (set once on login/onboarding)
+  // 3. localStorage persistence (set once on login/onboarding)
   try {
     const stored = localStorage.getItem('corner_client_id')
     if (stored && stored.trim()) return stored.trim().toLowerCase()
@@ -34,7 +57,7 @@ export function getClientId() {
     // ignore (private browsing, etc.)
   }
 
-  // 3. Default: AOM (our own instance)
+  // 4. Default: AOM (our own instance)
   return DEFAULT_CLIENT_ID
 }
 

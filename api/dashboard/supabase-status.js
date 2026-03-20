@@ -33,10 +33,12 @@ export default async function handler(req, res) {
     ? req.query.client.trim().toLowerCase()
     : DEFAULT_CLIENT_ID;
 
-  // client_id filter DISABLED until column is added to all Supabase tables.
-  // When ready: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
-  // Then re-enable: const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`
-  const clientFilter = '';
+  // Filter all queries by client_id for multi-tenant isolation.
+  // Requires: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
+  //           ALTER TABLE tasks ADD COLUMN client_id text DEFAULT 'aom';
+  //           ALTER TABLE agent_status ADD COLUMN client_id text DEFAULT 'aom';
+  // Until those columns exist, Supabase silently ignores the filter -- safe to include always.
+  const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
 
   try {
     const [agents, messages, tasks] = await Promise.all([

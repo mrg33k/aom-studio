@@ -32,6 +32,8 @@ import BoardView from './BoardView.jsx'
 import briefsIndex from '../data/briefs-index.json'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
+import FilesTab from './FilesTab.jsx'
+import { getClientId, setClientIdFromUser } from './lib/clientConfig.js'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -5035,7 +5037,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   // Load persisted tasks from Supabase on mount (production only)
   useEffect(() => {
     if (IS_LOCAL) return
-    fetch(`/api/dashboard/supabase-status`)
+    fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(getClientId())}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data?.tasks) return
@@ -5078,6 +5080,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           text: `[TASK] ${text}`,
           role: 'user',
           source: 'corner-dashboard-task',
+          client_id: getClientId(),
         }),
       })
     } catch {}
@@ -7608,6 +7611,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               { id: 'chat', label: 'CHAT', key: 'L' },
               { id: 'tasks', label: 'LIST', key: 'T' },
               { id: 'info', label: 'INFO', key: 'I' },
+              { id: 'files', label: 'FILES', key: 'F' },
             ]
         ).map(tab => {
           const active = activeTab === tab.id
@@ -8615,6 +8619,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </div>
         )}
 
+        {/* FILES TAB */}
+        {activeTab === 'files' && (
+          <FilesTab
+            agentSlug={agentSlug}
+            clientId={null}
+            isNightMode={isNightMode}
+            onSendFileToChat={onSendFileToChat}
+          />
+        )}
+
         {/* Checklist and Megaboard tabs removed. Use full-screen mode switching instead. */}
 
       </div>
@@ -8723,11 +8737,19 @@ export default function GameDashboard() {
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
 
-  // Load Supabase user on mount + watch for auth state changes
+  // Load Supabase user on mount + watch for auth state changes.
+  // Derives client_id from user metadata (world field) for multi-tenant data isolation.
   useEffect(() => {
-    getCurrentUser().then(user => { if (user) setCurrentUser(user) })
+    getCurrentUser().then(user => {
+      if (user) {
+        setCurrentUser(user)
+        setClientIdFromUser(user)
+      }
+    })
     const unsubscribe = onAuthStateChange((session) => {
-      setCurrentUser(session?.user || null)
+      const user = session?.user || null
+      setCurrentUser(user)
+      setClientIdFromUser(user)
     })
     return unsubscribe
   }, [])
@@ -8764,7 +8786,7 @@ export default function GameDashboard() {
       fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: task.agent || 'elon', text: `[PROMOTE] ${task.text}`, role: 'user', source: 'corner-dashboard-task' }),
+        body: JSON.stringify({ agent: task.agent || 'elon', text: `[PROMOTE] ${task.text}`, role: 'user', source: 'corner-dashboard-task', client_id: getClientId() }),
       }).catch(() => {})
     }
   }, [])
@@ -9250,7 +9272,7 @@ export default function GameDashboard() {
 
     if (!IS_LOCAL) {
       // PRODUCTION: load chat history via Vercel proxy (bypasses Supabase JS client issues)
-      fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100`)
+      fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100&client=${encodeURIComponent(getClientId())}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           const msgs = (data?.messages || [])
@@ -9313,7 +9335,7 @@ export default function GameDashboard() {
 
       const poll = setInterval(async () => {
         try {
-          const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20`)
+          const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20&client=${encodeURIComponent(getClientId())}`)
           if (!res.ok) return
           const data = await res.json()
           const newMsgs = (data?.messages || [])
@@ -9680,7 +9702,7 @@ export default function GameDashboard() {
         const res = await fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', ...(replyToId ? { reply_to: replyToId } : {}) }),
+          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', client_id: getClientId(), ...(replyToId ? { reply_to: replyToId } : {}) }),
         })
         if (!res.ok) throw new Error(`Send failed: ${res.status}`)
         // Response arrives via poll (3s interval)
