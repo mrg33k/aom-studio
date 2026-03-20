@@ -1247,6 +1247,143 @@ function HoursSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+//  13b. MONTHLY PLANS
+// ═══════════════════════════════════════════════════════════════════════════════
+function MonthlyPlansSection() {
+  return (
+    <section className="relative py-24 md:py-32 overflow-hidden" style={{ background: BG }}>
+      <FilmGrain />
+      <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-12">
+
+        <FadeIn>
+          <span className="font-mono text-sm font-bold uppercase tracking-[0.2em]" style={{ color: ORANGE }}>
+            Going Forward
+          </span>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h2 className="font-headline font-extrabold uppercase tracking-tight mt-4 mb-4"
+            style={{ color: CREAM, fontSize: 'clamp(36px, 6vw, 64px)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            Monthly Plans.
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.15}>
+          <p className="font-body text-lg mb-6 max-w-[700px]" style={{ color: MUTED, lineHeight: 1.6 }}>
+            All plans depend on scheduled shoots and Ambition keeping AOM informed about upcoming jobs. The more we know, the better the content.
+          </p>
+        </FadeIn>
+
+        <FadeIn delay={0.18}>
+          <div className="p-5 mb-12" style={{ background: `${ORANGE}08`, borderLeft: `3px solid ${ORANGE}` }}>
+            <p className="font-body text-base" style={{ color: TEXT, lineHeight: 1.6 }}>
+              <strong style={{ color: CREAM }}>Website hosting note:</strong> The way we built ambitionac.com saves Ambition a minimum of $100/year on hosting costs compared to traditional setups. On-call website maintenance is included at no extra charge across all plans.
+            </p>
+          </div>
+        </FadeIn>
+
+        {/* Three Tier Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Tier 1 */}
+          <FadeIn delay={0.2}>
+            <div className="p-8 relative overflow-hidden h-full flex flex-col" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: MUTED }} />
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-2" style={{ color: MUTED }}>Current Plan</p>
+              <h3 className="font-headline font-extrabold text-2xl uppercase tracking-tight mb-1" style={{ color: CREAM }}>
+                Video Production
+              </h3>
+              <p className="font-headline font-extrabold text-4xl md:text-5xl mt-2 mb-6" style={{ color: CREAM }}>
+                $2,000<span className="text-lg font-normal" style={{ color: MUTED }}>/mo</span>
+              </p>
+              <div className="flex flex-col gap-3 flex-1">
+                {[
+                  'Professional video production',
+                  'On-site shoots (as scheduled)',
+                  'Drone + cinema camera coverage',
+                  'Edited, color-graded deliverables',
+                  'Website maintenance (complimentary)',
+                  'On-call support',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <Check size={16} style={{ color: '#22C55E', flexShrink: 0, marginTop: 3 }} />
+                    <p className="font-body text-base" style={{ color: TEXT }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="font-body text-sm mt-6 pt-4" style={{ color: MUTED, borderTop: `1px solid ${BORDER}` }}>
+                No posting included. Ambition handles social deployment.
+              </p>
+            </div>
+          </FadeIn>
+
+          {/* Tier 2 */}
+          <FadeIn delay={0.3}>
+            <div className="p-8 relative overflow-hidden h-full flex flex-col" style={{ background: CARD_BG, border: `2px solid ${ORANGE}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: ORANGE }} />
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-2" style={{ color: ORANGE }}>Recommended</p>
+              <h3 className="font-headline font-extrabold text-2xl uppercase tracking-tight mb-1" style={{ color: CREAM }}>
+                Full Service
+              </h3>
+              <p className="font-headline font-extrabold text-4xl md:text-5xl mt-2 mb-6" style={{ color: CREAM }}>
+                $2,500<span className="text-lg font-normal" style={{ color: MUTED }}>/mo</span>
+              </p>
+              <div className="flex flex-col gap-3 flex-1">
+                {[
+                  'Everything in Video Production',
+                  'Ad creation and management',
+                  'Social presence upkeep (4-6 posts/mo)',
+                  'Weekly performance reviews',
+                  'Stat analysis and reporting',
+                  'Story-driven posting strategy',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <Check size={16} style={{ color: '#22C55E', flexShrink: 0, marginTop: 3 }} />
+                    <p className="font-body text-base" style={{ color: TEXT }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="font-body text-sm mt-6 pt-4" style={{ color: MUTED, borderTop: `1px solid ${BORDER}` }}>
+                Ad spend is separate (recommended $500-1,500/mo).
+              </p>
+            </div>
+          </FadeIn>
+
+          {/* Tier 3 */}
+          <FadeIn delay={0.4}>
+            <div className="p-8 relative overflow-hidden h-full flex flex-col" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: '#F59E0B' }} />
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-2" style={{ color: '#F59E0B' }}>Premium</p>
+              <h3 className="font-headline font-extrabold text-2xl uppercase tracking-tight mb-1" style={{ color: CREAM }}>
+                Full Service + AI
+              </h3>
+              <p className="font-headline font-extrabold text-4xl md:text-5xl mt-2 mb-6" style={{ color: CREAM }}>
+                $3,500<span className="text-lg font-normal" style={{ color: MUTED }}>/mo</span>
+              </p>
+              <div className="flex flex-col gap-3 flex-1">
+                {[
+                  'Everything in Full Service',
+                  'Ads, video, and social posting',
+                  '12 posts per month',
+                  'Custom AI systems for operations',
+                  'Automated reporting dashboards',
+                  'Priority scheduling',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <Check size={16} style={{ color: '#22C55E', flexShrink: 0, marginTop: 3 }} />
+                    <p className="font-body text-base" style={{ color: TEXT }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="font-body text-sm mt-6 pt-4" style={{ color: MUTED, borderTop: `1px solid ${BORDER}` }}>
+                Full-stack creative and technology partner.
+              </p>
+            </div>
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 //  14. GETTING THE PHONE TO RING (SERVICE CALL PLAN)
 // ═══════════════════════════════════════════════════════════════════════════════
 function ServiceCallPlanSection() {
@@ -1497,6 +1634,66 @@ function ServiceCallPlanSection() {
             </p>
           </div>
         </FadeIn>
+
+        {/* Keyword Research */}
+        <FadeIn delay={0.65}>
+          <div className="mt-10 p-8 md:p-10" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+            <p className="font-mono text-sm font-bold uppercase tracking-[0.2em] mb-3" style={{ color: ORANGE }}>
+              Keyword Research: What People Are Searching For
+            </p>
+            <p className="font-body text-lg mb-8" style={{ color: MUTED, lineHeight: 1.6 }}>
+              These are the highest-converting search terms for HVAC and refrigeration services in Phoenix. Urgency + service type + location = the calls that turn into revenue.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: '#22C55E' }}>
+                  Commercial HVAC (Very High Priority)
+                </p>
+                <div className="flex flex-col gap-2">
+                  {[
+                    'commercial HVAC repair Phoenix',
+                    'commercial AC repair Phoenix AZ',
+                    'AC not working commercial building Phoenix',
+                    'emergency HVAC repair Phoenix same day',
+                    '24 hour commercial AC repair Phoenix AZ',
+                  ].map((kw, i) => (
+                    <div key={i} className="flex items-center gap-2 p-3" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}` }}>
+                      <Hash size={14} style={{ color: '#22C55E', flexShrink: 0 }} />
+                      <span className="font-body text-sm" style={{ color: TEXT }}>{kw}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-4" style={{ color: '#F59E0B' }}>
+                  Restaurants / Kitchens (Highest Volume)
+                </p>
+                <div className="flex flex-col gap-2">
+                  {[
+                    'commercial refrigeration repair Phoenix',
+                    'walk-in cooler repair Phoenix AZ',
+                    'restaurant equipment repair Phoenix',
+                    'ice machine repair Phoenix',
+                    'commercial kitchen equipment repair near me',
+                  ].map((kw, i) => (
+                    <div key={i} className="flex items-center gap-2 p-3" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}` }}>
+                      <Hash size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                      <span className="font-body text-sm" style={{ color: TEXT }}>{kw}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-5" style={{ background: `${ORANGE}08`, borderLeft: `3px solid ${ORANGE}` }}>
+              <p className="font-body text-base" style={{ color: TEXT, lineHeight: 1.6 }}>
+                <strong style={{ color: CREAM }}>Restaurant equipment repair is the highest-volume category.</strong> Refrigeration generates the most service calls industry-wide. This is where the phone starts ringing.
+              </p>
+            </div>
+          </div>
+        </FadeIn>
       </div>
     </section>
   )
@@ -1657,6 +1854,7 @@ export default function AmbitionPerformance() {
       <EquipmentSection />
       <ValueSection />
       <HoursSection />
+      <MonthlyPlansSection />
       <ServiceCallPlanSection />
       <WhatsNextSection />
       <FooterSection />
