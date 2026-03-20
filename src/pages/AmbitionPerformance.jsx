@@ -5,7 +5,7 @@ import {
   CheckCircle2, ArrowRight, Check, Calendar, Image,
   Users, Clock, DollarSign, TrendingUp, MapPin,
   Play, Flame, Layers, FileText, Star, Zap,
-  BarChart3, Target, Shield, Megaphone, Hash
+  BarChart3, Target, Shield, Megaphone
 } from 'lucide-react'
 
 // ─── BRAND CONSTANTS (Q Proposal tokens) ────────────────────────────────────
@@ -1659,7 +1659,7 @@ function ServiceCallPlanSection() {
                     '24 hour commercial AC repair Phoenix AZ',
                   ].map((kw, i) => (
                     <div key={i} className="flex items-center gap-2 p-3" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}` }}>
-                      <Hash size={14} style={{ color: '#22C55E', flexShrink: 0 }} />
+                      <Zap size={14} style={{ color: '#22C55E', flexShrink: 0 }} />
                       <span className="font-body text-sm" style={{ color: TEXT }}>{kw}</span>
                     </div>
                   ))}
@@ -1679,7 +1679,7 @@ function ServiceCallPlanSection() {
                     'commercial kitchen equipment repair near me',
                   ].map((kw, i) => (
                     <div key={i} className="flex items-center gap-2 p-3" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}` }}>
-                      <Hash size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                      <Zap size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />
                       <span className="font-body text-sm" style={{ color: TEXT }}>{kw}</span>
                     </div>
                   ))}
