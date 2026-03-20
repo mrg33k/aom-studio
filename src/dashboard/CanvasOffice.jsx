@@ -200,6 +200,13 @@ const AGENT_FOLDER_ROOMS = [
   'kohrs', 'nabi', 'outreach', 'ai-advisory', 'included-health',
 ]
 
+// Rooms with a single static PNG (no working/idle pair). 512x512 transparent PNGs.
+// These skip the 1024px crop and fill the hex cell directly.
+const SINGLE_IMAGE_ROOMS = {
+  'patrik': '/rooms/patrik-office.png',
+  'aom-team': '/rooms/aom-team-room.png',
+}
+
 // Static version string for room images. Increment when room PNGs are updated.
 // Using Date.now() previously caused EVERY mount to re-download all PNGs (never cached).
 const ROOM_IMAGE_VERSION = '1'
@@ -209,6 +216,14 @@ function getRoomImageSources(id) {
     return {
       working: `/corner/${id}-room/room-shell-working.png?v=${ROOM_IMAGE_VERSION}`,
       idle: `/corner/${id}-room/room-shell-idle.png?v=${ROOM_IMAGE_VERSION}`,
+      hasImages: true,
+    }
+  }
+  if (SINGLE_IMAGE_ROOMS[id]) {
+    // Single static PNG -- use same image for both working and idle slots
+    return {
+      working: SINGLE_IMAGE_ROOMS[id],
+      idle: SINGLE_IMAGE_ROOMS[id],
       hasImages: true,
     }
   }
