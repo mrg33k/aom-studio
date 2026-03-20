@@ -36,6 +36,7 @@ import BriefPage from './pages/BriefPage.jsx'
 import Skills from './pages/Skills.jsx'
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
+const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
 import './index.css'
 
 const DashboardV2 = lazy(() => import('./dashboard/DashboardV2.jsx'))
@@ -103,6 +104,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/book" element={<BookAudit />} />
           <Route path="/corner" element={<Corner />} />
           <Route path="/skills" element={<Skills />} />
+          <Route path="/demo" element={<DemoPage />} />
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
           <Route path="/dashboard" element={<GameDashboard />} />
           <Route path="/dashboard/agent/:slug" element={<GameDashboard />} />
