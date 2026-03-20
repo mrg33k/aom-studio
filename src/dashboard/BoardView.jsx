@@ -3,7 +3,7 @@
 // Features: filter bar, search, horizontal scroll, drag-and-drop between columns
 // Data source: pipeData from useDataPipe hook (rightNow, completedFeed, punchData)
 
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -80,12 +80,13 @@ function saveColOrder(order) {
 
 // ── BOARD CARD ──────────────────────────────────────────────────────────────
 
-function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex }) {
+function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu }) {
   const agentSlug = entry.agent?.toLowerCase()
   const agentColor = getAgentColor(agentSlug)
   const taskText = entry.text || entry.description || entry.currentTask || 'No task'
   const agentName = entry.agent ? getAgentName(agentSlug) : null
   const projectTag = entry.project || null
+  const longPressTimerRef = useRef(null)
 
   // Only show agent badge if it differs from the column we're in
   const showAgentBadge = agentName && agentSlug !== columnKey
@@ -99,6 +100,21 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         onDragStart?.()
       }}
       onDragEnd={() => onDragEnd?.()}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        onContextMenu?.({ x: e.clientX, y: e.clientY, entry, columnKey })
+      }}
+      onTouchStart={(e) => {
+        clearTimeout(longPressTimerRef.current)
+        const touch = e.touches[0]
+        const cx = touch.clientX
+        const cy = touch.clientY
+        longPressTimerRef.current = setTimeout(() => {
+          onContextMenu?.({ x: cx, y: cy, entry, columnKey })
+        }, 500)
+      }}
+      onTouchEnd={() => clearTimeout(longPressTimerRef.current)}
+      onTouchMove={() => clearTimeout(longPressTimerRef.current)}
       style={{
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.08)',
@@ -336,6 +352,7 @@ function BoardColumn({
               isDragging={draggingKey === `${colKey}-${i}`}
               onDragStart={() => onCardDragStart(`${colKey}-${i}`)}
               onDragEnd={() => onCardDragEnd()}
+              onContextMenu={(ctx) => setBoardCtxMenu(ctx)}
             />
           ))
         )}
@@ -411,6 +428,35 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
   // Drag state
   const [draggingCard, setDraggingCard] = useState(null) // key like "rightnow-0"
   const [dropTargetCol, setDropTargetCol] = useState(null)
+
+  // Context menu state
+  const [boardCtxMenu, setBoardCtxMenu] = useState(null) // { x, y, entry, columnKey }
+  const boardCtxRef = useRef(null)
+
+  // Dismiss context menu on outside click / Escape
+  useEffect(() => {
+    if (!boardCtxMenu) return
+    const delay = 150
+    const timer = setTimeout(() => {
+      const handler = (e) => {
+        if (boardCtxRef.current && boardCtxRef.current.contains(e.target)) return
+        setBoardCtxMenu(null)
+      }
+      const keyHandler = (e) => { if (e.key === 'Escape') setBoardCtxMenu(null) }
+      document.addEventListener('mousedown', handler)
+      document.addEventListener('touchstart', handler, { passive: true })
+      document.addEventListener('keydown', keyHandler)
+      boardCtxMenu._cleanup = () => {
+        document.removeEventListener('mousedown', handler)
+        document.removeEventListener('touchstart', handler)
+        document.removeEventListener('keydown', keyHandler)
+      }
+    }, delay)
+    return () => {
+      clearTimeout(timer)
+      boardCtxMenu._cleanup?.()
+    }
+  }, [boardCtxMenu])
 
   // Per-column task order (for within-column reordering)
   const [taskOrders, setTaskOrders] = useState(() => {
@@ -751,6 +797,107 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
           </div>
         )}
       </div>
+
+      {/* Board card context menu */}
+      {boardCtxMenu && (() => {
+        const menuW = 220
+        const menuH = 200
+        const x = Math.min(boardCtxMenu.x, window.innerWidth - menuW - 8)
+        const y = boardCtxMenu.y + menuH > window.innerHeight - 8
+          ? boardCtxMenu.y - menuH - 4
+          : boardCtxMenu.y + 4
+        const entry = boardCtxMenu.entry
+        const taskText = entry?.text || entry?.description || entry?.currentTask || ''
+        return (
+          <div
+            ref={boardCtxRef}
+            style={{
+              position: 'fixed', left: x, top: y, zIndex: 9999,
+              minWidth: menuW,
+              background: 'rgba(12, 18, 35, 0.97)',
+              backdropFilter: 'blur(20px)',
+              border: '2px solid rgba(100, 180, 255, 0.18)',
+              borderRadius: 10,
+              padding: '6px 0',
+              boxShadow: '0 12px 48px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}
+          >
+            {/* Task name header */}
+            <div style={{
+              padding: '6px 14px 8px',
+              fontSize: 11, fontWeight: 700, color: '#4A6080',
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+              borderBottom: '1px solid rgba(100,180,255,0.08)',
+              marginBottom: 2,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {taskText.slice(0, 40)}{taskText.length > 40 ? '...' : ''}
+            </div>
+            {/* Promote to Right Now */}
+            <button onClick={() => {
+              try {
+                const saved = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
+                if (!saved.some(t => t.text === taskText)) {
+                  saved.push({ id: Date.now(), text: taskText, agent: entry.agent || 'patrik', addedAt: new Date().toISOString() })
+                  localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved))
+                }
+              } catch {}
+              setBoardCtxMenu(null)
+            }} style={boardCtxBtn('#FF6B3D')}>
+              Send to Right Now
+            </button>
+            {/* Create Task (add copy to manual tasks) */}
+            <button onClick={() => {
+              try {
+                const all = JSON.parse(localStorage.getItem('corner-manual-tasks') || '[]')
+                all.push({ id: Date.now(), text: taskText, done: false, agent: entry.agent || 'patrik' })
+                localStorage.setItem('corner-manual-tasks', JSON.stringify(all))
+              } catch {}
+              setBoardCtxMenu(null)
+            }} style={boardCtxBtn('#5BB8FF')}>
+              Add to HUD Pill
+            </button>
+            {/* Mark done */}
+            <button onClick={() => {
+              try {
+                const checks = JSON.parse(localStorage.getItem('corner-checks') || '{}')
+                const key = taskText.slice(0, 60)
+                checks[key] = !checks[key]
+                localStorage.setItem('corner-checks', JSON.stringify(checks))
+              } catch {}
+              setBoardCtxMenu(null)
+            }} style={boardCtxBtn('#22C55E')}>
+              {(() => {
+                try {
+                  const checks = JSON.parse(localStorage.getItem('corner-checks') || '{}')
+                  return checks[taskText.slice(0, 60)] ? 'Mark Undone' : 'Mark Done'
+                } catch { return 'Mark Done' }
+              })()}
+            </button>
+            <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
+            {/* Copy text */}
+            <button onClick={() => {
+              try { navigator.clipboard.writeText(taskText) } catch {}
+              setBoardCtxMenu(null)
+            }} style={boardCtxBtn('#D0D8E8')}>
+              Copy Text
+            </button>
+          </div>
+        )
+      })()}
     </div>
   )
+}
+
+function boardCtxBtn(color) {
+  return {
+    width: '100%', display: 'flex', alignItems: 'center',
+    padding: '9px 14px',
+    background: 'none', border: 'none', cursor: 'pointer',
+    color, fontSize: 14, fontWeight: 500,
+    fontFamily: "'Inter', system-ui, sans-serif",
+    textAlign: 'left',
+    transition: 'background 80ms ease',
+  }
 }

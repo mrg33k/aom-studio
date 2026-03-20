@@ -6892,7 +6892,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -6912,6 +6912,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const switcherRef = useRef(null)
   // Reply-to state: { id, content } | null
   const [replyTo, setReplyTo] = useState(null)
+  // Consume external reply (set by context menu "Reply" action in GameDashboard)
+  useEffect(() => {
+    if (externalReplyTo) {
+      setReplyTo(externalReplyTo)
+      onClearExternalReply?.()
+    }
+  }, [externalReplyTo]) // eslint-disable-line react-hooks/exhaustive-deps
   // Long-press timer for message context menu (mobile)
   const msgLongPressRef = useRef(null)
 
@@ -9060,6 +9067,14 @@ export default function GameDashboard() {
   const [msgContextMenu, setMsgContextMenu] = useState(null) // { position: {x,y}, msg }
   // Send-to smart picker state
   const [sendToMenu, setSendToMenu] = useState(null) // { position: {x,y}, msg }
+  // Pending reply: set by context menu "Reply" action, consumed by UnifiedPanel
+  const [pendingReplyMsg, setPendingReplyMsg] = useState(null) // { id, content } | null
+  // Pending pill expand: set by "Add Task" on project context menu, consumed by GameHUD
+  const [expandPillSection, setExpandPillSection] = useState(null)
+  // Hidden pills: archived via context menu
+  const [hiddenPills, setHiddenPills] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('corner-hidden-pills') || '[]') } catch { return [] }
+  })
 
   // Handle message right-click / long-press
   const handleMessageContextMenu = useCallback((e, msg) => {
@@ -9713,8 +9728,22 @@ export default function GameDashboard() {
         }
         break
       case 'assign':
+        break
       case 'add':
-        // C4: Will integrate with Supabase task creation
+        // Open the pill's task panel in GameHUD so user can type a task
+        if (data?.section || data?.name) {
+          setExpandPillSection(data.section || data.name)
+        }
+        break
+      case 'archive':
+        // Hide pill until user re-enables it
+        if (data?.section) {
+          setHiddenPills(prev => {
+            const next = [...prev.filter(s => s !== data.section), data.section]
+            try { localStorage.setItem('corner-hidden-pills', JSON.stringify(next)) } catch {}
+            return next
+          })
+        }
         break
       case 'expand':
         handleModeSwitch('checklist')
@@ -9744,9 +9773,11 @@ export default function GameDashboard() {
         break
       }
       case 'reply':
-        // This triggers the reply banner -- handled by the panel's replyTo state via setReplyTo
-        // We pass the message to a shared state here but replyTo lives inside UnifiedPanel.
-        // For now just signal via a custom event that the panel can listen to.
+        // Set pending reply -- UnifiedPanel picks this up via externalReplyTo prop
+        if (msg?.content) {
+          setPendingReplyMsg({ id: msg.id || `msg-${Date.now()}`, content: msg.content })
+          setPanelActiveTab('chat')
+        }
         break
       case 'send-to': {
         // Show the SendToMenu picker at the context menu position
@@ -10049,6 +10080,8 @@ export default function GameDashboard() {
               onMessageContextMenu={handleMessageContextMenu}
               onGoOverview={() => { setIsOverview(true) }}
               onCenterCamera={() => { if (selectedRoom) { setCameraTarget(selectedRoom); setIsOverview(false) } }}
+              externalReplyTo={pendingReplyMsg}
+              onClearExternalReply={() => setPendingReplyMsg(null)}
             />
           )}
       </div>
@@ -10126,6 +10159,9 @@ export default function GameDashboard() {
               setPanelActiveTab('chat')
             }}
             isNightMode={isNightMode}
+            expandPillSection={expandPillSection}
+            onExpandPillHandled={() => setExpandPillSection(null)}
+            hiddenPills={hiddenPills}
           />
         </Suspense>
         </div>
@@ -10213,6 +10249,8 @@ export default function GameDashboard() {
           selectedPowerups={selectedPowerups}
           onRemovePowerup={(id) => setSelectedPowerups(prev => prev.filter(s => s.id !== id))}
           onMessageContextMenu={handleMessageContextMenu}
+          externalReplyTo={pendingReplyMsg}
+          onClearExternalReply={() => setPendingReplyMsg(null)}
         />
       )}
 

@@ -1853,6 +1853,11 @@ export default function GameHUD({
   onNavigateToAgent,
   // Daytime/nighttime theme -- when false, bottom HUD goes white/vibrant blue to match top bar
   isNightMode: isNightModeProp,
+  // External pill expansion: GameDashboard can ask HUD to expand a specific pill
+  expandPillSection,
+  onExpandPillHandled,
+  // Archived pills: hidden until explicitly re-enabled
+  hiddenPills,
 }) {
   // Override: HUD switches to night at 8pm AZ time (GameDashboard uses 9pm, but HUD owns its own threshold)
   const [nightOverride, setNightOverride] = useState(() => new Date().getHours() >= 20)
@@ -1907,6 +1912,15 @@ export default function GameHUD({
   const hudTextMuted = isDaytime ? '#94B8D8' : HUD.textMuted
   const hudAccent = isDaytime ? '#60A5FA' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
+  // External pill expansion (from GameDashboard context menu "Add Task")
+  // Store the pending section to expand; consumed after filteredProjects is available
+  const pendingExpandRef = useRef(null)
+  useEffect(() => {
+    if (expandPillSection) {
+      pendingExpandRef.current = expandPillSection
+      onExpandPillHandled?.()
+    }
+  }, [expandPillSection]) // eslint-disable-line react-hooks/exhaustive-deps
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
   const [overflowOpen, setOverflowOpen] = useState(false) // +N overflow popover
   const overflowRef = useRef(null)
@@ -2236,9 +2250,13 @@ export default function GameHUD({
     setTimeout(() => setHighlightedTask(null), 2500)
   }, [])
 
-  // Filter projects by search query, then apply custom pill order
+  // Filter projects by search query, then apply custom pill order, then exclude hidden pills
   const filteredProjects = useMemo(() => {
     let list = projects
+    // Exclude hidden/archived pills (unless searching, so user can find them)
+    if (!searchQuery.trim() && hiddenPills && hiddenPills.length > 0) {
+      list = list.filter(p => !hiddenPills.includes(p.section))
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       list = projects.filter(p =>
@@ -2257,7 +2275,16 @@ export default function GameHUD({
       })
     }
     return list
-  }, [projects, searchQuery, pillCustomOrder])
+  }, [projects, searchQuery, pillCustomOrder, hiddenPills])
+
+  // Consume pending expand (from GameDashboard context menu "Add Task")
+  useEffect(() => {
+    if (!pendingExpandRef.current || filteredProjects.length === 0) return
+    const section = pendingExpandRef.current
+    pendingExpandRef.current = null
+    const target = filteredProjects.find(p => p.section === section || p.name === section)
+    if (target) setExpandedProject(target)
+  }, [filteredProjects])
 
   // Focus search input when opened
   useEffect(() => {
@@ -2349,7 +2376,7 @@ export default function GameHUD({
             allProjects={projects}
             hudTaskCtxId={hudTaskCtx?.taskId}
             onTaskContextMenu={(e, task, proj) => {
-              setHudTaskCtx({ task, project: proj, taskId: task.isManual ? `manual-${task.manualId}` : task.origIdx })
+              setHudTaskCtx({ task, project: proj, taskId: task.isManual ? `manual-${task.manualId}` : task.origIdx, x: e.clientX, y: e.clientY })
             }}
             onNavigateToProject={navigateToProject}
             onNavigateToAgent={(slug) => {
@@ -2915,12 +2942,19 @@ export default function GameHUD({
       `}</style>
 
       {/* Task right-click context menu (rendered outside all overflow containers) */}
-      {hudTaskCtx && (
+      {hudTaskCtx && (() => {
+        // Position near the right-click/long-press point, clamped to viewport
+        const menuW = 260
+        const menuH = 240
+        const rawX = hudTaskCtx.x || window.innerWidth / 2
+        const rawY = hudTaskCtx.y || window.innerHeight - 120
+        const posX = Math.min(rawX, window.innerWidth - menuW - 8)
+        const posY = rawY + menuH > window.innerHeight - 8 ? rawY - menuH - 4 : rawY + 4
+        return (
         <div data-hud-ctx-menu style={{
           position: 'fixed',
-          bottom: 80,
-          left: '50%',
-          transform: 'translateX(-50%)',
+          left: posX,
+          top: posY,
           zIndex: 9999,
           background: isNightMode
             ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)'
@@ -2966,7 +3000,27 @@ export default function GameHUD({
             fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.08em',
           }}>Move to pill</div>
           {(projects || []).filter(p => p.name !== hudTaskCtx.project?.name).slice(0, 5).map(p => (
-            <button key={p.name} onClick={() => setHudTaskCtx(null)}
+            <button key={p.name} onClick={() => {
+              const task = hudTaskCtx.task
+              // For manual tasks: delete from current section + add to target
+              if (task.isManual) {
+                deleteManualTask?.(task.manualId)
+              }
+              // Add to target pill as a manual task with the target section
+              try {
+                const all = JSON.parse(localStorage.getItem('corner-manual-tasks') || '[]')
+                all.push({
+                  id: Date.now(),
+                  text: task.text,
+                  done: false,
+                  agent: p.section,
+                  projectSection: p.section,
+                  movedFrom: hudTaskCtx.project?.section,
+                })
+                localStorage.setItem('corner-manual-tasks', JSON.stringify(all))
+              } catch {}
+              setHudTaskCtx(null)
+            }}
               style={hudCtxBtn(isNightMode)}
               onMouseEnter={e => e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)'}
               onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -2987,7 +3041,8 @@ export default function GameHUD({
             </button>
           )}
         </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
