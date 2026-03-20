@@ -399,7 +399,7 @@ export function useDataPipe(parsePunchList) {
         // Map tasks to completed feed
         if (data.tasks) {
           const completed = data.tasks
-            .filter(t => t.status === 'completed')
+            .filter(t => t.status === 'completed' || t.status === 'done')
             .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
           setCompletedFeed(completed)
         }
