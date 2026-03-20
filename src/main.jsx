@@ -39,6 +39,7 @@ import Corner from './pages/Corner.jsx'
 import BriefPage from './pages/BriefPage.jsx'
 import Skills from './pages/Skills.jsx'
 import Settings from './pages/Settings.jsx'
+import Onboarding from './pages/Onboarding.jsx'
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
 const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
@@ -71,6 +72,7 @@ function BrandRedirect() {
 
 // AuthGuard: checks Supabase session before rendering dashboard routes.
 // Falls through immediately if Supabase is not configured (localhost without env vars).
+// First-time users (user_metadata.onboarded !== true) are redirected to /onboarding.
 function AuthGuard({ children }) {
   const navigate = useNavigate()
   const [checked, setChecked] = useState(false)
@@ -80,8 +82,19 @@ function AuthGuard({ children }) {
     // onAuthStateChange fires immediately with current session, then on changes.
     const unsubscribe = onAuthStateChange((session) => {
       if (session) {
-        setAuthed(true)
-        setChecked(true)
+        // Check onboarding status from user_metadata or localStorage fallback
+        const isOnboarded =
+          session.user?.user_metadata?.onboarded === true ||
+          localStorage.getItem('corner-onboarded') === 'true'
+        if (!isOnboarded) {
+          // First-time user -- send to onboarding before dashboard
+          setChecked(true)
+          setAuthed(false)
+          navigate('/onboarding', { replace: true })
+        } else {
+          setAuthed(true)
+          setChecked(true)
+        }
       } else {
         setAuthed(false)
         setChecked(true)
@@ -152,6 +165,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/checklist" element={<AuthGuard><GameDashboard /></AuthGuard>} />
