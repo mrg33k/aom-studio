@@ -934,6 +934,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   drawerSnap = null,
   isMobile = false,
   initialFocusRoom = null, // If set, start camera focused on this room instead of overview
+  onOpenChat,    // (roomId) -> open chat panel for room
+  onSendMessage, // (roomId) -> open chat + focus input
+  onViewTasks,   // (roomId) -> switch to tasks tab for room
+  onSetAsHome,   // (roomId) -> save as default home room in localStorage
 }, ref) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
@@ -2582,23 +2586,49 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           }}>
             {contextMenu.roomName}
           </div>
+          {/* Primary room actions */}
           <ContextMenuItem
-            label="View Agent"
-            icon="&#x2192;"
-            onClick={() => handleViewAgent(contextMenu.roomId)}
+            label="Open Chat"
+            icon="&#x1F4AC;"
+            accent
+            onClick={() => {
+              onOpenChat?.(contextMenu.roomId)
+              handleViewAgent(contextMenu.roomId)
+            }}
           />
           <ContextMenuItem
-            label="Regenerate Room"
-            icon="&#x21BB;"
-            onClick={() => handleRegenerate(contextMenu.roomId, contextMenu.roomName)}
+            label="Send Message"
+            icon="&#x2197;"
+            onClick={() => {
+              onSendMessage?.(contextMenu.roomId)
+              setContextMenu(null)
+            }}
           />
+          <ContextMenuItem
+            label="View Tasks"
+            icon="&#x2713;"
+            onClick={() => {
+              onViewTasks?.(contextMenu.roomId)
+              setContextMenu(null)
+            }}
+          />
+          <ContextMenuItem
+            label="Set as Home"
+            icon="&#x2302;"
+            onClick={() => {
+              onSetAsHome?.(contextMenu.roomId)
+              showToast(`${contextMenu.roomName} set as home`)
+              setContextMenu(null)
+            }}
+          />
+          {/* Separator */}
+          <div style={{ height: 1, background: 'rgba(96, 165, 250, 0.12)', margin: '4px 0' }} />
+          {/* Room management */}
           <ContextMenuItem
             label="Hide Room"
             icon="&#x2715;"
             onClick={() => handleHideRoom(contextMenu.roomId)}
           />
-          {/* Separator */}
-          <div style={{ height: 1, background: 'rgba(96, 165, 250, 0.12)', margin: '4px 0' }} />
           {hiddenRooms.size > 0 && (
             <ContextMenuItem
               label={`Show Hidden (${hiddenRooms.size})`}
@@ -2709,7 +2739,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 export default CanvasOffice
 
 // ---- CONTEXT MENU ITEM COMPONENT ----
-function ContextMenuItem({ label, icon, onClick }) {
+function ContextMenuItem({ label, icon, onClick, accent = false }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -2723,8 +2753,8 @@ function ContextMenuItem({ label, icon, onClick }) {
         alignItems: 'center',
         gap: 10,
         fontSize: 13,
-        fontWeight: 500,
-        color: hovered ? '#fff' : '#C8D6E5',
+        fontWeight: accent ? 600 : 500,
+        color: hovered ? '#fff' : (accent ? '#60A5FA' : '#C8D6E5'),
         background: hovered ? 'rgba(96, 165, 250, 0.15)' : 'transparent',
         transition: 'all 0.12s ease',
       }}

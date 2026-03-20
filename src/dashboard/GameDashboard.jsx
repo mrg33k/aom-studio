@@ -2267,12 +2267,11 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
     switch (type) {
       case 'room':
         return [
-          { id: 'chat', label: `Chat with ${data?.agent || 'Agent'}`, icon: MessageSquare, accent: true },
-          { id: 'zoom', label: 'Zoom In', icon: ZoomIn },
-          { id: 'tasks', label: 'View Tasks', icon: ListTodo },
+          { id: 'open-chat', label: 'Open Chat', icon: MessageSquare, accent: true },
+          { id: 'send-message', label: 'Send Message', icon: Send },
+          { id: 'view-tasks', label: 'View Tasks', icon: ListTodo },
           { divider: true },
-          { id: 'activity', label: 'Recent Activity', icon: Activity },
-          { id: 'assign', label: 'Assign Task', icon: Plus },
+          { id: 'set-home', label: 'Set as Home', icon: Home },
         ]
       case 'task':
         return [
@@ -7763,7 +7762,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     ))}
                   </div>
                 )}
-                <input type="text" value={chatInput || ''} onChange={e => {
+                <input type="text" data-panel-chat-input value={chatInput || ''} onChange={e => {
                     isUserTypingRef.current = true
                     onChatInputChange?.(e.target.value)
                     if (powerupOpen) onPowerupToggle?.(false)
@@ -8737,7 +8736,8 @@ export default function GameDashboard() {
     }
 
     function loadFromGitHub(slug) {
-      const isProject = slug === 'aom' || slug.includes('-')
+      const roomMeta = ROOM_LOOKUP[slug]
+      const isProject = roomMeta?.type === 'project' || roomMeta?.type === 'special' || slug === 'aom'
       const convTarget = slug === 'aom' ? 'aom-internal' : slug
       const convType = isProject ? 'project' : 'agent'
       fetch(`${CONV_API_BASE}?target=${convTarget}&type=${convType}&limit=50`)
@@ -8810,7 +8810,8 @@ export default function GameDashboard() {
     }
 
     // --- LOCAL: file-backed poll ---
-    const isProj = selectedRoom === 'aom' || selectedRoom.includes('-')
+    const pollRoomMeta = ROOM_LOOKUP[selectedRoom]
+    const isProj = pollRoomMeta?.type === 'project' || pollRoomMeta?.type === 'special' || selectedRoom === 'aom'
     const pollTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
     const pollType = isProj ? 'project' : 'agent'
     const poll = setInterval(() => {
@@ -9187,10 +9188,12 @@ export default function GameDashboard() {
     e.preventDefault()
     const room = ROOM_LOOKUP[roomId]
     if (!room) return
-    if (room.agent === null && room.type !== 'project') return
+    if (room.agent === null && room.type !== 'project' && room.type !== 'special') return
+    const isProjectRoom = room.type === 'project' || room.type === 'special'
+    const label = isProjectRoom ? (room.name || roomId) : `${room.agent}'s Room`
     setContextMenu({
       type: 'room',
-      data: { roomId, agent: room.agent, label: `${room.agent}'s Room` },
+      data: { roomId, agent: room.agent, label, isProject: isProjectRoom },
       position: { x: e.clientX, y: e.clientY },
     })
   }, [])
@@ -9198,6 +9201,45 @@ export default function GameDashboard() {
   // Context menu action dispatcher
   const handleContextAction = useCallback((actionId, data) => {
     switch (actionId) {
+      // Room context menu actions (right-click / long-press on hex rooms)
+      case 'open-chat':
+        if (data?.roomId) {
+          handleChat(data.roomId)
+          setPanelActiveTab('chat')
+          setPanelVisible(true)
+        } else if (data?.slug) {
+          handleChat(data.slug)
+          setPanelActiveTab('chat')
+          setPanelVisible(true)
+        }
+        break
+      case 'send-message':
+        if (data?.roomId) {
+          handleChat(data.roomId)
+          setPanelActiveTab('chat')
+          setPanelVisible(true)
+          // Focus the chat input after panel opens
+          setTimeout(() => {
+            const input = document.querySelector('[data-panel-chat-input]')
+            if (input) input.focus()
+          }, 150)
+        }
+        break
+      case 'view-tasks':
+        if (data?.roomId) {
+          setSelectedRoom(data.roomId)
+          setCameraTarget(data.roomId)
+          setIsOverview(false)
+          setPanelVisible(true)
+          setPanelActiveTab('tasks')
+        }
+        break
+      case 'set-home':
+        if (data?.roomId) {
+          try { localStorage.setItem('corner-home-room', data.roomId) } catch {}
+        }
+        break
+      // Legacy / other menu types
       case 'chat':
         if (data?.roomId) { handleChat(data.roomId); setPanelVisible(true) }
         else if (data?.slug) { handleChat(data.slug); setPanelVisible(true) }
@@ -9421,6 +9463,30 @@ export default function GameDashboard() {
                 drawerSnap={drawerSnap}
                 isMobile={isMobile}
                 initialFocusRoom={isMobile ? DEFAULT_AGENT : null}
+                onOpenChat={(roomId) => {
+                  handleChat(roomId)
+                  setPanelActiveTab('chat')
+                  setPanelVisible(true)
+                }}
+                onSendMessage={(roomId) => {
+                  handleChat(roomId)
+                  setPanelActiveTab('chat')
+                  setPanelVisible(true)
+                  setTimeout(() => {
+                    const input = document.querySelector('[data-panel-chat-input]')
+                    if (input) input.focus()
+                  }, 150)
+                }}
+                onViewTasks={(roomId) => {
+                  setSelectedRoom(roomId)
+                  setCameraTarget(roomId)
+                  setIsOverview(false)
+                  setPanelVisible(true)
+                  setPanelActiveTab('tasks')
+                }}
+                onSetAsHome={(roomId) => {
+                  try { localStorage.setItem('corner-home-room', roomId) } catch {}
+                }}
               />
 
               {/* SimCity floating stats overlay (bottom-left of game viewport) */}
