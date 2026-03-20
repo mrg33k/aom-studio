@@ -676,9 +676,11 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
       if (e.key === 'Escape') { setRevolverAgent(null); setSearchFilter('') }
     }
     document.addEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler, { passive: true })
     document.addEventListener('keydown', keyHandler)
     return () => {
       document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
       document.removeEventListener('keydown', keyHandler)
     }
   }, [revolverAgent])
@@ -2270,7 +2272,11 @@ export default function GameHUD({
       }
     }
     document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
+    }
   }, [])
 
   // Close on Escape

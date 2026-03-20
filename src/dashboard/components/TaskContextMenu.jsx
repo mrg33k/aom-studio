@@ -202,6 +202,7 @@ export default function TaskContextMenu({
 
     const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClick)
+      document.addEventListener('touchstart', handleClick, { passive: true })
       document.addEventListener('keydown', handleKey)
     }, 30)
     // Close on scroll (parent scroll)
@@ -210,6 +211,7 @@ export default function TaskContextMenu({
     return () => {
       clearTimeout(timer)
       document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('touchstart', handleClick)
       document.removeEventListener('keydown', handleKey)
       window.removeEventListener('scroll', handleScroll, true)
     }

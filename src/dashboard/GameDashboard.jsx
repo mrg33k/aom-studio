@@ -1767,6 +1767,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   })
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const panState = useRef({ dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0, velX: 0, velY: 0 })
+  const roomLongPressRef = useRef(null)
   const momentumRef = useRef(null)
 
   // Scroll wheel zoom - SNAP between preset levels (no free zoom)
@@ -2157,6 +2158,17 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 onContextMenu={(e) => hasAgent && onRoomContextMenu?.(e, room.id)}
                 onMouseEnter={() => setHoveredRoom(room.id)}
                 onMouseLeave={() => setHoveredRoom(null)}
+                onTouchStart={(e) => {
+                  if (!hasAgent) return
+                  const touch = e.touches[0]
+                  const cx = touch ? touch.clientX : 0
+                  const cy = touch ? touch.clientY : 0
+                  roomLongPressRef.current = setTimeout(() => {
+                    onRoomContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {} }, room.id)
+                  }, 500)
+                }}
+                onTouchEnd={() => clearTimeout(roomLongPressRef.current)}
+                onTouchMove={() => clearTimeout(roomLongPressRef.current)}
                 whileHover={hasAgent ? {
                   scale: 1.02,
                   transition: { type: 'spring', stiffness: 500, damping: 12, mass: 0.5 }
@@ -2238,22 +2250,57 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   )
 }
 
+// ---- URL PARSER -- renders clickable links inside chat message text --------
+// Splits text on https?:// URLs and wraps each in an <a> tag.
+function renderMessageContent(text, agentColor) {
+  if (!text || typeof text !== 'string') return null
+  const URL_RE = /(https?:\/\/[^\s]+)/g
+  const parts = text.split(URL_RE)
+  if (parts.length === 1) return text // no URLs, fast path
+  return parts.map((part, i) => {
+    if (URL_RE.test(part)) {
+      URL_RE.lastIndex = 0
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          style={{
+            color: agentColor ? `${agentColor}EE` : '#7CB9FF',
+            textDecoration: 'underline',
+            textUnderlineOffset: 2,
+            wordBreak: 'break-all',
+          }}
+        >
+          {part}
+        </a>
+      )
+    }
+    URL_RE.lastIndex = 0
+    return part
+  })
+}
+
 // ---- RIGHT-CLICK CONTEXT MENU (Figma/VS Code style) -----------------------
 // Clean, simple, no modals. Appears at cursor, disappears on click-away.
 // Types: 'room', 'task', 'agent', 'project'
 function ContextMenu({ type, data, position, onClose, onAction }) {
   const menuRef = useRef(null)
 
-  // Close on click outside or Escape
+  // Close on click outside or Escape (mousedown for desktop, touchstart for iPad)
   useEffect(() => {
     const handleClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
     }
     const handleKey = (e) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('mousedown', handleClick)
+    document.addEventListener('touchstart', handleClick, { passive: true })
     document.addEventListener('keydown', handleKey)
     return () => {
       document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('touchstart', handleClick)
       document.removeEventListener('keydown', handleKey)
     }
   }, [onClose])
@@ -2424,16 +2471,18 @@ function SendToMenu({ position, onClose, onSelect, currentAgent }) {
     setTimeout(() => inputRef.current?.focus(), 50)
   }, [])
 
-  // Close on click outside / Escape
+  // Close on click outside / Escape (mousedown for desktop, touchstart for iPad)
   useEffect(() => {
     const handleClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
     }
     const handleKey = (e) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('mousedown', handleClick)
+    document.addEventListener('touchstart', handleClick, { passive: true })
     document.addEventListener('keydown', handleKey)
     return () => {
       document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('touchstart', handleClick)
       document.removeEventListener('keydown', handleKey)
     }
   }, [onClose])
@@ -4897,6 +4946,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   })
   const [taskInput, setTaskInput] = useState('')
   const [taskCtx, setTaskCtx] = useState(null)
+  const taskLongPressRef = useRef(null)
   const [dragIdx, setDragIdx] = useState(null)
   const [dragOverIdx, setDragOverIdx] = useState(null)
   const [dragOverTaskId, setDragOverTaskId] = useState(null) // Track sub-task drop target (drag ON a task)
@@ -5168,6 +5218,16 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         onDrop={isDraggable && !isExpanded ? () => handleDrop(idx, t.id) : undefined}
         onDragEnd={isDraggable && !isExpanded ? () => { setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null) } : undefined}
         onContextMenu={ctxHandler}
+        onTouchStart={ctxHandler ? (e) => {
+          const touch = e.touches[0]
+          const cx = touch ? touch.clientX : 0
+          const cy = touch ? touch.clientY : 0
+          taskLongPressRef.current = setTimeout(() => {
+            ctxHandler({ clientX: cx, clientY: cy, preventDefault: () => {} })
+          }, 500)
+        } : undefined}
+        onTouchEnd={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
+        onTouchMove={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
         style={{
           marginBottom: isMobile ? 10 : 6,
           background: isLive
@@ -7707,10 +7767,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       e.preventDefault()
                       onMessageContextMenu?.(e, msg)
                     }}
-                    onTouchStart={() => {
+                    onTouchStart={(e) => {
                       clearTimeout(msgLongPressRef.current)
+                      const touch = e.touches[0]
+                      const cx = touch ? touch.clientX : window.innerWidth / 2
+                      const cy = touch ? touch.clientY : window.innerHeight / 2
                       msgLongPressRef.current = setTimeout(() => {
-                        onMessageContextMenu?.({ clientX: 0, clientY: 0, preventDefault: () => {}, _msgLongPress: true }, msg)
+                        onMessageContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {}, _msgLongPress: true }, msg)
                       }, 500)
                     }}
                     onTouchEnd={() => clearTimeout(msgLongPressRef.current)}
@@ -7805,7 +7868,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           ),
                           position: 'relative',
                         }}>
-                        {msg.content && typeof msg.content === 'string' && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
+                        {msg.content && typeof msg.content === 'string' && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{renderMessageContent(msg.content, isUser ? '#7CB9FF' : agentColor)}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
                         {msg.streaming && !msg.content && (
                           <div style={{ display: 'flex', gap: 5, padding: '4px 0', alignItems: 'center' }}>
                             {[0, 1, 2].map(j => (
