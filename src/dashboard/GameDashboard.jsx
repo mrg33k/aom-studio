@@ -2620,8 +2620,11 @@ function MobileDrawer({
         // Keyboard just opened
         setMobileViewportHeight(vvh)
         if (!keyboardOpen) {
-          // Save current snap so we can restore it when keyboard closes
-          preKeyboardSnapRef.current = snap
+          // Save current snap so we can restore it when keyboard closes.
+          // Only overwrite if onInputFocus hasn't already set the restore target.
+          if (preKeyboardSnapRef.current === null) {
+            preKeyboardSnapRef.current = snap
+          }
           setKeyboardOpen(true)
           // Auto-snap to full so chat input stays visible above keyboard
           onSnapChange('full')
@@ -2901,7 +2904,11 @@ function MobileDrawer({
               onPowerupToggle={onPowerupToggle}
               onPowerupActivate={onPowerupActivate}
               onInputFocus={() => {
-                if (snap === 'half') onSnapChange('full')
+                if (snap !== 'full') {
+                  // Save current snap BEFORE changing so keyboard-close restores correctly
+                  preKeyboardSnapRef.current = snap
+                  onSnapChange('full')
+                }
               }}
             />
           </div>
@@ -2934,7 +2941,10 @@ function MobileDrawer({
               rightNowTasks={rightNowTasks}
               cornerConfig={cornerConfig}
               onInputFocus={() => {
-                if (snap === 'half') onSnapChange('full')
+                if (snap !== 'full') {
+                  preKeyboardSnapRef.current = snap
+                  onSnapChange('full')
+                }
               }}
             />
           </div>
@@ -2967,7 +2977,10 @@ function MobileDrawer({
               rightNowTasks={rightNowTasks}
               cornerConfig={cornerConfig}
               onInputFocus={() => {
-                if (snap === 'half') onSnapChange('full')
+                if (snap !== 'full') {
+                  preKeyboardSnapRef.current = snap
+                  onSnapChange('full')
+                }
               }}
             />
           </div>
@@ -7030,7 +7043,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               </div>
             )}
             {/* Chat input */}
-            <div style={{
+            <div
+              onTouchStart={isMobile ? () => onInputFocus?.() : undefined}
+              style={{
               padding: '16px 20px',
               paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
               borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
