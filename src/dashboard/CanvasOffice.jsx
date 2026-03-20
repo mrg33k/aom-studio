@@ -349,6 +349,65 @@ function findNearestSlot(wx, wy, originX, originY, totalSlots) {
   return bestIdx
 }
 
+// ---- SNAP TO NEAREST HEX GRID CELL ----
+// Given a world-space point (the top-left of where the room wants to land),
+// find the nearest hex grid cell and return its top-left world position {x, y}.
+//
+// The hex layout uses hexPosition(row, col, ox, oy) where:
+//   x = ox + col * HEX_COL_STEP
+//   y = oy + row * HEX_ROW_STEP
+//
+// For the VISIBLE snap grid we use only even col values per row (same as generateHexSlots),
+// which creates the diamond/offset pattern. Each row r has a col offset parity that
+// alternates: even rows use even cols, odd rows use odd cols.
+// This way rooms don't stack on top of each other (they fit the isometric grid).
+const HEX_COL_STEP = VIS_W * 0.52   // world-space x step per col unit
+const HEX_ROW_STEP = VIS_H * 0.72   // world-space y step per row unit
+
+function snapToNearestHexCell(wx, wy, originX, originY) {
+  // Convert top-left to center for distance calculations
+  const cx = wx + ROOM_SIZE / 2
+  const cy = wy + ROOM_SIZE / 2
+
+  // Estimate row from y
+  const rawRow = (cy - originY - ROOM_SIZE / 2) / HEX_ROW_STEP
+  const bestRow = Math.round(rawRow)
+
+  // For each candidate row, the valid cols are those with the same parity as
+  // the row itself (matching generateHexSlots diamond pattern).
+  // We search bestRow ± 1 to handle boundary cases.
+  let nearest = { row: bestRow, col: 0 }
+  let nearestDist = Infinity
+
+  for (let dr = -1; dr <= 1; dr++) {
+    const r = bestRow + dr
+    // Estimate col from x
+    const rawCol = (cx - originX - ROOM_SIZE / 2) / HEX_COL_STEP
+    const bestColRaw = Math.round(rawCol)
+
+    // Candidate cols: the nearest integer cols, stepped by 2 (same parity)
+    // In our grid, even rows use even cols, odd rows use odd cols.
+    const parity = ((r % 2) + 2) % 2 // 0 for even rows, 1 for odd rows
+    // Align bestColRaw to correct parity
+    let alignedCol = bestColRaw
+    if (((alignedCol % 2) + 2) % 2 !== parity) alignedCol += 1
+
+    for (let dc = -2; dc <= 2; dc += 2) {
+      const c = alignedCol + dc
+      const pos = hexPosition(r, c, originX, originY)
+      const pcx = pos.x + ROOM_SIZE / 2
+      const pcy = pos.y + ROOM_SIZE / 2
+      const d = Math.sqrt((cx - pcx) ** 2 + (cy - pcy) ** 2)
+      if (d < nearestDist) {
+        nearestDist = d
+        nearest = { row: r, col: c }
+      }
+    }
+  }
+
+  return hexPosition(nearest.row, nearest.col, originX, originY)
+}
+
 // ---- LOAD/SAVE SLOT ORDER FROM LOCALSTORAGE ----
 // Reconciles saved order with current visible rooms: removes rooms no longer visible,
 // appends new rooms that weren't in the saved order. Handles dynamic room counts.
@@ -924,6 +983,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     startClientX: 0,
     startClientY: 0,
     totalMovement: 0,
+    // Snap target: the nearest hex grid cell world position (updated every frame during drag)
+    snapX: 0,
+    snapY: 0,
   })
   const mouseDownRef = useRef({ active: false, didDrag: false, startX: 0, startY: 0 })
 
@@ -1200,6 +1262,87 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
     const elapsed = (performance.now() - startTimeRef.current) / 1000
     const now = performance.now()
+
+    // ---- HEX GRID LINES: draw snap grid as visible lines behind rooms ----
+    // Compute which cells are visible in the current viewport (with a 2-cell margin)
+    {
+      const viewL = -cam.x / cam.zoom
+      const viewT = -cam.y / cam.zoom
+      const viewR = viewL + size.w / cam.zoom
+      const viewB = viewT + size.h / cam.zoom
+
+      // How many rows/cols fit in the viewport (plus margin)
+      const rowMin = Math.floor((viewT - ORIGIN_Y) / HEX_ROW_STEP) - 2
+      const rowMax = Math.ceil((viewB - ORIGIN_Y) / HEX_ROW_STEP) + 2
+      const colMin = Math.floor((viewL - ORIGIN_X) / HEX_COL_STEP) - 2
+      const colMax = Math.ceil((viewR - ORIGIN_X) / HEX_COL_STEP) + 2
+
+      ctx.save()
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.14)'  // #3B82F6 at low opacity
+      ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
+
+      const S = ROOM_SIZE
+      // Draw a diamond outline at each hex grid cell.
+      // For each row, start at the correct parity col and step by 2.
+      // Even rows use even cols, odd rows use odd cols (matches generateHexSlots).
+      for (let r = rowMin; r <= rowMax; r++) {
+        const parity = ((r % 2) + 2) % 2  // 0 for even rows, 1 for odd rows
+        // Find the first col >= colMin that has the right parity
+        let cStart = colMin
+        if (((cStart % 2) + 2) % 2 !== parity) cStart += 1
+        for (let c = cStart; c <= colMax; c += 2) {
+          const pos = hexPosition(r, c, ORIGIN_X, ORIGIN_Y)
+          // Diamond path matching the hit-test shape: hw=ROOM_SIZE/2, hh=ROOM_SIZE/4
+          const px = pos.x + S * 0.5
+          const py = pos.y + S * 0.5
+          const hw = S / 2
+          const hh = S / 4
+          ctx.beginPath()
+          ctx.moveTo(px, py - hh)      // top
+          ctx.lineTo(px + hw, py)      // right
+          ctx.lineTo(px, py + hh)      // bottom
+          ctx.lineTo(px - hw, py)      // left
+          ctx.closePath()
+          ctx.stroke()
+        }
+      }
+      ctx.restore()
+    }
+
+    // ---- DRAW SNAP INDICATOR (ghost diamond at snap target during room drag) ----
+    {
+      const drag = dragStateRef.current
+      if (drag.active && drag.roomId) {
+        // Compute snap target for current drag position
+        const rawX = drag.worldX - drag.offsetX
+        const rawY = drag.worldY - drag.offsetY
+        const snap = snapToNearestHexCell(rawX, rawY, ORIGIN_X, ORIGIN_Y)
+        // Store on drag state so onUp can read it
+        drag.snapX = snap.x
+        drag.snapY = snap.y
+
+        const S = ROOM_SIZE
+        const meta = ROOM_META[drag.roomId]
+        const color = meta?.color || '#3B82F6'
+        ctx.save()
+        ctx.strokeStyle = color
+        ctx.globalAlpha = 0.35
+        ctx.lineWidth = 2.5 / (cameraRef.current?.zoom || 1)
+        ctx.setLineDash([8, 6])
+        const px = snap.x + S / 2
+        const py = snap.y + S / 2
+        const hw = S / 2
+        const hh = S / 4
+        ctx.beginPath()
+        ctx.moveTo(px, py - hh)
+        ctx.lineTo(px + hw, py)
+        ctx.lineTo(px, py + hh)
+        ctx.lineTo(px - hw, py)
+        ctx.closePath()
+        ctx.stroke()
+        ctx.restore()
+      }
+    }
 
     // ---- CELEBRATION WAVE: compute per-room offsets ----
     const celeb = celebrationRef.current
@@ -1491,7 +1634,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         // Queue badge for dragged room too
         badgeQueue.push({ offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
 
-        // DROP INDICATOR: disabled -- rooms now placed freely, no target slot to ghost
+        // DROP INDICATOR: shown in the hex grid draw pass above (snap target diamond)
       }
     }
 
@@ -1908,12 +2051,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const pan = panRef.current
 
     if (drag.active && drag.roomId) {
-      // FREE DROP: save world position directly, no snap-to-slot
-      const dropX = drag.worldX - drag.offsetX
-      const dropY = drag.worldY - drag.offsetY
+      // SNAP DROP: snap to nearest hex grid cell, save that position
+      const rawX = drag.worldX - drag.offsetX
+      const rawY = drag.worldY - drag.offsetY
+      const snapped = snapToNearestHexCell(rawX, rawY, ORIGIN_X, ORIGIN_Y)
       freePositionsRef.current = {
         ...freePositionsRef.current,
-        [drag.roomId]: { x: dropX, y: dropY },
+        [drag.roomId]: { x: snapped.x, y: snapped.y },
       }
       saveFreePositions(freePositionsRef.current)
       drag.active = false
@@ -1946,7 +2090,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
 
     mouseDownRef.current.active = false
-  }, [])
+  }, [ORIGIN_X, ORIGIN_Y])
 
   // ---- CLICK: Focus/unfocus room + recall visiting character ----
   const onClick = useCallback((e) => {
@@ -2292,12 +2436,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const pan = panRef.current
 
       if (drag.active && drag.roomId) {
-        // FREE DROP: save world position directly, no snap-to-slot
-        const dropX = drag.worldX - drag.offsetX
-        const dropY = drag.worldY - drag.offsetY
+        // SNAP DROP: snap to nearest hex grid cell
+        const rawX = drag.worldX - drag.offsetX
+        const rawY = drag.worldY - drag.offsetY
+        const snapped = snapToNearestHexCell(rawX, rawY, ORIGIN_X, ORIGIN_Y)
         freePositionsRef.current = {
           ...freePositionsRef.current,
-          [drag.roomId]: { x: dropX, y: dropY },
+          [drag.roomId]: { x: snapped.x, y: snapped.y },
         }
         saveFreePositions(freePositionsRef.current)
         drag.active = false
