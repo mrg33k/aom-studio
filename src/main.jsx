@@ -36,6 +36,7 @@ import AmbitionPerformanceV2 from './pages/AmbitionPerformanceV2.jsx'
 import Corner from './pages/Corner.jsx'
 import BriefPage from './pages/BriefPage.jsx'
 import Skills from './pages/Skills.jsx'
+import Settings from './pages/Settings.jsx'
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
 const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
@@ -108,6 +109,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/book" element={<BookAudit />} />
           <Route path="/corner" element={<Corner />} />
           <Route path="/skills" element={<Skills />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
           <Route path="/dashboard" element={<GameDashboard />} />
