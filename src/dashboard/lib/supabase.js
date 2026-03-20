@@ -22,6 +22,18 @@ export const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY)
 //   source      text  -- "corner-dashboard" | "terminal" | "telegram" | "auto-responder"
 //   status      text  -- "pending" | "read"
 
+// text_files table schema (paste zone / transcripts):
+//   CREATE TABLE text_files (
+//     id          uuid primary key default gen_random_uuid(),
+//     client_id   text not null default 'default',
+//     filename    text not null,
+//     content     text not null,
+//     type        text not null default 'text',
+//     created_at  timestamptz default now()
+//   );
+//   CREATE INDEX idx_text_files_client ON text_files(client_id);
+//   -- RLS: enable row-level security, allow authenticated users to CRUD their own client_id
+
 export function mapSupabaseMsg(m) {
   return {
     id:      m.id,

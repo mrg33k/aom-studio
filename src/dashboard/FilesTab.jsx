@@ -1,13 +1,16 @@
 // FilesTab.jsx -- Files tab for UnifiedPanel sidebar
 // Upload images, view thumbnails, send to chat, full-size modal
-// Storage: Supabase Storage (bucket: 'corner-files') with localStorage fallback
+// Paste zone for large text (transcripts, notes) -- iPad-friendly
+// Storage: Supabase Storage (bucket: 'corner-files') + Supabase 'text_files' table with localStorage fallback
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Camera, X, Maximize2, Send, Trash2, FolderOpen } from 'lucide-react'
+import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft, ClipboardPaste } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 
 const STORAGE_KEY = 'corner-files-local'
+const TEXT_STORAGE_KEY = 'corner-text-files-local'
 const BUCKET = 'corner-files'
+const TEXT_TABLE = 'text_files'
 
 // ---- Helpers ----
 
@@ -41,6 +44,36 @@ function deleteLocalFile(id, agentSlug, clientId) {
   } catch { /* ignore */ }
 }
 
+function getLocalTextFiles(agentSlug, clientId) {
+  try {
+    const raw = localStorage.getItem(TEXT_STORAGE_KEY)
+    if (!raw) return []
+    const all = JSON.parse(raw)
+    return all.filter(f => f.agent === agentSlug && f.clientId === (clientId || 'default'))
+  } catch {
+    return []
+  }
+}
+
+function saveLocalTextFile(file) {
+  try {
+    const raw = localStorage.getItem(TEXT_STORAGE_KEY)
+    const all = raw ? JSON.parse(raw) : []
+    all.unshift(file)
+    // Keep max 100 text files
+    localStorage.setItem(TEXT_STORAGE_KEY, JSON.stringify(all.slice(0, 100)))
+  } catch { /* ignore */ }
+}
+
+function deleteLocalTextFile(id) {
+  try {
+    const raw = localStorage.getItem(TEXT_STORAGE_KEY)
+    if (!raw) return
+    const all = JSON.parse(raw)
+    localStorage.setItem(TEXT_STORAGE_KEY, JSON.stringify(all.filter(f => f.id !== id)))
+  } catch { /* ignore */ }
+}
+
 function formatDate(iso) {
   try {
     const d = new Date(iso)
@@ -50,9 +83,28 @@ function formatDate(iso) {
   }
 }
 
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 40)
+    .replace(/-$/, '')
+}
+
+function generateFilename(content) {
+  const firstLine = (content || '').split('\n')[0].trim()
+  const slug = slugify(firstLine) || 'untitled'
+  const now = new Date()
+  const date = now.toISOString().slice(0, 10)
+  return `${slug}-${date}.txt`
+}
+
 // ---- FilesTab Component ----
 
 export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileToChat }) {
+  const [subTab, setSubTab] = useState('text') // 'images' | 'text'
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -61,9 +113,17 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
   const fileInputRef = useRef(null)
   const dropZoneRef = useRef(null)
 
+  // Text paste state
+  const [textFiles, setTextFiles] = useState([])
+  const [pasteContent, setPasteContent] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [viewingFile, setViewingFile] = useState(null) // text file being viewed
+  const [textError, setTextError] = useState(null)
+  const textareaRef = useRef(null)
+
   const isDaytime = isNightMode === false
 
-  // Load files on mount or agent switch
+  // Load image files on mount or agent switch
   const loadFiles = useCallback(async () => {
     if (supabase) {
       try {
@@ -97,9 +157,44 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
     setFiles(getLocalFiles(agentSlug, clientId))
   }, [agentSlug, clientId])
 
+  // Load text files on mount or agent switch
+  const loadTextFiles = useCallback(async () => {
+    if (supabase) {
+      try {
+        const { data, error: fetchErr } = await supabase
+          .from(TEXT_TABLE)
+          .select('*')
+          .eq('client_id', clientId || 'default')
+          .order('created_at', { ascending: false })
+          .limit(100)
+        if (fetchErr) throw fetchErr
+        if (data) {
+          setTextFiles(data.map(row => ({
+            id: row.id,
+            filename: row.filename,
+            content: row.content,
+            type: row.type || 'text',
+            created_at: row.created_at,
+            source: 'supabase',
+            agent: agentSlug,
+            clientId: clientId || 'default',
+          })))
+          return
+        }
+      } catch (err) {
+        console.warn('[FilesTab] Supabase text_files unavailable, using localStorage:', err.message)
+      }
+    }
+    // localStorage fallback
+    setTextFiles(getLocalTextFiles(agentSlug, clientId))
+  }, [agentSlug, clientId])
+
   useEffect(() => {
     loadFiles()
-  }, [loadFiles])
+    loadTextFiles()
+  }, [loadFiles, loadTextFiles])
+
+  // ---- Image upload handlers (unchanged) ----
 
   const handleUpload = useCallback(async (fileList) => {
     if (!fileList || fileList.length === 0) return
@@ -177,7 +272,72 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
     if (lightboxFile?.id === file.id) setLightboxFile(null)
   }, [agentSlug, clientId, lightboxFile])
 
-  // Drag and drop
+  // ---- Text paste handlers ----
+
+  const handleSaveText = useCallback(async () => {
+    const trimmed = pasteContent.trim()
+    if (!trimmed) return
+    setTextError(null)
+    setSaving(true)
+
+    const filename = generateFilename(trimmed)
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const now = new Date().toISOString()
+
+    if (supabase) {
+      try {
+        const { error: insertErr } = await supabase.from(TEXT_TABLE).insert({
+          client_id: clientId || 'default',
+          filename,
+          content: trimmed,
+          type: 'text',
+          created_at: now,
+        })
+        if (insertErr) throw insertErr
+        setPasteContent('')
+        await loadTextFiles()
+        setSaving(false)
+        return
+      } catch (err) {
+        console.warn('[FilesTab] Supabase text save failed, using localStorage:', err.message)
+      }
+    }
+
+    // localStorage fallback
+    const entry = {
+      id,
+      filename,
+      content: trimmed,
+      type: 'text',
+      created_at: now,
+      source: 'local',
+      agent: agentSlug,
+      clientId: clientId || 'default',
+    }
+    saveLocalTextFile(entry)
+    setTextFiles(prev => [entry, ...prev])
+    setPasteContent('')
+    setSaving(false)
+  }, [pasteContent, agentSlug, clientId, loadTextFiles])
+
+  const handleDeleteTextFile = useCallback(async (file) => {
+    if (file.source === 'supabase' && supabase) {
+      try {
+        const { error: delErr } = await supabase.from(TEXT_TABLE).delete().eq('id', file.id)
+        if (delErr) throw delErr
+        setTextFiles(prev => prev.filter(f => f.id !== file.id))
+        if (viewingFile?.id === file.id) setViewingFile(null)
+        return
+      } catch (err) {
+        console.warn('[FilesTab] Supabase text delete failed:', err.message)
+      }
+    }
+    deleteLocalTextFile(file.id)
+    setTextFiles(prev => prev.filter(f => f.id !== file.id))
+    if (viewingFile?.id === file.id) setViewingFile(null)
+  }, [viewingFile])
+
+  // Drag and drop (images only)
   const handleDragOver = (e) => { e.preventDefault(); setDragOver(true) }
   const handleDragLeave = () => setDragOver(false)
   const handleDrop = (e) => {
@@ -191,6 +351,9 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
   const borderColor = isDaytime ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.12)'
   const mutedText = isDaytime ? '#6B8AB0' : '#4A6080'
   const labelText = isDaytime ? '#8BA4C4' : '#6B8AB0'
+  const accentBg = isDaytime ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)'
+  const accentBorder = isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.2)'
+  const accentColor = isDaytime ? '#60A5FA' : '#4D90D0'
 
   return (
     <div style={{
@@ -201,52 +364,49 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
       background: panelBg,
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
-      {/* Upload bar */}
+      {/* Sub-tab toggle: Text / Images */}
       <div style={{
-        padding: '10px 14px',
+        display: 'flex',
         borderBottom: `1px solid ${borderColor}`,
         flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
       }}>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '6px 14px',
-            background: isDaytime ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)',
-            border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(59,130,246,0.2)'}`,
-            borderRadius: 6,
-            color: isDaytime ? '#60A5FA' : '#4D90D0',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: uploading ? 'not-allowed' : 'pointer',
-            opacity: uploading ? 0.6 : 1,
-            transition: 'opacity 150ms',
-          }}
-        >
-          <Camera size={14} />
-          {uploading ? 'Uploading...' : 'Upload'}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/gif,image/webp"
-          multiple
-          style={{ display: 'none' }}
-          onChange={e => handleUpload(e.target.files)}
-        />
-        {files.length > 0 && (
-          <span style={{ fontSize: 12, color: mutedText, marginLeft: 'auto' }}>
-            {files.length} file{files.length !== 1 ? 's' : ''}
-          </span>
-        )}
+        {[
+          { id: 'text', label: 'Text', icon: FileText },
+          { id: 'images', label: 'Images', icon: Image },
+        ].map(tab => {
+          const active = subTab === tab.id
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              onClick={() => { setSubTab(tab.id); setViewingFile(null) }}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '10px 0',
+                background: active ? accentBg : 'transparent',
+                border: 'none',
+                borderBottom: active ? `2px solid ${accentColor}` : '2px solid transparent',
+                color: active ? accentColor : mutedText,
+                fontSize: 12,
+                fontWeight: active ? 700 : 500,
+                cursor: 'pointer',
+                transition: 'all 150ms',
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}
+            >
+              <Icon size={14} />
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Error message */}
-      {error && (
+      {/* Error messages */}
+      {(error || textError) && (
         <div style={{
           padding: '8px 14px',
           background: 'rgba(239,68,68,0.1)',
@@ -255,69 +415,322 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
           fontSize: 12,
           flexShrink: 0,
         }}>
-          {error}
-          <button onClick={() => setError(null)} style={{ marginLeft: 8, color: '#F87171', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12 }}>dismiss</button>
+          {error || textError}
+          <button onClick={() => { setError(null); setTextError(null) }} style={{ marginLeft: 8, color: '#F87171', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12 }}>dismiss</button>
         </div>
       )}
 
-      {/* Scrollable content area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Drop zone */}
-        <div
-          ref={dropZoneRef}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            border: `2px dashed ${dragOver ? '#3B82F6' : borderColor}`,
-            borderRadius: 8,
-            padding: '16px 12px',
-            textAlign: 'center',
-            cursor: 'pointer',
-            background: dragOver ? 'rgba(59,130,246,0.06)' : 'transparent',
-            transition: 'border-color 150ms, background 150ms',
+      {/* ============ TEXT SUB-TAB ============ */}
+      {subTab === 'text' && !viewingFile && (
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {/* Paste zone */}
+          <div style={{ padding: '12px 14px', flexShrink: 0 }}>
+            <textarea
+              ref={textareaRef}
+              value={pasteContent}
+              onChange={e => setPasteContent(e.target.value)}
+              placeholder="Paste text here (transcripts, notes, etc.)"
+              style={{
+                width: '100%',
+                minHeight: 300,
+                maxHeight: 500,
+                padding: 12,
+                background: isDaytime ? '#0B1423' : '#060B14',
+                border: `1px solid ${borderColor}`,
+                borderRadius: 8,
+                color: isDaytime ? '#D1D9E6' : '#A0B0C8',
+                fontSize: 14,
+                lineHeight: 1.6,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                resize: 'vertical',
+                outline: 'none',
+                boxSizing: 'border-box',
+                // iPad-friendly: larger touch target, good padding
+                WebkitAppearance: 'none',
+                WebkitOverflowScrolling: 'touch',
+              }}
+              onFocus={e => {
+                e.target.style.borderColor = accentColor
+              }}
+              onBlur={e => {
+                e.target.style.borderColor = borderColor
+              }}
+            />
+            {/* Character count + Save button */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 8,
+              gap: 8,
+            }}>
+              <span style={{ fontSize: 11, color: mutedText }}>
+                {pasteContent.length > 0
+                  ? `${pasteContent.length.toLocaleString()} chars / ${pasteContent.split('\n').length} lines`
+                  : ''}
+              </span>
+              <button
+                onClick={handleSaveText}
+                disabled={!pasteContent.trim() || saving}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 18px',
+                  background: pasteContent.trim() ? (isDaytime ? 'rgba(34,197,94,0.2)' : 'rgba(34,197,94,0.15)') : accentBg,
+                  border: `1px solid ${pasteContent.trim() ? 'rgba(34,197,94,0.4)' : accentBorder}`,
+                  borderRadius: 6,
+                  color: pasteContent.trim() ? '#4ADE80' : mutedText,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: pasteContent.trim() && !saving ? 'pointer' : 'not-allowed',
+                  opacity: saving ? 0.6 : 1,
+                  transition: 'all 150ms',
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  // iPad: bigger touch target
+                  minHeight: 40,
+                }}
+              >
+                <Save size={14} />
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+
+          {/* Saved text files list */}
+          <div style={{
+            borderTop: `1px solid ${borderColor}`,
+            padding: '8px 14px',
             flexShrink: 0,
-          }}
-        >
-          <FolderOpen size={20} style={{ color: mutedText, marginBottom: 6, display: 'block', margin: '0 auto 6px' }} />
-          <div style={{ color: labelText, fontSize: 12 }}>
-            {dragOver ? 'Drop to upload' : 'Drop files here'}
-          </div>
-          <div style={{ color: mutedText, fontSize: 11, marginTop: 2 }}>PNG, JPG, GIF, WebP</div>
-        </div>
-
-        {/* Empty state */}
-        {files.length === 0 && !uploading && (
-          <div style={{
-            textAlign: 'center', color: mutedText, fontSize: 13, padding: '24px 0',
           }}>
-            No files yet. Upload or drag images above.
+            <div style={{ fontSize: 11, fontWeight: 700, color: labelText, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+              Saved Files ({textFiles.length})
+            </div>
           </div>
-        )}
 
-        {/* Thumbnail grid */}
-        {files.length > 0 && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 8,
-          }}>
-            {files.map(file => (
-              <FileThumbnail
+          {textFiles.length === 0 && (
+            <div style={{
+              textAlign: 'center', color: mutedText, fontSize: 13, padding: '24px 14px',
+            }}>
+              No saved text files yet.
+            </div>
+          )}
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px 14px' }}>
+            {textFiles.map(file => (
+              <TextFileRow
                 key={file.id}
                 file={file}
                 isDaytime={isDaytime}
-                onView={() => setLightboxFile(file)}
-                onDelete={() => handleDelete(file)}
-                onSendToChat={onSendFileToChat ? () => onSendFileToChat(file) : null}
+                borderColor={borderColor}
+                mutedText={mutedText}
+                labelText={labelText}
+                accentColor={accentColor}
+                onView={() => setViewingFile(file)}
+                onDelete={() => handleDeleteTextFile(file)}
               />
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Lightbox modal */}
+      {/* ============ TEXT FILE VIEWER ============ */}
+      {subTab === 'text' && viewingFile && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Viewer header */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 14px',
+            borderBottom: `1px solid ${borderColor}`,
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => setViewingFile(null)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: accentBg, border: `1px solid ${accentBorder}`,
+                borderRadius: 6, width: 28, height: 28, cursor: 'pointer',
+                color: accentColor, flexShrink: 0,
+              }}
+            >
+              <ArrowLeft size={14} />
+            </button>
+            <span style={{
+              color: '#E8ECF0', fontSize: 12, fontWeight: 600,
+              flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {viewingFile.filename}
+            </span>
+            <span style={{ color: mutedText, fontSize: 11, flexShrink: 0 }}>
+              {formatDate(viewingFile.created_at)}
+            </span>
+            <button
+              onClick={() => handleDeleteTextFile(viewingFile)}
+              style={{
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.2)',
+                borderRadius: 6, color: '#F87171',
+                width: 28, height: 28,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+          {/* Read-only content */}
+          <div style={{ flex: 1, overflow: 'auto', padding: 14 }}>
+            <textarea
+              readOnly
+              value={viewingFile.content}
+              style={{
+                width: '100%',
+                height: '100%',
+                minHeight: 300,
+                padding: 12,
+                background: isDaytime ? '#0B1423' : '#060B14',
+                border: `1px solid ${borderColor}`,
+                borderRadius: 8,
+                color: isDaytime ? '#D1D9E6' : '#A0B0C8',
+                fontSize: 14,
+                lineHeight: 1.6,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                resize: 'none',
+                outline: 'none',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            />
+          </div>
+          {/* Footer with stats */}
+          <div style={{
+            padding: '8px 14px',
+            borderTop: `1px solid ${borderColor}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 11, color: mutedText }}>
+              {viewingFile.content.length.toLocaleString()} chars
+            </span>
+            <span style={{ fontSize: 11, color: mutedText }}>
+              {viewingFile.content.split('\n').length} lines
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ============ IMAGES SUB-TAB ============ */}
+      {subTab === 'images' && (
+        <>
+          {/* Upload bar */}
+          <div style={{
+            padding: '10px 14px',
+            borderBottom: `1px solid ${borderColor}`,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 14px',
+                background: accentBg,
+                border: `1px solid ${accentBorder}`,
+                borderRadius: 6,
+                color: accentColor,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                opacity: uploading ? 0.6 : 1,
+                transition: 'opacity 150ms',
+              }}
+            >
+              <Camera size={14} />
+              {uploading ? 'Uploading...' : 'Upload'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+              multiple
+              style={{ display: 'none' }}
+              onChange={e => handleUpload(e.target.files)}
+            />
+            {files.length > 0 && (
+              <span style={{ fontSize: 12, color: mutedText, marginLeft: 'auto' }}>
+                {files.length} file{files.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+
+          {/* Scrollable content area */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Drop zone */}
+            <div
+              ref={dropZoneRef}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${dragOver ? '#3B82F6' : borderColor}`,
+                borderRadius: 8,
+                padding: '16px 12px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: dragOver ? 'rgba(59,130,246,0.06)' : 'transparent',
+                transition: 'border-color 150ms, background 150ms',
+                flexShrink: 0,
+              }}
+            >
+              <FolderOpen size={20} style={{ color: mutedText, marginBottom: 6, display: 'block', margin: '0 auto 6px' }} />
+              <div style={{ color: labelText, fontSize: 12 }}>
+                {dragOver ? 'Drop to upload' : 'Drop files here'}
+              </div>
+              <div style={{ color: mutedText, fontSize: 11, marginTop: 2 }}>PNG, JPG, GIF, WebP</div>
+            </div>
+
+            {/* Empty state */}
+            {files.length === 0 && !uploading && (
+              <div style={{
+                textAlign: 'center', color: mutedText, fontSize: 13, padding: '24px 0',
+              }}>
+                No files yet. Upload or drag images above.
+              </div>
+            )}
+
+            {/* Thumbnail grid */}
+            {files.length > 0 && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 8,
+              }}>
+                {files.map(file => (
+                  <FileThumbnail
+                    key={file.id}
+                    file={file}
+                    isDaytime={isDaytime}
+                    onView={() => setLightboxFile(file)}
+                    onDelete={() => handleDelete(file)}
+                    onSendToChat={onSendFileToChat ? () => onSendFileToChat(file) : null}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Lightbox modal (images) */}
       {lightboxFile && (
         <FileLightbox
           file={lightboxFile}
@@ -327,6 +740,64 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
           onSendToChat={onSendFileToChat ? () => { onSendFileToChat(lightboxFile); setLightboxFile(null) } : null}
         />
       )}
+    </div>
+  )
+}
+
+// ---- Text File Row ----
+
+function TextFileRow({ file, isDaytime, borderColor, mutedText, labelText, accentColor, onView, onDelete }) {
+  const [hovered, setHovered] = useState(false)
+  const preview = (file.content || '').slice(0, 100).replace(/\n/g, ' ')
+
+  return (
+    <div
+      onClick={onView}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '10px 12px',
+        marginBottom: 6,
+        background: hovered ? (isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)') : 'transparent',
+        border: `1px solid ${hovered ? 'rgba(59,130,246,0.25)' : borderColor}`,
+        borderRadius: 8,
+        cursor: 'pointer',
+        transition: 'all 150ms',
+      }}
+    >
+      {/* Title row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <FileText size={13} style={{ color: accentColor, flexShrink: 0 }} />
+        <span style={{
+          fontSize: 13, fontWeight: 600, color: '#E8ECF0',
+          flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {file.filename}
+        </span>
+        <button
+          onClick={e => { e.stopPropagation(); onDelete() }}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#F87171', opacity: hovered ? 0.8 : 0, transition: 'opacity 150ms',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 22, height: 22, flexShrink: 0, padding: 0,
+          }}
+        >
+          <X size={12} />
+        </button>
+      </div>
+      {/* Preview */}
+      <div style={{
+        fontSize: 12, color: mutedText, lineHeight: 1.4,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        paddingLeft: 21,
+      }}>
+        {preview}{file.content.length > 100 ? '...' : ''}
+      </div>
+      {/* Date */}
+      <div style={{ fontSize: 11, color: isDaytime ? '#4A6080' : '#3A5070', marginTop: 4, paddingLeft: 21 }}>
+        {formatDate(file.created_at)}
+      </div>
     </div>
   )
 }
