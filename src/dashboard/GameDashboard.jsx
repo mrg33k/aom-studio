@@ -2257,15 +2257,59 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
 // Splits text on https?:// URLs and wraps each in an <a> tag.
 function renderMessageContent(text, agentColor) {
   if (!text || typeof text !== 'string') return null
+  // Split on markdown image syntax first: ![alt](url)
+  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
+  const URL_RE = /(https?:\/\/[^\s]+)/g
+  const result = []
+  let lastIndex = 0
+  let match
+  IMG_RE.lastIndex = 0
+  while ((match = IMG_RE.exec(text)) !== null) {
+    // Text before image
+    if (match.index > lastIndex) {
+      const before = text.slice(lastIndex, match.index)
+      result.push(renderMessageContent._renderText(before, agentColor, result.length))
+    }
+    // Inline image thumbnail
+    result.push(
+      <img
+        key={`img-${match.index}`}
+        src={match[2]}
+        alt={match[1] || 'image'}
+        style={{
+          display: 'block',
+          maxWidth: '100%',
+          maxHeight: 200,
+          borderRadius: 8,
+          border: '1px solid rgba(59,130,246,0.25)',
+          marginTop: 6,
+          objectFit: 'cover',
+          cursor: 'pointer',
+        }}
+        onClick={e => { e.stopPropagation(); window.open(match[2], '_blank') }}
+      />
+    )
+    lastIndex = match.index + match[0].length
+  }
+  // Remaining text after last image
+  if (lastIndex < text.length) {
+    const remaining = text.slice(lastIndex)
+    result.push(renderMessageContent._renderText(remaining, agentColor, result.length))
+  }
+  if (result.length === 0) return text
+  if (result.length === 1 && typeof result[0] === 'string') return result[0]
+  return result
+}
+renderMessageContent._renderText = function(text, agentColor, keyOffset) {
   const URL_RE = /(https?:\/\/[^\s]+)/g
   const parts = text.split(URL_RE)
-  if (parts.length === 1) return text // no URLs, fast path
+  if (parts.length === 1) return text
   return parts.map((part, i) => {
     if (URL_RE.test(part)) {
       URL_RE.lastIndex = 0
       return (
         <a
-          key={i}
+          key={`url-${keyOffset}-${i}`}
           href={part}
           target="_blank"
           rel="noopener noreferrer"
@@ -6951,7 +6995,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -9890,6 +9934,14 @@ export default function GameDashboard() {
     }
   }, [selectedRoom, msgContextMenu])
 
+  // Send file from Files tab to chat as inline image message
+  const handleSendFileToChat = useCallback((file) => {
+    if (!file?.url) return
+    const imgMd = `![${file.name}](${file.url})`
+    setPanelChatInput(prev => prev ? prev + '\n' + imgMd : imgMd)
+    setPanelActiveTab('chat')
+  }, [])
+
   // Mini-map room click -> move camera
   const handleMinimapRoomClick = (roomId) => {
     setCameraTarget(roomId)
@@ -10176,6 +10228,7 @@ export default function GameDashboard() {
               onCenterCamera={() => { if (selectedRoom) { setCameraTarget(selectedRoom); setIsOverview(false) } }}
               externalReplyTo={pendingReplyMsg}
               onClearExternalReply={() => setPendingReplyMsg(null)}
+              onSendFileToChat={handleSendFileToChat}
             />
           )}
       </div>
