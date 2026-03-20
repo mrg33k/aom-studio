@@ -35,6 +35,9 @@
     { "source": "/dashboard/chat", "destination": "/index.html" },
     { "source": "/dashboard/chat/agent/:slug", "destination": "/index.html" },
     { "source": "/dashboard/v1", "destination": "/index.html" },
-    { "source": "/skills", "destination": "/index.html" }
+    { "source": "/skills", "destination": "/index.html" },
+    { "source": "/demo", "destination": "/index.html" },
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/settings", "destination": "/index.html" }
   ]
 }
