@@ -56,6 +56,27 @@ const SHUFFLE_ANIM_MS = 200
 const SLOT_ORDER_KEY = 'corner-slot-order'
 const HIDDEN_ROOMS_KEY = 'corner-hidden-rooms'
 const CUSTOM_ROOMS_KEY = 'corner-custom-rooms'
+const FREE_POSITIONS_KEY = 'corner-free-positions'
+
+// Load free room positions from localStorage
+// Returns: { [roomId]: { x, y } } or {}
+function loadFreePositions() {
+  try {
+    const raw = localStorage.getItem(FREE_POSITIONS_KEY)
+    if (raw) {
+      const saved = JSON.parse(raw)
+      if (saved && typeof saved === 'object') return saved
+    }
+  } catch (e) { /* ignore */ }
+  return {}
+}
+
+// Save free room positions to localStorage
+function saveFreePositions(positions) {
+  try {
+    localStorage.setItem(FREE_POSITIONS_KEY, JSON.stringify(positions))
+  } catch (e) { /* ignore */ }
+}
 
 // ---- ROOM DATA FROM gridSpec.js (ALL_ROOMS = agents + projects) ----
 // Build ROOM_META lookup from ALL_ROOMS so both agents and projects get names/colors
@@ -872,6 +893,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   const [slotOrder, setSlotOrder] = useState(loadSlotOrder)
   // Hidden rooms tracked in state for re-render on hide/show
   const [hiddenRooms, setHiddenRooms] = useState(() => new Set(loadHiddenRooms()))
+
+  // ---- FREE POSITION OVERRIDES ----
+  // When a room is dropped freely (no snap-to-slot), its {x, y} world position is saved here.
+  // On render, freePositions[roomId] takes priority over slotWorldPos(slotIdx).
+  // Persisted to localStorage under FREE_POSITIONS_KEY.
+  const freePositionsRef = useRef(loadFreePositions())
   // New room creation modal
   const [showNewRoomModal, setShowNewRoomModal] = useState(false)
 
@@ -1264,7 +1291,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const renderOrder = slotOrder.map((id, idx) => ({ id, slotIdx: idx, row: dynSlots[idx]?.row ?? 0 }))
     renderOrder.sort((a, b) => a.row - b.row)
 
-    // Helper: get room world position (handles shuffle animation)
+    // Helper: get room world position (handles shuffle animation + free position override)
     function getRoomWorldPos(roomId, slotIdx) {
       let posX, posY
       const shuffleAnim = shuffleAnimRef.current[roomId]
@@ -1275,9 +1302,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         posY = shuffleAnim.fromY + (shuffleAnim.toY - shuffleAnim.fromY) * e
       } else {
         if (shuffleAnim) delete shuffleAnimRef.current[roomId]
-        const slotPos = slotWorldPos(slotIdx, ORIGIN_X, ORIGIN_Y)
-        posX = slotPos.x
-        posY = slotPos.y
+        // Free position override: if user placed this room freely, use that position
+        const freePos = freePositionsRef.current[roomId]
+        if (freePos) {
+          posX = freePos.x
+          posY = freePos.y
+        } else {
+          const slotPos = slotWorldPos(slotIdx, ORIGIN_X, ORIGIN_Y)
+          posX = slotPos.x
+          posY = slotPos.y
+        }
       }
       return { posX, posY }
     }
@@ -1457,27 +1491,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         // Queue badge for dragged room too
         badgeQueue.push({ offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
 
-        // ---- DRAW DROP INDICATOR (ghost outline at target slot) ----
-        if (drag.currentSlot >= 0 && drag.currentSlot !== drag.fromSlot) {
-          const targetPos = slotWorldPos(drag.currentSlot, ORIGIN_X, ORIGIN_Y)
-          ctx.save()
-          ctx.globalAlpha = 0.3
-          ctx.strokeStyle = meta.color
-          ctx.lineWidth = 3
-          ctx.setLineDash([8, 6])
-          const S = ROOM_SIZE
-          ctx.beginPath()
-          ctx.moveTo(targetPos.x + S * 0.50, targetPos.y + S * 0.03)
-          ctx.lineTo(targetPos.x + S * 0.97, targetPos.y + S * 0.27)
-          ctx.lineTo(targetPos.x + S * 0.97, targetPos.y + S * 0.76)
-          ctx.lineTo(targetPos.x + S * 0.50, targetPos.y + S * 0.97)
-          ctx.lineTo(targetPos.x + S * 0.03, targetPos.y + S * 0.76)
-          ctx.lineTo(targetPos.x + S * 0.03, targetPos.y + S * 0.27)
-          ctx.closePath()
-          ctx.stroke()
-          ctx.setLineDash([])
-          ctx.restore()
-        }
+        // DROP INDICATOR: disabled -- rooms now placed freely, no target slot to ghost
       }
     }
 
@@ -1845,7 +1859,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       }
     }
 
-    // If dragging a room: update world position + check for slot shuffle
+    // If dragging a room: update world position freely (no slot shuffle)
     if (drag.active && drag.roomId) {
       const rect = containerRef.current?.getBoundingClientRect()
       if (rect) {
@@ -1854,15 +1868,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const cy = (e.clientY - rect.top - cam.y) / cam.zoom
         drag.worldX = cx
         drag.worldY = cy
-
-        // Find which slot we're hovering over
-        const nearestSlot = findNearestSlot(cx, cy, ORIGIN_X, ORIGIN_Y, slotOrder.length)
-
-        // If we moved to a new slot, trigger shuffle
-        if (nearestSlot !== drag.currentSlot) {
-          drag.currentSlot = nearestSlot
-          shuffleToSlot(drag.roomId, nearestSlot)
-        }
       }
       return
     }
@@ -1895,7 +1900,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         cameraRef.current.y = pan.startCamY + (e.clientY - pan.startTouchY)
       }
     }
-  }, [hover, setExtHover, ORIGIN_X, ORIGIN_Y, slotOrder, shuffleToSlot])
+  }, [hover, setExtHover, ORIGIN_X, ORIGIN_Y, slotOrder])
 
   // ---- MOUSE UP ----
   const onUp = useCallback(() => {
@@ -1903,10 +1908,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const pan = panRef.current
 
     if (drag.active && drag.roomId) {
-      setSlotOrder(prev => {
-        saveSlotOrder(prev)
-        return prev
-      })
+      // FREE DROP: save world position directly, no snap-to-slot
+      const dropX = drag.worldX - drag.offsetX
+      const dropY = drag.worldY - drag.offsetY
+      freePositionsRef.current = {
+        ...freePositionsRef.current,
+        [drag.roomId]: { x: dropX, y: dropY },
+      }
+      saveFreePositions(freePositionsRef.current)
       drag.active = false
       drag.roomId = null
     } else {
@@ -2230,12 +2239,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const cy = (t.clientY - rect.top - cam.y) / cam.zoom
         drag.worldX = cx
         drag.worldY = cy
-
-        const nearestSlot = findNearestSlot(cx, cy, ORIGIN_X, ORIGIN_Y, slotOrder.length)
-        if (nearestSlot !== drag.currentSlot) {
-          drag.currentSlot = nearestSlot
-          shuffleToSlot(drag.roomId, nearestSlot)
-        }
+        // FREE DRAG: no slot shuffle, room follows finger
       }
       return
     }
@@ -2274,7 +2278,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       cameraRef.current.x = pan.startCamX + dx
       cameraRef.current.y = pan.startCamY + dy
     }
-  }, [ORIGIN_X, ORIGIN_Y, slotOrder, shuffleToSlot])
+  }, [ORIGIN_X, ORIGIN_Y, slotOrder])
 
   const onTouchEnd = useCallback((e) => {
     // Clear long-press timer on any touch end
@@ -2288,10 +2292,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const pan = panRef.current
 
       if (drag.active && drag.roomId) {
-        setSlotOrder(prev => {
-          saveSlotOrder(prev)
-          return prev
-        })
+        // FREE DROP: save world position directly, no snap-to-slot
+        const dropX = drag.worldX - drag.offsetX
+        const dropY = drag.worldY - drag.offsetY
+        freePositionsRef.current = {
+          ...freePositionsRef.current,
+          [drag.roomId]: { x: dropX, y: dropY },
+        }
+        saveFreePositions(freePositionsRef.current)
         drag.active = false
         drag.roomId = null
       } else {

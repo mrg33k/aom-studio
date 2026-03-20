@@ -24,7 +24,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // GHOST KILL: AnimatedAgentCharacter, CharacterAnimationStyles, CanvasRoom all REMOVED
 // Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
-import CrossyBackground from './CrossyBackground.jsx'
+// CrossyBackground: replaced with CSS hex grid (Three.js city scene removed)
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import BoardView from './BoardView.jsx'
@@ -8960,9 +8960,18 @@ export default function GameDashboard() {
       <div style={{ flex: 1, display: viewMode === 'board' ? 'none' : 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 80 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
-              {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
-              {/* Disabled on mobile/PWA for performance -- Three.js too heavy for mobile GPU */}
-              {currentMode === 'game' && !disableThreeJs && <CrossyBackground isNightMode={isNightMode} />}
+              {/* Hex grid background: dark base with subtle hex outline pattern (z-index 0) */}
+              {currentMode === 'game' && (
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 0,
+                  backgroundColor: '#0A0F1A',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='104' viewBox='0 0 120 104'%3E%3Cpath d='M60 2 L118 32 L118 72 L60 102 L2 72 L2 32 Z' fill='none' stroke='%233B82F6' stroke-width='0.8' stroke-opacity='0.12'/%3E%3C/svg%3E")`,
+                  backgroundSize: '120px 104px',
+                  backgroundRepeat: 'repeat',
+                }} />
+              )}
               <CanvasOffice
                 ref={canvasOfficeRef}
                 agentStatus={agentStatus}
