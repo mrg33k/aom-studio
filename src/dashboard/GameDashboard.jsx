@@ -27,6 +27,7 @@ import CanvasOffice from './CanvasOffice.jsx'
 import CrossyBackground from './CrossyBackground.jsx'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import BoardView from './BoardView.jsx'
 import briefsIndex from '../data/briefs-index.json'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 
@@ -3078,7 +3079,7 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [teamName, setTeamName] = useState(() => {
     try { return localStorage.getItem('corner-team-name') || 'aom' } catch { return 'aom' }
@@ -3737,6 +3738,72 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
+
+        {/* View mode toggle: Game | Board */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          background: isNightMode ? 'rgba(15,27,45,0.8)' : 'rgba(10,18,35,0.6)',
+          border: isNightMode ? '1.5px solid rgba(59,130,246,0.18)' : '1.5px solid rgba(59,130,246,0.25)',
+          borderRadius: 10,
+          padding: 3,
+          gap: 2,
+          flexShrink: 0,
+        }}>
+          {[
+            { id: 'game', label: isMobile ? null : 'Game', icon: '⬡' },
+            { id: 'board', label: isMobile ? null : 'Board', icon: '⊟' },
+          ].map(({ id, label, icon }) => {
+            const active = (viewMode || 'game') === id
+            return (
+              <button
+                key={id}
+                onClick={() => onViewModeSwitch?.(id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 5,
+                  padding: isMobile ? '4px 8px' : '4px 12px',
+                  borderRadius: 7,
+                  background: active
+                    ? (isNightMode ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.18)')
+                    : 'transparent',
+                  border: active
+                    ? (isNightMode ? '1px solid rgba(59,130,246,0.45)' : '1px solid rgba(59,130,246,0.4)')
+                    : '1px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 150ms ease',
+                }}
+                onMouseEnter={e => {
+                  if (!active) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.08)'
+                }}
+                onMouseLeave={e => {
+                  if (!active) e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                {id === 'game' ? (
+                  <Gamepad2
+                    size={14}
+                    color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
+                  />
+                ) : (
+                  <FolderKanban
+                    size={14}
+                    color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
+                  />
+                )}
+                {!isMobile && (
+                  <span style={{
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    fontSize: 12,
+                    fontWeight: active ? 700 : 500,
+                    color: active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0'),
+                    letterSpacing: '0.02em',
+                  }}>
+                    {label}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
 
       </div>
     </div>
@@ -8043,6 +8110,15 @@ export default function GameDashboard() {
     return localStorage.getItem('corner-mode') || 'game'
   })
 
+  // VIEW MODE: 'game' = isometric canvas, 'board' = Trello/kanban columns
+  const [viewMode, setViewMode] = useState(() => {
+    try { return localStorage.getItem('corner-view-mode') || 'game' } catch { return 'game' }
+  })
+  const handleViewModeSwitch = useCallback((mode) => {
+    setViewMode(mode)
+    try { localStorage.setItem('corner-view-mode', mode) } catch {}
+  }, [])
+
   // CAMERA STATE: start in overview to see the full building
   const [cameraTarget, setCameraTarget] = useState(DEFAULT_AGENT)
   const [cameraZoom, setCameraZoom] = useState(0.7)
@@ -8718,13 +8794,18 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 
+      {/* Board view: Trello/kanban mode -- shown when viewMode === 'board', hides game canvas */}
+      {viewMode === 'board' && (
+        <BoardView pipeData={pipeData} isMobile={isMobile} isNightMode={isNightMode} />
+      )}
+
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 80 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: viewMode === 'board' ? 'none' : 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 80 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
@@ -8853,8 +8934,9 @@ export default function GameDashboard() {
       {/* Wrapped in a container that constrains fixed positioning to the game viewport only.
           transform creates a new containing block, so GameHUD's position:fixed becomes relative to this container.
           On desktop with sidebar visible: HUD only covers game area, not sidebar.
-          HIDDEN on mobile when drawer is open (pills vs drawer mutual exclusion). */}
-      {(
+          HIDDEN on mobile when drawer is open (pills vs drawer mutual exclusion).
+          HIDDEN in board view mode. */}
+      {viewMode !== 'board' && (
         <div style={{
           position: 'fixed',
           bottom: 0,
