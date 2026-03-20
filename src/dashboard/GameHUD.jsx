@@ -56,7 +56,7 @@ import {
 } from 'lucide-react'
 import { AGENTS, GRID_SPEC } from './gridSpec.js'
 import { HUDBellButton, HUDToasts, HUD_NOTIFICATION_STYLES } from './HUDNotifications.jsx'
-import { useDataPipe } from './hooks/useDataPipe.js'
+import { useDataPipe, formatRelativeTime } from './hooks/useDataPipe.js'
 
 // ---- PALETTE ----------------------------------------------------------------
 const PALETTE = GRID_SPEC.colorPalette
@@ -1198,7 +1198,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask }) {
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, highlightedTask }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
@@ -1496,6 +1496,60 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleMan
             )
           }
 
+          // INBOX CARD: agent message preview with colored left edge + click to navigate
+          if (task.isInboxCard) {
+            const INBOX_AGENT_COLORS = {
+              elon: '#4CAF50', bobby: '#3B82F6', steffen: '#F59E0B', steve: '#EC4899',
+              cleo: '#9C27B0', alex: '#EF4444', mom: '#06B6D4', tony: '#F97316',
+              jacob: '#10B981', colton: '#E85D26', elmo: '#C9A84C', paige: '#66BB6A', pixel: '#8B5CF6',
+            }
+            const agentColor = INBOX_AGENT_COLORS[task.agent] || '#3B9EFF'
+            const agentName = task.agent ? task.agent.charAt(0).toUpperCase() + task.agent.slice(1) : 'Agent'
+            const relTime = task.timestamp ? formatRelativeTime(task.timestamp) : ''
+            return (
+              <motion.div
+                key={task.id || `inbox-${task.agent}-${i}`}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03, duration: 0.15 }}
+                onClick={() => onNavigateToAgent?.(task.agent)}
+                whileHover={{ x: 3, transition: { type: 'spring', stiffness: 400, damping: 20 } }}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: 4,
+                  padding: '10px 12px',
+                  borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
+                  borderLeft: `3px solid ${agentColor}`,
+                  cursor: 'pointer',
+                  borderRadius: 4,
+                  transition: 'background 150ms ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,158,255,0.1)' : 'rgba(59,158,255,0.08)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{
+                    fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 700,
+                    color: tpTextPrimary,
+                  }}>
+                    {agentName}
+                  </span>
+                  {relTime && (
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: tpTextMuted }}>
+                      {relTime}
+                    </span>
+                  )}
+                </div>
+                <span style={{
+                  fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12,
+                  color: tpTextMuted, lineHeight: 1.4,
+                }}>
+                  {task.text || '(no preview)'}
+                </span>
+              </motion.div>
+            )
+          }
+
           return (
             <motion.div
               key={task.isManual ? `manual-${task.manualId}` : task.origIdx}
@@ -1735,6 +1789,8 @@ export default function GameHUD({
   chatAgent, onChatSubmit, onExpandChat,
   // Context menu props
   onAgentContextMenu, onProjectContextMenu,
+  // Inbox: navigate to an agent's chat when clicking an inbox card
+  onNavigateToAgent,
   // Daytime/nighttime theme -- when false, bottom HUD goes white/vibrant blue to match top bar
   isNightMode: isNightModeProp,
 }) {
@@ -1797,6 +1853,7 @@ export default function GameHUD({
   const {
     rightNow: liveRightNowTasks,
     completedFeed,
+    inboxItems,
     yourTodos: patrikTodos,
     finishThese: checkingInTasks,
     isAutoChecked,
@@ -1891,13 +1948,20 @@ export default function GameHUD({
       tasks: rightNowTasks,
     })
 
-    // INBOX: Unread message count placeholder -- to be wired to Supabase later
+    // INBOX: Unread assistant messages from Supabase (one card per agent)
     merged.push({
       name: 'Inbox',
       section: 'inbox',
       color: '#3B9EFF',
       icon: 'mail',
-      tasks: [],
+      tasks: (inboxItems || []).map(item => ({
+        text: item.text,
+        agent: item.agent,
+        timestamp: item.timestamp,
+        id: item.id,
+        done: false,
+        isInboxCard: true,
+      })),
       isInbox: true,
     })
 
@@ -2000,7 +2064,7 @@ export default function GameHUD({
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks, manualTasks])
+  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, inboxItems, isAutoChecked, patrikTodos, checkingInTasks, manualTasks])
 
   // Keep ref in sync for navigateToProject callback
   projectsRef.current = projects
@@ -2106,6 +2170,10 @@ export default function GameHUD({
               setHudTaskCtx({ task, project: proj, taskId: task.isManual ? `manual-${task.manualId}` : task.origIdx })
             }}
             onNavigateToProject={navigateToProject}
+            onNavigateToAgent={(slug) => {
+              setExpandedProject(null)
+              onNavigateToAgent?.(slug)
+            }}
             highlightedTask={highlightedTask}
           />
         )}

@@ -296,6 +296,7 @@ function deriveProjectProgress(punchData) {
 export function useDataPipe(parsePunchList) {
   const [rightNow, setRightNow] = useState([])
   const [completedFeed, setCompletedFeed] = useState([])
+  const [inboxItems, setInboxItems] = useState([])
   const [punchData, setPunchData] = useState(null)
   const [punchLoading, setPunchLoading] = useState(IS_LOCAL)
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -402,6 +403,35 @@ export function useDataPipe(parsePunchList) {
             .filter(t => t.status === 'completed' || t.status === 'done')
             .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
           setCompletedFeed(completed)
+        }
+
+        // Compute unread inbox items: assistant messages newer than user's last message per agent
+        if (data.messages) {
+          // Messages arrive oldest-first (reversed in supabase-status.js)
+          const agentLastSeen = {} // agent -> timestamp of last user message from dashboard
+          for (const msg of data.messages) {
+            if (msg.role === 'user' && msg.source === 'corner-dashboard') {
+              agentLastSeen[msg.agent] = msg.timestamp
+            }
+          }
+          const unread = []
+          const seenAgents = new Set() // one card per agent max
+          for (const msg of [...data.messages].reverse()) { // newest first
+            if (msg.role === 'assistant' && msg.agent && !seenAgents.has(msg.agent)) {
+              const lastSeen = agentLastSeen[msg.agent]
+              if (!lastSeen || msg.timestamp > lastSeen) {
+                seenAgents.add(msg.agent)
+                const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
+                unread.push({
+                  agent: msg.agent,
+                  text: preview,
+                  timestamp: msg.timestamp,
+                  id: msg.id,
+                })
+              }
+            }
+          }
+          setInboxItems(unread)
         }
 
         // Build punchData from Supabase tasks so pills render on production.
@@ -520,6 +550,7 @@ export function useDataPipe(parsePunchList) {
     yourTodos: yourTodos.length,
     schedule: schedule.length,
     finishThese: finishThese.length,
+    inbox: inboxItems.length,
   }
 
   // Build agents status map for CanvasOffice room states
@@ -534,6 +565,7 @@ export function useDataPipe(parsePunchList) {
   return {
     rightNow,
     completedFeed,
+    inboxItems,
     yourTodos,
     finishThese,
     schedule,

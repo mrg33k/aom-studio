@@ -8991,6 +8991,15 @@ export default function GameDashboard() {
               // Focus sidebar chat
               setPanelActiveTab('chat')
             }}
+            onNavigateToAgent={(slug) => {
+              // Navigate to agent's room + open chat
+              setCameraTarget(slug)
+              setSelectedRoom(slug)
+              setChatAgent(slug)
+              setIsOverview(false)
+              setCameraZoom(1.6)
+              setPanelActiveTab('chat')
+            }}
             isNightMode={isNightMode}
           />
         </Suspense>
