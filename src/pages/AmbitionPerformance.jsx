@@ -297,6 +297,10 @@ function NavBar() {
 // ═══════════════════════════════════════════════════════════════════════════════
 //  2. HERO
 // ═══════════════════════════════════════════════════════════════════════════════
+// ─── AMBITION BRAND CONSTANTS ───────────────────────────────────────────────
+const AMBITION_NAVY = '#1a237e'
+const AMBITION_RED = '#dc2626'
+
 function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden"
@@ -307,7 +311,25 @@ function HeroSection() {
       <div className="absolute inset-0 z-[1] opacity-[0.03]"
         style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
-      <div className="relative z-10 text-center px-6 max-w-[900px] mx-auto">
+      {/* Ambition brand header bar */}
+      <div className="absolute top-0 left-0 right-0 z-20"
+        style={{ background: AMBITION_NAVY, borderBottom: `3px solid ${AMBITION_RED}` }}>
+        <div className="max-w-[1200px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src="/ambition-logo.png" alt="Ambition Mechanical" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
+            <span className="font-headline font-extrabold uppercase tracking-wide hidden sm:block"
+              style={{ color: '#ffffff', fontSize: 16, letterSpacing: '0.05em' }}>
+              Ambition Mechanical
+            </span>
+          </div>
+          <span className="font-mono text-xs font-bold uppercase tracking-[0.15em]"
+            style={{ color: 'rgba(255,255,255,0.55)' }}>
+            Performance Report
+          </span>
+        </div>
+      </div>
+
+      <div className="relative z-10 text-center px-6 max-w-[900px] mx-auto pt-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <span className="inline-block font-mono text-sm font-bold uppercase tracking-[0.2em] mb-4" style={{ color: ORANGE }}>
             Client Performance Report
@@ -460,19 +482,19 @@ function SocialSection() {
         <FadeIn delay={0.2}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
             <div className="p-6 text-center" style={{ background: `${ORANGE}10`, border: `1px solid ${ORANGE}33` }}>
-              <p className="font-headline font-extrabold text-4xl md:text-5xl" style={{ color: ORANGE }}>~600K+</p>
+              <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: ORANGE }}>~600K+</p>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Est. Total Views</p>
             </div>
             <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
-              <p className="font-headline font-extrabold text-4xl md:text-5xl" style={{ color: CREAM }}>21.6K</p>
+              <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>21.6K</p>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>TikTok Likes</p>
             </div>
             <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
-              <p className="font-headline font-extrabold text-4xl md:text-5xl" style={{ color: CREAM }}>4,912</p>
+              <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>4,912</p>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Total Followers</p>
             </div>
             <div className="p-6 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
-              <p className="font-headline font-extrabold text-4xl md:text-5xl" style={{ color: CREAM }}>$0</p>
+              <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>$0</p>
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Ad Spend</p>
             </div>
           </div>
@@ -547,19 +569,19 @@ function SocialSection() {
 
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div>
-                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(28px, 4vw, 42px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(22px, 3vw, 32px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                     {visible ? postCount : 0}
                   </div>
                   <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Posts</p>
                 </div>
                 <div>
-                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(28px, 4vw, 42px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(22px, 3vw, 32px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                     {visible ? followerCount.toLocaleString() : 0}
                   </div>
                   <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Followers</p>
                 </div>
                 <div>
-                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(28px, 4vw, 42px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                  <div className="font-headline font-extrabold" style={{ fontSize: 'clamp(22px, 3vw, 32px)', color: CREAM, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                     {visible ? followingCount.toLocaleString() : 0}
                   </div>
                   <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mt-2" style={{ color: MUTED }}>Following</p>
@@ -591,15 +613,15 @@ function SocialSection() {
 
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div>
-                  <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>3,119</p>
+                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>3,119</p>
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Followers</p>
                 </div>
                 <div>
-                  <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>21.6K</p>
+                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>21.6K</p>
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Likes</p>
                 </div>
                 <div>
-                  <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>317</p>
+                  <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>317</p>
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Following</p>
                 </div>
               </div>
@@ -627,7 +649,7 @@ function SocialSection() {
               <p className="font-mono text-xs mb-6" style={{ color: MUTED }}>Ambition Mechanical Services</p>
 
               <div className="mb-6">
-                <p className="font-headline font-extrabold text-3xl md:text-4xl" style={{ color: CREAM }}>147</p>
+                <p className="font-headline font-extrabold text-2xl md:text-3xl" style={{ color: CREAM }}>147</p>
                 <p className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] mt-1" style={{ color: MUTED }}>Followers</p>
               </div>
 
