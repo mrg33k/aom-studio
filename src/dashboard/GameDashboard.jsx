@@ -763,6 +763,20 @@ function useIsMobile(bp = 768) {
   return m
 }
 
+// iPad/tablet: 768-1024px width (not mobile, but needs compressed sidebar header)
+function useIsTablet() {
+  const [t, setT] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.innerWidth >= 768 && window.innerWidth <= 1024
+  })
+  useEffect(() => {
+    const c = () => setT(window.innerWidth >= 768 && window.innerWidth <= 1024)
+    window.addEventListener('resize', c)
+    return () => window.removeEventListener('resize', c)
+  }, [])
+  return t
+}
+
 // Detect PWA standalone mode or mobile to disable heavy Three.js rendering
 function useIsMobileOrPWA() {
   return useMemo(() => {
@@ -6304,7 +6318,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -6445,59 +6459,72 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         pointerEvents: 'none',
       }} />
 
-      {/* ---- AGENT CARD (chunky, game-scale, 64px avatar) ---- */}
+      {/* ---- AGENT CARD ---- */}
       {/* Hidden on mobile: mobile overlay header already shows agent info */}
+      {/* Tablet (iPad 768-1024px): compact one-row layout, ~50px tall, saves chat space */}
+      {/* Desktop: chunky game-scale 64px avatar */}
       <div style={{
-        padding: '20px 24px',
+        padding: isTablet ? '8px 14px' : '20px 24px',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%)'
           : 'linear-gradient(180deg, rgba(59,130,246,0.12) 0%, transparent 100%)',
         borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.15)' : '2px solid rgba(59,130,246,0.25)',
         flexShrink: 0,
-        display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 16,
+        display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: isTablet ? 10 : 16,
       }}>
-        {/* 64px avatar with agent color ring + status dot */}
+        {/* Avatar with status dot */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <SpriteAvatar agentSlug={room?.id} size={64} borderColor={agentColor}
+          <SpriteAvatar agentSlug={room?.id} size={isTablet ? 34 : 64} borderColor={agentColor}
             status={status}
             style={{
-              borderWidth: 3,
-              boxShadow: `0 0 20px ${agentColor}30, 0 0 40px ${agentColor}10`,
+              borderWidth: isTablet ? 2 : 3,
+              boxShadow: isTablet ? `0 0 10px ${agentColor}25` : `0 0 20px ${agentColor}30, 0 0 40px ${agentColor}10`,
             }}
           />
-          {/* Status dot (bottom-right, large) */}
+          {/* Status dot */}
           <div style={{
             position: 'absolute', bottom: 0, right: 0,
-            width: 18, height: 18, borderRadius: '50%',
+            width: isTablet ? 10 : 18, height: isTablet ? 10 : 18, borderRadius: '50%',
             background: cfg.color,
-            border: isNightMode ? '3px solid #0F1B2D' : '3px solid #142846',
-            boxShadow: `0 0 8px ${cfg.color}`,
+            border: isNightMode
+              ? `${isTablet ? 2 : 3}px solid #0F1B2D`
+              : `${isTablet ? 2 : 3}px solid #142846`,
+            boxShadow: `0 0 ${isTablet ? 4 : 8}px ${cfg.color}`,
           }} />
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Name + role/status -- stacked on desktop, inline on tablet */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: isTablet ? 'row' : 'column', alignItems: isTablet ? 'center' : 'flex-start', gap: isTablet ? 8 : 0 }}>
           <div style={{
-            color: isNightMode ? '#F1F5F9' : '#E8ECF0', fontSize: 22, fontWeight: 900,
+            color: isNightMode ? '#F1F5F9' : '#E8ECF0',
+            fontSize: isTablet ? 14 : 22,
+            fontWeight: 900,
             fontFamily: "'Inter', system-ui, sans-serif",
             letterSpacing: '0.01em', lineHeight: 1.1,
+            flexShrink: 0,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            maxWidth: isTablet ? 100 : undefined,
           }}>
             {agent?.name || room?.agent}
           </div>
-          <div style={{
-            color: agentColor, fontSize: 13, fontWeight: 700,
-            fontFamily: "'Inter', system-ui, sans-serif",
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-            marginTop: 2,
-          }}>
-            {agent?.role || room?.role}
-          </div>
+          {!isTablet && (
+            <div style={{
+              color: agentColor, fontSize: 13, fontWeight: 700,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+              marginTop: 2,
+            }}>
+              {agent?.role || room?.role}
+            </div>
+          )}
           {/* Status badge pill */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
-            marginTop: 6,
+            marginTop: isTablet ? 0 : 6,
             fontSize: 11, fontWeight: 700,
             textTransform: 'uppercase', letterSpacing: '0.06em',
             borderRadius: 4, padding: '2px 8px',
+            flexShrink: 0,
             ...(status === 'WORKING' ? { color: '#16A34A', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }
               : status === 'BLOCKED' ? { color: '#DC2626', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }
               : status === 'DONE' ? { color: '#60A5FA', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }
@@ -6510,28 +6537,31 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             }} />
             {status === 'WORKING' ? 'ACTIVE' : status || 'IDLE'}
           </div>
-          <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-            <span style={{
-              fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
-              fontFamily: "'Inter', system-ui, sans-serif",
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              <span style={{ fontSize: 18, fontWeight: 900, color: '#22C55E', fontVariantNumeric: 'tabular-nums' }}>
-                {agentStatus?.buildCount || workingCount || 0}
+          {/* Stat counts -- desktop only, hidden on tablet to save space */}
+          {!isTablet && (
+            <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+              <span style={{
+                fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: '#22C55E', fontVariantNumeric: 'tabular-nums' }}>
+                  {agentStatus?.buildCount || workingCount || 0}
+                </span>
+                builds
               </span>
-              builds
-            </span>
-            <span style={{
-              fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
-              fontFamily: "'Inter', system-ui, sans-serif",
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              <span style={{ fontSize: 18, fontWeight: 900, color: '#60A5FA', fontVariantNumeric: 'tabular-nums' }}>
-                {agentStatus?.taskCount || 0}
+              <span style={{
+                fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: '#60A5FA', fontVariantNumeric: 'tabular-nums' }}>
+                  {agentStatus?.taskCount || 0}
+                </span>
+                tasks
               </span>
-              tasks
-            </span>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Extend/collapse */}
@@ -6540,20 +6570,20 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
             border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.1)',
             borderRadius: 8, cursor: 'pointer', color: isExtended ? '#E85D26' : (isDaytime ? '#6B8AB0' : '#6B7280'),
-            width: 32, height: 32,
+            width: isTablet ? 28 : 32, height: isTablet ? 28 : 32,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 150ms ease', flexShrink: 0,
           }}
           onMouseEnter={e => { e.currentTarget.style.color = isDaytime ? '#E2E8F0' : '#EDF2FA'; e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.12)' }}
           onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : (isDaytime ? '#6B8AB0' : '#6B7280'); e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)' }}
         >
-          {isExtended ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          {isExtended ? <Minimize2 size={isTablet ? 14 : 18} /> : <Maximize2 size={isTablet ? 14 : 18} />}
         </button>
       </div>
 
       {/* ---- 4 TOP SQUARES (interactive, alive -- replaces stat pills) ---- */}
-      {/* Hidden on mobile: saves vertical space, agent info in header */}
-      {!isMobile && (
+      {/* Hidden on mobile and tablet: saves vertical space, agent info in header */}
+      {!isMobile && !isTablet && (
         <TopSquares
           allAgentStatus={allAgentStatus}
           workingCount={workingCount}
@@ -8319,6 +8349,7 @@ export default function GameDashboard() {
 
   const { data, error, loading } = useDashboardData()
   const isMobile = useIsMobile()
+  const isTablet = useIsTablet() // iPad/tablet (768-1024px): compress sidebar profile header
   const disableThreeJs = useIsMobileOrPWA() // Kill Three.js on mobile/PWA for performance
 
   // C3: WebSocket connection
@@ -8915,6 +8946,7 @@ export default function GameDashboard() {
               isExtended={panelExtended}
               onToggleExtend={() => setPanelExtended(e => !e)}
               isMobile={isMobile}
+              isTablet={isTablet}
               atMenuOpen={atMenuOpen}
               filteredAtOptions={filteredAtOptions}
               atMenuIndex={atMenuIndex}
