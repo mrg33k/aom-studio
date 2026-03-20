@@ -8468,6 +8468,12 @@ export default function GameDashboard() {
         })
         if (!res.ok) throw new Error(`Send failed: ${res.status}`)
         // Response arrives via poll (3s interval)
+        // Set agent to active -- visual feedback that message was received
+        fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(agent)}&status=active&current_task=${encodeURIComponent('Responding to message...')}`, { method: 'PATCH' }).catch(() => {})
+        // Auto-idle after 60s if no real task update changes the status first
+        setTimeout(() => {
+          fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(agent)}&status=idle`, { method: 'PATCH' }).catch(() => {})
+        }, 60000)
       } catch (err) {
         setAgentChats(prev => {
           const current = prev[agent]?._all || []
