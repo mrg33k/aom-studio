@@ -597,6 +597,23 @@ function SocialSection() {
                   ))}
                 </div>
               </div>
+
+              <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16, marginTop: 16 }}>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: ORANGE }}>Strategy</p>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { label: 'Frequency', value: '4-5x per week' },
+                    { label: 'Post Focus', value: 'Project showcases, before/after, team on-site, equipment close-ups' },
+                    { label: 'Positioning', value: 'Craftsmanship you can see. Every post proves the work speaks for itself.' },
+                  ].map(item => (
+                    <div key={item.label} className="flex flex-col gap-1">
+                      <span className="font-body text-xs font-bold uppercase tracking-[0.1em]" style={{ color: MUTED }}>{item.label}</span>
+                      <span className="font-body text-sm" style={{ color: TEXT }}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <p className="font-body text-sm mt-4" style={{ color: MUTED }}>100% organic growth. Zero paid promotion.</p>
             </div>
           </FadeIn>
@@ -632,6 +649,22 @@ function SocialSection() {
                   {['HVAC Repairs', 'Project Showcases', 'Behind-the-Scenes', 'Equipment Installs'].map(tag => (
                     <span key={tag} className="font-body text-xs font-medium px-3 py-1"
                       style={{ color: TEXT, background: 'rgba(255,255,255,0.06)', borderRadius: 4 }}>{tag}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 16, marginTop: 16 }}>
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.15em] mb-3" style={{ color: '#F59E0B' }}>Strategy</p>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { label: 'Frequency', value: '3-5x per week' },
+                    { label: 'Post Focus', value: 'Time-lapses, day-in-the-life, satisfying process shots, crew culture' },
+                    { label: 'Positioning', value: 'Construction content that makes people stop scrolling. Raw, real, impressive.' },
+                  ].map(item => (
+                    <div key={item.label} className="flex flex-col gap-1">
+                      <span className="font-body text-xs font-bold uppercase tracking-[0.1em]" style={{ color: MUTED }}>{item.label}</span>
+                      <span className="font-body text-sm" style={{ color: TEXT }}>{item.value}</span>
+                    </div>
                   ))}
                 </div>
               </div>
