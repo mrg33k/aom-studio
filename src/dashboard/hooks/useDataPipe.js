@@ -377,21 +377,26 @@ export function useDataPipe(parsePunchList) {
         const data = await res.json()
 
         // Map Supabase data to Right Now format
-        // FIX 1: Deduplicate -- agent_status is primary source. Tasks table only fills in agents
-        // not already represented in agent_status to avoid double-listing the same agent.
-        if (data.agents) {
-          const active = data.agents
-            .filter(a => a.status === 'working')
-            .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, isLive: true }))
+        // Right Now shows TASKS not AGENTS. Each active task gets its own card.
+        // If an agent has 3 active tasks, they show as 3 separate Right Now items.
+        {
+          const active = []
 
-          // Add active tasks for agents NOT already in the agent_status working list
+          // Primary source: active tasks from tasks table (one card per task)
           if (data.tasks) {
-            const agentSlugsInStatus = new Set(active.map(a => a.agent))
             const taskEntries = data.tasks
               .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
-              .filter(t => t.agent && !agentSlugsInStatus.has(t.agent))
-              .map(t => ({ agent: t.agent, text: t.text || t.title || `${t.agent} is working`, isLive: true }))
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, taskId: t.id }))
             active.push(...taskEntries)
+          }
+
+          // Fallback: working agents from agent_status that have NO active tasks
+          if (data.agents) {
+            const agentsWithTasks = new Set(active.map(a => a.agent))
+            const agentFallback = data.agents
+              .filter(a => a.status === 'working' && !agentsWithTasks.has(a.slug))
+              .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, isLive: true }))
+            active.push(...agentFallback)
           }
 
           setRightNow(active)
