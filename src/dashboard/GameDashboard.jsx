@@ -8203,10 +8203,12 @@ export default function GameDashboard() {
       fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
-          const msgs = (data?.messages || []).map(m => ({
-            id: m.id, role: m.role || 'assistant', content: m.text || '',
-            time: m.timestamp || '', source: m.source || 'supabase',
-          })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+          const msgs = (data?.messages || [])
+            .filter(m => !m.agent || m.agent === room) // guard: only show messages belonging to this agent
+            .map(m => ({
+              id: m.id, role: m.role || 'assistant', content: m.text || '',
+              time: m.timestamp || '', source: m.source || 'supabase',
+            })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
           console.log(`[Corner] Proxy: loaded ${msgs.length} msgs for ${room}`)
           setAgentChats(prev => ({ ...prev, [room]: { _all: msgs } }))
           setPanelChatLoading(false)
@@ -8264,7 +8266,7 @@ export default function GameDashboard() {
           if (!res.ok) return
           const data = await res.json()
           const newMsgs = (data?.messages || [])
-            .filter(m => m.role === 'assistant' && m.timestamp > lastSeenTs)
+            .filter(m => m.role === 'assistant' && m.timestamp > lastSeenTs && (!m.agent || m.agent === room)) // guard: only messages for this agent
           if (newMsgs.length) {
             lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
             setAgentChats(prev => {
