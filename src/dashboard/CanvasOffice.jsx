@@ -1051,6 +1051,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         setFocusedRoom(null)
       }
     },
+    resetLayout: () => {
+      // Clear all free-position overrides, rooms snap back to default hex grid slots
+      try { localStorage.removeItem(FREE_POSITIONS_KEY) } catch {}
+      freePositionsRef.current = {}
+    },
   }), [triggerCelebration, slotOrder])
 
   // ---- AUTO-TEST: trigger celebration wave every 60 seconds ----
@@ -1876,6 +1881,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const handler = (e) => { e.preventDefault() }
     el.addEventListener('wheel', handler, { passive: false })
     return () => el.removeEventListener('wheel', handler)
+  }, [])
+
+  // iPad touch drag fix: register non-passive touchmove listener so e.preventDefault()
+  // can block Safari scroll/zoom interference during room drag. React synthetic events
+  // are passive by default and cannot call preventDefault().
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const handler = (e) => {
+      if (dragStateRef.current.active && dragStateRef.current.roomId) {
+        e.preventDefault()
+      }
+    }
+    el.addEventListener('touchmove', handler, { passive: false })
+    return () => el.removeEventListener('touchmove', handler)
   }, [])
 
   // ---- SHUFFLE LOGIC: Insert dragged room at target slot, animate others ----

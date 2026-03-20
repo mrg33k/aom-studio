@@ -3101,8 +3101,9 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout }) {
   const [teamOpen, setTeamOpen] = useState(false)
+  const [layoutResetToast, setLayoutResetToast] = useState(false)
   const [teamName, setTeamName] = useState(() => {
     try { return localStorage.getItem('corner-team-name') || 'aom' } catch { return 'aom' }
   })
@@ -3757,6 +3758,72 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             </span>
           )}
         </button>
+
+        {/* Reset layout button (game view only) -- clears free-drag positions */}
+        {(viewMode === 'game' || !viewMode) && (
+          <button
+            title="Reset room layout"
+            onClick={() => {
+              onResetLayout?.()
+              setLayoutResetToast(true)
+              setTimeout(() => setLayoutResetToast(false), 1800)
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5, flexShrink: 0,
+              background: 'transparent',
+              border: isNightMode ? '1.5px solid rgba(59,130,246,0.18)' : '1.5px solid rgba(59,130,246,0.22)',
+              borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
+              cursor: 'pointer', transition: 'all 150ms ease',
+              position: 'relative',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.08)'
+              e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.borderColor = isNightMode ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.22)'
+            }}
+          >
+            <RotateCcw size={13} color={isNightMode ? '#64748B' : '#6B8AB0'} />
+            {!isMobile && (
+              <span style={{
+                fontSize: 12, fontWeight: 600,
+                color: isNightMode ? '#64748B' : '#6B8AB0',
+                fontFamily: "'Inter', sans-serif",
+              }}>
+                Reset
+              </span>
+            )}
+            {/* Toast confirmation */}
+            <AnimatePresence>
+              {layoutResetToast && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: isNightMode ? 'rgba(15,23,42,0.95)' : 'rgba(15,23,42,0.92)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                    borderRadius: 6, padding: '5px 10px',
+                    whiteSpace: 'nowrap', zIndex: 200,
+                    fontSize: 12, fontWeight: 600,
+                    color: '#60A5FA',
+                    fontFamily: "'Inter', sans-serif",
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  Layout reset
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
+        )}
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
@@ -4632,6 +4699,15 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [activeFilter, setActiveFilter] = useState('all')
   const [collapsedSections, setCollapsedSections] = useState({})
   const [selectedTask, setSelectedTask] = useState(null) // Task detail view
+  const [expandedTaskId, setExpandedTaskId] = useState(null) // Accordion expand state
+
+  // Load/save per-task context notes from localStorage
+  const getTaskContext = (id) => {
+    try { return localStorage.getItem(`corner-task-context-${id}`) || '' } catch { return '' }
+  }
+  const saveTaskContext = (id, text) => {
+    try { localStorage.setItem(`corner-task-context-${id}`, text) } catch {}
+  }
 
   // Persist tasks
   useEffect(() => {
@@ -4843,21 +4919,20 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     const { isLive, showAgent, showProject, projectColor, onToggle, onContextMenu: ctxHandler, draggable: isDraggable, idx, sectionName, sectionColor } = opts
     const cardAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
     const cardColor = isLive ? '#FF6B3D' : (cardAgent?.agentColor || cardAgent?.color || agentColor)
+    const cardKey = t.id || `task-${idx}`
+    const isExpanded = expandedTaskId === cardKey
 
     return (
       <div
-        key={t.id || `task-${idx}`}
-        draggable={isDraggable}
-        onDragStart={isDraggable ? () => handleDragStart(idx) : undefined}
-        onDragOver={isDraggable ? (e) => handleDragOver(e, idx) : undefined}
-        onDrop={isDraggable ? () => handleDrop(idx) : undefined}
-        onDragEnd={isDraggable ? () => { setDragIdx(null); setDragOverIdx(null) } : undefined}
+        key={cardKey}
+        draggable={isDraggable && !isExpanded}
+        onDragStart={isDraggable && !isExpanded ? () => handleDragStart(idx) : undefined}
+        onDragOver={isDraggable && !isExpanded ? (e) => handleDragOver(e, idx) : undefined}
+        onDrop={isDraggable && !isExpanded ? () => handleDrop(idx) : undefined}
+        onDragEnd={isDraggable && !isExpanded ? () => { setDragIdx(null); setDragOverIdx(null) } : undefined}
         onContextMenu={ctxHandler}
-        onClick={() => setSelectedTask({ ...t, _cardColor: cardColor, _cardAgent: cardAgent, _isLive: isLive, _sectionName: sectionName, _sectionColor: sectionColor || projectColor })}
         style={{
-          display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 10,
-          padding: isMobile ? '8px 10px' : '10px 12px', marginBottom: isMobile ? 10 : 6,
-          minHeight: isMobile ? 44 : undefined,
+          marginBottom: isMobile ? 10 : 6,
           background: isLive
             ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
             : t.done
@@ -4874,77 +4949,178 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
               ? (isDaytime ? '3px solid rgba(59,130,246,0.06)' : '3px solid rgba(255,255,255,0.03)')
               : `3px solid ${cardColor}`,
           borderRadius: 8,
-          cursor: isDraggable ? 'grab' : 'default',
           opacity: dragIdx === idx ? 0.4 : (t.done ? 0.45 : 1),
           transition: 'background 150ms, opacity 150ms, border 150ms',
+          overflow: 'hidden',
         }}
       >
-        {/* Agent avatar (left column) */}
-        {showAgent && cardAgent && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0, minWidth: 32 }}>
-            <SpriteAvatar agentSlug={cardAgent.slug || cardAgent.id} size={28} borderColor={cardColor} />
-            <span style={{
-              fontSize: 9, fontWeight: 700, color: cardColor,
-              fontFamily: "'Inter', sans-serif", textTransform: 'uppercase',
-              letterSpacing: '0.04em', lineHeight: 1,
+        {/* --- Card header row (always visible, tap to toggle accordion) --- */}
+        <div
+          onClick={() => setExpandedTaskId(isExpanded ? null : cardKey)}
+          style={{
+            display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 10,
+            padding: isMobile ? '8px 10px' : '10px 12px',
+            minHeight: isMobile ? 44 : undefined,
+            cursor: 'pointer',
+          }}
+        >
+          {/* Agent avatar (left column) */}
+          {showAgent && cardAgent && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0, minWidth: 32 }}>
+              <SpriteAvatar agentSlug={cardAgent.slug || cardAgent.id} size={28} borderColor={cardColor} />
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: cardColor,
+                fontFamily: "'Inter', sans-serif", textTransform: 'uppercase',
+                letterSpacing: '0.04em', lineHeight: 1,
+              }}>
+                {cardAgent.name || cardAgent.agent}
+              </span>
+            </div>
+          )}
+
+          {/* Checkbox (non-live tasks only) */}
+          {!isLive && onToggle && (
+            <div
+              onClick={(e) => { e.stopPropagation(); onToggle(t.id) }}
+              style={{
+                width: isMobile ? 24 : 20, height: isMobile ? 24 : 20, borderRadius: isMobile ? 6 : 5, flexShrink: 0, marginTop: 1,
+                border: t.done ? `2px solid ${cardColor}` : `2px solid ${cardColor}50`,
+                background: t.done ? cardColor : `${cardColor}08`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all 150ms',
+                boxShadow: t.done ? `0 0 6px ${cardColor}30` : 'none',
+              }}
+            >
+              {t.done && (
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </div>
+          )}
+
+          {/* Task content (right column) */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: isMobile ? 12 : 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
+              color: t.done
+                ? (isDaytime ? '#6B8AB0' : '#475569')
+                : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
+              fontFamily: "'Inter', sans-serif",
+              textDecoration: t.done ? 'line-through' : 'none',
             }}>
-              {cardAgent.name || cardAgent.agent}
-            </span>
+              {t.text}
+            </div>
+            {/* Badges row */}
+            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+              {isLive && (
+                <span style={{
+                  fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
+                  background: '#FF6B3D', color: '#FFF',
+                  fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+                }}>LIVE</span>
+              )}
+              {showProject && t.project && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
+                  background: `${projectColor || '#3B82F6'}18`,
+                  color: projectColor || '#3B82F6',
+                  fontFamily: "'Inter', sans-serif",
+                }}>{t.project}</span>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* Checkbox (non-live tasks only) */}
-        {!isLive && onToggle && (
-          <div
-            onClick={(e) => { e.stopPropagation(); onToggle(t.id) }}
+          {/* Chevron toggle */}
+          <ChevronDown
+            size={14}
             style={{
-              width: isMobile ? 24 : 20, height: isMobile ? 24 : 20, borderRadius: isMobile ? 6 : 5, flexShrink: 0, marginTop: 1,
-              border: t.done ? `2px solid ${cardColor}` : `2px solid ${cardColor}50`,
-              background: t.done ? cardColor : `${cardColor}08`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 150ms',
-              boxShadow: t.done ? `0 0 6px ${cardColor}30` : 'none',
+              flexShrink: 0, marginTop: 2,
+              color: isDaytime ? '#6B8AB0' : '#475569',
+              transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+              transition: 'transform 180ms ease',
             }}
-          >
-            {t.done && (
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
+          />
+        </div>
+
+        {/* --- Accordion body (only when expanded) --- */}
+        {isExpanded && (
+          <div style={{
+            padding: '0 12px 12px 12px',
+            background: isDaytime ? 'rgba(10,18,35,0.3)' : 'rgba(0,0,0,0.25)',
+            borderTop: isDaytime ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(255,255,255,0.04)',
+          }}>
+            {/* Original prompt */}
+            <div style={{ marginTop: 10, marginBottom: 10 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: isDaytime ? '#4A6585' : '#475569',
+                fontFamily: "'Inter', sans-serif",
+                marginBottom: 5,
+              }}>
+                Original Prompt
+              </div>
+              <div style={{
+                fontSize: 12, lineHeight: 1.5,
+                color: isDaytime ? '#94B8D8' : '#6B8AB0',
+                fontFamily: "'Inter', sans-serif",
+                fontStyle: 'italic',
+                padding: '6px 8px',
+                background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(255,255,255,0.02)',
+                borderRadius: 6,
+                border: isDaytime ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(255,255,255,0.04)',
+              }}>
+                {t.text}
+              </div>
+            </div>
+
+            {/* Context notes (editable) */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: isDaytime ? '#4A6585' : '#475569',
+                fontFamily: "'Inter', sans-serif",
+                marginBottom: 5,
+              }}>
+                Context
+              </div>
+              <TaskContextTextarea
+                taskId={t.id}
+                isDaytime={isDaytime}
+                cardColor={cardColor}
+                getTaskContext={getTaskContext}
+                saveTaskContext={saveTaskContext}
+              />
+            </div>
+
+            {/* Agent story (placeholder) */}
+            <div>
+              <div style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: isDaytime ? '#4A6585' : '#475569',
+                fontFamily: "'Inter', sans-serif",
+                marginBottom: 5,
+              }}>
+                Agent Story
+              </div>
+              <div style={{
+                fontSize: 11, lineHeight: 1.5,
+                color: isDaytime ? '#4A6585' : '#334155',
+                fontFamily: "'Inter', sans-serif",
+                fontStyle: 'italic',
+                padding: '6px 8px',
+                background: isDaytime ? 'rgba(59,130,246,0.02)' : 'rgba(255,255,255,0.01)',
+                borderRadius: 6,
+                border: isDaytime ? '1px dashed rgba(59,130,246,0.08)' : '1px dashed rgba(255,255,255,0.04)',
+              }}>
+                Story will appear when task completes
+              </div>
+            </div>
           </div>
         )}
-
-        {/* Task content (right column) */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: isMobile ? 12 : 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
-            color: t.done
-              ? (isDaytime ? '#6B8AB0' : '#475569')
-              : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
-            fontFamily: "'Inter', sans-serif",
-            textDecoration: t.done ? 'line-through' : 'none',
-          }}>
-            {t.text}
-          </div>
-          {/* Badges row */}
-          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-            {isLive && (
-              <span style={{
-                fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
-                background: '#FF6B3D', color: '#FFF',
-                fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
-              }}>LIVE</span>
-            )}
-            {showProject && t.project && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
-                background: `${projectColor || '#3B82F6'}18`,
-                color: projectColor || '#3B82F6',
-                fontFamily: "'Inter', sans-serif",
-              }}>{t.project}</span>
-            )}
-          </div>
-        </div>
       </div>
     )
   }
@@ -5305,6 +5481,40 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         </div>
       )}
     </div>
+  )
+}
+
+// ---- TASK CONTEXT TEXTAREA (accordion body, per-task notes) ----------------
+// Standalone component so it can keep local state without re-rendering siblings.
+function TaskContextTextarea({ taskId, isDaytime, cardColor, getTaskContext, saveTaskContext }) {
+  const [value, setValue] = useState(() => getTaskContext(taskId))
+  return (
+    <textarea
+      value={value}
+      onChange={e => {
+        setValue(e.target.value)
+        saveTaskContext(taskId, e.target.value)
+      }}
+      onClick={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      placeholder="Add notes or context..."
+      rows={3}
+      style={{
+        width: '100%', resize: 'vertical',
+        padding: '6px 8px',
+        background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(255,255,255,0.02)',
+        border: isDaytime ? `1px solid ${cardColor}22` : `1px solid ${cardColor}18`,
+        borderRadius: 6,
+        fontSize: 12, lineHeight: 1.5,
+        color: isDaytime ? '#F1F5F9' : '#D0D8E8',
+        fontFamily: "'Inter', sans-serif",
+        outline: 'none',
+        boxSizing: 'border-box',
+        caretColor: cardColor,
+        userSelect: 'text',
+        WebkitUserSelect: 'text',
+      }}
+    />
   )
 }
 
@@ -9113,7 +9323,7 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 
