@@ -5378,6 +5378,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
 
   const workingAgents = useMemo(() => {
     // Combine live agent tasks + manual Right Now tasks
+    // No demo fallback -- only show real data from Supabase/pipe
     const agents = []
     if (liveAgents.length > 0) {
       agents.push(...liveAgents.map(t => ({
@@ -5386,10 +5387,6 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
         task: t.text || '',
         isLive: true,
       })))
-    } else if (!IS_LOCAL) {
-      agents.push(...Object.entries(allAgentStatus || {})
-        .filter(([, a]) => a?.status === 'WORKING')
-        .map(([slug, a]) => ({ slug, name: a.name || slug, task: a.currentTask || '', isLive: true })))
     }
     // Add manual Right Now tasks
     for (const t of rightNowTasks) {
@@ -6279,9 +6276,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   // Bobby2: Full pipeData passed to TopSquares so sidebar uses same persistent truth as HUD pills
   const pipeData = useDataPipe(parsePunchListSidebar)
   const { rightNow: liveAgents, pillCounts: pipeCounts } = pipeData
-  // Use nullish coalescing (??) not OR (||) so 0 stays 0 instead of falling through to demo data
-  const workingCount = IS_LOCAL ? (liveAgents?.length ?? 0) : Object.values(allAgentStatus || {}).filter(a => a?.status === 'WORKING').length
-  const blockedCount = IS_LOCAL ? (pipeCounts?.yourTodos ?? 0) : Object.values(allAgentStatus || {}).filter(a => a?.status === 'BLOCKED').length
+  // Use real data everywhere -- no demo fallback on production
+  const workingCount = liveAgents?.length ?? 0
+  const blockedCount = pipeCounts?.yourTodos ?? 0
   const doneCount = Object.values(allAgentStatus || {}).filter(a => a?.status === 'DONE').length
   const totalAgents = Object.keys(allAgentStatus || {}).length || 13
   const overallProgress = totalAgents > 0 ? Math.round(((workingCount + doneCount) / totalAgents) * 100) : 0

@@ -905,8 +905,9 @@ function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
 // Drop shadows, bold rounded corners, chunky, grabbable, satisfying.
 function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode, wiggle }) {
   const isDaytime = isNightMode === false
-  const totalTasks = project.tasks.length
-  const doneTasks = project.tasks.filter(t => t.done).length
+  const realTasks = project.tasks.filter(t => !t.isAddPrompt)
+  const totalTasks = realTasks.length
+  const doneTasks = realTasks.filter(t => t.done).length
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
   const remaining = totalTasks - doneTasks
   const isSchedule = project.section === 'schedule' || project.section === 'today'
