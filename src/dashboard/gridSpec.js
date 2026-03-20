@@ -330,48 +330,44 @@ export const PROJECTS = [
 // ---- GROUPED HEX GRID LAYOUT ORDER ----
 // ALL_ROOMS order controls default room positions on the hex grid.
 // Matches the ROW_SIZES config in CanvasOffice.jsx:
-//   Row 0 (3): Command team    -- Elon, Bobby, Mom
-//   Row 1 (4): Creative        -- Steffen, Cleo, Steve, Alex
-//   Row 2 (6): Support         -- Tony, Jacob, Colton, Paige, Elmo, Pixel
-//   Row 3 (2): Special         -- AOM Team, Patrik
-//   Row 4 (6): Top projects    -- Corner, Ambition, KOHRS, ISA, Skylar, Brandon Wiley
-//   Row 5 (3): More projects   -- NABI, Outreach, AI Advisory
-// Hidden rooms appended last (not rendered).
+//   Row 0 (3): Core team      -- Elon, Bobby, Steffen
+//   Row 1 (4): Creative+      -- Cleo, Jacob, AOM Team, Patrik
+//   Row 2 (5): Top projects   -- Corner, Ambition, KOHRS, ISA, Skylar
+//   Row 3 (4): More projects  -- Brandon Wiley, NABI, Outreach, AI Advisory
+// Hidden rooms appended last (not rendered):
+//   mom, pixel, paige, alex, steve, colton, tony, included-health
 
 const _AGENT_MAP = Object.fromEntries(AGENTS.map(a => [a.slug, { ...a, type: 'agent', hidden: false }]))
 const _PROJECT_MAP = Object.fromEntries(PROJECTS.map(p => [p.slug, p]))
 
 export const ALL_ROOMS = [
-  // Row 0 -- Command team
+  // Row 0 -- Core team
   _AGENT_MAP['elon'],
   _AGENT_MAP['bobby'],
-  _AGENT_MAP['mom'],
-  // Row 1 -- Creative agents
   _AGENT_MAP['steffen'],
+  // Row 1 -- Creative + special
   _AGENT_MAP['cleo'],
-  _AGENT_MAP['steve'],
-  _AGENT_MAP['alex'],
-  // Row 2 -- Support agents
-  _AGENT_MAP['tony'],
   _AGENT_MAP['jacob'],
-  _AGENT_MAP['colton'],
-  _AGENT_MAP['paige'],
-  _AGENT_MAP['elmo'],
-  _AGENT_MAP['pixel'],
-  // Row 3 -- Special rooms
   _PROJECT_MAP['aom-team'],
   _AGENT_MAP['patrik'],
-  // Row 4 -- Active projects
+  // Row 2 -- Top projects
   _PROJECT_MAP['corner'],
   _PROJECT_MAP['ambition-mechanical'],
   _PROJECT_MAP['kohrs'],
   _PROJECT_MAP['isa-energy'],
   _PROJECT_MAP['skylar'],
+  // Row 3 -- More projects
   _PROJECT_MAP['brandon-wiley'],
-  // Row 5 -- More projects
   _PROJECT_MAP['nabi'],
   _PROJECT_MAP['outreach'],
   _PROJECT_MAP['ai-advisory'],
-  // Hidden (not rendered in grid)
+  // Hidden -- not rendered on hex grid (still accessible in Board view, chat dropdowns, @mentions)
+  { ..._AGENT_MAP['mom'],    hidden: true },
+  { ..._AGENT_MAP['pixel'],  hidden: true },
+  { ..._AGENT_MAP['paige'],  hidden: true },
+  { ..._AGENT_MAP['alex'],   hidden: true },
+  { ..._AGENT_MAP['steve'],  hidden: true },
+  { ..._AGENT_MAP['colton'], hidden: true },
+  { ..._AGENT_MAP['tony'],   hidden: true },
   _PROJECT_MAP['included-health'],
 ].filter(Boolean)
