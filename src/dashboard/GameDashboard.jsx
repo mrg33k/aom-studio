@@ -5404,8 +5404,8 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
     return agents
   }, [liveAgents, allAgentStatus, rightNowTasks])
 
-  // LIVE count: mergedAgents is already deduped (liveAgents + rightNowTasks, no double-count)
-  const liveCount = mergedAgents.length
+  // LIVE count: workingAgents is already deduped (liveAgents + rightNowTasks, no double-count)
+  const liveCount = workingAgents.length
 
   // YOUR TODOS: real count from useDataPipe (punch-list [Patrik] tags), not blocked agents
   const todoCount = pipeData?.pillCounts?.yourTodos ?? blockedCount ?? 0
