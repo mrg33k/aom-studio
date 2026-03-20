@@ -14,9 +14,9 @@ function useSEO() {
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    setMeta('description', 'Ambition Mechanical Services x AOM: 11-month performance report. 37 shoots. 88+ videos. $78k+ in delivered value.');
+    setMeta('description', 'Ambition Mechanical Services x AOM: 11-month performance report. 37 shoots. 3,138 video files. 3 TB of footage. $78k+ in delivered value.');
     setMeta('og:title', 'Ambition Mechanical Services | Performance Report', true);
-    setMeta('og:description', '37 shoots. 88+ videos. 57 posts. 1 custom website. 11 months of creative production for Ambition Mechanical.', true);
+    setMeta('og:description', '37 shoots. 3,138 video files. 713 photos. 3 TB of footage. 1 custom website. 11 months of creative production.', true);
     setMeta('og:type', 'article', true);
     setMeta('og:url', 'https://aheadofmarket.com/brands/ambition/performance', true);
   }, []);
@@ -129,12 +129,18 @@ function StatCard({ number, suffix = '', prefix = '', label, context, index }) {
    ════════════════════════════════════════════════════════════════ */
 
 const heroStats = [
-  { number: 37, suffix: '', label: 'Professional Video Shoots', context: 'Across the Phoenix metro' },
-  { number: 88, suffix: '+', label: 'Videos Produced', context: 'Edited, color-graded, delivered' },
-  { number: 57, suffix: '', label: 'Instagram Posts Published', context: 'Growing the brand online' },
-  { number: 1537, suffix: '', label: 'Instagram Followers', context: 'Organic audience growth', prefix: '' },
+  { number: 37, suffix: '', label: 'Professional Video Shoots', context: 'May 2025 through March 2026' },
+  { number: 3138, suffix: '', label: 'Video Files Captured', context: '3 TB of raw + finished footage' },
+  { number: 713, suffix: '', label: 'Professional Photos', context: 'Stills, aerials, DNG raws' },
+  { number: 23, suffix: '', label: 'Finished Video Exports', context: 'Edited, color-graded, delivered' },
   { number: 22, suffix: '+', label: 'Job Sites Documented', context: 'Premium client locations' },
-  { number: 1, suffix: '', label: 'Custom Website', context: 'Built and launched' },
+  { number: 1, suffix: '', label: 'Custom Website', context: 'Built and launched March 2026' },
+];
+
+const socialStats = [
+  { platform: 'Instagram', handle: '@ambition_air_conditioning', posts: 57, followers: 1537, following: 1229 },
+  { platform: 'TikTok', handle: '@ambitionmech', posts: null, followers: null, following: null },
+  { platform: 'LinkedIn', handle: 'Ambition Mechanical Services', posts: null, followers: null, following: null },
 ];
 
 const shoots = [
@@ -265,7 +271,7 @@ function HeroSection() {
 
         <Reveal delay={0.35}>
           <p className="text-[#A8A29E] text-lg md:text-xl text-center mt-8 max-w-2xl mx-auto leading-relaxed font-body">
-            11 months of creative production partnership. 37 shoots. 88+ videos. 1 custom website. Here's everything we've built together.
+            11 months of creative production partnership. 37 shoots. 3,138 video files. 3 TB of footage. 713 photos. 1 custom website. Here's everything we've built together.
           </p>
         </Reveal>
 
@@ -319,6 +325,89 @@ function StatsSection() {
           {heroStats.map((stat, i) => (
             <StatCard key={stat.label} {...stat} index={i} />
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SOCIAL MEDIA PRESENCE
+   ════════════════════════════════════════════════════════════════ */
+function SocialSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.2 });
+  const postCount = useCountUp(57, 1400, isInView);
+  const followerCount = useCountUp(1537, 1400, isInView);
+
+  return (
+    <section ref={ref} className="relative bg-[#141412] py-16 md:py-24 lg:py-28 overflow-hidden">
+      <NoiseOverlay />
+      <div className="relative z-10 max-w-6xl mx-auto px-6">
+        <Reveal>
+          <SectionLabel label="SOCIAL MEDIA PRESENCE" />
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <h2 className="font-headline text-3xl md:text-4xl lg:text-5xl font-extrabold italic uppercase tracking-tighter text-[#F5F0EB]">
+            BUILDING THE BRAND ONLINE.
+          </h2>
+        </Reveal>
+
+        <Reveal delay={0.15}>
+          <p className="text-[#A8A29E] text-base md:text-lg leading-relaxed max-w-3xl mt-6 font-body">
+            Organic growth across three platforms. Every post hand-crafted. No bots, no paid followers, no shortcuts.
+          </p>
+        </Reveal>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 mt-12">
+          {/* Instagram */}
+          <Reveal delay={0.2}>
+            <div className="bg-[#1A1A17] border border-[#292524] p-6 md:p-8 relative overflow-hidden group hover:border-[#E85D26]/30 transition-all duration-500">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#E85D26]" />
+              <div className="flex items-center gap-2 mb-4">
+                <Instagram size={20} className="text-[#E85D26]" />
+                <span className="font-headline text-xs font-bold uppercase tracking-tight text-[#78716C]">Instagram</span>
+              </div>
+              <p className="font-mono text-xs text-[#A8A29E] mb-4">@ambition_air_conditioning</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="font-headline text-3xl md:text-4xl font-extrabold italic text-[#F5F0EB] tabular-nums">{isInView ? postCount : 0}</div>
+                  <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C] mt-1">POSTS</p>
+                </div>
+                <div>
+                  <div className="font-headline text-3xl md:text-4xl font-extrabold italic text-[#F5F0EB] tabular-nums">{isInView ? followerCount.toLocaleString() : 0}</div>
+                  <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C] mt-1">FOLLOWERS</p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* TikTok */}
+          <Reveal delay={0.3}>
+            <div className="bg-[#1A1A17] border border-[#292524] p-6 md:p-8 relative overflow-hidden group hover:border-[#E85D26]/30 transition-all duration-500">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#C9A84C]" />
+              <div className="flex items-center gap-2 mb-4">
+                <Video size={20} className="text-[#C9A84C]" />
+                <span className="font-headline text-xs font-bold uppercase tracking-tight text-[#78716C]">TikTok</span>
+              </div>
+              <p className="font-mono text-xs text-[#A8A29E] mb-4">@ambitionmech</p>
+              <p className="text-[#A8A29E] text-sm leading-relaxed font-body">Active account with HVAC content, project showcases, and behind-the-scenes footage. Cross-posting pipeline ready.</p>
+            </div>
+          </Reveal>
+
+          {/* LinkedIn */}
+          <Reveal delay={0.4}>
+            <div className="bg-[#1A1A17] border border-[#292524] p-6 md:p-8 relative overflow-hidden group hover:border-[#E85D26]/30 transition-all duration-500">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#7C9A72]" />
+              <div className="flex items-center gap-2 mb-4">
+                <Linkedin size={20} className="text-[#7C9A72]" />
+                <span className="font-headline text-xs font-bold uppercase tracking-tight text-[#78716C]">LinkedIn</span>
+              </div>
+              <p className="font-mono text-xs text-[#A8A29E] mb-4">Ambition Mechanical Services</p>
+              <p className="text-[#A8A29E] text-sm leading-relaxed font-body">Company page established. Authority post strategy built: 2 posts/week positioning Mo as the industry expert. Content calendar ready.</p>
+            </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -961,6 +1050,7 @@ export default function AmbitionPerformance() {
       <SiteNav transparent />
       <HeroSection />
       <StatsSection />
+      <SocialSection />
       <ClientsSection />
       <ShootsSection />
       <ContentSection />
