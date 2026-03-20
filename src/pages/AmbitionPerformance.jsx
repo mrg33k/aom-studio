@@ -5,7 +5,7 @@ import {
   CheckCircle2, ArrowRight, Check, Calendar, Image,
   Users, Clock, DollarSign, TrendingUp, MapPin,
   Play, Flame, Layers, FileText, Star, Zap,
-  BarChart3, Target, Shield, Megaphone
+  BarChart3, Target, Shield, Megaphone, Hash
 } from 'lucide-react'
 
 // ─── BRAND CONSTANTS (Q Proposal tokens) ────────────────────────────────────
