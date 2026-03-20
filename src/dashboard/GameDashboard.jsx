@@ -105,6 +105,29 @@ const POWERUPS = [
   { id: 'wash', name: 'Wash Face', slash: '/wash-your-face', icon: Sparkles, color: '#CA8A04', subtitle: 'cleanup run' },
   { id: 'council', name: 'Council', slash: '/council', icon: Users, color: '#9333EA', subtitle: 'agent brief' },
   { id: 'look', name: 'Look', slash: '/look', icon: Search, color: '#06B6D4', subtitle: 'visual search' },
+  { id: 'social-post', name: 'Social Post', slash: '/social-post', icon: MessageSquare, color: '#0EA5E9', subtitle: 'draft a post' },
+  { id: 'double-check', name: 'Double Check', slash: '/double-check', icon: CheckCircle2, color: '#22C55E', subtitle: 'QA gate' },
+  { id: 'cage-match', name: 'Cage Match', slash: '/cage-match', icon: Zap, color: '#F97316', subtitle: 'build both, keep best' },
+  { id: 'health-check', name: 'Health Check', slash: '/health-check', icon: Activity, color: '#10B981', subtitle: 'system health' },
+  { id: 'invoice', name: 'Invoice', slash: '/invoice', icon: FileText, color: '#6366F1', subtitle: 'generate invoice' },
+  { id: 'pitch-deck', name: 'Pitch Deck', slash: '/pitch-deck', icon: LayoutDashboard, color: '#8B5CF6', subtitle: 'build a deck' },
+  { id: 'email-drafter', name: 'Email Drafter', slash: '/email-drafter', icon: Send, color: '#F59E0B', subtitle: 'draft email' },
+  { id: 'storyboard', name: 'Storyboard', slash: '/storyboard', icon: Film, color: '#EC4899', subtitle: 'visual storyboard' },
+  { id: 'punch-list', name: 'Punch List', slash: '/punch-list', icon: ListTodo, color: '#14B8A6', subtitle: 'task manager' },
+  { id: 'masterplan', name: 'Masterplan', slash: '/masterplan', icon: MapIcon, color: '#7C3AED', subtitle: 'strategic plan' },
+  { id: 'outreach', name: 'Outreach', slash: '/outreach', icon: Users, color: '#EF4444', subtitle: 'cold outreach' },
+  { id: 'roi-calc', name: 'ROI Calculator', slash: '/roi-calc', icon: BarChart3, color: '#059669', subtitle: 'calculate ROI' },
+  { id: 'supersaiyan', name: 'Super Saiyan', slash: '/supersaiyan', icon: Zap, color: '#FBBF24', subtitle: 'full power mode' },
+  { id: 'snapshot', name: 'Snapshot', slash: '/snapshot', icon: ScanEye, color: '#0284C7', subtitle: 'capture state' },
+  { id: 'weekly-report', name: 'Weekly Report', slash: '/weekly-report', icon: BarChart3, color: '#4F46E5', subtitle: 'weekly summary' },
+  { id: 'skill-gap-scan', name: 'Skill Gap Scan', slash: '/skill-gap-scan', icon: Radar, color: '#7C3AED', subtitle: 'find the gaps' },
+  { id: 'client-onboarding', name: 'Client Onboarding', slash: '/client-onboarding', icon: Users, color: '#0EA5E9', subtitle: 'onboard client' },
+  { id: 'ship-it', name: 'Ship It', slash: '/ship-it', icon: GitCommit, color: '#22C55E', subtitle: 'deploy now' },
+  { id: 'wd40', name: 'WD-40', slash: '/wd40', icon: Sparkles, color: '#D97706', subtitle: 'iterate to great' },
+  { id: 'brand-refresh', name: 'Brand Refresh', slash: '/brand-refresh', icon: ScanEye, color: '#EC4899', subtitle: 'refresh brand' },
+  { id: 'quick-fix', name: 'Quick Fix', slash: '/quick-fix', icon: Zap, color: '#F59E0B', subtitle: 'fast patch' },
+  { id: 'say-it-better', name: 'Say It Better', slash: '/say-it-better', icon: MessageSquare, color: '#06B6D4', subtitle: 'rewrite copy' },
+  { id: 'do-research', name: 'Research', slash: '/do-research', icon: Search, color: '#3B82F6', subtitle: 'deep research' },
 ]
 
 // ---- POWERUP MENU COMPONENT ----
@@ -263,7 +286,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, i
                   left: 0,
                   width: 320,
                 }),
-                maxHeight: isMobile ? '50vh' : 400,
+                maxHeight: isMobile ? '60vh' : 480,
                 overflowY: 'auto',
                 background: 'rgba(15, 23, 42, 0.97)',
                 backdropFilter: 'blur(20px)',
@@ -306,12 +329,12 @@ function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, i
                 </button>
               </div>
 
-              {/* Grid */}
+              {/* Single-column scrollable list of ALL skills */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 10,
-                padding: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+                padding: 10,
               }}>
                 {POWERUPS.map((pu, idx) => (
                   <PowerupTile
@@ -394,12 +417,12 @@ function PowerupTile({ powerup, index, onActivate, isMobile, isSelected }) {
       onTouchStart={() => setPressed(true)}
       onTouchEnd={() => setPressed(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        minHeight: 72,
-        padding: '12px 14px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        minHeight: 44,
+        padding: '8px 12px',
         background: bgColor,
         border: `1.5px solid ${borderColor}`,
-        borderRadius: 14,
+        borderRadius: 10,
         cursor: 'pointer',
         transition: 'background 120ms ease, border-color 120ms ease, transform 120ms ease',
         transform: pressed ? 'scale(0.97)' : 'scale(1)',
@@ -423,21 +446,21 @@ function PowerupTile({ powerup, index, onActivate, isMobile, isSelected }) {
 
       {/* Icon container */}
       <div style={{
-        width: 44, height: 44,
-        borderRadius: 12,
+        width: 32, height: 32,
+        borderRadius: 8,
         background: `${powerup.color}26`,
         border: `1.5px solid ${powerup.color}40`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
-        <Icon size={22} color={powerup.color} strokeWidth={2} />
+        <Icon size={16} color={powerup.color} strokeWidth={2} />
       </div>
 
-      {/* Label stack */}
-      <div style={{ minWidth: 0, flex: 1 }}>
+      {/* Label stack -- inline for compact single-column */}
+      <div style={{ minWidth: 0, flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
           fontFamily: "'Inter', system-ui, sans-serif",
-          fontSize: 15, fontWeight: 700,
+          fontSize: 13, fontWeight: 700,
           color: '#F1F5F9',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           lineHeight: 1.2,
@@ -446,11 +469,11 @@ function PowerupTile({ powerup, index, onActivate, isMobile, isSelected }) {
         </div>
         <div style={{
           fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 11, fontWeight: 600,
+          fontSize: 10, fontWeight: 600,
           color: '#6B8AB0',
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          marginTop: 3,
+          flexShrink: 0,
         }}>
           {powerup.slash}
         </div>
@@ -8339,7 +8362,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     }
                     if (e.key === 'Enter') isUserTypingRef.current = false
                   }}
-                  placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`} disabled={streaming}
+                  placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`} disabled={false}
                   style={{
                     width: '100%',
                     background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
@@ -8374,7 +8397,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 {/* Dual-purpose button: on mobile, shows sparkle (powerup) when empty, send arrow when has text. Desktop always shows send. */}
                 <button
                   type={isMobile && !chatInput?.trim() ? 'button' : 'submit'}
-                  disabled={streaming}
+                  disabled={false}
                   onClick={isMobile && !chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
                   style={{
                     position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
@@ -8811,10 +8834,38 @@ export default function GameDashboard() {
   const addToRightNow = useCallback((task) => {
     if (!task) return
     console.log('[addToRightNow] task:', task)
-    if (!IS_LOCAL) {
-      // 1. Update the TASK status: todo -> active
-      // Only use ID-based lookup if it looks like a real Supabase UUID (36 chars with hyphens).
-      // localStorage-generated IDs (e.g. 'dash-1234567890') are not Supabase UUIDs -- fall back to agent lookup.
+    // 1. Write to both localStorage keys (TaskContextMenu + GameHUD consistency)
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-rightnow') || '[]')
+      if (!saved.includes(task.text)) saved.push(task.text)
+      localStorage.setItem('corner-task-rightnow', JSON.stringify(saved))
+    } catch {}
+    try {
+      const saved2 = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
+      if (!saved2.some(t => t.text === task.text)) {
+        saved2.push({ id: Date.now(), text: task.text, agent: task.agent || 'patrik', addedAt: new Date().toISOString() })
+        localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved2))
+      }
+    } catch {}
+    // 2. Local task-assign for local mode
+    if (IS_LOCAL) {
+      try {
+        fetch('/api/local/task-assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task: task.text,
+            agent: task.agent || undefined,
+            project: task.projectSection || undefined,
+            blocked: task.agent === 'patrik',
+          }),
+        }).then(() => {
+          // Refetch pipe data so Right Now updates immediately
+          pipeData?.refetch?.()
+        }).catch(() => {})
+      } catch {}
+    } else {
+      // 3. Production: Supabase API calls
       const rawId = task.taskId || task.id
       const isSupabaseUuid = rawId && typeof rawId === 'string' && /^[0-9a-f-]{36}$/i.test(rawId)
       const taskParam = isSupabaseUuid
@@ -8822,18 +8873,19 @@ export default function GameDashboard() {
         : `agent=${encodeURIComponent(task.agent || 'elon')}`
       console.log('[addToRightNow] PATCH param:', taskParam, 'rawId:', rawId, 'isUuid:', isSupabaseUuid)
       fetch(`/api/dashboard/agent-status?table=tasks&${taskParam}&status=active`, { method: 'PATCH' })
-        .then(r => console.log('[addToRightNow] task PATCH status:', r.status))
+        .then(r => {
+          console.log('[addToRightNow] task PATCH status:', r.status)
+          pipeData?.refetch?.()
+        })
         .catch(err => console.warn('[addToRightNow] task PATCH failed:', err))
-      // 2. Update the AGENT status: idle -> active
       fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(task.agent || 'elon')}&status=active&current_task=${encodeURIComponent(task.text || '')}`, { method: 'PATCH' }).catch(() => {})
-      // 3. Notify relay so Elon auto-assigns
       fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agent: task.agent || 'elon', text: `[PROMOTE] ${task.text}`, role: 'user', source: 'corner-dashboard-task', client_id: getClientId() }),
       }).catch(() => {})
     }
-  }, [])
+  }, [pipeData])
   const removeFromRightNow = useCallback((id) => {
     // For future: removal logic
   }, [])
@@ -9256,7 +9308,24 @@ export default function GameDashboard() {
   // Task context menu action handler
   const handleSidebarContextAction = useCallback((action, task, payload) => {
     handleTaskContextAction(action, task, payload, setSidebarCheckedTasks)
-  }, [])
+    // FIX 2: When a task is marked done, inject a confirmation message into chat
+    if (action === 'toggle' && !task.done) {
+      const confirmMsg = {
+        role: 'assistant',
+        content: `Task marked done: "${task.text}"\n\nConfirmed done or needs more work?`,
+        time: new Date().toISOString(),
+        source: 'corner-task-confirm',
+        id: `confirm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        isTaskConfirm: true,
+        taskText: task.text,
+      }
+      setAgentChats(prev => {
+        const agent = task.agent || selectedRoom || 'elon'
+        const current = prev[agent] || { _all: [] }
+        return { ...prev, [agent]: { _all: [...(current._all || []), confirmMsg] } }
+      })
+    }
+  }, [selectedRoom])
 
   // C3: MODE STATE
   const [currentMode, setCurrentMode] = useState(() => {
@@ -9626,16 +9695,16 @@ export default function GameDashboard() {
     if (roomId === selectedRoom) {
       // Already selected: zoom to Level 3 (detail)
       setCameraZoom(ZOOM_MAX)
-      // On mobile, open drawer to full on double-tap
-      if (isMobile && drawerSnap === 'half') {
+      // On mobile/tablet, open drawer to full on double-tap
+      if ((isMobile || isTablet) && drawerSnap === 'half') {
         setDrawerSnap('full')
       }
     } else {
       // First click: zoom to Level 2 (neighborhood)
       setCameraZoom(1.6)
       setSelectedRoom(roomId)
-      // On mobile, open the bottom sheet drawer to half position
-      if (isMobile) {
+      // On mobile/tablet, open the bottom sheet drawer to half position
+      if (isMobile || isTablet) {
         setDrawerSnap('half')
       }
     }
@@ -10183,7 +10252,7 @@ export default function GameDashboard() {
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
           {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. [SURVIVES: Responsive layout. Engine canvas auto-scales, sidebar logic stays.] */}
           {/* TODO(steffen-design): Mobile bottom-sheet drawer UX -- design the swipe-up drawer for mobile. Should show: agent name/status at peek height, chat on half-pull, full panel on full-pull. Reference Steffen's c3-mobile-layout-spec.md. The notification cards currently overlap the bottom bar on mobile. [SURVIVES: Mobile UI design. Engine-independent.] */}
-          {!isMobile && selectedRoom && (selectedRoom === 'aom' || ROOM_LOOKUP[selectedRoom]) && (
+          {!isMobile && !isTablet && selectedRoom && (selectedRoom === 'aom' || ROOM_LOOKUP[selectedRoom]) && (
             <UnifiedPanel
               key={selectedRoom}
               room={ROOM_LOOKUP[selectedRoom]}
@@ -10362,8 +10431,8 @@ export default function GameDashboard() {
         />
       )}
 
-      {/* Mobile bottom sheet drawer (iOS-style, 3 snap points) */}
-      {isMobile && drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
+      {/* Mobile/tablet bottom sheet drawer (iOS-style, 3 snap points) */}
+      {(isMobile || isTablet) && drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
         <MobileDrawer
           key={`drawer-${selectedRoom}`}
           room={ROOM_LOOKUP[selectedRoom]}
