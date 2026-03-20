@@ -18,24 +18,26 @@ const TEXT = '#F0ECE6'
 const MUTED = '#8A847C'
 const BORDER = 'rgba(255,255,255,0.08)'
 
-// ─── GOOGLE FONTS ────────────────────────────────────────────────────────────
-const fontLink = document.createElement('link')
-fontLink.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
-fontLink.rel = 'stylesheet'
-if (!document.querySelector('link[href*="Syne"]')) {
-  document.head.appendChild(fontLink)
-}
-
-// ─── FONT CLASSES (injected as style tag) ────────────────────────────────────
-const styleTag = document.createElement('style')
-styleTag.textContent = `
-  .font-headline { font-family: 'Syne', sans-serif; }
-  .font-body { font-family: 'Space Grotesk', system-ui, sans-serif; }
-  .font-mono { font-family: 'JetBrains Mono', monospace; }
-`
-if (!document.querySelector('style[data-ambition-fonts]')) {
-  styleTag.setAttribute('data-ambition-fonts', 'true')
-  document.head.appendChild(styleTag)
+// ─── GOOGLE FONTS (injected via useEffect to avoid SSR/module-scope crash) ───
+function useAmbitionFonts() {
+  useEffect(() => {
+    if (!document.querySelector('link[href*="Syne"]')) {
+      const fontLink = document.createElement('link')
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap'
+      fontLink.rel = 'stylesheet'
+      document.head.appendChild(fontLink)
+    }
+    if (!document.querySelector('style[data-ambition-fonts]')) {
+      const styleTag = document.createElement('style')
+      styleTag.setAttribute('data-ambition-fonts', 'true')
+      styleTag.textContent = `
+        .font-headline { font-family: 'Syne', sans-serif; }
+        .font-body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+      `
+      document.head.appendChild(styleTag)
+    }
+  }, [])
 }
 
 // ─── SEO ─────────────────────────────────────────────────────────────────────
@@ -1838,6 +1840,7 @@ function FooterSection() {
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function AmbitionPerformance() {
   useSEO()
+  useAmbitionFonts()
 
   return (
     <div className="min-h-screen" style={{ background: BG }}>
