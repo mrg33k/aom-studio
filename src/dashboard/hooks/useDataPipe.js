@@ -14,6 +14,7 @@
 // Rule: If the activity feed updates and the pill count doesn't, something is polling separately. Kill it.
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { supabase } from '../lib/supabase'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -375,10 +376,23 @@ export function useDataPipe(parsePunchList) {
         const data = await res.json()
 
         // Map Supabase data to Right Now format
+        // FIX 1: Deduplicate -- agent_status is primary source. Tasks table only fills in agents
+        // not already represented in agent_status to avoid double-listing the same agent.
         if (data.agents) {
           const active = data.agents
             .filter(a => a.status === 'working')
             .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, isLive: true }))
+
+          // Add active tasks for agents NOT already in the agent_status working list
+          if (data.tasks) {
+            const agentSlugsInStatus = new Set(active.map(a => a.agent))
+            const taskEntries = data.tasks
+              .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
+              .filter(t => t.agent && !agentSlugsInStatus.has(t.agent))
+              .map(t => ({ agent: t.agent, text: t.text || t.title || `${t.agent} is working`, isLive: true }))
+            active.push(...taskEntries)
+          }
+
           setRightNow(active)
         }
 
@@ -454,7 +468,24 @@ export function useDataPipe(parsePunchList) {
     // Local: poll every 3s. Production: poll every 10s (Supabase has rate limits)
     const interval = IS_LOCAL ? 3000 : 10000
     const timer = setInterval(fetchAll, interval)
-    return () => clearInterval(timer)
+
+    // FIX 3: Supabase Realtime subscription -- updates Right Now instantly on agent_status changes
+    // without waiting for the 10s poll. Only active in production where supabase is configured.
+    let channel = null
+    if (!IS_LOCAL && supabase) {
+      channel = supabase
+        .channel('agent-status-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
+          // Re-fetch all data on any agent_status change
+          fetchAll()
+        })
+        .subscribe()
+    }
+
+    return () => {
+      clearInterval(timer)
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [fetchAll])
 
   // Stable isAutoChecked function -- reads from ref, never causes re-renders

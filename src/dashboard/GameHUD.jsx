@@ -104,7 +104,7 @@ function parsePunchList(markdown) {
 
   // Section name -> project config mapping
   const SECTION_MAP = {
-    'RIGHT NOW':         { name: 'Inbox', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // Renamed from Right Now to Inbox per Patrik Round 2. [SURVIVES: HUD data pill.]
+    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // Reverted to Right Now per Patrik (was briefly Inbox in Round 2).
     'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },  // Patrik's personal blocked items
     'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Stale tasks needing attention (was "Checking In")
     'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Legacy alias
@@ -2185,7 +2185,7 @@ export default function GameHUD({
                 fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 800,
                 color: '#FF6B3D', letterSpacing: '0.1em', textTransform: 'uppercase',
                 flexShrink: 0, whiteSpace: 'nowrap',
-              }}>INBOX</span>
+              }}>RIGHT NOW</span>
               <div style={{ width: 1, height: 20, background: hudDivider, flexShrink: 0 }} />
               {tickerTasks.map((task, idx) => (
                 <motion.button

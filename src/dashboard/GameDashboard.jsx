@@ -8,7 +8,7 @@ import {
   ZoomIn, ZoomOut, Home, LayoutDashboard, Gamepad2, Command,
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
   BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
-  CalendarDays, Sparkles, Users, Search,
+  CalendarDays, Sparkles, Users, Search, Folder,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
@@ -5912,7 +5912,7 @@ function parsePunchListSidebar(markdown) {
   let currentProject = null
 
   const SECTION_MAP = {
-    'RIGHT NOW':     { name: 'Inbox', section: 'rightnow',     color: '#FF6B3D' },
+    'RIGHT NOW':     { name: 'Right Now', section: 'rightnow',     color: '#FF6B3D' },
     'YOUR TODOS':    { name: 'Your TODOs', section: 'your-todos', color: '#EF4444' },
     'FINISH THESE':  { name: 'Finish These', section: 'finish-these', color: '#6B8AB0' },
     'CHECKING IN':   { name: 'Finish These', section: 'finish-these', color: '#6B8AB0' },
@@ -6191,7 +6191,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -6206,6 +6206,22 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const userJustSentRef = useRef(false)
   const prevMessageCountRef = useRef(0)
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
+  const [agentSwitcherOpen, setAgentSwitcherOpen] = useState(false)
+  const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
+  const switcherRef = useRef(null)
+
+  // Close switcher dropdowns on outside click
+  useEffect(() => {
+    if (!agentSwitcherOpen && !projectSwitcherOpen) return
+    const handleClick = (e) => {
+      if (switcherRef.current && !switcherRef.current.contains(e.target)) {
+        setAgentSwitcherOpen(false)
+        setProjectSwitcherOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [agentSwitcherOpen, projectSwitcherOpen])
 
   // Conversations default to latest (scroll to bottom).
   // On first load or agent switch: snap to bottom.
@@ -6438,46 +6454,151 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         />
       )}
 
-      {/* ---- "TALKING TO" INDICATOR (subtle channel context above tabs) ---- */}
-      {/* Hidden on mobile: header already shows who you're talking to */}
-      <div style={{
+      {/* ---- AGENT + PROJECT SWITCHER (replaces static "Talking to" indicator) ---- */}
+      {/* Click the agent name to switch who you're talking to. Click project to scope the context. */}
+      <div ref={switcherRef} style={{
         display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 6,
-        padding: '6px 24px',
+        padding: '6px 16px',
         borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.12)',
-        flexShrink: 0,
+        flexShrink: 0, position: 'relative',
       }}>
         <MessageSquare size={12} style={{ color: isDaytime ? '#6B8AB0' : '#8BA4C4', flexShrink: 0 }} />
         <span style={{
-          fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
           textTransform: 'uppercase', letterSpacing: '0.1em',
           color: isDaytime ? '#6B8AB0' : '#8BA4C4',
-        }}>
-          Talking to:
-        </span>
-        <span style={{
-          fontSize: 11, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
-          textTransform: 'uppercase', letterSpacing: '0.08em',
-          color: agentColor,
-        }}>
-          {agent?.name || room?.agent || agentSlug}
-        </span>
-        {/* Show project badges if agent belongs to any */}
-        {(() => {
-          const projects = getAgentProjects(agentSlug)
-          if (!projects.length) return null
-          return projects.slice(0, 2).map(p => (
-            <span key={p.key} style={{
-              fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-              color: isDaytime ? '#8BA4C4' : '#8BA4C4',
-              background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
-              border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.08)',
-              borderRadius: 3, padding: '1px 5px',
-              textTransform: 'uppercase', letterSpacing: '0.06em',
+        }}>to:</span>
+
+        {/* Agent selector button */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setAgentSwitcherOpen(o => !o); setProjectSwitcherOpen(false) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: agentSwitcherOpen ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)',
+              border: `1px solid ${agentSwitcherOpen ? 'rgba(59,130,246,0.35)' : 'rgba(59,130,246,0.15)'}`,
+              borderRadius: 4, padding: '3px 8px 3px 8px',
+              cursor: 'pointer', transition: 'all 150ms ease',
+            }}
+          >
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: agentColor, flexShrink: 0 }} />
+            <span style={{
+              fontSize: 11, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+              textTransform: 'uppercase', letterSpacing: '0.08em', color: agentColor,
+            }}>{agent?.name || room?.agent || agentSlug}</span>
+            <ChevronDown size={10} style={{ color: isDaytime ? '#6B8AB0' : '#8BA4C4', flexShrink: 0 }} />
+          </button>
+          {agentSwitcherOpen && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
+              background: isNightMode ? '#0F1B2D' : '#142846',
+              border: '1px solid rgba(59,130,246,0.25)', borderRadius: 6,
+              minWidth: 160, maxHeight: 280, overflowY: 'auto',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
             }}>
-              {p.name}
-            </span>
-          ))
-        })()}
+              {AGENTS.map(a => {
+                const isSelected = a.slug === agentSlug
+                return (
+                  <button key={a.slug} onClick={(e) => {
+                    e.stopPropagation()
+                    onSelectAgent?.(a.slug)
+                    setAgentSwitcherOpen(false)
+                  }} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 12px', background: isSelected ? 'rgba(59,130,246,0.15)' : 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    borderBottom: '1px solid rgba(59,130,246,0.08)',
+                    transition: 'background 100ms ease',
+                  }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(59,130,246,0.08)' }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.color || '#6B7280', flexShrink: 0 }} />
+                    <span style={{
+                      fontSize: 12, fontWeight: isSelected ? 800 : 600,
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      color: isSelected ? (a.color || '#60A5FA') : '#94A3B8',
+                      textTransform: 'capitalize',
+                    }}>{a.name}</span>
+                    {isSelected && <CheckCircle2 size={12} style={{ color: '#60A5FA', marginLeft: 'auto' }} />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Project selector button */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setProjectSwitcherOpen(o => !o); setAgentSwitcherOpen(false) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: projectSwitcherOpen ? 'rgba(59,130,246,0.10)' : 'transparent',
+              border: `1px solid ${projectSwitcherOpen ? 'rgba(59,130,246,0.25)' : 'rgba(59,130,246,0.10)'}`,
+              borderRadius: 4, padding: '3px 8px',
+              cursor: 'pointer', transition: 'all 150ms ease',
+            }}
+          >
+            <Folder size={10} style={{ color: isDaytime ? '#6B8AB0' : '#8BA4C4', flexShrink: 0 }} />
+            <span style={{
+              fontSize: 10, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace",
+              color: selectedProject ? '#60A5FA' : (isDaytime ? '#6B8AB0' : '#8BA4C4'),
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+            }}>{selectedProject ? (PROJECTS.find(p => p.slug === selectedProject)?.name || selectedProject) : 'Project'}</span>
+            <ChevronDown size={10} style={{ color: isDaytime ? '#6B8AB0' : '#8BA4C4', flexShrink: 0 }} />
+          </button>
+          {projectSwitcherOpen && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
+              background: isNightMode ? '#0F1B2D' : '#142846',
+              border: '1px solid rgba(59,130,246,0.25)', borderRadius: 6,
+              minWidth: 180, maxHeight: 260, overflowY: 'auto',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            }}>
+              {/* None option */}
+              <button onClick={(e) => { e.stopPropagation(); onSelectProject?.(null); setProjectSwitcherOpen(false) }} style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px 12px', background: !selectedProject ? 'rgba(59,130,246,0.15)' : 'transparent',
+                border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(59,130,246,0.08)',
+                transition: 'background 100ms ease',
+              }}
+              onMouseEnter={e => { if (selectedProject) e.currentTarget.style.background = 'rgba(59,130,246,0.08)' }}
+              onMouseLeave={e => { if (selectedProject) e.currentTarget.style.background = 'transparent' }}
+              >
+                <span style={{ fontSize: 12, color: !selectedProject ? '#60A5FA' : '#94A3B8', fontWeight: !selectedProject ? 700 : 500, fontFamily: "'Inter', system-ui, sans-serif" }}>No project</span>
+                {!selectedProject && <CheckCircle2 size={12} style={{ color: '#60A5FA', marginLeft: 'auto' }} />}
+              </button>
+              {PROJECTS.filter(p => !p.hidden).map(p => {
+                const isSelected = selectedProject === p.slug
+                return (
+                  <button key={p.slug} onClick={(e) => {
+                    e.stopPropagation()
+                    onSelectProject?.(p.slug)
+                    setProjectSwitcherOpen(false)
+                  }} style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 12px', background: isSelected ? 'rgba(59,130,246,0.15)' : 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    borderBottom: '1px solid rgba(59,130,246,0.08)',
+                    transition: 'background 100ms ease',
+                  }}
+                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'rgba(59,130,246,0.08)' }}
+                  onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+                    <span style={{
+                      fontSize: 12, fontWeight: isSelected ? 800 : 600,
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      color: isSelected ? (p.color || '#60A5FA') : '#94A3B8',
+                    }}>{p.name}</span>
+                    {isSelected && <CheckCircle2 size={12} style={{ color: p.color || '#60A5FA', marginLeft: 'auto' }} />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ---- TAB BAR (3 tabs: Live / List / Info) ---- */}
@@ -7487,6 +7608,8 @@ export default function GameDashboard() {
     const saved = sessionStorage.getItem('corner-selected-room')
     return saved || DEFAULT_AGENT
   })
+  // Selected project for chat scoping (null = no project, slug = project context)
+  const [selectedProject, setSelectedProject] = useState(null)
   const [showMinimap, setShowMinimap] = useState(true)
   const [notifications, setNotifications] = useState([])
   const [showShortcuts, setShowShortcuts] = useState(false)
@@ -8663,6 +8786,9 @@ export default function GameDashboard() {
               powerupOpen={powerupOpen}
               onPowerupToggle={setPowerupOpen}
               onPowerupActivate={handlePowerupActivate}
+              onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }}
+              onSelectProject={setSelectedProject}
+              selectedProject={selectedProject}
             />
           )}
       </div>
