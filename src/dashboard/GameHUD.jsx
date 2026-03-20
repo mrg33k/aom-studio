@@ -1891,6 +1891,16 @@ export default function GameHUD({
       tasks: rightNowTasks,
     })
 
+    // INBOX: Unread message count placeholder -- to be wired to Supabase later
+    merged.push({
+      name: 'Inbox',
+      section: 'inbox',
+      color: '#3B9EFF',
+      icon: 'mail',
+      tasks: [],
+      isInbox: true,
+    })
+
     // COMPLETED FEED = simplified activity feed of recent task completions
     if (completedFeed.length > 0) {
       merged.push({
@@ -1911,51 +1921,53 @@ export default function GameHUD({
     }
 
     // YOUR TODOS: Patrik's personal blocked items (things only he can unblock)
-    if (patrikTodos.length > 0) {
-      const existingTodos = merged.find(p => p.section === 'your-todos')
-      if (!existingTodos) {
-        merged.push({
-          name: 'Your TODOs',
-          section: 'your-todos',
-          color: '#EF4444',
-          icon: 'user-check',
-          tasks: patrikTodos.map(t => ({
-            text: t.text,
-            done: false,
-            agent: 'patrik',
-            raw: t.raw,
-            projectSource: t.project,
-            projectSection: t.projectSection,
-            projectColor: t.projectColor,
-          })),
-          isTodoList: true,
-        })
-      }
-    }
+    // REMOVED from pill bar per Patrik directive (Mar 20, 2026) -- kept for future use
+    // if (patrikTodos.length > 0) {
+    //   const existingTodos = merged.find(p => p.section === 'your-todos')
+    //   if (!existingTodos) {
+    //     merged.push({
+    //       name: 'Your TODOs',
+    //       section: 'your-todos',
+    //       color: '#EF4444',
+    //       icon: 'user-check',
+    //       tasks: patrikTodos.map(t => ({
+    //         text: t.text,
+    //         done: false,
+    //         agent: 'patrik',
+    //         raw: t.raw,
+    //         projectSource: t.project,
+    //         projectSection: t.projectSection,
+    //         projectColor: t.projectColor,
+    //       })),
+    //       isTodoList: true,
+    //     })
+    //   }
+    // }
 
     // FINISH THESE: Stale tasks that haven't had movement
-    if (checkingInTasks.length > 0) {
-      const existingStale = merged.find(p => p.section === 'finish-these')
-      if (!existingStale) {
-        merged.push({
-          name: 'Finish These',
-          section: 'finish-these',
-          color: '#6B8AB0',
-          icon: 'history',
-          tasks: checkingInTasks.map(t => ({
-            text: t.text,
-            done: false,
-            agent: t.agent,
-            raw: t.raw,
-            projectSource: t.project,
-            projectSection: t.projectSection,
-            projectColor: t.projectColor,
-            isStale: true,
-          })),
-          isFinishThese: true,
-        })
-      }
-    }
+    // REMOVED from pill bar per Patrik directive (Mar 20, 2026) -- kept for future use
+    // if (checkingInTasks.length > 0) {
+    //   const existingStale = merged.find(p => p.section === 'finish-these')
+    //   if (!existingStale) {
+    //     merged.push({
+    //       name: 'Finish These',
+    //       section: 'finish-these',
+    //       color: '#6B8AB0',
+    //       icon: 'history',
+    //       tasks: checkingInTasks.map(t => ({
+    //         text: t.text,
+    //         done: false,
+    //         agent: t.agent,
+    //         raw: t.raw,
+    //         projectSource: t.project,
+    //         projectSection: t.projectSection,
+    //         projectColor: t.projectColor,
+    //         isStale: true,
+    //       })),
+    //       isFinishThese: true,
+    //     })
+    //   }
+    // }
 
     // LIVE TASK AUTO-CHECK: mark tasks as done if they match TASK FINISHED notifications
     for (const project of merged) {
@@ -1968,24 +1980,17 @@ export default function GameHUD({
     }
 
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
-    // Sort order (Patrik directive): Right Now > Your TODOs > Schedule > Finish These > rest
+    // Sort order (Patrik directive Mar 20, 2026): Right Now > Inbox > Completed > project pills
+    const PILL_ORDER = { 'rightnow': 0, 'inbox': 1, 'completed-feed': 2 }
     return [...merged].sort((a, b) => {
-      // Right Now is always first (running agents)
-      if (a.section === 'rightnow') return -1
-      if (b.section === 'rightnow') return 1
-      // Your TODOs second
-      if (a.section === 'your-todos') return -1
-      if (b.section === 'your-todos') return 1
-      // Schedule third (was Today)
-      if (a.section === 'schedule' || a.section === 'today') return -1
-      if (b.section === 'schedule' || b.section === 'today') return 1
-      // Finish These fourth (was Checking In) -- least urgent, stale stuff
-      if (a.section === 'finish-these' || a.section === 'checking-in') return -1
-      if (b.section === 'finish-these' || b.section === 'checking-in') return 1
-      // Completed feed after the org bins
-      if (a.section === 'completed-feed') return -1
-      if (b.section === 'completed-feed') return 1
-      // Primary: conversation-driven weight (higher = first)
+      const aOrder = PILL_ORDER[a.section]
+      const bOrder = PILL_ORDER[b.section]
+      // Both are pinned pills -- sort by fixed order
+      if (aOrder !== undefined && bOrder !== undefined) return aOrder - bOrder
+      // Pinned pills always come before project pills
+      if (aOrder !== undefined) return -1
+      if (bOrder !== undefined) return 1
+      // Both are project pills -- sort by conversation weight, then task count
       const aWeight = weights[a.section] || 10
       const bWeight = weights[b.section] || 10
       if (aWeight !== bWeight) return bWeight - aWeight
