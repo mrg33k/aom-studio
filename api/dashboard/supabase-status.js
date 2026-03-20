@@ -33,8 +33,10 @@ export default async function handler(req, res) {
     ? req.query.client.trim().toLowerCase()
     : DEFAULT_CLIENT_ID;
 
-  // client_id filter only applied when explicitly passed (column may not exist yet)
-  const clientFilter = req.query.client ? `&client_id=eq.${encodeURIComponent(clientId)}` : '';
+  // client_id filter DISABLED until column is added to all Supabase tables.
+  // When ready: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
+  // Then re-enable: const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`
+  const clientFilter = '';
 
   try {
     const [agents, messages, tasks] = await Promise.all([
