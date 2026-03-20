@@ -9,7 +9,7 @@ import {
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
   BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
   CalendarDays, Sparkles, Users, Search, Folder,
-  CornerDownLeft, Copy, RotateCcw, Reply,
+  CornerDownLeft, Copy, RotateCcw, Reply, Building2,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
@@ -5678,7 +5678,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
             fontSize: 12, fontWeight: 500, color: elapsed >= 50 ? '#EF4444' : '#F59E0B',
             fontFamily: "'Inter', sans-serif",
           }}>
-            {elapsed >= 50 ? 'Response may be delayed' : 'Still processing'}
+            {elapsed >= 60 ? `${agentName || 'Agent'} may be busy` : elapsed >= 50 ? 'Response may be delayed' : 'Still processing'}
           </span>
         )}
       </div>
@@ -6557,7 +6557,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -6701,6 +6701,103 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           : 'radial-gradient(ellipse, rgba(59,130,246,0.12) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
+
+      {/* ---- PANEL NAV BAR ---- */}
+      {/* [City] [<] Agent Name [>] [Home] -- compact 36px top nav */}
+      {!isMobile && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 0,
+          height: 36, flexShrink: 0,
+          borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(59,130,246,0.18)',
+          background: isNightMode ? 'rgba(9,15,28,0.6)' : 'rgba(16,34,62,0.5)',
+          paddingLeft: 4, paddingRight: 4,
+        }}>
+          {/* City / Overview icon */}
+          <button
+            onClick={() => onGoOverview?.()}
+            title="City overview"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              transition: 'color 120ms, background 120ms', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >
+            <Building2 size={16} />
+          </button>
+
+          {/* Prev agent arrow */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
+              const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
+              if (prev) onSelectAgent?.(prev.slug)
+            }}
+            title="Previous agent"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              fontSize: 16, lineHeight: 1, flexShrink: 0,
+              transition: 'color 120ms, background 120ms',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >&#8249;</button>
+
+          {/* Agent/Project name (center) */}
+          <div style={{
+            flex: 1, textAlign: 'center',
+            fontSize: 12, fontWeight: 700,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            color: isNightMode ? '#C8D8EC' : '#D4E2F4',
+            letterSpacing: '0.03em',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            paddingLeft: 4, paddingRight: 4,
+          }}>
+            {agent?.name || room?.agent || agentSlug}
+          </div>
+
+          {/* Next agent arrow */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
+              const next = AGENTS[(idx + 1) % AGENTS.length]
+              if (next) onSelectAgent?.(next.slug)
+            }}
+            title="Next agent"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              fontSize: 16, lineHeight: 1, flexShrink: 0,
+              transition: 'color 120ms, background 120ms',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >&#8250;</button>
+
+          {/* Home / center camera icon */}
+          <button
+            onClick={() => onCenterCamera?.()}
+            title="Center camera on room"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              transition: 'color 120ms, background 120ms', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >
+            <Home size={16} />
+          </button>
+        </div>
+      )}
 
       {/* ---- AGENT CARD ---- */}
       {/* Hidden on mobile: mobile overlay header already shows agent info */}
@@ -9165,8 +9262,9 @@ export default function GameDashboard() {
           updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', content: `Error: ${err.message}`, time: new Date().toISOString() }
           return { ...prev, [agent]: { _all: updated } }
         })
+        setPanelStreaming(false) // Clear streaming on send error so ring doesn't spin forever
       }
-      // Note: setPanelStreaming(false) intentionally removed here.
+      // Note: setPanelStreaming(false) is NOT called on success here.
       // Polling clears streaming state when a real assistant response arrives (lines 8004, 8045).
       // Clearing immediately after POST would kill the thinking indicator within milliseconds.
     }
@@ -9593,6 +9691,8 @@ export default function GameDashboard() {
               onSelectProject={setSelectedProject}
               selectedProject={selectedProject}
               onMessageContextMenu={handleMessageContextMenu}
+              onGoOverview={() => { setIsOverview(true) }}
+              onCenterCamera={() => { if (selectedRoom) { setCameraTarget(selectedRoom); setIsOverview(false) } }}
             />
           )}
       </div>

@@ -1146,7 +1146,7 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
 // ---- EXPANDED TASK PANEL (blue glass, game-styled, interactive checkboxes) ---
 // DONE(bobby2): DAYTIME WHITE EXTENDS TO RIGHT NOW -- TaskPanel now accepts isNightMode and flips to white/light glass in daytime.
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjectTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, onAddToRightNow, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, onMarkInboxRead, highlightedTask }) {
+function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjectTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, onAddToRightNow, hudTaskCtxId, onNavigateToProject, onNavigateToAgent, onMarkInboxRead, highlightedTask, rightNowTasks }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
@@ -1601,6 +1601,21 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
                     : '3px solid transparent',
               }}
             >
+              {/* RTN badge - orange dot when task is promoted to Right Now */}
+              {(() => {
+                const isInRightNow = !task.isAddPrompt && !task.done && rightNowTasks?.some(rt => rt.text === task.text)
+                if (!isInRightNow) return null
+                return (
+                  <div title="In Right Now" style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: '#FF6B3D',
+                    flexShrink: 0, alignSelf: 'center',
+                    boxShadow: '0 0 6px rgba(255,107,61,0.7)',
+                    animation: 'statusPulse 1.5s ease-in-out infinite',
+                  }} />
+                )
+              })()}
+
               {/* Checkbox - CLICKABLE (44px touch target via padding) */}
               <motion.div
                 onClick={() => {
@@ -2326,6 +2341,7 @@ export default function GameHUD({
             }}
             onMarkInboxRead={markInboxRead}
             highlightedTask={highlightedTask}
+            rightNowTasks={liveRightNowTasks}
           />
         )}
       </AnimatePresence>
