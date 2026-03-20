@@ -40,12 +40,14 @@ export default async function handler(req, res) {
     const { agent, limit = 100 } = req.query
     if (!agent) return res.status(400).json({ error: 'agent required' })
 
-    // Resolve client_id for this request
+    // client_id filter ready for multi-tenant (add column to Supabase first)
     const clientId = (req.query.client && req.query.client.trim())
       ? req.query.client.trim().toLowerCase()
       : DEFAULT_CLIENT_ID
 
-    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}&client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=${limit}`
+    // Only filter by client_id if explicitly passed (column may not exist yet)
+    const clientFilter = req.query.client ? `&client_id=eq.${encodeURIComponent(clientId)}` : ''
+    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}${clientFilter}&order=timestamp.desc&limit=${limit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()
@@ -73,8 +75,9 @@ export default async function handler(req, res) {
       role,
       text: text.trim(),
       source,
-      client_id: resolvedClientId,
     }
+    // Only include client_id if explicitly provided (column may not exist yet)
+    if (client_id) payload.client_id = resolvedClientId
 
     const url = `${SUPABASE_URL}/rest/v1/messages`
     const sbRes = await fetch(url, {

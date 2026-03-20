@@ -33,15 +33,14 @@ export default async function handler(req, res) {
     ? req.query.client.trim().toLowerCase()
     : DEFAULT_CLIENT_ID;
 
-  // Build a client filter suffix for tables that have a client_id column.
-  // Tables without client_id (pre-migration) fall back to unfiltered queries.
-  const clientFilter = `client_id=eq.${encodeURIComponent(clientId)}`;
+  // client_id filter only applied when explicitly passed (column may not exist yet)
+  const clientFilter = req.query.client ? `&client_id=eq.${encodeURIComponent(clientId)}` : '';
 
   try {
     const [agents, messages, tasks] = await Promise.all([
-      supabaseGet('agent_status', `order=slug&${clientFilter}`),
-      supabaseGet('messages', `order=timestamp.desc&limit=100&${clientFilter}`),
-      supabaseGet('tasks', `order=created_at.desc&limit=50&${clientFilter}`),
+      supabaseGet('agent_status', `order=slug${clientFilter}`),
+      supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
+      supabaseGet('tasks', `order=created_at.desc&limit=50${clientFilter}`),
     ]);
 
     // Split agents vs projects
