@@ -7737,12 +7737,13 @@ export default function GameDashboard() {
   const rightNowTasks = pipeData?.rightNow || []
   const addToRightNow = useCallback((task) => {
     if (!task) return
-    // Update task status in Supabase: todo -> active (shows in Right Now)
-    if (!IS_LOCAL && task.id) {
-      fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(task.agent || 'elon')}&status=active&current_task=${encodeURIComponent(task.text || '')}`, { method: 'PATCH' }).catch(() => {})
-    }
-    // Write to relay so Elon sees the promotion and can auto-assign
     if (!IS_LOCAL) {
+      // 1. Update the TASK status: todo -> active
+      const taskParam = task.taskId || task.id ? `id=${encodeURIComponent(task.taskId || task.id)}` : `agent=${encodeURIComponent(task.agent || 'elon')}`
+      fetch(`/api/dashboard/task-update?${taskParam}&status=active`, { method: 'PATCH' }).catch(() => {})
+      // 2. Update the AGENT status: idle -> active
+      fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(task.agent || 'elon')}&status=active&current_task=${encodeURIComponent(task.text || '')}`, { method: 'PATCH' }).catch(() => {})
+      // 3. Notify relay so Elon auto-assigns
       fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
