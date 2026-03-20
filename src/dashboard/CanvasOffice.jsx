@@ -201,7 +201,7 @@ const AGENT_FOLDER_ROOMS = [
 ]
 
 // Rooms with a single static PNG (no working/idle pair). 512x512 transparent PNGs.
-// These skip the 1024px crop and fill the hex cell directly.
+// Crop coords are scaled by (naturalWidth/1024) so these render identically to 1024px rooms.
 const SINGLE_IMAGE_ROOMS = {
   'patrik': '/rooms/patrik-office.png',
   'aom-team': '/rooms/aom-team-room.png',
@@ -1740,48 +1740,38 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.clip()
 
     // Crossfade blend between working and idle
-    // Use 9-arg drawImage to source-crop the navy border padding out of 1024x1024 PNGs.
-    // This draws only the hex content region, stretched to fill ROOM_SIZE.
+    // Use 9-arg drawImage to source-crop the navy border padding. Crop coords are defined
+    // in 1024px reference space and automatically scaled for 512px images (SINGLE_IMAGE_ROOMS)
+    // so both sizes render identically inside the hex cell.
     const hasWorkImg = workImg?.complete
     const hasIdleImg = idleImg?.complete
 
+    // Helper: draw a room image with source-crop normalized to 1024px reference space.
+    // Rooms may be 1024x1024 OR 512x512 (SINGLE_IMAGE_ROOMS). Either way we apply the
+    // same crop ratios so both render identically inside the hex cell.
+    const drawRoomImage = (img, alpha) => {
+      const iw = img.naturalWidth || 1024
+      const ih = img.naturalHeight || 1024
+      const scale = iw / 1024  // 1.0 for 1024px, 0.5 for 512px
+      if (scale > 0) {
+        const cx = SRC_CROP_X * scale
+        const cy = SRC_CROP_Y * scale
+        const cw = SRC_CROP_W * scale
+        const ch = SRC_CROP_H * scale
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.drawImage(img, cx, cy, cw, ch, 0, 0, S, S)
+        ctx.restore()
+      }
+    }
+
     if (hasWorkImg && hasIdleImg) {
-      const iw = workImg.naturalWidth || 1024
-      const ih = workImg.naturalHeight || 1024
-      // Only apply source crop to full-size (1024x1024) room images
-      const useCrop = iw >= 1024 && ih >= 1024
-      ctx.save()
-      ctx.globalAlpha = (1 - alpha) * parentAlpha
-      if (useCrop) {
-        ctx.drawImage(workImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
-      } else {
-        ctx.drawImage(workImg, 0, 0, S, S)
-      }
-      ctx.restore()
-      ctx.save()
-      ctx.globalAlpha = alpha * parentAlpha
-      if (useCrop) {
-        ctx.drawImage(idleImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
-      } else {
-        ctx.drawImage(idleImg, 0, 0, S, S)
-      }
-      ctx.restore()
+      drawRoomImage(workImg, (1 - alpha) * parentAlpha)
+      drawRoomImage(idleImg, alpha * parentAlpha)
     } else if (hasWorkImg) {
-      const iw = workImg.naturalWidth || 1024
-      const ih = workImg.naturalHeight || 1024
-      if (iw >= 1024 && ih >= 1024) {
-        ctx.drawImage(workImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
-      } else {
-        ctx.drawImage(workImg, 0, 0, S, S)
-      }
+      drawRoomImage(workImg, parentAlpha)
     } else if (hasIdleImg) {
-      const iw = idleImg.naturalWidth || 1024
-      const ih = idleImg.naturalHeight || 1024
-      if (iw >= 1024 && ih >= 1024) {
-        ctx.drawImage(idleImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
-      } else {
-        ctx.drawImage(idleImg, 0, 0, S, S)
-      }
+      drawRoomImage(idleImg, parentAlpha)
     } else {
       // ---- PLACEHOLDER: colored hex for project/custom rooms without images ----
       // Dark interior fill
