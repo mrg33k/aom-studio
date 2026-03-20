@@ -128,7 +128,7 @@ const heroStats = [
   { number: 37, suffix: '', label: 'Professional Video Shoots', context: 'May 2025 through March 2026' },
   { number: 3138, suffix: '', label: 'Video Files Captured', context: '3 TB of raw + finished footage' },
   { number: 713, suffix: '', label: 'Professional Photos', context: 'Stills, aerials, DNG raws' },
-  { number: 23, suffix: '', label: 'Finished Video Exports', context: 'Edited, color-graded, delivered' },
+  { number: 48, suffix: '', label: 'Finished Video Exports', context: 'Edited, color-graded, delivered' },
   { number: 25, suffix: '+', label: 'Job Sites Documented', context: 'Premium client locations across Phoenix metro' },
   { number: 1, suffix: '', label: 'Custom Website', context: 'Built and launched March 2026' },
 ]
@@ -198,7 +198,7 @@ const contentArsenal = [
 
 const valueComparison = [
   { item: '37 Professional Shoots', rate: '$800 avg per shoot', value: '$29,600' },
-  { item: '23 Finished Video Exports', rate: '$500 avg per video', value: '$11,500' },
+  { item: '48 Finished Video Exports', rate: '$500 avg per video', value: '$11,500' },
   { item: 'Custom Website', rate: 'Design + Dev + CMS', value: '$6,000' },
   { item: 'Brand & Content Strategy', rate: 'Guidelines + Pillars + Calendar', value: '$5,000' },
   { item: 'Social Media Management', rate: '11 months across 3 platforms', value: '$11,000' },
