@@ -7130,6 +7130,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const [confirmIndex, setConfirmIndex] = useState(0)
   const confirmDoneCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug).length
   useEffect(() => { setConfirmIndex(0) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Track which task is currently animating the approve glow+fade (keyed by taskId or text)
+  const [approvingTaskId, setApprovingTaskId] = useState(null)
   // Long-press timer for message context menu (mobile)
   const msgLongPressRef = useRef(null)
 
@@ -8652,6 +8654,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         const t = doneTasks[safeIndex]
         const total = doneTasks.length
         const callTaskAction = async (taskId, taskText, action) => {
+          if (action === 'approve') {
+            // Animate: green glow (300ms) then fade out (250ms), then fire API
+            const key = taskId || taskText
+            setApprovingTaskId(key)
+            await new Promise(r => setTimeout(r, 300))
+            setApprovingTaskId(key + '__fadeout')
+            await new Promise(r => setTimeout(r, 250))
+            setApprovingTaskId(null)
+          }
           try {
             await fetch('/api/dashboard/task-action', {
               method: 'POST',
@@ -8683,7 +8694,12 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               ? 'linear-gradient(180deg, rgba(254,252,232,0.60) 0%, rgba(255,255,255,0) 100%)'
               : 'linear-gradient(180deg, rgba(20,15,5,0.45) 0%, transparent 100%)',
           }}>
-            <div key={t.taskId || t.text} style={{
+            {(() => {
+              const cardKey = t.taskId || t.text
+              const isGlowing = approvingTaskId === cardKey
+              const isFadingOut = approvingTaskId === cardKey + '__fadeout'
+              return (
+            <div key={cardKey} className={isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : ''} style={{
               background: isDaytime
                 ? 'linear-gradient(135deg, rgba(234,179,8,0.12) 0%, rgba(161,98,7,0.06) 100%)'
                 : 'linear-gradient(135deg, rgba(234,179,8,0.18) 0%, rgba(161,98,7,0.10) 100%)',
@@ -8833,6 +8849,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </button>
               </div>
             </div>
+              )
+            })()}
           </div>
         )
       })()}
@@ -11547,6 +11565,25 @@ export default function GameDashboard() {
         }
         .md-msg tr:nth-child(even) td {
           background: rgba(255,255,255,0.03);
+        }
+        /* Approve animation: green glow flash then fade+slide out */
+        @keyframes approveGlow {
+          0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0); border-color: rgba(234,179,8,0.45); }
+          25%  { box-shadow: 0 0 0 6px rgba(34,197,94,0.5), 0 0 24px rgba(34,197,94,0.4); border-color: rgba(34,197,94,0.9); }
+          60%  { box-shadow: 0 0 0 10px rgba(34,197,94,0.2), 0 0 40px rgba(34,197,94,0.25); border-color: rgba(34,197,94,0.7); }
+          100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); border-color: rgba(34,197,94,0.3); }
+        }
+        @keyframes approveFadeOut {
+          0%   { opacity: 1; transform: translateY(0) scaleY(1); max-height: 200px; }
+          100% { opacity: 0; transform: translateY(-8px) scaleY(0.92); max-height: 0; padding: 0; margin: 0; }
+        }
+        .task-approving {
+          animation: approveGlow 300ms ease-out forwards;
+        }
+        .task-approved {
+          animation: approveFadeOut 250ms ease-in forwards;
+          overflow: hidden;
+          pointer-events: none;
         }
       `}</style>
     </div>

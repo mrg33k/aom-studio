@@ -82,7 +82,19 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
   const textPrimary = isDaytime ? '#1E293B' : '#E2E8F0'
   const textMuted = isDaytime ? '#64748B' : '#8BA4C4'
 
+  // Track approve animation state per card key
+  const [approvingId, setApprovingId] = useState(null)
+
   const callAction = async (taskId, taskText, agent, action) => {
+    if (action === 'approve') {
+      // Animate: green glow (300ms) then fade out (250ms), then fire API
+      const key = taskId || taskText
+      setApprovingId(key)
+      await new Promise(r => setTimeout(r, 300))
+      setApprovingId(key + '__fadeout')
+      await new Promise(r => setTimeout(r, 250))
+      setApprovingId(null)
+    }
     try {
       await fetch('/api/dashboard/task-action', {
         method: 'POST',
@@ -158,8 +170,12 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
         {/* SECTION 1: Done tasks awaiting approval */}
         {doneTasks.length > 0 && (
           <>
-            {doneTasks.map((t, idx) => (
-              <div key={t.taskId || `done-${idx}`} style={{
+            {doneTasks.map((t, idx) => {
+              const cardKey = t.taskId || `done-${idx}`
+              const isGlowing = approvingId === cardKey || approvingId === (t.taskId || t.text)
+              const isFadingOut = approvingId === cardKey + '__fadeout' || approvingId === (t.taskId || t.text) + '__fadeout'
+              return (
+              <div key={cardKey} className={isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : ''} style={{
                 background: isDaytime
                   ? 'linear-gradient(135deg, rgba(234,179,8,0.10) 0%, rgba(161,98,7,0.05) 100%)'
                   : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(161,98,7,0.08) 100%)',
@@ -276,7 +292,8 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                   </button>
                 </div>
               </div>
-            ))}
+              )
+            })}
             {unreadMsgs.length > 0 && (
               <div style={{ height: 1, background: isDaytime ? 'rgba(234,179,8,0.18)' : 'rgba(234,179,8,0.15)', margin: '2px 0' }} />
             )}
