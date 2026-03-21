@@ -216,17 +216,25 @@ export default function TaskContextMenu({
     }
   }, [showContextInput])
 
-  // Keep menu in viewport
+  // Keep menu in viewport -- flip ABOVE click point when near bottom
   const [adjustedPos, setAdjustedPos] = useState(position)
+  const [flippedUp, setFlippedUp] = useState(false)
   useEffect(() => {
     if (!menuRef.current) return
     const rect = menuRef.current.getBoundingClientRect()
     let x = position.x
     let y = position.y
+    let flipped = false
+    // Horizontal clamp
     if (x + rect.width > window.innerWidth - 8) x = window.innerWidth - rect.width - 8
-    if (y + rect.height > window.innerHeight - 8) y = window.innerHeight - rect.height - 8
     if (x < 8) x = 8
+    // Vertical: flip above if menu would overflow the bottom
+    if (y + rect.height > window.innerHeight - 8) {
+      y = position.y - rect.height
+      flipped = true
+    }
     if (y < 8) y = 8
+    setFlippedUp(flipped)
     setAdjustedPos({ x, y })
   }, [position])
 
@@ -346,9 +354,9 @@ export default function TaskContextMenu({
   return (
     <motion.div
       ref={menuRef}
-      initial={{ opacity: 0, scale: 0.92, y: -4 }}
+      initial={{ opacity: 0, scale: 0.92, y: flippedUp ? 4 : -4 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.92, y: -4 }}
+      exit={{ opacity: 0, scale: 0.92, y: flippedUp ? 4 : -4 }}
       transition={{ duration: 0.12, ease: [0.2, 0.9, 0.3, 1] }}
       style={{
         position: 'fixed',
