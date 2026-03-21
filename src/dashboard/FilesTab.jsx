@@ -1,78 +1,14 @@
 // FilesTab.jsx -- Files tab for UnifiedPanel sidebar
 // Upload images, view thumbnails, send to chat, full-size modal
 // Paste zone for large text (transcripts, notes) -- iPad-friendly
-// Storage: Supabase Storage (bucket: 'corner-files') + Supabase 'text_files' table with localStorage fallback
+// Storage: Supabase Storage (bucket: 'corner-files') + Supabase 'text_files' table
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft, ClipboardPaste } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 
-const STORAGE_KEY = 'corner-files-local'
-const TEXT_STORAGE_KEY = 'corner-text-files-local'
 const BUCKET = 'corner-files'
 const TEXT_TABLE = 'text_files'
-
-// ---- Helpers ----
-
-function getLocalFiles(agentSlug, clientId) {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const all = JSON.parse(raw)
-    return all.filter(f => f.agent === agentSlug && f.clientId === (clientId || 'default'))
-  } catch {
-    return []
-  }
-}
-
-function saveLocalFile(file, agentSlug, clientId) {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const all = raw ? JSON.parse(raw) : []
-    all.unshift(file) // newest first
-    // Keep max 50 files to avoid localStorage overflow
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all.slice(0, 50)))
-  } catch { /* ignore */ }
-}
-
-function deleteLocalFile(id, agentSlug, clientId) {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return
-    const all = JSON.parse(raw)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all.filter(f => f.id !== id)))
-  } catch { /* ignore */ }
-}
-
-function getLocalTextFiles(agentSlug, clientId) {
-  try {
-    const raw = localStorage.getItem(TEXT_STORAGE_KEY)
-    if (!raw) return []
-    const all = JSON.parse(raw)
-    return all.filter(f => f.agent === agentSlug && f.clientId === (clientId || 'default'))
-  } catch {
-    return []
-  }
-}
-
-function saveLocalTextFile(file) {
-  try {
-    const raw = localStorage.getItem(TEXT_STORAGE_KEY)
-    const all = raw ? JSON.parse(raw) : []
-    all.unshift(file)
-    // Keep max 100 text files
-    localStorage.setItem(TEXT_STORAGE_KEY, JSON.stringify(all.slice(0, 100)))
-  } catch { /* ignore */ }
-}
-
-function deleteLocalTextFile(id) {
-  try {
-    const raw = localStorage.getItem(TEXT_STORAGE_KEY)
-    if (!raw) return
-    const all = JSON.parse(raw)
-    localStorage.setItem(TEXT_STORAGE_KEY, JSON.stringify(all.filter(f => f.id !== id)))
-  } catch { /* ignore */ }
-}
 
 function formatDate(iso) {
   try {
@@ -149,12 +85,10 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
           return
         }
       } catch (err) {
-        // Supabase storage not set up or bucket missing -- fall through to localStorage
-        console.warn('[FilesTab] Supabase storage unavailable, using localStorage:', err.message)
+        console.warn('[FilesTab] Supabase storage unavailable:', err.message)
+        setFiles([])
       }
     }
-    // localStorage fallback
-    setFiles(getLocalFiles(agentSlug, clientId))
   }, [agentSlug, clientId])
 
   // Load text files on mount or agent switch
@@ -182,11 +116,10 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
           return
         }
       } catch (err) {
-        console.warn('[FilesTab] Supabase text_files unavailable, using localStorage:', err.message)
+        console.warn('[FilesTab] Supabase text_files unavailable:', err.message)
+        setTextFiles([])
       }
     }
-    // localStorage fallback
-    setTextFiles(getLocalTextFiles(agentSlug, clientId))
   }, [agentSlug, clientId])
 
   useEffect(() => {
@@ -225,31 +158,9 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
           await loadFiles()
           continue
         } catch (err) {
-          console.warn('[FilesTab] Supabase upload failed, falling back to localStorage:', err.message)
+          console.warn('[FilesTab] Supabase upload failed:', err.message)
+          setError(`Failed to upload ${file.name}: ${err.message}`)
         }
-      }
-
-      // localStorage fallback: store as base64
-      try {
-        const b64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = e => resolve(e.target.result)
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-        const entry = {
-          id,
-          name: file.name,
-          date: new Date().toISOString(),
-          url: b64,
-          source: 'local',
-          agent: agentSlug,
-          clientId: clientId || 'default',
-        }
-        saveLocalFile(entry, agentSlug, clientId)
-        setFiles(prev => [entry, ...prev])
-      } catch (err) {
-        setError(`Failed to save ${file.name}: ${err.message}`)
       }
     }
     setUploading(false)
@@ -267,9 +178,6 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
         console.warn('[FilesTab] Supabase delete failed:', err.message)
       }
     }
-    deleteLocalFile(file.id, agentSlug, clientId)
-    setFiles(prev => prev.filter(f => f.id !== file.id))
-    if (lightboxFile?.id === file.id) setLightboxFile(null)
   }, [agentSlug, clientId, lightboxFile])
 
   // ---- Text paste handlers ----
@@ -299,24 +207,10 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
         setSaving(false)
         return
       } catch (err) {
-        console.warn('[FilesTab] Supabase text save failed, using localStorage:', err.message)
+        console.warn('[FilesTab] Supabase text save failed:', err.message)
+        setTextError(`Failed to save: ${err.message}`)
       }
     }
-
-    // localStorage fallback
-    const entry = {
-      id,
-      filename,
-      content: trimmed,
-      type: 'text',
-      created_at: now,
-      source: 'local',
-      agent: agentSlug,
-      clientId: clientId || 'default',
-    }
-    saveLocalTextFile(entry)
-    setTextFiles(prev => [entry, ...prev])
-    setPasteContent('')
     setSaving(false)
   }, [pasteContent, agentSlug, clientId, loadTextFiles])
 
@@ -332,9 +226,6 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
         console.warn('[FilesTab] Supabase text delete failed:', err.message)
       }
     }
-    deleteLocalTextFile(file.id)
-    setTextFiles(prev => prev.filter(f => f.id !== file.id))
-    if (viewingFile?.id === file.id) setViewingFile(null)
   }, [viewingFile])
 
   // Drag and drop (images only)
