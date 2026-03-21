@@ -1200,54 +1200,44 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const elapsed = (performance.now() - startTimeRef.current) / 1000
     const now = performance.now()
 
-    // ---- HEX GRID LINES: draw snap grid as visible lines behind rooms ----
-    // Grid cells use the same hexPosition(r, c, ORIGIN_X, ORIGIN_Y) + ROOM_SIZE as rooms.
-    // HEX_COL_STEP = VIS_W * 0.52, HEX_ROW_STEP = VIS_H * 0.72 (module-level constants).
-    // Viewport culling: convert screen edges to world space, then to row/col via the same
-    // step values. The -2/+2 margin ensures cells at the edge are never clipped.
-    // Parity rule: generateHexSlots puts even cols on even rows, odd cols on odd rows.
-    // The grid mirrors this exactly so outlines land on actual room positions.
+    // ---- HEX GRID LINES: draw outline at each actual room slot position ----
+    // Uses IDENTICAL origin, cell size, and row height as room placement (hexPosition +
+    // ORIGIN_X/Y). Iterates over the same slot list that slotWorldPos uses -- no extra
+    // empty cells above, below, or beside the real room cluster. Viewport culling skips
+    // cells whose bounding box is entirely off-screen.
     {
       const viewL = -cam.x / cam.zoom
       const viewT = -cam.y / cam.zoom
       const viewR = viewL + size.w / cam.zoom
       const viewB = viewT + size.h / cam.zoom
 
-      // Row/col range that covers the visible viewport (plus 2-cell margin)
-      const rowMin = Math.floor((viewT - ORIGIN_Y) / HEX_ROW_STEP) - 2
-      const rowMax = Math.ceil((viewB - ORIGIN_Y) / HEX_ROW_STEP) + 2
-      // Account for ROOM_SIZE: a cell whose top-left is off-screen left may still be visible
-      const colMin = Math.floor((viewL - ORIGIN_X - ROOM_SIZE) / HEX_COL_STEP) - 1
-      const colMax = Math.ceil((viewR - ORIGIN_X) / HEX_COL_STEP) + 1
-
       ctx.save()
       ctx.strokeStyle = 'rgba(59, 130, 246, 0.14)'  // #3B82F6 at low opacity
       ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
 
-      // S and vertex ratios MUST match drawRoom()'s ctx.clip() path exactly:
+      // Hex vertex ratios match drawRoom()'s ctx.clip() path exactly:
       //   top=(0.50,0.00), upper-right=(0.99,0.31), lower-right=(0.99,0.72),
       //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.31)
-      // Position via hexPosition() which is the same function used for room placement.
+      // hexPosition(slot.row, slot.col, ORIGIN_X, ORIGIN_Y) is the SAME call used in
+      // slotWorldPos() -- both return identical (x, y) top-left coordinates.
       const S = ROOM_SIZE
-      for (let r = rowMin; r <= rowMax; r++) {
-        const parity = ((r % 2) + 2) % 2  // 0 for even rows, 1 for odd rows
-        // Find the first col >= colMin that has the right parity (step-2 grid)
-        let cStart = colMin
-        if (((cStart % 2) + 2) % 2 !== parity) cStart += 1
-        for (let c = cStart; c <= colMax; c += 2) {
-          const pos = hexPosition(r, c, ORIGIN_X, ORIGIN_Y)
-          const ox = pos.x
-          const oy = pos.y
-          ctx.beginPath()
-          ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
-          ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right
-          ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
-          ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
-          ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
-          ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left
-          ctx.closePath()
-          ctx.stroke()
-        }
+      const gridSlots = getHexSlots(slotOrder.length)
+      for (let i = 0; i < gridSlots.length; i++) {
+        const slot = gridSlots[i]
+        const pos = hexPosition(slot.row, slot.col, ORIGIN_X, ORIGIN_Y)
+        const ox = pos.x
+        const oy = pos.y
+        // Viewport cull: skip if bounding box entirely off-screen
+        if (ox + S < viewL || ox > viewR || oy + S < viewT || oy > viewB) continue
+        ctx.beginPath()
+        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
+        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left
+        ctx.closePath()
+        ctx.stroke()
       }
       ctx.restore()
     }
