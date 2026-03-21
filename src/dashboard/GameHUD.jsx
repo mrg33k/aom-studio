@@ -60,6 +60,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Zap, X, Loader2, CheckCircle2, Search } from 'lucide-react'
 import { HUDBellButton, HUDToasts, HUD_NOTIFICATION_STYLES } from './HUDNotifications.jsx'
 import { useDataPipe } from './hooks/useDataPipe.js'
+import { getClientId } from './lib/clientConfig.js'
 import {
   HUD,
   parsePunchList,
@@ -70,6 +71,259 @@ import { TaskPanel } from './components/TaskPanel.jsx'
 import { ProjectCard } from './components/ProjectCard.jsx'
 import { hudCtxBtn } from './components/CompactStats.jsx'
 
+// ---- INBOX PANEL ------------------------------------------------------------
+// Shown when the Inbox pill is expanded. Two sections:
+//   (1) Done tasks awaiting approval -- amber cards with Approve / Deny / Clarify
+//   (2) Unread messages -- compact agent message previews
+function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToAgent, refetch }) {
+  const isDaytime = isNightMode === false
+  const bg = isDaytime ? 'rgba(248,250,255,0.97)' : 'rgba(8,16,36,0.97)'
+  const border = isDaytime ? 'rgba(234,179,8,0.35)' : 'rgba(234,179,8,0.30)'
+  const textPrimary = isDaytime ? '#1E293B' : '#E2E8F0'
+  const textMuted = isDaytime ? '#64748B' : '#8BA4C4'
+
+  const callAction = async (taskId, taskText, agent, action) => {
+    try {
+      await fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action, taskId, taskText, agent,
+          clientId: getClientId(),
+        }),
+      })
+      refetch?.()
+    } catch { /* silent */ }
+  }
+
+  return (
+    <motion.div
+      key="inbox-panel"
+      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 16, scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+      style={{
+        position: 'absolute', bottom: '100%', left: 0, right: 0,
+        marginBottom: 8,
+        background: bg,
+        borderRadius: '14px 14px 0 0',
+        border: `1.5px solid ${border}`,
+        borderBottom: 'none',
+        boxShadow: isDaytime
+          ? '0 -8px 32px rgba(234,179,8,0.12), 0 -2px 8px rgba(0,0,0,0.08)'
+          : '0 -8px 32px rgba(234,179,8,0.15), 0 -2px 8px rgba(0,0,0,0.3)',
+        maxHeight: 360,
+        overflowY: 'auto',
+        zIndex: 50,
+        scrollbarWidth: 'thin',
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '10px 16px 8px',
+        borderBottom: `1px solid ${isDaytime ? 'rgba(234,179,8,0.20)' : 'rgba(234,179,8,0.18)'}`,
+        position: 'sticky', top: 0, background: bg, zIndex: 1,
+      }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%',
+          background: '#EAB308',
+          boxShadow: '0 0 8px #EAB308, 0 0 14px rgba(234,179,8,0.5)',
+        }} />
+        <span style={{
+          fontSize: 11, fontWeight: 700,
+          color: isDaytime ? '#92400E' : '#FCD34D',
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: '0.08em', textTransform: 'uppercase', flex: 1,
+        }}>Inbox</span>
+        {(doneTasks.length + unreadMsgs.length) > 0 && (
+          <span style={{
+            fontSize: 11, fontWeight: 700, color: isDaytime ? '#92400E' : '#FCD34D',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>{doneTasks.length + unreadMsgs.length}</span>
+        )}
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: textMuted, padding: 4, borderRadius: 6,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        ><X size={14} /></button>
+      </div>
+
+      <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+        {/* SECTION 1: Done tasks awaiting approval */}
+        {doneTasks.length > 0 && (
+          <>
+            {doneTasks.map((t, idx) => (
+              <div key={t.taskId || `done-${idx}`} style={{
+                background: isDaytime
+                  ? 'linear-gradient(135deg, rgba(234,179,8,0.10) 0%, rgba(161,98,7,0.05) 100%)'
+                  : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(161,98,7,0.08) 100%)',
+                border: isDaytime ? '1.5px solid rgba(234,179,8,0.45)' : '1.5px solid rgba(234,179,8,0.45)',
+                borderLeft: '3px solid #EAB308',
+                borderRadius: 10,
+                padding: '10px 12px',
+                boxShadow: isDaytime
+                  ? '0 1px 6px rgba(234,179,8,0.10)'
+                  : '0 1px 8px rgba(234,179,8,0.15)',
+              }}>
+                {/* Agent + label row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: '#EAB308', boxShadow: '0 0 6px #EAB308',
+                  }} />
+                  <span style={{
+                    fontSize: 10, fontWeight: 700,
+                    color: isDaytime ? '#92400E' : '#FCD34D',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    flex: 1,
+                  }}>
+                    {t.agent ? `${t.agent.charAt(0).toUpperCase()}${t.agent.slice(1)} -- ` : ''}Done
+                  </span>
+                  <span style={{ fontSize: 9, color: textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
+                    awaiting approval
+                  </span>
+                </div>
+                {/* Task text */}
+                <div style={{
+                  fontSize: 13, fontWeight: 600, color: textPrimary,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  lineHeight: 1.4, marginBottom: 8,
+                  padding: '6px 10px',
+                  background: isDaytime ? 'rgba(255,255,255,0.65)' : 'rgba(10,18,35,0.55)',
+                  borderRadius: 7,
+                  border: isDaytime ? '1px solid rgba(234,179,8,0.18)' : '1px solid rgba(234,179,8,0.22)',
+                }}>
+                  {t.text}
+                </div>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={() => callAction(t.taskId, t.text, t.agent, 'approve')}
+                    style={{
+                      flex: 1, padding: '7px 10px',
+                      background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                      border: '1.5px solid rgba(34,197,94,0.5)',
+                      borderRadius: 8, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      color: '#FFF', fontSize: 12, fontWeight: 800,
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      boxShadow: '0 1px 6px rgba(22,163,74,0.28)',
+                      transition: 'transform 80ms ease, box-shadow 80ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => callAction(t.taskId, t.text, t.agent, 'reject')}
+                    style={{
+                      flex: 1, padding: '7px 10px',
+                      background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                      border: '1.5px solid rgba(239,68,68,0.5)',
+                      borderRadius: 8, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      color: '#FFF', fontSize: 12, fontWeight: 800,
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      boxShadow: '0 1px 6px rgba(220,38,38,0.28)',
+                      transition: 'transform 80ms ease, box-shadow 80ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                    Deny
+                  </button>
+                  <button
+                    onClick={() => onNavigateToAgent?.(t.agent)}
+                    style={{
+                      flex: 1, padding: '7px 10px',
+                      background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                      border: '1.5px solid rgba(59,130,246,0.5)',
+                      borderRadius: 8, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      color: '#FFF', fontSize: 12, fontWeight: 800,
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      boxShadow: '0 1px 6px rgba(37,99,235,0.28)',
+                      transition: 'transform 80ms ease, box-shadow 80ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    Clarify
+                  </button>
+                </div>
+              </div>
+            ))}
+            {unreadMsgs.length > 0 && (
+              <div style={{ height: 1, background: isDaytime ? 'rgba(234,179,8,0.18)' : 'rgba(234,179,8,0.15)', margin: '2px 0' }} />
+            )}
+          </>
+        )}
+
+        {/* SECTION 2: Unread messages */}
+        {unreadMsgs.map((m, idx) => (
+          <button
+            key={m.id || `msg-${idx}`}
+            onClick={() => onNavigateToAgent?.(m.agent)}
+            style={{
+              background: isDaytime ? 'rgba(59,130,246,0.07)' : 'rgba(59,130,246,0.10)',
+              border: isDaytime ? '1px solid rgba(59,130,246,0.20)' : '1px solid rgba(59,130,246,0.22)',
+              borderLeft: '3px solid #3B82F6',
+              borderRadius: 8, padding: '8px 12px',
+              display: 'flex', flexDirection: 'column', gap: 3,
+              cursor: 'pointer', textAlign: 'left', width: '100%',
+              transition: 'background 120ms ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.16)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.07)' : 'rgba(59,130,246,0.10)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                fontSize: 11, fontWeight: 700, color: isDaytime ? '#2563EB' : '#60A5FA',
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+              }}>{m.agent ? `${m.agent.charAt(0).toUpperCase()}${m.agent.slice(1)}` : 'Agent'}</span>
+              <span style={{ fontSize: 9, color: textMuted, marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace" }}>
+                new msg
+              </span>
+            </div>
+            <span style={{
+              fontSize: 12, color: textPrimary,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              maxWidth: '100%',
+            }}>{m.text || m.preview || ''}</span>
+          </button>
+        ))}
+
+        {doneTasks.length === 0 && unreadMsgs.length === 0 && (
+          <div style={{
+            padding: '16px 8px', textAlign: 'center',
+            color: textMuted, fontSize: 13,
+            fontFamily: "'Inter', system-ui, sans-serif",
+          }}>Inbox is empty</div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
 // ---- MAIN HUD ---------------------------------------------------------------
 // DONE(bobby2): Chat input REMOVED from bottom bar per Patrik directive. Chat lives ONLY in sidebar.
 // Bottom bar = agent roster | scrollable project pills | compact stats | notification bell
@@ -79,6 +333,8 @@ export default function GameHUD({
   chatAgent, onChatSubmit, onExpandChat,
   // Context menu props
   onAgentContextMenu, onProjectContextMenu,
+  // Navigation -- used by InboxPanel to open agent chat from Inbox
+  onNavigateToAgent,
   // Daytime/nighttime theme -- when false, bottom HUD goes white/vibrant blue to match top bar
   isNightMode: isNightModeProp,
 }) {
@@ -177,12 +433,20 @@ export default function GameHUD({
   const {
     rightNow: liveRightNowTasks,
     completedFeed,
+    inboxItems,
     yourTodos: patrikTodos,
     finishThese: checkingInTasks,
     isAutoChecked,
     punchData,
     punchLoading: loading,
   } = useDataPipe(parsePunchList)
+
+  // Inbox: done tasks awaiting approval + unread messages
+  const donePendingTasks = useMemo(() =>
+    (liveRightNowTasks || []).filter(t => t.isDoneAwaitingApproval),
+    [liveRightNowTasks]
+  )
+  const inboxCount = donePendingTasks.length + (inboxItems || []).length
   const hudRef = useRef(null)
   const conversationScores = useConversationRecency()
 
@@ -261,6 +525,41 @@ export default function GameHUD({
       tasks: rightNowTasks,
     })
 
+    // INBOX pill = done tasks awaiting approval + unread messages
+    // Only render when there's something to show
+    const donePending = (liveRightNowTasks || []).filter(t => t.isDoneAwaitingApproval)
+    const unreadMsgs = inboxItems || []
+    if (donePending.length > 0 || unreadMsgs.length > 0) {
+      merged.push({
+        name: 'Inbox',
+        section: 'inbox',
+        color: '#EAB308',
+        icon: 'inbox',
+        tasks: [
+          ...donePending.map(t => ({
+            text: t.text,
+            agent: t.agent,
+            taskId: t.taskId,
+            done: false,
+            raw: '',
+            isLive: false,
+            isDoneAwaitingApproval: true,
+          })),
+          ...unreadMsgs.map(m => ({
+            text: m.text || m.preview || '',
+            agent: m.agent,
+            done: false,
+            raw: '',
+            isLive: false,
+            isUnreadMsg: true,
+            msgId: m.id,
+            msgTimestamp: m.timestamp,
+          })),
+        ],
+        isInbox: true,
+      })
+    }
+
     // COMPLETED FEED = simplified activity feed of recent task completions
     if (completedFeed.length > 0) {
       merged.push({
@@ -338,12 +637,15 @@ export default function GameHUD({
     }
 
     const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
-    // Sort order (Patrik directive): Right Now > Your TODOs > Schedule > Finish These > rest
+    // Sort order (Patrik directive): Right Now > Inbox > Your TODOs > Schedule > Finish These > rest
     return [...merged].sort((a, b) => {
       // Right Now is always first (running agents)
       if (a.section === 'rightnow') return -1
       if (b.section === 'rightnow') return 1
-      // Your TODOs second
+      // Inbox second -- done tasks + unread messages need immediate attention
+      if (a.section === 'inbox') return -1
+      if (b.section === 'inbox') return 1
+      // Your TODOs third
       if (a.section === 'your-todos') return -1
       if (b.section === 'your-todos') return 1
       // Schedule third (was Today)
@@ -365,7 +667,7 @@ export default function GameHUD({
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks, manualTasks])
+  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks, manualTasks, inboxItems])
 
   // Keep ref in sync for navigateToProject callback
   projectsRef.current = projects
@@ -454,9 +756,19 @@ export default function GameHUD({
         pointerEvents: 'auto',
       }}
     >
-      {/* Expanded task panel */}
+      {/* Expanded task panel -- Inbox gets a custom approval panel; all others use TaskPanel */}
       <AnimatePresence>
-        {expandedProject && (
+        {expandedProject && expandedProject.section === 'inbox' ? (
+          <InboxPanel
+            key="inbox"
+            doneTasks={donePendingTasks}
+            unreadMsgs={inboxItems || []}
+            onClose={() => setExpandedProject(null)}
+            isNightMode={isNightMode}
+            onNavigateToAgent={onNavigateToAgent}
+            refetch={() => {}}
+          />
+        ) : expandedProject ? (
           <TaskPanel
             key={expandedProject.section}
             project={expandedProject}
@@ -478,7 +790,7 @@ export default function GameHUD({
             onNavigateToProject={navigateToProject}
             highlightedTask={highlightedTask}
           />
-        )}
+        ) : null}
       </AnimatePresence>
 
       {/* The HUD panel - BLUE GLASS game panel (daytime = brighter blue glass) */}
