@@ -1084,7 +1084,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       animate={isMobile ? { x: 0 } : { opacity: 1, x: 0 }}
       exit={isMobile ? { x: '100%' } : { opacity: 0, x: 20 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className={`flex flex-col bg-[#0A0A08] ${
+      className={`flex flex-col bg-[#0A0A08] overflow-x-hidden ${
         isMobile
           ? 'fixed inset-0 z-50'
           : 'h-full border-l border-[#292524]'
@@ -1162,7 +1162,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
       </AnimatePresence>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-5 space-y-4 scroll-smooth chat-messages-area relative">
+      <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 space-y-4 scroll-smooth chat-messages-area relative">
         {messages.length === 0 && !searchQuery && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-full bg-[#1A1A17] border-2 border-[#C026D3]/40 flex items-center justify-center mb-4">

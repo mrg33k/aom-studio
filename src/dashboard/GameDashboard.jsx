@@ -4901,7 +4901,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
 
             {/* Messages area */}
             <div ref={messagesContainerRef} style={{
-              flex: 1, overflowY: 'auto', padding: '16px 20px',
+              flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px',
               maxWidth: fullscreen ? 720 : '100%',
               margin: fullscreen ? '0 auto' : 0, width: '100%',
             }}>
@@ -7844,7 +7844,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               isNearBottomRef.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
               if (isNearBottomRef.current) setShowNewMsgIndicator(false)
             }} style={{
-              flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 20px',
+              flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px',
               display: 'flex', flexDirection: 'column', gap: 14,
               position: 'relative',
             }}>
