@@ -408,10 +408,10 @@ export function useDataPipe(parsePunchList) {
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
             active.push(...queuedEntries)
 
-            // Done tasks awaiting approval -- agent marked done, Patrik must approve/deny/clarify
+            // Done AND Todo tasks awaiting approval
             const doneEntries = data.tasks
-              .filter(t => t.status === 'done')
-              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task done`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
+              .filter(t => t.status === 'done' || t.status === 'todo')
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
             active.push(...doneEntries)
           }
 

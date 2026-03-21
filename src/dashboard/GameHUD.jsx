@@ -984,19 +984,21 @@ export default function GameHUD({
                   }}
                   whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
                   whileTap={{ scale: 0.94 }}
-                  className={task.done ? '' : (task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-new')}
+                  className={task.done ? '' : (task.isDoneAwaitingApproval ? 'ticker-task-new' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-new')}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: isMobile ? '10px 14px' : '4px 12px',
                     minHeight: isMobile ? 44 : 'auto',
                     background: task.done
                       ? 'rgba(34,197,94,0.12)'
-                      : task.isQueued
-                        ? 'rgba(233,30,144,0.12)'
-                        : task.isLive
-                          ? 'rgba(255,107,61,0.12)'
-                          : 'rgba(100,180,255,0.08)',
-                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isQueued ? 'rgba(233,30,144,0.25)' : task.isLive ? 'rgba(255,107,61,0.25)' : 'rgba(100,180,255,0.15)'}`,
+                      : task.isDoneAwaitingApproval
+                        ? 'rgba(245,158,11,0.12)'
+                        : task.isQueued
+                          ? 'rgba(233,30,144,0.12)'
+                          : task.isLive
+                            ? 'rgba(255,107,61,0.12)'
+                            : 'rgba(100,180,255,0.08)',
+                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isDoneAwaitingApproval ? 'rgba(245,158,11,0.35)' : task.isQueued ? 'rgba(233,30,144,0.25)' : task.isLive ? 'rgba(255,107,61,0.25)' : 'rgba(100,180,255,0.15)'}`,
                     borderRadius: 10,
                     cursor: 'pointer',
                     flexShrink: 0,
@@ -1005,6 +1007,13 @@ export default function GameHUD({
                 >
                   {task.done ? (
                     <CheckCircle2 size={13} color="#22C55E" style={{ flexShrink: 0 }} />
+                  ) : task.isDoneAwaitingApproval ? (
+                    <span style={{
+                      width: 7, height: 7, borderRadius: '50%', background: '#F59E0B',
+                      boxShadow: '0 0 6px rgba(245,158,11,0.7)',
+                      animation: 'statusPulse 2s ease-in-out infinite',
+                      flexShrink: 0,
+                    }} />
                   ) : task.isQueued ? (
                     <span style={{
                       width: 7, height: 7, borderRadius: '50%', background: '#E91E90',
