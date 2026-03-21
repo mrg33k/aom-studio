@@ -1595,7 +1595,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
               }}
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '12px 8px',
+                padding: '12px 16px',
                 minHeight: 44,
                 borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 borderTop: taskDropIdx === i ? `2px solid ${project.color || '#3B9EFF'}` : '2px solid transparent',
@@ -1650,7 +1650,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.85 }}
                 style={{
-                  width: 24, height: 24, borderRadius: 6, flexShrink: 0, marginTop: 0,
+                  width: 18, height: 18, borderRadius: 5, flexShrink: 0, marginTop: 2,
                   border: isDone ? 'none' : `1.5px solid ${tpCheckboxBorder}`,
                   background: isDone ? (task.autoChecked ? '#22C55E' : project.color) : tpCheckboxBg,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1658,7 +1658,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
                   cursor: 'pointer',
                   opacity: isSaving ? 0.5 : 1,
                   boxShadow: task.autoChecked ? '0 0 8px rgba(34,197,94,0.4)' : 'none',
-                  // 44px touch target via invisible padding (checkbox visual stays 24px, tap area 44px)
+                  // 44px touch target via invisible padding (checkbox visual stays 18px, tap area 38px)
                   padding: 10, margin: -10, boxSizing: 'content-box',
                 }}>
                 {isDone && <Check size={14} color="#FFF" strokeWidth={3} />}
