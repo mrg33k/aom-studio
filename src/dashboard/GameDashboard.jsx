@@ -9196,11 +9196,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   width: 32, height: 32, borderRadius: 8,
                   background: powerupOpen
                     ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)'
-                    : 'transparent',
+                    // Dark glass with subtle blue tint -- matches HUD.panelBg (rgba(8,16,32,0.92))
+                    // plus violet hint so the Sparkles icon is always visible on any background
+                    : 'rgba(20, 28, 56, 0.82)',
                   border: powerupOpen
                     ? '1.5px solid rgba(124,58,237,0.6)'
-                    : '1.5px solid rgba(124,58,237,0.3)',
-                  color: powerupOpen ? '#FFF' : 'rgba(124,58,237,0.7)',
+                    : '1.5px solid rgba(124,58,237,0.35)',
+                  color: powerupOpen ? '#FFF' : 'rgba(155,120,255,0.85)',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 150ms ease',
