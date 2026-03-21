@@ -35,6 +35,7 @@ import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
 import FilesTab from './FilesTab.jsx'
 import { getClientId, setClientIdFromUser } from './lib/clientConfig.js'
+import { marked } from 'marked'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -2278,23 +2279,43 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
 }
 
 // ---- URL PARSER -- renders clickable links inside chat message text --------
-// Splits text on https?:// URLs and wraps each in an <a> tag.
-function renderMessageContent(text, agentColor) {
+// Configure marked for chat rendering: GFM on, line breaks on, no mangle
+marked.setOptions({ gfm: true, breaks: true })
+
+// MarkdownMessage: renders assistant message content as markdown HTML.
+// Uses dangerouslySetInnerHTML -- content is agent-generated, not user input.
+// User messages stay plain text via renderPlainContent.
+function MarkdownMessage({ text, agentColor, streaming }) {
   if (!text || typeof text !== 'string') return null
-  // Split on markdown image syntax first: ![alt](url)
-  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
+  let html
+  try {
+    html = marked.parse(text)
+  } catch {
+    html = text
+  }
+  return (
+    <div
+      className="md-msg"
+      data-agent-color={agentColor}
+      style={{ '--agent-color': agentColor || '#7CB9FF' }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  )
+}
+
+// renderPlainContent: for user messages -- splits on URLs, wraps in <a>.
+function renderPlainContent(text, accentColor) {
+  if (!text || typeof text !== 'string') return null
   const URL_RE = /(https?:\/\/[^\s]+)/g
+  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
   const result = []
   let lastIndex = 0
   let match
   IMG_RE.lastIndex = 0
   while ((match = IMG_RE.exec(text)) !== null) {
-    // Text before image
     if (match.index > lastIndex) {
-      const before = text.slice(lastIndex, match.index)
-      result.push(renderMessageContent._renderText(before, agentColor, result.length))
+      result.push(renderPlainContent._renderText(text.slice(lastIndex, match.index), accentColor, result.length))
     }
-    // Inline image thumbnail
     result.push(
       <img
         key={`img-${match.index}`}
@@ -2315,16 +2336,14 @@ function renderMessageContent(text, agentColor) {
     )
     lastIndex = match.index + match[0].length
   }
-  // Remaining text after last image
   if (lastIndex < text.length) {
-    const remaining = text.slice(lastIndex)
-    result.push(renderMessageContent._renderText(remaining, agentColor, result.length))
+    result.push(renderPlainContent._renderText(text.slice(lastIndex), accentColor, result.length))
   }
   if (result.length === 0) return text
   if (result.length === 1 && typeof result[0] === 'string') return result[0]
   return result
 }
-renderMessageContent._renderText = function(text, agentColor, keyOffset) {
+renderPlainContent._renderText = function(text, accentColor, keyOffset) {
   const URL_RE = /(https?:\/\/[^\s]+)/g
   const parts = text.split(URL_RE)
   if (parts.length === 1) return text
@@ -2339,7 +2358,7 @@ renderMessageContent._renderText = function(text, agentColor, keyOffset) {
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
           style={{
-            color: agentColor ? `${agentColor}EE` : '#7CB9FF',
+            color: accentColor ? `${accentColor}EE` : '#7CB9FF',
             textDecoration: 'underline',
             textUnderlineOffset: 2,
             wordBreak: 'break-all',
@@ -5134,6 +5153,15 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   }
   const saveTaskContext = (id, text) => {
     try { localStorage.setItem(`corner-task-context-${id}`, text) } catch {}
+    // Supabase: save context note (fire-and-forget)
+    if (!IS_LOCAL) {
+      const task = tasks.find(t => t.id === id)
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addContext', taskText: task?.text || '', taskId: id, payload: text }),
+      }).catch(() => {})
+    }
   }
 
   // Persist tasks
@@ -5184,7 +5212,16 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     setTasks(prev => [...prev, { id: taskId, text, done: false, agent: agentSlug }])
     setTaskInput('')
 
-    // Write to Supabase for persistence + backend visibility
+    // Write to Supabase tasks table (real task) + messages (for chat visibility)
+    if (!IS_LOCAL) {
+      // Create in tasks table for dashboard reads
+      fetch('/api/dashboard/agent-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, agent: agentSlug || 'elon', status: 'todo' }),
+      }).catch(() => {})
+    }
+    // Write to messages table for backend visibility (both local and prod)
     try {
       await fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
@@ -5201,11 +5238,29 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   }
 
   const toggleTask = (id) => {
+    const task = tasks.find(t => t.id === id)
     setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+    // Supabase: toggle done/undone (fire-and-forget)
+    if (!IS_LOCAL && task) {
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle', taskText: task.text, taskId: id, payload: !task.done }),
+      }).catch(() => {})
+    }
   }
 
   const deleteTask = (id) => {
+    const task = tasks.find(t => t.id === id)
     setTasks(prev => prev.filter(t => t.id !== id))
+    // Supabase: soft-delete (fire-and-forget)
+    if (!IS_LOCAL && task) {
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', taskText: task.text, taskId: id }),
+      }).catch(() => {})
+    }
   }
 
   const moveTask = (id, targetAgent) => {
@@ -5218,6 +5273,14 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       targetTasks.push({ ...taskItem, agent: targetAgent })
       localStorage.setItem(targetKey, JSON.stringify(targetTasks))
     } catch {}
+    // Supabase: reassign to new agent (fire-and-forget)
+    if (!IS_LOCAL) {
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reassign', taskText: taskItem.text, taskId: id, payload: targetAgent }),
+      }).catch(() => {})
+    }
   }
 
   // Drag and drop reorder + sub-task nesting
@@ -8149,7 +8212,18 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           ),
                           position: 'relative',
                         }}>
-                        {msg.content && typeof msg.content === 'string' && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{renderMessageContent(msg.content, isUser ? '#7CB9FF' : agentColor)}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
+                        {msg.content && typeof msg.content === 'string' && (
+                          isUser ? (
+                            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                              {renderPlainContent(msg.content, '#7CB9FF')}
+                            </div>
+                          ) : (
+                            <div style={{ wordBreak: 'break-word', position: 'relative' }}>
+                              <MarkdownMessage text={msg.content} agentColor={agentColor} streaming={msg.streaming} />
+                              {msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}
+                            </div>
+                          )
+                        )}
                         {msg.streaming && !msg.content && (
                           <div style={{ display: 'flex', gap: 5, padding: '4px 0', alignItems: 'center' }}>
                             {[0, 1, 2].map(j => (
@@ -8960,17 +9034,21 @@ export default function GameDashboard() {
 
   // Load Supabase user on mount + watch for auth state changes.
   // Derives client_id from user metadata (world field) for multi-tenant data isolation.
+  // Also sets window.__cornerClientId for child components (e.g. TaskContextMenu) that
+  // can't import getClientId directly without circular deps.
   useEffect(() => {
     getCurrentUser().then(user => {
       if (user) {
         setCurrentUser(user)
         setClientIdFromUser(user)
       }
+      window.__cornerClientId = getClientId()
     })
     const unsubscribe = onAuthStateChange((session) => {
       const user = session?.user || null
       setCurrentUser(user)
       setClientIdFromUser(user)
+      window.__cornerClientId = getClientId()
     })
     return unsubscribe
   }, [])
@@ -10171,6 +10249,14 @@ export default function GameDashboard() {
           saved.push({ text: taskText, agent: selectedRoom, done: false, id: `msg-task-${Date.now()}` })
           localStorage.setItem('corner-manual-tasks', JSON.stringify(saved))
         } catch {}
+        // Supabase: create task from chat message (fire-and-forget)
+        if (!IS_LOCAL) {
+          fetch('/api/dashboard/agent-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: taskText, agent: selectedRoom || 'elon', status: 'todo' }),
+          }).catch(() => {})
+        }
         break
       }
       case 'reply':

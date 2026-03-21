@@ -3065,6 +3065,14 @@ export default function GameHUD({
                 })
                 localStorage.setItem('corner-manual-tasks', JSON.stringify(all))
               } catch {}
+              // Supabase: move task to new project (fire-and-forget)
+              if (!IS_LOCAL) {
+                fetch('/api/dashboard/task-action', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'moveToProject', taskText: task.text, taskId: task.taskId || task.id || null, payload: p.section }),
+                }).catch(() => {})
+              }
               setHudTaskCtx(null)
             }}
               style={hudCtxBtn(isNightMode)}

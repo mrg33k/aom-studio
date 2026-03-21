@@ -6,6 +6,8 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 
+const BOARD_IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 
 function getAgentColor(slug) {
@@ -843,6 +845,14 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
                   localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved))
                 }
               } catch {}
+              // Supabase: promote task to active (fire-and-forget)
+              if (!BOARD_IS_LOCAL) {
+                fetch('/api/dashboard/task-action', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'addToRightNow', taskText, taskId: entry.taskId || entry.id || null, agent: entry.agent || 'patrik' }),
+                }).catch(() => {})
+              }
               setBoardCtxMenu(null)
             }} style={boardCtxBtn('#FF6B3D')}>
               Send to Right Now
@@ -854,18 +864,36 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
                 all.push({ id: Date.now(), text: taskText, done: false, agent: entry.agent || 'patrik' })
                 localStorage.setItem('corner-manual-tasks', JSON.stringify(all))
               } catch {}
+              // Supabase: create task as todo (fire-and-forget)
+              if (!BOARD_IS_LOCAL) {
+                fetch('/api/dashboard/agent-status', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ text: taskText, agent: entry.agent || 'elon', status: 'todo' }),
+                }).catch(() => {})
+              }
               setBoardCtxMenu(null)
             }} style={boardCtxBtn('#5BB8FF')}>
               Add to HUD Pill
             </button>
             {/* Mark done */}
             <button onClick={() => {
+              const key = taskText.slice(0, 60)
+              let wasDone = false
               try {
                 const checks = JSON.parse(localStorage.getItem('corner-checks') || '{}')
-                const key = taskText.slice(0, 60)
+                wasDone = !!checks[key]
                 checks[key] = !checks[key]
                 localStorage.setItem('corner-checks', JSON.stringify(checks))
               } catch {}
+              // Supabase: toggle done/undone (fire-and-forget)
+              if (!BOARD_IS_LOCAL) {
+                fetch('/api/dashboard/task-action', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: wasDone ? 'markUndone' : 'markDone', taskText, taskId: entry.taskId || entry.id || null }),
+                }).catch(() => {})
+              }
               setBoardCtxMenu(null)
             }} style={boardCtxBtn('#22C55E')}>
               {(() => {
