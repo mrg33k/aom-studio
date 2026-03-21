@@ -2930,6 +2930,8 @@ function MobileDrawer({
   powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup,
   // Task confirm props
   onDismissMessage, onTaskNotDone,
+  // Unread clear: called when user focuses the chat input
+  onClearUnread,
   // Snap state (controlled from parent)
   snap, onSnapChange,
 }) {
@@ -3273,6 +3275,7 @@ function MobileDrawer({
               onDismissMessage={onDismissMessage}
               onTaskNotDone={onTaskNotDone}
               onInputFocus={() => {
+                onClearUnread?.(agentSlug)
                 if (snap !== 'full') {
                   // Save current snap BEFORE changing so keyboard-close restores correctly
                   preKeyboardSnapRef.current = snap
@@ -9348,6 +9351,8 @@ export default function GameDashboard() {
   const [unreadAgents, setUnreadAgents] = useState({}) // { agentSlug: count }
   const bgOutboxPollRef = useRef(null)
   const lastBgOutboxCheckRef = useRef(null)
+  // Per-agent last-seen timestamp for background unread polling
+  const unreadLastSeenRef = useRef({}) // { agentSlug: isoTimestamp }
 
   // Cleanup all polls on unmount
   useEffect(() => {
@@ -9447,6 +9452,58 @@ export default function GameDashboard() {
   }, [panelVisible])
   */
 
+  // Background unread poller: production only, polls all visible agents every 5s
+  // Detects new assistant messages for agents that are NOT currently selected
+  // and increments their unread count to trigger the room hex notification dot.
+  const selectedRoomRef = useRef(selectedRoom)
+  useEffect(() => { selectedRoomRef.current = selectedRoom }, [selectedRoom])
+
+  useEffect(() => {
+    if (IS_LOCAL) return // Local uses file poll which already populates agentChats
+
+    const POLL_AGENTS = AGENTS.map(a => a.slug)
+    // Seed last-seen timestamps at "now" so only genuinely new messages trigger unread
+    const seedTs = new Date().toISOString()
+    POLL_AGENTS.forEach(slug => {
+      if (!unreadLastSeenRef.current[slug]) {
+        unreadLastSeenRef.current[slug] = seedTs
+      }
+    })
+
+    const bgPoll = setInterval(async () => {
+      const active = selectedRoomRef.current
+      // Only check agents that are NOT the currently active room
+      const toCheck = POLL_AGENTS.filter(slug => slug !== active)
+      if (!toCheck.length) return
+
+      for (const slug of toCheck) {
+        const since = unreadLastSeenRef.current[slug] || seedTs
+        try {
+          const res = await fetch(
+            `/api/dashboard/supabase-messages?agent=${encodeURIComponent(slug)}&limit=5&client=${encodeURIComponent(getClientId())}`
+          )
+          if (!res.ok) continue
+          const data = await res.json()
+          const msgs = (data?.messages || []).filter(
+            m => m.role === 'assistant' && m.timestamp > since
+          )
+          if (msgs.length > 0) {
+            // Advance watermark to the latest message we've seen
+            unreadLastSeenRef.current[slug] = msgs[msgs.length - 1].timestamp
+            setUnreadAgents(prev => ({
+              ...prev,
+              [slug]: (prev[slug] || 0) + msgs.length,
+            }))
+          }
+        } catch {
+          // Fail silently -- this is a best-effort background check
+        }
+      }
+    }, 5000) // 5s cadence: responsive without hammering Supabase
+
+    return () => clearInterval(bgPoll)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Clear unread when panel is opened
   useEffect(() => {
     if (panelVisible) {
@@ -9491,8 +9548,22 @@ export default function GameDashboard() {
         return updated
       })
       prevAgentChatCountsRef.current[selectedRoom] = (agentChats[selectedRoom]?._all || []).filter(m => m.role === 'assistant' && !m.streaming).length
+      // Advance watermark so background poller doesn't re-trigger for already-seen messages
+      unreadLastSeenRef.current[selectedRoom] = new Date().toISOString()
     }
   }, [selectedRoom]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Callback: clear unread for a specific agent slug (used by chat input focus + room click)
+  const clearUnreadForRoom = useCallback((slug) => {
+    if (!slug) return
+    setUnreadAgents(prev => {
+      if (!prev[slug]) return prev
+      const updated = { ...prev }
+      delete updated[slug]
+      return updated
+    })
+    unreadLastSeenRef.current[slug] = new Date().toISOString()
+  }, [])
 
   // DONE(bobby2): RELAY MESSAGE CRASH FIX -- safePanelUpdate() wraps all setPanelMessages calls with try/catch + field validation. safeTimeSort() handles NaN timestamps. All relay message pushes validate .message exists and default .time/.id. Malformed relay data can no longer crash React render cycle.
   // DONE(bobby): HMR STATE PRESERVATION -- Key dashboard state (selectedRoom, panelActiveTab) persists to sessionStorage on change, restores on HMR reload. Auth already in sessionStorage. Mode already in localStorage. Chat messages reload from relay history on reconnect. Bobby commits no longer reset which agent Patrik was talking to.
@@ -10599,6 +10670,7 @@ export default function GameDashboard() {
               onSendFileToChat={handleSendFileToChat}
               onDismissMessage={handleDismissMessage}
               onTaskNotDone={handleTaskNotDone}
+              onInputFocus={() => clearUnreadForRoom(selectedRoom)}
             />
           )}
       </div>
@@ -10770,6 +10842,7 @@ export default function GameDashboard() {
           onClearExternalReply={() => setPendingReplyMsg(null)}
           onDismissMessage={handleDismissMessage}
           onTaskNotDone={handleTaskNotDone}
+          onClearUnread={clearUnreadForRoom}
         />
       )}
 

@@ -1720,7 +1720,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       // If this room has unread messages, draw a pulsing iOS-style badge dot at the top-right of the hex
       const unreadCount = unreadAgents?.[badgeRoomId] || 0
       if (unreadCount > 0) {
-        const badgePulse = Math.sin(now / 500) * 0.15 + 0.85 // pulse between 0.70 and 1.0
+        const badgePulse = Math.sin(now / 350) * 0.35 + 0.65 // pulse between 0.30 and 1.0 -- noticeable blink
         const badgeR = 14 * invZoomScale
         // Top-right corner of the hex (near the peak of the right wall)
         const bdgX = S * 0.82
