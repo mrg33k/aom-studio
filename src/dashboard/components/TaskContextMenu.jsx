@@ -155,29 +155,14 @@ export default function TaskContextMenu({
   const projectItemRef = useRef(null)
   const priorityItemRef = useRef(null)
 
-  // Is task already in Right Now?
-  const isInRightNow = (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-rightnow') || '[]')
-      return saved.includes(task?.text)
-    } catch { return false }
-  })()
+  // Is task already in Right Now? (Supabase owns this -- read from task prop)
+  const isInRightNow = task?.status === 'active' || task?.rightNow === true || false
 
-  // Current priority
-  const currentPriority = (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-priorities') || '{}')
-      return saved[task?.text] || null
-    } catch { return null }
-  })()
+  // Current priority (read from task prop -- Supabase owns this)
+  const currentPriority = task?.priority || null
 
-  // Current context note
-  const existingNote = (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-context') || '{}')
-      return saved[task?.text] || ''
-    } catch { return '' }
-  })()
+  // Current context note (read from task prop -- Supabase owns this)
+  const existingNote = task?.note || task?.context || ''
 
   // Close on click outside or Escape
   useEffect(() => {
@@ -691,13 +676,9 @@ export default function TaskContextMenu({
 }
 
 // ---- Priority bar indicator for task cards ----
-export function TaskPriorityBar({ taskText }) {
-  const priority = (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-priorities') || '{}')
-      return saved[taskText] || null
-    } catch { return null }
-  })()
+export function TaskPriorityBar({ taskText, priority: priorityProp }) {
+  // Priority comes from task prop (Supabase-sourced), not localStorage
+  const priority = priorityProp || null
 
   if (!priority) return null
 
@@ -721,13 +702,9 @@ export function TaskPriorityBar({ taskText }) {
 }
 
 // ---- Context note indicator for task cards ----
-export function TaskNoteIndicator({ taskText, style }) {
-  const note = (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-context') || '{}')
-      return saved[taskText] || ''
-    } catch { return '' }
-  })()
+export function TaskNoteIndicator({ taskText, note: noteProp, style }) {
+  // Note comes from task prop (Supabase-sourced), not localStorage
+  const note = noteProp || ''
 
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -768,10 +745,7 @@ export function TaskNoteIndicator({ taskText, style }) {
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
 // ---- Fire-and-forget Supabase task action via /api/dashboard/task-action ----
-// On production: sends the action to Supabase alongside the localStorage write.
-// On localhost: only fires the local task-assign endpoint for addToRightNow (backward compat).
 function supabaseTaskAction(action, task, payload) {
-  if (IS_LOCAL) return // localhost uses localStorage only
   try {
     fetch('/api/dashboard/task-action', {
       method: 'POST',
@@ -789,9 +763,7 @@ function supabaseTaskAction(action, task, payload) {
 }
 
 // ---- Context menu action handler (shared logic, call from parent) ----
-// This centralizes the localStorage writes so both ChecklistMode and GameDashboard
-// can use the same handler without duplicating logic.
-// Every localStorage write has a parallel Supabase write on production (fire-and-forget).
+// All state changes go to Supabase via fire-and-forget. No localStorage.
 export function handleTaskContextAction(action, task, payload, setCheckedTasks) {
   if (action === 'toggle') {
     if (setCheckedTasks) {
@@ -806,39 +778,15 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
         return next
       })
     }
-    // Supabase: toggle done/undone
     supabaseTaskAction('toggle', task, !task.done)
   } else if (action === 'priority') {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-priorities') || '{}')
-      saved[task.text] = payload
-      localStorage.setItem('corner-task-priorities', JSON.stringify(saved))
-    } catch {}
-    // Supabase: set priority
     supabaseTaskAction('priority', task, payload)
   } else if (action === 'reassign') {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-agents') || '{}')
-      saved[task.text] = payload
-      localStorage.setItem('corner-task-agents', JSON.stringify(saved))
-    } catch {}
     console.log(`[Corner] Task "${task.text}" reassigned to ${payload}`)
-    // Supabase: reassign agent
     supabaseTaskAction('reassign', task, payload)
   } else if (action === 'delete') {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-deleted') || '[]')
-      if (!saved.includes(task.text)) saved.push(task.text)
-      localStorage.setItem('corner-task-deleted', JSON.stringify(saved))
-    } catch {}
-    // Supabase: soft-delete
     supabaseTaskAction('delete', task)
   } else if (action === 'addToRightNow') {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-rightnow') || '[]')
-      if (!saved.includes(task.text)) saved.push(task.text)
-      localStorage.setItem('corner-task-rightnow', JSON.stringify(saved))
-    } catch {}
     // Local: route to agent via task-assign endpoint (auto-assigns and notifies)
     if (IS_LOCAL) {
       try {
@@ -854,26 +802,13 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
         }).catch(() => {})
       } catch {}
     }
-    // Supabase: promote to active
     supabaseTaskAction('addToRightNow', task)
     console.log(`[Corner] Task "${task.text}" added to Right Now`)
   } else if (action === 'moveToProject') {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-project-moves') || '{}')
-      saved[task.text] = payload
-      localStorage.setItem('corner-task-project-moves', JSON.stringify(saved))
-    } catch {}
     console.log(`[Corner] Task "${task.text}" moved to project: ${payload}`)
-    // Supabase: move to project
     supabaseTaskAction('moveToProject', task, payload)
   } else if (action === 'addContext') {
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-context') || '{}')
-      saved[task.text] = payload
-      localStorage.setItem('corner-task-context', JSON.stringify(saved))
-    } catch {}
     console.log(`[Corner] Context note added to "${task.text}": ${payload}`)
-    // Supabase: add context note
     supabaseTaskAction('addContext', task, payload)
   }
 }
