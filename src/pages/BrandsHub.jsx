@@ -2,12 +2,16 @@ import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 
-/* Load Barlow Condensed for Ambition card */
-if (!document.querySelector('link[href*="Barlow+Condensed"]')) {
-  const link = document.createElement('link')
-  link.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap'
-  link.rel = 'stylesheet'
-  document.head.appendChild(link)
+/* Load Barlow Condensed for Ambition card -- injected in effect to avoid module-scope crash */
+function useBarlowFont() {
+  useEffect(() => {
+    if (!document.querySelector('link[href*="Barlow+Condensed"]')) {
+      const link = document.createElement('link')
+      link.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap'
+      link.rel = 'stylesheet'
+      document.head.appendChild(link)
+    }
+  }, [])
 }
 
 const brands = [
@@ -30,6 +34,7 @@ const brands = [
 ]
 
 export default function BrandsHub() {
+  useBarlowFont()
   return (
     <div className="min-h-screen bg-[#FDF6EC] text-[#0A0A0A] relative">
       {/* Top bar */}

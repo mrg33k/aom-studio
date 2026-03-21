@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import {
-  Copy, Check, Download, Lock, Zap, Calendar, Mail, ClipboardList, Rocket,
-  Video, Palette, Search, BarChart3, Shield, Users, Music, Eye, Film,
-  Code, Share2, Terminal, ChevronDown, ArrowRight, Sparkles, Sun
+  Terminal, Zap, Search, ArrowRight, ChevronDown,
+  Workflow, Film, Briefcase, Users, Code2, Server
 } from 'lucide-react';
 import SiteNav from '../components/SiteNav';
 import SiteFooter from '../components/SiteFooter';
@@ -11,16 +10,16 @@ import SiteFooter from '../components/SiteFooter';
 /* -- SEO ----------------------------------------------------------------- */
 function useSEO() {
   useEffect(() => {
-    document.title = '51 Skills. One System. | AOM';
+    document.title = '89 Skills. One System. | AOM';
     const setMeta = (name, content, property = false) => {
       const attr = property ? 'property' : 'name';
       let el = document.querySelector(`meta[${attr}="${name}"]`);
       if (!el) { el = document.createElement('meta'); el.setAttribute(attr, name); document.head.appendChild(el); }
       el.setAttribute('content', content);
     };
-    setMeta('description', '51 Claude Code skills built by running a real business. Free starter skills you can copy today. Premium skills included with Corner.');
-    setMeta('og:title', '51 Skills. One System. | AOM', true);
-    setMeta('og:description', '51 Claude Code skills built by running a real business. Free starter skills you can copy today. Premium skills included with Corner.', true);
+    setMeta('description', '89 Claude Code skills built by running a real business. Workflow, content, client, agent, dev, and system skills. Free and premium.');
+    setMeta('og:title', '89 Skills. One System. | AOM', true);
+    setMeta('og:description', '89 Claude Code skills built by running a real business.', true);
     setMeta('og:type', 'website', true);
     setMeta('og:url', 'https://aheadofmarket.com/skills', true);
     setMeta('twitter:card', 'summary_large_image');
@@ -59,506 +58,288 @@ function Reveal({ children, className = '', delay = 0 }) {
   );
 }
 
-/* -- Skill content for copy/download -------------------------------------- */
-const SKILL_CONTENT = {
-  'plan-my-day': `# Plan My Day
-
-Read my calendar, tasks, priorities, and context files. Give me a ranked action plan for today.
-
-## What to check:
-1. Calendar events for today (both calendars)
-2. Punch list / task list
-3. Current priorities
-4. Any pending messages or follow-ups
-5. Deadlines approaching this week
-
-## Output format:
-- Ranked list of what to do, in order
-- Time estimates for each
-- Flag anything overdue or time-sensitive at the top
-- Keep it scannable. Bullets, not paragraphs.
-`,
-  'calendar': `# Calendar
-
-Manage Google Calendar. Create events, check availability, find conflicts.
-
-## Capabilities:
-- Create events on either calendar (personal or work)
-- Check what's on the schedule for any date range
-- Find open slots for meetings
-- Move or reschedule events
-- Always include timezone (Arizona, no DST)
-
-## Rules:
-- Always confirm event details before creating
-- Include all relevant attendees
-- Default to 30-minute meetings unless specified
-- Add a brief agenda/description to every event
-`,
-  'calendar-hygiene': `# Calendar Hygiene
-
-Audit the calendar for conflicts, dead time, and scheduling debt.
-
-## Process:
-1. Pull the next 7 days of events
-2. Flag any overlapping events
-3. Identify back-to-back meetings with no buffer
-4. Find empty blocks that should be protected (deep work, lunch)
-5. Flag meetings with no agenda or description
-6. Suggest optimizations
-
-## Output:
-- Conflicts found (with fix suggestions)
-- Schedule health score (1-10)
-- Recommended changes
-`,
-  'email-drafter': `# Email Drafter
-
-Draft emails that sound like they came from you. Not AI. Not corporate. You.
-
-## How it works:
-1. Understand the context (who, what, why)
-2. Check previous emails to this person if available
-3. Match tone to relationship (client = professional-warm, team = casual-direct)
-4. Draft the email
-5. Wait for approval before sending
-
-## Rules:
-- Never send without explicit approval
-- Keep it concise. Respect people's inboxes.
-- Open with their first name. Always.
-- No fluff. Get to the point, then be human about it.
-`,
-  'client-onboarding': `# Client Onboarding
-
-Collect client info, generate a creative brief, and auto-build a proposal with pricing.
-
-## Flow:
-1. Gather: Company name, contact, project type, timeline, budget range
-2. Research: Quick look at their online presence, competitors, industry
-3. Brief: Generate a creative brief with goals, deliverables, timeline
-4. Proposal: Auto-generate a proposal with pricing tiers
-5. Review: Present for approval before sending
-
-## Works for any project type:
-- Video production
-- Website builds
-- Social media management
-- AI advisory / audit
-- Brand packages
-`,
-  'punch-list': `# Punch List
-
-The master task list. One source of truth for everything that needs doing.
-
-## How it works:
-- Agents read it to know what's next
-- Agents update it when they complete tasks
-- New tasks get added with priority and owner
-- Overdue items get flagged automatically
-
-## Format:
-Each item has: task description, owner, priority (P1/P2/P3), due date, status
-
-## Rules:
-- Never delete items. Check them off or move to archive.
-- P1 items get surfaced in every morning plan
-- If something's been sitting for 3+ days, escalate it
-`,
-  'session-start': `# Session Start
-
-Every conversation starts with full context. No cold starts. No "where were we?"
-
-## On every session:
-1. Read current priorities
-2. Read active missions (running agents)
-3. Check for pending messages
-4. Check recent session log
-5. Surface anything time-sensitive
-
-## Output:
-- What's actively in progress
-- What's blocked and why
-- What needs attention today
-- Any messages waiting for response
-
-## Why this matters:
-Context switching kills momentum. This skill eliminates the 5-10 minutes of "catching up" at the start of every session.
-`,
-};
-
-/* -- Skill data ----------------------------------------------------------- */
-const FREE_SKILLS = [
+/* -- Skills data ---------------------------------------------------------- */
+const CATEGORIES = [
   {
-    id: 'plan-my-day',
-    name: 'Plan My Day',
-    icon: Sun,
-    description: 'Reads your calendar, tasks, and priorities. Gives you a ranked action plan in 30 seconds.',
-    replaces: 'Staring at your calendar for 20 minutes trying to figure out what matters today.',
-    category: 'Productivity',
+    id: 'workflow',
+    label: 'Workflow & Orchestration',
+    icon: Workflow,
+    color: '#E85D26',
+    colorClass: 'text-orange-400',
+    bgClass: 'bg-orange-500/10 border-orange-500/20',
+    description: 'The engine room. Skills that orchestrate, iterate, and drive work forward.',
+    skills: [
+      { name: 'little-engine', trigger: '/little-engine', desc: 'Run 3 parallel Bobby agents on the top tasks from the queue. Auto-refill when one finishes.' },
+      { name: 'ship-it', trigger: '/ship-it', desc: 'Push, deploy, verify, and send the link. One command ship cycle.' },
+      { name: 'quick-fix', trigger: '/quick-fix', desc: 'Describe a bug, Bobby fixes it, push and deploy. End-to-end bug fix.' },
+      { name: 'wd40', trigger: '/wd40', desc: 'Test, research, fix, repeat. The relentless quality loop that does not stop until it\'s right.' },
+      { name: 'wd40-page', trigger: '/wd40-page', desc: 'Iterate on a page until approved. Screenshot, fix, deploy, repeat.' },
+      { name: 'wrestlemania', trigger: '/wrestlemania', desc: 'Full-stack problem solving: go back in time, research, cage match it, ship the winner. For hard problems where the answer isn\'t obvious.' },
+      { name: 'cage-match', trigger: '/cage-match', desc: 'Two options enter. One leaves. Build both, test both, keep winner, delete loser. Stop debating. Start shipping.' },
+      { name: 'supersaiyan', trigger: '/supersaiyan', desc: 'The agent screenshots its own work, gets brutally self-critical, then rebuilds it better. Repeat until the output is actually good.' },
+      { name: 'rally', trigger: '/rally', desc: 'Morning huddle. Sync all agents, assign missions, enforce clean scope, launch everyone. Collect results and report back.' },
+      { name: 'nuke', trigger: '/nuke', desc: 'Kill all running agents, reset all tasks, clean slate. Emergency reset.' },
+      { name: 'status-check', trigger: '/status-check', desc: 'Full system snapshot: deployed, building, queued, deploy limit, agents.' },
+      { name: 'blockers', trigger: '/blockers', desc: 'Scan all active agents and context for open blockers. Print the list, then work through them one by one.' },
+      { name: 'masterplan', trigger: '/masterplan', desc: 'Full system audit. Agents, skills, context files, memory, repo health. Finds every gap, fixes what it can, reports the rest.' },
+    ],
   },
   {
-    id: 'calendar',
-    name: 'Calendar',
-    icon: Calendar,
-    description: 'Create events, check availability, manage two calendars. Voice-command energy.',
-    replaces: 'Switching between tabs, copying event details, forgetting to invite people.',
-    category: 'Productivity',
+    id: 'content',
+    label: 'Content & Media',
+    icon: Film,
+    color: '#a855f7',
+    colorClass: 'text-purple-400',
+    bgClass: 'bg-purple-500/10 border-purple-500/20',
+    description: 'From raw footage to finished content. Video, audio, graphics, and AI generation.',
+    skills: [
+      { name: 'b-roll-story-cut', trigger: '/b-roll-story-cut', desc: 'Cleo\'s autonomous b-roll editing workflow. Eyes and ears on every clip, story brief, suggested trims, LUT, export.' },
+      { name: 'fast-recut', trigger: '/fast-recut', desc: 'Take already-trimmed clips and extract the single best 2.5-second moment from each one.' },
+      { name: 'caption-writer', trigger: '/caption-writer', desc: 'Write platform-specific captions from a video transcript.' },
+      { name: 'content-calendar', trigger: '/content-calendar', desc: 'Generate a 30-day posting schedule for a client.' },
+      { name: 'thumbnail', trigger: '/thumbnail', desc: 'Steffen generates social thumbnails from a topic via Gemini.' },
+      { name: 'mood-board', trigger: '/mood-board', desc: 'Steffen generates a mood board from keywords via Gemini.' },
+      { name: 'storyboard', trigger: '/storyboard', desc: 'Generate visual storyboard frames from a script.' },
+      { name: 'voice-clone', trigger: '/voice-clone', desc: 'Generate audio from text using ElevenLabs voice API.' },
+      { name: 'elevenlabs-voice', trigger: '/elevenlabs-voice', desc: 'Generate voiceover audio via ElevenLabs. Conservative by default. Only when a clip genuinely benefits from VO.' },
+      { name: 'suno-music', trigger: '/suno-music', desc: 'Generates custom AI music tracks for video edits and social content using the Suno API.' },
+      { name: 'eyes-and-ears', trigger: '/eyes-and-ears', desc: 'Every agent sees and hears. Any media file gets processed through Gemini AND built-in tools. No exceptions.' },
+      { name: 'gemini-vision', trigger: '/gemini-vision', desc: 'Uses Gemini Vision API to analyze video frames: composition, lighting, shot quality scoring, b-roll categorization.' },
+      { name: 'visual-search', trigger: '/visual-search', desc: 'Search all AOM footage by describing what you\'re looking for. "Drone shot at sunset." Found.' },
+      { name: 'footage-review', trigger: '/footage-review', desc: 'Catalogs an entire shoot folder: frame grids, audio analysis, shot types, highlight moments. 500 files in minutes.' },
+      { name: 'footage-reorganize', trigger: '/footage-reorganize', desc: 'Analyzes every clip with ffprobe + Gemini, categorizes, physically moves files into organized subfolders.' },
+      { name: 'audio-align', trigger: '/audio-align', desc: 'Syncs separately recorded lav mic audio to camera video. Frame-accurate. No manual scrubbing.' },
+      { name: 'audio-library', trigger: '/audio-library', desc: 'Manages Cleo\'s local audio library. Selects tracks from licensed catalog and mixes with ffmpeg.' },
+      { name: 'auto-color', trigger: '/auto-color', desc: 'Detects camera model and lighting, selects the right LUT, applies it. Color grading on autopilot.' },
+      { name: 'auto-timeline', trigger: '/auto-timeline', desc: 'Exports EDL and FCPXML from AI edit guides. Drop into DaVinci Resolve. No re-editing.' },
+      { name: 'text-overlay', trigger: '/text-overlay', desc: 'Bakes in clean, bold text graphics with fade animations. Designed for IG Reels and TikTok style vertical content.' },
+      { name: 'video-overlay', trigger: '/video-overlay', desc: 'Render animated text overlays for social reels using Remotion. Lower thirds, labels, CTAs, hooks.' },
+      { name: 'lip-sync', trigger: '/lip-sync', desc: 'Sync separately recorded lav mic audio to camera video with frame-accurate precision.' },
+      { name: 'doc-social-edit', trigger: '/doc-social-edit', desc: 'Full process for turning raw footage + lav audio into a documentary-style social edit. The subject tells the story.' },
+      { name: 'ai-video-gen', trigger: '/ai-video-gen', desc: 'Generates AI videos, animations, and images using fal.ai\'s multi-model API. B-roll, concept videos, thumbnails.' },
+    ],
   },
   {
-    id: 'calendar-hygiene',
-    name: 'Calendar Hygiene',
-    icon: ClipboardList,
-    description: 'Finds conflicts, dead time, and scheduling debt. Cleans your week.',
-    replaces: 'That feeling on Monday morning when you realize Friday is already packed.',
-    category: 'Productivity',
+    id: 'client',
+    label: 'Client & Business',
+    icon: Briefcase,
+    color: '#22c55e',
+    colorClass: 'text-green-400',
+    bgClass: 'bg-green-500/10 border-green-500/20',
+    description: 'Onboarding, health checks, invoices, outreach, and brand systems.',
+    skills: [
+      { name: 'client-setup', trigger: '/client-setup', desc: 'Set up a new test client: workspace, conversations, Supabase, token tracking.' },
+      { name: 'client-onboarding', trigger: '/client-onboarding', desc: 'Collect client info, generate creative brief, auto-build proposal with pricing. Works for any project type.' },
+      { name: 'health-check', trigger: '/health-check', desc: 'Scan a client\'s system for issues, stale data, and broken links.' },
+      { name: 'weekly-report', trigger: '/weekly-report', desc: 'Auto-generate weekly client report from their activity data.' },
+      { name: 'invoice', trigger: '/invoice', desc: 'Generate an invoice page from project data.' },
+      { name: 'roi-calc', trigger: '/roi-calc', desc: 'Custom ROI calculator for any client based on their industry.' },
+      { name: 'pitch-deck', trigger: '/pitch-deck', desc: 'Generate a pitch deck page from product data for investors and clients.' },
+      { name: 'competitor-scan', trigger: '/competitor-scan', desc: 'Research a competitor\'s web and social presence. Report gaps and opportunities.' },
+      { name: 'outreach', trigger: '/outreach', desc: 'Finds Phoenix-area leads via Apollo, researches them, writes personalized cold emails, creates Gmail drafts for review.' },
+      { name: 'outreach-numbers', trigger: '/outreach-numbers', desc: 'Live count on the outreach pipeline. Contacts emailed, pace, when new contacts are needed.' },
+      { name: 'email-drafter', trigger: '/email-drafter', desc: 'Writes clean, ready-to-send emails in AOM\'s voice. No back and forth, no unnecessary questions.' },
+      { name: 'social-agent', trigger: '/social-agent', desc: 'Multi-platform posting: Instagram, LinkedIn, TikTok. Schedules, formats, captions. One command.' },
+      { name: 'social-media-research', trigger: '/social-media-research', desc: 'Research what\'s actually working on social for a specific niche. Real patterns from top-performing accounts.' },
+      { name: 'brand-page', trigger: '/brand-page', desc: 'Generate a branded page using Steffen\'s design system from data.' },
+      { name: 'brand-refresh', trigger: '/brand-refresh', desc: 'Full sync of a brand system: guidelines page, social templates, video overlays, downloadable assets.' },
+      { name: 'brand-agent', trigger: '/brand-agent', desc: 'Give it 5 reference images. Get back a complete brand system: colors, typography, photography direction, social templates.' },
+    ],
   },
   {
-    id: 'email-drafter',
-    name: 'Email Drafter',
-    icon: Mail,
-    description: 'Drafts emails in your voice. Knows your contacts, your tone, your context.',
-    replaces: 'Writing the same "just following up" email for the 400th time.',
-    category: 'Communication',
-  },
-  {
-    id: 'client-onboarding',
-    name: 'Client Onboarding',
+    id: 'agent',
+    label: 'Agent & Communication',
     icon: Users,
-    description: 'Collects client info, generates creative brief, auto-builds proposal with pricing. Works for any project type.',
-    replaces: 'The 3-hour process of gathering info, writing a brief, and building a proposal from scratch.',
-    category: 'Business',
+    color: '#38bdf8',
+    colorClass: 'text-sky-400',
+    bgClass: 'bg-sky-500/10 border-sky-500/20',
+    description: 'How agents talk, switch, remember, and hand off work to each other.',
+    skills: [
+      { name: '1on1', trigger: '/1on1', desc: 'Switch the main session to speak as a specific agent. Patrik talks directly to them in real time.' },
+      { name: 'ask-elon', trigger: '/ask-elon', desc: 'Agents report task completions, ask questions, and flag blockers through Elon. Elon notifies Patrik instantly.' },
+      { name: 'check-with-elon', trigger: '/check-with-elon', desc: 'Read an agent\'s last-conversation.md to pick up updates from Elon. The handoff transparency system.' },
+      { name: 'council', trigger: '/council', desc: 'Multiple agents debate a decision from different angles. Strategy, design, technical, financial. You get the synthesis.' },
+      { name: 'create-team-conversation', trigger: '/create-team-conversation', desc: 'Reads all conversation sources and classifies each message into the correct project thread. One by one. Chronological.' },
+      { name: 'hold-that-thought', trigger: '/htt', desc: 'Teddy\'s pouch. Permanent memory capture. Freeze a moment from the live conversation into storage with enough DNA to reconstruct it later.' },
+      { name: 'reprompt', trigger: '/reprompt', desc: 'Take a rough prompt, understand the intent, and rewrite it to be maximally effective. No questions. Just do it.' },
+      { name: 'do-research', trigger: '/do-research', desc: 'Comprehensive research on any topic across 4 layers: public skills, GitHub, web search, internal history.' },
+      { name: 'session-start', trigger: '/session-start', desc: 'Every conversation starts with full context. What\'s active, what\'s blocked, what needs attention. No cold starts.' },
+      { name: 'session-handoff', trigger: '/session-handoff', desc: 'Write the tape, open a fresh session, close the old one. Clean slate with full memory.' },
+      { name: 'go-back-in-time', trigger: '/gbit', desc: 'Full contextual search through all past work, conversations, iterations, and deliverables. Retrieves the past.' },
+    ],
   },
   {
-    id: 'punch-list',
-    name: 'Punch List',
-    icon: ClipboardList,
-    description: 'Your master task list. Agents read it, update it, check things off. One source of truth.',
-    replaces: 'Scattered to-do lists in 4 different apps that nobody actually checks.',
-    category: 'Operations',
+    id: 'dev',
+    label: 'Development',
+    icon: Code2,
+    color: '#f59e0b',
+    colorClass: 'text-amber-400',
+    bgClass: 'bg-amber-500/10 border-amber-500/20',
+    description: 'Web dev, QA, bug killing, and building the Corner product.',
+    skills: [
+      { name: 'web-dev-agent', trigger: '/web-dev-agent', desc: 'Launches a subagent that works autonomously without flooding the main chat. Bobby\'s mode for big builds.' },
+      { name: 'build-corner', trigger: '/build-corner', desc: 'Launch the full Corner product WD-40 pipeline. Three teams, 8 agents, autonomous loop.' },
+      { name: 'make-corner-room', trigger: '/make-corner-room', desc: 'Generate a new isometric hex room for the Corner dashboard using Gemini image gen.' },
+      { name: 'coding-qa', trigger: '/coding-qa', desc: 'Reviews code for quality, security, performance. Catches bugs before they ship. Reads like a senior engineer.' },
+      { name: 'double-check', trigger: '/double-check', desc: 'QA gate. Screenshots the work, checks every pixel, catches what was missed. Nothing ships without Elmo.' },
+      { name: 'kill-the-bugs', trigger: '/kill-the-bugs', desc: 'System health audit and cleanup. Find and kill everything that shouldn\'t be running.' },
+      { name: 'frontend-design', trigger: '/frontend-design', desc: 'Steffen specs the design, Bobby builds it, Elmo QAs it. The pipeline for any visual or UI task.' },
+      { name: 'merge-branches', trigger: '/merge-branches', desc: 'Merges all claude/* work branches into master, pushes master, and cleans up merged branches.' },
+    ],
   },
   {
-    id: 'session-start',
-    name: 'Session Start',
-    icon: Rocket,
-    description: 'Every conversation starts with full context. What\'s active, what\'s blocked, what needs attention.',
-    replaces: 'The first 10 minutes of every session spent remembering where you left off.',
-    category: 'System',
+    id: 'system',
+    label: 'System & Infrastructure',
+    icon: Server,
+    color: '#ec4899',
+    colorClass: 'text-pink-400',
+    bgClass: 'bg-pink-500/10 border-pink-500/20',
+    description: 'Memory, snapshots, scheduling, phone home, and keeping the system healthy.',
+    skills: [
+      { name: 'snapshot', trigger: '/snapshot', desc: 'Save full system state to a single file for disaster recovery.' },
+      { name: 'migrate', trigger: '/migrate', desc: 'Move a client from one setup to another.' },
+      { name: 'phone-home', trigger: '/phone-home', desc: 'Mac-side bridge. Polls context/home-queue.md for commands from the phone. Executes with full Mac power.' },
+      { name: 'skill-gap-scan', trigger: '/skill-gap-scan', desc: 'Scans the entire system for recurring workflows that don\'t have a skill. If it happens 3 times, build the skill.' },
+      { name: 'calendar', trigger: '/calendar', desc: 'Create events, check availability, manage two calendars. Create, update, remove. Voice-command energy.' },
+      { name: 'calendar-hygiene', trigger: '/calendar-hygiene', desc: 'Keeps both calendars clean: no duplicates, no orphaned events, no back-to-back meetings without buffer.' },
+      { name: 'plan-my-day', trigger: '/plan-my-day', desc: 'Reads calendar, tasks, and priorities. Gives a ranked action plan in 30 seconds.' },
+      { name: 'punch-list', trigger: '/punch-list', desc: 'The master task list. One source of truth. Agents read it, update it, check things off.' },
+      { name: 'run-the-numbers', trigger: '/run-the-numbers', desc: 'Builds a 30-day revenue forecast by scanning every source of payment intel in the system.' },
+      { name: 'big-3', trigger: '/big-3', desc: 'Launches Steffen, Bobby, and Elmo as a coordinated chain for anything visual, web, or brand-related.' },
+      { name: 'internal-update', trigger: '/internal-update', desc: 'Captures what happened, updates context files, logs decisions, archives session, commits, and pushes.' },
+      { name: 'wash-your-face', trigger: '/wash-your-face', desc: 'Re-reads all context files and recent decisions. Gets sharp again mid-session when context feels stale.' },
+      { name: 'rag', trigger: '/rag', desc: 'Semantic search across the entire AOM-EA knowledge base. Find decisions, context, and history.' },
+      { name: 'instant-watch', trigger: '/instant-watch', desc: 'Watch any YouTube video and get a full breakdown in seconds. Title, chapters, key moments, what\'s worth implementing.' },
+      { name: 'look', trigger: '/look', desc: 'Captures what\'s visible on Patrik\'s screen, reads it, and responds intelligently.' },
+      { name: 'mobile-rundown', trigger: '/rundown', desc: 'Tight bullet-point status of everything happening right now. Designed for Telegram when away from desk.' },
+      { name: 'butter-method', trigger: '/butter-method', desc: 'AI assistant editor: analyzes footage, picks the best clips, outputs an FCPXML timeline for DaVinci Resolve.' },
+      { name: 'status', trigger: '/status', desc: 'One command, full picture. Reads every agent\'s last-conversation.md and delivers a unified view.' },
+    ],
   },
 ];
 
-const PREMIUM_SKILLS = [
-  {
-    name: 'Doc Social Edit',
-    icon: Video,
-    description: 'Turns raw footage into platform-ready social reels. Shot selection, pacing, graphics, captions.',
-    impact: 'What used to take a full day of editing now ships in one session.',
-    category: 'Content',
-  },
-  {
-    name: 'Brand Agent',
-    icon: Palette,
-    description: 'Give it 5 reference images. Get back a complete brand system: colors, typography, photography direction, social templates.',
-    impact: 'A brand identity package in one session instead of two weeks.',
-    category: 'Design',
-  },
-  {
-    name: 'Masterplan',
-    icon: BarChart3,
-    description: 'Full system audit. Agents, skills, context files, memory, repo health. Finds every gap, fixes what it can, reports the rest.',
-    impact: 'Your entire operation scanned and optimized in minutes.',
-    category: 'System',
-  },
-  {
-    name: 'Council',
-    icon: Users,
-    description: 'Multiple agents debate a decision from different angles. Strategy, design, technical, financial. You get the synthesis.',
-    impact: 'Board-level decision support without the board.',
-    category: 'Strategy',
-  },
-  {
-    name: 'Gemini Vision',
-    icon: Eye,
-    description: 'AI-powered footage analysis. Shot quality scoring, face detection, composition analysis. Sees what you\'d miss at 2am.',
-    impact: 'Review 500 clips in the time it takes to drink a coffee.',
-    category: 'Content',
-  },
-  {
-    name: 'Auto-Color',
-    icon: Sparkles,
-    description: 'Detects your camera, analyzes the lighting, selects the right LUT. Color grading on autopilot.',
-    impact: '30 minutes of color correction reduced to 30 seconds.',
-    category: 'Content',
-  },
-  {
-    name: 'Auto-Timeline',
-    icon: Film,
-    description: 'Exports EDL and FCPXML from your AI edit. Drop it into Premiere or Resolve. No re-editing.',
-    impact: 'AI edits go straight into your professional NLE.',
-    category: 'Content',
-  },
-  {
-    name: 'ElevenLabs Voice',
-    icon: Music,
-    description: 'Generate voiceover in your brand\'s voice. Script it, generate it, mix it into the edit. 30 seconds.',
-    impact: 'Professional voiceover without booking a session.',
-    category: 'Content',
-  },
-  {
-    name: 'Double Check (Elmo)',
-    icon: Shield,
-    description: 'QA gate. Screenshots your work, checks every pixel, catches what you missed. Nothing ships without Elmo.',
-    impact: 'Zero broken links, zero typos, zero embarrassing deploys.',
-    category: 'Quality',
-  },
-  {
-    name: 'Outreach Pipeline',
-    icon: Mail,
-    description: 'Cold email at scale. Domain rotation, personalization, follow-up sequences. 50+ emails, zero templates.',
-    impact: 'A full sales development operation from one command.',
-    category: 'Business',
-  },
-  {
-    name: 'Visual Search',
-    icon: Search,
-    description: 'Search your footage library by describing what you\'re looking for. "Drone shot of a rooftop at sunset." Found.',
-    impact: 'Hours of scrubbing through hard drives, gone.',
-    category: 'Content',
-  },
-  {
-    name: 'Footage Review',
-    icon: Film,
-    description: 'Catalogs an entire shoot folder. Frame grids, audio analysis, shot types, highlight moments. 500 files in minutes.',
-    impact: 'A full shoot logged and organized before you finish lunch.',
-    category: 'Content',
-  },
-  {
-    name: 'Coding QA',
-    icon: Code,
-    description: 'Reviews code for quality, security, performance. Catches bugs before they ship. Reads like a senior engineer.',
-    impact: 'Code review without waiting for the pull request.',
-    category: 'Engineering',
-  },
-  {
-    name: 'Social Agent',
-    icon: Share2,
-    description: 'Multi-platform posting. Instagram, LinkedIn, TikTok. Schedules, formats, captions. One command.',
-    impact: 'All platforms updated in the time it takes to post to one.',
-    category: 'Marketing',
-  },
-  {
-    name: 'Suno Music',
-    icon: Music,
-    description: 'AI-generated music beds for your content. Describe the vibe, get the track. Royalty-free, on-brand.',
-    impact: 'Custom music for every piece of content. No licensing headaches.',
-    category: 'Content',
-  },
-];
-
-const CATEGORY_COLORS = {
-  Productivity: 'from-blue-500/20 to-blue-600/5 border-blue-500/20',
-  Communication: 'from-green-500/20 to-green-600/5 border-green-500/20',
-  Business: 'from-purple-500/20 to-purple-600/5 border-purple-500/20',
-  Operations: 'from-yellow-500/20 to-yellow-600/5 border-yellow-500/20',
-  System: 'from-cyan-500/20 to-cyan-600/5 border-cyan-500/20',
-  Content: 'from-rose-500/20 to-rose-600/5 border-rose-500/20',
-  Design: 'from-pink-500/20 to-pink-600/5 border-pink-500/20',
-  Strategy: 'from-indigo-500/20 to-indigo-600/5 border-indigo-500/20',
-  Quality: 'from-emerald-500/20 to-emerald-600/5 border-emerald-500/20',
-  Engineering: 'from-orange-500/20 to-orange-600/5 border-orange-500/20',
-  Marketing: 'from-teal-500/20 to-teal-600/5 border-teal-500/20',
+/* -- Category colors for card accents ------------------------------------ */
+const CAT_COLOR_MAP = {
+  workflow: '#E85D26',
+  content: '#a855f7',
+  client: '#22c55e',
+  agent: '#38bdf8',
+  dev: '#f59e0b',
+  system: '#ec4899',
 };
 
-const CATEGORY_TEXT = {
-  Productivity: 'text-blue-400',
-  Communication: 'text-green-400',
-  Business: 'text-purple-400',
-  Operations: 'text-yellow-400',
-  System: 'text-cyan-400',
-  Content: 'text-rose-400',
-  Design: 'text-pink-400',
-  Strategy: 'text-indigo-400',
-  Quality: 'text-emerald-400',
-  Engineering: 'text-orange-400',
-  Marketing: 'text-teal-400',
-};
-
-/* -- Free skill card ------------------------------------------------------ */
-function FreeSkillCard({ skill, index }) {
-  const [copied, setCopied] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const Icon = skill.icon;
-
-  const handleCopy = async () => {
-    const content = SKILL_CONTENT[skill.id];
-    if (!content) return;
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback
-      const ta = document.createElement('textarea');
-      ta.value = content;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleDownload = () => {
-    const content = SKILL_CONTENT[skill.id];
-    if (!content) return;
-    const blob = new Blob([content], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${skill.id}-SKILL.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+/* -- Skill card ----------------------------------------------------------- */
+function SkillCard({ skill, catId, index }) {
+  const accentColor = CAT_COLOR_MAP[catId] || '#E85D26';
 
   return (
-    <Reveal delay={index * 0.08}>
-      <div className="group relative h-full">
-        {/* Gradient border effect */}
-        <div className="absolute -inset-[1px] bg-gradient-to-b from-[#E85D26]/30 via-white/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-        <div className="relative h-full bg-[#111110] border border-white/[0.06] rounded-xl p-6 flex flex-col transition-all duration-300 group-hover:border-transparent group-hover:bg-[#141413]">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#E85D26]/10 border border-[#E85D26]/20 flex items-center justify-center">
-                <Icon size={18} className="text-[#E85D26]" />
-              </div>
-              <div>
-                <h3 className="font-headline text-lg font-extrabold text-[#F0ECE6] tracking-tight">{skill.name}</h3>
-                <span className={`text-xs font-mono uppercase tracking-widest ${CATEGORY_TEXT[skill.category] || 'text-zinc-500'}`}>
-                  {skill.category}
-                </span>
-              </div>
-            </div>
-            <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-              Free
-            </span>
-          </div>
-
-          {/* Description */}
-          <p className="font-body text-base text-[#8A847C] leading-relaxed mb-4 flex-grow">
-            {skill.description}
-          </p>
-
-          {/* What it replaces */}
-          <div className="mb-5 p-3 bg-white/[0.02] border border-white/[0.04] rounded-lg">
-            <p className="text-xs font-mono uppercase tracking-widest text-zinc-600 mb-1">Replaces</p>
-            <p className="font-body text-sm text-zinc-400 italic leading-relaxed">"{skill.replaces}"</p>
-          </div>
-
-          {/* Preview toggle */}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#8A847C] hover:text-[#F0ECE6] transition-colors mb-4"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: Math.min(index * 0.03, 0.3) }}
+      className="group relative h-full"
+    >
+      <div
+        className="absolute -inset-[1px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ background: `linear-gradient(to bottom, ${accentColor}30, transparent)` }}
+      />
+      <div className="relative h-full bg-[#111110] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-3 transition-all duration-300 group-hover:border-transparent group-hover:bg-[#141413]">
+        {/* Name + trigger */}
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-headline text-sm font-extrabold text-[#F0ECE6] tracking-tight leading-snug">
+            {skill.name}
+          </h3>
+          <span
+            className="shrink-0 font-mono text-[10px] px-2 py-0.5 rounded border"
+            style={{ color: accentColor, borderColor: accentColor + '40', backgroundColor: accentColor + '10' }}
           >
-            <ChevronDown size={14} className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
-            {expanded ? 'Hide preview' : 'Preview skill'}
-          </button>
-
-          <AnimatePresence>
-            {expanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden mb-4"
-              >
-                <pre className="bg-[#0A0A08] border border-white/[0.04] rounded-lg p-4 text-xs font-mono text-zinc-500 overflow-x-auto max-h-[200px] overflow-y-auto leading-relaxed">
-                  {SKILL_CONTENT[skill.id]}
-                </pre>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Actions */}
-          <div className="flex gap-2 mt-auto">
-            <button
-              onClick={handleCopy}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#E85D26] text-white font-headline font-bold text-sm uppercase tracking-wider rounded-lg hover:bg-[#D14E1C] transition-all shadow-lg shadow-[#E85D26]/10"
-            >
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? 'Copied' : 'Copy Skill'}
-            </button>
-            <button
-              onClick={handleDownload}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-white/5 text-[#8A847C] font-headline font-bold text-sm uppercase tracking-wider rounded-lg hover:bg-white/10 hover:text-[#F0ECE6] border border-white/[0.06] transition-all"
-              title="Download SKILL.md"
-            >
-              <Download size={16} />
-            </button>
-          </div>
+            {skill.trigger}
+          </span>
         </div>
+        {/* Description */}
+        <p className="font-body text-xs text-[#8A847C] leading-relaxed flex-grow">
+          {skill.desc}
+        </p>
       </div>
-    </Reveal>
+    </motion.div>
   );
 }
 
-/* -- Premium skill card --------------------------------------------------- */
-function PremiumSkillCard({ skill, index }) {
-  const Icon = skill.icon;
+/* -- Category section ----------------------------------------------------- */
+function CategorySection({ cat, searchQuery }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const Icon = cat.icon;
+
+  const filtered = searchQuery
+    ? cat.skills.filter(s =>
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.trigger.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : cat.skills;
+
+  if (searchQuery && filtered.length === 0) return null;
 
   return (
-    <Reveal delay={index * 0.06}>
-      <div className="group relative h-full">
-        {/* Gradient border effect - premium uses a different glow */}
-        <div className="absolute -inset-[1px] bg-gradient-to-b from-white/10 via-white/[0.03] to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-        <div className="relative h-full bg-[#0E0E0D] border border-white/[0.04] rounded-xl p-5 flex flex-col transition-all duration-300 group-hover:border-transparent group-hover:bg-[#121211]">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                <Icon size={16} className="text-[#8A847C]" />
-              </div>
-              <div>
-                <h3 className="font-headline text-base font-extrabold text-[#F0ECE6] tracking-tight">{skill.name}</h3>
-                <span className={`text-[10px] font-mono uppercase tracking-widest ${CATEGORY_TEXT[skill.category] || 'text-zinc-600'}`}>
-                  {skill.category}
-                </span>
-              </div>
-            </div>
-            <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-[#8A847C] bg-white/[0.03] border border-white/[0.06] rounded-full">
-              <Lock size={10} />
-              Corner
+    <div className="mb-12">
+      {/* Category header */}
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center gap-3 mb-6 group text-left"
+      >
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center border shrink-0"
+          style={{ backgroundColor: cat.color + '15', borderColor: cat.color + '30' }}
+        >
+          <Icon size={16} style={{ color: cat.color }} />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h2 className="font-headline text-xl font-extrabold text-[#F0ECE6] tracking-tight">
+              {cat.label}
+            </h2>
+            <span
+              className="font-mono text-[10px] px-2 py-0.5 rounded-full border"
+              style={{ color: cat.color, borderColor: cat.color + '40', backgroundColor: cat.color + '10' }}
+            >
+              {filtered.length} skills
             </span>
           </div>
-
-          {/* Description */}
-          <p className="font-body text-sm text-[#8A847C] leading-relaxed mb-3 flex-grow">
-            {skill.description}
-          </p>
-
-          {/* Impact */}
-          <div className="p-3 bg-gradient-to-r from-[#E85D26]/5 to-transparent border-l-2 border-[#E85D26]/30 rounded-r-lg">
-            <p className="font-body text-sm text-[#E85D26]/80 leading-relaxed">
-              {skill.impact}
-            </p>
-          </div>
+          <p className="font-body text-sm text-[#8A847C] mt-0.5">{cat.description}</p>
         </div>
-      </div>
-    </Reveal>
+        <ChevronDown
+          size={18}
+          className="text-[#8A847C] group-hover:text-[#F0ECE6] transition-all duration-200 shrink-0"
+          style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+
+      {/* Cards grid */}
+      <AnimatePresence>
+        {!collapsed && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filtered.map((skill, i) => (
+                <SkillCard key={skill.name} skill={skill} catId={cat.id} index={i} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
-/* -- Stat counter --------------------------------------------------------- */
+/* -- Stat block ----------------------------------------------------------- */
 function StatBlock({ number, label, delay = 0 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
-
   return (
     <motion.div
       ref={ref}
@@ -567,12 +348,8 @@ function StatBlock({ number, label, delay = 0 }) {
       transition={{ duration: 0.6, delay }}
       className="text-center"
     >
-      <div className="font-headline text-4xl md:text-5xl font-extrabold text-[#E85D26] tracking-tight">
-        {number}
-      </div>
-      <div className="font-body text-sm text-[#8A847C] mt-1 uppercase tracking-widest">
-        {label}
-      </div>
+      <div className="font-headline text-4xl md:text-5xl font-extrabold text-[#E85D26] tracking-tight">{number}</div>
+      <div className="font-body text-sm text-[#8A847C] mt-1 uppercase tracking-widest">{label}</div>
     </motion.div>
   );
 }
@@ -580,16 +357,31 @@ function StatBlock({ number, label, delay = 0 }) {
 /* == MAIN PAGE ============================================================ */
 export default function Skills() {
   useSEO();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+
+  const totalSkills = CATEGORIES.reduce((acc, c) => acc + c.skills.length, 0);
+
+  const filteredCategories = activeFilter === 'all'
+    ? CATEGORIES
+    : CATEGORIES.filter(c => c.id === activeFilter);
+
+  const hasResults = filteredCategories.some(cat => {
+    if (!searchQuery) return true;
+    return cat.skills.some(s =>
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.trigger.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   return (
     <main className="bg-[#0A0A08] text-[#F0ECE6] font-body antialiased min-h-screen overflow-x-hidden">
       <SiteNav transparent />
 
       {/* -- HERO ---------------------------------------------------------- */}
-      <section className="relative min-h-[80vh] flex items-center pt-24 pb-16 px-6 overflow-hidden">
+      <section className="relative min-h-[60vh] flex items-center pt-24 pb-16 px-6 overflow-hidden">
         <NoiseOverlay />
-
-        {/* Radial gradient bg */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#E85D26]/[0.04] rounded-full blur-[120px]" />
           <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#E85D26]/[0.02] rounded-full blur-[80px]" />
@@ -605,31 +397,31 @@ export default function Skills() {
 
           <Reveal delay={0.1}>
             <h1 className="font-headline text-[clamp(2.5rem,7vw,5.5rem)] font-extrabold leading-[0.95] tracking-[-0.02em] max-w-4xl">
-              51 Skills.{' '}
+              {totalSkills} Skills.{' '}
               <span className="text-[#8A847C]">One System.</span>
             </h1>
           </Reveal>
 
           <Reveal delay={0.2}>
             <p className="font-body text-lg md:text-xl text-[#8A847C] max-w-2xl mt-8 leading-relaxed">
-              Built by running a real business. Tested every day. Each skill solves one specific problem, plugs into Claude Code, and works the moment you drop it in.
+              Built by running a real business. Tested every day. Each skill solves one specific problem and plugs into Claude Code the moment you drop it in.
             </p>
           </Reveal>
 
           <Reveal delay={0.3}>
             <div className="flex flex-wrap gap-4 mt-10">
               <a
-                href="#free-skills"
+                href="#skills"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-[#E85D26] text-white font-headline font-extrabold text-base uppercase tracking-widest rounded-lg hover:bg-[#D14E1C] transition-all shadow-lg shadow-[#E85D26]/20"
               >
-                Get Free Skills
+                Browse All Skills
                 <ArrowRight size={18} />
               </a>
               <a
-                href="#premium-skills"
+                href="/corner"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white/5 text-[#F0ECE6] font-headline font-bold text-base uppercase tracking-widest rounded-lg hover:bg-white/10 border border-white/[0.08] transition-all"
               >
-                See the Full Arsenal
+                Get Corner
               </a>
             </div>
           </Reveal>
@@ -637,97 +429,138 @@ export default function Skills() {
           {/* Stats bar */}
           <Reveal delay={0.4}>
             <div className="mt-20 grid grid-cols-3 gap-8 max-w-lg">
-              <StatBlock number="51" label="Skills" delay={0} />
-              <StatBlock number="7" label="Free" delay={0.1} />
+              <StatBlock number={totalSkills} label="Skills" delay={0} />
+              <StatBlock number="6" label="Categories" delay={0.1} />
               <StatBlock number="12" label="Agents" delay={0.2} />
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* -- FREE SKILLS --------------------------------------------------- */}
-      <section id="free-skills" className="relative px-6 py-24 scroll-mt-20">
+      {/* -- SKILLS SECTION ------------------------------------------------ */}
+      <section id="skills" className="relative px-6 py-16 scroll-mt-20">
         <NoiseOverlay opacity={0.02} />
         <div className="max-w-6xl mx-auto relative z-10">
-          <Reveal>
-            <div className="flex items-center gap-3 mb-4">
-              <Zap size={18} className="text-emerald-400" />
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-emerald-400">Open Source</span>
+
+          {/* Search + filter bar */}
+          <div className="mb-10 flex flex-col sm:flex-row gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A847C]" />
+              <input
+                type="text"
+                placeholder="Search skills..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-[#111110] border border-white/[0.08] rounded-xl pl-11 pr-4 py-3 font-mono text-sm text-[#F0ECE6] placeholder-[#8A847C]/50 focus:outline-none focus:border-[#E85D26]/40 focus:bg-[#141413] transition-all"
+              />
             </div>
-          </Reveal>
 
-          <Reveal delay={0.05}>
-            <h2 className="font-headline text-3xl md:text-5xl font-extrabold tracking-tight mb-3">
-              Start Here.
-            </h2>
-          </Reveal>
-
-          <Reveal delay={0.1}>
-            <p className="font-body text-lg text-[#8A847C] max-w-2xl mb-4 leading-relaxed">
-              Copy any of these into your Claude Code project. They work out of the box. No setup, no paywall, no catch.
-            </p>
-          </Reveal>
-
-          <Reveal delay={0.15}>
-            <p className="font-body text-sm text-zinc-600 mb-12">
-              Drop the file into <code className="px-2 py-0.5 bg-white/[0.04] border border-white/[0.06] rounded text-zinc-400 font-mono text-xs">.claude/skills/skill-name/SKILL.md</code> and it just works.
-            </p>
-          </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FREE_SKILLS.map((skill, i) => (
-              <FreeSkillCard key={skill.id} skill={skill} index={i} />
-            ))}
+            {/* Category filter pills */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setActiveFilter('all')}
+                className={`px-3 py-2 rounded-lg font-mono text-xs uppercase tracking-widest border transition-all ${
+                  activeFilter === 'all'
+                    ? 'bg-[#E85D26]/15 border-[#E85D26]/40 text-[#E85D26]'
+                    : 'bg-white/[0.03] border-white/[0.06] text-[#8A847C] hover:text-[#F0ECE6] hover:border-white/20'
+                }`}
+              >
+                All
+              </button>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveFilter(cat.id === activeFilter ? 'all' : cat.id)}
+                  className={`px-3 py-2 rounded-lg font-mono text-xs uppercase tracking-widest border transition-all ${
+                    activeFilter === cat.id
+                      ? 'border-opacity-40 opacity-100'
+                      : 'bg-white/[0.03] border-white/[0.06] text-[#8A847C] hover:text-[#F0ECE6] hover:border-white/20'
+                  }`}
+                  style={
+                    activeFilter === cat.id
+                      ? { backgroundColor: cat.color + '15', borderColor: cat.color + '40', color: cat.color }
+                      : {}
+                  }
+                >
+                  {cat.label.split(' ')[0]}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* No results */}
+          {!hasResults && (
+            <div className="text-center py-20">
+              <p className="font-mono text-sm text-[#8A847C]">No skills match "{searchQuery}"</p>
+            </div>
+          )}
+
+          {/* Categories */}
+          {filteredCategories.map(cat => (
+            <CategorySection
+              key={cat.id}
+              cat={cat}
+              searchQuery={searchQuery}
+            />
+          ))}
         </div>
       </section>
 
-      {/* -- DIVIDER ------------------------------------------------------- */}
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="border-t border-white/[0.04]" />
-      </div>
-
-      {/* -- PREMIUM SKILLS ------------------------------------------------ */}
-      <section id="premium-skills" className="relative px-6 py-24 scroll-mt-20">
+      {/* -- HOW SKILLS WORK ----------------------------------------------- */}
+      <section className="relative px-6 py-24 bg-[#0C0C0B] border-t border-white/[0.04]">
         <NoiseOverlay opacity={0.02} />
-
-        {/* Subtle gradient */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[#E85D26]/[0.03] rounded-full blur-[100px]" />
-        </div>
-
         <div className="max-w-6xl mx-auto relative z-10">
           <Reveal>
-            <div className="flex items-center gap-3 mb-4">
-              <Lock size={16} className="text-[#8A847C]" />
-              <span className="font-mono text-xs uppercase tracking-[0.2em] text-[#8A847C]">Included with Corner</span>
-            </div>
-          </Reveal>
-
-          <Reveal delay={0.05}>
-            <h2 className="font-headline text-3xl md:text-5xl font-extrabold tracking-tight mb-3">
-              The Full Arsenal.
+            <h2 className="font-headline text-3xl md:text-4xl font-extrabold tracking-tight mb-12 text-center">
+              How Skills Work
             </h2>
           </Reveal>
 
-          <Reveal delay={0.1}>
-            <p className="font-body text-lg text-[#8A847C] max-w-2xl mb-12 leading-relaxed">
-              These are the skills that run AOM every day. Video editing, brand systems, QA gates, outreach pipelines, and 12 AI agents working in concert. When you get Corner, you get all of this.
-            </p>
-          </Reveal>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <Reveal delay={0}>
+              <div className="text-center">
+                <div className="w-14 h-14 rounded-xl bg-[#E85D26]/10 border border-[#E85D26]/20 flex items-center justify-center mx-auto mb-4">
+                  <Zap size={22} className="text-[#E85D26]" />
+                </div>
+                <h3 className="font-headline text-lg font-extrabold mb-2">1. Drop it in</h3>
+                <p className="font-body text-sm text-[#8A847C] leading-relaxed">
+                  Save the SKILL.md file to <code className="font-mono text-xs text-zinc-400">.claude/skills/skill-name/SKILL.md</code>. That's the entire setup.
+                </p>
+              </div>
+            </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {PREMIUM_SKILLS.map((skill, i) => (
-              <PremiumSkillCard key={skill.name} skill={skill} index={i} />
-            ))}
+            <Reveal delay={0.1}>
+              <div className="text-center">
+                <div className="w-14 h-14 rounded-xl bg-[#E85D26]/10 border border-[#E85D26]/20 flex items-center justify-center mx-auto mb-4">
+                  <Terminal size={22} className="text-[#E85D26]" />
+                </div>
+                <h3 className="font-headline text-lg font-extrabold mb-2">2. Call it</h3>
+                <p className="font-body text-sm text-[#8A847C] leading-relaxed">
+                  Type the trigger command in your Claude Code conversation. Claude reads the instructions and executes.
+                </p>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.2}>
+              <div className="text-center">
+                <div className="w-14 h-14 rounded-xl bg-[#E85D26]/10 border border-[#E85D26]/20 flex items-center justify-center mx-auto mb-4">
+                  <ArrowRight size={22} className="text-[#E85D26]" />
+                </div>
+                <h3 className="font-headline text-lg font-extrabold mb-2">3. Done</h3>
+                <p className="font-body text-sm text-[#8A847C] leading-relaxed">
+                  The skill handles the rest. No configuration, no API keys, no learning curve.
+                </p>
+              </div>
+            </Reveal>
           </div>
 
           {/* CTA */}
-          <Reveal delay={0.2}>
+          <Reveal delay={0.3}>
             <div className="mt-16 text-center">
               <div className="inline-flex flex-col items-center gap-6 p-8 md:p-12 bg-[#0E0E0D] border border-white/[0.06] rounded-2xl max-w-2xl w-full">
                 <div className="font-headline text-2xl md:text-3xl font-extrabold tracking-tight text-center">
-                  51 skills. 12 agents.{' '}
+                  {totalSkills} skills. 12 agents.{' '}
                   <span className="text-[#E85D26]">Your business, on autopilot.</span>
                 </div>
                 <p className="font-body text-base text-[#8A847C] text-center leading-relaxed max-w-lg">
@@ -751,56 +584,6 @@ export default function Skills() {
               </div>
             </div>
           </Reveal>
-        </div>
-      </section>
-
-      {/* -- HOW SKILLS WORK ----------------------------------------------- */}
-      <section className="relative px-6 py-24 bg-[#0C0C0B] border-t border-white/[0.04]">
-        <NoiseOverlay opacity={0.02} />
-        <div className="max-w-6xl mx-auto relative z-10">
-          <Reveal>
-            <h2 className="font-headline text-3xl md:text-4xl font-extrabold tracking-tight mb-12 text-center">
-              How Skills Work
-            </h2>
-          </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <Reveal delay={0}>
-              <div className="text-center">
-                <div className="w-14 h-14 rounded-xl bg-[#E85D26]/10 border border-[#E85D26]/20 flex items-center justify-center mx-auto mb-4">
-                  <Download size={22} className="text-[#E85D26]" />
-                </div>
-                <h3 className="font-headline text-lg font-extrabold mb-2">1. Drop it in</h3>
-                <p className="font-body text-sm text-[#8A847C] leading-relaxed">
-                  Save the SKILL.md file to your Claude Code project's skills folder. That's the entire setup.
-                </p>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.1}>
-              <div className="text-center">
-                <div className="w-14 h-14 rounded-xl bg-[#E85D26]/10 border border-[#E85D26]/20 flex items-center justify-center mx-auto mb-4">
-                  <Terminal size={22} className="text-[#E85D26]" />
-                </div>
-                <h3 className="font-headline text-lg font-extrabold mb-2">2. Call it</h3>
-                <p className="font-body text-sm text-[#8A847C] leading-relaxed">
-                  Type the skill name in your conversation. Claude reads the instructions and executes.
-                </p>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.2}>
-              <div className="text-center">
-                <div className="w-14 h-14 rounded-xl bg-[#E85D26]/10 border border-[#E85D26]/20 flex items-center justify-center mx-auto mb-4">
-                  <Zap size={22} className="text-[#E85D26]" />
-                </div>
-                <h3 className="font-headline text-lg font-extrabold mb-2">3. Done</h3>
-                <p className="font-body text-sm text-[#8A847C] leading-relaxed">
-                  The skill handles the rest. No configuration, no API keys, no learning curve.
-                </p>
-              </div>
-            </Reveal>
-          </div>
         </div>
       </section>
 

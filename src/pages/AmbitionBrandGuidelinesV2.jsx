@@ -15,12 +15,7 @@ import { toPng } from 'html-to-image'
 /*  GOOGLE FONTS                                                       */
 /* ================================================================== */
 
-const fontLink = document.createElement('link')
-fontLink.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap'
-fontLink.rel = 'stylesheet'
-if (!document.querySelector('link[href*="Barlow+Condensed"]')) {
-  document.head.appendChild(fontLink)
-}
+/* Font injection moved to useEffect in main component to avoid module-scope document crash */
 
 /* ================================================================== */
 /*  DESIGN TOKENS                                                      */
@@ -708,6 +703,16 @@ export default function AmbitionBrandGuidelinesV2() {
   const navigate = useNavigate()
   const [activeSection, setActiveSection] = useState(null)
   const [showNav, setShowNav] = useState(false)
+
+  // Inject Google Fonts (moved out of module scope to avoid document crash)
+  useEffect(() => {
+    if (!document.querySelector('link[href*="Barlow+Condensed"]')) {
+      const fontLink = document.createElement('link')
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap'
+      fontLink.rel = 'stylesheet'
+      document.head.appendChild(fontLink)
+    }
+  }, [])
 
   // Refs for downloadable elements
   const patternRefs = useRef({})

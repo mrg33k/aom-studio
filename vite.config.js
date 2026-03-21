@@ -1048,6 +1048,38 @@ function localDashboardPlugin() {
         res.end(JSON.stringify({ notifications, timestamp: new Date().toISOString() }))
       })
 
+      // ---- SET ACTIVE PERSONA --------
+      // Dashboard agent selector writes to context/.active-persona so the
+      // terminal session responds as the chosen agent.
+      server.middlewares.use('/api/local/set-persona', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'POST only' }))
+          return
+        }
+        let body = ''
+        req.on('data', chunk => { body += chunk })
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body)
+            const slug = (data.agent || '').toLowerCase().trim()
+            const VALID = new Set(['elon','bobby','steffen','steve','alex','jacob','cleo','tony','paige','colton','elmo','mom','pixel'])
+            if (!slug || !VALID.has(slug)) {
+              res.statusCode = 400
+              res.end(JSON.stringify({ error: `Invalid agent slug: ${slug}` }))
+              return
+            }
+            const personaPath = resolve(AOM_EA_ROOT, 'context', '.active-persona')
+            fs.writeFileSync(personaPath, slug)
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ ok: true, agent: slug }))
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ error: err.message }))
+          }
+        })
+      })
+
       // ---- TASK ASSIGN (Right Now routing) --------
       // When a task moves to Right Now, auto-assign to an agent and notify them.
       // This makes Right Now ACTIONABLE, not just a display list.

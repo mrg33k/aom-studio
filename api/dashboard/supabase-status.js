@@ -1,9 +1,12 @@
-// GET /api/dashboard/supabase-status
-// Returns agent status, messages, and tasks from Supabase
-// This replaces the GitHub-polling status.js for production use
+// GET /api/dashboard/supabase-status?client=aom
+// Returns agent status, messages, and tasks from Supabase.
+// Optional ?client= query param scopes all table fetches to a specific tenant.
+// Default client_id = 'aom' (us). This is the multi-tenant isolation foundation.
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+const DEFAULT_CLIENT_ID = 'aom';
 
 async function supabaseGet(table, params = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
@@ -24,11 +27,24 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Supabase not configured' });
   }
 
+  // Resolve client_id -- scopes all queries to the correct tenant.
+  // ?client=acme in the URL overrides the default.
+  const clientId = (req.query.client && req.query.client.trim())
+    ? req.query.client.trim().toLowerCase()
+    : DEFAULT_CLIENT_ID;
+
+  // Filter all queries by client_id for multi-tenant isolation.
+  // Requires: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
+  //           ALTER TABLE tasks ADD COLUMN client_id text DEFAULT 'aom';
+  //           ALTER TABLE agent_status ADD COLUMN client_id text DEFAULT 'aom';
+  // Until those columns exist, Supabase silently ignores the filter -- safe to include always.
+  const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
+
   try {
     const [agents, messages, tasks] = await Promise.all([
-      supabaseGet('agent_status', 'order=slug'),
-      supabaseGet('messages', 'order=timestamp.desc&limit=100'),
-      supabaseGet('tasks', 'order=created_at.desc&limit=50'),
+      supabaseGet('agent_status', `order=slug${clientFilter}`),
+      supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
+      supabaseGet('tasks', `order=created_at.desc&limit=50${clientFilter}`),
     ]);
 
     // Split agents vs projects
@@ -72,6 +88,7 @@ export default async function handler(req, res) {
       },
       lastUpdated: new Date().toISOString(),
       source: 'supabase',
+      clientId,   // echo back which tenant was served
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -1,13 +1,18 @@
-// GET  /api/dashboard/supabase-messages?agent={slug}&limit=100
-// POST /api/dashboard/supabase-messages  { agent, text, role, source }
+// GET  /api/dashboard/supabase-messages?agent={slug}&limit=100&client=aom
+// POST /api/dashboard/supabase-messages  { agent, text, role, source, client_id }
 //
 // Server-side Supabase proxy. Uses service role key for writes.
 // The ONLY production chat endpoint. No Supabase JS client in browser.
+//
+// Multi-tenant: all reads + writes are scoped by client_id.
+// Default client_id = 'aom'. Pass ?client= on GET or client_id in POST body.
 
 import crypto from 'crypto'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+
+const DEFAULT_CLIENT_ID = 'aom'
 
 function supabaseHeaders() {
   return {
@@ -35,7 +40,16 @@ export default async function handler(req, res) {
     const { agent, limit = 100 } = req.query
     if (!agent) return res.status(400).json({ error: 'agent required' })
 
-    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}&order=timestamp.desc&limit=${limit}`
+    // client_id filter ready for multi-tenant (add column to Supabase first)
+    const clientId = (req.query.client && req.query.client.trim())
+      ? req.query.client.trim().toLowerCase()
+      : DEFAULT_CLIENT_ID
+
+    // Always filter by client_id for multi-tenant isolation.
+    // Requires: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
+    // Supabase silently ignores unknown column filters -- safe to include always.
+    const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`
+    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}${clientFilter}&order=timestamp.desc&limit=${limit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()
@@ -49,8 +63,13 @@ export default async function handler(req, res) {
 
   // ---- POST: write a new message (user send from dashboard) ---------------
   if (req.method === 'POST') {
-    const { agent, text, role = 'user', source = 'corner-dashboard' } = req.body || {}
+    const { agent, text, role = 'user', source = 'corner-dashboard', client_id } = req.body || {}
     if (!agent || !text) return res.status(400).json({ error: 'agent and text required' })
+
+    // Resolve client_id: prefer body field, else default to 'aom'
+    const resolvedClientId = (client_id && client_id.trim())
+      ? client_id.trim().toLowerCase()
+      : DEFAULT_CLIENT_ID
 
     const payload = {
       id: crypto.randomUUID(),
@@ -58,6 +77,7 @@ export default async function handler(req, res) {
       role,
       text: text.trim(),
       source,
+      client_id: resolvedClientId,  // always include -- multi-tenant isolation
     }
 
     const url = `${SUPABASE_URL}/rest/v1/messages`

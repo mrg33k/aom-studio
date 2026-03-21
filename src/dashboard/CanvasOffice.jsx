@@ -56,6 +56,27 @@ const SHUFFLE_ANIM_MS = 200
 const SLOT_ORDER_KEY = 'corner-slot-order'
 const HIDDEN_ROOMS_KEY = 'corner-hidden-rooms'
 const CUSTOM_ROOMS_KEY = 'corner-custom-rooms'
+const FREE_POSITIONS_KEY = 'corner-free-positions'
+
+// Load free room positions from localStorage
+// Returns: { [roomId]: { x, y } } or {}
+function loadFreePositions() {
+  try {
+    const raw = localStorage.getItem(FREE_POSITIONS_KEY)
+    if (raw) {
+      const saved = JSON.parse(raw)
+      if (saved && typeof saved === 'object') return saved
+    }
+  } catch (e) { /* ignore */ }
+  return {}
+}
+
+// Save free room positions to localStorage
+function saveFreePositions(positions) {
+  try {
+    localStorage.setItem(FREE_POSITIONS_KEY, JSON.stringify(positions))
+  } catch (e) { /* ignore */ }
+}
 
 // ---- ROOM DATA FROM gridSpec.js (ALL_ROOMS = agents + projects) ----
 // Build ROOM_META lookup from ALL_ROOMS so both agents and projects get names/colors
@@ -127,46 +148,35 @@ function buildVisibleRoomIDs(hiddenSet) {
   return allSlugs.filter(id => !hiddenSet.has(id))
 }
 
-// ---- DYNAMIC HEX SLOT GENERATION (diamond growth) ----
-// Generate hex slot positions for N rooms in a diamond pattern growing from center outward.
-// Pattern: center row is widest, rows above/below taper by 1 room each.
-// For hex staggering, odd rows are offset by half a column width.
+// ---- ROW-GROUPED HEX SLOT GENERATION ----
+// Generates hex slot positions using explicit row widths so rooms cluster by group.
+// Row widths match the ALL_ROOMS order in gridSpec.js:
+//   Row 0 (3): Core team      -- Elon, Bobby, Steffen
+//   Row 1 (4): Creative+     -- Cleo, Jacob, AOM Team, Patrik
+//   Row 2 (5): Top projects  -- Corner, Ambition, KOHRS, ISA, Skylar
+//   Row 3 (4): More projects -- Brandon Wiley, NABI, Outreach, AI Advisory
+//   Row 4+: overflow rows    -- 6 per row (custom rooms, future agents)
+// Hex stagger: each row col is centered at 0, step 2, giving offset-column hex packing.
+const ROW_SIZES = [3, 4, 5, 4]
+const OVERFLOW_ROW_SIZE = 6
+
 function generateHexSlots(n) {
   if (n <= 0) return []
-  // Determine how many rows we need. Diamond shape: row widths go 1,2,3,...,maxW,...,3,2,1
-  // Total slots for a diamond of maxWidth W = W^2 (for perfect diamond)
-  // We grow rows until we have enough slots.
   const slots = []
+  let remaining = n
 
-  // Strategy: build rows from center outward (ring-based diamond)
-  // Row 0 = center. Rows grow by +1 width going down, -1 width going up.
-  // Simpler approach: just build concentric rings in hex grid order.
+  for (let row = 0; remaining > 0; row++) {
+    const rowWidth = row < ROW_SIZES.length
+      ? Math.min(ROW_SIZES[row], remaining)
+      : Math.min(OVERFLOW_ROW_SIZE, remaining)
 
-  // Use the ring approach: ring 0 = 1 slot (center). ring 1 = up to 6 neighbors. ring 2 = up to 12. etc.
-  // For visual aesthetics, use a diamond/hexagonal packing.
-
-  // Simple diamond layout: row r has (maxPerRow - |r - centerRow|) rooms
-  // Center row index = floor(sqrt(n)) to get a reasonable diamond height
-  // Let's compute the minimum diamond that fits N rooms:
-
-  // Diamond with maxWidth W has total = W + 2*(1+2+...+(W-1)) = W + W*(W-1) = W^2 slots
-  // So we need W = ceil(sqrt(N))
-  let maxWidth = Math.ceil(Math.sqrt(n))
-  if (maxWidth < 1) maxWidth = 1
-
-  // Total rows = 2*maxWidth - 1
-  const totalRows = 2 * maxWidth - 1
-  const centerRow = maxWidth - 1 // 0-indexed center
-
-  let count = 0
-  for (let r = 0; r < totalRows && count < n; r++) {
-    const rowWidth = maxWidth - Math.abs(r - centerRow)
-    // Center the row: columns go from -(rowWidth-1) to (rowWidth-1) stepping by 2
+    // Center the row at col 0 with step-2 columns
+    // e.g. width 3 -> cols [-2, 0, 2], width 4 -> cols [-3, -1, 1, 3]
     const startCol = -(rowWidth - 1)
-    for (let c = 0; c < rowWidth && count < n; c++) {
-      slots.push({ row: r, col: startCol + c * 2 })
-      count++
+    for (let c = 0; c < rowWidth; c++) {
+      slots.push({ row, col: startCol + c * 2 })
     }
+    remaining -= rowWidth
   }
   return slots
 }
@@ -190,6 +200,13 @@ const AGENT_FOLDER_ROOMS = [
   'kohrs', 'nabi', 'outreach', 'ai-advisory', 'included-health',
 ]
 
+// Rooms with a single static PNG (no working/idle pair). 512x512 transparent PNGs.
+// Crop coords are scaled by (naturalWidth/1024) so these render identically to 1024px rooms.
+const SINGLE_IMAGE_ROOMS = {
+  'patrik': '/rooms/patrik-office.png',
+  'aom-team': '/rooms/aom-team-room.png',
+}
+
 // Static version string for room images. Increment when room PNGs are updated.
 // Using Date.now() previously caused EVERY mount to re-download all PNGs (never cached).
 const ROOM_IMAGE_VERSION = '1'
@@ -199,6 +216,14 @@ function getRoomImageSources(id) {
     return {
       working: `/corner/${id}-room/room-shell-working.png?v=${ROOM_IMAGE_VERSION}`,
       idle: `/corner/${id}-room/room-shell-idle.png?v=${ROOM_IMAGE_VERSION}`,
+      hasImages: true,
+    }
+  }
+  if (SINGLE_IMAGE_ROOMS[id]) {
+    // Single static PNG -- use same image for both working and idle slots
+    return {
+      working: SINGLE_IMAGE_ROOMS[id],
+      idle: SINGLE_IMAGE_ROOMS[id],
       hasImages: true,
     }
   }
@@ -326,6 +351,65 @@ function findNearestSlot(wx, wy, originX, originY, totalSlots) {
     }
   }
   return bestIdx
+}
+
+// ---- SNAP TO NEAREST HEX GRID CELL ----
+// Given a world-space point (the top-left of where the room wants to land),
+// find the nearest hex grid cell and return its top-left world position {x, y}.
+//
+// The hex layout uses hexPosition(row, col, ox, oy) where:
+//   x = ox + col * HEX_COL_STEP
+//   y = oy + row * HEX_ROW_STEP
+//
+// For the VISIBLE snap grid we use only even col values per row (same as generateHexSlots),
+// which creates the diamond/offset pattern. Each row r has a col offset parity that
+// alternates: even rows use even cols, odd rows use odd cols.
+// This way rooms don't stack on top of each other (they fit the isometric grid).
+const HEX_COL_STEP = VIS_W * 0.52   // world-space x step per col unit
+const HEX_ROW_STEP = VIS_H * 0.72   // world-space y step per row unit
+
+function snapToNearestHexCell(wx, wy, originX, originY) {
+  // Convert top-left to center for distance calculations
+  const cx = wx + ROOM_SIZE / 2
+  const cy = wy + ROOM_SIZE / 2
+
+  // Estimate row from y
+  const rawRow = (cy - originY - ROOM_SIZE / 2) / HEX_ROW_STEP
+  const bestRow = Math.round(rawRow)
+
+  // For each candidate row, the valid cols are those with the same parity as
+  // the row itself (matching generateHexSlots diamond pattern).
+  // We search bestRow ± 1 to handle boundary cases.
+  let nearest = { row: bestRow, col: 0 }
+  let nearestDist = Infinity
+
+  for (let dr = -1; dr <= 1; dr++) {
+    const r = bestRow + dr
+    // Estimate col from x
+    const rawCol = (cx - originX - ROOM_SIZE / 2) / HEX_COL_STEP
+    const bestColRaw = Math.round(rawCol)
+
+    // Candidate cols: the nearest integer cols, stepped by 2 (same parity)
+    // In our grid, even rows use even cols, odd rows use odd cols.
+    const parity = ((r % 2) + 2) % 2 // 0 for even rows, 1 for odd rows
+    // Align bestColRaw to correct parity
+    let alignedCol = bestColRaw
+    if (((alignedCol % 2) + 2) % 2 !== parity) alignedCol += 1
+
+    for (let dc = -2; dc <= 2; dc += 2) {
+      const c = alignedCol + dc
+      const pos = hexPosition(r, c, originX, originY)
+      const pcx = pos.x + ROOM_SIZE / 2
+      const pcy = pos.y + ROOM_SIZE / 2
+      const d = Math.sqrt((cx - pcx) ** 2 + (cy - pcy) ** 2)
+      if (d < nearestDist) {
+        nearestDist = d
+        nearest = { row: r, col: c }
+      }
+    }
+  }
+
+  return hexPosition(nearest.row, nearest.col, originX, originY)
 }
 
 // ---- LOAD/SAVE SLOT ORDER FROM LOCALSTORAGE ----
@@ -854,6 +938,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   drawerSnap = null,
   isMobile = false,
   initialFocusRoom = null, // If set, start camera focused on this room instead of overview
+  onOpenChat,    // (roomId) -> open chat panel for room
+  onSendMessage, // (roomId) -> open chat + focus input
+  onViewTasks,   // (roomId) -> switch to tasks tab for room
+  onSetAsHome,   // (roomId) -> save as default home room in localStorage
+  unreadAgents = {},  // { agentSlug: count } -- rooms with unread messages
 }, ref) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
@@ -872,6 +961,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   const [slotOrder, setSlotOrder] = useState(loadSlotOrder)
   // Hidden rooms tracked in state for re-render on hide/show
   const [hiddenRooms, setHiddenRooms] = useState(() => new Set(loadHiddenRooms()))
+
+  // ---- FREE POSITION OVERRIDES ----
+  // When a room is dropped freely (no snap-to-slot), its {x, y} world position is saved here.
+  // On render, freePositions[roomId] takes priority over slotWorldPos(slotIdx).
+  // Persisted to localStorage under FREE_POSITIONS_KEY.
+  const freePositionsRef = useRef(loadFreePositions())
   // New room creation modal
   const [showNewRoomModal, setShowNewRoomModal] = useState(false)
 
@@ -897,6 +992,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     startClientX: 0,
     startClientY: 0,
     totalMovement: 0,
+    // Snap target: the nearest hex grid cell world position (updated every frame during drag)
+    snapX: 0,
+    snapY: 0,
   })
   const mouseDownRef = useRef({ active: false, didDrag: false, startX: 0, startY: 0 })
 
@@ -961,6 +1059,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       } else {
         setFocusedRoom(null)
       }
+    },
+    resetLayout: () => {
+      // Clear free-position overrides AND saved slot order so rooms snap back to
+      // default grouped layout defined by ALL_ROOMS order in gridSpec.js
+      try { localStorage.removeItem(FREE_POSITIONS_KEY) } catch {}
+      try { localStorage.removeItem(SLOT_ORDER_KEY) } catch {}
+      freePositionsRef.current = {}
+      // Reload slot order from defaults (triggers re-render so rooms visually snap)
+      setSlotOrder(loadSlotOrder())
     },
   }), [triggerCelebration, slotOrder])
 
@@ -1028,7 +1135,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
   // Origin for hex layout
   const ORIGIN_X = ROOM_SIZE * 1.5
-  const ORIGIN_Y = ROOM_SIZE * 0.1
+  const ORIGIN_Y = ROOM_SIZE * 0.1 - 100
 
   // ---- COMPUTE GRID BOUNDING BOX ----
   const getGridBounds = useCallback(() => {
@@ -1174,6 +1281,88 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const elapsed = (performance.now() - startTimeRef.current) / 1000
     const now = performance.now()
 
+    // ---- HEX GRID LINES: draw snap grid as visible lines behind rooms ----
+    // Compute which cells are visible in the current viewport (with a 2-cell margin)
+    {
+      const viewL = -cam.x / cam.zoom
+      const viewT = -cam.y / cam.zoom
+      const viewR = viewL + size.w / cam.zoom
+      const viewB = viewT + size.h / cam.zoom
+
+      // How many rows/cols fit in the viewport (plus margin)
+      const rowMin = Math.floor((viewT - ORIGIN_Y) / HEX_ROW_STEP) - 2
+      const rowMax = Math.ceil((viewB - ORIGIN_Y) / HEX_ROW_STEP) + 2
+      const colMin = Math.floor((viewL - ORIGIN_X) / HEX_COL_STEP) - 2
+      const colMax = Math.ceil((viewR - ORIGIN_X) / HEX_COL_STEP) + 2
+
+      ctx.save()
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.14)'  // #3B82F6 at low opacity
+      ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
+
+      const S = ROOM_SIZE
+      // Draw a diamond outline at each hex grid cell.
+      // For each row, start at the correct parity col and step by 2.
+      // Even rows use even cols, odd rows use odd cols (matches generateHexSlots).
+      for (let r = rowMin; r <= rowMax; r++) {
+        const parity = ((r % 2) + 2) % 2  // 0 for even rows, 1 for odd rows
+        // Find the first col >= colMin that has the right parity
+        let cStart = colMin
+        if (((cStart % 2) + 2) % 2 !== parity) cStart += 1
+        for (let c = cStart; c <= colMax; c += 2) {
+          const pos = hexPosition(r, c, ORIGIN_X, ORIGIN_Y)
+          // Diamond path matching the hit-test shape: hw=ROOM_SIZE/2, hh=ROOM_SIZE/4
+          // Grid lines shifted up by half a hex height (hh = S/4)
+          const px = pos.x + S * 0.5
+          const py = pos.y + S * 0.5 - S / 4
+          const hw = S / 2
+          const hh = S / 4
+          ctx.beginPath()
+          ctx.moveTo(px, py - hh)      // top
+          ctx.lineTo(px + hw, py)      // right
+          ctx.lineTo(px, py + hh)      // bottom
+          ctx.lineTo(px - hw, py)      // left
+          ctx.closePath()
+          ctx.stroke()
+        }
+      }
+      ctx.restore()
+    }
+
+    // ---- DRAW SNAP INDICATOR (ghost diamond at snap target during room drag) ----
+    {
+      const drag = dragStateRef.current
+      if (drag.active && drag.roomId) {
+        // Compute snap target for current drag position
+        const rawX = drag.worldX - drag.offsetX
+        const rawY = drag.worldY - drag.offsetY
+        const snap = snapToNearestHexCell(rawX, rawY, ORIGIN_X, ORIGIN_Y)
+        // Store on drag state so onUp can read it
+        drag.snapX = snap.x
+        drag.snapY = snap.y
+
+        const S = ROOM_SIZE
+        const meta = ROOM_META[drag.roomId]
+        const color = meta?.color || '#3B82F6'
+        ctx.save()
+        ctx.strokeStyle = color
+        ctx.globalAlpha = 0.35
+        ctx.lineWidth = 2.5 / (cameraRef.current?.zoom || 1)
+        ctx.setLineDash([8, 6])
+        const px = snap.x + S / 2
+        const py = snap.y + S / 2
+        const hw = S / 2
+        const hh = S / 4
+        ctx.beginPath()
+        ctx.moveTo(px, py - hh)
+        ctx.lineTo(px + hw, py)
+        ctx.lineTo(px, py + hh)
+        ctx.lineTo(px - hw, py)
+        ctx.closePath()
+        ctx.stroke()
+        ctx.restore()
+      }
+    }
+
     // ---- CELEBRATION WAVE: compute per-room offsets ----
     const celeb = celebrationRef.current
     let celebElapsed = 0
@@ -1264,7 +1453,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const renderOrder = slotOrder.map((id, idx) => ({ id, slotIdx: idx, row: dynSlots[idx]?.row ?? 0 }))
     renderOrder.sort((a, b) => a.row - b.row)
 
-    // Helper: get room world position (handles shuffle animation)
+    // Helper: get room world position (handles shuffle animation + free position override)
     function getRoomWorldPos(roomId, slotIdx) {
       let posX, posY
       const shuffleAnim = shuffleAnimRef.current[roomId]
@@ -1275,9 +1464,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         posY = shuffleAnim.fromY + (shuffleAnim.toY - shuffleAnim.fromY) * e
       } else {
         if (shuffleAnim) delete shuffleAnimRef.current[roomId]
-        const slotPos = slotWorldPos(slotIdx, ORIGIN_X, ORIGIN_Y)
-        posX = slotPos.x
-        posY = slotPos.y
+        // Free position override: if user placed this room freely, use that position
+        const freePos = freePositionsRef.current[roomId]
+        if (freePos) {
+          posX = freePos.x
+          posY = freePos.y
+        } else {
+          const slotPos = slotWorldPos(slotIdx, ORIGIN_X, ORIGIN_Y)
+          posX = slotPos.x
+          posY = slotPos.y
+        }
       }
       return { posX, posY }
     }
@@ -1334,7 +1530,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL, cam.zoom, celebGlow, walkPositions[roomId])
 
       // Queue badge for deferred rendering (on top of all rooms)
-      badgeQueue.push({ offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
+      badgeQueue.push({ roomId, offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
 
       // Context menu dotted hex outline (drawn AFTER room, outside clip)
       if (isCtxRoom) {
@@ -1455,35 +1651,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.restore()
 
         // Queue badge for dragged room too
-        badgeQueue.push({ offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
+        badgeQueue.push({ roomId: draggedRoomId, offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
 
-        // ---- DRAW DROP INDICATOR (ghost outline at target slot) ----
-        if (drag.currentSlot >= 0 && drag.currentSlot !== drag.fromSlot) {
-          const targetPos = slotWorldPos(drag.currentSlot, ORIGIN_X, ORIGIN_Y)
-          ctx.save()
-          ctx.globalAlpha = 0.3
-          ctx.strokeStyle = meta.color
-          ctx.lineWidth = 3
-          ctx.setLineDash([8, 6])
-          const S = ROOM_SIZE
-          ctx.beginPath()
-          ctx.moveTo(targetPos.x + S * 0.50, targetPos.y + S * 0.03)
-          ctx.lineTo(targetPos.x + S * 0.97, targetPos.y + S * 0.27)
-          ctx.lineTo(targetPos.x + S * 0.97, targetPos.y + S * 0.76)
-          ctx.lineTo(targetPos.x + S * 0.50, targetPos.y + S * 0.97)
-          ctx.lineTo(targetPos.x + S * 0.03, targetPos.y + S * 0.76)
-          ctx.lineTo(targetPos.x + S * 0.03, targetPos.y + S * 0.27)
-          ctx.closePath()
-          ctx.stroke()
-          ctx.setLineDash([])
-          ctx.restore()
-        }
+        // DROP INDICATOR: shown in the hex grid draw pass above (snap target diamond)
       }
     }
 
     // ---- FINAL PASS: DRAW ALL NAME BADGES ON TOP OF EVERYTHING ----
     for (const badge of badgeQueue) {
-      const { offsetX: bx, offsetY: by, nameText, nameColor, currentZoom } = badge
+      const { roomId: badgeRoomId, offsetX: bx, offsetY: by, nameText, nameColor, currentZoom } = badge
       const S = ROOM_SIZE
       const baseFontSize = 17
       const invZoomScale = Math.min(3.0, Math.max(1.0, 1.0 / (currentZoom || 1)))
@@ -1539,11 +1715,52 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
       ctx.restore()
       ctx.restore()
+
+      // ---- UNREAD NOTIFICATION DOT ----
+      // If this room has unread messages, draw a pulsing iOS-style badge dot at the top-right of the hex
+      const unreadCount = unreadAgents?.[badgeRoomId] || 0
+      if (unreadCount > 0) {
+        const badgePulse = Math.sin(now / 350) * 0.35 + 0.65 // pulse between 0.30 and 1.0 -- noticeable blink
+        const badgeR = 14 * invZoomScale
+        // Top-right corner of the hex (near the peak of the right wall)
+        const bdgX = S * 0.82
+        const bdgY = S * 0.08
+
+        ctx.save()
+        ctx.translate(bx, by)
+        ctx.globalAlpha = badgePulse
+
+        // Outer glow ring
+        ctx.beginPath()
+        ctx.arc(bdgX, bdgY, badgeR * 1.6, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.25)'
+        ctx.fill()
+
+        // Solid badge circle
+        ctx.beginPath()
+        ctx.arc(bdgX, bdgY, badgeR, 0, Math.PI * 2)
+        ctx.fillStyle = '#3B82F6'
+        ctx.shadowColor = '#3B82F6'
+        ctx.shadowBlur = 8 * invZoomScale
+        ctx.fill()
+        ctx.shadowBlur = 0
+
+        // Count label (cap at 9+)
+        const label = unreadCount > 9 ? '9+' : String(unreadCount)
+        const countFontSize = Math.max(9, badgeR * 1.1)
+        ctx.font = `800 ${countFontSize}px Inter, system-ui, sans-serif`
+        ctx.fillStyle = '#FFFFFF'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(label, bdgX, bdgY)
+
+        ctx.restore()
+      }
     }
 
     ctx.restore() // undo pan/zoom
 
-  }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, ORIGIN_X, ORIGIN_Y, contextMenu])
+  }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, ORIGIN_X, ORIGIN_Y, contextMenu, unreadAgents])
 
   // ---- HELPER: Draw one room ----
   function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, charImg, alpha, nameText, nameColor, isHighlighted, currentZoom, celebGlow = 0, charWalkPos = null) {
@@ -1566,48 +1783,38 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.clip()
 
     // Crossfade blend between working and idle
-    // Use 9-arg drawImage to source-crop the navy border padding out of 1024x1024 PNGs.
-    // This draws only the hex content region, stretched to fill ROOM_SIZE.
+    // Use 9-arg drawImage to source-crop the navy border padding. Crop coords are defined
+    // in 1024px reference space and automatically scaled for 512px images (SINGLE_IMAGE_ROOMS)
+    // so both sizes render identically inside the hex cell.
     const hasWorkImg = workImg?.complete
     const hasIdleImg = idleImg?.complete
 
+    // Helper: draw a room image with source-crop normalized to 1024px reference space.
+    // Rooms may be 1024x1024 OR 512x512 (SINGLE_IMAGE_ROOMS). Either way we apply the
+    // same crop ratios so both render identically inside the hex cell.
+    const drawRoomImage = (img, alpha) => {
+      const iw = img.naturalWidth || 1024
+      const ih = img.naturalHeight || 1024
+      const scale = iw / 1024  // 1.0 for 1024px, 0.5 for 512px
+      if (scale > 0) {
+        const cx = SRC_CROP_X * scale
+        const cy = SRC_CROP_Y * scale
+        const cw = SRC_CROP_W * scale
+        const ch = SRC_CROP_H * scale
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.drawImage(img, cx, cy, cw, ch, 0, 0, S, S)
+        ctx.restore()
+      }
+    }
+
     if (hasWorkImg && hasIdleImg) {
-      const iw = workImg.naturalWidth || 1024
-      const ih = workImg.naturalHeight || 1024
-      // Only apply source crop to full-size (1024x1024) room images
-      const useCrop = iw >= 1024 && ih >= 1024
-      ctx.save()
-      ctx.globalAlpha = (1 - alpha) * parentAlpha
-      if (useCrop) {
-        ctx.drawImage(workImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
-      } else {
-        ctx.drawImage(workImg, 0, 0, S, S)
-      }
-      ctx.restore()
-      ctx.save()
-      ctx.globalAlpha = alpha * parentAlpha
-      if (useCrop) {
-        ctx.drawImage(idleImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
-      } else {
-        ctx.drawImage(idleImg, 0, 0, S, S)
-      }
-      ctx.restore()
+      drawRoomImage(workImg, (1 - alpha) * parentAlpha)
+      drawRoomImage(idleImg, alpha * parentAlpha)
     } else if (hasWorkImg) {
-      const iw = workImg.naturalWidth || 1024
-      const ih = workImg.naturalHeight || 1024
-      if (iw >= 1024 && ih >= 1024) {
-        ctx.drawImage(workImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
-      } else {
-        ctx.drawImage(workImg, 0, 0, S, S)
-      }
+      drawRoomImage(workImg, parentAlpha)
     } else if (hasIdleImg) {
-      const iw = idleImg.naturalWidth || 1024
-      const ih = idleImg.naturalHeight || 1024
-      if (iw >= 1024 && ih >= 1024) {
-        ctx.drawImage(idleImg, SRC_CROP_X, SRC_CROP_Y, SRC_CROP_W, SRC_CROP_H, 0, 0, S, S)
-      } else {
-        ctx.drawImage(idleImg, 0, 0, S, S)
-      }
+      drawRoomImage(idleImg, parentAlpha)
     } else {
       // ---- PLACEHOLDER: colored hex for project/custom rooms without images ----
       // Dark interior fill
@@ -1719,6 +1926,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const handler = (e) => { e.preventDefault() }
     el.addEventListener('wheel', handler, { passive: false })
     return () => el.removeEventListener('wheel', handler)
+  }, [])
+
+  // iPad touch drag fix: register non-passive touchmove listener so e.preventDefault()
+  // can block Safari scroll/zoom interference during room drag. React synthetic events
+  // are passive by default and cannot call preventDefault().
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const handler = (e) => {
+      if (dragStateRef.current.active && dragStateRef.current.roomId) {
+        e.preventDefault()
+      }
+    }
+    el.addEventListener('touchmove', handler, { passive: false })
+    return () => el.removeEventListener('touchmove', handler)
   }, [])
 
   // ---- SHUFFLE LOGIC: Insert dragged room at target slot, animate others ----
@@ -1845,7 +2067,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       }
     }
 
-    // If dragging a room: update world position + check for slot shuffle
+    // If dragging a room: update world position freely (no slot shuffle)
     if (drag.active && drag.roomId) {
       const rect = containerRef.current?.getBoundingClientRect()
       if (rect) {
@@ -1854,15 +2076,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const cy = (e.clientY - rect.top - cam.y) / cam.zoom
         drag.worldX = cx
         drag.worldY = cy
-
-        // Find which slot we're hovering over
-        const nearestSlot = findNearestSlot(cx, cy, ORIGIN_X, ORIGIN_Y, slotOrder.length)
-
-        // If we moved to a new slot, trigger shuffle
-        if (nearestSlot !== drag.currentSlot) {
-          drag.currentSlot = nearestSlot
-          shuffleToSlot(drag.roomId, nearestSlot)
-        }
       }
       return
     }
@@ -1895,7 +2108,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         cameraRef.current.y = pan.startCamY + (e.clientY - pan.startTouchY)
       }
     }
-  }, [hover, setExtHover, ORIGIN_X, ORIGIN_Y, slotOrder, shuffleToSlot])
+  }, [hover, setExtHover, ORIGIN_X, ORIGIN_Y, slotOrder])
 
   // ---- MOUSE UP ----
   const onUp = useCallback(() => {
@@ -1903,10 +2116,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const pan = panRef.current
 
     if (drag.active && drag.roomId) {
-      setSlotOrder(prev => {
-        saveSlotOrder(prev)
-        return prev
-      })
+      // SNAP DROP: snap to nearest hex grid cell, save that position
+      const rawX = drag.worldX - drag.offsetX
+      const rawY = drag.worldY - drag.offsetY
+      const snapped = snapToNearestHexCell(rawX, rawY, ORIGIN_X, ORIGIN_Y)
+      freePositionsRef.current = {
+        ...freePositionsRef.current,
+        [drag.roomId]: { x: snapped.x, y: snapped.y },
+      }
+      saveFreePositions(freePositionsRef.current)
       drag.active = false
       drag.roomId = null
     } else {
@@ -1937,7 +2155,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
 
     mouseDownRef.current.active = false
-  }, [])
+  }, [ORIGIN_X, ORIGIN_Y])
 
   // ---- CLICK: Focus/unfocus room + recall visiting character ----
   const onClick = useCallback((e) => {
@@ -2230,12 +2448,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const cy = (t.clientY - rect.top - cam.y) / cam.zoom
         drag.worldX = cx
         drag.worldY = cy
-
-        const nearestSlot = findNearestSlot(cx, cy, ORIGIN_X, ORIGIN_Y, slotOrder.length)
-        if (nearestSlot !== drag.currentSlot) {
-          drag.currentSlot = nearestSlot
-          shuffleToSlot(drag.roomId, nearestSlot)
-        }
+        // FREE DRAG: no slot shuffle, room follows finger
       }
       return
     }
@@ -2274,7 +2487,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       cameraRef.current.x = pan.startCamX + dx
       cameraRef.current.y = pan.startCamY + dy
     }
-  }, [ORIGIN_X, ORIGIN_Y, slotOrder, shuffleToSlot])
+  }, [ORIGIN_X, ORIGIN_Y, slotOrder])
 
   const onTouchEnd = useCallback((e) => {
     // Clear long-press timer on any touch end
@@ -2288,10 +2501,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const pan = panRef.current
 
       if (drag.active && drag.roomId) {
-        setSlotOrder(prev => {
-          saveSlotOrder(prev)
-          return prev
-        })
+        // SNAP DROP: snap to nearest hex grid cell
+        const rawX = drag.worldX - drag.offsetX
+        const rawY = drag.worldY - drag.offsetY
+        const snapped = snapToNearestHexCell(rawX, rawY, ORIGIN_X, ORIGIN_Y)
+        freePositionsRef.current = {
+          ...freePositionsRef.current,
+          [drag.roomId]: { x: snapped.x, y: snapped.y },
+        }
+        saveFreePositions(freePositionsRef.current)
         drag.active = false
         drag.roomId = null
       } else {
@@ -2409,23 +2627,49 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           }}>
             {contextMenu.roomName}
           </div>
+          {/* Primary room actions */}
           <ContextMenuItem
-            label="View Agent"
-            icon="&#x2192;"
-            onClick={() => handleViewAgent(contextMenu.roomId)}
+            label="Open Chat"
+            icon="&#x1F4AC;"
+            accent
+            onClick={() => {
+              onOpenChat?.(contextMenu.roomId)
+              handleViewAgent(contextMenu.roomId)
+            }}
           />
           <ContextMenuItem
-            label="Regenerate Room"
-            icon="&#x21BB;"
-            onClick={() => handleRegenerate(contextMenu.roomId, contextMenu.roomName)}
+            label="Send Message"
+            icon="&#x2197;"
+            onClick={() => {
+              onSendMessage?.(contextMenu.roomId)
+              setContextMenu(null)
+            }}
           />
+          <ContextMenuItem
+            label="View Tasks"
+            icon="&#x2713;"
+            onClick={() => {
+              onViewTasks?.(contextMenu.roomId)
+              setContextMenu(null)
+            }}
+          />
+          <ContextMenuItem
+            label="Set as Home"
+            icon="&#x2302;"
+            onClick={() => {
+              onSetAsHome?.(contextMenu.roomId)
+              showToast(`${contextMenu.roomName} set as home`)
+              setContextMenu(null)
+            }}
+          />
+          {/* Separator */}
+          <div style={{ height: 1, background: 'rgba(96, 165, 250, 0.12)', margin: '4px 0' }} />
+          {/* Room management */}
           <ContextMenuItem
             label="Hide Room"
             icon="&#x2715;"
             onClick={() => handleHideRoom(contextMenu.roomId)}
           />
-          {/* Separator */}
-          <div style={{ height: 1, background: 'rgba(96, 165, 250, 0.12)', margin: '4px 0' }} />
           {hiddenRooms.size > 0 && (
             <ContextMenuItem
               label={`Show Hidden (${hiddenRooms.size})`}
@@ -2536,7 +2780,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 export default CanvasOffice
 
 // ---- CONTEXT MENU ITEM COMPONENT ----
-function ContextMenuItem({ label, icon, onClick }) {
+function ContextMenuItem({ label, icon, onClick, accent = false }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -2550,8 +2794,8 @@ function ContextMenuItem({ label, icon, onClick }) {
         alignItems: 'center',
         gap: 10,
         fontSize: 13,
-        fontWeight: 500,
-        color: hovered ? '#fff' : '#C8D6E5',
+        fontWeight: accent ? 600 : 500,
+        color: hovered ? '#fff' : (accent ? '#60A5FA' : '#C8D6E5'),
         background: hovered ? 'rgba(96, 165, 250, 0.15)' : 'transparent',
         transition: 'all 0.12s ease',
       }}

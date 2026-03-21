@@ -323,10 +323,51 @@ export const PROJECTS = [
   { slug: 'outreach', name: 'Outreach', type: 'project', color: '#26A69A', statusColors: { active: '#26A69A', idle: '#00897B', offline: '#00695C' }, floor: 'wood-light', floorColor: '#C4A882', lightColor: '#80CBC4', monitorColor: '#80CBC4', hidden: false, team: ['jacob', 'alex'] },
   { slug: 'ai-advisory', name: 'AI Advisory', type: 'project', color: '#29B6F6', statusColors: { active: '#29B6F6', idle: '#0288D1', offline: '#01579B' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81D4FA', monitorColor: '#81D4FA', hidden: false, team: ['steve', 'elon', 'alex'] },
   { slug: 'included-health', name: 'Included Health', type: 'project', color: '#78909C', statusColors: { active: '#78909C', idle: '#546E7A', offline: '#37474F' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#B0BEC5', monitorColor: '#B0BEC5', hidden: true, team: ['paige'] },
+  // ── Special rooms ──────────────────────────────────────────────────────────
+  { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'pixel'] },
 ]
 
-// All rooms (agents + visible projects) for grid rendering
+// ---- GROUPED HEX GRID LAYOUT ORDER ----
+// ALL_ROOMS order controls default room positions on the hex grid.
+// Matches the ROW_SIZES config in CanvasOffice.jsx:
+//   Row 0 (3): Core team      -- Elon, Bobby, Steffen
+//   Row 1 (4): Creative+      -- Cleo, Jacob, AOM Team, Patrik
+//   Row 2 (5): Top projects   -- Corner, Ambition, KOHRS, ISA, Skylar
+//   Row 3 (4): More projects  -- Brandon Wiley, NABI, Outreach, AI Advisory
+// Hidden rooms appended last (not rendered):
+//   mom, pixel, paige, alex, steve, colton, tony, included-health
+
+const _AGENT_MAP = Object.fromEntries(AGENTS.map(a => [a.slug, { ...a, type: 'agent', hidden: false }]))
+const _PROJECT_MAP = Object.fromEntries(PROJECTS.map(p => [p.slug, p]))
+
 export const ALL_ROOMS = [
-  ...AGENTS.map(a => ({ ...a, type: 'agent', hidden: false })),
-  ...PROJECTS,
-]
+  // Row 0 -- Core team
+  _AGENT_MAP['elon'],
+  _AGENT_MAP['bobby'],
+  _AGENT_MAP['steffen'],
+  // Row 1 -- Creative + special
+  _AGENT_MAP['cleo'],
+  _AGENT_MAP['jacob'],
+  _PROJECT_MAP['aom-team'],
+  _AGENT_MAP['patrik'],
+  // Row 2 -- Top projects
+  _PROJECT_MAP['corner'],
+  _PROJECT_MAP['ambition-mechanical'],
+  _PROJECT_MAP['kohrs'],
+  _PROJECT_MAP['isa-energy'],
+  _PROJECT_MAP['skylar'],
+  // Row 3 -- More projects
+  _PROJECT_MAP['brandon-wiley'],
+  _PROJECT_MAP['nabi'],
+  _PROJECT_MAP['outreach'],
+  _PROJECT_MAP['ai-advisory'],
+  // Hidden -- not rendered on hex grid (still accessible in Board view, chat dropdowns, @mentions)
+  { ..._AGENT_MAP['mom'],    hidden: true },
+  { ..._AGENT_MAP['pixel'],  hidden: true },
+  { ..._AGENT_MAP['paige'],  hidden: true },
+  { ..._AGENT_MAP['alex'],   hidden: true },
+  { ..._AGENT_MAP['steve'],  hidden: true },
+  { ..._AGENT_MAP['colton'], hidden: true },
+  { ..._AGENT_MAP['tony'],   hidden: true },
+  _PROJECT_MAP['included-health'],
+].filter(Boolean)

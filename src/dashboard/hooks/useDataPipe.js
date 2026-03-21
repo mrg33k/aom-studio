@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { getClientId } from '../lib/clientConfig'
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -296,6 +297,7 @@ function deriveProjectProgress(punchData) {
 export function useDataPipe(parsePunchList) {
   const [rightNow, setRightNow] = useState([])
   const [completedFeed, setCompletedFeed] = useState([])
+  const [inboxItems, setInboxItems] = useState([])
   const [punchData, setPunchData] = useState(null)
   const [punchLoading, setPunchLoading] = useState(IS_LOCAL)
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -371,26 +373,32 @@ export function useDataPipe(parsePunchList) {
     } else {
       // PRODUCTION: read from Supabase via API
       try {
-        const res = await fetch('/api/dashboard/supabase-status')
+        const clientId = getClientId()
+        const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
         if (!res.ok) return
         const data = await res.json()
 
         // Map Supabase data to Right Now format
-        // FIX 1: Deduplicate -- agent_status is primary source. Tasks table only fills in agents
-        // not already represented in agent_status to avoid double-listing the same agent.
-        if (data.agents) {
-          const active = data.agents
-            .filter(a => a.status === 'working')
-            .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, isLive: true }))
+        // Right Now shows TASKS not AGENTS. Each active task gets its own card.
+        // If an agent has 3 active tasks, they show as 3 separate Right Now items.
+        {
+          const active = []
 
-          // Add active tasks for agents NOT already in the agent_status working list
+          // Primary source: active tasks from tasks table (one card per task)
           if (data.tasks) {
-            const agentSlugsInStatus = new Set(active.map(a => a.agent))
             const taskEntries = data.tasks
               .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
-              .filter(t => t.agent && !agentSlugsInStatus.has(t.agent))
-              .map(t => ({ agent: t.agent, text: t.text || t.title || `${t.agent} is working`, isLive: true }))
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, taskId: t.id, source: t.source || 'agent', isQueued: t.source === 'loadup' || t.source === 'user' }))
             active.push(...taskEntries)
+          }
+
+          // Fallback: working agents from agent_status that have NO active tasks
+          if (data.agents) {
+            const agentsWithTasks = new Set(active.map(a => a.agent))
+            const agentFallback = data.agents
+              .filter(a => a.status === 'working' && !agentsWithTasks.has(a.slug))
+              .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, isLive: true }))
+            active.push(...agentFallback)
           }
 
           setRightNow(active)
@@ -399,9 +407,38 @@ export function useDataPipe(parsePunchList) {
         // Map tasks to completed feed
         if (data.tasks) {
           const completed = data.tasks
-            .filter(t => t.status === 'completed')
+            .filter(t => t.status === 'completed' || t.status === 'done')
             .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
           setCompletedFeed(completed)
+        }
+
+        // Compute unread inbox items: assistant messages newer than user's last message per agent
+        if (data.messages) {
+          // Messages arrive oldest-first (reversed in supabase-status.js)
+          const agentLastSeen = {} // agent -> timestamp of last user message from dashboard
+          for (const msg of data.messages) {
+            if (msg.role === 'user' && msg.source === 'corner-dashboard') {
+              agentLastSeen[msg.agent] = msg.timestamp
+            }
+          }
+          const unread = []
+          const seenAgents = new Set() // one card per agent max
+          for (const msg of [...data.messages].reverse()) { // newest first
+            if (msg.role === 'assistant' && msg.agent && !seenAgents.has(msg.agent)) {
+              const lastSeen = agentLastSeen[msg.agent]
+              if (!lastSeen || msg.timestamp > lastSeen) {
+                seenAgents.add(msg.agent)
+                const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
+                unread.push({
+                  agent: msg.agent,
+                  text: preview,
+                  timestamp: msg.timestamp,
+                  id: msg.id,
+                })
+              }
+            }
+          }
+          setInboxItems(unread)
         }
 
         // Build punchData from Supabase tasks so pills render on production.
@@ -450,6 +487,24 @@ export function useDataPipe(parsePunchList) {
             }
           }
 
+          // Ensure default project pills always exist even without tasks
+          const DEFAULT_PROJECTS = [
+            { name: 'Corner', section: 'corner', color: '#3B9EFF', icon: 'project' },
+            { name: 'Ambition', section: 'ambition', color: '#F59E0B', icon: 'project' },
+            { name: 'KOHRS', section: 'kohrs', color: '#EF4444', icon: 'project' },
+            { name: 'ISA', section: 'isa', color: '#F97316', icon: 'project' },
+            { name: 'Skylar', section: 'skylar', color: '#EC4899', icon: 'project' },
+            { name: 'Outreach', section: 'outreach', color: '#EF4444', icon: 'project' },
+            { name: 'IH', section: 'ih', color: '#EF4444', icon: 'client' },
+            { name: 'Brandon Wiley', section: 'brandon-wiley', color: '#9C27B0', icon: 'project' },
+            { name: 'NABI', section: 'nabi', color: '#F97316', icon: 'project' },
+            { name: 'LBX', section: 'lbx', color: '#9C27B0', icon: 'project' },
+          ]
+          for (const dp of DEFAULT_PROJECTS) {
+            if (!projectMap.has(dp.section)) {
+              projectMap.set(dp.section, { ...dp, tasks: [] })
+            }
+          }
           setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
         } else {
           setPunchData({ projects: [], todayTasks: [] })
@@ -520,6 +575,7 @@ export function useDataPipe(parsePunchList) {
     yourTodos: yourTodos.length,
     schedule: schedule.length,
     finishThese: finishThese.length,
+    inbox: inboxItems.length,
   }
 
   // Build agents status map for CanvasOffice room states
@@ -534,6 +590,7 @@ export function useDataPipe(parsePunchList) {
   return {
     rightNow,
     completedFeed,
+    inboxItems,
     yourTodos,
     finishThese,
     schedule,

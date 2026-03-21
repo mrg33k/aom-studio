@@ -9,6 +9,7 @@ import {
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
   BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
   CalendarDays, Sparkles, Users, Search, Folder,
+  CornerDownLeft, Copy, RotateCcw, Reply, Building2, FileText, BarChart3,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
@@ -24,11 +25,17 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // GHOST KILL: AnimatedAgentCharacter, CharacterAnimationStyles, CanvasRoom all REMOVED
 // Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
-import CrossyBackground from './CrossyBackground.jsx'
+// CrossyBackground: replaced with CSS hex grid (Three.js city scene removed)
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import FloatingActionButton from './components/FloatingActionButton.jsx'
+import BoardView from './BoardView.jsx'
 import briefsIndex from '../data/briefs-index.json'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
+import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
+import FilesTab from './FilesTab.jsx'
+import { getClientId, setClientIdFromUser } from './lib/clientConfig.js'
+import { marked } from 'marked'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -100,10 +107,33 @@ const POWERUPS = [
   { id: 'wash', name: 'Wash Face', slash: '/wash-your-face', icon: Sparkles, color: '#CA8A04', subtitle: 'cleanup run' },
   { id: 'council', name: 'Council', slash: '/council', icon: Users, color: '#9333EA', subtitle: 'agent brief' },
   { id: 'look', name: 'Look', slash: '/look', icon: Search, color: '#06B6D4', subtitle: 'visual search' },
+  { id: 'social-post', name: 'Social Post', slash: '/social-post', icon: MessageSquare, color: '#0EA5E9', subtitle: 'draft a post' },
+  { id: 'double-check', name: 'Double Check', slash: '/double-check', icon: CheckCircle2, color: '#22C55E', subtitle: 'QA gate' },
+  { id: 'cage-match', name: 'Cage Match', slash: '/cage-match', icon: Zap, color: '#F97316', subtitle: 'build both, keep best' },
+  { id: 'health-check', name: 'Health Check', slash: '/health-check', icon: Activity, color: '#10B981', subtitle: 'system health' },
+  { id: 'invoice', name: 'Invoice', slash: '/invoice', icon: FileText, color: '#6366F1', subtitle: 'generate invoice' },
+  { id: 'pitch-deck', name: 'Pitch Deck', slash: '/pitch-deck', icon: LayoutDashboard, color: '#8B5CF6', subtitle: 'build a deck' },
+  { id: 'email-drafter', name: 'Email Drafter', slash: '/email-drafter', icon: Send, color: '#F59E0B', subtitle: 'draft email' },
+  { id: 'storyboard', name: 'Storyboard', slash: '/storyboard', icon: Film, color: '#EC4899', subtitle: 'visual storyboard' },
+  { id: 'punch-list', name: 'Punch List', slash: '/punch-list', icon: ListTodo, color: '#14B8A6', subtitle: 'task manager' },
+  { id: 'masterplan', name: 'Masterplan', slash: '/masterplan', icon: MapIcon, color: '#7C3AED', subtitle: 'strategic plan' },
+  { id: 'outreach', name: 'Outreach', slash: '/outreach', icon: Users, color: '#EF4444', subtitle: 'cold outreach' },
+  { id: 'roi-calc', name: 'ROI Calculator', slash: '/roi-calc', icon: BarChart3, color: '#059669', subtitle: 'calculate ROI' },
+  { id: 'supersaiyan', name: 'Super Saiyan', slash: '/supersaiyan', icon: Zap, color: '#FBBF24', subtitle: 'full power mode' },
+  { id: 'snapshot', name: 'Snapshot', slash: '/snapshot', icon: ScanEye, color: '#0284C7', subtitle: 'capture state' },
+  { id: 'weekly-report', name: 'Weekly Report', slash: '/weekly-report', icon: BarChart3, color: '#4F46E5', subtitle: 'weekly summary' },
+  { id: 'skill-gap-scan', name: 'Skill Gap Scan', slash: '/skill-gap-scan', icon: Radar, color: '#7C3AED', subtitle: 'find the gaps' },
+  { id: 'client-onboarding', name: 'Client Onboarding', slash: '/client-onboarding', icon: Users, color: '#0EA5E9', subtitle: 'onboard client' },
+  { id: 'ship-it', name: 'Ship It', slash: '/ship-it', icon: GitCommit, color: '#22C55E', subtitle: 'deploy now' },
+  { id: 'wd40', name: 'WD-40', slash: '/wd40', icon: Sparkles, color: '#D97706', subtitle: 'iterate to great' },
+  { id: 'brand-refresh', name: 'Brand Refresh', slash: '/brand-refresh', icon: ScanEye, color: '#EC4899', subtitle: 'refresh brand' },
+  { id: 'quick-fix', name: 'Quick Fix', slash: '/quick-fix', icon: Zap, color: '#F59E0B', subtitle: 'fast patch' },
+  { id: 'say-it-better', name: 'Say It Better', slash: '/say-it-better', icon: MessageSquare, color: '#06B6D4', subtitle: 'rewrite copy' },
+  { id: 'do-research', name: 'Research', slash: '/do-research', icon: Search, color: '#3B82F6', subtitle: 'deep research' },
 ]
 
 // ---- POWERUP MENU COMPONENT ----
-function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hideTrigger }) {
+function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, isNightMode, hideTrigger }) {
   const panelRef = useRef(null)
   const [particles, setParticles] = useState([])
 
@@ -145,7 +175,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
   }, [isOpen, onToggle]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleActivate = useCallback((powerup) => {
-    // Particle burst at trigger button position
+    // Particle burst
     const newParticles = Array.from({ length: 4 }, (_, i) => ({
       id: `${powerup.id}-${Date.now()}-${i}`,
       color: powerup.color,
@@ -154,9 +184,10 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
     setParticles(newParticles)
     setTimeout(() => setParticles([]), 500)
 
-    onActivate(powerup.slash)
-    onToggle(false)
-  }, [onActivate, onToggle])
+    // Toggle this skill in the selected list -- menu stays open for multi-select
+    onActivate(powerup)
+    // Do NOT call onToggle(false) -- user explicitly closes the menu
+  }, [onActivate])
 
   return (
     <div ref={panelRef} style={{ position: 'relative', flexShrink: 0, ...(hideTrigger ? { width: 0, height: 0, overflow: 'visible' } : {}) }}>
@@ -244,11 +275,20 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
               role="menu"
               aria-label="Powerup skills menu"
               style={{
-                position: 'absolute',
-                bottom: 'calc(100% + 8px)',
-                left: 0,
-                width: isMobile ? 'calc(100vw - 32px)' : 320,
-                maxHeight: 400,
+                // Mobile: fixed to viewport so it never causes page scroll
+                // Desktop: absolute relative to trigger button
+                position: isMobile ? 'fixed' : 'absolute',
+                ...(isMobile ? {
+                  bottom: 80, // above the chat input bar
+                  left: 16,
+                  right: 16,
+                  width: 'auto',
+                } : {
+                  bottom: 'calc(100% + 8px)',
+                  left: 0,
+                  width: 320,
+                }),
+                maxHeight: isMobile ? '60vh' : 480,
                 overflowY: 'auto',
                 background: 'rgba(15, 23, 42, 0.97)',
                 backdropFilter: 'blur(20px)',
@@ -256,8 +296,8 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
                 border: '2px solid rgba(59, 130, 246, 0.2)',
                 borderRadius: 16,
                 boxShadow: '0 -8px 40px rgba(0, 0, 0, 0.5), 0 -2px 12px rgba(124, 58, 237, 0.15)',
-                zIndex: 150,
-                transformOrigin: 'bottom left',
+                zIndex: 200,
+                transformOrigin: isMobile ? 'bottom center' : 'bottom left',
               }}
             >
               {/* Header */}
@@ -291,12 +331,12 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
                 </button>
               </div>
 
-              {/* Grid */}
+              {/* Single-column scrollable list of ALL skills */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 10,
-                padding: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+                padding: 10,
               }}>
                 {POWERUPS.map((pu, idx) => (
                   <PowerupTile
@@ -305,6 +345,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
                     index={idx}
                     onActivate={handleActivate}
                     isMobile={isMobile}
+                    isSelected={selectedSkills?.some(s => s.id === pu.id) || false}
                   />
                 ))}
               </div>
@@ -325,7 +366,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, isMobile, isNightMode, hide
 }
 
 // ---- POWERUP TILE ----
-function PowerupTile({ powerup, index, onActivate, isMobile }) {
+function PowerupTile({ powerup, index, onActivate, isMobile, isSelected }) {
   const [pressed, setPressed] = useState(false)
   const [flashing, setFlashing] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
@@ -347,22 +388,26 @@ function PowerupTile({ powerup, index, onActivate, isMobile }) {
     setShowTooltip(false)
   }
 
-  const bgColor = flashing
-    ? `${powerup.color}66`
-    : pressed
-      ? `${powerup.color}1A`
-      : 'rgba(59, 130, 246, 0.04)'
+  const bgColor = isSelected
+    ? `${powerup.color}22`
+    : flashing
+      ? `${powerup.color}66`
+      : pressed
+        ? `${powerup.color}1A`
+        : 'rgba(59, 130, 246, 0.04)'
 
-  const borderColor = flashing
+  const borderColor = isSelected
     ? `${powerup.color}80`
-    : pressed
-      ? `${powerup.color}4D`
-      : 'rgba(59, 130, 246, 0.08)'
+    : flashing
+      ? `${powerup.color}80`
+      : pressed
+        ? `${powerup.color}4D`
+        : 'rgba(59, 130, 246, 0.08)'
 
   return (
     <motion.button
       role="menuitem"
-      aria-label={`Activate ${powerup.name} powerup`}
+      aria-label={`${isSelected ? 'Deselect' : 'Select'} ${powerup.name} powerup`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03, type: 'spring', stiffness: 400, damping: 28 }}
@@ -374,12 +419,12 @@ function PowerupTile({ powerup, index, onActivate, isMobile }) {
       onTouchStart={() => setPressed(true)}
       onTouchEnd={() => setPressed(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        minHeight: 72,
-        padding: '12px 14px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        minHeight: 44,
+        padding: '8px 12px',
         background: bgColor,
         border: `1.5px solid ${borderColor}`,
-        borderRadius: 14,
+        borderRadius: 10,
         cursor: 'pointer',
         transition: 'background 120ms ease, border-color 120ms ease, transform 120ms ease',
         transform: pressed ? 'scale(0.97)' : 'scale(1)',
@@ -387,23 +432,37 @@ function PowerupTile({ powerup, index, onActivate, isMobile }) {
         textAlign: 'left',
       }}
     >
+      {/* Selected checkmark badge */}
+      {isSelected && (
+        <div style={{
+          position: 'absolute', top: 6, right: 6,
+          width: 16, height: 16, borderRadius: '50%',
+          background: powerup.color,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+
       {/* Icon container */}
       <div style={{
-        width: 44, height: 44,
-        borderRadius: 12,
+        width: 32, height: 32,
+        borderRadius: 8,
         background: `${powerup.color}26`,
         border: `1.5px solid ${powerup.color}40`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
-        <Icon size={22} color={powerup.color} strokeWidth={2} />
+        <Icon size={16} color={powerup.color} strokeWidth={2} />
       </div>
 
-      {/* Label stack */}
-      <div style={{ minWidth: 0, flex: 1 }}>
+      {/* Label stack -- inline for compact single-column */}
+      <div style={{ minWidth: 0, flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
           fontFamily: "'Inter', system-ui, sans-serif",
-          fontSize: 15, fontWeight: 700,
+          fontSize: 13, fontWeight: 700,
           color: '#F1F5F9',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           lineHeight: 1.2,
@@ -412,11 +471,11 @@ function PowerupTile({ powerup, index, onActivate, isMobile }) {
         </div>
         <div style={{
           fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 11, fontWeight: 600,
+          fontSize: 10, fontWeight: 600,
           color: '#6B8AB0',
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          marginTop: 3,
+          flexShrink: 0,
         }}>
           {powerup.slash}
         </div>
@@ -468,13 +527,13 @@ for (const proj of PROJECTS) {
       id: proj.slug,
       name: proj.name,
       agent: proj.slug, // project rooms use their slug as "agent" for chat routing
-      role: 'Project',
+      role: proj.type === 'special' ? 'Team Channel' : 'Project',
       agentColor: proj.color,
       statusColors: proj.statusColors,
       floor: proj.floor,
       floorColor: proj.floorColor,
       lightColor: proj.lightColor,
-      type: 'project',
+      type: proj.type || 'project',
     }
   }
 }
@@ -760,6 +819,20 @@ function useIsMobile(bp = 768) {
     return () => window.removeEventListener('resize', c)
   }, [bp])
   return m
+}
+
+// iPad/tablet: 768-1024px width (not mobile, but needs compressed sidebar header)
+function useIsTablet() {
+  const [t, setT] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.innerWidth >= 768 && window.innerWidth <= 1280
+  })
+  useEffect(() => {
+    const c = () => setT(window.innerWidth >= 768 && window.innerWidth <= 1280)
+    window.addEventListener('resize', c)
+    return () => window.removeEventListener('resize', c)
+  }, [])
+  return t
 }
 
 // Detect PWA standalone mode or mobile to disable heavy Three.js rendering
@@ -1722,6 +1795,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   })
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const panState = useRef({ dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0, velX: 0, velY: 0 })
+  const roomLongPressRef = useRef(null)
   const momentumRef = useRef(null)
 
   // Scroll wheel zoom - SNAP between preset levels (no free zoom)
@@ -2112,6 +2186,17 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 onContextMenu={(e) => hasAgent && onRoomContextMenu?.(e, room.id)}
                 onMouseEnter={() => setHoveredRoom(room.id)}
                 onMouseLeave={() => setHoveredRoom(null)}
+                onTouchStart={(e) => {
+                  if (!hasAgent) return
+                  const touch = e.touches[0]
+                  const cx = touch ? touch.clientX : 0
+                  const cy = touch ? touch.clientY : 0
+                  roomLongPressRef.current = setTimeout(() => {
+                    onRoomContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {} }, room.id)
+                  }, 500)
+                }}
+                onTouchEnd={() => clearTimeout(roomLongPressRef.current)}
+                onTouchMove={() => clearTimeout(roomLongPressRef.current)}
                 whileHover={hasAgent ? {
                   scale: 1.02,
                   transition: { type: 'spring', stiffness: 500, damping: 12, mass: 0.5 }
@@ -2193,22 +2278,121 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   )
 }
 
+// ---- URL PARSER -- renders clickable links inside chat message text --------
+// Configure marked for chat rendering: GFM on, line breaks on, no mangle
+marked.setOptions({ gfm: true, breaks: true })
+
+// MarkdownMessage: renders assistant message content as markdown HTML.
+// Uses dangerouslySetInnerHTML -- content is agent-generated, not user input.
+// User messages stay plain text via renderPlainContent.
+function MarkdownMessage({ text, agentColor, streaming }) {
+  if (!text || typeof text !== 'string') return null
+  // Normalize escaped newlines (relay messages store \n as literal 2-char sequence)
+  let normalized = text.replace(/\\n/g, '\n')
+  let html
+  try {
+    html = marked.parse(normalized)
+  } catch {
+    html = normalized
+  }
+  return (
+    <div
+      className="md-msg"
+      data-agent-color={agentColor}
+      style={{ '--agent-color': agentColor || '#7CB9FF' }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  )
+}
+
+// renderPlainContent: for user messages -- splits on URLs, wraps in <a>.
+function renderPlainContent(text, accentColor) {
+  if (!text || typeof text !== 'string') return null
+  const URL_RE = /(https?:\/\/[^\s]+)/g
+  const IMG_RE = /!\[([^\]]*)\]\(([^)]+)\)/g
+  const result = []
+  let lastIndex = 0
+  let match
+  IMG_RE.lastIndex = 0
+  while ((match = IMG_RE.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      result.push(renderPlainContent._renderText(text.slice(lastIndex, match.index), accentColor, result.length))
+    }
+    result.push(
+      <img
+        key={`img-${match.index}`}
+        src={match[2]}
+        alt={match[1] || 'image'}
+        style={{
+          display: 'block',
+          maxWidth: '100%',
+          maxHeight: 200,
+          borderRadius: 8,
+          border: '1px solid rgba(59,130,246,0.25)',
+          marginTop: 6,
+          objectFit: 'cover',
+          cursor: 'pointer',
+        }}
+        onClick={e => { e.stopPropagation(); window.open(match[2], '_blank') }}
+      />
+    )
+    lastIndex = match.index + match[0].length
+  }
+  if (lastIndex < text.length) {
+    result.push(renderPlainContent._renderText(text.slice(lastIndex), accentColor, result.length))
+  }
+  if (result.length === 0) return text
+  if (result.length === 1 && typeof result[0] === 'string') return result[0]
+  return result
+}
+renderPlainContent._renderText = function(text, accentColor, keyOffset) {
+  const URL_RE = /(https?:\/\/[^\s]+)/g
+  const parts = text.split(URL_RE)
+  if (parts.length === 1) return text
+  return parts.map((part, i) => {
+    if (URL_RE.test(part)) {
+      URL_RE.lastIndex = 0
+      return (
+        <a
+          key={`url-${keyOffset}-${i}`}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          style={{
+            color: accentColor ? `${accentColor}EE` : '#7CB9FF',
+            textDecoration: 'underline',
+            textUnderlineOffset: 2,
+            wordBreak: 'break-all',
+          }}
+        >
+          {part}
+        </a>
+      )
+    }
+    URL_RE.lastIndex = 0
+    return part
+  })
+}
+
 // ---- RIGHT-CLICK CONTEXT MENU (Figma/VS Code style) -----------------------
 // Clean, simple, no modals. Appears at cursor, disappears on click-away.
 // Types: 'room', 'task', 'agent', 'project'
 function ContextMenu({ type, data, position, onClose, onAction }) {
   const menuRef = useRef(null)
 
-  // Close on click outside or Escape
+  // Close on click outside or Escape (mousedown for desktop, touchstart for iPad)
   useEffect(() => {
     const handleClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
     }
     const handleKey = (e) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('mousedown', handleClick)
+    document.addEventListener('touchstart', handleClick, { passive: true })
     document.addEventListener('keydown', handleKey)
     return () => {
       document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('touchstart', handleClick)
       document.removeEventListener('keydown', handleKey)
     }
   }, [onClose])
@@ -2231,12 +2415,11 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
     switch (type) {
       case 'room':
         return [
-          { id: 'chat', label: `Chat with ${data?.agent || 'Agent'}`, icon: MessageSquare, accent: true },
-          { id: 'zoom', label: 'Zoom In', icon: ZoomIn },
-          { id: 'tasks', label: 'View Tasks', icon: ListTodo },
+          { id: 'open-chat', label: 'Open Chat', icon: MessageSquare, accent: true },
+          { id: 'send-message', label: 'Send Message', icon: Send },
+          { id: 'view-tasks', label: 'View Tasks', icon: ListTodo },
           { divider: true },
-          { id: 'activity', label: 'Recent Activity', icon: Activity },
-          { id: 'assign', label: 'Assign Task', icon: Plus },
+          { id: 'set-home', label: 'Set as Home', icon: Home },
         ]
       case 'task':
         return [
@@ -2259,11 +2442,19 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
         ]
       case 'project':
         return [
-          { id: 'expand', label: 'View Tasks', icon: ListTodo, accent: true },
-          { id: 'add', label: 'Add Task', icon: Plus },
+          { id: 'add', label: 'Add Task', icon: Plus, accent: true },
+          { id: 'expand', label: 'View Tasks', icon: ListTodo },
           { divider: true },
-          { id: 'timeline', label: 'Timeline', icon: Calendar },
-          { id: 'archive', label: 'Archive Project', icon: ArrowRight },
+          { id: 'archive', label: 'Archive Pill', icon: ArrowRight },
+        ]
+      case 'message':
+        return [
+          { id: 'create-task', label: 'Create Task from Message', icon: Plus, accent: true },
+          { id: 'reply', label: 'Reply', icon: Reply },
+          { id: 'copy', label: 'Copy Text', icon: Copy },
+          { id: 'send-to', label: 'Send to...', icon: Send },
+          { divider: true },
+          { id: 'resend', label: 'Resend', icon: RotateCcw },
         ]
       default:
         return []
@@ -2332,6 +2523,180 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
           </button>
         )
       })}
+    </motion.div>
+  )
+}
+
+// ---- SEND-TO SMART PICKER ----
+// Shows recent agents (from localStorage history) + search. Appears at message position.
+function SendToMenu({ position, onClose, onSelect, currentAgent }) {
+  const menuRef = useRef(null)
+  const [search, setSearch] = useState('')
+  const inputRef = useRef(null)
+
+  // Get recently visited agents from localStorage
+  const recentAgents = useMemo(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('corner-recent-agents') || '[]')
+      return raw
+        .filter(slug => slug !== currentAgent)
+        .slice(0, 3)
+        .map(slug => AGENTS.find(a => a.slug === slug))
+        .filter(Boolean)
+    } catch {
+      return []
+    }
+  }, [currentAgent])
+
+  // All agents filtered by search
+  const filteredAgents = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    if (!q) return AGENTS.filter(a => a.slug !== currentAgent && !recentAgents.some(r => r.slug === a.slug))
+    return AGENTS.filter(a =>
+      a.slug !== currentAgent &&
+      (a.slug.includes(q) || (a.name || '').toLowerCase().includes(q) || (a.role || '').toLowerCase().includes(q))
+    )
+  }, [search, currentAgent, recentAgents])
+
+  // Focus input on mount
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }, [])
+
+  // Close on click outside / Escape (mousedown for desktop, touchstart for iPad)
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) onClose()
+    }
+    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('touchstart', handleClick, { passive: true })
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('touchstart', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose])
+
+  // Viewport-clamp position
+  const [adjusted, setAdjusted] = useState(position)
+  useEffect(() => {
+    if (menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect()
+      const newPos = { ...position }
+      if (rect.right > window.innerWidth - 8) newPos.x = window.innerWidth - rect.width - 8
+      if (rect.bottom > window.innerHeight - 8) newPos.y = window.innerHeight - rect.height - 8
+      if (newPos.x < 8) newPos.x = 8
+      if (newPos.y < 8) newPos.y = 8
+      setAdjusted(newPos)
+    }
+  }, [position])
+
+  const AgentRow = ({ agent }) => (
+    <button
+      key={agent.slug}
+      onClick={() => { onSelect(agent); onClose() }}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+        padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer',
+        color: '#D0D8E8', fontSize: 13, fontWeight: 500,
+        fontFamily: "'Inter', system-ui, sans-serif", textAlign: 'left',
+        transition: 'background 80ms ease',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(100,180,255,0.08)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+    >
+      <SpriteAvatar agentSlug={agent.slug} size={22} borderColor={agent.agentColor || agent.color || '#6B7280'} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#E8ECF0' }}>{agent.name || agent.slug}</div>
+        {agent.role && <div style={{ fontSize: 10, color: '#4A6080', fontFamily: "'JetBrains Mono', monospace" }}>{agent.role}</div>}
+      </div>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: agent.agentColor || agent.color || '#6B7280', flexShrink: 0 }} />
+    </button>
+  )
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.92, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.12, ease: [0.2, 0.9, 0.3, 1] }}
+      style={{
+        position: 'fixed',
+        left: adjusted.x,
+        top: adjusted.y,
+        zIndex: 210,
+        width: 240,
+        background: 'rgba(10, 16, 30, 0.97)',
+        backdropFilter: 'blur(20px)',
+        border: '2px solid rgba(100, 180, 255, 0.18)',
+        borderRadius: 10,
+        boxShadow: '0 12px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(100,180,255,0.06)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        padding: '8px 14px 6px',
+        fontSize: 10, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+        color: '#4A6080', textTransform: 'uppercase', letterSpacing: '0.12em',
+        borderBottom: '1px solid rgba(100,180,255,0.08)',
+      }}>
+        Send to...
+      </div>
+
+      {/* Search */}
+      <div style={{ padding: '6px 10px' }}>
+        <input
+          ref={inputRef}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search agent..."
+          style={{
+            width: '100%', padding: '6px 10px',
+            background: 'rgba(100,180,255,0.06)',
+            border: '1px solid rgba(100,180,255,0.15)',
+            borderRadius: 6, fontSize: 12, fontWeight: 500,
+            color: '#E2E8F0', fontFamily: "'Inter', sans-serif",
+            outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+      </div>
+
+      {/* Recent agents (when no search) */}
+      {!search && recentAgents.length > 0 && (
+        <div>
+          <div style={{
+            padding: '4px 14px 2px',
+            fontSize: 9, fontWeight: 800, color: '#4A6080',
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            Recent
+          </div>
+          {recentAgents.map(a => <AgentRow key={a.slug} agent={a} />)}
+        </div>
+      )}
+
+      {/* Divider if recent + more */}
+      {!search && recentAgents.length > 0 && filteredAgents.length > 0 && (
+        <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '2px 10px' }} />
+      )}
+
+      {/* All agents / search results */}
+      <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+        {(!search ? filteredAgents : filteredAgents).slice(0, 12).map(a => <AgentRow key={a.slug} agent={a} />)}
+        {filteredAgents.length === 0 && (
+          <div style={{
+            padding: '10px 14px', fontSize: 12, color: '#4A6080',
+            fontFamily: "'Inter', sans-serif", fontStyle: 'italic',
+          }}>
+            No agents found
+          </div>
+        )}
+      </div>
     </motion.div>
   )
 }
@@ -2553,205 +2918,6 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
   )
 }
 
-// MobileFixedInput: chat input bar rendered OUTSIDE overflow:hidden containers.
-// Position:fixed, anchored to bottom of viewport. Survives any drawer clip chain.
-// Renders only when the mobile drawer is open (visible prop).
-// WM-A Bug 1 fix: lifts input above all overflow:hidden ancestors.
-function MobileFixedInput({
-  visible,
-  chatInput,
-  onChatInputChange,
-  onSendMessage,
-  streaming,
-  powerupOpen,
-  onPowerupToggle,
-  onPowerupActivate,
-  agentColor,
-  agent,
-  atMenuOpen,
-  filteredAtOptions,
-  atMenuIndex,
-  onAtSelect,
-  onAtKeyDown,
-  isNightMode,
-}) {
-  const [kbOffset, setKbOffset] = useState(0)
-
-  // Track keyboard open state to slide input above keyboard
-  useEffect(() => {
-    if (!window.visualViewport) return
-    const handler = () => {
-      const offset = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop
-      setKbOffset(Math.max(0, offset))
-    }
-    window.visualViewport.addEventListener('resize', handler)
-    window.visualViewport.addEventListener('scroll', handler)
-    return () => {
-      window.visualViewport.removeEventListener('resize', handler)
-      window.visualViewport.removeEventListener('scroll', handler)
-    }
-  }, [])
-
-  if (!visible) return null
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: kbOffset > 0 ? kbOffset : 'env(safe-area-inset-bottom, 0px)',
-        zIndex: 210,
-        background: isNightMode
-          ? 'linear-gradient(180deg, rgba(10,15,30,0.97) 0%, rgba(10,15,30,1) 100%)'
-          : 'linear-gradient(180deg, rgba(20,40,70,0.97) 0%, rgba(20,40,70,1) 100%)',
-        borderTop: isNightMode ? '2px solid rgba(59,130,246,0.18)' : '2px solid rgba(59,130,246,0.25)',
-        padding: '12px 16px',
-        // Not inside any overflow:hidden -- direct child of body stacking context
-        // This is the key: no ancestor has overflow:hidden above this element
-        touchAction: 'manipulation',
-        WebkitUserSelect: 'text',
-        userSelect: 'text',
-      }}
-    >
-      {/* @ autocomplete dropdown (floats above input bar) */}
-      {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
-        <div style={{
-          position: 'absolute', bottom: '100%', left: 16, right: 16,
-          marginBottom: 6,
-          background: isNightMode ? '#1A2744' : '#1E2A3A',
-          border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
-          borderRadius: 12,
-          boxShadow: '0 -8px 32px rgba(0,0,0,0.5)',
-          maxHeight: 220, overflowY: 'auto',
-          zIndex: 211,
-          padding: '6px 0',
-        }}>
-          <div style={{
-            padding: '4px 14px 6px',
-            fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#6B8AB0',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            Switch to...
-          </div>
-          {filteredAtOptions.map((opt, i) => (
-            <div
-              key={opt.slug}
-              onMouseDown={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
-              style={{
-                padding: '9px 14px',
-                display: 'flex', alignItems: 'center', gap: 10,
-                cursor: 'pointer',
-                background: i === atMenuIndex
-                  ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
-                  : 'transparent',
-              }}
-            >
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: opt.color, flexShrink: 0,
-              }} />
-              <div style={{
-                fontSize: 14, fontWeight: 700,
-                color: isNightMode ? '#F1F5F9' : '#E8ECF0',
-                fontFamily: "'Inter', system-ui, sans-serif",
-              }}>
-                {opt.name}
-              </div>
-              <span style={{
-                marginLeft: 'auto',
-                fontSize: 11, fontWeight: 600,
-                color: isNightMode ? '#475569' : '#4A6585',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>
-                @{opt.slug}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <PowerupMenu
-        isOpen={powerupOpen || false}
-        onToggle={(v) => onPowerupToggle?.(v)}
-        onActivate={(slash) => onPowerupActivate?.(slash)}
-        isMobile={true}
-        isNightMode={isNightMode}
-        hideTrigger={true}
-      />
-
-      <form onSubmit={onSendMessage} style={{ position: 'relative' }}>
-        <input
-          type="text"
-          value={chatInput || ''}
-          onChange={e => {
-            onChatInputChange?.(e.target.value)
-            if (powerupOpen) onPowerupToggle?.(false)
-          }}
-          onKeyDown={e => {
-            if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
-              if (e.key === 'ArrowDown') { e.preventDefault(); onAtKeyDown?.('down'); return }
-              if (e.key === 'ArrowUp') { e.preventDefault(); onAtKeyDown?.('up'); return }
-              if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0]); return }
-              if (e.key === 'Escape') { e.preventDefault(); onAtKeyDown?.('escape'); return }
-            }
-          }}
-          placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`}
-          disabled={false}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="sentences"
-          spellCheck="false"
-          inputMode="text"
-          enterKeyHint="send"
-          style={{
-            width: '100%',
-            background: isNightMode ? 'rgba(59,130,246,0.07)' : 'rgba(59,130,246,0.05)',
-            border: isNightMode ? '2px solid rgba(59,130,246,0.22)' : '2px solid rgba(59,130,246,0.18)',
-            borderRadius: 12,
-            padding: '14px 56px 14px 18px',
-            fontSize: 18, fontWeight: 400,
-            fontFamily: "'Inter', system-ui, sans-serif",
-            color: isNightMode ? '#F1F5F9' : '#E2E8F0',
-            outline: 'none',
-            // Not inside overflow:hidden -- iOS keyboard will scroll to show this input
-            WebkitUserSelect: 'text',
-            userSelect: 'text',
-            touchAction: 'manipulation',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        />
-        <button
-          type={!chatInput?.trim() ? 'button' : 'submit'}
-          disabled={streaming}
-          onClick={!chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
-          style={{
-            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-            width: 44, height: 44, borderRadius: 12,
-            background: chatInput?.trim()
-              ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
-              : 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
-            border: chatInput?.trim()
-              ? '2px solid rgba(59,130,246,0.6)'
-              : '2px solid rgba(124, 58, 237, 0.4)',
-            color: '#FFF',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: chatInput?.trim()
-              ? '0 3px 12px rgba(59,130,246,0.3)'
-              : '0 2px 12px rgba(124, 58, 237, 0.25)',
-            transition: 'all 150ms ease',
-          }}>
-          {streaming ? <Loader2 size={18} className="animate-spin" /> : (
-            !chatInput?.trim() ? <Sparkles size={18} /> : <Send size={18} />
-          )}
-        </button>
-      </form>
-    </div>
-  )
-}
-
 // Snap points: HIDDEN (off-screen), HALF (~50% screen), FULL (100% screen)
 // Anchored to bottom of screen. Animates HEIGHT with spring physics.
 // Content (chat input, task lists) always fills the visible area correctly.
@@ -2763,7 +2929,11 @@ function MobileDrawer({
   allAgentStatus, data, isNightMode, onAddToRightNow, rightNowTasks,
   atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig,
   // Powerup props
-  powerupOpen, onPowerupToggle, onPowerupActivate,
+  powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup,
+  // Task confirm props
+  onDismissMessage, onTaskNotDone,
+  // Unread clear: called when user focuses the chat input
+  onClearUnread,
   // Snap state (controlled from parent)
   snap, onSnapChange,
 }) {
@@ -2819,8 +2989,11 @@ function MobileDrawer({
         // Keyboard just opened
         setMobileViewportHeight(vvh)
         if (!keyboardOpen) {
-          // Save current snap so we can restore it when keyboard closes
-          preKeyboardSnapRef.current = snap
+          // Save current snap so we can restore it when keyboard closes.
+          // Only overwrite if onInputFocus hasn't already set the restore target.
+          if (preKeyboardSnapRef.current === null) {
+            preKeyboardSnapRef.current = snap
+          }
           setKeyboardOpen(true)
           // Auto-snap to full so chat input stays visible above keyboard
           onSnapChange('full')
@@ -3099,10 +3272,18 @@ function MobileDrawer({
               powerupOpen={powerupOpen}
               onPowerupToggle={onPowerupToggle}
               onPowerupActivate={onPowerupActivate}
+              selectedPowerups={selectedPowerups}
+              onRemovePowerup={onRemovePowerup}
+              onDismissMessage={onDismissMessage}
+              onTaskNotDone={onTaskNotDone}
               onInputFocus={() => {
-                if (snap === 'half') onSnapChange('full')
+                onClearUnread?.(agentSlug)
+                if (snap !== 'full') {
+                  // Save current snap BEFORE changing so keyboard-close restores correctly
+                  preKeyboardSnapRef.current = snap
+                  onSnapChange('full')
+                }
               }}
-              hideInputBar={true}
             />
           </div>
         )}
@@ -3134,7 +3315,10 @@ function MobileDrawer({
               rightNowTasks={rightNowTasks}
               cornerConfig={cornerConfig}
               onInputFocus={() => {
-                if (snap === 'half') onSnapChange('full')
+                if (snap !== 'full') {
+                  preKeyboardSnapRef.current = snap
+                  onSnapChange('full')
+                }
               }}
             />
           </div>
@@ -3167,7 +3351,10 @@ function MobileDrawer({
               rightNowTasks={rightNowTasks}
               cornerConfig={cornerConfig}
               onInputFocus={() => {
-                if (snap === 'half') onSnapChange('full')
+                if (snap !== 'full') {
+                  preKeyboardSnapRef.current = snap
+                  onSnapChange('full')
+                }
               }}
             />
           </div>
@@ -3265,8 +3452,10 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut }) {
   const [teamOpen, setTeamOpen] = useState(false)
+  const [layoutResetToast, setLayoutResetToast] = useState(false)
+  const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done'
   const [teamName, setTeamName] = useState(() => {
     try { return localStorage.getItem('corner-team-name') || 'aom' } catch { return 'aom' }
   })
@@ -3880,50 +4069,278 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           })
         }
 
-        {/* + New Project button -- compact on mobile (icon only) */}
-        <button
-          onClick={() => {
-            // Future: create new project
-            alert('New Project coming soon')
-          }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'transparent',
-            border: isNightMode ? '1.5px dashed rgba(59,130,246,0.25)' : '1.5px dashed rgba(59,130,246,0.3)',
-            borderRadius: 10, padding: isMobile ? '6px 10px' : '6px 14px',
-            cursor: 'pointer',
-            transition: 'all 150ms ease',
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)'
-            e.currentTarget.style.borderColor = isNightMode ? 'rgba(59,130,246,0.4)' : 'rgba(59,130,246,0.45)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.borderColor = isNightMode ? 'rgba(59,130,246,0.25)' : 'rgba(59,130,246,0.3)'
-          }}
-        >
-          <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-            stroke={isNightMode ? '#64748B' : '#6B8AB0'} strokeWidth={2}
-            strokeLinecap="round" strokeLinejoin="round"
+        {/* + New Project button REMOVED -- replaced by FloatingActionButton (FAB) bottom-right */}
+
+        {/* Reset layout button (game view only) -- clears free-drag positions */}
+        {(viewMode === 'game' || !viewMode) && (
+          <button
+            title="Reset room layout"
+            onClick={() => {
+              onResetLayout?.()
+              setLayoutResetToast(true)
+              setTimeout(() => setLayoutResetToast(false), 1800)
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5, flexShrink: 0,
+              background: 'transparent',
+              border: isNightMode ? '1.5px solid rgba(59,130,246,0.18)' : '1.5px solid rgba(59,130,246,0.22)',
+              borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
+              cursor: 'pointer', transition: 'all 150ms ease',
+              position: 'relative',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.08)'
+              e.currentTarget.style.borderColor = 'rgba(59,130,246,0.4)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.borderColor = isNightMode ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.22)'
+            }}
           >
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          {!isMobile && (
-            <span style={{
-              fontSize: 13, fontWeight: 600,
-              color: isNightMode ? '#64748B' : '#6B8AB0',
-              fontFamily: "'Inter', sans-serif",
-            }}>
-              New
-            </span>
-          )}
-        </button>
+            <RotateCcw size={13} color={isNightMode ? '#64748B' : '#6B8AB0'} />
+            {!isMobile && (
+              <span style={{
+                fontSize: 12, fontWeight: 600,
+                color: isNightMode ? '#64748B' : '#6B8AB0',
+                fontFamily: "'Inter', sans-serif",
+              }}>
+                Reset
+              </span>
+            )}
+            {/* Toast confirmation */}
+            <AnimatePresence>
+              {layoutResetToast && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: isNightMode ? 'rgba(15,23,42,0.95)' : 'rgba(15,23,42,0.92)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                    borderRadius: 6, padding: '5px 10px',
+                    whiteSpace: 'nowrap', zIndex: 200,
+                    fontSize: 12, fontWeight: 600,
+                    color: '#60A5FA',
+                    fontFamily: "'Inter', sans-serif",
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  Layout reset
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
+        )}
+
+        {/* Unstuck button (game view only) -- clears stale active tasks + resets stuck agents */}
+        {(viewMode === 'game' || !viewMode) && (
+          <button
+            title="Unstuck: clear active tasks + reset stuck agents"
+            onClick={async () => {
+              if (unstuckToast === 'loading') return
+              setUnstuckToast('loading')
+              try {
+                // Clear localStorage
+                try {
+                  localStorage.removeItem('corner-right-now-tasks')
+                  localStorage.removeItem('corner-task-rightnow')
+                } catch {}
+                // Call API
+                await onUnstuck?.()
+                setUnstuckToast('done')
+                setTimeout(() => setUnstuckToast(null), 1800)
+              } catch {
+                setUnstuckToast(null)
+              }
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5, flexShrink: 0,
+              background: 'transparent',
+              border: isNightMode ? '1.5px solid rgba(234,179,8,0.22)' : '1.5px solid rgba(234,179,8,0.3)',
+              borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
+              cursor: unstuckToast === 'loading' ? 'default' : 'pointer',
+              transition: 'all 150ms ease',
+              position: 'relative',
+              opacity: unstuckToast === 'loading' ? 0.6 : 1,
+            }}
+            onMouseEnter={e => {
+              if (unstuckToast === 'loading') return
+              e.currentTarget.style.background = isNightMode ? 'rgba(234,179,8,0.1)' : 'rgba(234,179,8,0.08)'
+              e.currentTarget.style.borderColor = 'rgba(234,179,8,0.5)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.borderColor = isNightMode ? 'rgba(234,179,8,0.22)' : 'rgba(234,179,8,0.3)'
+            }}
+          >
+            <Zap size={13} color={isNightMode ? '#A16207' : '#CA8A04'} />
+            {!isMobile && (
+              <span style={{
+                fontSize: 12, fontWeight: 600,
+                color: isNightMode ? '#A16207' : '#CA8A04',
+                fontFamily: "'Inter', sans-serif",
+              }}>
+                {unstuckToast === 'loading' ? '...' : 'Unstuck'}
+              </span>
+            )}
+            {/* Toast confirmation */}
+            <AnimatePresence>
+              {unstuckToast === 'done' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: isNightMode ? 'rgba(15,23,42,0.95)' : 'rgba(15,23,42,0.92)',
+                    border: '1px solid rgba(234,179,8,0.35)',
+                    borderRadius: 6, padding: '5px 10px',
+                    whiteSpace: 'nowrap', zIndex: 200,
+                    fontSize: 12, fontWeight: 600,
+                    color: '#EAB308',
+                    fontFamily: "'Inter', sans-serif",
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  Unstuck!
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
+        )}
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
+
+        {/* User display + sign-out (only when Supabase auth active) */}
+        {currentUser && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+          }}>
+            {!isMobile && (
+              <span style={{
+                fontSize: 12, fontWeight: 500,
+                color: isNightMode ? '#475569' : '#6B8AB0',
+                fontFamily: "'Inter', sans-serif",
+                maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {currentUser.email}
+              </span>
+            )}
+            <button
+              title="Sign out"
+              onClick={onSignOut}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'transparent',
+                border: isNightMode ? '1.5px solid rgba(239,68,68,0.2)' : '1.5px solid rgba(239,68,68,0.25)',
+                borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
+                cursor: 'pointer', transition: 'all 150ms ease', flexShrink: 0,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(239,68,68,0.1)'
+                e.currentTarget.style.borderColor = 'rgba(239,68,68,0.45)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.borderColor = isNightMode ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.25)'
+              }}
+            >
+              {/* Log-out icon (arrow right out of box) */}
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none"
+                stroke="#F87171" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              {!isMobile && (
+                <span style={{
+                  fontSize: 12, fontWeight: 600,
+                  color: '#F87171',
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  Sign out
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* View mode toggle: Game | Board */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          background: isNightMode ? 'rgba(15,27,45,0.8)' : 'rgba(10,18,35,0.6)',
+          border: isNightMode ? '1.5px solid rgba(59,130,246,0.18)' : '1.5px solid rgba(59,130,246,0.25)',
+          borderRadius: 10,
+          padding: 3,
+          gap: 2,
+          flexShrink: 0,
+        }}>
+          {[
+            { id: 'game', label: isMobile ? null : 'Game', icon: '⬡' },
+            { id: 'board', label: isMobile ? null : 'Board', icon: '⊟' },
+          ].map(({ id, label, icon }) => {
+            const active = (viewMode || 'game') === id
+            return (
+              <button
+                key={id}
+                onClick={() => onViewModeSwitch?.(id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 5,
+                  padding: isMobile ? '4px 8px' : '4px 12px',
+                  borderRadius: 7,
+                  background: active
+                    ? (isNightMode ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.18)')
+                    : 'transparent',
+                  border: active
+                    ? (isNightMode ? '1px solid rgba(59,130,246,0.45)' : '1px solid rgba(59,130,246,0.4)')
+                    : '1px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 150ms ease',
+                }}
+                onMouseEnter={e => {
+                  if (!active) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.08)'
+                }}
+                onMouseLeave={e => {
+                  if (!active) e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                {id === 'game' ? (
+                  <Gamepad2
+                    size={14}
+                    color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
+                  />
+                ) : (
+                  <FolderKanban
+                    size={14}
+                    color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
+                  />
+                )}
+                {!isMobile && (
+                  <span style={{
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                    fontSize: 12,
+                    fontWeight: active ? 700 : 500,
+                    color: active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0'),
+                    letterSpacing: '0.02em',
+                  }}>
+                    {label}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
 
       </div>
     </div>
@@ -3936,7 +4353,7 @@ function TaskCard({ entry, agentColor, onContextMenu }) {
     DONE: { bg: 'rgba(16,185,129,0.15)', text: '#10B981' },
     ACTIVE: { bg: 'rgba(245,158,11,0.15)', text: '#F59E0B' },
     BLOCKED: { bg: 'rgba(239,68,68,0.15)', text: '#EF4444' },
-    QUEUED: { bg: 'rgba(107,114,128,0.15)', text: '#6B7280' },
+    QUEUED: { bg: 'rgba(217,70,239,0.15)', text: '#D946EF' },
     WORKING: { bg: 'rgba(245,158,11,0.15)', text: '#F59E0B' },
   }
   const badge = statusBadgeColors[entry.status] || statusBadgeColors.QUEUED
@@ -4725,11 +5142,32 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   })
   const [taskInput, setTaskInput] = useState('')
   const [taskCtx, setTaskCtx] = useState(null)
+  const taskLongPressRef = useRef(null)
   const [dragIdx, setDragIdx] = useState(null)
   const [dragOverIdx, setDragOverIdx] = useState(null)
+  const [dragOverTaskId, setDragOverTaskId] = useState(null) // Track sub-task drop target (drag ON a task)
   const [activeFilter, setActiveFilter] = useState('all')
   const [collapsedSections, setCollapsedSections] = useState({})
   const [selectedTask, setSelectedTask] = useState(null) // Task detail view
+  const [expandedTaskId, setExpandedTaskId] = useState(null) // Accordion expand state
+  const [collapsedParents, setCollapsedParents] = useState({}) // Track collapsed sub-task groups
+
+  // Load/save per-task context notes from localStorage
+  const getTaskContext = (id) => {
+    try { return localStorage.getItem(`corner-task-context-${id}`) || '' } catch { return '' }
+  }
+  const saveTaskContext = (id, text) => {
+    try { localStorage.setItem(`corner-task-context-${id}`, text) } catch {}
+    // Supabase: save context note (fire-and-forget)
+    if (!IS_LOCAL) {
+      const task = tasks.find(t => t.id === id)
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addContext', taskText: task?.text || '', taskId: id, payload: text }),
+      }).catch(() => {})
+    }
+  }
 
   // Persist tasks
   useEffect(() => {
@@ -4742,6 +5180,27 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     setTaskCtx(null)
     setActiveFilter('all')
   }, [TASKS_KEY])
+
+  // Load persisted tasks from Supabase on mount (production only)
+  useEffect(() => {
+    if (IS_LOCAL) return
+    fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(getClientId())}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.tasks) return
+        const agentTasks = data.tasks
+          .filter(t => t.agent === agentSlug && t.status !== 'done')
+          .map(t => ({ id: t.id, text: t.text, done: t.status === 'completed', agent: t.agent }))
+        if (agentTasks.length > 0) {
+          setTasks(prev => {
+            const existingIds = new Set(prev.map(t => String(t.id)))
+            const newTasks = agentTasks.filter(t => !existingIds.has(String(t.id)))
+            return [...prev, ...newTasks]
+          })
+        }
+      })
+      .catch(() => {})
+  }, [agentSlug])
 
   // Close context menu on outside click
   useEffect(() => {
@@ -4758,7 +5217,16 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     setTasks(prev => [...prev, { id: taskId, text, done: false, agent: agentSlug }])
     setTaskInput('')
 
-    // Write to Supabase for persistence + backend visibility
+    // Write to Supabase tasks table (real task) + messages (for chat visibility)
+    if (!IS_LOCAL) {
+      // Create in tasks table for dashboard reads
+      fetch('/api/dashboard/agent-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, agent: agentSlug || 'elon', status: 'todo' }),
+      }).catch(() => {})
+    }
+    // Write to messages table for backend visibility (both local and prod)
     try {
       await fetch('/api/dashboard/supabase-messages', {
         method: 'POST',
@@ -4768,17 +5236,36 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           text: `[TASK] ${text}`,
           role: 'user',
           source: 'corner-dashboard-task',
+          client_id: getClientId(),
         }),
       })
     } catch {}
   }
 
   const toggleTask = (id) => {
+    const task = tasks.find(t => t.id === id)
     setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+    // Supabase: toggle done/undone (fire-and-forget)
+    if (!IS_LOCAL && task) {
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle', taskText: task.text, taskId: id, payload: !task.done }),
+      }).catch(() => {})
+    }
   }
 
   const deleteTask = (id) => {
+    const task = tasks.find(t => t.id === id)
     setTasks(prev => prev.filter(t => t.id !== id))
+    // Supabase: soft-delete (fire-and-forget)
+    if (!IS_LOCAL && task) {
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', taskText: task.text, taskId: id }),
+      }).catch(() => {})
+    }
   }
 
   const moveTask = (id, targetAgent) => {
@@ -4791,21 +5278,59 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       targetTasks.push({ ...taskItem, agent: targetAgent })
       localStorage.setItem(targetKey, JSON.stringify(targetTasks))
     } catch {}
+    // Supabase: reassign to new agent (fire-and-forget)
+    if (!IS_LOCAL) {
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reassign', taskText: taskItem.text, taskId: id, payload: targetAgent }),
+      }).catch(() => {})
+    }
   }
 
-  // Drag and drop reorder
+  // Drag and drop reorder + sub-task nesting
   const handleDragStart = (idx) => setDragIdx(idx)
-  const handleDragOver = (e, idx) => { e.preventDefault(); setDragOverIdx(idx) }
-  const handleDrop = (idx) => {
-    if (dragIdx === null || dragIdx === idx) { setDragIdx(null); setDragOverIdx(null); return }
-    setTasks(prev => {
-      const copy = [...prev]
-      const [moved] = copy.splice(dragIdx, 1)
-      copy.splice(idx, 0, moved)
-      return copy
-    })
+  const handleDragOver = (e, idx, taskId) => {
+    e.preventDefault()
+    setDragOverIdx(idx)
+    // Track when hovering directly over a task card (for sub-task drop)
+    setDragOverTaskId(taskId || null)
+  }
+  const handleDragLeave = () => {
+    setDragOverTaskId(null)
+  }
+  const handleDrop = (idx, targetTaskId) => {
+    if (dragIdx === null) { setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null); return }
+    // If dropping ON a different task (not self), make it a sub-task
+    if (dragOverTaskId && dragIdx !== idx) {
+      const draggedTask = tasks[dragIdx]
+      if (!draggedTask || draggedTask.id === targetTaskId) {
+        setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null); return
+      }
+      // Prevent circular: don't make a parent a sub-task of its own child
+      if (draggedTask.parentId === targetTaskId) {
+        setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null); return
+      }
+      setTasks(prev => prev.map(t => t.id === draggedTask.id ? { ...t, parentId: targetTaskId } : t))
+      try {
+        const subKey = `corner-task-subtasks-${targetTaskId}`
+        const existing = JSON.parse(localStorage.getItem(subKey) || '[]')
+        if (!existing.includes(draggedTask.id)) {
+          localStorage.setItem(subKey, JSON.stringify([...existing, draggedTask.id]))
+        }
+      } catch {}
+    } else if (dragIdx !== idx) {
+      // Normal reorder
+      setTasks(prev => {
+        const copy = [...prev]
+        const [moved] = copy.splice(dragIdx, 1)
+        copy.splice(idx, 0, moved)
+        return copy
+      })
+    }
     setDragIdx(null)
     setDragOverIdx(null)
+    setDragOverTaskId(null)
   }
 
   const toggleSection = (key) => {
@@ -4920,108 +5445,224 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     const { isLive, showAgent, showProject, projectColor, onToggle, onContextMenu: ctxHandler, draggable: isDraggable, idx, sectionName, sectionColor } = opts
     const cardAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
     const cardColor = isLive ? '#FF6B3D' : (cardAgent?.agentColor || cardAgent?.color || agentColor)
+    const cardKey = t.id || `task-${idx}`
+    const isExpanded = expandedTaskId === cardKey
+    const isDropTarget = dragOverTaskId === t.id && dragIdx !== null && tasks[dragIdx]?.id !== t.id
 
     return (
       <div
-        key={t.id || `task-${idx}`}
-        draggable={isDraggable}
-        onDragStart={isDraggable ? () => handleDragStart(idx) : undefined}
-        onDragOver={isDraggable ? (e) => handleDragOver(e, idx) : undefined}
-        onDrop={isDraggable ? () => handleDrop(idx) : undefined}
-        onDragEnd={isDraggable ? () => { setDragIdx(null); setDragOverIdx(null) } : undefined}
+        key={cardKey}
+        draggable={isDraggable && !isExpanded}
+        onDragStart={isDraggable && !isExpanded ? () => handleDragStart(idx) : undefined}
+        onDragOver={isDraggable && !isExpanded ? (e) => handleDragOver(e, idx, t.id) : undefined}
+        onDragLeave={isDraggable && !isExpanded ? handleDragLeave : undefined}
+        onDrop={isDraggable && !isExpanded ? () => handleDrop(idx, t.id) : undefined}
+        onDragEnd={isDraggable && !isExpanded ? () => { setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null) } : undefined}
         onContextMenu={ctxHandler}
-        onClick={() => setSelectedTask({ ...t, _cardColor: cardColor, _cardAgent: cardAgent, _isLive: isLive, _sectionName: sectionName, _sectionColor: sectionColor || projectColor })}
+        onTouchStart={ctxHandler ? (e) => {
+          const touch = e.touches[0]
+          const cx = touch ? touch.clientX : 0
+          const cy = touch ? touch.clientY : 0
+          taskLongPressRef.current = setTimeout(() => {
+            ctxHandler({ clientX: cx, clientY: cy, preventDefault: () => {} })
+          }, 500)
+        } : undefined}
+        onTouchEnd={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
+        onTouchMove={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
         style={{
-          display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 10,
-          padding: isMobile ? '8px 10px' : '10px 12px', marginBottom: isMobile ? 10 : 6,
-          minHeight: isMobile ? 44 : undefined,
+          marginBottom: isMobile ? 10 : 6,
           background: isLive
             ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
             : t.done
               ? (isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(255,255,255,0.02)')
-              : (isDaytime ? `${cardColor}0A` : `${cardColor}06`),
+              : isDropTarget
+                ? (isDaytime ? `${cardColor}20` : `${cardColor}18`)
+                : (isDaytime ? `${cardColor}0A` : `${cardColor}06`),
           border: isLive
             ? '1px solid rgba(255,107,61,0.2)'
             : t.done
               ? (isDaytime ? '1px solid rgba(59,130,246,0.06)' : '1px solid rgba(255,255,255,0.03)')
-              : `1px solid ${cardColor}18`,
+              : isDropTarget
+                ? `2px dashed ${cardColor}60`
+                : `1px solid ${cardColor}18`,
           borderLeft: isLive
             ? '3px solid #FF6B3D'
             : t.done
               ? (isDaytime ? '3px solid rgba(59,130,246,0.06)' : '3px solid rgba(255,255,255,0.03)')
               : `3px solid ${cardColor}`,
           borderRadius: 8,
-          cursor: isDraggable ? 'grab' : 'default',
           opacity: dragIdx === idx ? 0.4 : (t.done ? 0.45 : 1),
           transition: 'background 150ms, opacity 150ms, border 150ms',
+          overflow: 'hidden',
         }}
       >
-        {/* Agent avatar (left column) */}
-        {showAgent && cardAgent && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0, minWidth: 32 }}>
-            <SpriteAvatar agentSlug={cardAgent.slug || cardAgent.id} size={28} borderColor={cardColor} />
-            <span style={{
-              fontSize: 9, fontWeight: 700, color: cardColor,
-              fontFamily: "'Inter', sans-serif", textTransform: 'uppercase',
-              letterSpacing: '0.04em', lineHeight: 1,
+        {/* --- Card header row (always visible, tap to toggle accordion) --- */}
+        <div
+          onClick={() => setExpandedTaskId(isExpanded ? null : cardKey)}
+          style={{
+            display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 10,
+            padding: isMobile ? '8px 10px' : '10px 12px',
+            minHeight: isMobile ? 44 : undefined,
+            cursor: 'pointer',
+          }}
+        >
+          {/* Agent avatar (left column) */}
+          {showAgent && cardAgent && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0, minWidth: 32 }}>
+              <SpriteAvatar agentSlug={cardAgent.slug || cardAgent.id} size={28} borderColor={cardColor} />
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: cardColor,
+                fontFamily: "'Inter', sans-serif", textTransform: 'uppercase',
+                letterSpacing: '0.04em', lineHeight: 1,
+              }}>
+                {cardAgent.name || cardAgent.agent}
+              </span>
+            </div>
+          )}
+
+          {/* Checkbox (non-live tasks only) */}
+          {!isLive && onToggle && (
+            <div
+              onClick={(e) => { e.stopPropagation(); onToggle(t.id) }}
+              style={{
+                width: isMobile ? 24 : 20, height: isMobile ? 24 : 20, borderRadius: isMobile ? 6 : 5, flexShrink: 0, marginTop: 1,
+                border: t.done ? `2px solid ${cardColor}` : `2px solid ${cardColor}50`,
+                background: t.done ? cardColor : `${cardColor}08`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all 150ms',
+                boxShadow: t.done ? `0 0 6px ${cardColor}30` : 'none',
+              }}
+            >
+              {t.done && (
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </div>
+          )}
+
+          {/* Task content (right column) */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: isMobile ? 12 : 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
+              color: t.done
+                ? (isDaytime ? '#6B8AB0' : '#475569')
+                : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
+              fontFamily: "'Inter', sans-serif",
+              textDecoration: t.done ? 'line-through' : 'none',
             }}>
-              {cardAgent.name || cardAgent.agent}
-            </span>
+              {t.text}
+            </div>
+            {/* Badges row */}
+            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+              {isLive && (
+                <span style={{
+                  fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
+                  background: '#FF6B3D', color: '#FFF',
+                  fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+                }}>LIVE</span>
+              )}
+              {showProject && t.project && (
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
+                  background: `${projectColor || '#3B82F6'}18`,
+                  color: projectColor || '#3B82F6',
+                  fontFamily: "'Inter', sans-serif",
+                }}>{t.project}</span>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* Checkbox (non-live tasks only) */}
-        {!isLive && onToggle && (
-          <div
-            onClick={(e) => { e.stopPropagation(); onToggle(t.id) }}
+          {/* Chevron toggle */}
+          <ChevronDown
+            size={14}
             style={{
-              width: isMobile ? 24 : 20, height: isMobile ? 24 : 20, borderRadius: isMobile ? 6 : 5, flexShrink: 0, marginTop: 1,
-              border: t.done ? `2px solid ${cardColor}` : `2px solid ${cardColor}50`,
-              background: t.done ? cardColor : `${cardColor}08`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'all 150ms',
-              boxShadow: t.done ? `0 0 6px ${cardColor}30` : 'none',
+              flexShrink: 0, marginTop: 2,
+              color: isDaytime ? '#6B8AB0' : '#475569',
+              transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+              transition: 'transform 180ms ease',
             }}
-          >
-            {t.done && (
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#FFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
+          />
+        </div>
+
+        {/* --- Accordion body (only when expanded) --- */}
+        {isExpanded && (
+          <div style={{
+            padding: '0 12px 12px 12px',
+            background: isDaytime ? 'rgba(10,18,35,0.3)' : 'rgba(0,0,0,0.25)',
+            borderTop: isDaytime ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(255,255,255,0.04)',
+          }}>
+            {/* Original prompt */}
+            <div style={{ marginTop: 10, marginBottom: 10 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: isDaytime ? '#4A6585' : '#475569',
+                fontFamily: "'Inter', sans-serif",
+                marginBottom: 5,
+              }}>
+                Original Prompt
+              </div>
+              <div style={{
+                fontSize: 12, lineHeight: 1.5,
+                color: isDaytime ? '#94B8D8' : '#6B8AB0',
+                fontFamily: "'Inter', sans-serif",
+                fontStyle: 'italic',
+                padding: '6px 8px',
+                background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(255,255,255,0.02)',
+                borderRadius: 6,
+                border: isDaytime ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(255,255,255,0.04)',
+              }}>
+                {t.text}
+              </div>
+            </div>
+
+            {/* Context notes (editable) */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: isDaytime ? '#4A6585' : '#475569',
+                fontFamily: "'Inter', sans-serif",
+                marginBottom: 5,
+              }}>
+                Context
+              </div>
+              <TaskContextTextarea
+                taskId={t.id}
+                isDaytime={isDaytime}
+                cardColor={cardColor}
+                getTaskContext={getTaskContext}
+                saveTaskContext={saveTaskContext}
+              />
+            </div>
+
+            {/* Agent story (placeholder) */}
+            <div>
+              <div style={{
+                fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: isDaytime ? '#4A6585' : '#475569',
+                fontFamily: "'Inter', sans-serif",
+                marginBottom: 5,
+              }}>
+                Agent Story
+              </div>
+              <div style={{
+                fontSize: 11, lineHeight: 1.5,
+                color: isDaytime ? '#4A6585' : '#334155',
+                fontFamily: "'Inter', sans-serif",
+                fontStyle: 'italic',
+                padding: '6px 8px',
+                background: isDaytime ? 'rgba(59,130,246,0.02)' : 'rgba(255,255,255,0.01)',
+                borderRadius: 6,
+                border: isDaytime ? '1px dashed rgba(59,130,246,0.08)' : '1px dashed rgba(255,255,255,0.04)',
+              }}>
+                Story will appear when task completes
+              </div>
+            </div>
           </div>
         )}
-
-        {/* Task content (right column) */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: isMobile ? 12 : 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
-            color: t.done
-              ? (isDaytime ? '#6B8AB0' : '#475569')
-              : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
-            fontFamily: "'Inter', sans-serif",
-            textDecoration: t.done ? 'line-through' : 'none',
-          }}>
-            {t.text}
-          </div>
-          {/* Badges row */}
-          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-            {isLive && (
-              <span style={{
-                fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
-                background: '#FF6B3D', color: '#FFF',
-                fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
-              }}>LIVE</span>
-            )}
-            {showProject && t.project && (
-              <span style={{
-                fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
-                background: `${projectColor || '#3B82F6'}18`,
-                color: projectColor || '#3B82F6',
-                fontFamily: "'Inter', sans-serif",
-              }}>{t.project}</span>
-            )}
-          </div>
-        </div>
       </div>
     )
   }
@@ -5256,23 +5897,78 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         <div style={{ marginBottom: 12 }}>
           {renderSectionHeader(
             agent?.name || agentSlug?.toUpperCase() || 'TASKS',
-            tasks.filter(t => !t.done).length,
+            tasks.filter(t => !t.done && !t.parentId).length,
             agentColor,
             'local',
             false,
             tasks.length > 0 ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 0
           )}
-          {!collapsedSections.local && tasks.map((t, idx) =>
-            renderTaskCard(t, {
-              onToggle: toggleTask,
-              draggable: true,
-              idx,
-              onContextMenu: (e) => {
-                e.preventDefault()
-                setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
-              },
+          {!collapsedSections.local && tasks
+            .filter(t => !t.parentId) // Only top-level tasks
+            .map((t, idx) => {
+              const subTasks = tasks.filter(sub => sub.parentId === t.id)
+              const parentCollapsed = collapsedParents[t.id]
+              return (
+                <div key={t.id || `task-${idx}`}>
+                  {renderTaskCard(t, {
+                    onToggle: toggleTask,
+                    draggable: true,
+                    idx: tasks.indexOf(t),
+                    onContextMenu: (e) => {
+                      e.preventDefault()
+                      setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
+                    },
+                  })}
+                  {/* Sub-tasks */}
+                  {subTasks.length > 0 && (
+                    <div>
+                      {/* Sub-task toggle */}
+                      <div
+                        onClick={() => setCollapsedParents(prev => ({ ...prev, [t.id]: !prev[t.id] }))}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          paddingLeft: 20, marginBottom: 4, cursor: 'pointer',
+                          fontSize: 10, fontWeight: 700, color: isDaytime ? '#6B8AB0' : '#475569',
+                          fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em',
+                        }}
+                      >
+                        <ChevronDown size={10} style={{ transform: parentCollapsed ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 150ms' }} />
+                        {subTasks.length} sub-task{subTasks.length !== 1 ? 's' : ''}
+                      </div>
+                      {!parentCollapsed && (
+                        <div style={{
+                          marginLeft: 16,
+                          paddingLeft: 12,
+                          borderLeft: `2px solid ${agentColor}30`,
+                        }}>
+                          {subTasks.map((sub, subIdx) =>
+                            <div key={sub.id || `sub-${subIdx}`} style={{ position: 'relative' }}>
+                              {/* Connecting dot */}
+                              <div style={{
+                                position: 'absolute', left: -17, top: 14,
+                                width: 6, height: 6, borderRadius: '50%',
+                                background: isDaytime ? `${agentColor}60` : `${agentColor}40`,
+                                flexShrink: 0,
+                              }} />
+                              {renderTaskCard(sub, {
+                                onToggle: toggleTask,
+                                draggable: true,
+                                idx: tasks.indexOf(sub),
+                                onContextMenu: (e) => {
+                                  e.preventDefault()
+                                  setTaskCtx({ id: sub.id, x: e.clientX, y: e.clientY, text: sub.text })
+                                },
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
             })
-          )}
+          }
         </div>
       )}
 
@@ -5382,6 +6078,40 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         </div>
       )}
     </div>
+  )
+}
+
+// ---- TASK CONTEXT TEXTAREA (accordion body, per-task notes) ----------------
+// Standalone component so it can keep local state without re-rendering siblings.
+function TaskContextTextarea({ taskId, isDaytime, cardColor, getTaskContext, saveTaskContext }) {
+  const [value, setValue] = useState(() => getTaskContext(taskId))
+  return (
+    <textarea
+      value={value}
+      onChange={e => {
+        setValue(e.target.value)
+        saveTaskContext(taskId, e.target.value)
+      }}
+      onClick={e => e.stopPropagation()}
+      onMouseDown={e => e.stopPropagation()}
+      placeholder="Add notes or context..."
+      rows={3}
+      style={{
+        width: '100%', resize: 'vertical',
+        padding: '6px 8px',
+        background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(255,255,255,0.02)',
+        border: isDaytime ? `1px solid ${cardColor}22` : `1px solid ${cardColor}18`,
+        borderRadius: 6,
+        fontSize: 12, lineHeight: 1.5,
+        color: isDaytime ? '#F1F5F9' : '#D0D8E8',
+        fontFamily: "'Inter', sans-serif",
+        outline: 'none',
+        boxSizing: 'border-box',
+        caretColor: cardColor,
+        userSelect: 'text',
+        WebkitUserSelect: 'text',
+      }}
+    />
   )
 }
 
@@ -5524,7 +6254,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
             fontSize: 12, fontWeight: 500, color: elapsed >= 50 ? '#EF4444' : '#F59E0B',
             fontFamily: "'Inter', sans-serif",
           }}>
-            {elapsed >= 50 ? 'Response may be delayed' : 'Still processing'}
+            {elapsed >= 60 ? `${agentName || 'Agent'} may be busy` : elapsed >= 50 ? 'Response may be delayed' : 'Still processing'}
           </span>
         )}
       </div>
@@ -6403,7 +7133,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject, hideInputBar }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -6421,6 +7151,17 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const [agentSwitcherOpen, setAgentSwitcherOpen] = useState(false)
   const [projectSwitcherOpen, setProjectSwitcherOpen] = useState(false)
   const switcherRef = useRef(null)
+  // Reply-to state: { id, content } | null
+  const [replyTo, setReplyTo] = useState(null)
+  // Consume external reply (set by context menu "Reply" action in GameDashboard)
+  useEffect(() => {
+    if (externalReplyTo) {
+      setReplyTo(externalReplyTo)
+      onClearExternalReply?.()
+    }
+  }, [externalReplyTo]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Long-press timer for message context menu (mobile)
+  const msgLongPressRef = useRef(null)
 
   // Close switcher dropdowns on outside click
   useEffect(() => {
@@ -6544,96 +7285,314 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         pointerEvents: 'none',
       }} />
 
-      {/* ---- AGENT CARD (chunky, game-scale, 64px avatar) ---- */}
+      {/* ---- PANEL NAV BAR ---- */}
+      {/* [City] [<] Agent Name [>] [Home] -- compact 36px top nav */}
+      {!isMobile && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 0,
+          height: 36, flexShrink: 0,
+          borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(59,130,246,0.18)',
+          background: isNightMode ? 'rgba(9,15,28,0.6)' : 'rgba(16,34,62,0.5)',
+          paddingLeft: 4, paddingRight: 4,
+        }}>
+          {/* City / Overview icon */}
+          <button
+            onClick={() => onGoOverview?.()}
+            title="City overview"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              transition: 'color 120ms, background 120ms', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >
+            <Building2 size={16} />
+          </button>
+
+          {/* Prev agent arrow */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
+              const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
+              if (prev) onSelectAgent?.(prev.slug)
+            }}
+            title="Previous agent"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              fontSize: 16, lineHeight: 1, flexShrink: 0,
+              transition: 'color 120ms, background 120ms',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >&#8249;</button>
+
+          {/* Agent/Project name (center) */}
+          <div style={{
+            flex: 1, textAlign: 'center',
+            fontSize: 12, fontWeight: 700,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            color: isNightMode ? '#C8D8EC' : '#D4E2F4',
+            letterSpacing: '0.03em',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            paddingLeft: 4, paddingRight: 4,
+          }}>
+            {agent?.name || room?.agent || agentSlug}
+          </div>
+
+          {/* Next agent arrow */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
+              const next = AGENTS[(idx + 1) % AGENTS.length]
+              if (next) onSelectAgent?.(next.slug)
+            }}
+            title="Next agent"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              fontSize: 16, lineHeight: 1, flexShrink: 0,
+              transition: 'color 120ms, background 120ms',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >&#8250;</button>
+
+          {/* Home / center camera icon */}
+          <button
+            onClick={() => onCenterCamera?.()}
+            title="Center camera on room"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              transition: 'color 120ms, background 120ms', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >
+            <Home size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* ---- AGENT CARD ---- */}
       {/* Hidden on mobile: mobile overlay header already shows agent info */}
+      {/* Tablet (iPad 768-1280px): single 40px row -- avatar 28px + name + status dot only, nothing else */}
+      {/* Desktop: chunky game-scale 64px avatar */}
       <div style={{
-        padding: '20px 24px',
+        padding: isTablet ? '4px 12px' : '20px 24px',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 100%)'
           : 'linear-gradient(180deg, rgba(59,130,246,0.12) 0%, transparent 100%)',
         borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.15)' : '2px solid rgba(59,130,246,0.25)',
         flexShrink: 0,
-        display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 16,
+        minHeight: isTablet ? 40 : undefined,
+        display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: isTablet ? 8 : 16,
       }}>
-        {/* 64px avatar with agent color ring + status dot */}
+        {/* Avatar with status dot */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <SpriteAvatar agentSlug={room?.id} size={64} borderColor={agentColor}
+          <SpriteAvatar agentSlug={room?.id} size={isTablet ? 28 : 64} borderColor={agentColor}
             status={status}
             style={{
-              borderWidth: 3,
-              boxShadow: `0 0 20px ${agentColor}30, 0 0 40px ${agentColor}10`,
+              borderWidth: isTablet ? 1 : 3,
+              boxShadow: isTablet ? `0 0 8px ${agentColor}20` : `0 0 20px ${agentColor}30, 0 0 40px ${agentColor}10`,
             }}
           />
-          {/* Status dot (bottom-right, large) */}
+          {/* Status dot */}
           <div style={{
             position: 'absolute', bottom: 0, right: 0,
-            width: 18, height: 18, borderRadius: '50%',
+            width: isTablet ? 8 : 18, height: isTablet ? 8 : 18, borderRadius: '50%',
             background: cfg.color,
-            border: isNightMode ? '3px solid #0F1B2D' : '3px solid #142846',
-            boxShadow: `0 0 8px ${cfg.color}`,
+            border: isNightMode
+              ? `${isTablet ? 1 : 3}px solid #0F1B2D`
+              : `${isTablet ? 1 : 3}px solid #142846`,
+            boxShadow: `0 0 ${isTablet ? 3 : 8}px ${cfg.color}`,
           }} />
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Name + role/status -- stacked on desktop, inline on tablet */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: isTablet ? 6 : 0, flexWrap: isTablet ? 'nowrap' : undefined }}>
+          {/* Quick-switch arrows + name block */}
+          {isTablet ? (
+            // Tablet: arrows inline with name
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, maxWidth: 130 }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
+                  const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
+                  if (prev) onSelectAgent?.(prev.slug)
+                }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                  color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                  fontSize: 14, lineHeight: 1, flexShrink: 0,
+                  display: 'flex', alignItems: 'center',
+                }}
+                title="Previous agent"
+              >&#8249;</button>
+              <div style={{
+                color: isNightMode ? '#F1F5F9' : '#E8ECF0',
+                fontSize: 13,
+                fontWeight: 900,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                letterSpacing: '0.01em', lineHeight: 1.1,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                maxWidth: 80,
+              }}>
+                {agent?.name || room?.agent}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
+                  const next = AGENTS[(idx + 1) % AGENTS.length]
+                  if (next) onSelectAgent?.(next.slug)
+                }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                  color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                  fontSize: 14, lineHeight: 1, flexShrink: 0,
+                  display: 'flex', alignItems: 'center',
+                }}
+                title="Next agent"
+              >&#8250;</button>
+            </div>
+          ) : (
+            // Desktop: name row with arrows, then subtitle below
+            <div style={{ width: '100%', marginBottom: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
+                    const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
+                    if (prev) onSelectAgent?.(prev.slug)
+                  }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                    color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                    fontSize: 18, lineHeight: 1, flexShrink: 0,
+                    display: 'flex', alignItems: 'center',
+                    opacity: 0.7, transition: 'opacity 120ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.7' }}
+                  title="Previous agent"
+                >&#8249;</button>
+                <div style={{
+                  color: isNightMode ? '#F1F5F9' : '#E8ECF0',
+                  fontSize: 22,
+                  fontWeight: 900,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  letterSpacing: '0.01em', lineHeight: 1.1,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  flex: 1,
+                }}>
+                  {agent?.name || room?.agent}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
+                    const next = AGENTS[(idx + 1) % AGENTS.length]
+                    if (next) onSelectAgent?.(next.slug)
+                  }}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
+                    color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                    fontSize: 18, lineHeight: 1, flexShrink: 0,
+                    display: 'flex', alignItems: 'center',
+                    opacity: 0.7, transition: 'opacity 120ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.7' }}
+                  title="Next agent"
+                >&#8250;</button>
+              </div>
+              {/* Current task subtitle */}
+              {(() => {
+                const activeTask = liveAgents?.find(t => t.agent === agentSlug)
+                const subtitle = activeTask?.text || (status === 'WORKING' ? 'Active' : 'Idle')
+                return (
+                  <div style={{
+                    fontSize: 10, fontStyle: 'italic', color: '#8BA4C4',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    maxWidth: '100%', marginTop: 2, lineHeight: 1.3,
+                    fontFamily: "'Inter', system-ui, sans-serif",
+                  }}>
+                    {subtitle}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+          {!isTablet && (
+            <div style={{
+              color: agentColor, fontSize: 13, fontWeight: 700,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+              marginTop: 2, width: '100%',
+            }}>
+              {agent?.role || room?.role}
+            </div>
+          )}
+          {/* Status badge pill -- always visible but smaller on tablet */}
           <div style={{
-            color: isNightMode ? '#F1F5F9' : '#E8ECF0', fontSize: 22, fontWeight: 900,
-            fontFamily: "'Inter', system-ui, sans-serif",
-            letterSpacing: '0.01em', lineHeight: 1.1,
-          }}>
-            {agent?.name || room?.agent}
-          </div>
-          <div style={{
-            color: agentColor, fontSize: 13, fontWeight: 700,
-            fontFamily: "'Inter', system-ui, sans-serif",
+            display: 'inline-flex', alignItems: 'center', gap: isTablet ? 3 : 5,
+            marginTop: isTablet ? 0 : 6,
+            fontSize: isTablet ? 9 : 11, fontWeight: 700,
             textTransform: 'uppercase', letterSpacing: '0.06em',
-            marginTop: 2,
-          }}>
-            {agent?.role || room?.role}
-          </div>
-          {/* Status badge pill */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            marginTop: 6,
-            fontSize: 11, fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-            borderRadius: 4, padding: '2px 8px',
+            borderRadius: 4, padding: isTablet ? '1px 5px' : '2px 8px',
+            flexShrink: 0,
             ...(status === 'WORKING' ? { color: '#16A34A', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }
               : status === 'BLOCKED' ? { color: '#DC2626', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }
               : status === 'DONE' ? { color: '#60A5FA', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }
               : { color: '#6B7280', background: 'rgba(107,114,128,0.1)', border: '1px solid rgba(107,114,128,0.2)' }),
           }}>
             <span style={{
-              width: 5, height: 5, borderRadius: '50%',
+              width: isTablet ? 4 : 5, height: isTablet ? 4 : 5, borderRadius: '50%',
               background: status === 'WORKING' ? '#16A34A' : status === 'BLOCKED' ? '#DC2626' : status === 'DONE' ? '#2563EB' : '#6B7280',
               flexShrink: 0,
             }} />
             {status === 'WORKING' ? 'ACTIVE' : status || 'IDLE'}
           </div>
-          <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-            <span style={{
-              fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
-              fontFamily: "'Inter', system-ui, sans-serif",
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              <span style={{ fontSize: 18, fontWeight: 900, color: '#22C55E', fontVariantNumeric: 'tabular-nums' }}>
-                {agentStatus?.buildCount || workingCount || 0}
+          {/* Stat counts -- desktop only, hidden on tablet to save space */}
+          {!isTablet && (
+            <div style={{ display: 'flex', gap: 12, marginTop: 6, width: '100%' }}>
+              <span style={{
+                fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: '#22C55E', fontVariantNumeric: 'tabular-nums' }}>
+                  {agentStatus?.buildCount || workingCount || 0}
+                </span>
+                builds
               </span>
-              builds
-            </span>
-            <span style={{
-              fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
-              fontFamily: "'Inter', system-ui, sans-serif",
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              <span style={{ fontSize: 18, fontWeight: 900, color: '#60A5FA', fontVariantNumeric: 'tabular-nums' }}>
-                {agentStatus?.taskCount || 0}
+              <span style={{
+                fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: '#60A5FA', fontVariantNumeric: 'tabular-nums' }}>
+                  {agentStatus?.taskCount || 0}
+                </span>
+                tasks
               </span>
-              tasks
-            </span>
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Extend/collapse */}
+        {/* Extend/collapse -- hidden on tablet to save header space */}
+        {!isTablet && (
         <button onClick={onToggleExtend} title={isExtended ? 'Collapse panel' : 'Expand panel'}
           style={{
             background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
@@ -6648,11 +7607,12 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         >
           {isExtended ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
         </button>
+        )}
       </div>
 
       {/* ---- 4 TOP SQUARES (interactive, alive -- replaces stat pills) ---- */}
-      {/* Hidden on mobile: saves vertical space, agent info in header */}
-      {!isMobile && (
+      {/* Hidden on mobile and tablet: saves vertical space, agent info in header */}
+      {!isMobile && !isTablet && (
         <TopSquares
           allAgentStatus={allAgentStatus}
           workingCount={workingCount}
@@ -6668,8 +7628,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
       {/* ---- AGENT + PROJECT SWITCHER (replaces static "Talking to" indicator) ---- */}
       {/* Click the agent name to switch who you're talking to. Click project to scope the context. */}
+      {/* Hidden on mobile AND tablet -- saves ~30px of vertical space on iPad */}
       <div ref={switcherRef} style={{
-        display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 6,
+        display: (isMobile || isTablet) ? 'none' : 'flex', alignItems: 'center', gap: 6,
         padding: '6px 16px',
         borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.08)' : '1px solid rgba(59,130,246,0.12)',
         flexShrink: 0, position: 'relative',
@@ -6815,6 +7776,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
       {/* ---- TAB BAR (3 tabs: Live / List / Info) ---- */}
       {/* Hidden on mobile: MobileDrawer has its own tab bar */}
+      {/* Tablet: compressed to ~32px height to maximize chat space */}
       <div style={{
         display: isMobile ? 'none' : 'flex',
         borderBottom: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
@@ -6831,6 +7793,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               { id: 'chat', label: 'CHAT', key: 'L' },
               { id: 'tasks', label: 'LIST', key: 'T' },
               { id: 'info', label: 'INFO', key: 'I' },
+              { id: 'files', label: 'FILES', key: 'F' },
             ]
         ).map(tab => {
           const active = activeTab === tab.id
@@ -6849,9 +7812,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
               style={{
                 flex: 1, textAlign: 'center',
-                padding: isMobile ? '12px 0' : '14px 0',
-                minHeight: isMobile ? 44 : 'auto',
-                fontSize: isMobile ? 13 : 16, fontWeight: 900,
+                padding: isMobile ? '12px 0' : isTablet ? '7px 0' : '14px 0',
+                minHeight: isMobile ? 44 : isTablet ? 32 : 'auto',
+                fontSize: isMobile ? 13 : isTablet ? 11 : 16, fontWeight: 900,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
                 color: active ? (isNightMode ? '#F1F5F9' : '#60A5FA') : (isNightMode ? '#475569' : '#6B8AB0'),
@@ -6883,9 +7846,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 />
               )}
-              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? 0 : 6 }}>
+              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: (isMobile || isTablet) ? 0 : 6 }}>
                 {tab.label}
-                {tab.key && !isMobile && (
+                {tab.key && !isMobile && !isTablet && (
                   <span style={{
                     background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.06)',
                     border: isDaytime ? '1px solid rgba(59,130,246,0.18)' : '1px solid rgba(255,255,255,0.1)',
@@ -6917,7 +7880,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {activeTab === 'chat' && (
           <ChatErrorBoundary>
           <>
-            {/* Messages area */}
+            {/* Messages area -- flex: 1 + minHeight: 0 is critical for flex scroll to work */}
             <div ref={messagesContainerRef} onScroll={() => {
               const el = messagesContainerRef.current
               if (!el) return
@@ -6925,7 +7888,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               isNearBottomRef.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
               if (isNearBottomRef.current) setShowNewMsgIndicator(false)
             }} style={{
-              flex: 1, overflowY: 'auto', padding: '16px 20px',
+              flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 20px',
               display: 'flex', flexDirection: 'column', gap: 14,
               position: 'relative',
             }}>
@@ -6976,6 +7939,106 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 const isSameSource = prevMsg && prevMsg.role === msg.role && formatSource(prevMsg.source) === formatSource(msg.source)
                 const sourceLabel = isSameSource ? null : formatSource(msg.source)
                 const isNotif = !isUser && isSystemNotification(msg)
+
+                // ---- TASK CONFIRM CARD (Vegas vibes) ----
+                // Agent marked a task done -> special card with CHECK / MINUS buttons
+                if (msg.isTaskConfirm) {
+                  return (
+                    <div key={msg.id || i} style={{
+                      margin: '8px 0',
+                      background: isDaytime
+                        ? 'linear-gradient(135deg, rgba(59,130,246,0.10) 0%, rgba(99,102,241,0.06) 100%)'
+                        : 'linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(99,102,241,0.10) 100%)',
+                      border: isDaytime ? '1.5px solid rgba(59,130,246,0.35)' : '1.5px solid rgba(99,102,241,0.40)',
+                      borderLeft: '3px solid #3B82F6',
+                      borderRadius: 12,
+                      padding: '12px 16px',
+                      boxShadow: isDaytime
+                        ? '0 2px 12px rgba(59,130,246,0.15), 0 1px 3px rgba(0,0,0,0.15)'
+                        : '0 2px 16px rgba(59,130,246,0.22), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
+                    }}>
+                      {/* Header row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <div style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: '#3B82F6',
+                          boxShadow: '0 0 8px #3B82F6, 0 0 16px rgba(59,130,246,0.5)',
+                          flexShrink: 0,
+                          animation: 'vegasTypingBounce 2s ease-in-out infinite',
+                        }} />
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, color: isDaytime ? '#3B82F6' : '#60A5FA',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          letterSpacing: '0.08em', textTransform: 'uppercase',
+                        }}>Task Complete</span>
+                        {msg.time && (
+                          <span style={{ marginLeft: 'auto', fontSize: 10, color: isDaytime ? '#6B8AB0' : '#8BA4C4', fontFamily: "'JetBrains Mono', monospace" }}>
+                            {formatChatTime(msg.time)}
+                          </span>
+                        )}
+                      </div>
+                      {/* Task text */}
+                      <div style={{
+                        fontSize: 14, fontWeight: 600, color: isDaytime ? '#1E293B' : '#E2E8F0',
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        lineHeight: 1.4, marginBottom: 12,
+                        padding: '8px 12px',
+                        background: isDaytime ? 'rgba(255,255,255,0.6)' : 'rgba(15,27,45,0.6)',
+                        borderRadius: 8,
+                        border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(99,102,241,0.20)',
+                      }}>
+                        {msg.taskText || msg.content?.replace('Task marked done: ', '').replace('\n\nConfirmed done or needs more work?', '') || msg.content}
+                      </div>
+                      {/* Buttons */}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {/* CHECK -- confirmed done */}
+                        <button
+                          onClick={() => onDismissMessage?.(msg.id)}
+                          style={{
+                            flex: 1, padding: '10px 16px',
+                            background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                            border: '1.5px solid rgba(34,197,94,0.5)',
+                            borderRadius: 10, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                            color: '#FFFFFF', fontSize: 14, fontWeight: 800,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            boxShadow: '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+                            transition: 'transform 80ms ease, box-shadow 80ms ease',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(22,163,74,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Done
+                        </button>
+                        {/* MINUS -- not done, rerun */}
+                        <button
+                          onClick={() => onTaskNotDone?.(msg.id, msg.taskText || '')}
+                          style={{
+                            flex: 1, padding: '10px 16px',
+                            background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                            border: '1.5px solid rgba(239,68,68,0.5)',
+                            borderRadius: 10, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                            color: '#FFFFFF', fontSize: 14, fontWeight: 800,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            boxShadow: '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+                            transition: 'transform 80ms ease, box-shadow 80ms ease',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          Rerun
+                        </button>
+                      </div>
+                    </div>
+                  )
+                }
 
                 // System notification inline (commit messages, etc.)
                 if (isNotif && !msg.streaming) {
@@ -7043,10 +8106,28 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 }
 
                 return (
-                  <div key={msg.id || i} style={{
-                    display: 'flex', gap: 10, alignItems: 'flex-start',
-                    flexDirection: isUser ? 'row-reverse' : 'row',
-                  }}>
+                  <div key={msg.id || i}
+                    style={{
+                      display: 'flex', gap: 10, alignItems: 'flex-start',
+                      flexDirection: isUser ? 'row-reverse' : 'row',
+                      position: 'relative',
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      onMessageContextMenu?.(e, msg)
+                    }}
+                    onTouchStart={(e) => {
+                      clearTimeout(msgLongPressRef.current)
+                      const touch = e.touches[0]
+                      const cx = touch ? touch.clientX : window.innerWidth / 2
+                      const cy = touch ? touch.clientY : window.innerHeight / 2
+                      msgLongPressRef.current = setTimeout(() => {
+                        onMessageContextMenu?.({ clientX: cx, clientY: cy, preventDefault: () => {}, _msgLongPress: true }, msg)
+                      }, 500)
+                    }}
+                    onTouchEnd={() => clearTimeout(msgLongPressRef.current)}
+                    onTouchMove={() => clearTimeout(msgLongPressRef.current)}
+                  >
                     {/* Avatar -- 36px with colored ring per Steffen target */}
                     {isUser ? (
                       <div style={{
@@ -7073,29 +8154,81 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
                     {/* Message content */}
                     <div style={{ maxWidth: '80%' }}>
-                      <div style={{
-                        padding: isUser ? '10px 14px' : '8px 12px',
-                        borderRadius: 8,
-                        fontSize: 14, fontWeight: 500, lineHeight: 1.45,
-                        fontFamily: "'Inter', system-ui, sans-serif",
-                        ...(isUser
-                          ? {
-                              background: isNightMode
-                                ? 'linear-gradient(180deg, rgba(59,130,246,0.14) 0%, rgba(59,130,246,0.08) 100%)'
-                                : 'linear-gradient(180deg, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0.10) 100%)',
-                              border: '1px solid rgba(59,130,246,0.25)',
-                              color: '#F1F5F9',
-                              borderTopRightRadius: 4,
-                            }
-                          : {
-                              background: '#0F1B2D',
-                              border: `1px solid ${msg.streaming ? agentColor + '40' : 'rgba(255,255,255,0.08)'}`,
-                              color: '#F1F5F9',
-                              borderTopLeftRadius: 4,
-                            }
-                        ),
-                      }}>
-                        {msg.content && typeof msg.content === 'string' && <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.content}{msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}</div>}
+                      {/* Name + timestamp above bubble */}
+                      {!msg.streaming && (
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          marginBottom: 3, padding: '0 2px',
+                          flexDirection: isUser ? 'row-reverse' : 'row',
+                        }}>
+                          <span style={{
+                            fontSize: 11, fontWeight: 600,
+                            color: isUser ? '#F59E0B' : agentColor,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                          }}>
+                            {isUser ? 'Patrik' : (agent?.name || agentSlug)}
+                          </span>
+                          {msg.time && (
+                            <span style={{
+                              fontSize: 11, color: '#4A6080',
+                              fontFamily: "'JetBrains Mono', monospace",
+                            }}>
+                              {formatChatTime(msg.time)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {/* Reply-to preview inside bubble if this message has a reply_to */}
+                      {msg.reply_to && chatMessages && (() => {
+                        const parent = chatMessages.find(m => m.id === msg.reply_to)
+                        if (!parent) return null
+                        return (
+                          <div style={{
+                            borderLeft: `3px solid ${agentColor}80`,
+                            paddingLeft: 8, marginBottom: 6,
+                            color: '#8BA4C4', fontSize: 11,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            opacity: 0.8,
+                          }}>
+                            {(parent.content || '').slice(0, 80)}{(parent.content || '').length > 80 ? '...' : ''}
+                          </div>
+                        )
+                      })()}
+                      <div
+                        className="msg-bubble"
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 12,
+                          fontSize: 13, fontWeight: 500, lineHeight: 1.4,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          ...(isUser
+                            ? {
+                                background: '#1a3a5c',
+                                border: '1px solid rgba(59,130,246,0.3)',
+                                color: '#fff',
+                                borderBottomRightRadius: 3,
+                              }
+                            : {
+                                background: '#0F1B2D',
+                                border: `1px solid ${msg.streaming ? agentColor + '40' : 'rgba(255,255,255,0.08)'}`,
+                                color: '#F1F5F9',
+                                borderBottomLeftRadius: 3,
+                              }
+                          ),
+                          position: 'relative',
+                        }}>
+                        {msg.content && typeof msg.content === 'string' && (
+                          isUser ? (
+                            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                              {renderPlainContent(msg.content, '#7CB9FF')}
+                            </div>
+                          ) : (
+                            <div style={{ wordBreak: 'break-word', position: 'relative' }}>
+                              <MarkdownMessage text={msg.content} agentColor={agentColor} streaming={msg.streaming} />
+                              {msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}
+                            </div>
+                          )
+                        )}
                         {msg.streaming && !msg.content && (
                           <div style={{ display: 'flex', gap: 5, padding: '4px 0', alignItems: 'center' }}>
                             {[0, 1, 2].map(j => (
@@ -7108,22 +8241,35 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             ))}
                           </div>
                         )}
+                        {/* Hover Reply button */}
+                        {!msg.streaming && msg.content && (
+                          <button
+                            className="msg-reply-btn"
+                            onClick={() => setReplyTo({ id: msg.id || `msg-${i}`, content: msg.content })}
+                            style={{
+                              display: 'none', // shown via CSS hover on parent
+                              position: 'absolute',
+                              ...(isUser ? { left: -32 } : { right: -32 }),
+                              top: '50%', transform: 'translateY(-50%)',
+                              background: 'rgba(15,27,45,0.9)',
+                              border: '1px solid rgba(100,180,255,0.2)',
+                              borderRadius: 6, width: 26, height: 26,
+                              cursor: 'pointer', color: '#8BA4C4',
+                              alignItems: 'center', justifyContent: 'center',
+                              padding: 0,
+                            }}
+                          >
+                            <CornerDownLeft size={13} />
+                          </button>
+                        )}
                       </div>
-                      {/* Meta row: timestamp + source pill */}
-                      {!msg.streaming && (
+                      {/* Meta row: source pill only (timestamp moved above) */}
+                      {!msg.streaming && sourceLabel && (
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: 8,
-                          marginTop: 4, padding: '0 4px',
+                          marginTop: 3, padding: '0 4px',
                           flexDirection: isUser ? 'row-reverse' : 'row',
                         }}>
-                          {msg.time && (
-                            <span style={{
-                              fontSize: 10, fontWeight: 500, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
-                              fontFamily: "'JetBrains Mono', monospace",
-                            }}>
-                              {formatChatTime(msg.time)}
-                            </span>
-                          )}
                           {sourceLabel && (
                             <span style={{
                               fontSize: 9, fontWeight: 500, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
@@ -7229,214 +8375,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </button>
               </div>
             )}
-            {/* Chat input -- hidden when hideInputBar=true (WM-A: MobileFixedInput handles it outside overflow:hidden) */}
-            {/* WM-A: spacer reserves input bar height so messages scroll correctly when MobileFixedInput is used */}
-            {hideInputBar && <div style={{ flexShrink: 0, height: 80 }} />}
-            {!hideInputBar && <div style={{
-              padding: '16px 20px',
-              paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
-              borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
-              background: isNightMode
-                ? 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)'
-                : 'transparent',
-              flexShrink: 0,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 0 : 10 }}>
-              {/* Powerup menu: desktop shows full trigger button. Mobile hides trigger (dual-purpose send/powerup button in input). */}
-              <PowerupMenu
-                isOpen={powerupOpen || false}
-                onToggle={(v) => onPowerupToggle?.(v)}
-                onActivate={(slash) => onPowerupActivate?.(slash)}
-                isMobile={isMobile}
-                isNightMode={isNightMode}
-                hideTrigger={isMobile}
-              />
-              <form onSubmit={(e) => {
-                isUserTypingRef.current = false
-                onSendMessage(e)
-              }} style={{ position: 'relative', flex: 1 }}>
-                {/* @ autocomplete dropdown (floats above input) */}
-                {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
-                  <div style={{
-                    position: 'absolute', bottom: '100%', left: 0, right: 0,
-                    marginBottom: 6,
-                    background: isNightMode ? '#1A2744' : '#1E2A3A',
-                    border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
-                    borderRadius: 12,
-                    boxShadow: isNightMode
-                      ? '0 -8px 32px rgba(0,0,0,0.5), 0 -2px 8px rgba(59,130,246,0.15)'
-                      : '0 -8px 32px rgba(0,0,0,0.4), 0 -2px 8px rgba(59,130,246,0.15)',
-                    maxHeight: 240, overflowY: 'auto',
-                    zIndex: 100,
-                    padding: '6px 0',
-                  }}>
-                    <div style={{
-                      padding: '4px 14px 8px',
-                      fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#6B8AB0',
-                      textTransform: 'uppercase', letterSpacing: '0.08em',
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>
-                      Switch to...
-                    </div>
-                    {filteredAtOptions.map((opt, i) => (
-                      <div
-                        key={opt.slug}
-                        onMouseDown={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
-                        onMouseEnter={() => {}}
-                        style={{
-                          padding: '10px 14px',
-                          display: 'flex', alignItems: 'center', gap: 12,
-                          cursor: 'pointer',
-                          background: i === atMenuIndex
-                            ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
-                            : 'transparent',
-                          transition: 'background 100ms ease',
-                        }}
-                      >
-                        {/* Color dot */}
-                        <div style={{
-                          width: 10, height: 10, borderRadius: '50%',
-                          background: opt.color,
-                          boxShadow: `0 0 6px ${opt.color}40`,
-                          flexShrink: 0,
-                        }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{
-                            fontSize: 15, fontWeight: 800,
-                            color: isNightMode ? '#F1F5F9' : '#E8ECF0',
-                            fontFamily: "'Inter', system-ui, sans-serif",
-                          }}>
-                            {opt.name}
-                            {opt.type === 'project' && (
-                              <span style={{
-                                marginLeft: 8, fontSize: 11, fontWeight: 600,
-                                color: '#F59E0B', background: 'rgba(245,158,11,0.1)',
-                                border: '1px solid rgba(245,158,11,0.2)',
-                                borderRadius: 4, padding: '1px 6px',
-                              }}>
-                                PROJECT
-                              </span>
-                            )}
-                          </div>
-                          <div style={{
-                            fontSize: 12, fontWeight: 600,
-                            color: isNightMode ? '#64748B' : '#6B8AB0',
-                            fontFamily: "'Inter', system-ui, sans-serif",
-                            marginTop: 1,
-                          }}>
-                            {opt.role}
-                          </div>
-                        </div>
-                        <span style={{
-                          fontSize: 12, fontWeight: 600,
-                          color: isNightMode ? '#475569' : '#4A6585',
-                          fontFamily: "'JetBrains Mono', monospace",
-                        }}>
-                          @{opt.slug}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <input type="text" value={chatInput || ''} onChange={e => {
-                    isUserTypingRef.current = true
-                    onChatInputChange?.(e.target.value)
-                    if (powerupOpen) onPowerupToggle?.(false)
-                  }}
-                  onKeyDown={e => {
-                    // @ autocomplete keyboard navigation
-                    if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault()
-                        onAtKeyDown?.('down')
-                        return
-                      }
-                      if (e.key === 'ArrowUp') {
-                        e.preventDefault()
-                        onAtKeyDown?.('up')
-                        return
-                      }
-                      if (e.key === 'Enter' || e.key === 'Tab') {
-                        e.preventDefault()
-                        onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0])
-                        return
-                      }
-                      if (e.key === 'Escape') {
-                        e.preventDefault()
-                        onAtKeyDown?.('escape')
-                        return
-                      }
-                    }
-                    if (e.key === 'Enter') isUserTypingRef.current = false
-                  }}
-                  placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`}
-                  disabled={false}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="sentences"
-                  spellCheck="false"
-                  inputMode="text"
-                  enterKeyHint="send"
-                  style={{
-                    width: '100%',
-                    background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
-                    border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
-                    borderRadius: 12,
-                    padding: '14px 56px 14px 18px',
-                    fontSize: 18, fontWeight: 400,
-                    fontFamily: "'Inter', system-ui, sans-serif",
-                    color: isNightMode ? '#F1F5F9' : '#E2E8F0',
-                    outline: 'none',
-                    transition: 'border-color 200ms ease, box-shadow 200ms ease',
-                    // iOS Safari: override parent userSelect:none so text can be selected/typed
-                    userSelect: 'text',
-                    WebkitUserSelect: 'text',
-                    // Allow normal tap behavior (focus + keyboard) even under parent touchAction:manipulation
-                    touchAction: 'manipulation',
-                    // Remove gray tap flash on iOS
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                  onFocus={e => {
-                    isUserTypingRef.current = true
-                    e.target.style.borderColor = agentColor + '88'
-                    e.target.style.boxShadow = `0 0 0 3px ${agentColor}25, 0 0 16px ${agentColor}15`
-                    onInputFocus?.()
-                  }}
-                  onBlur={e => {
-                    setTimeout(() => { isUserTypingRef.current = false }, 300)
-                    e.target.style.borderColor = 'rgba(59,130,246,0.2)'
-                    e.target.style.boxShadow = 'none'
-                  }}
-                />
-                {/* Dual-purpose button: on mobile, shows sparkle (powerup) when empty, send arrow when has text. Desktop always shows send. */}
-                <button
-                  type={isMobile && !chatInput?.trim() ? 'button' : 'submit'}
-                  disabled={streaming}
-                  onClick={isMobile && !chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
-                  style={{
-                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                    width: 44, height: 44, borderRadius: 12,
-                    background: chatInput?.trim()
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
-                      : (isMobile ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)' : 'rgba(59,130,246,0.12)'),
-                    border: chatInput?.trim()
-                      ? '2px solid rgba(59,130,246,0.6)'
-                      : (isMobile ? '2px solid rgba(124, 58, 237, 0.4)' : '2px solid rgba(59,130,246,0.2)'),
-                    color: '#FFF',
-                    cursor: (chatInput?.trim() || isMobile) ? 'pointer' : 'default',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: chatInput?.trim()
-                      ? '0 3px 12px rgba(59,130,246,0.3)'
-                      : (isMobile ? '0 2px 12px rgba(124, 58, 237, 0.25)' : 'none'),
-                    transition: 'all 150ms ease',
-                  }}>
-                  {streaming ? <Loader2 size={18} className="animate-spin" /> : (
-                    isMobile && !chatInput?.trim() ? <Sparkles size={18} /> : <Send size={18} />
-                  )}
-                </button>
-              </form>
-              </div>{/* end powerup + form flex row */}
-            </div>}{/* end !hideInputBar */}
           </>
           </ChatErrorBoundary>
         )}
@@ -7700,9 +8638,300 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </div>
         )}
 
+        {/* FILES TAB */}
+        {activeTab === 'files' && (
+          <FilesTab
+            agentSlug={agentSlug}
+            clientId={null}
+            isNightMode={isNightMode}
+            onSendFileToChat={onSendFileToChat}
+          />
+        )}
+
         {/* Checklist and Megaboard tabs removed. Use full-screen mode switching instead. */}
 
       </div>
+
+      {/* Chat input -- rendered as SIBLING of the tab content div, OUTSIDE overflow:hidden.
+          This fixes the iPhone half-drawer clipping bug: at 52% snap the overflow:hidden
+          content area clips the input. Moving it here makes it a bottom-anchored flex item
+          of UnifiedPanel's outer flex column, always visible at any snap height.
+          Only shown when activeTab === 'chat'. Desktop sidebar is unaffected (same behavior). */}
+      {activeTab === 'chat' && (
+        <div
+          onTouchStart={isMobile ? () => onInputFocus?.() : undefined}
+          style={{
+          padding: '16px 20px',
+          paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
+          borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
+          background: isNightMode
+            ? 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)'
+            : 'transparent',
+          flexShrink: 0,
+        }}>
+          {/* Reply-to banner */}
+          {replyTo && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              marginBottom: 8, padding: '6px 10px',
+              background: 'rgba(59,130,246,0.08)',
+              border: '1px solid rgba(59,130,246,0.2)',
+              borderRadius: 8,
+              fontSize: 12, color: '#8BA4C4',
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}>
+              <CornerDownLeft size={12} color="#4A8FD4" style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                Replying to: {(replyTo.content || '').slice(0, 60)}{(replyTo.content || '').length > 60 ? '...' : ''}
+              </span>
+              <button
+                type="button"
+                onClick={() => setReplyTo(null)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#4A6080', padding: 0, lineHeight: 1,
+                  display: 'flex', alignItems: 'center',
+                }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+          {/* Selected skill badges -- shown above input when skills are queued */}
+          {selectedPowerups && selectedPowerups.length > 0 && (
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: 6,
+              marginBottom: 8,
+            }}>
+              {selectedPowerups.map(skill => (
+                <div
+                  key={skill.id}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '3px 8px 3px 6px',
+                    background: `${skill.color}20`,
+                    border: `1px solid ${skill.color}50`,
+                    borderRadius: 20,
+                    fontSize: 10, fontWeight: 700,
+                    color: skill.color,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    userSelect: 'none',
+                  }}
+                >
+                  <span style={{ fontSize: 9, opacity: 0.75 }}>/</span>
+                  {skill.slash.replace('/', '')}
+                  <button
+                    type="button"
+                    onClick={() => onRemovePowerup?.(skill.id)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: skill.color, padding: 0, lineHeight: 1,
+                      display: 'flex', alignItems: 'center',
+                      opacity: 0.7,
+                      marginLeft: 2,
+                    }}
+                    aria-label={`Remove ${skill.name} skill`}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 0 : 10 }}>
+          {/* Powerup menu: desktop shows full trigger button. Mobile hides trigger (dual-purpose send/powerup button in input). */}
+          <PowerupMenu
+            isOpen={powerupOpen || false}
+            onToggle={(v) => onPowerupToggle?.(v)}
+            onActivate={(powerup) => onPowerupActivate?.(powerup)}
+            selectedSkills={selectedPowerups || []}
+            isMobile={isMobile}
+            isNightMode={isNightMode}
+            hideTrigger={isMobile}
+          />
+          <form onSubmit={(e) => {
+            isUserTypingRef.current = false
+            onSendMessage(e, replyTo?.id)
+            setReplyTo(null)
+          }} style={{ position: 'relative', flex: 1 }}>
+            {/* @ autocomplete dropdown (floats above input) */}
+            {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
+              <div style={{
+                position: 'absolute', bottom: '100%', left: 0, right: 0,
+                marginBottom: 6,
+                background: isNightMode ? '#1A2744' : '#1E2A3A',
+                border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
+                borderRadius: 12,
+                boxShadow: isNightMode
+                  ? '0 -8px 32px rgba(0,0,0,0.5), 0 -2px 8px rgba(59,130,246,0.15)'
+                  : '0 -8px 32px rgba(0,0,0,0.4), 0 -2px 8px rgba(59,130,246,0.15)',
+                maxHeight: 240, overflowY: 'auto',
+                zIndex: 100,
+                padding: '6px 0',
+              }}>
+                <div style={{
+                  padding: '4px 14px 8px',
+                  fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#6B8AB0',
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>
+                  Switch to...
+                </div>
+                {filteredAtOptions.map((opt, i) => (
+                  <div
+                    key={opt.slug}
+                    onMouseDown={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
+                    onMouseEnter={() => {}}
+                    style={{
+                      padding: '10px 14px',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      cursor: 'pointer',
+                      background: i === atMenuIndex
+                        ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
+                        : 'transparent',
+                      transition: 'background 100ms ease',
+                    }}
+                  >
+                    {/* Color dot */}
+                    <div style={{
+                      width: 10, height: 10, borderRadius: '50%',
+                      background: opt.color,
+                      boxShadow: `0 0 6px ${opt.color}40`,
+                      flexShrink: 0,
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 15, fontWeight: 800,
+                        color: isNightMode ? '#F1F5F9' : '#E8ECF0',
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                      }}>
+                        {opt.name}
+                        {opt.type === 'project' && (
+                          <span style={{
+                            marginLeft: 8, fontSize: 11, fontWeight: 600,
+                            color: '#F59E0B', background: 'rgba(245,158,11,0.1)',
+                            border: '1px solid rgba(245,158,11,0.2)',
+                            borderRadius: 4, padding: '1px 6px',
+                          }}>
+                            PROJECT
+                          </span>
+                        )}
+                      </div>
+                      <div style={{
+                        fontSize: 12, fontWeight: 600,
+                        color: isNightMode ? '#64748B' : '#6B8AB0',
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        marginTop: 1,
+                      }}>
+                        {opt.role}
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: 12, fontWeight: 600,
+                      color: isNightMode ? '#475569' : '#4A6585',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
+                      @{opt.slug}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <input type="text" data-panel-chat-input value={chatInput || ''} onChange={e => {
+                isUserTypingRef.current = true
+                onChatInputChange?.(e.target.value)
+                if (powerupOpen) onPowerupToggle?.(false)
+              }}
+              onKeyDown={e => {
+                // @ autocomplete keyboard navigation
+                if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    onAtKeyDown?.('down')
+                    return
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    onAtKeyDown?.('up')
+                    return
+                  }
+                  if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault()
+                    onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0])
+                    return
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    onAtKeyDown?.('escape')
+                    return
+                  }
+                }
+                if (e.key === 'Enter') isUserTypingRef.current = false
+              }}
+              placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`} disabled={false}
+              style={{
+                width: '100%',
+                background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
+                border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
+                borderRadius: 12,
+                padding: '14px 56px 14px 18px',
+                fontSize: 18, fontWeight: 400,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                color: isNightMode ? '#F1F5F9' : '#E2E8F0',
+                outline: 'none',
+                transition: 'border-color 200ms ease, box-shadow 200ms ease',
+                // iOS Safari: override parent userSelect:none so text can be selected/typed
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
+                // Allow normal tap behavior (focus + keyboard) even under parent touchAction:manipulation
+                touchAction: 'manipulation',
+                // Remove gray tap flash on iOS
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              onFocus={e => {
+                isUserTypingRef.current = true
+                e.target.style.borderColor = agentColor + '88'
+                e.target.style.boxShadow = `0 0 0 3px ${agentColor}25, 0 0 16px ${agentColor}15`
+                onInputFocus?.()
+              }}
+              onBlur={e => {
+                setTimeout(() => { isUserTypingRef.current = false }, 300)
+                e.target.style.borderColor = 'rgba(59,130,246,0.2)'
+                e.target.style.boxShadow = 'none'
+              }}
+            />
+            {/* Dual-purpose button: on mobile, shows sparkle (powerup) when empty, send arrow when has text. Desktop always shows send. */}
+            <button
+              type={isMobile && !chatInput?.trim() ? 'button' : 'submit'}
+              disabled={false}
+              onClick={isMobile && !chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
+              style={{
+                position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                width: 44, height: 44, borderRadius: 12,
+                background: chatInput?.trim()
+                  ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                  : (isMobile ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)' : 'rgba(59,130,246,0.12)'),
+                border: chatInput?.trim()
+                  ? '2px solid rgba(59,130,246,0.6)'
+                  : (isMobile ? '2px solid rgba(124, 58, 237, 0.4)' : '2px solid rgba(59,130,246,0.2)'),
+                color: '#FFF',
+                cursor: (chatInput?.trim() || isMobile) ? 'pointer' : 'default',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: chatInput?.trim()
+                  ? '0 3px 12px rgba(59,130,246,0.3)'
+                  : (isMobile ? '0 2px 12px rgba(124, 58, 237, 0.25)' : 'none'),
+                transition: 'all 150ms ease',
+              }}>
+              {streaming ? <Loader2 size={18} className="animate-spin" /> : (
+                isMobile && !chatInput?.trim() ? <Sparkles size={18} /> : <Send size={18} />
+              )}
+            </button>
+          </form>
+          </div>{/* end powerup + form flex row */}
+        </div>
+      )}
     </div>
   )
 }
@@ -7805,19 +9034,97 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
 // ---- MAIN GAME DASHBOARD ---------------------------------------------------
 export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
+  const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
+
+  // Load Supabase user on mount + watch for auth state changes.
+  // Derives client_id from user metadata (world field) for multi-tenant data isolation.
+  // Also sets window.__cornerClientId for child components (e.g. TaskContextMenu) that
+  // can't import getClientId directly without circular deps.
+  useEffect(() => {
+    getCurrentUser().then(user => {
+      if (user) {
+        setCurrentUser(user)
+        setClientIdFromUser(user)
+      }
+      window.__cornerClientId = getClientId()
+    })
+    const unsubscribe = onAuthStateChange((session) => {
+      const user = session?.user || null
+      setCurrentUser(user)
+      setClientIdFromUser(user)
+      window.__cornerClientId = getClientId()
+    })
+    return unsubscribe
+  }, [])
+
+  const handleSignOut = useCallback(async () => {
+    await authSignOut()
+    sessionStorage.removeItem('dash-auth')
+    window.location.href = '/login'
+  }, [])
 
   // Right Now tasks: wire to useDataPipe (real-time from task-status.jsonl + agent-notifications.md)
   // No longer using localStorage -- this is now live data from the server
   const pipeData = useDataPipe(parsePunchListSidebar)
   const rightNowTasks = pipeData?.rightNow || []
   const addToRightNow = useCallback((task) => {
-    // For future interactive features: could add temp override in local state
-    // For now, RIGHT NOW is read-only from pipeData
-  }, [])
+    if (!task) return
+    console.log('[addToRightNow] task:', task)
+    // 1. Write to both localStorage keys (TaskContextMenu + GameHUD consistency)
+    try {
+      const saved = JSON.parse(localStorage.getItem('corner-task-rightnow') || '[]')
+      if (!saved.includes(task.text)) saved.push(task.text)
+      localStorage.setItem('corner-task-rightnow', JSON.stringify(saved))
+    } catch {}
+    try {
+      const saved2 = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
+      if (!saved2.some(t => t.text === task.text)) {
+        saved2.push({ id: Date.now(), text: task.text, agent: task.agent || 'patrik', addedAt: new Date().toISOString() })
+        localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved2))
+      }
+    } catch {}
+    // 2. Local task-assign for local mode
+    if (IS_LOCAL) {
+      try {
+        fetch('/api/local/task-assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task: task.text,
+            agent: task.agent || undefined,
+            project: task.projectSection || undefined,
+            blocked: task.agent === 'patrik',
+          }),
+        }).then(() => {
+          // Refetch pipe data so Right Now updates immediately
+          pipeData?.refetch?.()
+        }).catch(() => {})
+      } catch {}
+    } else {
+      // 3. Production: Supabase API calls
+      const rawId = task.taskId || task.id
+      const isSupabaseUuid = rawId && typeof rawId === 'string' && /^[0-9a-f-]{36}$/i.test(rawId)
+      const taskParam = isSupabaseUuid
+        ? `id=${encodeURIComponent(rawId)}`
+        : `agent=${encodeURIComponent(task.agent || 'elon')}`
+      console.log('[addToRightNow] PATCH param:', taskParam, 'rawId:', rawId, 'isUuid:', isSupabaseUuid)
+      fetch(`/api/dashboard/agent-status?table=tasks&${taskParam}&status=active`, { method: 'PATCH' })
+        .then(r => {
+          console.log('[addToRightNow] task PATCH status:', r.status)
+          pipeData?.refetch?.()
+        })
+        .catch(err => console.warn('[addToRightNow] task PATCH failed:', err))
+      fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(task.agent || 'elon')}&status=active&current_task=${encodeURIComponent(task.text || '')}`, { method: 'PATCH' }).catch(() => {})
+      fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: task.agent || 'elon', text: `[PROMOTE] ${task.text}`, role: 'user', source: 'corner-dashboard-task', client_id: getClientId() }),
+      }).catch(() => {})
+    }
+  }, [pipeData])
   const removeFromRightNow = useCallback((id) => {
-    // For future: could add removal logic that writes back to server
-    // For now, RIGHT NOW is read-only from pipeData
+    // For future: removal logic
   }, [])
   // HMR state recovery: restore selected room + tab from sessionStorage if HMR just reloaded
   const [selectedRoom, setSelectedRoom] = useState(() => {
@@ -7847,7 +9154,9 @@ export default function GameDashboard() {
   const [panelChatInput, setPanelChatInput] = useState('')
   // Powerup menu state
   const [powerupOpen, setPowerupOpen] = useState(false)
-  const powerupPendingRef = useRef(null) // slash command to auto-submit
+  const powerupPendingRef = useRef(null) // slash command to auto-submit (legacy single-skill path)
+  // Multi-select powerup skills: array of skill objects (from POWERUPS)
+  const [selectedPowerups, setSelectedPowerups] = useState([])
   // @ routing: corner config + autocomplete state
   const [cornerConfig, setCornerConfig] = useState(null)
   const [atMenuOpen, setAtMenuOpen] = useState(false)
@@ -8044,6 +9353,8 @@ export default function GameDashboard() {
   const [unreadAgents, setUnreadAgents] = useState({}) // { agentSlug: count }
   const bgOutboxPollRef = useRef(null)
   const lastBgOutboxCheckRef = useRef(null)
+  // Per-agent last-seen timestamp for background unread polling
+  const unreadLastSeenRef = useRef({}) // { agentSlug: isoTimestamp }
 
   // Cleanup all polls on unmount
   useEffect(() => {
@@ -8143,12 +9454,118 @@ export default function GameDashboard() {
   }, [panelVisible])
   */
 
+  // Background unread poller: production only, polls all visible agents every 5s
+  // Detects new assistant messages for agents that are NOT currently selected
+  // and increments their unread count to trigger the room hex notification dot.
+  const selectedRoomRef = useRef(selectedRoom)
+  useEffect(() => { selectedRoomRef.current = selectedRoom }, [selectedRoom])
+
+  useEffect(() => {
+    if (IS_LOCAL) return // Local uses file poll which already populates agentChats
+
+    const POLL_AGENTS = AGENTS.map(a => a.slug)
+    // Seed last-seen timestamps at "now" so only genuinely new messages trigger unread
+    const seedTs = new Date().toISOString()
+    POLL_AGENTS.forEach(slug => {
+      if (!unreadLastSeenRef.current[slug]) {
+        unreadLastSeenRef.current[slug] = seedTs
+      }
+    })
+
+    const bgPoll = setInterval(async () => {
+      const active = selectedRoomRef.current
+      // Only check agents that are NOT the currently active room
+      const toCheck = POLL_AGENTS.filter(slug => slug !== active)
+      if (!toCheck.length) return
+
+      for (const slug of toCheck) {
+        const since = unreadLastSeenRef.current[slug] || seedTs
+        try {
+          const res = await fetch(
+            `/api/dashboard/supabase-messages?agent=${encodeURIComponent(slug)}&limit=5&client=${encodeURIComponent(getClientId())}`
+          )
+          if (!res.ok) continue
+          const data = await res.json()
+          const msgs = (data?.messages || []).filter(
+            m => m.role === 'assistant' && m.timestamp > since
+          )
+          if (msgs.length > 0) {
+            // Advance watermark to the latest message we've seen
+            unreadLastSeenRef.current[slug] = msgs[msgs.length - 1].timestamp
+            setUnreadAgents(prev => ({
+              ...prev,
+              [slug]: (prev[slug] || 0) + msgs.length,
+            }))
+          }
+        } catch {
+          // Fail silently -- this is a best-effort background check
+        }
+      }
+    }, 5000) // 5s cadence: responsive without hammering Supabase
+
+    return () => clearInterval(bgPoll)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Clear unread when panel is opened
   useEffect(() => {
     if (panelVisible) {
       setUnreadCount(0)
     }
   }, [panelVisible])
+
+  // Track unread messages per agent: increment when assistant messages arrive for non-active agents
+  // Used by CanvasOffice to show notification dots on room hexes
+  const prevAgentChatCountsRef = useRef({})
+  useEffect(() => {
+    const newUnread = {}
+    for (const [agentSlug, chat] of Object.entries(agentChats)) {
+      const msgs = chat?._all || []
+      const assistantMsgs = msgs.filter(m => m.role === 'assistant' && !m.streaming)
+      const prevCount = prevAgentChatCountsRef.current[agentSlug] || 0
+      const currCount = assistantMsgs.length
+      if (currCount > prevCount && agentSlug !== selectedRoom) {
+        // New messages arrived for a background agent
+        newUnread[agentSlug] = (currCount - prevCount)
+      }
+      prevAgentChatCountsRef.current[agentSlug] = currCount
+    }
+    if (Object.keys(newUnread).length > 0) {
+      setUnreadAgents(prev => {
+        const updated = { ...prev }
+        for (const [slug, count] of Object.entries(newUnread)) {
+          updated[slug] = (updated[slug] || 0) + count
+        }
+        return updated
+      })
+    }
+  }, [agentChats, selectedRoom])
+
+  // Clear unread for the active agent when user switches to it
+  useEffect(() => {
+    if (selectedRoom) {
+      setUnreadAgents(prev => {
+        if (!prev[selectedRoom]) return prev
+        const updated = { ...prev }
+        delete updated[selectedRoom]
+        return updated
+      })
+      prevAgentChatCountsRef.current[selectedRoom] = (agentChats[selectedRoom]?._all || []).filter(m => m.role === 'assistant' && !m.streaming).length
+      // Advance watermark so background poller doesn't re-trigger for already-seen messages
+      unreadLastSeenRef.current[selectedRoom] = new Date().toISOString()
+    }
+  }, [selectedRoom]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Callback: clear unread for a specific agent slug (used by chat input focus + room click)
+  const clearUnreadForRoom = useCallback((slug) => {
+    if (!slug) return
+    setUnreadAgents(prev => {
+      if (!prev[slug]) return prev
+      const updated = { ...prev }
+      delete updated[slug]
+      return updated
+    })
+    unreadLastSeenRef.current[slug] = new Date().toISOString()
+  }, [])
 
   // DONE(bobby2): RELAY MESSAGE CRASH FIX -- safePanelUpdate() wraps all setPanelMessages calls with try/catch + field validation. safeTimeSort() handles NaN timestamps. All relay message pushes validate .message exists and default .time/.id. Malformed relay data can no longer crash React render cycle.
   // DONE(bobby): HMR STATE PRESERVATION -- Key dashboard state (selectedRoom, panelActiveTab) persists to sessionStorage on change, restores on HMR reload. Auth already in sessionStorage. Mode already in localStorage. Chat messages reload from relay history on reconnect. Bobby commits no longer reset which agent Patrik was talking to.
@@ -8181,6 +9598,37 @@ export default function GameDashboard() {
   // Task right-click context menu state (separate from room/agent context menu)
   const [taskContextMenu, setTaskContextMenu] = useState(null) // { position: {x,y}, task }
 
+  // Message context menu state
+  const [msgContextMenu, setMsgContextMenu] = useState(null) // { position: {x,y}, msg }
+  // Send-to smart picker state
+  const [sendToMenu, setSendToMenu] = useState(null) // { position: {x,y}, msg }
+  // Pending reply: set by context menu "Reply" action, consumed by UnifiedPanel
+  const [pendingReplyMsg, setPendingReplyMsg] = useState(null) // { id, content } | null
+  // Pending pill expand: set by "Add Task" on project context menu, consumed by GameHUD
+  const [expandPillSection, setExpandPillSection] = useState(null)
+  // Hidden pills: archived via context menu
+  const [hiddenPills, setHiddenPills] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('corner-hidden-pills') || '[]') } catch { return [] }
+  })
+
+  // Handle message right-click / long-press
+  const handleMessageContextMenu = useCallback((e, msg) => {
+    e.preventDefault?.()
+    const x = e._msgLongPress ? window.innerWidth / 2 - 110 : e.clientX
+    const y = e._msgLongPress ? window.innerHeight / 2 - 60 : e.clientY
+    setMsgContextMenu({ position: { x, y }, msg })
+  }, [])
+
+  // Track recently visited agents in localStorage
+  useEffect(() => {
+    if (!selectedRoom) return
+    try {
+      const recent = JSON.parse(localStorage.getItem('corner-recent-agents') || '[]')
+      const filtered = recent.filter(s => s !== selectedRoom)
+      localStorage.setItem('corner-recent-agents', JSON.stringify([selectedRoom, ...filtered].slice(0, 10)))
+    } catch {}
+  }, [selectedRoom])
+
   // Checkbox state for task context menu actions (toggle done)
   const [sidebarCheckedTasks, setSidebarCheckedTasks] = useState(() => {
     try {
@@ -8205,7 +9653,24 @@ export default function GameDashboard() {
   // Task context menu action handler
   const handleSidebarContextAction = useCallback((action, task, payload) => {
     handleTaskContextAction(action, task, payload, setSidebarCheckedTasks)
-  }, [])
+    // FIX 2: When a task is marked done, inject a confirmation message into chat
+    if (action === 'toggle' && !task.done) {
+      const confirmMsg = {
+        role: 'assistant',
+        content: `Task marked done: "${task.text}"\n\nConfirmed done or needs more work?`,
+        time: new Date().toISOString(),
+        source: 'corner-task-confirm',
+        id: `confirm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        isTaskConfirm: true,
+        taskText: task.text,
+      }
+      setAgentChats(prev => {
+        const agent = task.agent || selectedRoom || 'elon'
+        const current = prev[agent] || { _all: [] }
+        return { ...prev, [agent]: { _all: [...(current._all || []), confirmMsg] } }
+      })
+    }
+  }, [selectedRoom])
 
   // C3: MODE STATE
   const [currentMode, setCurrentMode] = useState(() => {
@@ -8215,6 +9680,15 @@ export default function GameDashboard() {
     if (path.includes('/megaboard')) return 'megaboard'
     return localStorage.getItem('corner-mode') || 'game'
   })
+
+  // VIEW MODE: 'game' = isometric canvas, 'board' = Trello/kanban columns
+  const [viewMode, setViewMode] = useState(() => {
+    try { return localStorage.getItem('corner-view-mode') || 'game' } catch { return 'game' }
+  })
+  const handleViewModeSwitch = useCallback((mode) => {
+    setViewMode(mode)
+    try { localStorage.setItem('corner-view-mode', mode) } catch {}
+  }, [])
 
   // CAMERA STATE: start in overview to see the full building
   const [cameraTarget, setCameraTarget] = useState(DEFAULT_AGENT)
@@ -8256,13 +9730,15 @@ export default function GameDashboard() {
 
     if (!IS_LOCAL) {
       // PRODUCTION: load chat history via Vercel proxy (bypasses Supabase JS client issues)
-      fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100`)
+      fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100&client=${encodeURIComponent(getClientId())}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
-          const msgs = (data?.messages || []).map(m => ({
-            id: m.id, role: m.role || 'assistant', content: m.text || '',
-            time: m.timestamp || '', source: m.source || 'supabase',
-          })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+          const msgs = (data?.messages || [])
+            .filter(m => !m.agent || m.agent === room) // guard: only show messages belonging to this agent
+            .map(m => ({
+              id: m.id, role: m.role || 'assistant', content: m.text || '',
+              time: m.timestamp || '', source: m.source || 'supabase',
+            })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
           console.log(`[Corner] Proxy: loaded ${msgs.length} msgs for ${room}`)
           setAgentChats(prev => ({ ...prev, [room]: { _all: msgs } }))
           setPanelChatLoading(false)
@@ -8274,7 +9750,8 @@ export default function GameDashboard() {
     }
 
     function loadFromGitHub(slug) {
-      const isProject = slug === 'aom' || slug.includes('-')
+      const roomMeta = ROOM_LOOKUP[slug]
+      const isProject = roomMeta?.type === 'project' || roomMeta?.type === 'special' || slug === 'aom'
       const convTarget = slug === 'aom' ? 'aom-internal' : slug
       const convType = isProject ? 'project' : 'agent'
       fetch(`${CONV_API_BASE}?target=${convTarget}&type=${convType}&limit=50`)
@@ -8316,11 +9793,11 @@ export default function GameDashboard() {
 
       const poll = setInterval(async () => {
         try {
-          const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20`)
+          const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20&client=${encodeURIComponent(getClientId())}`)
           if (!res.ok) return
           const data = await res.json()
           const newMsgs = (data?.messages || [])
-            .filter(m => m.role === 'assistant' && m.timestamp > lastSeenTs)
+            .filter(m => m.role === 'assistant' && m.timestamp > lastSeenTs && (!m.agent || m.agent === room)) // guard: only messages for this agent
           if (newMsgs.length) {
             lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
             setAgentChats(prev => {
@@ -8347,7 +9824,8 @@ export default function GameDashboard() {
     }
 
     // --- LOCAL: file-backed poll ---
-    const isProj = selectedRoom === 'aom' || selectedRoom.includes('-')
+    const pollRoomMeta = ROOM_LOOKUP[selectedRoom]
+    const isProj = pollRoomMeta?.type === 'project' || pollRoomMeta?.type === 'special' || selectedRoom === 'aom'
     const pollTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
     const pollType = isProj ? 'project' : 'agent'
     const poll = setInterval(() => {
@@ -8406,6 +9884,7 @@ export default function GameDashboard() {
 
   const { data, error, loading } = useDashboardData()
   const isMobile = useIsMobile()
+  const isTablet = useIsTablet() // iPad/tablet (768-1024px): compress sidebar profile header
   const disableThreeJs = useIsMobileOrPWA() // Kill Three.js on mobile/PWA for performance
 
   // C3: WebSocket connection
@@ -8561,14 +10040,9 @@ export default function GameDashboard() {
     if (roomId === selectedRoom) {
       // Already selected: zoom to Level 3 (detail)
       setCameraZoom(ZOOM_MAX)
-      // On mobile: always open the drawer. If hidden/null (first load), open to half.
-      // If already at half, promote to full (double-tap behavior).
-      if (isMobile) {
-        if (drawerSnap === 'half') {
-          setDrawerSnap('full')
-        } else if (!drawerSnap) {
-          setDrawerSnap('half')
-        }
+      // On mobile, open drawer to full on double-tap
+      if (isMobile && drawerSnap === 'half') {
+        setDrawerSnap('full')
       }
     } else {
       // First click: zoom to Level 2 (neighborhood)
@@ -8602,7 +10076,7 @@ export default function GameDashboard() {
   }
 
   // ---- SHARED SEND MESSAGE HANDLER (used by both desktop sidebar and mobile drawer) ----
-  const handlePanelSendMessage = useCallback(async (e) => {
+  const handlePanelSendMessage = useCallback(async (e, replyToId) => {
     e?.preventDefault()
     setAtMenuOpen(false)
     setAtMenuFilter('')
@@ -8635,6 +10109,13 @@ export default function GameDashboard() {
       }
     }
     setPanelChatInput('')
+    // Append selected powerup skills to message text, then clear selection
+    if (selectedPowerups.length > 0) {
+      const skillsList = selectedPowerups.map(s => s.slash).join(', ')
+      text = `${text}\n\nSkills: ${skillsList}`
+      setSelectedPowerups([])
+      setPowerupOpen(false)
+    }
     const sentTime = new Date().toISOString()
     const localId = `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     setAgentChats(prev => {
@@ -8642,6 +10123,7 @@ export default function GameDashboard() {
       const msgs = [...(current._all || []), {
         role: 'user', content: text, time: sentTime,
         source: 'via dashboard', id: localId,
+        ...(replyToId ? { reply_to: replyToId } : {}),
       }, {
         role: 'assistant', content: '', streaming: true,
         time: sentTime, id: `thinking-${localId}`,
@@ -8655,7 +10137,7 @@ export default function GameDashboard() {
     }
     // Send message via relay (local Vite middleware or Vercel serverless)
     if (IS_LOCAL) {
-      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard' }
+      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard', ...(replyToId ? { reply_to: replyToId } : {}) }
       if (atPrefixMatch) {
         const matchedOpt = atOptions.find(opt =>
           opt.slug === atPrefixMatch[1].toLowerCase() ||
@@ -8678,10 +10160,16 @@ export default function GameDashboard() {
         const res = await fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard' }),
+          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', client_id: getClientId(), ...(replyToId ? { reply_to: replyToId } : {}) }),
         })
         if (!res.ok) throw new Error(`Send failed: ${res.status}`)
         // Response arrives via poll (3s interval)
+        // Set agent to active -- visual feedback that message was received
+        fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(agent)}&status=active&current_task=${encodeURIComponent('Responding to message...')}`, { method: 'PATCH' }).catch(() => {})
+        // Auto-idle after 60s if no real task update changes the status first
+        setTimeout(() => {
+          fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(agent)}&status=stuck`, { method: 'PATCH' }).catch(() => {})
+        }, 60000)
       } catch (err) {
         setAgentChats(prev => {
           const current = prev[agent]?._all || []
@@ -8691,39 +10179,36 @@ export default function GameDashboard() {
           updated[thinkingIdx] = { id: `resp-${localId}`, role: 'assistant', content: `Error: ${err.message}`, time: new Date().toISOString() }
           return { ...prev, [agent]: { _all: updated } }
         })
+        setPanelStreaming(false) // Clear streaming on send error so ring doesn't spin forever
       }
-      // Note: setPanelStreaming(false) intentionally removed here.
+      // Note: setPanelStreaming(false) is NOT called on success here.
       // Polling clears streaming state when a real assistant response arrives (lines 8004, 8045).
       // Clearing immediately after POST would kill the thinking indicator within milliseconds.
     }
-  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap])
+  }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups])
 
-  // Powerup activation: inject slash command and auto-submit
-  const handlePowerupActivate = useCallback((slash) => {
-    setPowerupOpen(false)
-    // Set the input to the slash command and queue auto-submit
-    setPanelChatInput(slash)
-    powerupPendingRef.current = slash
+  // Powerup v2: toggle skill in selectedPowerups (multi-select, menu stays open)
+  const handlePowerupActivate = useCallback((powerup) => {
+    setSelectedPowerups(prev => {
+      const already = prev.some(s => s.id === powerup.id)
+      return already ? prev.filter(s => s.id !== powerup.id) : [...prev, powerup]
+    })
   }, [])
 
-  // Auto-submit when powerup pending (runs after panelChatInput state update)
-  useEffect(() => {
-    if (powerupPendingRef.current && panelChatInput === powerupPendingRef.current) {
-      powerupPendingRef.current = null
-      // Simulate form submit by calling the send handler directly
-      handlePanelSendMessage({ preventDefault: () => {} })
-    }
-  }, [panelChatInput, handlePanelSendMessage])
+  // Clear powerup pending ref on mount (legacy safety net)
+  useEffect(() => { powerupPendingRef.current = null }, [])
 
   // Right-click context menu on rooms
   const handleRoomContextMenu = useCallback((e, roomId) => {
     e.preventDefault()
     const room = ROOM_LOOKUP[roomId]
     if (!room) return
-    if (room.agent === null && room.type !== 'project') return
+    if (room.agent === null && room.type !== 'project' && room.type !== 'special') return
+    const isProjectRoom = room.type === 'project' || room.type === 'special'
+    const label = isProjectRoom ? (room.name || roomId) : `${room.agent}'s Room`
     setContextMenu({
       type: 'room',
-      data: { roomId, agent: room.agent, label: `${room.agent}'s Room` },
+      data: { roomId, agent: room.agent, label, isProject: isProjectRoom },
       position: { x: e.clientX, y: e.clientY },
     })
   }, [])
@@ -8731,6 +10216,45 @@ export default function GameDashboard() {
   // Context menu action dispatcher
   const handleContextAction = useCallback((actionId, data) => {
     switch (actionId) {
+      // Room context menu actions (right-click / long-press on hex rooms)
+      case 'open-chat':
+        if (data?.roomId) {
+          handleChat(data.roomId)
+          setPanelActiveTab('chat')
+          setPanelVisible(true)
+        } else if (data?.slug) {
+          handleChat(data.slug)
+          setPanelActiveTab('chat')
+          setPanelVisible(true)
+        }
+        break
+      case 'send-message':
+        if (data?.roomId) {
+          handleChat(data.roomId)
+          setPanelActiveTab('chat')
+          setPanelVisible(true)
+          // Focus the chat input after panel opens
+          setTimeout(() => {
+            const input = document.querySelector('[data-panel-chat-input]')
+            if (input) input.focus()
+          }, 150)
+        }
+        break
+      case 'view-tasks':
+        if (data?.roomId) {
+          setSelectedRoom(data.roomId)
+          setCameraTarget(data.roomId)
+          setIsOverview(false)
+          setPanelVisible(true)
+          setPanelActiveTab('tasks')
+        }
+        break
+      case 'set-home':
+        if (data?.roomId) {
+          try { localStorage.setItem('corner-home-room', data.roomId) } catch {}
+        }
+        break
+      // Legacy / other menu types
       case 'chat':
         if (data?.roomId) { handleChat(data.roomId); setPanelVisible(true) }
         else if (data?.slug) { handleChat(data.slug); setPanelVisible(true) }
@@ -8756,8 +10280,22 @@ export default function GameDashboard() {
         }
         break
       case 'assign':
+        break
       case 'add':
-        // C4: Will integrate with Supabase task creation
+        // Open the pill's task panel in GameHUD so user can type a task
+        if (data?.section || data?.name) {
+          setExpandPillSection(data.section || data.name)
+        }
+        break
+      case 'archive':
+        // Hide pill until user re-enables it
+        if (data?.section) {
+          setHiddenPills(prev => {
+            const next = [...prev.filter(s => s !== data.section), data.section]
+            try { localStorage.setItem('corner-hidden-pills', JSON.stringify(next)) } catch {}
+            return next
+          })
+        }
         break
       case 'expand':
         handleModeSwitch('checklist')
@@ -8766,6 +10304,97 @@ export default function GameDashboard() {
         break
     }
   }, [handleModeSwitch])
+
+  // Message context menu action handler
+  const handleMsgContextAction = useCallback((actionId, data) => {
+    const msg = data
+    switch (actionId) {
+      case 'copy':
+        if (msg?.content) {
+          try { navigator.clipboard.writeText(msg.content) } catch {}
+        }
+        break
+      case 'create-task': {
+        if (!msg?.content) break
+        const taskText = msg.content.slice(0, 120)
+        try {
+          const saved = JSON.parse(localStorage.getItem('corner-manual-tasks') || '[]')
+          saved.push({ text: taskText, agent: selectedRoom, done: false, id: `msg-task-${Date.now()}` })
+          localStorage.setItem('corner-manual-tasks', JSON.stringify(saved))
+        } catch {}
+        // Supabase: create task from chat message (fire-and-forget)
+        if (!IS_LOCAL) {
+          fetch('/api/dashboard/agent-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: taskText, agent: selectedRoom || 'elon', status: 'todo' }),
+          }).catch(() => {})
+        }
+        break
+      }
+      case 'reply':
+        // Set pending reply -- UnifiedPanel picks this up via externalReplyTo prop
+        if (msg?.content) {
+          setPendingReplyMsg({ id: msg.id || `msg-${Date.now()}`, content: msg.content })
+          setPanelActiveTab('chat')
+        }
+        break
+      case 'send-to': {
+        // Show the SendToMenu picker at the context menu position
+        const pos = msgContextMenu?.position || { x: window.innerWidth / 2 - 120, y: window.innerHeight / 2 - 100 }
+        setSendToMenu({ position: pos, msg })
+        break
+      }
+      case 'resend':
+        if (msg?.content && msg?.role === 'user') {
+          setPanelChatInput(msg.content)
+          setPanelActiveTab('chat')
+        }
+        break
+      default:
+        break
+    }
+  }, [selectedRoom, msgContextMenu])
+
+  // Send file from Files tab to chat as inline image message
+  const handleSendFileToChat = useCallback((file) => {
+    if (!file?.url) return
+    const imgMd = `![${file.name}](${file.url})`
+    setPanelChatInput(prev => prev ? prev + '\n' + imgMd : imgMd)
+    setPanelActiveTab('chat')
+  }, [])
+
+  // Task confirm: dismiss a message card by ID (check button = confirmed)
+  const handleDismissMessage = useCallback((msgId) => {
+    setAgentChats(prev => {
+      const agent = selectedRoom || 'elon'
+      const current = prev[agent]?._all || []
+      return { ...prev, [agent]: { _all: current.filter(m => m.id !== msgId) } }
+    })
+  }, [selectedRoom])
+
+  // Task confirm: minus button = send rerun message + dismiss
+  const handleTaskNotDone = useCallback((msgId, taskText) => {
+    // Dismiss the card
+    setAgentChats(prev => {
+      const agent = selectedRoom || 'elon'
+      const current = prev[agent]?._all || []
+      return { ...prev, [agent]: { _all: current.filter(m => m.id !== msgId) } }
+    })
+    // Send the rerun message via the input pipeline
+    const rerunMsg = `Task not done: "${taskText}" -- Rerun with a new approach.`
+    const sentTime = new Date().toISOString()
+    const localId = `rerun-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const agent = selectedRoom || 'elon'
+    setAgentChats(prev => {
+      const current = prev[agent] || { _all: [] }
+      return { ...prev, [agent]: { _all: [...(current._all || []), { role: 'user', content: rerunMsg, time: sentTime, source: 'via dashboard', id: localId }, { role: 'assistant', content: '', streaming: true, time: sentTime, id: `thinking-${localId}` }] } }
+    })
+    setPanelStreaming(true)
+    if (IS_LOCAL) {
+      fetch('/api/local/relay-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent, message: rerunMsg, source: 'corner-dashboard' }) }).catch(() => {})
+    }
+  }, [selectedRoom])
 
   // Mini-map room click -> move camera
   const handleMinimapRoomClick = (roomId) => {
@@ -8890,18 +10519,24 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 
+      {/* Board view: Trello/kanban mode -- shown when viewMode === 'board', hides game canvas */}
+      {viewMode === 'board' && (
+        <BoardView pipeData={pipeData} isMobile={isMobile} isNightMode={isNightMode} />
+      )}
+
       {/* Main content area -- game + sidebar side by side (flex row) */}
       {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 80 : 0, transition: 'padding-top 200ms ease' }}>
+      <div style={{ flex: 1, display: viewMode === 'board' ? 'none' : 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 80 : 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
-              {/* Crossy Road background: renders BEHIND CanvasOffice (z-index 0) */}
-              {/* Disabled on mobile/PWA for performance -- Three.js too heavy for mobile GPU */}
-              {currentMode === 'game' && !disableThreeJs && <CrossyBackground isNightMode={isNightMode} />}
+              {/* Dark background for game viewport. Hex grid lines are drawn on canvas (moves with camera). */}
+              {currentMode === 'game' && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: '#0A0F1A' }} />
+              )}
               <CanvasOffice
                 ref={canvasOfficeRef}
                 agentStatus={agentStatus}
@@ -8913,6 +10548,31 @@ export default function GameDashboard() {
                 drawerSnap={drawerSnap}
                 isMobile={isMobile}
                 initialFocusRoom={isMobile ? DEFAULT_AGENT : null}
+                unreadAgents={unreadAgents}
+                onOpenChat={(roomId) => {
+                  handleChat(roomId)
+                  setPanelActiveTab('chat')
+                  setPanelVisible(true)
+                }}
+                onSendMessage={(roomId) => {
+                  handleChat(roomId)
+                  setPanelActiveTab('chat')
+                  setPanelVisible(true)
+                  setTimeout(() => {
+                    const input = document.querySelector('[data-panel-chat-input]')
+                    if (input) input.focus()
+                  }, 150)
+                }}
+                onViewTasks={(roomId) => {
+                  setSelectedRoom(roomId)
+                  setCameraTarget(roomId)
+                  setIsOverview(false)
+                  setPanelVisible(true)
+                  setPanelActiveTab('tasks')
+                }}
+                onSetAsHome={(roomId) => {
+                  try { localStorage.setItem('corner-home-room', roomId) } catch {}
+                }}
               />
 
               {/* SimCity floating stats overlay (bottom-left of game viewport) */}
@@ -8940,21 +10600,7 @@ export default function GameDashboard() {
                 </div>
               )}
 
-              {/* Camera controls (floating, right side of game viewport) -- desktop only. Mobile uses pinch-to-zoom + tap-to-center. */}
-              {!isMobile && (
-                <CameraControls
-                  cameraZoom={cameraZoom}
-                  setCameraZoom={setCameraZoom}
-                  isOverview={isOverview}
-                  setIsOverview={setIsOverview}
-                  cameraTarget={cameraTarget}
-                  setCameraTarget={setCameraTarget}
-                  onHomeRoom={handleHomeRoom}
-                  panelVisible={false}
-                  isMobile={isMobile}
-                  drawerOpen={drawerOpen}
-                />
-              )}
+              {/* Camera controls REMOVED per Patrik directive. Zoom/home/overview via keyboard only. */}
 
               {/* Ambient vignette overlay for Elon room focus (dark bg, subtle server-green glow) */}
               {currentMode === 'game' && (
@@ -8996,6 +10642,7 @@ export default function GameDashboard() {
               isExtended={panelExtended}
               onToggleExtend={() => setPanelExtended(e => !e)}
               isMobile={isMobile}
+              isTablet={isTablet}
               atMenuOpen={atMenuOpen}
               filteredAtOptions={filteredAtOptions}
               atMenuIndex={atMenuIndex}
@@ -9012,9 +10659,20 @@ export default function GameDashboard() {
               powerupOpen={powerupOpen}
               onPowerupToggle={setPowerupOpen}
               onPowerupActivate={handlePowerupActivate}
+              selectedPowerups={selectedPowerups}
+              onRemovePowerup={(id) => setSelectedPowerups(prev => prev.filter(s => s.id !== id))}
               onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }}
               onSelectProject={setSelectedProject}
               selectedProject={selectedProject}
+              onMessageContextMenu={handleMessageContextMenu}
+              onGoOverview={() => { setIsOverview(true) }}
+              onCenterCamera={() => { if (selectedRoom) { setCameraTarget(selectedRoom); setIsOverview(false) } }}
+              externalReplyTo={pendingReplyMsg}
+              onClearExternalReply={() => setPendingReplyMsg(null)}
+              onSendFileToChat={handleSendFileToChat}
+              onDismissMessage={handleDismissMessage}
+              onTaskNotDone={handleTaskNotDone}
+              onInputFocus={() => clearUnreadForRoom(selectedRoom)}
             />
           )}
       </div>
@@ -9025,8 +10683,9 @@ export default function GameDashboard() {
       {/* Wrapped in a container that constrains fixed positioning to the game viewport only.
           transform creates a new containing block, so GameHUD's position:fixed becomes relative to this container.
           On desktop with sidebar visible: HUD only covers game area, not sidebar.
-          HIDDEN on mobile when drawer is open (pills vs drawer mutual exclusion). */}
-      {(
+          HIDDEN on mobile when drawer is open (pills vs drawer mutual exclusion).
+          HIDDEN in board view mode. */}
+      {viewMode !== 'board' && (
         <div style={{
           position: 'fixed',
           bottom: 0,
@@ -9081,7 +10740,19 @@ export default function GameDashboard() {
               // Focus sidebar chat
               setPanelActiveTab('chat')
             }}
+            onNavigateToAgent={(slug) => {
+              // Navigate to agent's room + open chat
+              setCameraTarget(slug)
+              setSelectedRoom(slug)
+              setChatAgent(slug)
+              setIsOverview(false)
+              setCameraZoom(1.6)
+              setPanelActiveTab('chat')
+            }}
             isNightMode={isNightMode}
+            expandPillSection={expandPillSection}
+            onExpandPillHandled={() => setExpandPillSection(null)}
+            hiddenPills={hiddenPills}
           />
         </Suspense>
         </div>
@@ -9135,8 +10806,8 @@ export default function GameDashboard() {
         />
       )}
 
-      {/* Mobile bottom sheet drawer (iOS-style, 3 snap points) */}
-      {isMobile && drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
+      {/* Mobile/tablet bottom sheet drawer (iOS-style, 3 snap points) */}
+      {(isMobile) && drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
         <MobileDrawer
           key={`drawer-${selectedRoom}`}
           room={ROOM_LOOKUP[selectedRoom]}
@@ -9166,29 +10837,14 @@ export default function GameDashboard() {
           powerupOpen={powerupOpen}
           onPowerupToggle={setPowerupOpen}
           onPowerupActivate={handlePowerupActivate}
-        />
-      )}
-
-      {/* WM-A Bug 1 fix: MobileFixedInput renders OUTSIDE MobileDrawer's overflow:hidden.
-          Position:fixed at viewport bottom. No ancestor clips this input. iOS keyboard can reach it. */}
-      {isMobile && (
-        <MobileFixedInput
-          visible={drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom]}
-          chatInput={panelChatInput}
-          onChatInputChange={handleAtInputChange}
-          onSendMessage={handlePanelSendMessage}
-          streaming={panelStreaming}
-          powerupOpen={powerupOpen}
-          onPowerupToggle={setPowerupOpen}
-          onPowerupActivate={handlePowerupActivate}
-          agentColor={AGENTS.find(a => a.slug === selectedRoom)?.color || PROJECTS.find(p => p.slug === selectedRoom)?.color || '#6B7280'}
-          agent={AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom)}
-          atMenuOpen={atMenuOpen}
-          filteredAtOptions={filteredAtOptions}
-          atMenuIndex={atMenuIndex}
-          onAtSelect={handleAtSelect}
-          onAtKeyDown={handleAtKeyDown}
-          isNightMode={isNightMode}
+          selectedPowerups={selectedPowerups}
+          onRemovePowerup={(id) => setSelectedPowerups(prev => prev.filter(s => s.id !== id))}
+          onMessageContextMenu={handleMessageContextMenu}
+          externalReplyTo={pendingReplyMsg}
+          onClearExternalReply={() => setPendingReplyMsg(null)}
+          onDismissMessage={handleDismissMessage}
+          onTaskNotDone={handleTaskNotDone}
+          onClearUnread={clearUnreadForRoom}
         />
       )}
 
@@ -9241,6 +10897,11 @@ export default function GameDashboard() {
         </motion.div>
       )}
 
+      {/* Floating Action Button -- bottom-right, above HUD, expands upward */}
+      {(viewMode === 'game' || !viewMode) && (
+        <FloatingActionButton isNightMode={isNightMode} isMobile={isMobile} onRoomCreated={() => pipeData?.refetch?.()} />
+      )}
+
       {/* ChatBar REMOVED per Patrik directive: chat ONLY lives in the sidebar.
           Bottom HUD should NOT have a message input. Sidebar is the only place to chat.
           The ChatBar component still exists in the codebase for potential mobile reuse. */}
@@ -9270,6 +10931,47 @@ export default function GameDashboard() {
             onAction={handleSidebarContextAction}
             isNightMode={isNightMode}
             projects={pipeData?.punchData?.projects || []}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Right-click context menu (chat messages) */}
+      <AnimatePresence>
+        {msgContextMenu && (
+          <ContextMenu
+            key={`msg-ctx-${msgContextMenu.position.x}-${msgContextMenu.position.y}`}
+            type="message"
+            data={msgContextMenu.msg}
+            position={msgContextMenu.position}
+            onClose={() => setMsgContextMenu(null)}
+            onAction={(actionId, data) => { handleMsgContextAction(actionId, data); if (actionId !== 'send-to') setMsgContextMenu(null) }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Send-to smart destination picker */}
+      <AnimatePresence>
+        {sendToMenu && (
+          <SendToMenu
+            key={`send-to-${sendToMenu.position.x}-${sendToMenu.position.y}`}
+            position={sendToMenu.position}
+            currentAgent={selectedRoom}
+            onClose={() => setSendToMenu(null)}
+            onSelect={(targetAgent) => {
+              const msg = sendToMenu.msg
+              if (!msg?.content) return
+              // Switch to target agent and prefill input with forwarded message
+              const targetSlug = targetAgent.slug
+              const targetRoom = ROOM_LOOKUP[targetSlug]
+              if (targetRoom || targetSlug) {
+                setSelectedRoom(targetSlug)
+                setCameraTarget(targetSlug)
+                setIsOverview(false)
+                setPanelActiveTab('chat')
+                // Prefill chat with forwarded message (quoted)
+                setPanelChatInput(`> ${msg.content.slice(0, 200)}`)
+              }
+            }}
           />
         )}
       </AnimatePresence>
@@ -9553,6 +11255,127 @@ export default function GameDashboard() {
           -webkit-touch-callout: default !important;
           -webkit-user-select: text !important;
           user-select: text !important;
+        }
+        /* Message bubble hover: show reply button */
+        .msg-bubble:hover .msg-reply-btn {
+          display: flex !important;
+        }
+        /* Markdown message rendering inside assistant bubbles */
+        .md-msg {
+          font-size: 13px;
+          line-height: 1.6;
+          color: #F1F5F9;
+          font-family: 'Inter', system-ui, sans-serif;
+          word-break: break-word;
+        }
+        .md-msg p {
+          margin: 0 0 8px 0;
+        }
+        .md-msg p:last-child {
+          margin-bottom: 0;
+        }
+        .md-msg strong, .md-msg b {
+          color: #fff;
+          font-weight: 700;
+        }
+        .md-msg em, .md-msg i {
+          font-style: italic;
+          color: #CBD5E1;
+        }
+        .md-msg h1, .md-msg h2, .md-msg h3, .md-msg h4 {
+          color: #fff;
+          font-weight: 700;
+          margin: 10px 0 6px 0;
+          line-height: 1.3;
+        }
+        .md-msg h1 { font-size: 16px; }
+        .md-msg h2 { font-size: 15px; }
+        .md-msg h3 { font-size: 14px; }
+        .md-msg h4 { font-size: 13px; }
+        .md-msg ul, .md-msg ol {
+          margin: 4px 0 8px 0;
+          padding-left: 18px;
+        }
+        .md-msg ul { list-style-type: disc; }
+        .md-msg ol { list-style-type: decimal; }
+        .md-msg li {
+          margin: 3px 0;
+          line-height: 1.5;
+          color: #F1F5F9;
+        }
+        .md-msg li::marker {
+          color: var(--agent-color, #7CB9FF);
+          opacity: 0.7;
+        }
+        .md-msg code {
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 4px;
+          padding: 1px 5px;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+          font-size: 12px;
+          color: #93C5FD;
+          word-break: break-all;
+        }
+        .md-msg pre {
+          background: rgba(0,0,0,0.35);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 6px;
+          padding: 10px 12px;
+          margin: 8px 0;
+          overflow-x: auto;
+          max-height: 300px;
+        }
+        .md-msg pre code {
+          background: transparent;
+          border: none;
+          padding: 0;
+          font-size: 12px;
+          color: #CBD5E1;
+          word-break: normal;
+          white-space: pre;
+        }
+        .md-msg blockquote {
+          border-left: 3px solid var(--agent-color, #7CB9FF);
+          margin: 6px 0;
+          padding: 4px 10px;
+          color: #8BA4C4;
+          font-style: italic;
+          background: rgba(255,255,255,0.03);
+          border-radius: 0 4px 4px 0;
+        }
+        .md-msg a {
+          color: var(--agent-color, #7CB9FF);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          word-break: break-all;
+        }
+        .md-msg hr {
+          border: none;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          margin: 10px 0;
+        }
+        .md-msg table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 8px 0;
+          font-size: 12px;
+        }
+        .md-msg th {
+          background: rgba(255,255,255,0.08);
+          color: #fff;
+          font-weight: 600;
+          padding: 5px 8px;
+          border: 1px solid rgba(255,255,255,0.1);
+          text-align: left;
+        }
+        .md-msg td {
+          padding: 4px 8px;
+          border: 1px solid rgba(255,255,255,0.07);
+          color: #CBD5E1;
+        }
+        .md-msg tr:nth-child(even) td {
+          background: rgba(255,255,255,0.03);
         }
       `}</style>
     </div>

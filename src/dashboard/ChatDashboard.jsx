@@ -7,7 +7,7 @@ import {
   MessageSquare, Send, X, ArrowLeft, ChevronRight, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, BarChart3, GitCommit, Terminal, Radio,
-  Search as SearchIcon,
+  Search as SearchIcon, ChevronUp, Folder,
 } from 'lucide-react'
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
