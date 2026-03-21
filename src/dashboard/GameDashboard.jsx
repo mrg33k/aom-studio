@@ -5416,9 +5416,28 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
 
   // Task card render helper
   const renderTaskCard = (t, opts = {}) => {
-    const { isLive, showAgent, showProject, projectColor, onToggle, onContextMenu: ctxHandler, draggable: isDraggable, idx, sectionName, sectionColor } = opts
+    const { isLive, isQueued, isDoneAwaitingApproval, showAgent, showProject, projectColor, onToggle, onContextMenu: ctxHandler, draggable: isDraggable, idx, sectionName, sectionColor } = opts
     const cardAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
-    const cardColor = isLive ? '#FF6B3D' : (cardAgent?.agentColor || cardAgent?.color || agentColor)
+
+    // Lifecycle colors matching Right Now ticker (per Patrik directive):
+    //   Fuchsia (#E91E90) = queued
+    //   Orange  (#FF6B3D) = working/active (live)
+    //   Amber   (#F59E0B) = done awaiting approval
+    //   Green   (#22C55E) = approved/completed
+    //   Red     (#EF4444) = rejected/failed
+    const lifecycleColor = isQueued
+      ? '#E91E90'
+      : isDoneAwaitingApproval
+        ? '#F59E0B'
+        : t.status === 'rejected' || t.status === 'failed'
+          ? '#EF4444'
+          : t.done && !isDoneAwaitingApproval
+            ? '#22C55E'
+            : isLive
+              ? '#FF6B3D'
+              : null // null = fall through to agent/project color
+
+    const cardColor = lifecycleColor || (cardAgent?.agentColor || cardAgent?.color || agentColor)
     const cardKey = t.id || `task-${idx}`
     const isExpanded = expandedTaskId === cardKey
     const isDropTarget = dragOverTaskId === t.id && dragIdx !== null && tasks[dragIdx]?.id !== t.id
@@ -5445,27 +5464,23 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         onTouchMove={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
         style={{
           marginBottom: isMobile ? 10 : 6,
-          background: isLive
-            ? (isDaytime ? 'rgba(255,107,61,0.08)' : 'rgba(255,107,61,0.06)')
-            : t.done
-              ? (isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(255,255,255,0.02)')
-              : isDropTarget
-                ? (isDaytime ? `${cardColor}20` : `${cardColor}18`)
+          background: isDropTarget
+            ? (isDaytime ? `${cardColor}20` : `${cardColor}18`)
+            : lifecycleColor
+              ? (isDaytime ? `${lifecycleColor}0D` : `${lifecycleColor}08`)
+              : t.done
+                ? (isDaytime ? 'rgba(59,130,246,0.03)' : 'rgba(255,255,255,0.02)')
                 : (isDaytime ? `${cardColor}0A` : `${cardColor}06`),
-          border: isLive
-            ? '1px solid rgba(255,107,61,0.2)'
-            : t.done
-              ? (isDaytime ? '1px solid rgba(59,130,246,0.06)' : '1px solid rgba(255,255,255,0.03)')
-              : isDropTarget
-                ? `2px dashed ${cardColor}60`
+          border: isDropTarget
+            ? `2px dashed ${cardColor}60`
+            : lifecycleColor
+              ? `1px solid ${lifecycleColor}30`
+              : t.done
+                ? (isDaytime ? '1px solid rgba(59,130,246,0.06)' : '1px solid rgba(255,255,255,0.03)')
                 : `1px solid ${cardColor}18`,
-          borderLeft: isLive
-            ? '3px solid #FF6B3D'
-            : t.done
-              ? (isDaytime ? '3px solid rgba(59,130,246,0.06)' : '3px solid rgba(255,255,255,0.03)')
-              : `3px solid ${cardColor}`,
+          borderLeft: `3px solid ${cardColor}`,
           borderRadius: 8,
-          opacity: dragIdx === idx ? 0.4 : (t.done ? 0.45 : 1),
+          opacity: dragIdx === idx ? 0.4 : (t.done && !isDoneAwaitingApproval ? 0.45 : 1),
           transition: 'background 150ms, opacity 150ms, border 150ms',
           overflow: 'hidden',
         }}
@@ -5527,14 +5542,35 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             }}>
               {t.text}
             </div>
-            {/* Badges row */}
+            {/* Badges row -- lifecycle status */}
             <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-              {isLive && (
+              {isQueued && (
+                <span style={{
+                  fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
+                  background: '#E91E90', color: '#FFF',
+                  fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+                }}>QUEUED</span>
+              )}
+              {isLive && !isQueued && (
                 <span style={{
                   fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
                   background: '#FF6B3D', color: '#FFF',
                   fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
                 }}>LIVE</span>
+              )}
+              {isDoneAwaitingApproval && (
+                <span style={{
+                  fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
+                  background: '#F59E0B', color: '#FFF',
+                  fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+                }}>REVIEW</span>
+              )}
+              {(t.status === 'rejected' || t.status === 'failed') && (
+                <span style={{
+                  fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4,
+                  background: '#EF4444', color: '#FFF',
+                  fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em',
+                }}>REJECTED</span>
               )}
               {showProject && t.project && (
                 <span style={{
@@ -5838,8 +5874,8 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           {renderSectionHeader('RIGHT NOW', liveRightNow.length, '#FF6B3D', 'rightnow', true)}
           {!collapsedSections.rightnow && liveRightNow.map((t, i) =>
             renderTaskCard(
-              { id: t.id || `rn-${i}`, text: t.text || t.task || t.description || 'Running...', agent: t.agent },
-              { isLive: true, showAgent: true, idx: i, sectionName: 'Right Now', sectionColor: '#FF6B3D' }
+              { id: t.id || t.taskId || `rn-${i}`, text: t.text || t.task || t.description || 'Running...', agent: t.agent, status: t.status },
+              { isLive: !t.isQueued && !t.isDoneAwaitingApproval, isQueued: !!t.isQueued, isDoneAwaitingApproval: !!t.isDoneAwaitingApproval, showAgent: true, idx: i, sectionName: 'Right Now', sectionColor: '#FF6B3D' }
             )
           )}
         </div>
