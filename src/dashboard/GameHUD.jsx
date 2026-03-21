@@ -57,7 +57,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, X, Loader2, CheckCircle2, Search } from 'lucide-react'
+import { Zap, X, Loader2, CheckCircle2, Search, ChevronDown, ChevronRight } from 'lucide-react'
 import { HUDBellButton, HUDToasts, HUD_NOTIFICATION_STYLES } from './HUDNotifications.jsx'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import { getClientId } from './lib/clientConfig.js'
@@ -417,6 +417,9 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
   )
 }
 
+// Meta-sections that always stay flat (never nest under AOM parent pill)
+const META_SECTIONS = new Set(['rightnow', 'inbox', 'completed-feed', 'your-todos', 'finish-these', 'checking-in', 'schedule', 'today'])
+
 // ---- MAIN HUD ---------------------------------------------------------------
 // DONE(bobby2): Chat input REMOVED from bottom bar per Patrik directive. Chat lives ONLY in sidebar.
 // Bottom bar = agent roster | scrollable project pills | compact stats | notification bell
@@ -515,6 +518,7 @@ export default function GameHUD({
   const hudTextMuted = isDaytime ? '#94B8D8' : HUD.textMuted
   const hudAccent = isDaytime ? '#60A5FA' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
+  const [aomExpanded, setAomExpanded] = useState(false)
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -793,6 +797,20 @@ export default function GameHUD({
       p.tasks.some(t => t.text.toLowerCase().includes(q))
     )
   }, [projects, searchQuery])
+
+  // Group filtered project pills: meta-pills stay flat, all project/client pills nest under AOM parent
+  const { metaPills, aomChildren } = useMemo(() => {
+    const meta = []
+    const children = []
+    for (const p of filteredProjects) {
+      if (META_SECTIONS.has(p.section)) {
+        meta.push(p)
+      } else {
+        children.push(p)
+      }
+    }
+    return { metaPills: meta, aomChildren: children }
+  }, [filteredProjects])
 
   // Focus search input when opened
   useEffect(() => {
@@ -1183,28 +1201,123 @@ export default function GameHUD({
                   Loading...
                 </span>
               </div>
-            ) : filteredProjects.length === 0 ? (
+            ) : (metaPills.length === 0 && aomChildren.length === 0) ? (
               <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: hudTextMuted, padding: '0 8px' }}>
                 {searchQuery ? 'No matches' : 'No task data'}
               </span>
             ) : (
-              filteredProjects.map(project => (
-                <ProjectCard
-                  key={project.section}
-                  project={project}
-                  isExpanded={expandedProject?.section === project.section}
-                  onClick={() => {
-                    setExpandedProject(
-                      expandedProject?.section === project.section ? null : project
-                    )
-                  }}
-                  onContextMenu={onProjectContextMenu}
-                  isNightMode={isNightMode}
-                  wiggle={project.section === 'rightnow' && rightNowWiggle}
-                  isMobile={isMobile}
-                  isTablet={isTablet}
-                />
-              ))
+              <>
+                {/* Meta-pills: Right Now, Inbox, Completed, Your TODOs, etc. -- always flat */}
+                {metaPills.map(project => (
+                  <ProjectCard
+                    key={project.section}
+                    project={project}
+                    isExpanded={expandedProject?.section === project.section}
+                    onClick={() => {
+                      setExpandedProject(
+                        expandedProject?.section === project.section ? null : project
+                      )
+                    }}
+                    onContextMenu={onProjectContextMenu}
+                    isNightMode={isNightMode}
+                    wiggle={project.section === 'rightnow' && rightNowWiggle}
+                    isMobile={isMobile}
+                    isTablet={isTablet}
+                  />
+                ))}
+
+                {/* AOM parent pill + collapsible children */}
+                {aomChildren.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    {/* AOM parent pill */}
+                    <motion.button
+                      onClick={() => setAomExpanded(v => !v)}
+                      whileHover={{ scale: 1.06, y: -4, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+                      whileTap={{ scale: 0.90, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10,
+                        height: isMobile ? 36 : 56, padding: isMobile ? '0 12px' : '0 20px',
+                        background: aomExpanded
+                          ? 'linear-gradient(135deg, rgba(100,180,255,0.18), rgba(100,180,255,0.08))'
+                          : 'linear-gradient(135deg, rgba(100,180,255,0.10), rgba(100,180,255,0.04))',
+                        border: `2px solid ${aomExpanded ? 'rgba(100,180,255,0.45)' : 'rgba(100,180,255,0.22)'}`,
+                        borderRadius: 16, cursor: 'pointer', flexShrink: 0,
+                        boxShadow: aomExpanded
+                          ? '0 6px 24px rgba(100,180,255,0.25), 0 2px 8px rgba(0,0,0,0.4)'
+                          : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25)',
+                        transition: 'all 200ms ease',
+                      }}
+                    >
+                      {/* AOM color square */}
+                      <div style={{
+                        width: 10, height: 10, borderRadius: 3,
+                        background: '#60A5FA',
+                        boxShadow: '0 0 10px rgba(96,165,250,0.6)',
+                        flexShrink: 0,
+                      }} />
+                      <span style={{
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        fontSize: isMobile ? 12 : 20, fontWeight: 900,
+                        color: '#F1F5F9',
+                        whiteSpace: 'nowrap',
+                        letterSpacing: '-0.02em',
+                        textTransform: 'uppercase',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                      }}>AOM</span>
+                      {/* Child count badge */}
+                      <span style={{
+                        fontFamily: "'Inter Tight', monospace",
+                        fontSize: isMobile ? 11 : 14, fontWeight: 800,
+                        color: '#60A5FA',
+                        background: 'rgba(96,165,250,0.15)',
+                        padding: isMobile ? '2px 6px' : '3px 10px',
+                        borderRadius: 8,
+                        border: '1.5px solid rgba(96,165,250,0.3)',
+                        whiteSpace: 'nowrap',
+                        minWidth: 24, textAlign: 'center',
+                      }}>
+                        {aomChildren.length}
+                      </span>
+                      {/* Chevron */}
+                      {aomExpanded
+                        ? <ChevronDown size={isMobile ? 13 : 16} color="rgba(100,180,255,0.7)" />
+                        : <ChevronRight size={isMobile ? 13 : 16} color="rgba(100,180,255,0.7)" />
+                      }
+                    </motion.button>
+
+                    {/* Children: shown inline when expanded */}
+                    <AnimatePresence>
+                      {aomExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: 'auto' }}
+                          exit={{ opacity: 0, width: 0 }}
+                          transition={{ duration: 0.2, ease: 'easeOut' }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}
+                        >
+                          {aomChildren.map(project => (
+                            <ProjectCard
+                              key={project.section}
+                              project={project}
+                              isExpanded={expandedProject?.section === project.section}
+                              onClick={() => {
+                                setExpandedProject(
+                                  expandedProject?.section === project.section ? null : project
+                                )
+                              }}
+                              onContextMenu={onProjectContextMenu}
+                              isNightMode={isNightMode}
+                              wiggle={false}
+                              isMobile={isMobile}
+                              isTablet={isTablet}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
