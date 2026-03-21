@@ -8697,7 +8697,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 0 : 10 }}>
-          {/* Powerup menu: desktop shows full trigger button. Mobile hides trigger (dual-purpose send/powerup button in input). */}
+          {/* Powerup menu: desktop shows full trigger button. Mobile: trigger is embedded inside the input on the left. */}
           <PowerupMenu
             isOpen={powerupOpen || false}
             onToggle={(v) => onPowerupToggle?.(v)}
@@ -8795,6 +8795,31 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 ))}
               </div>
             )}
+            {/* Mobile: powerup trigger icon on the LEFT inside the input */}
+            {isMobile && (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) }}
+                aria-label={powerupOpen ? 'Close powerup menu' : 'Open powerup menu'}
+                style={{
+                  position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)',
+                  width: 32, height: 32, borderRadius: 8,
+                  background: powerupOpen
+                    ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)'
+                    : 'transparent',
+                  border: powerupOpen
+                    ? '1.5px solid rgba(124,58,237,0.6)'
+                    : '1.5px solid rgba(124,58,237,0.3)',
+                  color: powerupOpen ? '#FFF' : 'rgba(124,58,237,0.7)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 150ms ease',
+                  zIndex: 2,
+                  flexShrink: 0,
+                }}>
+                <Sparkles size={15} />
+              </button>
+            )}
             <input type="text" data-panel-chat-input value={chatInput || ''} onChange={e => {
                 isUserTypingRef.current = true
                 onChatInputChange?.(e.target.value)
@@ -8832,7 +8857,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
                 border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
                 borderRadius: 12,
-                padding: '14px 56px 14px 18px',
+                // Mobile: extra left padding to clear the powerup icon button
+                padding: isMobile ? '14px 56px 14px 48px' : '14px 56px 14px 18px',
                 fontSize: 18, fontWeight: 400,
                 fontFamily: "'Inter', system-ui, sans-serif",
                 color: isNightMode ? '#F1F5F9' : '#E2E8F0',
@@ -8858,31 +8884,26 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 e.target.style.boxShadow = 'none'
               }}
             />
-            {/* Dual-purpose button: on mobile, shows sparkle (powerup) when empty, send arrow when has text. Desktop always shows send. */}
+            {/* Send button: always sends on both mobile and desktop */}
             <button
-              type={isMobile && !chatInput?.trim() ? 'button' : 'submit'}
+              type="submit"
               disabled={false}
-              onClick={isMobile && !chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
               style={{
                 position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
                 width: 44, height: 44, borderRadius: 12,
                 background: chatInput?.trim()
                   ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
-                  : (isMobile ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)' : 'rgba(59,130,246,0.12)'),
+                  : 'rgba(59,130,246,0.12)',
                 border: chatInput?.trim()
                   ? '2px solid rgba(59,130,246,0.6)'
-                  : (isMobile ? '2px solid rgba(124, 58, 237, 0.4)' : '2px solid rgba(59,130,246,0.2)'),
+                  : '2px solid rgba(59,130,246,0.2)',
                 color: '#FFF',
-                cursor: (chatInput?.trim() || isMobile) ? 'pointer' : 'default',
+                cursor: chatInput?.trim() ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: chatInput?.trim()
-                  ? '0 3px 12px rgba(59,130,246,0.3)'
-                  : (isMobile ? '0 2px 12px rgba(124, 58, 237, 0.25)' : 'none'),
+                boxShadow: chatInput?.trim() ? '0 3px 12px rgba(59,130,246,0.3)' : 'none',
                 transition: 'all 150ms ease',
               }}>
-              {streaming ? <Loader2 size={18} className="animate-spin" /> : (
-                isMobile && !chatInput?.trim() ? <Sparkles size={18} /> : <Send size={18} />
-              )}
+              {streaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
           </form>
           </div>{/* end powerup + form flex row */}
