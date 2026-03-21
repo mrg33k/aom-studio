@@ -2553,6 +2553,205 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
   )
 }
 
+// MobileFixedInput: chat input bar rendered OUTSIDE overflow:hidden containers.
+// Position:fixed, anchored to bottom of viewport. Survives any drawer clip chain.
+// Renders only when the mobile drawer is open (visible prop).
+// WM-A Bug 1 fix: lifts input above all overflow:hidden ancestors.
+function MobileFixedInput({
+  visible,
+  chatInput,
+  onChatInputChange,
+  onSendMessage,
+  streaming,
+  powerupOpen,
+  onPowerupToggle,
+  onPowerupActivate,
+  agentColor,
+  agent,
+  atMenuOpen,
+  filteredAtOptions,
+  atMenuIndex,
+  onAtSelect,
+  onAtKeyDown,
+  isNightMode,
+}) {
+  const [kbOffset, setKbOffset] = useState(0)
+
+  // Track keyboard open state to slide input above keyboard
+  useEffect(() => {
+    if (!window.visualViewport) return
+    const handler = () => {
+      const offset = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop
+      setKbOffset(Math.max(0, offset))
+    }
+    window.visualViewport.addEventListener('resize', handler)
+    window.visualViewport.addEventListener('scroll', handler)
+    return () => {
+      window.visualViewport.removeEventListener('resize', handler)
+      window.visualViewport.removeEventListener('scroll', handler)
+    }
+  }, [])
+
+  if (!visible) return null
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: kbOffset > 0 ? kbOffset : 'env(safe-area-inset-bottom, 0px)',
+        zIndex: 210,
+        background: isNightMode
+          ? 'linear-gradient(180deg, rgba(10,15,30,0.97) 0%, rgba(10,15,30,1) 100%)'
+          : 'linear-gradient(180deg, rgba(20,40,70,0.97) 0%, rgba(20,40,70,1) 100%)',
+        borderTop: isNightMode ? '2px solid rgba(59,130,246,0.18)' : '2px solid rgba(59,130,246,0.25)',
+        padding: '12px 16px',
+        // Not inside any overflow:hidden -- direct child of body stacking context
+        // This is the key: no ancestor has overflow:hidden above this element
+        touchAction: 'manipulation',
+        WebkitUserSelect: 'text',
+        userSelect: 'text',
+      }}
+    >
+      {/* @ autocomplete dropdown (floats above input bar) */}
+      {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
+        <div style={{
+          position: 'absolute', bottom: '100%', left: 16, right: 16,
+          marginBottom: 6,
+          background: isNightMode ? '#1A2744' : '#1E2A3A',
+          border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
+          borderRadius: 12,
+          boxShadow: '0 -8px 32px rgba(0,0,0,0.5)',
+          maxHeight: 220, overflowY: 'auto',
+          zIndex: 211,
+          padding: '6px 0',
+        }}>
+          <div style={{
+            padding: '4px 14px 6px',
+            fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#6B8AB0',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            Switch to...
+          </div>
+          {filteredAtOptions.map((opt, i) => (
+            <div
+              key={opt.slug}
+              onMouseDown={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
+              style={{
+                padding: '9px 14px',
+                display: 'flex', alignItems: 'center', gap: 10,
+                cursor: 'pointer',
+                background: i === atMenuIndex
+                  ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
+                  : 'transparent',
+              }}
+            >
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: opt.color, flexShrink: 0,
+              }} />
+              <div style={{
+                fontSize: 14, fontWeight: 700,
+                color: isNightMode ? '#F1F5F9' : '#E8ECF0',
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}>
+                {opt.name}
+              </div>
+              <span style={{
+                marginLeft: 'auto',
+                fontSize: 11, fontWeight: 600,
+                color: isNightMode ? '#475569' : '#4A6585',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
+                @{opt.slug}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <PowerupMenu
+        isOpen={powerupOpen || false}
+        onToggle={(v) => onPowerupToggle?.(v)}
+        onActivate={(slash) => onPowerupActivate?.(slash)}
+        isMobile={true}
+        isNightMode={isNightMode}
+        hideTrigger={true}
+      />
+
+      <form onSubmit={onSendMessage} style={{ position: 'relative' }}>
+        <input
+          type="text"
+          value={chatInput || ''}
+          onChange={e => {
+            onChatInputChange?.(e.target.value)
+            if (powerupOpen) onPowerupToggle?.(false)
+          }}
+          onKeyDown={e => {
+            if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
+              if (e.key === 'ArrowDown') { e.preventDefault(); onAtKeyDown?.('down'); return }
+              if (e.key === 'ArrowUp') { e.preventDefault(); onAtKeyDown?.('up'); return }
+              if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0]); return }
+              if (e.key === 'Escape') { e.preventDefault(); onAtKeyDown?.('escape'); return }
+            }
+          }}
+          placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`}
+          disabled={false}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck="false"
+          inputMode="text"
+          enterKeyHint="send"
+          style={{
+            width: '100%',
+            background: isNightMode ? 'rgba(59,130,246,0.07)' : 'rgba(59,130,246,0.05)',
+            border: isNightMode ? '2px solid rgba(59,130,246,0.22)' : '2px solid rgba(59,130,246,0.18)',
+            borderRadius: 12,
+            padding: '14px 56px 14px 18px',
+            fontSize: 18, fontWeight: 400,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            color: isNightMode ? '#F1F5F9' : '#E2E8F0',
+            outline: 'none',
+            // Not inside overflow:hidden -- iOS keyboard will scroll to show this input
+            WebkitUserSelect: 'text',
+            userSelect: 'text',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        />
+        <button
+          type={!chatInput?.trim() ? 'button' : 'submit'}
+          disabled={streaming}
+          onClick={!chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
+          style={{
+            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+            width: 44, height: 44, borderRadius: 12,
+            background: chatInput?.trim()
+              ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+              : 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)',
+            border: chatInput?.trim()
+              ? '2px solid rgba(59,130,246,0.6)'
+              : '2px solid rgba(124, 58, 237, 0.4)',
+            color: '#FFF',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: chatInput?.trim()
+              ? '0 3px 12px rgba(59,130,246,0.3)'
+              : '0 2px 12px rgba(124, 58, 237, 0.25)',
+            transition: 'all 150ms ease',
+          }}>
+          {streaming ? <Loader2 size={18} className="animate-spin" /> : (
+            !chatInput?.trim() ? <Sparkles size={18} /> : <Send size={18} />
+          )}
+        </button>
+      </form>
+    </div>
+  )
+}
+
 // Snap points: HIDDEN (off-screen), HALF (~50% screen), FULL (100% screen)
 // Anchored to bottom of screen. Animates HEIGHT with spring physics.
 // Content (chat input, task lists) always fills the visible area correctly.
@@ -2903,6 +3102,7 @@ function MobileDrawer({
               onInputFocus={() => {
                 if (snap === 'half') onSnapChange('full')
               }}
+              hideInputBar={true}
             />
           </div>
         )}
@@ -6203,7 +6403,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, onInputFocus, onSelectAgent, onSelectProject, selectedProject, hideInputBar }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -7029,8 +7229,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </button>
               </div>
             )}
-            {/* Chat input */}
-            <div style={{
+            {/* Chat input -- hidden when hideInputBar=true (WM-A: MobileFixedInput handles it outside overflow:hidden) */}
+            {/* WM-A: spacer reserves input bar height so messages scroll correctly when MobileFixedInput is used */}
+            {hideInputBar && <div style={{ flexShrink: 0, height: 80 }} />}
+            {!hideInputBar && <div style={{
               padding: '16px 20px',
               paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
               borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
@@ -7234,7 +7436,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </button>
               </form>
               </div>{/* end powerup + form flex row */}
-            </div>
+            </div>}{/* end !hideInputBar */}
           </>
           </ChatErrorBoundary>
         )}
@@ -8964,6 +9166,29 @@ export default function GameDashboard() {
           powerupOpen={powerupOpen}
           onPowerupToggle={setPowerupOpen}
           onPowerupActivate={handlePowerupActivate}
+        />
+      )}
+
+      {/* WM-A Bug 1 fix: MobileFixedInput renders OUTSIDE MobileDrawer's overflow:hidden.
+          Position:fixed at viewport bottom. No ancestor clips this input. iOS keyboard can reach it. */}
+      {isMobile && (
+        <MobileFixedInput
+          visible={drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom]}
+          chatInput={panelChatInput}
+          onChatInputChange={handleAtInputChange}
+          onSendMessage={handlePanelSendMessage}
+          streaming={panelStreaming}
+          powerupOpen={powerupOpen}
+          onPowerupToggle={setPowerupOpen}
+          onPowerupActivate={handlePowerupActivate}
+          agentColor={AGENTS.find(a => a.slug === selectedRoom)?.color || PROJECTS.find(p => p.slug === selectedRoom)?.color || '#6B7280'}
+          agent={AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom)}
+          atMenuOpen={atMenuOpen}
+          filteredAtOptions={filteredAtOptions}
+          atMenuIndex={atMenuIndex}
+          onAtSelect={handleAtSelect}
+          onAtKeyDown={handleAtKeyDown}
+          isNightMode={isNightMode}
         />
       )}
 
