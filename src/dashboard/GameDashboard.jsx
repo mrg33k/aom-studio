@@ -9951,9 +9951,11 @@ export default function GameDashboard() {
     if (roomId === selectedRoom) {
       // Already selected: zoom to Level 3 (detail)
       setCameraZoom(ZOOM_MAX)
-      // On mobile, open drawer to full on double-tap
+      // On mobile, promote drawer: null -> half, half -> full
       if (isMobile && drawerSnap === 'half') {
         setDrawerSnap('full')
+      } else if (!drawerSnap) {
+        setDrawerSnap('half')
       }
     } else {
       // First click: zoom to Level 2 (neighborhood)
