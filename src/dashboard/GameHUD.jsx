@@ -74,7 +74,7 @@ import { hudCtxBtn } from './components/CompactStats.jsx'
 // DONE(bobby2): Chat input REMOVED from bottom bar per Patrik directive. Chat lives ONLY in sidebar.
 // Bottom bar = agent roster | scrollable project pills | compact stats | notification bell
 export default function GameHUD({
-  agentStatus, throughput, onAgentClick, isMobile,
+  agentStatus, throughput, onAgentClick, isMobile, isTablet,
   // Chat integration props (onExpandChat still used for bell/notification click -> open sidebar)
   chatAgent, onChatSubmit, onExpandChat,
   // Context menu props
@@ -742,6 +742,7 @@ export default function GameHUD({
                   isNightMode={isNightMode}
                   wiggle={project.section === 'rightnow' && rightNowWiggle}
                   isMobile={isMobile}
+                  isTablet={isTablet}
                 />
               ))
             )}

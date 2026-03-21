@@ -10651,6 +10651,7 @@ export default function GameDashboard() {
               })
             }}
             isMobile={isMobile}
+            isTablet={isTablet}
             chatAgent={chatAgent}
             onChatSubmit={(slug, text) => {
               // Route chat to sidebar: select the agent and switch to chat tab
