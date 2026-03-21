@@ -293,7 +293,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
           minWidth: 32, textAlign: 'center',
           whiteSpace: 'nowrap',
         }}>
-          {remaining} <span style={{ fontSize: 12, fontWeight: 700, opacity: 0.85, letterSpacing: '0.04em' }}>tasks</span>
+          {remaining}
         </span>
       )}
 
