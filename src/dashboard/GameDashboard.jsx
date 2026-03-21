@@ -4993,7 +4993,9 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
               flexShrink: 0, background: 'rgba(0, 0, 0, 0.15)',
             }}>
               <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
-                placeholder={`Message ${currentAgent?.name}...`} disabled={streaming}
+                placeholder={`Message ${currentAgent?.name}...`} disabled={false}
+                inputMode="text" enterKeyHint="send"
+                autoComplete="off" autoCorrect="off" autoCapitalize="sentences" spellCheck={false}
                 style={{
                   flex: 1, background: 'rgba(255, 255, 255, 0.05)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -5059,7 +5061,9 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
 
             <input type="text" value={input} onChange={e => setInput(e.target.value)}
               onFocus={() => setExpanded(true)}
-              placeholder={`Message ${currentAgent?.name}...`} disabled={streaming}
+              placeholder={`Message ${currentAgent?.name}...`} disabled={false}
+              inputMode="text" enterKeyHint="send"
+              autoComplete="off" autoCorrect="off" autoCapitalize="sentences" spellCheck={false}
               style={{
                 flex: 1, background: 'rgba(255, 255, 255, 0.04)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
