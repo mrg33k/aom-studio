@@ -9,7 +9,7 @@ import {
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
   BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
   CalendarDays, Sparkles, Users, Search, Folder,
-  CornerDownLeft, Copy, RotateCcw, Reply, Building2,
+  CornerDownLeft, Copy, RotateCcw, Reply, Building2, FileText,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
