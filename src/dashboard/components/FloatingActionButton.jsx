@@ -60,8 +60,8 @@ export default function FloatingActionButton({ isNightMode, isMobile }) {
         left: FAB_LEFT,
         zIndex: 55,
         display: 'flex',
-        flexDirection: 'column-reverse', // stack grows upward
-        alignItems: 'center',
+        flexDirection: 'column', // options above, button at bottom
+        alignItems: 'flex-start',
         gap: OPTION_GAP,
         pointerEvents: 'auto',
       }}
