@@ -2909,6 +2909,252 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
   )
 }
 
+// ---- MOBILE FIXED INPUT -------------------------------------------------------
+// Rendered OUTSIDE MobileDrawer/UnifiedPanel in the top-level return of GameDashboard.
+// This is the PERMANENT fix for iOS Safari focus bugs on half-drawer snap.
+// Key insight: any ancestor with overflow, transform, or position constraints can block
+// iOS Safari from opening the keyboard for an input. By being a direct child of the root
+// div (no overflow/transform ancestors), this input ALWAYS gets keyboard focus correctly.
+//
+// Previous failed approaches:
+//   #1: disabled={false} + iOS keyboard attrs -- overflow:hidden still blocked focus
+//   #2: overflow:clip on MobileDrawer -- still a stacking context, still blocked focus
+//   #3: (this component) -- lives entirely outside MobileDrawer tree. Cannot be blocked.
+function MobileFixedInput({
+  chatInput, onChatInputChange, onSendMessage, streaming,
+  agentColor, agentName, isNightMode,
+  atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown,
+  powerupOpen, onPowerupToggle, selectedPowerups, onRemovePowerup,
+  onInputFocus,
+}) {
+  const [kbOffset, setKbOffset] = useState(0)
+  const isUserTypingRef = useRef(false)
+  const color = agentColor || '#6B7280'
+
+  // Track keyboard height via visualViewport API
+  useEffect(() => {
+    if (!window.visualViewport) return
+    const handler = () => {
+      const kbHeight = Math.max(0, window.innerHeight - window.visualViewport.height)
+      setKbOffset(kbHeight)
+    }
+    window.visualViewport.addEventListener('resize', handler)
+    window.visualViewport.addEventListener('scroll', handler)
+    return () => {
+      window.visualViewport.removeEventListener('resize', handler)
+      window.visualViewport.removeEventListener('scroll', handler)
+    }
+  }, [])
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: kbOffset,
+        zIndex: 999,
+        background: isNightMode
+          ? 'rgba(10, 15, 30, 0.98)'
+          : 'rgba(10, 15, 30, 0.98)',
+        borderTop: isNightMode
+          ? '2px solid rgba(59,130,246,0.12)'
+          : '2px solid rgba(59,130,246,0.18)',
+        padding: '12px 16px',
+        paddingBottom: kbOffset > 0 ? 12 : 'max(12px, env(safe-area-inset-bottom, 12px))',
+      }}
+    >
+      {/* @ autocomplete dropdown */}
+      {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
+        <div style={{
+          position: 'absolute', bottom: '100%', left: 16, right: 16,
+          marginBottom: 6,
+          background: isNightMode ? '#1A2744' : '#1E2A3A',
+          border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
+          borderRadius: 12,
+          boxShadow: '0 -8px 32px rgba(0,0,0,0.5), 0 -2px 8px rgba(59,130,246,0.15)',
+          maxHeight: 200, overflowY: 'auto',
+          zIndex: 100, padding: '6px 0',
+        }}>
+          <div style={{
+            padding: '4px 14px 8px',
+            fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#6B8AB0',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            Switch to...
+          </div>
+          {filteredAtOptions.map((opt, i) => (
+            <div
+              key={opt.slug}
+              onMouseDown={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
+              onTouchEnd={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
+              style={{
+                padding: '10px 14px',
+                display: 'flex', alignItems: 'center', gap: 12,
+                cursor: 'pointer',
+                background: i === atMenuIndex
+                  ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
+                  : 'transparent',
+              }}
+            >
+              <div style={{
+                width: 10, height: 10, borderRadius: '50%',
+                background: opt.color, boxShadow: `0 0 6px ${opt.color}40`, flexShrink: 0,
+              }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#F1F5F9', fontFamily: "'Inter', system-ui, sans-serif" }}>
+                  {opt.name}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#64748B', fontFamily: "'Inter', system-ui, sans-serif", marginTop: 1 }}>
+                  {opt.role}
+                </div>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#475569', fontFamily: "'JetBrains Mono', monospace" }}>
+                @{opt.slug}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Selected skill badges */}
+      {selectedPowerups && selectedPowerups.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {selectedPowerups.map(skill => (
+            <div
+              key={skill.id}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '3px 8px 3px 6px',
+                background: `${skill.color}20`, border: `1px solid ${skill.color}50`,
+                borderRadius: 20, fontSize: 10, fontWeight: 700,
+                color: skill.color, fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: '0.04em', textTransform: 'uppercase', userSelect: 'none',
+              }}
+            >
+              <span style={{ fontSize: 9, opacity: 0.75 }}>/</span>
+              {skill.slash.replace('/', '')}
+              <button
+                type="button"
+                onClick={() => onRemovePowerup?.(skill.id)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: skill.color, padding: 0, lineHeight: 1,
+                  display: 'flex', alignItems: 'center', opacity: 0.7, marginLeft: 2,
+                }}
+              >
+                <X size={10} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Input row: powerup trigger + input + send */}
+      <form
+        onSubmit={(e) => {
+          isUserTypingRef.current = false
+          onSendMessage(e)
+        }}
+        style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+      >
+        {/* Powerup trigger button (left, inside input area) */}
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) }}
+          aria-label={powerupOpen ? 'Close powerup menu' : 'Open powerup menu'}
+          style={{
+            position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)',
+            width: 32, height: 32, borderRadius: 8, zIndex: 2, flexShrink: 0,
+            background: powerupOpen
+              ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)'
+              : 'rgba(20, 28, 56, 0.82)',
+            border: powerupOpen
+              ? '1.5px solid rgba(124,58,237,0.6)'
+              : '1.5px solid rgba(124,58,237,0.35)',
+            color: powerupOpen ? '#FFF' : 'rgba(155,120,255,0.85)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 150ms ease',
+          }}
+        >
+          <Sparkles size={15} />
+        </button>
+
+        <input
+          type="text"
+          data-panel-chat-input
+          data-mobile-fixed-input
+          value={chatInput || ''}
+          onChange={e => {
+            isUserTypingRef.current = true
+            onChatInputChange?.(e.target.value)
+            if (powerupOpen) onPowerupToggle?.(false)
+          }}
+          onKeyDown={e => {
+            if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
+              if (e.key === 'ArrowDown') { e.preventDefault(); onAtKeyDown?.('down'); return }
+              if (e.key === 'ArrowUp') { e.preventDefault(); onAtKeyDown?.('up'); return }
+              if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0]); return }
+              if (e.key === 'Escape') { e.preventDefault(); onAtKeyDown?.('escape'); return }
+            }
+            if (e.key === 'Enter') isUserTypingRef.current = false
+          }}
+          placeholder={`Talk to ${agentName}... (type @ to switch)`}
+          style={{
+            width: '100%',
+            background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
+            border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
+            borderRadius: 12,
+            padding: '14px 56px 14px 48px',
+            fontSize: 18, fontWeight: 400,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            color: isNightMode ? '#F1F5F9' : '#E2E8F0',
+            outline: 'none',
+            transition: 'border-color 200ms ease, box-shadow 200ms ease',
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+            touchAction: 'manipulation',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+          onFocus={e => {
+            isUserTypingRef.current = true
+            e.target.style.borderColor = color + '88'
+            e.target.style.boxShadow = `0 0 0 3px ${color}25, 0 0 16px ${color}15`
+            onInputFocus?.()
+          }}
+          onBlur={e => {
+            setTimeout(() => { isUserTypingRef.current = false }, 300)
+            e.target.style.borderColor = 'rgba(59,130,246,0.2)'
+            e.target.style.boxShadow = 'none'
+          }}
+        />
+
+        <button
+          type="submit"
+          style={{
+            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+            width: 44, height: 44, borderRadius: 12,
+            background: chatInput?.trim()
+              ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+              : 'rgba(59,130,246,0.12)',
+            border: chatInput?.trim()
+              ? '2px solid rgba(59,130,246,0.6)'
+              : '2px solid rgba(59,130,246,0.2)',
+            color: '#FFF',
+            cursor: chatInput?.trim() ? 'pointer' : 'default',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: chatInput?.trim() ? '0 3px 12px rgba(59,130,246,0.3)' : 'none',
+            transition: 'all 150ms ease',
+          }}
+        >
+          {streaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+        </button>
+      </form>
+    </div>
+  )
+}
+
 // Snap points: HIDDEN (off-screen), HALF (~50% screen), FULL (100% screen)
 // Anchored to bottom of screen. Animates HEIGHT with spring physics.
 // Content (chat input, task lists) always fills the visible area correctly.
@@ -2927,6 +3173,8 @@ function MobileDrawer({
   onClearUnread,
   // Snap state (controlled from parent)
   snap, onSnapChange,
+  // Active tab (lifted to parent so MobileFixedInput can know which tab is active)
+  activeTab: activeTabProp, onActiveTabChange: onActiveTabChangeProp,
   // Navigation: tap a Right Now task card -> navigate to that agent's chat
   onNavigateToAgent,
 }) {
@@ -2936,7 +3184,14 @@ function MobileDrawer({
   const dragStartHeight = useRef(0)
   const isDraggingHandle = useRef(false)
   const [handlePulsed, setHandlePulsed] = useState(false)
-  const [activeTab, setActiveTab] = useState('chat')
+  // activeTab: lifted to parent (GameDashboard) so MobileFixedInput can react to tab changes.
+  // Use prop if provided, fall back to local state for standalone usage.
+  const [activeTabLocal, setActiveTabLocal] = useState('chat')
+  const activeTab = activeTabProp !== undefined ? activeTabProp : activeTabLocal
+  const setActiveTab = (tab) => {
+    setActiveTabLocal(tab)
+    onActiveTabChangeProp?.(tab)
+  }
   const [mobileViewportHeight, setMobileViewportHeight] = useState(null)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const preKeyboardSnapRef = useRef(null)
@@ -3365,6 +3620,7 @@ function MobileDrawer({
               onRemovePowerup={onRemovePowerup}
               onDismissMessage={onDismissMessage}
               onTaskNotDone={onTaskNotDone}
+              hideInputBar={true}
               onInputFocus={() => {
                 onClearUnread?.(agentSlug)
                 if (snap !== 'full') {
@@ -7284,7 +7540,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -9198,8 +9454,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           This fixes the iPhone half-drawer clipping bug: at 52% snap the overflow:hidden
           content area clips the input. Moving it here makes it a bottom-anchored flex item
           of UnifiedPanel's outer flex column, always visible at any snap height.
-          Only shown when activeTab === 'chat'. Desktop sidebar is unaffected (same behavior). */}
-      {activeTab === 'chat' && (
+          Only shown when activeTab === 'chat'. Desktop sidebar is unaffected (same behavior).
+          hideInputBar: when true (mobile drawer), this input is hidden and MobileFixedInput
+          in GameDashboard renders it instead -- completely outside all overflow containers. */}
+      {activeTab === 'chat' && !hideInputBar && (
         <div
           onTouchStart={isMobile ? () => onInputFocus?.() : undefined}
           style={{
@@ -9498,6 +9756,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           </div>{/* end powerup + form flex row */}
         </div>
       )}
+      {/* Spacer: only shown on mobile when input is rendered outside (MobileFixedInput).
+          Prevents the last chat message from being hidden behind the fixed input bar. */}
+      {activeTab === 'chat' && hideInputBar && (
+        <div style={{ height: 80, flexShrink: 0 }} aria-hidden="true" />
+      )}
     </div>
   )
 }
@@ -9701,6 +9964,8 @@ export default function GameDashboard() {
   // Mobile drawer state: null = hidden, 'half' = 50% screen, 'full' = 100% screen
   const [drawerSnap, setDrawerSnap] = useState(null)
   const drawerOpen = drawerSnap === 'half' || drawerSnap === 'full'
+  // Mobile drawer active tab: lifted from MobileDrawer so MobileFixedInput can react to it
+  const [mobileDrawerActiveTab, setMobileDrawerActiveTab] = useState('chat')
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
 
   // Panel chat state (for unified panel inline chat)
@@ -11402,6 +11667,8 @@ export default function GameDashboard() {
           onDismissMessage={handleDismissMessage}
           onTaskNotDone={handleTaskNotDone}
           onClearUnread={clearUnreadForRoom}
+          activeTab={mobileDrawerActiveTab}
+          onActiveTabChange={setMobileDrawerActiveTab}
           onNavigateToAgent={(slug) => {
             setSelectedRoom(slug)
             setChatAgent(slug)
@@ -11409,6 +11676,37 @@ export default function GameDashboard() {
             setIsOverview(false)
             setPanelActiveTab('chat')
             setDrawerSnap('half')
+          }}
+        />
+      )}
+
+      {/* MobileFixedInput: chat input rendered as a DIRECT SIBLING of MobileDrawer in the root
+          return -- no overflow/transform/position ancestors can interfere.
+          This is attempt #3. Previous attempts failed because the input was still inside
+          MobileDrawer (which has overflow:clip) or inside UnifiedPanel (same problem).
+          The ONLY cure on iOS Safari: input must live in the top-level stacking context.
+          Hide when drawer is closed OR when active tab is not 'chat'. */}
+      {isMobile && drawerOpen && mobileDrawerActiveTab === 'chat' && selectedRoom && (
+        <MobileFixedInput
+          chatInput={panelChatInput}
+          onChatInputChange={handleAtInputChange}
+          onSendMessage={handlePanelSendMessage}
+          streaming={panelStreaming}
+          agentColor={ROOM_LOOKUP[selectedRoom]?.agentColor || '#6B7280'}
+          agentName={(AGENTS.find(a => a.slug === selectedRoom) || PROJECTS.find(p => p.slug === selectedRoom))?.name || 'agent'}
+          isNightMode={isNightMode}
+          atMenuOpen={atMenuOpen}
+          filteredAtOptions={filteredAtOptions}
+          atMenuIndex={atMenuIndex}
+          onAtSelect={handleAtSelect}
+          onAtKeyDown={handleAtKeyDown}
+          powerupOpen={powerupOpen}
+          onPowerupToggle={setPowerupOpen}
+          selectedPowerups={selectedPowerups}
+          onRemovePowerup={(id) => setSelectedPowerups(prev => prev.filter(s => s.id !== id))}
+          onInputFocus={() => {
+            clearUnreadForRoom(selectedRoom)
+            if (drawerSnap !== 'full') setDrawerSnap('full')
           }}
         />
       )}
