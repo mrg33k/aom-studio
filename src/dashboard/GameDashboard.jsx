@@ -7227,8 +7227,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   }, [externalReplyTo]) // eslint-disable-line react-hooks/exhaustive-deps
   // Confirmation box carousel index -- resets when agent changes or task count drops
   const [confirmIndex, setConfirmIndex] = useState(0)
+  // Confirmation box minimized state -- collapses full card to slim bar above input
+  const [confirmMinimized, setConfirmMinimized] = useState(false)
   const confirmDoneCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug).length
-  useEffect(() => { setConfirmIndex(0) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setConfirmIndex(0); setConfirmMinimized(false) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
   // Track which task is currently animating the approve glow+fade (keyed by taskId or text)
   const [approvingTaskId, setApprovingTaskId] = useState(null)
   // Track which task is currently animating the deny/reject red glow+fade
@@ -8828,11 +8830,46 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         return (
           <div style={{
             flexShrink: 0,
-            padding: '8px 16px',
             borderTop: '1px solid rgba(100,180,255,0.12)',
-            display: 'flex', flexDirection: 'column', gap: 8,
-            background: 'linear-gradient(180deg, rgba(8,16,32,0.55) 0%, transparent 100%)',
           }}>
+            {/* Minimized slim bar */}
+            {confirmMinimized ? (
+              <div
+                onClick={() => setConfirmMinimized(false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  height: 32, padding: '0 14px',
+                  borderLeft: '3px solid rgba(245,158,11,0.65)',
+                  background: 'rgba(8,16,32,0.72)',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                }}
+              >
+                <div style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: '#F59E0B',
+                  boxShadow: '0 0 6px rgba(245,158,11,0.8)',
+                  flexShrink: 0,
+                  animation: 'statusPulse 2s ease-in-out infinite',
+                }} />
+                <span style={{
+                  fontSize: 11, fontWeight: 700, color: '#8BA4C4',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.08em', flex: 1,
+                }}>
+                  {total} task{total > 1 ? 's' : ''} awaiting review
+                </span>
+                {/* Chevron up */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8BA4C4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="18 15 12 9 6 15" />
+                </svg>
+              </div>
+            ) : (
+            <div style={{
+              padding: '8px 16px',
+              display: 'flex', flexDirection: 'column', gap: 8,
+              background: 'linear-gradient(180deg, rgba(8,16,32,0.55) 0%, transparent 100%)',
+            }}>
             {(() => {
               const cardKey = t.taskId || t.text
               const isGlowing = approvingTaskId === cardKey
@@ -8923,6 +8960,25 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     >&#8250;</button>
                   </div>
                 )}
+                {/* Minimize button -- collapses to slim bar */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setConfirmMinimized(true) }}
+                  style={{
+                    width: 22, height: 22, borderRadius: 6, border: '1px solid rgba(100,180,255,0.18)',
+                    cursor: 'pointer', background: 'rgba(100,180,255,0.08)',
+                    color: '#8BA4C4', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0,
+                    transition: 'background 80ms ease, border-color 80ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.35)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.18)' }}
+                  aria-label="Minimize confirmation box"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
               </div>
               {/* Task text -- data readout panel */}
               <div style={{
@@ -9046,6 +9102,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             </motion.div>
               )
             })()}
+          </div>
+            )}
           </div>
         )
       })()}
