@@ -942,6 +942,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   onSendMessage, // (roomId) -> open chat + focus input
   onViewTasks,   // (roomId) -> switch to tasks tab for room
   onSetAsHome,   // (roomId) -> save as default home room in localStorage
+  unreadAgents = {},  // { agentSlug: count } -- rooms with unread messages
 }, ref) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
@@ -1529,7 +1530,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL, cam.zoom, celebGlow, walkPositions[roomId])
 
       // Queue badge for deferred rendering (on top of all rooms)
-      badgeQueue.push({ offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
+      badgeQueue.push({ roomId, offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
 
       // Context menu dotted hex outline (drawn AFTER room, outside clip)
       if (isCtxRoom) {
@@ -1650,7 +1651,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.restore()
 
         // Queue badge for dragged room too
-        badgeQueue.push({ offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
+        badgeQueue.push({ roomId: draggedRoomId, offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
 
         // DROP INDICATOR: shown in the hex grid draw pass above (snap target diamond)
       }
@@ -1658,7 +1659,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
     // ---- FINAL PASS: DRAW ALL NAME BADGES ON TOP OF EVERYTHING ----
     for (const badge of badgeQueue) {
-      const { offsetX: bx, offsetY: by, nameText, nameColor, currentZoom } = badge
+      const { roomId: badgeRoomId, offsetX: bx, offsetY: by, nameText, nameColor, currentZoom } = badge
       const S = ROOM_SIZE
       const baseFontSize = 17
       const invZoomScale = Math.min(3.0, Math.max(1.0, 1.0 / (currentZoom || 1)))
@@ -1714,11 +1715,52 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
       ctx.restore()
       ctx.restore()
+
+      // ---- UNREAD NOTIFICATION DOT ----
+      // If this room has unread messages, draw a pulsing iOS-style badge dot at the top-right of the hex
+      const unreadCount = unreadAgents?.[badgeRoomId] || 0
+      if (unreadCount > 0) {
+        const badgePulse = Math.sin(now / 500) * 0.15 + 0.85 // pulse between 0.70 and 1.0
+        const badgeR = 14 * invZoomScale
+        // Top-right corner of the hex (near the peak of the right wall)
+        const bdgX = S * 0.82
+        const bdgY = S * 0.08
+
+        ctx.save()
+        ctx.translate(bx, by)
+        ctx.globalAlpha = badgePulse
+
+        // Outer glow ring
+        ctx.beginPath()
+        ctx.arc(bdgX, bdgY, badgeR * 1.6, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.25)'
+        ctx.fill()
+
+        // Solid badge circle
+        ctx.beginPath()
+        ctx.arc(bdgX, bdgY, badgeR, 0, Math.PI * 2)
+        ctx.fillStyle = '#3B82F6'
+        ctx.shadowColor = '#3B82F6'
+        ctx.shadowBlur = 8 * invZoomScale
+        ctx.fill()
+        ctx.shadowBlur = 0
+
+        // Count label (cap at 9+)
+        const label = unreadCount > 9 ? '9+' : String(unreadCount)
+        const countFontSize = Math.max(9, badgeR * 1.1)
+        ctx.font = `800 ${countFontSize}px Inter, system-ui, sans-serif`
+        ctx.fillStyle = '#FFFFFF'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(label, bdgX, bdgY)
+
+        ctx.restore()
+      }
     }
 
     ctx.restore() // undo pan/zoom
 
-  }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, ORIGIN_X, ORIGIN_Y, contextMenu])
+  }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, ORIGIN_X, ORIGIN_Y, contextMenu, unreadAgents])
 
   // ---- HELPER: Draw one room ----
   function drawRoom(ctx, offsetX, offsetY, workImg, idleImg, charImg, alpha, nameText, nameColor, isHighlighted, currentZoom, celebGlow = 0, charWalkPos = null) {

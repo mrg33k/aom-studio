@@ -2909,6 +2909,8 @@ function MobileDrawer({
   atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig,
   // Powerup props
   powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup,
+  // Task confirm props
+  onDismissMessage, onTaskNotDone,
   // Snap state (controlled from parent)
   snap, onSnapChange,
 }) {
@@ -3249,6 +3251,8 @@ function MobileDrawer({
               onPowerupActivate={onPowerupActivate}
               selectedPowerups={selectedPowerups}
               onRemovePowerup={onRemovePowerup}
+              onDismissMessage={onDismissMessage}
+              onTaskNotDone={onTaskNotDone}
               onInputFocus={() => {
                 if (snap !== 'full') {
                   // Save current snap BEFORE changing so keyboard-close restores correctly
@@ -7061,7 +7065,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -7867,6 +7871,106 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 const isSameSource = prevMsg && prevMsg.role === msg.role && formatSource(prevMsg.source) === formatSource(msg.source)
                 const sourceLabel = isSameSource ? null : formatSource(msg.source)
                 const isNotif = !isUser && isSystemNotification(msg)
+
+                // ---- TASK CONFIRM CARD (Vegas vibes) ----
+                // Agent marked a task done -> special card with CHECK / MINUS buttons
+                if (msg.isTaskConfirm) {
+                  return (
+                    <div key={msg.id || i} style={{
+                      margin: '8px 0',
+                      background: isDaytime
+                        ? 'linear-gradient(135deg, rgba(59,130,246,0.10) 0%, rgba(99,102,241,0.06) 100%)'
+                        : 'linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(99,102,241,0.10) 100%)',
+                      border: isDaytime ? '1.5px solid rgba(59,130,246,0.35)' : '1.5px solid rgba(99,102,241,0.40)',
+                      borderLeft: '3px solid #3B82F6',
+                      borderRadius: 12,
+                      padding: '12px 16px',
+                      boxShadow: isDaytime
+                        ? '0 2px 12px rgba(59,130,246,0.15), 0 1px 3px rgba(0,0,0,0.15)'
+                        : '0 2px 16px rgba(59,130,246,0.22), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
+                    }}>
+                      {/* Header row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <div style={{
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: '#3B82F6',
+                          boxShadow: '0 0 8px #3B82F6, 0 0 16px rgba(59,130,246,0.5)',
+                          flexShrink: 0,
+                          animation: 'vegasTypingBounce 2s ease-in-out infinite',
+                        }} />
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, color: isDaytime ? '#3B82F6' : '#60A5FA',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          letterSpacing: '0.08em', textTransform: 'uppercase',
+                        }}>Task Complete</span>
+                        {msg.time && (
+                          <span style={{ marginLeft: 'auto', fontSize: 10, color: isDaytime ? '#6B8AB0' : '#8BA4C4', fontFamily: "'JetBrains Mono', monospace" }}>
+                            {formatChatTime(msg.time)}
+                          </span>
+                        )}
+                      </div>
+                      {/* Task text */}
+                      <div style={{
+                        fontSize: 14, fontWeight: 600, color: isDaytime ? '#1E293B' : '#E2E8F0',
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        lineHeight: 1.4, marginBottom: 12,
+                        padding: '8px 12px',
+                        background: isDaytime ? 'rgba(255,255,255,0.6)' : 'rgba(15,27,45,0.6)',
+                        borderRadius: 8,
+                        border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(99,102,241,0.20)',
+                      }}>
+                        {msg.taskText || msg.content?.replace('Task marked done: ', '').replace('\n\nConfirmed done or needs more work?', '') || msg.content}
+                      </div>
+                      {/* Buttons */}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {/* CHECK -- confirmed done */}
+                        <button
+                          onClick={() => onDismissMessage?.(msg.id)}
+                          style={{
+                            flex: 1, padding: '10px 16px',
+                            background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                            border: '1.5px solid rgba(34,197,94,0.5)',
+                            borderRadius: 10, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                            color: '#FFFFFF', fontSize: 14, fontWeight: 800,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            boxShadow: '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+                            transition: 'transform 80ms ease, box-shadow 80ms ease',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(22,163,74,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Done
+                        </button>
+                        {/* MINUS -- not done, rerun */}
+                        <button
+                          onClick={() => onTaskNotDone?.(msg.id, msg.taskText || '')}
+                          style={{
+                            flex: 1, padding: '10px 16px',
+                            background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                            border: '1.5px solid rgba(239,68,68,0.5)',
+                            borderRadius: 10, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                            color: '#FFFFFF', fontSize: 14, fontWeight: 800,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            boxShadow: '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+                            transition: 'transform 80ms ease, box-shadow 80ms ease',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          Rerun
+                        </button>
+                      </div>
+                    </div>
+                  )
+                }
 
                 // System notification inline (commit messages, etc.)
                 if (isNotif && !msg.streaming) {
@@ -9272,6 +9376,46 @@ export default function GameDashboard() {
     }
   }, [panelVisible])
 
+  // Track unread messages per agent: increment when assistant messages arrive for non-active agents
+  // Used by CanvasOffice to show notification dots on room hexes
+  const prevAgentChatCountsRef = useRef({})
+  useEffect(() => {
+    const newUnread = {}
+    for (const [agentSlug, chat] of Object.entries(agentChats)) {
+      const msgs = chat?._all || []
+      const assistantMsgs = msgs.filter(m => m.role === 'assistant' && !m.streaming)
+      const prevCount = prevAgentChatCountsRef.current[agentSlug] || 0
+      const currCount = assistantMsgs.length
+      if (currCount > prevCount && agentSlug !== selectedRoom) {
+        // New messages arrived for a background agent
+        newUnread[agentSlug] = (currCount - prevCount)
+      }
+      prevAgentChatCountsRef.current[agentSlug] = currCount
+    }
+    if (Object.keys(newUnread).length > 0) {
+      setUnreadAgents(prev => {
+        const updated = { ...prev }
+        for (const [slug, count] of Object.entries(newUnread)) {
+          updated[slug] = (updated[slug] || 0) + count
+        }
+        return updated
+      })
+    }
+  }, [agentChats, selectedRoom])
+
+  // Clear unread for the active agent when user switches to it
+  useEffect(() => {
+    if (selectedRoom) {
+      setUnreadAgents(prev => {
+        if (!prev[selectedRoom]) return prev
+        const updated = { ...prev }
+        delete updated[selectedRoom]
+        return updated
+      })
+      prevAgentChatCountsRef.current[selectedRoom] = (agentChats[selectedRoom]?._all || []).filter(m => m.role === 'assistant' && !m.streaming).length
+    }
+  }, [selectedRoom]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // DONE(bobby2): RELAY MESSAGE CRASH FIX -- safePanelUpdate() wraps all setPanelMessages calls with try/catch + field validation. safeTimeSort() handles NaN timestamps. All relay message pushes validate .message exists and default .time/.id. Malformed relay data can no longer crash React render cycle.
   // DONE(bobby): HMR STATE PRESERVATION -- Key dashboard state (selectedRoom, panelActiveTab) persists to sessionStorage on change, restores on HMR reload. Auth already in sessionStorage. Mode already in localStorage. Chat messages reload from relay history on reconnect. Bobby commits no longer reset which agent Patrik was talking to.
 
@@ -10061,6 +10205,38 @@ export default function GameDashboard() {
     setPanelActiveTab('chat')
   }, [])
 
+  // Task confirm: dismiss a message card by ID (check button = confirmed)
+  const handleDismissMessage = useCallback((msgId) => {
+    setAgentChats(prev => {
+      const agent = selectedRoom || 'elon'
+      const current = prev[agent]?._all || []
+      return { ...prev, [agent]: { _all: current.filter(m => m.id !== msgId) } }
+    })
+  }, [selectedRoom])
+
+  // Task confirm: minus button = send rerun message + dismiss
+  const handleTaskNotDone = useCallback((msgId, taskText) => {
+    // Dismiss the card
+    setAgentChats(prev => {
+      const agent = selectedRoom || 'elon'
+      const current = prev[agent]?._all || []
+      return { ...prev, [agent]: { _all: current.filter(m => m.id !== msgId) } }
+    })
+    // Send the rerun message via the input pipeline
+    const rerunMsg = `Task not done: "${taskText}" -- Rerun with a new approach.`
+    const sentTime = new Date().toISOString()
+    const localId = `rerun-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const agent = selectedRoom || 'elon'
+    setAgentChats(prev => {
+      const current = prev[agent] || { _all: [] }
+      return { ...prev, [agent]: { _all: [...(current._all || []), { role: 'user', content: rerunMsg, time: sentTime, source: 'via dashboard', id: localId }, { role: 'assistant', content: '', streaming: true, time: sentTime, id: `thinking-${localId}` }] } }
+    })
+    setPanelStreaming(true)
+    if (IS_LOCAL) {
+      fetch('/api/local/relay-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent, message: rerunMsg, source: 'corner-dashboard' }) }).catch(() => {})
+    }
+  }, [selectedRoom])
+
   // Mini-map room click -> move camera
   const handleMinimapRoomClick = (roomId) => {
     setCameraTarget(roomId)
@@ -10213,6 +10389,7 @@ export default function GameDashboard() {
                 drawerSnap={drawerSnap}
                 isMobile={isMobile}
                 initialFocusRoom={isMobile ? DEFAULT_AGENT : null}
+                unreadAgents={unreadAgents}
                 onOpenChat={(roomId) => {
                   handleChat(roomId)
                   setPanelActiveTab('chat')
@@ -10334,6 +10511,8 @@ export default function GameDashboard() {
               externalReplyTo={pendingReplyMsg}
               onClearExternalReply={() => setPendingReplyMsg(null)}
               onSendFileToChat={handleSendFileToChat}
+              onDismissMessage={handleDismissMessage}
+              onTaskNotDone={handleTaskNotDone}
             />
           )}
       </div>
@@ -10503,6 +10682,8 @@ export default function GameDashboard() {
           onMessageContextMenu={handleMessageContextMenu}
           externalReplyTo={pendingReplyMsg}
           onClearExternalReply={() => setPendingReplyMsg(null)}
+          onDismissMessage={handleDismissMessage}
+          onTaskNotDone={handleTaskNotDone}
         />
       )}
 
