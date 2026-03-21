@@ -11,7 +11,7 @@ const OPTIONS = [
 ]
 
 // Bottom offset for FAB: sits 16px above the HUD bottom bar (~56px tall) plus margin
-const FAB_BOTTOM = 80 // px -- HUD is ~56px + rounding. 80 keeps clear on all screen sizes.
+const FAB_BOTTOM = 64 // px -- sits just above HUD, inside game window area
 const FAB_RIGHT  = 16 // px
 const FAB_SIZE   = 56 // px -- main button diameter
 const OPTION_H   = 40 // px -- each option row height
