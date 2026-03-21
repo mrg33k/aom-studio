@@ -7174,6 +7174,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState(new Set())
   // Failed task keys: shown with error badge so user can retry
   const [failedTaskIds, setFailedTaskIds] = useState(new Set())
+  // Clarify task link: when user clicks Clarify on a task, store its ID here so the next send includes reply_to_task
+  const [clarifyingTaskId, setClarifyingTaskId] = useState(null)
   // Long-press timer for message context menu (mobile)
   const msgLongPressRef = useRef(null)
 
@@ -8737,16 +8739,27 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               setFailedTaskIds(prev => new Set([...prev, key]))
             })
         }
-        const handleClarify = (taskText) => {
+        const handleClarify = (taskId, taskText) => {
           const prefix = `Re: "${taskText}" -- `
-          // Switch to chat tab (if not already) so the input is visible
-          setPanelActiveTab('chat')
-          // Pre-fill via React state (instant, no DOM hack needed)
-          setPanelChatInput(prefix)
-          // Also focus the input after a tick so it's rendered + scrolled into view
+          // Store the task ID so the next message send includes reply_to_task
+          setClarifyingTaskId(taskId)
+          // Switch to chat tab using the prop-based setter (setActiveTab = onActiveTabChange)
+          setActiveTab('chat')
+          // Pre-fill chat input via prop handler (onChatInputChange -> handleAtInputChange -> setPanelChatInput)
+          onChatInputChange?.(prefix)
+          // Focus the input after a tick so it's rendered + scrolled into view
+          // Use both rAF and a short setTimeout for mobile reliability (touch events)
           requestAnimationFrame(() => {
             const input = document.querySelector('[data-panel-chat-input]')
-            if (input) input.focus()
+            if (input) {
+              input.focus()
+            } else {
+              // Fallback for mobile: input may not render until tab switch completes
+              setTimeout(() => {
+                const inp = document.querySelector('[data-panel-chat-input]')
+                if (inp) inp.focus()
+              }, 100)
+            }
           })
         }
         return (
@@ -8869,6 +8882,32 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 }}>task</span>
                 {t.text}
               </div>
+              {/* Linked reply badge -- shown when user clicked Clarify on this task */}
+              {clarifyingTaskId && clarifyingTaskId === t.taskId && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  marginBottom: 8, padding: '5px 8px',
+                  background: 'rgba(59,158,255,0.10)',
+                  border: '1px solid rgba(59,158,255,0.25)',
+                  borderRadius: 7,
+                }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5BB8FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#5BB8FF', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.06em', flex: 1 }}>
+                    REPLY LINKED TO THIS TASK
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setClarifyingTaskId(null) }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#4A6080', lineHeight: 1 }}
+                    title="Clear link"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               {/* Buttons */}
               <div style={{ display: 'flex', gap: 6 }}>
                 {/* Approve */}
@@ -8919,7 +8958,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </motion.button>
                 {/* Clarify */}
                 <motion.button
-                  onClick={() => handleClarify(t.text)}
+                  onClick={(e) => { e.stopPropagation(); handleClarify(t.taskId, t.text) }}
                   whileHover={{ scale: 1.04, y: -1 }}
                   whileTap={{ scale: 0.96 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 18 }}
@@ -9049,8 +9088,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           />
           <form onSubmit={(e) => {
             isUserTypingRef.current = false
-            onSendMessage(e, replyTo?.id)
+            onSendMessage(e, replyTo?.id, clarifyingTaskId)
             setReplyTo(null)
+            setClarifyingTaskId(null)
           }} style={{ position: 'relative', flex: 1 }}>
             {/* @ autocomplete dropdown (floats above input) */}
             {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
@@ -10363,7 +10403,7 @@ export default function GameDashboard() {
   }
 
   // ---- SHARED SEND MESSAGE HANDLER (used by both desktop sidebar and mobile drawer) ----
-  const handlePanelSendMessage = useCallback(async (e, replyToId) => {
+  const handlePanelSendMessage = useCallback(async (e, replyToId, replyToTaskId) => {
     e?.preventDefault()
     setAtMenuOpen(false)
     setAtMenuFilter('')
@@ -10411,6 +10451,7 @@ export default function GameDashboard() {
         role: 'user', content: text, time: sentTime,
         source: 'via dashboard', id: localId,
         ...(replyToId ? { reply_to: replyToId } : {}),
+        ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}),
       }, {
         role: 'assistant', content: '', streaming: true,
         time: sentTime, id: `thinking-${localId}`,
@@ -10424,7 +10465,7 @@ export default function GameDashboard() {
     }
     // Send message via relay (local Vite middleware or Vercel serverless)
     if (IS_LOCAL) {
-      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard', ...(replyToId ? { reply_to: replyToId } : {}) }
+      const sendBody = { agent: selectedRoom, message: text, source: 'corner-dashboard', ...(replyToId ? { reply_to: replyToId } : {}), ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}) }
       if (atPrefixMatch) {
         const matchedOpt = atOptions.find(opt =>
           opt.slug === atPrefixMatch[1].toLowerCase() ||
@@ -10447,7 +10488,7 @@ export default function GameDashboard() {
         const res = await fetch('/api/dashboard/supabase-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', client_id: getClientId(), ...(replyToId ? { reply_to: replyToId } : {}) }),
+          body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', client_id: getClientId(), ...(replyToId ? { reply_to: replyToId } : {}), ...(replyToTaskId ? { reply_to_task: replyToTaskId } : {}) }),
         })
         if (!res.ok) throw new Error(`Send failed: ${res.status}`)
         // Replace local dash-* ID with the server UUID so the poll recognises the message
