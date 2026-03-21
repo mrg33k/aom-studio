@@ -6,28 +6,7 @@
 import React, { useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Zap, AlertCircle, History, Flame, CheckCircle2 } from 'lucide-react'
-import { GRID_SPEC } from '../gridSpec.js'
-
-// ---- PALETTE & HUD (mirrored from GameHUD.jsx -- move to HUDConstants.jsx in god-file split 5/6) ----
-const PALETTE = GRID_SPEC.colorPalette
-
-const HUD = {
-  panelBg: 'rgba(8, 16, 32, 0.92)',
-  panelBgSolid: '#081020',
-  panelBorder: 'rgba(100, 180, 255, 0.22)',
-  panelBorderHover: 'rgba(100, 180, 255, 0.38)',
-  panelInnerGlow: 'rgba(100, 180, 255, 0.06)',
-  panelShadow: '0 -8px 48px rgba(0,0,0,0.6), 0 -2px 0 rgba(100,180,255,0.12), inset 0 1px 0 rgba(100,180,255,0.08)',
-  divider: 'rgba(100, 180, 255, 0.10)',
-  textPrimary: '#EDF2FA',
-  textSecondary: '#8BA4C4',
-  textMuted: '#4A6080',
-  accent: '#3B9EFF',
-  accentGlow: 'rgba(59, 158, 255, 0.35)',
-  blueOverlay: 'linear-gradient(180deg, rgba(100,180,255,0.06) 0%, rgba(100,180,255,0.02) 50%, transparent 100%)',
-  accentBright: '#5BB8FF',
-  accentDeep: '#1E6FCC',
-}
+import { PALETTE, HUD } from './HUDConstants.jsx'
 
 // ---- PROJECT CARD (VEGAS ENERGY: Trello thickness, physical objects) ---------
 // If you think it's big enough, DOUBLE IT. Slot machine buttons. Casino cards.
