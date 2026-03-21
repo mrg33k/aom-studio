@@ -916,6 +916,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     // Snap target: the nearest hex grid cell world position (updated every frame during drag)
     snapX: 0,
     snapY: 0,
+    // Spring-animated render position: lerps toward snapX/snapY each frame
+    renderX: 0,
+    renderY: 0,
   })
   const mouseDownRef = useRef({ active: false, didDrag: false, startX: 0, startY: 0 })
 
@@ -1254,6 +1257,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         drag.snapX = snap.x
         drag.snapY = snap.y
 
+        // Spring: lerp renderX/renderY toward snapX/snapY each frame (k=0.22 ~= 60fps spring)
+        const SPRING_K = 0.22
+        drag.renderX += (snap.x - drag.renderX) * SPRING_K
+        drag.renderY += (snap.y - drag.renderY) * SPRING_K
+
         const S = ROOM_SIZE
         const meta = ROOM_META[drag.roomId]
         const color = meta?.color || '#3B82F6'
@@ -1536,8 +1544,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const meta = ROOM_META[draggedRoomId]
       const imgs = roomImages[draggedRoomId]
       if (meta && imgs) {
-        const posX = drag.worldX - drag.offsetX
-        const posY = drag.worldY - drag.offsetY
+        // Use spring-animated position (snaps to hex grid smoothly)
+        const posX = drag.renderX
+        const posY = drag.renderY
 
         // Dragged room is always full brightness
         ctx.save()
@@ -1932,6 +1941,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         startClientX: e.clientX,
         startClientY: e.clientY,
         totalMovement: 0,
+        snapX: pos.x,
+        snapY: pos.y,
+        renderX: pos.x,
+        renderY: pos.y,
       }
     }
 
@@ -2258,6 +2271,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
             startClientX: t.clientX,
             startClientY: t.clientY,
             totalMovement: 0,
+            snapX: pos.x,
+            snapY: pos.y,
+            renderX: pos.x,
+            renderY: pos.y,
           }
 
           // Start long-press timer (500ms) for context menu
