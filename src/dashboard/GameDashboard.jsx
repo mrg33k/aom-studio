@@ -8400,6 +8400,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 const isSameAomAgent = isAomRoom && !isUser && prevMsgAgentSlug && prevMsgAgentSlug === msgAgentSlug
                 // Show avatar+name only on the first message of each agent run in AOM room
                 const showAomHeader = isAomRoom && !isUser && !isSameAomAgent
+                // Project path chip: last 2 segments of "AOM->Corner->Dashboard UI"
+                const msgProjectPath = isAomRoom ? (msg.projectPath || null) : null
+                const msgProjectLabel = msgProjectPath
+                  ? msgProjectPath.split('->').map(s => s.trim()).filter(Boolean).slice(-2).join(' > ')
+                  : null
 
                 // ---- TASK CONFIRM CARD (Vegas vibes) ----
                 // Agent marked a task done -> special card with CHECK / MINUS buttons
@@ -8643,6 +8648,25 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                               fontFamily: "'JetBrains Mono', monospace",
                             }}>
                               {formatChatTime(msg.time)}
+                            </span>
+                          )}
+                          {msgProjectLabel && (
+                            <span style={{
+                              fontSize: 10, fontWeight: 600,
+                              color: '#8BA4C4',
+                              background: 'rgba(15,27,45,0.75)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: 4,
+                              padding: '1px 6px',
+                              fontFamily: "'JetBrains Mono', monospace",
+                              letterSpacing: '0.03em',
+                              maxWidth: 140,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                            }}>
+                              {msgProjectLabel}
                             </span>
                           )}
                         </div>
@@ -10561,6 +10585,7 @@ export default function GameDashboard() {
               id: m.id, role: m.role || 'assistant', content: m.text || '',
               time: m.timestamp || '', source: m.source || 'supabase',
               agentTag: isAomTeamRoom ? (m.agent || null) : null, // carry agent slug for project tag badge
+              projectPath: isAomTeamRoom ? (m.project_path || null) : null, // project path for tag chip
             })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
           console.log(`[Corner] Proxy: loaded ${msgs.length} msgs for ${room}${isAomTeamRoom ? ' (aggregate)' : ''}`)
           setAgentChats(prev => ({ ...prev, [room]: { _all: msgs } }))
@@ -10637,6 +10662,7 @@ export default function GameDashboard() {
                   id: row.id, role: row.role || 'assistant', content: row.text || '',
                   time: row.timestamp, source: row.source || 'supabase',
                   agentTag: isAomTeamRoom ? (row.agent || null) : null,
+                  projectPath: isAomTeamRoom ? (row.project_path || null) : null,
                 }
                 // Primary dedup: by server UUID
                 if (updated.some(m => m.id === msg.id)) continue
