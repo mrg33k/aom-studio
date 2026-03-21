@@ -16,6 +16,18 @@ import { AGENTS } from './gridSpec.js'
 // Sprite avatar
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
+// Generate 2-letter initials from agent name.
+// Multi-word: first letter of first + first letter of last word ("John Smith" -> "JS").
+// Single word: first 2 letters uppercase ("Bobby" -> "BO", "Mark" -> "MA").
+function getInitials(name) {
+  if (!name) return '??'
+  const words = name.trim().split(/\s+/)
+  if (words.length >= 2) {
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
+
 function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) {
   const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
   const agent = AGENTS.find(a => a.slug === agentSlug)
@@ -45,10 +57,11 @@ function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) 
     <div style={{
       width: size, height: size, borderRadius: '50%', border: `2px solid ${color}`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: Math.max(12, size * 0.35), fontWeight: 700, color, background: `${color}33`,
-      flexShrink: 0, ...extraStyle,
+      fontSize: Math.max(10, size * 0.28), fontWeight: 700, color: '#FFFFFF',
+      background: color, flexShrink: 0, letterSpacing: '0.02em',
+      ...extraStyle,
     }}>
-      {agent?.name?.charAt(0) || '?'}
+      {getInitials(agent?.name || agentSlug || '?')}
     </div>
   )
 }

@@ -38,6 +38,18 @@ export function PlumbobClipDef({ id, size }) {
   )
 }
 
+// Generate 2-letter initials from agent name.
+// Multi-word: first letter of first + first letter of last word ("John Smith" -> "JS").
+// Single word: first 2 letters uppercase ("Bobby" -> "BO", "Mark" -> "MA").
+function getInitials(name) {
+  if (!name) return '??'
+  const words = name.trim().split(/\s+/)
+  if (words.length >= 2) {
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
+
 // ---- AGENT PORTRAIT (LARGER: 52px desktop, plumbob shape, blue idle ring) ---
 export const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
@@ -136,17 +148,18 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
           />
         ) : (
           <g clipPath={`url(#${clipId})`}>
-            <rect x={0} y={0} width={size} height={size} fill={`${color}25`} />
+            <rect x={0} y={0} width={size} height={size} fill={color} fillOpacity="0.85" />
             <text
               x={cx} y={h * 0.58}
               textAnchor="middle"
               dominantBaseline="middle"
-              fill={color}
+              fill="#FFFFFF"
               fontFamily="Inter, system-ui, sans-serif"
               fontWeight="700"
-              fontSize={Math.max(12, size * 0.36)}
+              fontSize={Math.max(10, size * 0.28)}
+              letterSpacing="0.02em"
             >
-              {agent?.name?.charAt(0) || '?'}
+              {getInitials(agent?.name || slug || '?')}
             </text>
           </g>
         )}
@@ -347,7 +360,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
           {mainHasSpr ? (
             <image href={`/corner/sprites/${mainAgent.slug}-idle.png`} x={-52*0.15} y={-52*0.05} width={52*1.35} height={52*1.35} clipPath="url(#main-agent-clip)" style={{ imageRendering: 'pixelated' }} preserveAspectRatio="xMidYMin slice" />
           ) : (
-            <text x={26} y={52*0.58} textAnchor="middle" dominantBaseline="middle" fill={mainAgent.color} fontFamily="Inter, system-ui, sans-serif" fontWeight="700" fontSize={20}>{mainAgent.name?.charAt(0)}</text>
+            <rect x={0} y={0} width={52} height={52} fill={mainAgent.color} fillOpacity="0.85" clipPath="url(#main-agent-clip)" /><text x={26} y={52*0.58} textAnchor="middle" dominantBaseline="middle" fill="#FFFFFF" fontFamily="Inter, system-ui, sans-serif" fontWeight="700" fontSize={16} letterSpacing="0.02em">{getInitials(mainAgent.name || mainAgent.slug || '?')}</text>
           )}
           <path d={`M 26 ${52*0.02} L ${26+52*0.48} ${52*0.22} L ${26+52*0.48} ${52*0.72} Q ${26+52*0.48} ${52*0.98}, 26 ${52*0.98} Q ${26-52*0.48} ${52*0.98}, ${26-52*0.48} ${52*0.72} L ${26-52*0.48} ${52*0.22} Z`} fill="none" stroke={mainCfg.ring} strokeWidth={2.5} strokeLinejoin="round" style={{ filter: mainStatus === 'WORKING' ? `drop-shadow(0 0 6px ${mainCfg.glow})` : 'none' }} />
         </svg>
@@ -411,8 +424,8 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                   width={60} height={60}
                   style={{ width: 60, height: 60, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -8, marginTop: -5 }} />
               ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: agent.color || '#4A6080', fontFamily: "'Inter', system-ui, sans-serif" }}>
-                  {agent.name?.charAt(0) || '?'}
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#FFFFFF', background: agent.color || '#4A6080', fontFamily: "'Inter', system-ui, sans-serif", letterSpacing: '0.02em' }}>
+                  {getInitials(agent.name || agent.slug || '?')}
                 </div>
               )}
             </motion.div>
@@ -495,8 +508,8 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                         <img src={`/corner/sprites/${agent.slug}-idle.png`} alt=""
                           style={{ width: 46, height: 46, objectFit: 'cover', objectPosition: '15% 5%', imageRendering: 'pixelated', display: 'block', marginLeft: -7, marginTop: -5 }} />
                       ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: agent.color }}>
-                          {agent.name?.charAt(0)}
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#FFFFFF', background: agent.color || '#4A6080', letterSpacing: '0.02em', fontFamily: "'Inter', system-ui, sans-serif" }}>
+                          {getInitials(agent.name || agent.slug || '?')}
                         </div>
                       )}
                     </div>
