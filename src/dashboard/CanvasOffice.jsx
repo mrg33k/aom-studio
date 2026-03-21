@@ -1310,8 +1310,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         for (let c = cStart; c <= colMax; c += 2) {
           const pos = hexPosition(r, c, ORIGIN_X, ORIGIN_Y)
           // Diamond path matching the hit-test shape: hw=ROOM_SIZE/2, hh=ROOM_SIZE/4
+          // Grid lines shifted up by half a hex height (hh = S/4)
           const px = pos.x + S * 0.5
-          const py = pos.y + S * 0.5
+          const py = pos.y + S * 0.5 - S / 4
           const hw = S / 2
           const hh = S / 4
           ctx.beginPath()
