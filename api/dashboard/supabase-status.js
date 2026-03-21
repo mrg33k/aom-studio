@@ -41,11 +41,15 @@ export default async function handler(req, res) {
   const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
 
   try {
-    const [agents, messages, tasks] = await Promise.all([
+    const [agents, messages, activeTasks, recentDone] = await Promise.all([
       supabaseGet('agent_status', `order=slug${clientFilter}`),
       supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
-      supabaseGet('tasks', `order=created_at.desc&limit=50${clientFilter}`),
+      // ALL non-done tasks (queued, active, todo, working, in_progress, blocked, done, rejected)
+      supabaseGet('tasks', `status=neq.completed&order=created_at.desc${clientFilter}`),
+      // Recent completed tasks (for completed feed)
+      supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
     ]);
+    const tasks = [...activeTasks, ...recentDone];
 
     // Split agents vs projects
     const agentList = agents.filter(a => a.type === 'agent');
