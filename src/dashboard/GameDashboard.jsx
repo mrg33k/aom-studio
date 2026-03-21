@@ -2927,6 +2927,8 @@ function MobileDrawer({
   onClearUnread,
   // Snap state (controlled from parent)
   snap, onSnapChange,
+  // Navigation: tap a Right Now task card -> navigate to that agent's chat
+  onNavigateToAgent,
 }) {
   const sheetRef = useRef(null)
   const dragStartY = useRef(0)
@@ -3159,6 +3161,90 @@ function MobileDrawer({
           animation: !handlePulsed ? 'handlePulse 1.5s ease-in-out infinite' : 'none',
         }} />
       </div>
+
+      {/* Mini Right Now bar -- only shown when drawer is at full-height snap */}
+      {isFullSnap && rightNowTasks && rightNowTasks.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          height: 36, flexShrink: 0,
+          padding: '0 12px',
+          borderBottom: '1px solid rgba(255, 107, 61, 0.15)',
+          background: 'rgba(255, 107, 61, 0.05)',
+          overflowX: 'auto', overflowY: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          touchAction: 'pan-x',
+        }}>
+          <Zap size={11} color="#FF6B3D" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(255,107,61,0.6))' }} />
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 800,
+            color: '#FF6B3D', letterSpacing: '0.12em', textTransform: 'uppercase',
+            flexShrink: 0, whiteSpace: 'nowrap',
+          }}>RIGHT NOW</span>
+          <div style={{ width: 1, height: 16, background: 'rgba(255,107,61,0.2)', flexShrink: 0 }} />
+          {rightNowTasks.map((t, idx) => {
+            const dotColor = t.isDoneAwaitingApproval
+              ? '#F59E0B'
+              : t.isQueued
+                ? '#E91E90'
+                : '#FF6B3D'
+            const taskAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
+            const taskText = t.text || t.task || t.description || 'Running...'
+            return (
+              <button
+                key={t.id || `mini-rn-${idx}`}
+                onClick={() => {
+                  if (t.agent && onNavigateToAgent) onNavigateToAgent(t.agent)
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '3px 9px',
+                  background: t.isDoneAwaitingApproval
+                    ? 'rgba(245,158,11,0.1)'
+                    : t.isQueued
+                      ? 'rgba(233,30,144,0.1)'
+                      : 'rgba(255,107,61,0.1)',
+                  border: `1px solid ${dotColor}25`,
+                  borderRadius: 8,
+                  cursor: t.agent ? 'pointer' : 'default',
+                  flexShrink: 0,
+                  transition: 'background 120ms ease',
+                }}
+              >
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: dotColor,
+                  boxShadow: `0 0 4px ${dotColor}80`,
+                  animation: 'statusPulse 1.8s ease-in-out infinite',
+                  flexShrink: 0,
+                }} />
+                {taskAgent && (
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                    color: taskAgent.agentColor || taskAgent.color || '#6B7280',
+                    textTransform: 'uppercase', letterSpacing: '0.08em',
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                  }}>
+                    {taskAgent.name?.split(' ')[0] || t.agent}
+                  </span>
+                )}
+                <span style={{
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  fontSize: 11, fontWeight: 600,
+                  color: '#CBD5E1',
+                  whiteSpace: 'nowrap',
+                  maxWidth: 140,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}>
+                  {taskText}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {/* Agent info header (compact) */}
       <div style={{
@@ -11316,6 +11402,14 @@ export default function GameDashboard() {
           onDismissMessage={handleDismissMessage}
           onTaskNotDone={handleTaskNotDone}
           onClearUnread={clearUnreadForRoom}
+          onNavigateToAgent={(slug) => {
+            setSelectedRoom(slug)
+            setChatAgent(slug)
+            setCameraTarget(slug)
+            setIsOverview(false)
+            setPanelActiveTab('chat')
+            setDrawerSnap('half')
+          }}
         />
       )}
 
