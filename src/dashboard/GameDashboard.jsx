@@ -2287,11 +2287,13 @@ marked.setOptions({ gfm: true, breaks: true })
 // User messages stay plain text via renderPlainContent.
 function MarkdownMessage({ text, agentColor, streaming }) {
   if (!text || typeof text !== 'string') return null
+  // Normalize escaped newlines (relay messages store \n as literal 2-char sequence)
+  let normalized = text.replace(/\\n/g, '\n')
   let html
   try {
-    html = marked.parse(text)
+    html = marked.parse(normalized)
   } catch {
-    html = text
+    html = normalized
   }
   return (
     <div
