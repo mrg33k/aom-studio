@@ -10264,21 +10264,7 @@ export default function GameDashboard() {
                 </div>
               )}
 
-              {/* Camera controls (floating, right side of game viewport) -- desktop only. Mobile uses pinch-to-zoom + tap-to-center. */}
-              {!isMobile && (
-                <CameraControls
-                  cameraZoom={cameraZoom}
-                  setCameraZoom={setCameraZoom}
-                  isOverview={isOverview}
-                  setIsOverview={setIsOverview}
-                  cameraTarget={cameraTarget}
-                  setCameraTarget={setCameraTarget}
-                  onHomeRoom={handleHomeRoom}
-                  panelVisible={false}
-                  isMobile={isMobile}
-                  drawerOpen={drawerOpen}
-                />
-              )}
+              {/* Camera controls REMOVED per Patrik directive. Zoom/home/overview via keyboard only. */}
 
               {/* Ambient vignette overlay for Elon room focus (dark bg, subtle server-green glow) */}
               {currentMode === 'game' && (

@@ -1,7 +1,7 @@
 // FloatingActionButton.jsx
-// Single persistent FAB anchored bottom-LEFT above the HUD (where mini-map used to be).
-// Expands upward to reveal action options with staggered fade-in.
-// Matches day/night theme. Always above HUD (z:40) -- this sits at z:55.
+// Single persistent FAB anchored top-right of game viewport.
+// Expands downward to reveal action options with staggered fade-in.
+// Matches day/night theme. Always above game content (z:55).
 
 import { useState, useEffect, useRef } from 'react'
 
@@ -10,10 +10,10 @@ const OPTIONS = [
   { id: 'new-agent',   label: 'New Agent',   icon: '◎' },
 ]
 
-// Bottom offset for FAB: sits 16px above the HUD bottom bar (~56px tall) plus margin
-const FAB_BOTTOM = 64 // px -- sits just above HUD, inside game window area
-const FAB_LEFT   = 16 // px -- bottom-left (where mini-map used to be)
-const FAB_SIZE   = 56 // px -- main button diameter
+// Position: top-right corner of game map area
+const FAB_TOP    = 80  // px -- below top nav bar (~60px) + margin
+const FAB_RIGHT  = 16  // px
+const FAB_SIZE   = 48  // px -- main button diameter (slightly smaller for top corner)
 const OPTION_H   = 40 // px -- each option row height
 const OPTION_GAP = 8  // px -- gap between options
 
@@ -56,78 +56,17 @@ export default function FloatingActionButton({ isNightMode, isMobile }) {
       ref={fabRef}
       style={{
         position: 'fixed',
-        bottom: FAB_BOTTOM,
-        left: FAB_LEFT,
+        top: FAB_TOP,
+        right: FAB_RIGHT,
         zIndex: 55,
         display: 'flex',
-        flexDirection: 'column', // options above, button at bottom
-        alignItems: 'flex-start',
+        flexDirection: 'column', // button on top, options expand downward
+        alignItems: 'flex-end',
         gap: OPTION_GAP,
         pointerEvents: 'auto',
       }}
     >
-      {/* Option buttons -- render first (column-reverse means they appear above FAB) */}
-      {OPTIONS.map((opt, i) => (
-        <div
-          key={opt.id}
-          onClick={() => handleAction(opt.id)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            height: OPTION_H,
-            padding: '0 16px 0 12px',
-            background: optionBg,
-            border: `1.5px solid ${optionBorder}`,
-            borderRadius: OPTION_H / 2,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            backdropFilter: 'blur(20px)',
-            boxShadow: `0 4px 16px rgba(${glowColor},0.25), 0 0 0 1px rgba(${glowColor},0.1)`,
-            // Staggered fade-in
-            opacity: open ? 1 : 0,
-            transform: open
-              ? 'translateY(0) scale(1)'
-              : 'translateY(12px) scale(0.92)',
-            transition: open
-              ? `opacity 180ms ease ${i * 55}ms, transform 220ms cubic-bezier(0.34,1.56,0.64,1) ${i * 55}ms`
-              : `opacity 120ms ease ${(OPTIONS.length - 1 - i) * 40}ms, transform 150ms ease ${(OPTIONS.length - 1 - i) * 40}ms`,
-            pointerEvents: open ? 'auto' : 'none',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = isNightMode
-              ? 'rgba(120,80,255,0.18)'
-              : 'rgba(59,130,246,0.18)'
-            e.currentTarget.style.borderColor = isNightMode
-              ? 'rgba(120,80,255,0.6)'
-              : 'rgba(59,130,246,0.6)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = optionBg
-            e.currentTarget.style.borderColor = optionBorder
-          }}
-        >
-          <span style={{
-            fontSize: 14,
-            lineHeight: 1,
-            filter: `drop-shadow(0 0 4px rgba(${glowColor},0.6))`,
-          }}>
-            {opt.icon}
-          </span>
-          <span style={{
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: "'Inter Tight', 'Inter', sans-serif",
-            letterSpacing: '0.06em',
-            color: isNightMode ? 'rgba(200,180,255,0.9)' : 'rgba(180,210,255,0.9)',
-            userSelect: 'none',
-          }}>
-            {opt.label}
-          </span>
-        </div>
-      ))}
-
-      {/* Main FAB button */}
+      {/* Main FAB button (top, always visible) */}
       <button
         aria-label={open ? 'Close actions' : 'Open actions'}
         onClick={() => setOpen(v => !v)}
@@ -185,6 +124,66 @@ export default function FloatingActionButton({ isNightMode, isMobile }) {
           <line x1="4" y1="12" x2="20" y2="12" />
         </svg>
       </button>
+
+      {/* Option buttons -- expand downward below FAB */}
+      {OPTIONS.map((opt, i) => (
+        <div
+          key={opt.id}
+          onClick={() => handleAction(opt.id)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            height: OPTION_H,
+            padding: '0 16px 0 12px',
+            background: optionBg,
+            border: `1.5px solid ${optionBorder}`,
+            borderRadius: OPTION_H / 2,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            backdropFilter: 'blur(20px)',
+            boxShadow: `0 4px 16px rgba(${glowColor},0.25), 0 0 0 1px rgba(${glowColor},0.1)`,
+            opacity: open ? 1 : 0,
+            transform: open
+              ? 'translateY(0) scale(1)'
+              : 'translateY(-8px) scale(0.92)',
+            transition: open
+              ? `opacity 180ms ease ${i * 55}ms, transform 220ms cubic-bezier(0.34,1.56,0.64,1) ${i * 55}ms`
+              : `opacity 120ms ease ${(OPTIONS.length - 1 - i) * 40}ms, transform 150ms ease ${(OPTIONS.length - 1 - i) * 40}ms`,
+            pointerEvents: open ? 'auto' : 'none',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = isNightMode
+              ? 'rgba(120,80,255,0.18)'
+              : 'rgba(59,130,246,0.18)'
+            e.currentTarget.style.borderColor = isNightMode
+              ? 'rgba(120,80,255,0.6)'
+              : 'rgba(59,130,246,0.6)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = optionBg
+            e.currentTarget.style.borderColor = optionBorder
+          }}
+        >
+          <span style={{
+            fontSize: 14,
+            lineHeight: 1,
+            filter: `drop-shadow(0 0 4px rgba(${glowColor},0.6))`,
+          }}>
+            {opt.icon}
+          </span>
+          <span style={{
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "'Inter Tight', 'Inter', sans-serif",
+            letterSpacing: '0.06em',
+            color: isNightMode ? 'rgba(200,180,255,0.9)' : 'rgba(180,210,255,0.9)',
+            userSelect: 'none',
+          }}>
+            {opt.label}
+          </span>
+        </div>
+      ))}
 
       {/* Keyframes injected once */}
       <style>{`
