@@ -1113,10 +1113,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     if (isMobile && drawerSnap === 'half') {
       // Drawer height = 52% of window.innerHeight. Container height (viewH) = window.innerHeight - paddingTop.
       // Visible area above drawer in container coords (approx, ignoring safe-area-bottom) = viewH - drawerH.
-      // Position room center at 60% of visible height -- biased toward the drawer to close dead space.
+      // Position room center at 72% of visible height so the hex bottom tip tucks under the drawer edge,
+      // eliminating the ~10px dark canvas gap. Lower hex vertices stay visible; only the tip is hidden.
       const drawerH = Math.round(window.innerHeight * 0.52)
       const visibleH = Math.max(100, viewH - drawerH)
-      const visibleCenterY = visibleH * 0.60
+      const visibleCenterY = visibleH * 0.72
       panY = visibleCenterY - roomCY * zoomFocus
     } else if (isMobile && drawerSnap === 'full') {
       // Full drawer covers everything, but user can still see the top sliver
