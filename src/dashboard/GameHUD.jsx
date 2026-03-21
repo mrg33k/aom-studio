@@ -87,35 +87,48 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
   const [approvingId, setApprovingId] = useState(null)
   // Track deny/reject animation state per card key
   const [denyingId, setDenyingId] = useState(null)
+  // Optimistic removal: keys hidden immediately on approve/deny
+  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState(new Set())
+  // Failed task keys: shown with red border error badge for retry
+  const [failedTaskIds, setFailedTaskIds] = useState(new Set())
 
-  const callAction = async (taskId, taskText, agent, action) => {
+  const callAction = (taskId, taskText, agent, action) => {
     const key = taskId || taskText
-    if (action === 'approve') {
-      // Animate: green glow (300ms) then fade out (250ms), then fire API
-      setApprovingId(key)
-      await new Promise(r => setTimeout(r, 300))
-      setApprovingId(key + '__fadeout')
-      await new Promise(r => setTimeout(r, 250))
-      setApprovingId(null)
-    } else if (action === 'reject') {
-      // Animate: red glow (300ms) then fade out (250ms), then fire API
-      setDenyingId(key)
-      await new Promise(r => setTimeout(r, 300))
-      setDenyingId(key + '__fadeout')
-      await new Promise(r => setTimeout(r, 250))
-      setDenyingId(null)
+    // 1. Optimistically remove from UI immediately
+    setOptimisticallyRemovedIds(prev => new Set([...prev, key]))
+    // Clear any prior failure badge
+    setFailedTaskIds(prev => { const n = new Set(prev); n.delete(key); return n })
+    // 2. Fire animation in background (non-blocking)
+    const runAnim = async () => {
+      if (action === 'approve') {
+        setApprovingId(key)
+        await new Promise(r => setTimeout(r, 300))
+        setApprovingId(key + '__fadeout')
+        await new Promise(r => setTimeout(r, 250))
+        setApprovingId(null)
+      } else if (action === 'reject') {
+        setDenyingId(key)
+        await new Promise(r => setTimeout(r, 300))
+        setDenyingId(key + '__fadeout')
+        await new Promise(r => setTimeout(r, 250))
+        setDenyingId(null)
+      }
     }
-    try {
-      await fetch('/api/dashboard/task-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action, taskId, taskText, agent,
-          clientId: getClientId(),
-        }),
+    runAnim()
+    // 3. Fire API in background -- re-add with error badge on failure
+    fetch('/api/dashboard/task-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, taskId, taskText, agent, clientId: getClientId() }),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('non-ok')
+        refetch?.()
       })
-      refetch?.()
-    } catch { /* silent */ }
+      .catch(() => {
+        setOptimisticallyRemovedIds(prev => { const n = new Set(prev); n.delete(key); return n })
+        setFailedTaskIds(prev => new Set([...prev, key]))
+      })
   }
 
   return (
@@ -184,14 +197,15 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
       <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
         {/* SECTION 1: Done tasks awaiting approval */}
-        {doneTasks.length > 0 && (
+        {doneTasks.filter(t => !optimisticallyRemovedIds.has(t.taskId || t.text)).length > 0 && (
           <>
-            {doneTasks.map((t, idx) => {
+            {doneTasks.filter(t => !optimisticallyRemovedIds.has(t.taskId || t.text)).map((t, idx) => {
               const cardKey = t.taskId || `done-${idx}`
               const isGlowing = approvingId === cardKey || approvingId === (t.taskId || t.text)
               const isFadingOut = approvingId === cardKey + '__fadeout' || approvingId === (t.taskId || t.text) + '__fadeout'
               const isDenyGlowing = denyingId === cardKey || denyingId === (t.taskId || t.text)
               const isDenyFadingOut = denyingId === cardKey + '__fadeout' || denyingId === (t.taskId || t.text) + '__fadeout'
+              const hasFailed = failedTaskIds.has(cardKey) || failedTaskIds.has(t.taskId || t.text)
               const inboxCardClass = isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : isDenyGlowing ? 'task-denying' : isDenyFadingOut ? 'task-denied' : ''
               return (
               <motion.div
@@ -203,38 +217,47 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                 transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                 style={{
                   background: 'rgba(8,16,32,0.88)',
-                  border: '1.5px solid rgba(100,180,255,0.22)',
-                  borderLeft: '3px solid rgba(100,180,255,0.50)',
+                  border: hasFailed ? '1.5px solid rgba(239,68,68,0.65)' : '1.5px solid rgba(100,180,255,0.22)',
+                  borderLeft: hasFailed ? '3px solid rgba(239,68,68,0.85)' : '3px solid rgba(100,180,255,0.50)',
                   borderRadius: 10,
                   padding: '10px 12px',
-                  boxShadow: '0 2px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(100,180,255,0.07)',
+                  boxShadow: hasFailed
+                    ? '0 2px 16px rgba(239,68,68,0.15), inset 0 1px 0 rgba(239,68,68,0.07)'
+                    : '0 2px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(100,180,255,0.07)',
                   position: 'relative', overflow: 'hidden',
                 }}>
                 {/* Inner top glow */}
                 <div style={{
                   position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.25) 40%, rgba(100,180,255,0.25) 60%, transparent 100%)',
+                  background: hasFailed
+                    ? 'linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.35) 40%, rgba(239,68,68,0.35) 60%, transparent 100%)'
+                    : 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.25) 40%, rgba(100,180,255,0.25) 60%, transparent 100%)',
                   pointerEvents: 'none',
                 }} />
                 {/* Agent + label row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                   <div style={{
                     width: 6, height: 6, borderRadius: '50%',
-                    background: '#F59E0B', boxShadow: '0 0 6px rgba(245,158,11,0.7)',
+                    background: hasFailed ? '#EF4444' : '#F59E0B',
+                    boxShadow: hasFailed ? '0 0 6px rgba(239,68,68,0.7)' : '0 0 6px rgba(245,158,11,0.7)',
                     animation: 'statusPulse 2s ease-in-out infinite',
                   }} />
                   <span style={{
                     fontSize: 9, fontWeight: 700,
-                    color: '#8BA4C4',
+                    color: hasFailed ? '#F87171' : '#8BA4C4',
                     fontFamily: "'JetBrains Mono', monospace",
                     letterSpacing: '0.10em', textTransform: 'uppercase',
                     flex: 1,
                   }}>
-                    {t.agent ? `${t.agent.charAt(0).toUpperCase()}${t.agent.slice(1)} ` : ''}DONE
+                    {hasFailed
+                      ? 'FAILED -- TAP TO RETRY'
+                      : `${t.agent ? `${t.agent.charAt(0).toUpperCase()}${t.agent.slice(1)} ` : ''}DONE`}
                   </span>
+                  {!hasFailed && (
                   <span style={{ fontSize: 9, color: '#4A6080', fontFamily: "'JetBrains Mono', monospace" }}>
                     awaiting review
                   </span>
+                  )}
                 </div>
                 {/* Task text -- data readout */}
                 <div style={{

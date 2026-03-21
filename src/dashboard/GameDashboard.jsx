@@ -7170,6 +7170,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const [approvingTaskId, setApprovingTaskId] = useState(null)
   // Track which task is currently animating the deny/reject red glow+fade
   const [denyingTaskId, setDenyingTaskId] = useState(null)
+  // Optimistic removal: keys removed from UI immediately on approve/deny
+  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState(new Set())
+  // Failed task keys: shown with error badge so user can retry
+  const [failedTaskIds, setFailedTaskIds] = useState(new Set())
   // Long-press timer for message context menu (mobile)
   const msgLongPressRef = useRef(null)
 
@@ -8686,36 +8690,52 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           done tasks awaiting approval -- not sorted chronologically with messages.
           Multiple done tasks stack here. Zero done tasks = nothing rendered. */}
       {activeTab === 'chat' && (() => {
-        const doneTasks = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug)
+        const doneTasks = (rightNowTasks || []).filter(t =>
+          t.isDoneAwaitingApproval && t.agent === agentSlug &&
+          !optimisticallyRemovedIds.has(t.taskId || t.text)
+        )
         if (doneTasks.length === 0) return null
         const safeIndex = Math.min(confirmIndex, doneTasks.length - 1)
         const t = doneTasks[safeIndex]
         const total = doneTasks.length
-        const callTaskAction = async (taskId, taskText, action) => {
+        const callTaskAction = (taskId, taskText, action) => {
           const key = taskId || taskText
-          if (action === 'approve') {
-            // Animate: green glow (300ms) then fade out (250ms), then fire API
-            setApprovingTaskId(key)
-            await new Promise(r => setTimeout(r, 300))
-            setApprovingTaskId(key + '__fadeout')
-            await new Promise(r => setTimeout(r, 250))
-            setApprovingTaskId(null)
-          } else if (action === 'reject') {
-            // Animate: red glow (300ms) then fade out (250ms), then fire API
-            setDenyingTaskId(key)
-            await new Promise(r => setTimeout(r, 300))
-            setDenyingTaskId(key + '__fadeout')
-            await new Promise(r => setTimeout(r, 250))
-            setDenyingTaskId(null)
+          // 1. Optimistically remove from UI immediately
+          setOptimisticallyRemovedIds(prev => new Set([...prev, key]))
+          // Clear any prior failure badge for this key
+          setFailedTaskIds(prev => { const n = new Set(prev); n.delete(key); return n })
+          // 2. Fire animation in background (non-blocking)
+          const runAnim = async () => {
+            if (action === 'approve') {
+              setApprovingTaskId(key)
+              await new Promise(r => setTimeout(r, 300))
+              setApprovingTaskId(key + '__fadeout')
+              await new Promise(r => setTimeout(r, 250))
+              setApprovingTaskId(null)
+            } else if (action === 'reject') {
+              setDenyingTaskId(key)
+              await new Promise(r => setTimeout(r, 300))
+              setDenyingTaskId(key + '__fadeout')
+              await new Promise(r => setTimeout(r, 250))
+              setDenyingTaskId(null)
+            }
           }
-          try {
-            await fetch('/api/dashboard/task-action', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action, taskId, taskText, agent: agentSlug, clientId: getClientId() }),
+          runAnim()
+          // 3. Fire API in background -- re-add card with error badge on failure
+          fetch('/api/dashboard/task-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, taskId, taskText, agent: agentSlug, clientId: getClientId() }),
+          })
+            .then(res => {
+              if (!res.ok) throw new Error('non-ok')
+              pipeData?.refetch?.()
             })
-            pipeData?.refetch?.()
-          } catch { /* silent fail */ }
+            .catch(() => {
+              // Error recovery: restore card with failure badge
+              setOptimisticallyRemovedIds(prev => { const n = new Set(prev); n.delete(key); return n })
+              setFailedTaskIds(prev => new Set([...prev, key]))
+            })
         }
         const handleClarify = (taskText) => {
           const prefix = `Re: "${taskText}" -- `
@@ -8743,6 +8763,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               const isFadingOut = approvingTaskId === cardKey + '__fadeout'
               const isDenyGlowing = denyingTaskId === cardKey
               const isDenyFadingOut = denyingTaskId === cardKey + '__fadeout'
+              const hasFailed = failedTaskIds.has(cardKey)
               const cardClass = isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : isDenyGlowing ? 'task-denying' : isDenyFadingOut ? 'task-denied' : ''
               return (
             <motion.div
@@ -8754,34 +8775,40 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               transition={{ type: 'spring', stiffness: 420, damping: 28 }}
               style={{
                 background: 'rgba(8,16,32,0.92)',
-                border: '1.5px solid rgba(100,180,255,0.22)',
-                borderLeft: '3px solid rgba(100,180,255,0.55)',
+                border: hasFailed ? '1.5px solid rgba(239,68,68,0.65)' : '1.5px solid rgba(100,180,255,0.22)',
+                borderLeft: hasFailed ? '3px solid rgba(239,68,68,0.85)' : '3px solid rgba(100,180,255,0.55)',
                 borderRadius: 12,
                 padding: '12px 16px',
-                boxShadow: '0 -4px 32px rgba(100,180,255,0.06), 0 2px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(100,180,255,0.08)',
+                boxShadow: hasFailed
+                  ? '0 -4px 32px rgba(239,68,68,0.10), 0 2px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(239,68,68,0.08)'
+                  : '0 -4px 32px rgba(100,180,255,0.06), 0 2px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(100,180,255,0.08)',
                 position: 'relative', overflow: 'hidden',
               }}>
               {/* Inner glow strip */}
               <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-                background: 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.28) 40%, rgba(100,180,255,0.28) 60%, transparent 100%)',
+                background: hasFailed
+                  ? 'linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.35) 40%, rgba(239,68,68,0.35) 60%, transparent 100%)'
+                  : 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.28) 40%, rgba(100,180,255,0.28) 60%, transparent 100%)',
                 pointerEvents: 'none',
               }} />
-              {/* Header row: dot + label + (arrows + counter if multiple) */}
+              {/* Header row: dot + label + (error badge if failed) + (arrows + counter if multiple) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <div style={{
                   width: 7, height: 7, borderRadius: '50%',
-                  background: '#F59E0B',
-                  boxShadow: '0 0 8px rgba(245,158,11,0.8), 0 0 16px rgba(245,158,11,0.4)',
+                  background: hasFailed ? '#EF4444' : '#F59E0B',
+                  boxShadow: hasFailed
+                    ? '0 0 8px rgba(239,68,68,0.8), 0 0 16px rgba(239,68,68,0.4)'
+                    : '0 0 8px rgba(245,158,11,0.8), 0 0 16px rgba(245,158,11,0.4)',
                   flexShrink: 0,
                   animation: 'statusPulse 2s ease-in-out infinite',
                 }} />
                 <span style={{
-                  fontSize: 10, fontWeight: 700, color: '#8BA4C4',
+                  fontSize: 10, fontWeight: 700, color: hasFailed ? '#F87171' : '#8BA4C4',
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.10em', textTransform: 'uppercase',
                   flex: 1,
-                }}>AWAITING REVIEW</span>
+                }}>{hasFailed ? 'FAILED -- TAP TO RETRY' : 'AWAITING REVIEW'}</span>
                 {total > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                     <button
