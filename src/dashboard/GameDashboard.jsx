@@ -7167,7 +7167,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     }
                     if (e.key === 'Enter') isUserTypingRef.current = false
                   }}
-                  placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`} disabled={streaming}
+                  placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`}
+                  disabled={false}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="sentences"
+                  spellCheck="false"
+                  inputMode="text"
+                  enterKeyHint="send"
                   style={{
                     width: '100%',
                     background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
@@ -8352,9 +8359,14 @@ export default function GameDashboard() {
     if (roomId === selectedRoom) {
       // Already selected: zoom to Level 3 (detail)
       setCameraZoom(ZOOM_MAX)
-      // On mobile, open drawer to full on double-tap
-      if (isMobile && drawerSnap === 'half') {
-        setDrawerSnap('full')
+      // On mobile: always open the drawer. If hidden/null (first load), open to half.
+      // If already at half, promote to full (double-tap behavior).
+      if (isMobile) {
+        if (drawerSnap === 'half') {
+          setDrawerSnap('full')
+        } else if (!drawerSnap) {
+          setDrawerSnap('half')
+        }
       }
     } else {
       // First click: zoom to Level 2 (neighborhood)
