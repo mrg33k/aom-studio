@@ -9960,7 +9960,7 @@ export default function GameDashboard() {
           if (!res.ok) return
           const data = await res.json()
           const newMsgs = (data?.messages || [])
-            .filter(m => m.role === 'assistant' && m.timestamp > lastSeenTs && (!m.agent || m.agent === room)) // guard: only messages for this agent
+            .filter(m => m.timestamp > lastSeenTs && (!m.agent || m.agent === room)) // all roles: assistant + user from terminal/telegram
           if (newMsgs.length) {
             lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
             setAgentChats(prev => {
@@ -9968,17 +9968,19 @@ export default function GameDashboard() {
               let updated = [...current]
               let changed = false
               for (const row of newMsgs) {
-                const msg = { id: row.id, role: 'assistant', content: row.text || '', time: row.timestamp, source: row.source || 'supabase' }
+                const msg = { id: row.id, role: row.role || 'assistant', content: row.text || '', time: row.timestamp, source: row.source || 'supabase' }
                 if (!updated.some(m => m.id === msg.id)) {
-                  updated = updated.filter(m => !m.streaming)
+                  if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
                   updated.push(msg)
                   changed = true
                 }
               }
               if (!changed) return prev
+              // Sort by timestamp so terminal/telegram user messages appear in correct order
+              updated.sort(safeTimeSort)
               return { ...prev, [room]: { _all: updated } }
             })
-            setPanelStreaming(false)
+            if (newMsgs.some(m => m.role === 'assistant')) setPanelStreaming(false)
           }
         } catch {}
       }, 3000)
