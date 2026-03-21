@@ -469,6 +469,7 @@ export function useDataPipe(parsePunchList) {
             'rightnow': '#FF6B3D', 'your-todos': '#EF4444', 'schedule': '#FF6B3D',
             'finish-these': '#6B8AB0', 'corner': '#3B9EFF', 'ambition': '#F59E0B',
             'outreach': '#EF4444', 'infra': '#4CAF50', 'content': '#FF7043',
+            'multi-tenant': '#7C3AED',
           }
           const DEFAULT_COLOR = '#6B8AB0'
 
