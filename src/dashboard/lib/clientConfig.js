@@ -3,8 +3,10 @@
 // Priority order for resolving client_id:
 //   1. Supabase auth user metadata: user.user_metadata.world
 //   2. URL param: ?client=acme
-//   3. localStorage: corner_client_id
-//   4. Default: 'aom' (us)
+//   3. Default: 'aom' (us)
+//
+// NOTE: localStorage removed. No persistence until offline features are built.
+// Everything reads from Supabase auth or URL params only.
 //
 // This is the FOUNDATION layer only. No Supabase schema changes required here.
 // The client_id flows into API calls so each tenant's data is isolated.
@@ -18,13 +20,11 @@ let _authClientId = null
 /**
  * setClientIdFromUser(user) -- call this after Supabase auth resolves.
  * Reads user.user_metadata.world and caches it for synchronous getClientId() calls.
- * Also persists to localStorage so refreshes stay scoped to the right tenant.
  */
 export function setClientIdFromUser(user) {
   const world = user?.user_metadata?.world
   if (world && world.trim()) {
     _authClientId = world.trim().toLowerCase()
-    setClientId(_authClientId)
   } else {
     _authClientId = null
   }
@@ -49,33 +49,16 @@ export function getClientId() {
     // ignore
   }
 
-  // 3. localStorage persistence (set once on login/onboarding)
-  try {
-    const stored = localStorage.getItem('corner_client_id')
-    if (stored && stored.trim()) return stored.trim().toLowerCase()
-  } catch {
-    // ignore (private browsing, etc.)
-  }
-
-  // 4. Default: AOM (our own instance)
+  // 3. Default: AOM (our own instance)
   return DEFAULT_CLIENT_ID
 }
 
 /**
- * setClientId(id) -- persist client selection to localStorage.
- * Called during onboarding or admin switching.
+ * setClientId(id) -- no-op until offline features are built.
+ * Previously persisted to localStorage; removed pending Supabase-only approach.
  */
-export function setClientId(id) {
-  if (typeof window === 'undefined') return
-  try {
-    if (!id || id === DEFAULT_CLIENT_ID) {
-      localStorage.removeItem('corner_client_id')
-    } else {
-      localStorage.setItem('corner_client_id', id.trim().toLowerCase())
-    }
-  } catch {
-    // ignore
-  }
+export function setClientId(_id) {
+  // No-op: localStorage removed. Client identity resolves from Supabase auth only.
 }
 
 /**

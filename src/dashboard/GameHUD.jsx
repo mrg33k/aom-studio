@@ -150,19 +150,8 @@ export default function GameHUD({
   const hudRef = useRef(null)
   const conversationScores = useConversationRecency()
 
-  // DONE(bobby2): MANUAL TASKS for Right Now -- persisted in localStorage under 'corner-rightnow-manual-tasks'
-  const [manualTasks, setManualTasks] = useState(() => {
-    try {
-      const saved = localStorage.getItem('corner-rightnow-manual-tasks')
-      return saved ? JSON.parse(saved) : []
-    } catch { return [] }
-  })
-  // Sync manual tasks to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('corner-rightnow-manual-tasks', JSON.stringify(manualTasks))
-    } catch {}
-  }, [manualTasks])
+  // MANUAL TASKS for Right Now -- in-memory only (no localStorage until offline features built)
+  const [manualTasks, setManualTasks] = useState([])
 
   const addManualTask = useCallback((text) => {
     setManualTasks(prev => [...prev, { id: Date.now(), text, done: false, createdAt: new Date().toISOString() }])
@@ -201,7 +190,7 @@ export default function GameHUD({
     let merged = raw.filter(p => p.section !== 'rightnow')
 
     // RIGHT NOW = ALWAYS visible. Shows live agent tasks + manual tasks + add prompt.
-    // Live agent tasks get LIVE badge. Manual tasks (from localStorage) don't. Add prompt always at end.
+    // Live agent tasks get LIVE badge. Manual tasks don't. Add prompt always at end.
     const rightNowTasks = []
     // Live agent tasks first
     liveRightNowTasks.forEach(t => {
@@ -213,7 +202,7 @@ export default function GameHUD({
         isLive: true,
       })
     })
-    // Manual tasks (from localStorage)
+    // Manual tasks (in-memory)
     manualTasks.forEach(t => {
       rightNowTasks.push({
         text: t.text,
@@ -909,13 +898,7 @@ export default function GameHUD({
           </button>
 
           <button onClick={() => {
-            try {
-              const saved = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
-              if (!saved.some(t => t.text === hudTaskCtx.task.text)) {
-                saved.push({ id: Date.now(), text: hudTaskCtx.task.text, agent: hudTaskCtx.task.agent || 'patrik', addedAt: new Date().toISOString() })
-                localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved))
-              }
-            } catch {}
+            addManualTask(hudTaskCtx.task.text)
             setHudTaskCtx(null)
           }} style={{ ...hudCtxBtn(isNightMode), color: '#FF6B3D', fontWeight: 700 }}>
             Send to Right Now
