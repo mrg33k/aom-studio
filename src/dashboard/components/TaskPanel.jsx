@@ -1,6 +1,7 @@
 // TaskPanel.jsx -- extracted from GameHUD.jsx (god file split 4/6)
 // Contains: TaskPanel component
 // Pure extraction -- zero functionality changes.
+// DONE(bobby): touch drag-to-reorder task list on iPad/mobile using Pointer Events API
 
 import React, { useState, useCallback, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
@@ -62,6 +63,105 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
       return aDone ? 1 : -1
     })
   }, [tasks, localToggles])
+
+  // Drag-to-reorder state: stores an ordered array of task keys for the session
+  // Only applies to the current pill's tasks (live tasks sort is per-pill)
+  const [dragOrder, setDragOrder] = useState(null) // null = use default sort
+  const [activeDragKey, setActiveDragKey] = useState(null) // key of the actively dragged row
+  const dragStateRef = useRef({
+    active: false,
+    dragKey: null,    // key of the card being dragged
+    startY: 0,
+    pointerId: null,
+  })
+  const taskListRef = useRef(null)
+
+  // Get the task key for drag ordering
+  const getTaskKey = (task) => task.isManual ? `manual-${task.manualId}` : String(task.origIdx)
+
+  // Build ordered task list (dragOrder overrides sortedTasks order)
+  const orderedTasks = useMemo(() => {
+    if (!dragOrder) return sortedTasks
+    const keyMap = new Map(sortedTasks.map(t => [
+      t.isManual ? `manual-${t.manualId}` : String(t.origIdx),
+      t,
+    ]))
+    const result = []
+    for (const k of dragOrder) {
+      if (keyMap.has(k)) result.push(keyMap.get(k))
+    }
+    // Add any tasks not in dragOrder (e.g. newly added) at the end
+    for (const t of sortedTasks) {
+      const k = t.isManual ? `manual-${t.manualId}` : String(t.origIdx)
+      if (!dragOrder.includes(k)) result.push(t)
+    }
+    return result
+  }, [sortedTasks, dragOrder])
+
+  // Get task row element Y position relative to list
+  function getRowIndexAtY(listEl, clientY) {
+    if (!listEl) return -1
+    const rows = listEl.querySelectorAll('[data-task-row]')
+    let best = -1
+    let bestDist = Infinity
+    rows.forEach((row, i) => {
+      const rect = row.getBoundingClientRect()
+      const midY = rect.top + rect.height / 2
+      const dist = Math.abs(clientY - midY)
+      if (dist < bestDist) { bestDist = dist; best = i }
+    })
+    return best
+  }
+
+  const handleRowPointerDown = useCallback((e, task) => {
+    // Only on touch devices (skip mouse -- mouse gets context menu instead)
+    if (e.pointerType === 'mouse') return
+    // Skip add-prompt rows and live agent tasks (live tasks shouldn't be manually reordered)
+    if (task.isAddPrompt || task.isLive) return
+
+    const state = dragStateRef.current
+    state.startY = e.clientY
+    state.dragKey = getTaskKey(task)
+    state.pointerId = e.pointerId
+    state.active = false
+  }, [])
+
+  const handleRowPointerMove = useCallback((e) => {
+    const state = dragStateRef.current
+    if (!state.dragKey) return
+    if (state.pointerId !== e.pointerId) return
+
+    const dy = Math.abs(e.clientY - state.startY)
+    if (dy > 8 && !state.active) {
+      state.active = true
+      setActiveDragKey(state.dragKey)
+    }
+
+    if (state.active) {
+      e.stopPropagation() // prevent swipe-to-dismiss while reordering
+      const listEl = taskListRef.current
+      const overIdx = getRowIndexAtY(listEl, e.clientY)
+      if (overIdx < 0) return
+
+      const currentOrder = dragOrder || orderedTasks.map(getTaskKey)
+      const fromIdx = currentOrder.indexOf(state.dragKey)
+      if (fromIdx < 0 || fromIdx === overIdx) return
+
+      // Reorder: move dragKey from fromIdx to overIdx
+      const newOrder = [...currentOrder]
+      newOrder.splice(fromIdx, 1)
+      newOrder.splice(overIdx, 0, state.dragKey)
+      setDragOrder(newOrder)
+    }
+  }, [dragOrder, orderedTasks])
+
+  const handleRowPointerUp = useCallback(() => {
+    const state = dragStateRef.current
+    state.active = false
+    state.dragKey = null
+    state.pointerId = null
+    setActiveDragKey(null)
+  }, [])
 
   // Toggle checkbox: write to punch-list.md via API
   const toggleTask = useCallback(async (task, origIdx) => {
@@ -209,13 +309,20 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
       </div>
 
       {/* Task list */}
-      <div style={{
-        padding: '4px 12px 12px',
-        overflowY: 'auto', maxHeight: 300,
-        touchAction: 'pan-y',
-        WebkitOverflowScrolling: 'touch',
-      }} className="hud-scroll">
-        {sortedTasks.map((task, i) => {
+      <div
+        ref={taskListRef}
+        style={{
+          padding: '4px 12px 12px',
+          overflowY: 'auto', maxHeight: 300,
+          touchAction: 'pan-y',
+          WebkitOverflowScrolling: 'touch',
+        }}
+        className="hud-scroll"
+        onPointerMove={handleRowPointerMove}
+        onPointerUp={handleRowPointerUp}
+        onPointerCancel={handleRowPointerUp}
+      >
+        {orderedTasks.map((task, i) => {
           const isDone = getTaskDone(task, task.origIdx)
           const isSaving = saving === task.origIdx
 
@@ -224,13 +331,14 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
             return (
               <motion.div
                 key="add-prompt"
+                data-task-row
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.15 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '8px 8px',
-                  borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
+                  borderBottom: i < orderedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 }}
               >
                 {addingTask ? (
@@ -312,9 +420,13 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
             )
           }
 
+          const taskKey = task.isManual ? `manual-${task.manualId}` : String(task.origIdx)
+          const isDraggingThis = activeDragKey === taskKey
+
           return (
             <motion.div
               key={task.isManual ? `manual-${task.manualId}` : task.origIdx}
+              data-task-row
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03, duration: 0.15 }}
@@ -323,39 +435,30 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 e.stopPropagation()
                 onTaskContextMenu?.(e, task, project)
               }}
-              onTouchStart={(e) => {
-                // Long-press for mobile context menu (500ms)
-                const touch = e.touches[0]
-                const timer = setTimeout(() => {
-                  e.preventDefault?.()
-                  onTaskContextMenu?.({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {}, stopPropagation: () => {} }, task, project)
-                }, 500)
-                e.currentTarget._longPressTimer = timer
-              }}
-              onTouchEnd={(e) => {
-                clearTimeout(e.currentTarget._longPressTimer)
-              }}
-              onTouchMove={(e) => {
-                clearTimeout(e.currentTarget._longPressTimer)
-              }}
+              onPointerDown={(e) => handleRowPointerDown(e, task)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '8px 8px',
                 minHeight: 40,
-                borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
-                opacity: isDone ? 0.45 : 1,
+                borderBottom: i < orderedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
+                opacity: isDone ? 0.45 : isDraggingThis ? 0.5 : 1,
                 transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
-                // Highlight when navigated-to OR context menu open
-                background: highlightedTask && task.text === highlightedTask.text
-                  ? (isDaytime ? 'rgba(59,158,255,0.25)' : 'rgba(59,158,255,0.2)')
-                  : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
-                    ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.15)')
-                    : 'transparent',
-                borderLeft: highlightedTask && task.text === highlightedTask.text
-                  ? `3px solid ${project.color || '#3B9EFF'}`
-                  : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
-                    ? `3px solid ${project.color || '#3B82F6'}`
-                    : '3px solid transparent',
+                touchAction: 'pan-y',
+                // Highlight when dragging, navigated-to, or context menu open
+                background: isDraggingThis
+                  ? (isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)')
+                  : highlightedTask && task.text === highlightedTask.text
+                    ? (isDaytime ? 'rgba(59,158,255,0.25)' : 'rgba(59,158,255,0.2)')
+                    : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
+                      ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.15)')
+                      : 'transparent',
+                borderLeft: isDraggingThis
+                  ? `3px solid ${project.color || '#3B82F6'}`
+                  : highlightedTask && task.text === highlightedTask.text
+                    ? `3px solid ${project.color || '#3B9EFF'}`
+                    : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
+                      ? `3px solid ${project.color || '#3B82F6'}`
+                      : '3px solid transparent',
               }}
             >
               {/* Checkbox - CLICKABLE (44px touch target via wrapper div) */}

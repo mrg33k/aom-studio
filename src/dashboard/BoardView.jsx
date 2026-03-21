@@ -2,6 +2,7 @@
 // Columns: one per agent + one per project + Right Now + Completed
 // Features: filter bar, search, horizontal scroll, drag-and-drop between columns
 // Data source: pipeData from useDataPipe hook (rightNow, completedFeed, punchData)
+// DONE(bobby): touch drag-and-drop for iPad/mobile using Pointer Events API
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { AGENTS, PROJECTS } from './gridSpec.js'
@@ -65,21 +66,155 @@ const ALL_COLS = {
 }
 
 
+// ── TOUCH DRAG GHOST ────────────────────────────────────────────────────────
+// Creates a floating ghost element during touch drag. Appended to document.body.
+function createTouchGhost(sourceEl) {
+  const rect = sourceEl.getBoundingClientRect()
+  const ghost = sourceEl.cloneNode(true)
+  ghost.id = 'board-touch-ghost'
+  ghost.style.cssText = [
+    `position: fixed`,
+    `left: ${rect.left}px`,
+    `top: ${rect.top}px`,
+    `width: ${rect.width}px`,
+    `pointer-events: none`,
+    `z-index: 99999`,
+    `opacity: 0.85`,
+    `transform: rotate(2deg) scale(1.04)`,
+    `box-shadow: 0 12px 40px rgba(0,0,0,0.6)`,
+    `transition: none`,
+    `border-radius: 8px`,
+  ].join(';')
+  document.body.appendChild(ghost)
+  return ghost
+}
+
+function removeTouchGhost() {
+  const existing = document.getElementById('board-touch-ghost')
+  if (existing) existing.remove()
+}
+
 // ── BOARD CARD ──────────────────────────────────────────────────────────────
 
-function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu }) {
+function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop }) {
   const agentSlug = entry.agent?.toLowerCase()
   const agentColor = getAgentColor(agentSlug)
   const taskText = entry.text || entry.description || entry.currentTask || 'No task'
   const agentName = entry.agent ? getAgentName(agentSlug) : null
   const projectTag = entry.project || null
-  const longPressTimerRef = useRef(null)
+  const cardRef = useRef(null)
+
+  // Pointer-based drag (works for both mouse and touch)
+  const pointerDragRef = useRef({
+    active: false,
+    moved: false,
+    startX: 0,
+    startY: 0,
+    pointerId: null,
+    longPressTimer: null,
+  })
 
   // Only show agent badge if it differs from the column we're in
   const showAgentBadge = agentName && agentSlug !== columnKey
 
+  const handlePointerDown = useCallback((e) => {
+    // Only primary button for mouse, any for touch
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    const state = pointerDragRef.current
+    state.startX = e.clientX
+    state.startY = e.clientY
+    state.pointerId = e.pointerId
+    state.active = false
+    state.moved = false
+
+    // Long-press = context menu (500ms, cancels if we start dragging)
+    state.longPressTimer = setTimeout(() => {
+      if (!state.moved) {
+        onContextMenu?.({ x: e.clientX, y: e.clientY, entry, columnKey })
+      }
+    }, 500)
+  }, [entry, columnKey, onContextMenu])
+
+  const handlePointerMove = useCallback((e) => {
+    const state = pointerDragRef.current
+    if (state.pointerId === null) return
+    if (state.pointerId !== e.pointerId) return
+
+    const dx = e.clientX - state.startX
+    const dy = e.clientY - state.startY
+    const dist = Math.sqrt(dx * dx + dy * dy)
+
+    if (dist > 6 && !state.active) {
+      // Start drag
+      state.active = true
+      state.moved = true
+      clearTimeout(state.longPressTimer)
+
+      // Create ghost from card element
+      if (cardRef.current) {
+        createTouchGhost(cardRef.current)
+      }
+      onDragStart?.()
+    }
+
+    if (state.active) {
+      e.preventDefault()
+      const ghost = document.getElementById('board-touch-ghost')
+      if (ghost) {
+        const rect = cardRef.current?.getBoundingClientRect()
+        const offsetX = rect ? e.clientX - state.startX : 0
+        const offsetY = rect ? e.clientY - state.startY : 0
+        ghost.style.left = `${(rect?.left ?? 0) + offsetX}px`
+        ghost.style.top = `${(rect?.top ?? 0) + offsetY}px`
+
+        // Highlight drop target column
+        const el = document.elementFromPoint(e.clientX, e.clientY)
+        const colEl = el?.closest('[data-board-col]')
+        const allCols = document.querySelectorAll('[data-board-col]')
+        allCols.forEach(c => c.setAttribute('data-drop-hover', c === colEl ? '1' : '0'))
+      }
+    }
+  }, [onDragStart])
+
+  const handlePointerUp = useCallback((e) => {
+    const state = pointerDragRef.current
+    clearTimeout(state.longPressTimer)
+
+    if (state.active) {
+      // Find drop target column
+      removeTouchGhost()
+      const el = document.elementFromPoint(e.clientX, e.clientY)
+      const colEl = el?.closest('[data-board-col]')
+      if (colEl) {
+        const toCol = colEl.getAttribute('data-board-col')
+        if (toCol && toCol !== columnKey) {
+          onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex })
+        }
+      }
+      // Clear hover state
+      document.querySelectorAll('[data-board-col]').forEach(c => c.removeAttribute('data-drop-hover'))
+      onDragEnd?.()
+    }
+
+    state.active = false
+    state.moved = false
+    state.pointerId = null
+  }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd])
+
+  const handlePointerCancel = useCallback(() => {
+    const state = pointerDragRef.current
+    clearTimeout(state.longPressTimer)
+    removeTouchGhost()
+    document.querySelectorAll('[data-board-col]').forEach(c => c.removeAttribute('data-drop-hover'))
+    if (state.active) onDragEnd?.()
+    state.active = false
+    state.moved = false
+    state.pointerId = null
+  }, [onDragEnd])
+
   return (
     <div
+      ref={cardRef}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'move'
@@ -91,17 +226,10 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         e.preventDefault()
         onContextMenu?.({ x: e.clientX, y: e.clientY, entry, columnKey })
       }}
-      onTouchStart={(e) => {
-        clearTimeout(longPressTimerRef.current)
-        const touch = e.touches[0]
-        const cx = touch.clientX
-        const cy = touch.clientY
-        longPressTimerRef.current = setTimeout(() => {
-          onContextMenu?.({ x: cx, y: cy, entry, columnKey })
-        }, 500)
-      }}
-      onTouchEnd={() => clearTimeout(longPressTimerRef.current)}
-      onTouchMove={() => clearTimeout(longPressTimerRef.current)}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       style={{
         background: 'rgba(255,255,255,0.04)',
         border: '1px solid rgba(255,255,255,0.08)',
@@ -114,6 +242,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         opacity: isDragging ? 0.4 : 1,
         userSelect: 'none',
         WebkitUserSelect: 'none',
+        touchAction: 'none',
       }}
       onMouseEnter={e => {
         if (!isDragging) {
@@ -209,9 +338,23 @@ function BoardColumn({
   isVisible,
   taskOrder,
   onTaskReorder,
+  onContextMenu,
+  onTouchDrop,
 }) {
   const config = ALL_COLS[colKey] || { label: colKey, color: '#6B7280', type: 'other' }
   const dragInsertRef = useRef(null)
+  const [touchHover, setTouchHover] = useState(false)
+
+  // Keep touchHover in sync with data-drop-hover attribute changes
+  useEffect(() => {
+    const colEl = dragInsertRef.current?.closest('[data-board-col]')
+    if (!colEl) return
+    const obs = new MutationObserver(() => {
+      setTouchHover(colEl.getAttribute('data-drop-hover') === '1')
+    })
+    obs.observe(colEl, { attributes: true, attributeFilter: ['data-drop-hover'] })
+    return () => obs.disconnect()
+  }, [])
 
   // Sort cards by stored task order
   const sortedCards = useMemo(() => {
@@ -241,8 +384,11 @@ function BoardColumn({
 
   if (!isVisible) return null
 
+  const isHighlighted = isDropTarget || touchHover
+
   return (
     <div
+      data-board-col={colKey}
       style={{
         flex: '0 0 260px',
         width: 260,
@@ -264,9 +410,10 @@ function BoardColumn({
         alignItems: 'center',
         gap: 8,
         background: `${config.color}12`,
-        border: `2px solid ${config.color}38`,
+        border: `2px solid ${isHighlighted ? config.color : `${config.color}38`}`,
         borderRadius: '10px 10px 0 0',
         padding: '9px 14px',
+        transition: 'border-color 150ms ease',
       }}>
         <div style={{
           width: 8, height: 8, borderRadius: '50%',
@@ -306,18 +453,20 @@ function BoardColumn({
       </div>
 
       {/* Card stack / drop zone */}
-      <div style={{
-        flex: 1,
-        background: isDropTarget ? `${config.color}08` : 'rgba(255,255,255,0.015)',
-        border: `1.5px solid ${isDropTarget ? config.color : `${config.color}28`}`,
-        borderTop: 'none',
-        borderRadius: '0 0 10px 10px',
-        padding: '10px',
-        overflowY: 'auto',
-        minHeight: 100,
-        transition: 'background 150ms ease, border-color 150ms ease',
-        boxShadow: isDropTarget ? `inset 0 0 12px ${config.color}15` : 'none',
-      }}>
+      <div
+        ref={dragInsertRef}
+        style={{
+          flex: 1,
+          background: isHighlighted ? `${config.color}08` : 'rgba(255,255,255,0.015)',
+          border: `1.5px solid ${isHighlighted ? config.color : `${config.color}28`}`,
+          borderTop: 'none',
+          borderRadius: '0 0 10px 10px',
+          padding: '10px',
+          overflowY: 'auto',
+          minHeight: 100,
+          transition: 'background 150ms ease, border-color 150ms ease',
+          boxShadow: isHighlighted ? `inset 0 0 12px ${config.color}15` : 'none',
+        }}>
         {sortedCards.length === 0 ? (
           <div style={{
             fontFamily: "'Inter', system-ui, sans-serif",
@@ -327,7 +476,7 @@ function BoardColumn({
             paddingTop: 20,
             fontStyle: 'italic',
           }}>
-            {isDropTarget ? 'Drop here' : 'Nothing here'}
+            {isHighlighted ? 'Drop here' : 'Nothing here'}
           </div>
         ) : (
           sortedCards.map((card, i) => (
@@ -339,7 +488,8 @@ function BoardColumn({
               isDragging={draggingKey === `${colKey}-${i}`}
               onDragStart={() => onCardDragStart(`${colKey}-${i}`)}
               onDragEnd={() => onCardDragEnd()}
-              onContextMenu={(ctx) => setBoardCtxMenu(ctx)}
+              onContextMenu={(ctx) => onContextMenu?.(ctx)}
+              onTouchDrop={onTouchDrop}
             />
           ))
         )}
@@ -597,6 +747,17 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     saveCardOverrides(newOverrides)
   }, [cardOverrides, saveCardOverrides])
 
+  // Touch drag handler -- same logic as handleCardDrop but triggered by Pointer Events
+  const handleCardTouchDrop = useCallback((toCol, payload) => {
+    const { entry, fromCol, taskIndex } = payload
+    if (fromCol === toCol) return
+    const cardId = entry._id || `override-${entry.text?.slice(0, 20)}-${Date.now()}`
+    const card = { ...entry, _id: cardId }
+    const newOverrides = { ...cardOverrides, [cardId]: { toCol, card } }
+    saveCardOverrides(newOverrides)
+    setDraggingCard(null)
+  }, [cardOverrides, saveCardOverrides])
+
   const handleDragOver = useCallback((colKey) => {
     setDropTargetCol(colKey)
   }, [])
@@ -756,6 +917,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
               const updated = { ...taskOrders, [key]: newOrder }
               saveTaskOrders(updated)
             }}
+            onContextMenu={(ctx) => setBoardCtxMenu(ctx)}
+            onTouchDrop={handleCardTouchDrop}
           />
         ))}
 
