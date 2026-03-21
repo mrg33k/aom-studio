@@ -3424,9 +3424,10 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, currentUser, onSignOut }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
+  const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done'
   const [teamName, setTeamName] = useState(() => {
     try { return localStorage.getItem('corner-team-name') || 'aom' } catch { return 'aom' }
   })
@@ -4102,6 +4103,87 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   }}
                 >
                   Layout reset
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
+        )}
+
+        {/* Unstuck button (game view only) -- clears stale active tasks + resets stuck agents */}
+        {(viewMode === 'game' || !viewMode) && (
+          <button
+            title="Unstuck: clear active tasks + reset stuck agents"
+            onClick={async () => {
+              if (unstuckToast === 'loading') return
+              setUnstuckToast('loading')
+              try {
+                // Clear localStorage
+                try {
+                  localStorage.removeItem('corner-right-now-tasks')
+                  localStorage.removeItem('corner-task-rightnow')
+                } catch {}
+                // Call API
+                await onUnstuck?.()
+                setUnstuckToast('done')
+                setTimeout(() => setUnstuckToast(null), 1800)
+              } catch {
+                setUnstuckToast(null)
+              }
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: 5, flexShrink: 0,
+              background: 'transparent',
+              border: isNightMode ? '1.5px solid rgba(234,179,8,0.22)' : '1.5px solid rgba(234,179,8,0.3)',
+              borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
+              cursor: unstuckToast === 'loading' ? 'default' : 'pointer',
+              transition: 'all 150ms ease',
+              position: 'relative',
+              opacity: unstuckToast === 'loading' ? 0.6 : 1,
+            }}
+            onMouseEnter={e => {
+              if (unstuckToast === 'loading') return
+              e.currentTarget.style.background = isNightMode ? 'rgba(234,179,8,0.1)' : 'rgba(234,179,8,0.08)'
+              e.currentTarget.style.borderColor = 'rgba(234,179,8,0.5)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.borderColor = isNightMode ? 'rgba(234,179,8,0.22)' : 'rgba(234,179,8,0.3)'
+            }}
+          >
+            <Zap size={13} color={isNightMode ? '#A16207' : '#CA8A04'} />
+            {!isMobile && (
+              <span style={{
+                fontSize: 12, fontWeight: 600,
+                color: isNightMode ? '#A16207' : '#CA8A04',
+                fontFamily: "'Inter', sans-serif",
+              }}>
+                {unstuckToast === 'loading' ? '...' : 'Unstuck'}
+              </span>
+            )}
+            {/* Toast confirmation */}
+            <AnimatePresence>
+              {unstuckToast === 'done' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: isNightMode ? 'rgba(15,23,42,0.95)' : 'rgba(15,23,42,0.92)',
+                    border: '1px solid rgba(234,179,8,0.35)',
+                    borderRadius: 6, padding: '5px 10px',
+                    whiteSpace: 'nowrap', zIndex: 200,
+                    fontSize: 12, fontWeight: 600,
+                    color: '#EAB308',
+                    fontFamily: "'Inter', sans-serif",
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  Unstuck!
                 </motion.div>
               )}
             </AnimatePresence>
@@ -10102,7 +10184,7 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} currentUser={currentUser} onSignOut={handleSignOut} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 

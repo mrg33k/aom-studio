@@ -1,5 +1,5 @@
 // FloatingActionButton.jsx
-// Single persistent FAB anchored bottom-right above the HUD.
+// Single persistent FAB anchored bottom-LEFT above the HUD (where mini-map used to be).
 // Expands upward to reveal action options with staggered fade-in.
 // Matches day/night theme. Always above HUD (z:40) -- this sits at z:55.
 
@@ -12,7 +12,7 @@ const OPTIONS = [
 
 // Bottom offset for FAB: sits 16px above the HUD bottom bar (~56px tall) plus margin
 const FAB_BOTTOM = 64 // px -- sits just above HUD, inside game window area
-const FAB_RIGHT  = 16 // px
+const FAB_LEFT   = 16 // px -- bottom-left (where mini-map used to be)
 const FAB_SIZE   = 56 // px -- main button diameter
 const OPTION_H   = 40 // px -- each option row height
 const OPTION_GAP = 8  // px -- gap between options
@@ -57,7 +57,7 @@ export default function FloatingActionButton({ isNightMode, isMobile }) {
       style={{
         position: 'fixed',
         bottom: FAB_BOTTOM,
-        right: FAB_RIGHT,
+        left: FAB_LEFT,
         zIndex: 55,
         display: 'flex',
         flexDirection: 'column-reverse', // stack grows upward
