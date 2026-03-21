@@ -987,6 +987,11 @@ function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode,
         position: 'relative',
         overflow: 'hidden',
         transition: 'all 200ms ease',
+        // Suppress iOS white flash on long-press
+        WebkitTapHighlightColor: 'transparent',
+        WebkitTouchCallout: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
         // VEGAS + CROSSY ROAD: Physical drop shadow. Chunky grabbable pills.
         boxShadow: isDaytime
           ? (isExpanded
@@ -1184,6 +1189,8 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
   })
   const [draggingTaskIdx, setDraggingTaskIdx] = useState(null)
   const [taskDropIdx, setTaskDropIdx] = useState(null)
+  // Long-press visual feedback: track which task is being pressed
+  const [pressingTaskId, setPressingTaskId] = useState(null)
   // Swipe-to-dismiss (mobile): track touch start Y, swipe down > 60px = close
   const swipeStartY = useRef(0)
   const handleSwipeTouchStart = useCallback((e) => {
@@ -1569,17 +1576,22 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
               onTouchStart={(e) => {
                 // Long-press for mobile context menu (500ms)
                 const touch = e.touches[0]
+                const taskId = task.isManual ? `manual-${task.manualId}` : task.origIdx
+                setPressingTaskId(taskId)
                 const timer = setTimeout(() => {
                   e.preventDefault?.()
+                  setPressingTaskId(null)
                   onTaskContextMenu?.({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {}, stopPropagation: () => {} }, task, project)
                 }, 500)
                 e.currentTarget._longPressTimer = timer
               }}
               onTouchEnd={(e) => {
                 clearTimeout(e.currentTarget._longPressTimer)
+                setPressingTaskId(null)
               }}
               onTouchMove={(e) => {
                 clearTimeout(e.currentTarget._longPressTimer)
+                setPressingTaskId(null)
               }}
               style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12,
@@ -1588,8 +1600,16 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
                 borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 borderTop: taskDropIdx === i ? `2px solid ${project.color || '#3B9EFF'}` : '2px solid transparent',
                 opacity: isDone ? 0.35 : 1,
-                transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease, border-top 100ms ease',
+                transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease, border-top 100ms ease, transform 150ms ease, box-shadow 150ms ease',
                 cursor: 'grab',
+                // Suppress iOS white flash on tap/long-press
+                WebkitTapHighlightColor: 'transparent',
+                WebkitTouchCallout: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                // Long-press visual feedback: subtle lift + shadow (no color change)
+                transform: pressingTaskId === (task.isManual ? `manual-${task.manualId}` : task.origIdx) ? 'scale(1.01)' : 'scale(1)',
+                boxShadow: pressingTaskId === (task.isManual ? `manual-${task.manualId}` : task.origIdx) ? '0 4px 16px rgba(0,0,0,0.3)' : 'none',
                 // Highlight when navigated-to OR context menu open
                 background: highlightedTask && task.text === highlightedTask.text
                   ? (isDaytime ? 'rgba(59,158,255,0.25)' : 'rgba(59,158,255,0.2)')
