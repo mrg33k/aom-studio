@@ -2,6 +2,7 @@
 // Contains: TaskPanel component
 // Pure extraction -- zero functionality changes.
 // DONE(bobby): touch drag-to-reorder task list on iPad/mobile using Pointer Events API
+// DONE(bobby): consistent checkbox list item spacing across all platforms (8-10px gap, 44px tap target)
 
 import React, { useState, useCallback, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
@@ -337,7 +338,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 transition={{ delay: i * 0.03, duration: 0.15 }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 8px',
+                  padding: '4px 8px',
+                  minHeight: 44,
                   borderBottom: i < orderedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 }}
               >
@@ -438,8 +440,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
               onPointerDown={(e) => handleRowPointerDown(e, task)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 8px',
-                minHeight: 40,
+                padding: '4px 8px',
+                minHeight: 44,
                 borderBottom: i < orderedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 opacity: isDone ? 0.45 : isDraggingThis ? 0.5 : 1,
                 transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
@@ -500,6 +502,9 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                   lineHeight: 1.4,
                   textDecoration: isDone ? 'line-through' : 'none',
                   flex: 1,
+                  minWidth: 0,
+                  wordBreak: 'break-word',
+                  overflowWrap: 'break-word',
                   cursor: (task.projectSource || task.projectSection) ? 'pointer' : 'default',
                 }}
               >
