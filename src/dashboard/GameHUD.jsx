@@ -594,8 +594,10 @@ export default function GameHUD({
         done: false,
         agent: t.agent,
         raw: '',
-        isLive: true,
+        isLive: !t.isDoneAwaitingApproval,
         isQueued: !!t.isQueued,
+        isDoneAwaitingApproval: !!t.isDoneAwaitingApproval,
+        taskId: t.taskId,
       })
     })
     // Manual tasks (in-memory)
