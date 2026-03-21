@@ -4,6 +4,7 @@
 // Matches day/night theme. Always above game content (z:55).
 
 import { useState, useEffect, useRef } from 'react'
+import CreateRoomModal from './CreateRoomModal.jsx'
 
 const OPTIONS = [
   { id: 'new-project', label: 'New Project', icon: '▣' },
@@ -17,8 +18,10 @@ const FAB_SIZE   = 48  // px -- main button diameter (slightly smaller for top c
 const OPTION_H   = 40 // px -- each option row height
 const OPTION_GAP = 8  // px -- gap between options
 
-export default function FloatingActionButton({ isNightMode, isMobile }) {
+export default function FloatingActionButton({ isNightMode, isMobile, onRoomCreated }) {
   const [open, setOpen] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState('agent') // 'agent' | 'project'
   const fabRef = useRef(null)
 
   // Dismiss on outside click / touch
@@ -39,8 +42,8 @@ export default function FloatingActionButton({ isNightMode, isMobile }) {
 
   const handleAction = (id) => {
     setOpen(false)
-    if (id === 'new-project') alert('New Project coming soon')
-    if (id === 'new-agent')   alert('New Agent coming soon')
+    if (id === 'new-project') { setModalMode('project'); setModalOpen(true) }
+    if (id === 'new-agent')   { setModalMode('agent');   setModalOpen(true) }
   }
 
   // Theme tokens
@@ -192,6 +195,15 @@ export default function FloatingActionButton({ isNightMode, isMobile }) {
           50%       { opacity: 0.15; transform: scale(1.18); }
         }
       `}</style>
+
+      {/* Create Room Modal -- rendered outside FAB container so it covers full viewport */}
+      <CreateRoomModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        initialMode={modalMode}
+        isNightMode={isNightMode}
+        onRoomCreated={onRoomCreated}
+      />
     </div>
   )
 }
