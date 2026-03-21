@@ -1167,7 +1167,7 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
   const tpGlow = isDaytime
     ? 'linear-gradient(180deg, rgba(59,130,246,0.12) 0%, transparent 100%)'
     : 'linear-gradient(180deg, rgba(100,180,255,0.05) 0%, transparent 100%)'
-  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(100,180,255,0.18)'
+  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.55)' : 'rgba(100,180,255,0.45)'
   const tpCheckboxBg = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.03)'
   const tpCloseBg = isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.06)'
   const tpCloseHoverBg = isDaytime ? 'rgba(59,130,246,0.25)' : 'rgba(100,180,255,0.12)'
@@ -2041,18 +2041,20 @@ export default function GameHUD({
       }
     } catch {}
 
-    // Production: write to Supabase so useDataPipe picks it up via the tasks filter
+    // Production: write to Supabase tasks table so useDataPipe picks it up via the tasks filter
     // useDataPipe production path: data.tasks.filter(t => t.status === 'active' || 'working' || 'in_progress')
+    // NOTE: must POST to /api/dashboard/task-action (writes to tasks table), NOT to /api/dashboard/agent-status
+    // which writes to the agent_status table and is invisible to the Right Now feed.
     if (!IS_LOCAL) {
       try {
-        await fetch('/api/dashboard/agent-status', {
+        await fetch('/api/dashboard/task-action', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action: 'addToRightNow',
+            taskText: task.text,
             agent: task.agent || 'user',
-            text: task.text,
-            status: 'active',
-            source: 'user',
+            taskId: task.id || undefined,
           }),
         })
         // Immediately refetch so the task appears in Right Now ticker without waiting for next 3s poll

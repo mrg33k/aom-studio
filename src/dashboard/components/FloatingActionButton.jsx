@@ -15,7 +15,7 @@ const OPTIONS = [
 const FAB_TOP    = 80  // px -- below top nav bar (~60px) + margin
 const FAB_RIGHT  = 16  // px
 const FAB_SIZE   = 48  // px -- main button diameter (slightly smaller for top corner)
-const OPTION_H   = 40 // px -- each option row height
+const OPTION_H   = 44 // px -- each option row height (44px = proper mobile touch target)
 const OPTION_GAP = 8  // px -- gap between options
 
 export default function FloatingActionButton({ isNightMode, isMobile, onRoomCreated }) {

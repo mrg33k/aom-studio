@@ -4353,7 +4353,7 @@ function TaskCard({ entry, agentColor, onContextMenu }) {
     DONE: { bg: 'rgba(16,185,129,0.15)', text: '#10B981' },
     ACTIVE: { bg: 'rgba(245,158,11,0.15)', text: '#F59E0B' },
     BLOCKED: { bg: 'rgba(239,68,68,0.15)', text: '#EF4444' },
-    QUEUED: { bg: 'rgba(107,114,128,0.15)', text: '#6B7280' },
+    QUEUED: { bg: 'rgba(217,70,239,0.15)', text: '#D946EF' },
     WORKING: { bg: 'rgba(245,158,11,0.15)', text: '#F59E0B' },
   }
   const badge = statusBadgeColors[entry.status] || statusBadgeColors.QUEUED
@@ -10899,7 +10899,7 @@ export default function GameDashboard() {
 
       {/* Floating Action Button -- bottom-right, above HUD, expands upward */}
       {(viewMode === 'game' || !viewMode) && (
-        <FloatingActionButton isNightMode={isNightMode} isMobile={isMobile} />
+        <FloatingActionButton isNightMode={isNightMode} isMobile={isMobile} onRoomCreated={() => pipeData?.refetch?.()} />
       )}
 
       {/* ChatBar REMOVED per Patrik directive: chat ONLY lives in the sidebar.
