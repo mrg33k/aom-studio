@@ -3445,7 +3445,7 @@ function ShortcutsOverlay({ onClose }) {
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
   const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done'
@@ -3799,6 +3799,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     const status = getAgentStatus(agent.slug)
                     const dotCol = statusDotColor[status] || '#6B7280'
                     const isSelected = selectedAgent === agent.slug
+                    const pendingCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agent.slug).length
                     return (
                       <button
                         key={agent.slug}
@@ -3839,6 +3840,15 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                             {agent.role}
                           </div>
                         </div>
+                        {/* Amber badge: pending done tasks awaiting approval */}
+                        {pendingCount > 0 && (
+                          <div style={{
+                            width: 8, height: 8, borderRadius: '50%',
+                            background: '#EAB308',
+                            boxShadow: '0 0 6px #EAB308, 0 0 12px rgba(234,179,8,0.5)',
+                            flexShrink: 0, marginRight: 4,
+                          }} title={`${pendingCount} task${pendingCount > 1 ? 's' : ''} awaiting approval`} />
+                        )}
                         <div style={{
                           width: 8, height: 8, borderRadius: '50%',
                           background: dotCol,
@@ -7291,7 +7301,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
           >&#8249;</button>
 
-          {/* Agent/Project name (center) */}
+          {/* Agent/Project name (center) with optional pending-approval badge */}
           <div style={{
             flex: 1, textAlign: 'center',
             fontSize: 12, fontWeight: 700,
@@ -7300,8 +7310,18 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             letterSpacing: '0.03em',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             paddingLeft: 4, paddingRight: 4,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
           }}>
-            {agent?.name || room?.agent || agentSlug}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {agent?.name || room?.agent || agentSlug}
+            </span>
+            {confirmDoneCount > 0 && activeTab !== 'chat' && (
+              <div style={{
+                width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                background: '#EAB308',
+                boxShadow: '0 0 5px #EAB308, 0 0 10px rgba(234,179,8,0.5)',
+              }} title={`${confirmDoneCount} task${confirmDoneCount > 1 ? 's' : ''} awaiting approval`} />
+            )}
           </div>
 
           {/* Next agent arrow */}
@@ -7631,6 +7651,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             }}>
               {AGENTS.map(a => {
                 const isSelected = a.slug === agentSlug
+                const aPendingCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === a.slug).length
                 return (
                   <button key={a.slug} onClick={(e) => {
                     e.stopPropagation()
@@ -7653,7 +7674,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       color: isSelected ? (a.color || '#60A5FA') : '#94A3B8',
                       textTransform: 'capitalize',
                     }}>{a.name}</span>
-                    {isSelected && <CheckCircle2 size={12} style={{ color: '#60A5FA', marginLeft: 'auto' }} />}
+                    {aPendingCount > 0 && (
+                      <div style={{
+                        width: 7, height: 7, borderRadius: '50%', flexShrink: 0, marginLeft: 'auto',
+                        background: '#EAB308',
+                        boxShadow: '0 0 5px #EAB308, 0 0 10px rgba(234,179,8,0.4)',
+                      }} title={`${aPendingCount} task${aPendingCount > 1 ? 's' : ''} awaiting approval`} />
+                    )}
+                    {isSelected && !aPendingCount && <CheckCircle2 size={12} style={{ color: '#60A5FA', marginLeft: 'auto' }} />}
+                    {isSelected && aPendingCount > 0 && <CheckCircle2 size={12} style={{ color: '#60A5FA' }} />}
                   </button>
                 )
               })}
@@ -10644,7 +10673,7 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 
