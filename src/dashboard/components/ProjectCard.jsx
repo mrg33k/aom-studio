@@ -11,7 +11,7 @@ import { PALETTE, HUD } from './HUDConstants.jsx'
 // ---- PROJECT CARD (VEGAS ENERGY: Trello thickness, physical objects) ---------
 // If you think it's big enough, DOUBLE IT. Slot machine buttons. Casino cards.
 // Drop shadows, bold rounded corners, chunky, grabbable, satisfying.
-export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode, wiggle }) {
+export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNightMode, wiggle, isMobile }) {
   const isDaytime = isNightMode === false
   const realTasks = project.tasks.filter(t => !t.isAddPrompt)
   const totalTasks = realTasks.length
@@ -67,8 +67,8 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       whileHover={{ scale: 1.08, y: -6, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
       whileTap={{ scale: 0.88, y: 4, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 14,
-        height: 56, padding: '0 24px', minWidth: isRightNow ? 120 : 80,
+        display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14,
+        height: isMobile ? 36 : 56, padding: isMobile ? '0 12px' : '0 24px', minWidth: isMobile ? (isRightNow ? 80 : 60) : (isRightNow ? 120 : 80),
         background: isDaytime
           ? (isExpanded
               ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
@@ -130,15 +130,15 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         }} />
       )}
 
-      {/* Project indicator - BIGGER. Icons per section type. */}
+      {/* Project indicator - BIGGER on desktop, compact on mobile. */}
       {isRightNow ? (
-        <Zap size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+        <Zap size={isMobile ? 12 : 18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
       ) : isTodoList ? (
-        <AlertCircle size={18} color="#EF4444" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.6))' }} />
+        <AlertCircle size={isMobile ? 12 : 18} color="#EF4444" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.6))' }} />
       ) : isFinishThese ? (
-        <History size={18} color="#94A3B8" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.4))' }} />
+        <History size={isMobile ? 12 : 18} color="#94A3B8" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.4))' }} />
       ) : isSchedule ? (
-        <Flame size={18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
+        <Flame size={isMobile ? 12 : 18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isClient ? (
         <div style={{
           width: 14, height: 14, borderRadius: '50%',
@@ -158,10 +158,10 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         }} />
       )}
 
-      {/* Name - VEGAS SIZE. Font weight 900. Patrik directive. */}
+      {/* Name - VEGAS SIZE on desktop, compact on mobile. */}
       <span style={{
         fontFamily: "'Inter', system-ui, sans-serif",
-        fontSize: 20, fontWeight: 900,
+        fontSize: isMobile ? 12 : 20, fontWeight: 900,
         color: isExpanded
           ? '#FFFFFF'
           : isDaytime ? '#F1F5F9' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),

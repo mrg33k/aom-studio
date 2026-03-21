@@ -731,6 +731,7 @@ export default function GameHUD({
                   onContextMenu={onProjectContextMenu}
                   isNightMode={isNightMode}
                   wiggle={project.section === 'rightnow' && rightNowWiggle}
+                  isMobile={isMobile}
                 />
               ))
             )}
