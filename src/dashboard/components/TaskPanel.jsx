@@ -418,8 +418,26 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 )}
               </span>
 
-              {/* LIVE badge for live agent tasks */}
-              {task.isLive && (
+              {/* QUEUED badge for tasks waiting in queue (fuschia) */}
+              {task.isQueued && (
+                <span style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 9, fontWeight: 800,
+                  color: '#E91E90',
+                  background: 'rgba(233,30,144,0.12)',
+                  padding: '2px 6px', borderRadius: 4,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  border: '1px solid rgba(233,30,144,0.25)',
+                  flexShrink: 0,
+                  animation: 'statusPulse 2s ease-in-out infinite',
+                }}>
+                  QUEUED
+                </span>
+              )}
+
+              {/* LIVE badge for actively working tasks (orange) */}
+              {task.isLive && !task.isQueued && (
                 <span style={{
                   fontFamily: 'JetBrains Mono, monospace',
                   fontSize: 9, fontWeight: 800,

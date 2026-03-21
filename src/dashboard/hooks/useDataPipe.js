@@ -338,6 +338,16 @@ export function useDataPipe(parsePunchList) {
                   agent: task.agent || 'system',
                   done: false,
                   isLive: true,
+                  isQueued: false,
+                  taskId: task.id,
+                })
+              } else if (task.status === 'QUEUED') {
+                taskStatusTasks.push({
+                  text: task.description || task.task || task.text || 'Queued...',
+                  agent: task.agent || 'system',
+                  done: false,
+                  isLive: true,
+                  isQueued: true,
                   taskId: task.id,
                 })
               }
@@ -386,10 +396,17 @@ export function useDataPipe(parsePunchList) {
 
           // Primary source: active tasks from tasks table (one card per task)
           if (data.tasks) {
-            const taskEntries = data.tasks
+            // Working/active tasks -- agent is actually running them
+            const workingEntries = data.tasks
               .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
-              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, taskId: t.id, source: t.source || 'agent', isQueued: t.source === 'loadup' || t.source === 'user' }))
-            active.push(...taskEntries)
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, isQueued: false, taskId: t.id }))
+            active.push(...workingEntries)
+
+            // Queued tasks -- waiting for an agent to pick them up
+            const queuedEntries = data.tasks
+              .filter(t => t.status === 'queued')
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
+            active.push(...queuedEntries)
           }
 
           // Fallback: working agents from agent_status that have NO active tasks
