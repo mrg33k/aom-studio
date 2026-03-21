@@ -8110,280 +8110,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </button>
               </div>
             )}
-            {/* Chat input */}
-            <div
-              onTouchStart={isMobile ? () => onInputFocus?.() : undefined}
-              style={{
-              padding: '16px 20px',
-              paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
-              borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
-              background: isNightMode
-                ? 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)'
-                : 'transparent',
-              flexShrink: 0,
-            }}>
-              {/* Reply-to banner */}
-              {replyTo && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  marginBottom: 8, padding: '6px 10px',
-                  background: 'rgba(59,130,246,0.08)',
-                  border: '1px solid rgba(59,130,246,0.2)',
-                  borderRadius: 8,
-                  fontSize: 12, color: '#8BA4C4',
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                }}>
-                  <CornerDownLeft size={12} color="#4A8FD4" style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    Replying to: {(replyTo.content || '').slice(0, 60)}{(replyTo.content || '').length > 60 ? '...' : ''}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setReplyTo(null)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: '#4A6080', padding: 0, lineHeight: 1,
-                      display: 'flex', alignItems: 'center',
-                    }}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              )}
-              {/* Selected skill badges -- shown above input when skills are queued */}
-              {selectedPowerups && selectedPowerups.length > 0 && (
-                <div style={{
-                  display: 'flex', flexWrap: 'wrap', gap: 6,
-                  marginBottom: 8,
-                }}>
-                  {selectedPowerups.map(skill => (
-                    <div
-                      key={skill.id}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 4,
-                        padding: '3px 8px 3px 6px',
-                        background: `${skill.color}20`,
-                        border: `1px solid ${skill.color}50`,
-                        borderRadius: 20,
-                        fontSize: 10, fontWeight: 700,
-                        color: skill.color,
-                        fontFamily: "'JetBrains Mono', monospace",
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                        userSelect: 'none',
-                      }}
-                    >
-                      <span style={{ fontSize: 9, opacity: 0.75 }}>/</span>
-                      {skill.slash.replace('/', '')}
-                      <button
-                        type="button"
-                        onClick={() => onRemovePowerup?.(skill.id)}
-                        style={{
-                          background: 'none', border: 'none', cursor: 'pointer',
-                          color: skill.color, padding: 0, lineHeight: 1,
-                          display: 'flex', alignItems: 'center',
-                          opacity: 0.7,
-                          marginLeft: 2,
-                        }}
-                        aria-label={`Remove ${skill.name} skill`}
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 0 : 10 }}>
-              {/* Powerup menu: desktop shows full trigger button. Mobile hides trigger (dual-purpose send/powerup button in input). */}
-              <PowerupMenu
-                isOpen={powerupOpen || false}
-                onToggle={(v) => onPowerupToggle?.(v)}
-                onActivate={(powerup) => onPowerupActivate?.(powerup)}
-                selectedSkills={selectedPowerups || []}
-                isMobile={isMobile}
-                isNightMode={isNightMode}
-                hideTrigger={isMobile}
-              />
-              <form onSubmit={(e) => {
-                isUserTypingRef.current = false
-                onSendMessage(e, replyTo?.id)
-                setReplyTo(null)
-              }} style={{ position: 'relative', flex: 1 }}>
-                {/* @ autocomplete dropdown (floats above input) */}
-                {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
-                  <div style={{
-                    position: 'absolute', bottom: '100%', left: 0, right: 0,
-                    marginBottom: 6,
-                    background: isNightMode ? '#1A2744' : '#1E2A3A',
-                    border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
-                    borderRadius: 12,
-                    boxShadow: isNightMode
-                      ? '0 -8px 32px rgba(0,0,0,0.5), 0 -2px 8px rgba(59,130,246,0.15)'
-                      : '0 -8px 32px rgba(0,0,0,0.4), 0 -2px 8px rgba(59,130,246,0.15)',
-                    maxHeight: 240, overflowY: 'auto',
-                    zIndex: 100,
-                    padding: '6px 0',
-                  }}>
-                    <div style={{
-                      padding: '4px 14px 8px',
-                      fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#6B8AB0',
-                      textTransform: 'uppercase', letterSpacing: '0.08em',
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>
-                      Switch to...
-                    </div>
-                    {filteredAtOptions.map((opt, i) => (
-                      <div
-                        key={opt.slug}
-                        onMouseDown={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
-                        onMouseEnter={() => {}}
-                        style={{
-                          padding: '10px 14px',
-                          display: 'flex', alignItems: 'center', gap: 12,
-                          cursor: 'pointer',
-                          background: i === atMenuIndex
-                            ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
-                            : 'transparent',
-                          transition: 'background 100ms ease',
-                        }}
-                      >
-                        {/* Color dot */}
-                        <div style={{
-                          width: 10, height: 10, borderRadius: '50%',
-                          background: opt.color,
-                          boxShadow: `0 0 6px ${opt.color}40`,
-                          flexShrink: 0,
-                        }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{
-                            fontSize: 15, fontWeight: 800,
-                            color: isNightMode ? '#F1F5F9' : '#E8ECF0',
-                            fontFamily: "'Inter', system-ui, sans-serif",
-                          }}>
-                            {opt.name}
-                            {opt.type === 'project' && (
-                              <span style={{
-                                marginLeft: 8, fontSize: 11, fontWeight: 600,
-                                color: '#F59E0B', background: 'rgba(245,158,11,0.1)',
-                                border: '1px solid rgba(245,158,11,0.2)',
-                                borderRadius: 4, padding: '1px 6px',
-                              }}>
-                                PROJECT
-                              </span>
-                            )}
-                          </div>
-                          <div style={{
-                            fontSize: 12, fontWeight: 600,
-                            color: isNightMode ? '#64748B' : '#6B8AB0',
-                            fontFamily: "'Inter', system-ui, sans-serif",
-                            marginTop: 1,
-                          }}>
-                            {opt.role}
-                          </div>
-                        </div>
-                        <span style={{
-                          fontSize: 12, fontWeight: 600,
-                          color: isNightMode ? '#475569' : '#4A6585',
-                          fontFamily: "'JetBrains Mono', monospace",
-                        }}>
-                          @{opt.slug}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <input type="text" data-panel-chat-input value={chatInput || ''} onChange={e => {
-                    isUserTypingRef.current = true
-                    onChatInputChange?.(e.target.value)
-                    if (powerupOpen) onPowerupToggle?.(false)
-                  }}
-                  onKeyDown={e => {
-                    // @ autocomplete keyboard navigation
-                    if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault()
-                        onAtKeyDown?.('down')
-                        return
-                      }
-                      if (e.key === 'ArrowUp') {
-                        e.preventDefault()
-                        onAtKeyDown?.('up')
-                        return
-                      }
-                      if (e.key === 'Enter' || e.key === 'Tab') {
-                        e.preventDefault()
-                        onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0])
-                        return
-                      }
-                      if (e.key === 'Escape') {
-                        e.preventDefault()
-                        onAtKeyDown?.('escape')
-                        return
-                      }
-                    }
-                    if (e.key === 'Enter') isUserTypingRef.current = false
-                  }}
-                  placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`} disabled={false}
-                  style={{
-                    width: '100%',
-                    background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
-                    border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
-                    borderRadius: 12,
-                    padding: '14px 56px 14px 18px',
-                    fontSize: 18, fontWeight: 400,
-                    fontFamily: "'Inter', system-ui, sans-serif",
-                    color: isNightMode ? '#F1F5F9' : '#E2E8F0',
-                    outline: 'none',
-                    transition: 'border-color 200ms ease, box-shadow 200ms ease',
-                    // iOS Safari: override parent userSelect:none so text can be selected/typed
-                    userSelect: 'text',
-                    WebkitUserSelect: 'text',
-                    // Allow normal tap behavior (focus + keyboard) even under parent touchAction:manipulation
-                    touchAction: 'manipulation',
-                    // Remove gray tap flash on iOS
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                  onFocus={e => {
-                    isUserTypingRef.current = true
-                    e.target.style.borderColor = agentColor + '88'
-                    e.target.style.boxShadow = `0 0 0 3px ${agentColor}25, 0 0 16px ${agentColor}15`
-                    onInputFocus?.()
-                  }}
-                  onBlur={e => {
-                    setTimeout(() => { isUserTypingRef.current = false }, 300)
-                    e.target.style.borderColor = 'rgba(59,130,246,0.2)'
-                    e.target.style.boxShadow = 'none'
-                  }}
-                />
-                {/* Dual-purpose button: on mobile, shows sparkle (powerup) when empty, send arrow when has text. Desktop always shows send. */}
-                <button
-                  type={isMobile && !chatInput?.trim() ? 'button' : 'submit'}
-                  disabled={false}
-                  onClick={isMobile && !chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
-                  style={{
-                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                    width: 44, height: 44, borderRadius: 12,
-                    background: chatInput?.trim()
-                      ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
-                      : (isMobile ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)' : 'rgba(59,130,246,0.12)'),
-                    border: chatInput?.trim()
-                      ? '2px solid rgba(59,130,246,0.6)'
-                      : (isMobile ? '2px solid rgba(124, 58, 237, 0.4)' : '2px solid rgba(59,130,246,0.2)'),
-                    color: '#FFF',
-                    cursor: (chatInput?.trim() || isMobile) ? 'pointer' : 'default',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: chatInput?.trim()
-                      ? '0 3px 12px rgba(59,130,246,0.3)'
-                      : (isMobile ? '0 2px 12px rgba(124, 58, 237, 0.25)' : 'none'),
-                    transition: 'all 150ms ease',
-                  }}>
-                  {streaming ? <Loader2 size={18} className="animate-spin" /> : (
-                    isMobile && !chatInput?.trim() ? <Sparkles size={18} /> : <Send size={18} />
-                  )}
-                </button>
-              </form>
-              </div>{/* end powerup + form flex row */}
-            </div>
           </>
           </ChatErrorBoundary>
         )}
@@ -8660,6 +8386,287 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         {/* Checklist and Megaboard tabs removed. Use full-screen mode switching instead. */}
 
       </div>
+
+      {/* Chat input -- rendered as SIBLING of the tab content div, OUTSIDE overflow:hidden.
+          This fixes the iPhone half-drawer clipping bug: at 52% snap the overflow:hidden
+          content area clips the input. Moving it here makes it a bottom-anchored flex item
+          of UnifiedPanel's outer flex column, always visible at any snap height.
+          Only shown when activeTab === 'chat'. Desktop sidebar is unaffected (same behavior). */}
+      {activeTab === 'chat' && (
+        <div
+          onTouchStart={isMobile ? () => onInputFocus?.() : undefined}
+          style={{
+          padding: '16px 20px',
+          paddingBottom: isMobile ? 'max(16px, env(safe-area-inset-bottom, 16px))' : 16,
+          borderTop: isNightMode ? '2px solid rgba(59,130,246,0.12)' : '2px solid rgba(59,130,246,0.18)',
+          background: isNightMode
+            ? 'linear-gradient(180deg, transparent 0%, rgba(15,27,45,0.5) 100%)'
+            : 'transparent',
+          flexShrink: 0,
+        }}>
+          {/* Reply-to banner */}
+          {replyTo && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              marginBottom: 8, padding: '6px 10px',
+              background: 'rgba(59,130,246,0.08)',
+              border: '1px solid rgba(59,130,246,0.2)',
+              borderRadius: 8,
+              fontSize: 12, color: '#8BA4C4',
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}>
+              <CornerDownLeft size={12} color="#4A8FD4" style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                Replying to: {(replyTo.content || '').slice(0, 60)}{(replyTo.content || '').length > 60 ? '...' : ''}
+              </span>
+              <button
+                type="button"
+                onClick={() => setReplyTo(null)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#4A6080', padding: 0, lineHeight: 1,
+                  display: 'flex', alignItems: 'center',
+                }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+          {/* Selected skill badges -- shown above input when skills are queued */}
+          {selectedPowerups && selectedPowerups.length > 0 && (
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: 6,
+              marginBottom: 8,
+            }}>
+              {selectedPowerups.map(skill => (
+                <div
+                  key={skill.id}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '3px 8px 3px 6px',
+                    background: `${skill.color}20`,
+                    border: `1px solid ${skill.color}50`,
+                    borderRadius: 20,
+                    fontSize: 10, fontWeight: 700,
+                    color: skill.color,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    userSelect: 'none',
+                  }}
+                >
+                  <span style={{ fontSize: 9, opacity: 0.75 }}>/</span>
+                  {skill.slash.replace('/', '')}
+                  <button
+                    type="button"
+                    onClick={() => onRemovePowerup?.(skill.id)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: skill.color, padding: 0, lineHeight: 1,
+                      display: 'flex', alignItems: 'center',
+                      opacity: 0.7,
+                      marginLeft: 2,
+                    }}
+                    aria-label={`Remove ${skill.name} skill`}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 0 : 10 }}>
+          {/* Powerup menu: desktop shows full trigger button. Mobile hides trigger (dual-purpose send/powerup button in input). */}
+          <PowerupMenu
+            isOpen={powerupOpen || false}
+            onToggle={(v) => onPowerupToggle?.(v)}
+            onActivate={(powerup) => onPowerupActivate?.(powerup)}
+            selectedSkills={selectedPowerups || []}
+            isMobile={isMobile}
+            isNightMode={isNightMode}
+            hideTrigger={isMobile}
+          />
+          <form onSubmit={(e) => {
+            isUserTypingRef.current = false
+            onSendMessage(e, replyTo?.id)
+            setReplyTo(null)
+          }} style={{ position: 'relative', flex: 1 }}>
+            {/* @ autocomplete dropdown (floats above input) */}
+            {atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0 && (
+              <div style={{
+                position: 'absolute', bottom: '100%', left: 0, right: 0,
+                marginBottom: 6,
+                background: isNightMode ? '#1A2744' : '#1E2A3A',
+                border: isNightMode ? '2px solid rgba(59,130,246,0.3)' : '2px solid rgba(59,130,246,0.2)',
+                borderRadius: 12,
+                boxShadow: isNightMode
+                  ? '0 -8px 32px rgba(0,0,0,0.5), 0 -2px 8px rgba(59,130,246,0.15)'
+                  : '0 -8px 32px rgba(0,0,0,0.4), 0 -2px 8px rgba(59,130,246,0.15)',
+                maxHeight: 240, overflowY: 'auto',
+                zIndex: 100,
+                padding: '6px 0',
+              }}>
+                <div style={{
+                  padding: '4px 14px 8px',
+                  fontSize: 11, fontWeight: 700, color: isNightMode ? '#475569' : '#6B8AB0',
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>
+                  Switch to...
+                </div>
+                {filteredAtOptions.map((opt, i) => (
+                  <div
+                    key={opt.slug}
+                    onMouseDown={(ev) => { ev.preventDefault(); onAtSelect?.(opt) }}
+                    onMouseEnter={() => {}}
+                    style={{
+                      padding: '10px 14px',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      cursor: 'pointer',
+                      background: i === atMenuIndex
+                        ? (isNightMode ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.06)')
+                        : 'transparent',
+                      transition: 'background 100ms ease',
+                    }}
+                  >
+                    {/* Color dot */}
+                    <div style={{
+                      width: 10, height: 10, borderRadius: '50%',
+                      background: opt.color,
+                      boxShadow: `0 0 6px ${opt.color}40`,
+                      flexShrink: 0,
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 15, fontWeight: 800,
+                        color: isNightMode ? '#F1F5F9' : '#E8ECF0',
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                      }}>
+                        {opt.name}
+                        {opt.type === 'project' && (
+                          <span style={{
+                            marginLeft: 8, fontSize: 11, fontWeight: 600,
+                            color: '#F59E0B', background: 'rgba(245,158,11,0.1)',
+                            border: '1px solid rgba(245,158,11,0.2)',
+                            borderRadius: 4, padding: '1px 6px',
+                          }}>
+                            PROJECT
+                          </span>
+                        )}
+                      </div>
+                      <div style={{
+                        fontSize: 12, fontWeight: 600,
+                        color: isNightMode ? '#64748B' : '#6B8AB0',
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        marginTop: 1,
+                      }}>
+                        {opt.role}
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: 12, fontWeight: 600,
+                      color: isNightMode ? '#475569' : '#4A6585',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>
+                      @{opt.slug}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <input type="text" data-panel-chat-input value={chatInput || ''} onChange={e => {
+                isUserTypingRef.current = true
+                onChatInputChange?.(e.target.value)
+                if (powerupOpen) onPowerupToggle?.(false)
+              }}
+              onKeyDown={e => {
+                // @ autocomplete keyboard navigation
+                if (atMenuOpen && filteredAtOptions && filteredAtOptions.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    onAtKeyDown?.('down')
+                    return
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    onAtKeyDown?.('up')
+                    return
+                  }
+                  if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault()
+                    onAtSelect?.(filteredAtOptions[atMenuIndex] || filteredAtOptions[0])
+                    return
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    onAtKeyDown?.('escape')
+                    return
+                  }
+                }
+                if (e.key === 'Enter') isUserTypingRef.current = false
+              }}
+              placeholder={`Talk to ${agent?.name || 'agent'}... (type @ to switch)`} disabled={false}
+              style={{
+                width: '100%',
+                background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
+                border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
+                borderRadius: 12,
+                padding: '14px 56px 14px 18px',
+                fontSize: 18, fontWeight: 400,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                color: isNightMode ? '#F1F5F9' : '#E2E8F0',
+                outline: 'none',
+                transition: 'border-color 200ms ease, box-shadow 200ms ease',
+                // iOS Safari: override parent userSelect:none so text can be selected/typed
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
+                // Allow normal tap behavior (focus + keyboard) even under parent touchAction:manipulation
+                touchAction: 'manipulation',
+                // Remove gray tap flash on iOS
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              onFocus={e => {
+                isUserTypingRef.current = true
+                e.target.style.borderColor = agentColor + '88'
+                e.target.style.boxShadow = `0 0 0 3px ${agentColor}25, 0 0 16px ${agentColor}15`
+                onInputFocus?.()
+              }}
+              onBlur={e => {
+                setTimeout(() => { isUserTypingRef.current = false }, 300)
+                e.target.style.borderColor = 'rgba(59,130,246,0.2)'
+                e.target.style.boxShadow = 'none'
+              }}
+            />
+            {/* Dual-purpose button: on mobile, shows sparkle (powerup) when empty, send arrow when has text. Desktop always shows send. */}
+            <button
+              type={isMobile && !chatInput?.trim() ? 'button' : 'submit'}
+              disabled={false}
+              onClick={isMobile && !chatInput?.trim() ? (e) => { e.preventDefault(); onPowerupToggle?.(!powerupOpen) } : undefined}
+              style={{
+                position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                width: 44, height: 44, borderRadius: 12,
+                background: chatInput?.trim()
+                  ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
+                  : (isMobile ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)' : 'rgba(59,130,246,0.12)'),
+                border: chatInput?.trim()
+                  ? '2px solid rgba(59,130,246,0.6)'
+                  : (isMobile ? '2px solid rgba(124, 58, 237, 0.4)' : '2px solid rgba(59,130,246,0.2)'),
+                color: '#FFF',
+                cursor: (chatInput?.trim() || isMobile) ? 'pointer' : 'default',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: chatInput?.trim()
+                  ? '0 3px 12px rgba(59,130,246,0.3)'
+                  : (isMobile ? '0 2px 12px rgba(124, 58, 237, 0.25)' : 'none'),
+                transition: 'all 150ms ease',
+              }}>
+              {streaming ? <Loader2 size={18} className="animate-spin" /> : (
+                isMobile && !chatInput?.trim() ? <Sparkles size={18} /> : <Send size={18} />
+              )}
+            </button>
+          </form>
+          </div>{/* end powerup + form flex row */}
+        </div>
+      )}
     </div>
   )
 }
