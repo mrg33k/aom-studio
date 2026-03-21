@@ -2958,14 +2958,16 @@ function MobileDrawer({
   const sheetHeight = useMotionValue(0)
 
   // Animate to snap height when snap prop changes
+  // Three positions only: hidden (0), half (~52%), full (100%)
   useEffect(() => {
     const heights = getSnapHeights()
-    const target = heights[snap] ?? heights.half
+    // null snap = closed/hidden
+    const target = snap === null ? heights.hidden : (heights[snap] ?? heights.hidden)
     fmAnimate(sheetHeight, target, {
       type: 'spring',
-      stiffness: 300,
-      damping: 32,
-      mass: 0.8,
+      stiffness: 400,
+      damping: 38,
+      mass: 0.7,
     })
   }, [snap, mobileViewportHeight]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2993,7 +2995,7 @@ function MobileDrawer({
           // Re-animate to new full height
           const newFull = vvh
           fmAnimate(sheetHeight, newFull, {
-            type: 'spring', stiffness: 300, damping: 32, mass: 0.8,
+            type: 'spring', stiffness: 400, damping: 38, mass: 0.7,
           })
         }
       } else {
@@ -3037,12 +3039,12 @@ function MobileDrawer({
       targetSnap = dists[0].key
     }
 
-    const targetH = heights[targetSnap] ?? heights.half
+    const targetH = heights[targetSnap] ?? heights.hidden
     fmAnimate(sheetHeight, targetH, {
       type: 'spring',
-      stiffness: 300,
-      damping: 32,
-      mass: 0.8,
+      stiffness: 400,
+      damping: 38,
+      mass: 0.7,
     })
 
     if (targetSnap === 'hidden') {
