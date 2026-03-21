@@ -2004,7 +2004,10 @@ export default function GameHUD({
   }, [])
 
   // Add any task to Right Now (mobile-friendly alternative to right-click context menu)
-  const addToRightNow = useCallback((task) => {
+  // Production: writes to Supabase tasks table (status='active') so the task appears in the Right Now ticker.
+  // Localhost fallback: writes to localStorage only (no Supabase in local dev).
+  const addToRightNow = useCallback(async (task) => {
+    // localhost fallback -- keep localStorage write so dev mode still works
     try {
       const saved = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
       if (!saved.some(t => t.text === task.text)) {
@@ -2017,7 +2020,26 @@ export default function GameHUD({
         localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved))
       }
     } catch {}
-  }, [])
+
+    // Production: write to Supabase so useDataPipe picks it up via the tasks filter
+    // useDataPipe production path: data.tasks.filter(t => t.status === 'active' || 'working' || 'in_progress')
+    if (!IS_LOCAL) {
+      try {
+        await fetch('/api/dashboard/agent-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: task.agent || 'user',
+            text: task.text,
+            status: 'active',
+            source: 'user',
+          }),
+        })
+        // Immediately refetch so the task appears in Right Now ticker without waiting for next 3s poll
+        refetchPipeData?.()
+      } catch {}
+    }
+  }, [refetchPipeData])
 
   // INBOX READ STATE: track read message IDs in localStorage
   // read IDs are stored as { id, readAt } -- readAt used for ordering (oldest read = first to archive)
