@@ -1219,8 +1219,8 @@ export default function GameHUD({
             </svg>
           </button>
 
-          {/* Lightning bolt notification button (was bell) */}
-          <HUDBellButton onClick={onExpandChat} />
+          {/* Lightning bolt notification button (was bell) -- desktop only */}
+          {!isMobile && <HUDBellButton onClick={onExpandChat} />}
         </div>
       </div>
 
