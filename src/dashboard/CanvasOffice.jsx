@@ -1107,13 +1107,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const zoomFocus = targetScreenSize / visibleRoomSize
     const panX = viewW / 2 - roomCX * zoomFocus
 
-    // Mobile drawer offset: when drawer is at 'half' (~52% of screen), center the room
-    // in the top ~48% of the viewport instead of dead center
+    // Mobile drawer offset: when drawer is at 'half' (~52% of screen), push room
+    // toward the drawer so the room sits close to the chat, not in the upper quarter.
     let panY = viewH / 2 - roomCY * zoomFocus
     if (isMobile && drawerSnap === 'half') {
-      // Drawer covers ~52% of viewport from bottom. Visible area = top ~48%.
-      // Center of visible area = viewH * 0.48 / 2 = viewH * 0.24
-      const visibleCenterY = viewH * 0.24
+      // Drawer height = 52% of window.innerHeight. Container height (viewH) = window.innerHeight - paddingTop.
+      // Visible area above drawer in container coords (approx, ignoring safe-area-bottom) = viewH - drawerH.
+      // Position room center at 60% of visible height -- biased toward the drawer to close dead space.
+      const drawerH = Math.round(window.innerHeight * 0.52)
+      const visibleH = Math.max(100, viewH - drawerH)
+      const visibleCenterY = visibleH * 0.60
       panY = visibleCenterY - roomCY * zoomFocus
     } else if (isMobile && drawerSnap === 'full') {
       // Full drawer covers everything, but user can still see the top sliver
