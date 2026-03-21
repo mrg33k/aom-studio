@@ -1219,7 +1219,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
 
       const S = ROOM_SIZE
-      // Draw a diamond outline at each hex grid cell.
+      // Draw a hexagon outline at each hex grid cell matching the room clip path exactly.
+      // Vertices mirror drawRoom()'s ctx.clip() path:
+      //   top=(0.50,0.00), upper-right=(0.99,0.31), lower-right=(0.99,0.72),
+      //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.31)
       // For each row, start at the correct parity col and step by 2.
       // Even rows use even cols, odd rows use odd cols (matches generateHexSlots).
       for (let r = rowMin; r <= rowMax; r++) {
@@ -1229,17 +1232,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         if (((cStart % 2) + 2) % 2 !== parity) cStart += 1
         for (let c = cStart; c <= colMax; c += 2) {
           const pos = hexPosition(r, c, ORIGIN_X, ORIGIN_Y)
-          // Diamond path matching the hit-test shape: hw=ROOM_SIZE/2, hh=ROOM_SIZE/4
-          // Grid lines shifted up by half a hex height (hh = S/4)
-          const px = pos.x + S * 0.5
-          const py = pos.y + S * 0.5 - S / 4
-          const hw = S / 2
-          const hh = S / 4
+          const ox = pos.x
+          const oy = pos.y
           ctx.beginPath()
-          ctx.moveTo(px, py - hh)      // top
-          ctx.lineTo(px + hw, py)      // right
-          ctx.lineTo(px, py + hh)      // bottom
-          ctx.lineTo(px - hw, py)      // left
+          ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
+          ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right
+          ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
+          ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
+          ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
+          ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left
           ctx.closePath()
           ctx.stroke()
         }
