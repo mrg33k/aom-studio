@@ -10080,11 +10080,20 @@ export default function GameDashboard() {
               let changed = false
               for (const row of newMsgs) {
                 const msg = { id: row.id, role: row.role || 'assistant', content: row.text || '', time: row.timestamp, source: row.source || 'supabase' }
-                if (!updated.some(m => m.id === msg.id)) {
-                  if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
-                  updated.push(msg)
-                  changed = true
-                }
+                // Primary dedup: by server UUID
+                if (updated.some(m => m.id === msg.id)) continue
+                // Secondary dedup: same role+content within 5s (catches optimistic local messages
+                // whose dash-* ID wasn't yet replaced with server UUID, preventing double-send)
+                const msgTime = new Date(msg.time).getTime()
+                const isDupContent = updated.some(m =>
+                  m.role === msg.role &&
+                  m.content === msg.content &&
+                  Math.abs(new Date(m.time).getTime() - msgTime) < 5000
+                )
+                if (isDupContent) continue
+                if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
+                updated.push(msg)
+                changed = true
               }
               if (!changed) return prev
               // Sort by timestamp so terminal/telegram user messages appear in correct order
@@ -10441,6 +10450,22 @@ export default function GameDashboard() {
           body: JSON.stringify({ agent, text, role: 'user', source: 'corner-dashboard', client_id: getClientId(), ...(replyToId ? { reply_to: replyToId } : {}) }),
         })
         if (!res.ok) throw new Error(`Send failed: ${res.status}`)
+        // Replace local dash-* ID with the server UUID so the poll recognises the message
+        // and skips it (prevents double-send: optimistic + server echo appearing twice)
+        try {
+          const responseData = await res.json()
+          const serverId = responseData?.message?.id
+          if (serverId) {
+            setAgentChats(prev => {
+              const current = prev[agent]?._all || []
+              const idx = current.findIndex(m => m.id === localId)
+              if (idx === -1) return prev
+              const updated = [...current]
+              updated[idx] = { ...updated[idx], id: serverId }
+              return { ...prev, [agent]: { _all: updated } }
+            })
+          }
+        } catch {}
         // Response arrives via poll (3s interval)
         // Set agent to active -- visual feedback that message was received
         fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(agent)}&status=active&current_task=${encodeURIComponent('Responding to message...')}`, { method: 'PATCH' }).catch(() => {})
