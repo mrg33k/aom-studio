@@ -84,16 +84,25 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
 
   // Track approve animation state per card key
   const [approvingId, setApprovingId] = useState(null)
+  // Track deny/reject animation state per card key
+  const [denyingId, setDenyingId] = useState(null)
 
   const callAction = async (taskId, taskText, agent, action) => {
+    const key = taskId || taskText
     if (action === 'approve') {
       // Animate: green glow (300ms) then fade out (250ms), then fire API
-      const key = taskId || taskText
       setApprovingId(key)
       await new Promise(r => setTimeout(r, 300))
       setApprovingId(key + '__fadeout')
       await new Promise(r => setTimeout(r, 250))
       setApprovingId(null)
+    } else if (action === 'reject') {
+      // Animate: red glow (300ms) then fade out (250ms), then fire API
+      setDenyingId(key)
+      await new Promise(r => setTimeout(r, 300))
+      setDenyingId(key + '__fadeout')
+      await new Promise(r => setTimeout(r, 250))
+      setDenyingId(null)
     }
     try {
       await fetch('/api/dashboard/task-action', {
@@ -174,8 +183,11 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
               const cardKey = t.taskId || `done-${idx}`
               const isGlowing = approvingId === cardKey || approvingId === (t.taskId || t.text)
               const isFadingOut = approvingId === cardKey + '__fadeout' || approvingId === (t.taskId || t.text) + '__fadeout'
+              const isDenyGlowing = denyingId === cardKey || denyingId === (t.taskId || t.text)
+              const isDenyFadingOut = denyingId === cardKey + '__fadeout' || denyingId === (t.taskId || t.text) + '__fadeout'
+              const inboxCardClass = isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : isDenyGlowing ? 'task-denying' : isDenyFadingOut ? 'task-denied' : ''
               return (
-              <div key={cardKey} className={isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : ''} style={{
+              <div key={cardKey} className={inboxCardClass} style={{
                 background: isDaytime
                   ? 'linear-gradient(135deg, rgba(234,179,8,0.10) 0%, rgba(161,98,7,0.05) 100%)'
                   : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(161,98,7,0.08) 100%)',
