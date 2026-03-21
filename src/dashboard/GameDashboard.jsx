@@ -10548,7 +10548,7 @@ export default function GameDashboard() {
     if (!IS_LOCAL) {
       // PRODUCTION: load chat history via Vercel proxy (bypasses Supabase JS client issues)
       // AOM Team Room: fetch ALL messages across all agents (aggregate view)
-      const isAomTeamRoom = room === 'aom'
+      const isAomTeamRoom = room === 'aom' || room === 'aom-team'
       const fetchUrl = isAomTeamRoom
         ? `/api/dashboard/supabase-messages?agent=aom&all=true&limit=200&client=${encodeURIComponent(getClientId())}`
         : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100&client=${encodeURIComponent(getClientId())}`
@@ -10612,7 +10612,7 @@ export default function GameDashboard() {
     // --- PRODUCTION: Poll via Vercel proxy (bypasses Supabase JS client WebSocket issues) ---
     if (!IS_LOCAL) {
       const room = selectedRoom
-      const isAomTeamRoom = room === 'aom'
+      const isAomTeamRoom = room === 'aom' || room === 'aom-team'
       let lastSeenTs = new Date().toISOString()
 
       const poll = setInterval(async () => {
@@ -10668,8 +10668,8 @@ export default function GameDashboard() {
 
     // --- LOCAL: file-backed poll ---
     const pollRoomMeta = ROOM_LOOKUP[selectedRoom]
-    const isProj = pollRoomMeta?.type === 'project' || pollRoomMeta?.type === 'special' || selectedRoom === 'aom'
-    const pollTarget = selectedRoom === 'aom' ? 'aom-internal' : selectedRoom
+    const isProj = pollRoomMeta?.type === 'project' || pollRoomMeta?.type === 'special' || selectedRoom === 'aom' || selectedRoom === 'aom-team'
+    const pollTarget = selectedRoom === 'aom' || selectedRoom === 'aom-team' ? 'aom-internal' : selectedRoom
     const pollType = isProj ? 'project' : 'agent'
     const poll = setInterval(() => {
       fetch(`${CONV_API_BASE}?target=${pollTarget}&type=${pollType}&limit=50`)
@@ -11475,7 +11475,7 @@ export default function GameDashboard() {
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
           {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. [SURVIVES: Responsive layout. Engine canvas auto-scales, sidebar logic stays.] */}
           {/* TODO(steffen-design): Mobile bottom-sheet drawer UX -- design the swipe-up drawer for mobile. Should show: agent name/status at peek height, chat on half-pull, full panel on full-pull. Reference Steffen's c3-mobile-layout-spec.md. The notification cards currently overlap the bottom bar on mobile. [SURVIVES: Mobile UI design. Engine-independent.] */}
-          {!isMobile && selectedRoom && (selectedRoom === 'aom' || ROOM_LOOKUP[selectedRoom]) && (
+          {!isMobile && selectedRoom && (selectedRoom === 'aom' || selectedRoom === 'aom-team' || ROOM_LOOKUP[selectedRoom]) && (
             <UnifiedPanel
               key={selectedRoom}
               room={ROOM_LOOKUP[selectedRoom]}
