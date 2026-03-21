@@ -2128,6 +2128,7 @@ export default function GameHUD({
         agent: t.agent,
         raw: '',
         isLive: true,
+        isQueued: t.isQueued || false,
       })
     })
     // Manual tasks (from localStorage)
@@ -2534,10 +2535,12 @@ export default function GameHUD({
                     minHeight: isMobile ? 44 : 'auto',
                     background: task.done
                       ? 'rgba(34,197,94,0.12)'
-                      : task.isLive
-                        ? 'rgba(255,107,61,0.12)'
-                        : 'rgba(100,180,255,0.08)',
-                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isLive ? 'rgba(255,107,61,0.25)' : 'rgba(100,180,255,0.15)'}`,
+                      : task.isQueued
+                        ? 'rgba(217,70,239,0.12)'
+                        : task.isLive
+                          ? 'rgba(255,107,61,0.12)'
+                          : 'rgba(100,180,255,0.08)',
+                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isQueued ? 'rgba(217,70,239,0.3)' : task.isLive ? 'rgba(255,107,61,0.25)' : 'rgba(100,180,255,0.15)'}`,
                     borderRadius: 10,
                     cursor: 'pointer',
                     flexShrink: 0,
@@ -2548,9 +2551,10 @@ export default function GameHUD({
                     <CheckCircle2 size={13} color="#22C55E" style={{ flexShrink: 0 }} />
                   ) : task.isLive ? (
                     <span style={{
-                      width: 7, height: 7, borderRadius: '50%', background: '#FF6B3D',
-                      boxShadow: '0 0 6px rgba(255,107,61,0.6)',
-                      animation: 'statusPulse 1.5s ease-in-out infinite',
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: task.isQueued ? '#D946EF' : '#FF6B3D',
+                      boxShadow: task.isQueued ? '0 0 6px rgba(217,70,239,0.6)' : '0 0 6px rgba(255,107,61,0.6)',
+                      animation: task.isQueued ? 'none' : 'statusPulse 1.5s ease-in-out infinite',
                       flexShrink: 0,
                     }} />
                   ) : null}
