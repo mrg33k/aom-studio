@@ -37,8 +37,8 @@ export default async function handler(req, res) {
 
   // ---- GET: load chat history for an agent --------------------------------
   if (req.method === 'GET') {
-    const { agent, limit = 100 } = req.query
-    if (!agent) return res.status(400).json({ error: 'agent required' })
+    const { agent, limit = 100, all } = req.query
+    if (!agent && !all) return res.status(400).json({ error: 'agent required' })
 
     // client_id filter ready for multi-tenant (add column to Supabase first)
     const clientId = (req.query.client && req.query.client.trim())
@@ -49,7 +49,10 @@ export default async function handler(req, res) {
     // Requires: ALTER TABLE messages ADD COLUMN client_id text DEFAULT 'aom';
     // Supabase silently ignores unknown column filters -- safe to include always.
     const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`
-    const url = `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agent)}${clientFilter}&order=timestamp.desc&limit=${limit}`
+
+    // ?all=true: fetch ALL messages across all agents (for AOM Team Room aggregate view)
+    const agentFilter = (all === 'true' || all === '1') ? '' : `&agent=eq.${encodeURIComponent(agent)}`
+    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${clientFilter}&order=timestamp.desc&limit=${limit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()

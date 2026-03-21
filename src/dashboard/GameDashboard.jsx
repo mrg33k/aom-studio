@@ -8618,6 +8618,53 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                               {formatChatTime(msg.time)}
                             </span>
                           )}
+                          {/* AOM Team Room: project tag chip showing which agent/branch this msg is from */}
+                          {room?.id === 'aom' && msg.agentTag && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 700,
+                              color: (() => {
+                                // Hash agent slug to a color
+                                const AGENT_COLORS = {
+                                  bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',
+                                  cleo: '#EC4899', steve: '#8B5CF6', alex: '#F97316',
+                                  tony: '#EF4444', jacob: '#06B6D4', colton: '#3B9EFF',
+                                  elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
+                                  pixel: '#A78BFA',
+                                }
+                                return AGENT_COLORS[msg.agentTag] || '#60A5FA'
+                              })(),
+                              background: (() => {
+                                const AGENT_COLORS = {
+                                  bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',
+                                  cleo: '#EC4899', steve: '#8B5CF6', alex: '#F97316',
+                                  tony: '#EF4444', jacob: '#06B6D4', colton: '#3B9EFF',
+                                  elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
+                                  pixel: '#A78BFA',
+                                }
+                                const c = AGENT_COLORS[msg.agentTag] || '#60A5FA'
+                                return `${c}18`
+                              })(),
+                              border: (() => {
+                                const AGENT_COLORS = {
+                                  bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',
+                                  cleo: '#EC4899', steve: '#8B5CF6', alex: '#F97316',
+                                  tony: '#EF4444', jacob: '#06B6D4', colton: '#3B9EFF',
+                                  elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
+                                  pixel: '#A78BFA',
+                                }
+                                const c = AGENT_COLORS[msg.agentTag] || '#60A5FA'
+                                return `1px solid ${c}40`
+                              })(),
+                              padding: '1px 5px',
+                              borderRadius: 4,
+                              letterSpacing: '0.06em',
+                              textTransform: 'uppercase',
+                              fontFamily: "'JetBrains Mono', monospace",
+                              flexShrink: 0,
+                            }}>
+                              {msg.agentTag}
+                            </span>
+                          )}
                         </div>
                       )}
                       {/* Reply-to preview inside bubble if this message has a reply_to */}
@@ -10518,16 +10565,22 @@ export default function GameDashboard() {
 
     if (!IS_LOCAL) {
       // PRODUCTION: load chat history via Vercel proxy (bypasses Supabase JS client issues)
-      fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100&client=${encodeURIComponent(getClientId())}`)
+      // AOM Team Room: fetch ALL messages across all agents (aggregate view)
+      const isAomTeamRoom = room === 'aom'
+      const fetchUrl = isAomTeamRoom
+        ? `/api/dashboard/supabase-messages?agent=aom&all=true&limit=200&client=${encodeURIComponent(getClientId())}`
+        : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=100&client=${encodeURIComponent(getClientId())}`
+      fetch(fetchUrl)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           const msgs = (data?.messages || [])
-            .filter(m => !m.agent || m.agent === room) // guard: only show messages belonging to this agent
+            .filter(m => isAomTeamRoom || (!m.agent || m.agent === room)) // AOM room: no agent filter (aggregate all)
             .map(m => ({
               id: m.id, role: m.role || 'assistant', content: m.text || '',
               time: m.timestamp || '', source: m.source || 'supabase',
+              agentTag: isAomTeamRoom ? (m.agent || null) : null, // carry agent slug for project tag badge
             })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
-          console.log(`[Corner] Proxy: loaded ${msgs.length} msgs for ${room}`)
+          console.log(`[Corner] Proxy: loaded ${msgs.length} msgs for ${room}${isAomTeamRoom ? ' (aggregate)' : ''}`)
           setAgentChats(prev => ({ ...prev, [room]: { _all: msgs } }))
           setPanelChatLoading(false)
         })
@@ -10577,15 +10630,20 @@ export default function GameDashboard() {
     // --- PRODUCTION: Poll via Vercel proxy (bypasses Supabase JS client WebSocket issues) ---
     if (!IS_LOCAL) {
       const room = selectedRoom
+      const isAomTeamRoom = room === 'aom'
       let lastSeenTs = new Date().toISOString()
 
       const poll = setInterval(async () => {
         try {
-          const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20&client=${encodeURIComponent(getClientId())}`)
+          // AOM Team Room: fetch all messages without agent filter
+          const pollUrl = isAomTeamRoom
+            ? `/api/dashboard/supabase-messages?agent=aom&all=true&limit=50&client=${encodeURIComponent(getClientId())}`
+            : `/api/dashboard/supabase-messages?agent=${encodeURIComponent(room)}&limit=20&client=${encodeURIComponent(getClientId())}`
+          const res = await fetch(pollUrl)
           if (!res.ok) return
           const data = await res.json()
           const newMsgs = (data?.messages || [])
-            .filter(m => m.timestamp > lastSeenTs && (!m.agent || m.agent === room)) // all roles: assistant + user from terminal/telegram
+            .filter(m => m.timestamp > lastSeenTs && (isAomTeamRoom || (!m.agent || m.agent === room))) // AOM room: no agent filter
           if (newMsgs.length) {
             lastSeenTs = newMsgs[newMsgs.length - 1].timestamp
             setAgentChats(prev => {
@@ -10593,7 +10651,11 @@ export default function GameDashboard() {
               let updated = [...current]
               let changed = false
               for (const row of newMsgs) {
-                const msg = { id: row.id, role: row.role || 'assistant', content: row.text || '', time: row.timestamp, source: row.source || 'supabase' }
+                const msg = {
+                  id: row.id, role: row.role || 'assistant', content: row.text || '',
+                  time: row.timestamp, source: row.source || 'supabase',
+                  agentTag: isAomTeamRoom ? (row.agent || null) : null,
+                }
                 // Primary dedup: by server UUID
                 if (updated.some(m => m.id === msg.id)) continue
                 // Secondary dedup: same role+content within 5s (catches optimistic local messages
