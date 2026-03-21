@@ -1201,33 +1201,37 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const now = performance.now()
 
     // ---- HEX GRID LINES: draw snap grid as visible lines behind rooms ----
-    // Compute which cells are visible in the current viewport (with a 2-cell margin)
+    // Grid cells use the same hexPosition(r, c, ORIGIN_X, ORIGIN_Y) + ROOM_SIZE as rooms.
+    // HEX_COL_STEP = VIS_W * 0.52, HEX_ROW_STEP = VIS_H * 0.72 (module-level constants).
+    // Viewport culling: convert screen edges to world space, then to row/col via the same
+    // step values. The -2/+2 margin ensures cells at the edge are never clipped.
+    // Parity rule: generateHexSlots puts even cols on even rows, odd cols on odd rows.
+    // The grid mirrors this exactly so outlines land on actual room positions.
     {
       const viewL = -cam.x / cam.zoom
       const viewT = -cam.y / cam.zoom
       const viewR = viewL + size.w / cam.zoom
       const viewB = viewT + size.h / cam.zoom
 
-      // How many rows/cols fit in the viewport (plus margin)
+      // Row/col range that covers the visible viewport (plus 2-cell margin)
       const rowMin = Math.floor((viewT - ORIGIN_Y) / HEX_ROW_STEP) - 2
       const rowMax = Math.ceil((viewB - ORIGIN_Y) / HEX_ROW_STEP) + 2
-      const colMin = Math.floor((viewL - ORIGIN_X) / HEX_COL_STEP) - 2
-      const colMax = Math.ceil((viewR - ORIGIN_X) / HEX_COL_STEP) + 2
+      // Account for ROOM_SIZE: a cell whose top-left is off-screen left may still be visible
+      const colMin = Math.floor((viewL - ORIGIN_X - ROOM_SIZE) / HEX_COL_STEP) - 1
+      const colMax = Math.ceil((viewR - ORIGIN_X) / HEX_COL_STEP) + 1
 
       ctx.save()
       ctx.strokeStyle = 'rgba(59, 130, 246, 0.14)'  // #3B82F6 at low opacity
       ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
 
-      const S = ROOM_SIZE
-      // Draw a hexagon outline at each hex grid cell matching the room clip path exactly.
-      // Vertices mirror drawRoom()'s ctx.clip() path:
+      // S and vertex ratios MUST match drawRoom()'s ctx.clip() path exactly:
       //   top=(0.50,0.00), upper-right=(0.99,0.31), lower-right=(0.99,0.72),
       //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.31)
-      // For each row, start at the correct parity col and step by 2.
-      // Even rows use even cols, odd rows use odd cols (matches generateHexSlots).
+      // Position via hexPosition() which is the same function used for room placement.
+      const S = ROOM_SIZE
       for (let r = rowMin; r <= rowMax; r++) {
         const parity = ((r % 2) + 2) % 2  // 0 for even rows, 1 for odd rows
-        // Find the first col >= colMin that has the right parity
+        // Find the first col >= colMin that has the right parity (step-2 grid)
         let cStart = colMin
         if (((cStart % 2) + 2) % 2 !== parity) cStart += 1
         for (let c = cStart; c <= colMax; c += 2) {
