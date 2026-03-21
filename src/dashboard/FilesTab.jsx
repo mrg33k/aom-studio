@@ -4,7 +4,7 @@
 // Storage: Supabase Storage (bucket: 'corner-files') + Supabase 'text_files' table
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft, ClipboardPaste } from 'lucide-react'
+import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft } from 'lucide-react'
 import { supabase } from './lib/supabase.js'
 
 const BUCKET = 'corner-files'
@@ -42,6 +42,7 @@ function generateFilename(content) {
 export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileToChat }) {
   const [subTab, setSubTab] = useState('text') // 'images' | 'text'
   const [files, setFiles] = useState([])
+  const [filesLoading, setFilesLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [lightboxFile, setLightboxFile] = useState(null)
@@ -51,6 +52,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
 
   // Text paste state
   const [textFiles, setTextFiles] = useState([])
+  const [textFilesLoading, setTextFilesLoading] = useState(true)
   const [pasteContent, setPasteContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [viewingFile, setViewingFile] = useState(null) // text file being viewed
@@ -61,64 +63,72 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
 
   // Load image files on mount or agent switch
   const loadFiles = useCallback(async () => {
-    if (supabase) {
-      try {
-        const prefix = `${agentSlug}/${clientId || 'default'}/`
-        const { data, error: listErr } = await supabase.storage.from(BUCKET).list(prefix, {
-          limit: 100,
-          sortBy: { column: 'created_at', order: 'desc' },
-        })
-        if (listErr) throw listErr
-        if (data) {
-          const mapped = data
-            .filter(item => !item.id.endsWith('/'))
-            .map(item => ({
-              id: item.id,
-              name: item.name,
-              date: item.created_at,
-              url: supabase.storage.from(BUCKET).getPublicUrl(`${prefix}${item.name}`).data.publicUrl,
-              source: 'supabase',
-              agent: agentSlug,
-              clientId: clientId || 'default',
-            }))
-          setFiles(mapped)
-          return
-        }
-      } catch (err) {
-        console.warn('[FilesTab] Supabase storage unavailable:', err.message)
-        setFiles([])
-      }
+    setFilesLoading(true)
+    if (!supabase) {
+      // No Supabase configured (missing env vars) -- show empty state
+      setFiles([])
+      setFilesLoading(false)
+      return
+    }
+    try {
+      const prefix = `${agentSlug}/${clientId || 'default'}/`
+      const { data, error: listErr } = await supabase.storage.from(BUCKET).list(prefix, {
+        limit: 100,
+        sortBy: { column: 'created_at', order: 'desc' },
+      })
+      if (listErr) throw listErr
+      const mapped = (data || [])
+        .filter(item => item.name && item.name !== '')
+        .map(item => ({
+          id: item.id,
+          name: item.name,
+          date: item.created_at,
+          url: supabase.storage.from(BUCKET).getPublicUrl(`${prefix}${item.name}`).data.publicUrl,
+          source: 'supabase',
+          agent: agentSlug,
+          clientId: clientId || 'default',
+        }))
+      setFiles(mapped)
+    } catch (err) {
+      console.warn('[FilesTab] Supabase storage unavailable:', err.message)
+      setFiles([])
+    } finally {
+      setFilesLoading(false)
     }
   }, [agentSlug, clientId])
 
   // Load text files on mount or agent switch
   const loadTextFiles = useCallback(async () => {
-    if (supabase) {
-      try {
-        const { data, error: fetchErr } = await supabase
-          .from(TEXT_TABLE)
-          .select('*')
-          .eq('client_id', clientId || 'default')
-          .order('created_at', { ascending: false })
-          .limit(100)
-        if (fetchErr) throw fetchErr
-        if (data) {
-          setTextFiles(data.map(row => ({
-            id: row.id,
-            filename: row.filename,
-            content: row.content,
-            type: row.type || 'text',
-            created_at: row.created_at,
-            source: 'supabase',
-            agent: agentSlug,
-            clientId: clientId || 'default',
-          })))
-          return
-        }
-      } catch (err) {
-        console.warn('[FilesTab] Supabase text_files unavailable:', err.message)
-        setTextFiles([])
-      }
+    setTextFilesLoading(true)
+    if (!supabase) {
+      // No Supabase configured (missing env vars) -- show empty state
+      setTextFiles([])
+      setTextFilesLoading(false)
+      return
+    }
+    try {
+      const { data, error: fetchErr } = await supabase
+        .from(TEXT_TABLE)
+        .select('*')
+        .eq('client_id', clientId || 'default')
+        .order('created_at', { ascending: false })
+        .limit(100)
+      if (fetchErr) throw fetchErr
+      setTextFiles((data || []).map(row => ({
+        id: row.id,
+        filename: row.filename,
+        content: row.content,
+        type: row.type || 'text',
+        created_at: row.created_at,
+        source: 'supabase',
+        agent: agentSlug,
+        clientId: clientId || 'default',
+      })))
+    } catch (err) {
+      console.warn('[FilesTab] Supabase text_files unavailable:', err.message)
+      setTextFiles([])
+    } finally {
+      setTextFilesLoading(false)
     }
   }, [agentSlug, clientId])
 
@@ -399,7 +409,12 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
             </div>
           </div>
 
-          {textFiles.length === 0 && (
+          {textFilesLoading && (
+            <div style={{ textAlign: 'center', color: mutedText, fontSize: 13, padding: '24px 14px' }}>
+              Loading...
+            </div>
+          )}
+          {!textFilesLoading && textFiles.length === 0 && (
             <div style={{
               textAlign: 'center', color: mutedText, fontSize: 13, padding: '24px 14px',
             }}>
@@ -589,8 +604,13 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
               <div style={{ color: mutedText, fontSize: 11, marginTop: 2 }}>PNG, JPG, GIF, WebP</div>
             </div>
 
-            {/* Empty state */}
-            {files.length === 0 && !uploading && (
+            {/* Loading / Empty state */}
+            {filesLoading && (
+              <div style={{ textAlign: 'center', color: mutedText, fontSize: 13, padding: '24px 0' }}>
+                Loading...
+              </div>
+            )}
+            {!filesLoading && files.length === 0 && !uploading && (
               <div style={{
                 textAlign: 'center', color: mutedText, fontSize: 13, padding: '24px 0',
               }}>
