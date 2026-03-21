@@ -28,6 +28,7 @@ import CanvasOffice from './CanvasOffice.jsx'
 // CrossyBackground: replaced with CSS hex grid (Three.js city scene removed)
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import FloatingActionButton from './components/FloatingActionButton.jsx'
 import BoardView from './BoardView.jsx'
 import briefsIndex from '../data/briefs-index.json'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
@@ -4039,47 +4040,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           })
         }
 
-        {/* + New Project button -- compact on mobile (icon only) */}
-        <button
-          onClick={() => {
-            // Future: create new project
-            alert('New Project coming soon')
-          }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'transparent',
-            border: isNightMode ? '1.5px dashed rgba(59,130,246,0.25)' : '1.5px dashed rgba(59,130,246,0.3)',
-            borderRadius: 10, padding: isMobile ? '6px 10px' : '6px 14px',
-            cursor: 'pointer',
-            transition: 'all 150ms ease',
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.05)'
-            e.currentTarget.style.borderColor = isNightMode ? 'rgba(59,130,246,0.4)' : 'rgba(59,130,246,0.45)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.borderColor = isNightMode ? 'rgba(59,130,246,0.25)' : 'rgba(59,130,246,0.3)'
-          }}
-        >
-          <svg width={14} height={14} viewBox="0 0 24 24" fill="none"
-            stroke={isNightMode ? '#64748B' : '#6B8AB0'} strokeWidth={2}
-            strokeLinecap="round" strokeLinejoin="round"
-          >
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          {!isMobile && (
-            <span style={{
-              fontSize: 13, fontWeight: 600,
-              color: isNightMode ? '#64748B' : '#6B8AB0',
-              fontFamily: "'Inter', sans-serif",
-            }}>
-              New
-            </span>
-          )}
-        </button>
+        {/* + New Project button REMOVED -- replaced by FloatingActionButton (FAB) bottom-right */}
 
         {/* Reset layout button (game view only) -- clears free-drag positions */}
         {(viewMode === 'game' || !viewMode) && (
@@ -9695,16 +9656,16 @@ export default function GameDashboard() {
     if (roomId === selectedRoom) {
       // Already selected: zoom to Level 3 (detail)
       setCameraZoom(ZOOM_MAX)
-      // On mobile/tablet, open drawer to full on double-tap
-      if ((isMobile || isTablet) && drawerSnap === 'half') {
+      // On mobile, open drawer to full on double-tap
+      if (isMobile && drawerSnap === 'half') {
         setDrawerSnap('full')
       }
     } else {
       // First click: zoom to Level 2 (neighborhood)
       setCameraZoom(1.6)
       setSelectedRoom(roomId)
-      // On mobile/tablet, open the bottom sheet drawer to half position
-      if (isMobile || isTablet) {
+      // On mobile, open the bottom sheet drawer to half position
+      if (isMobile) {
         setDrawerSnap('half')
       }
     }
@@ -10252,7 +10213,7 @@ export default function GameDashboard() {
           {/* SIDEBAR PANEL: always visible on desktop, sits beside game viewport */}
           {/* TODO(patrik): Mobile sidebar -- map squished on mobile. Sidebar needs mobile-responsive breakpoint. On mobile: sidebar should stack below or become a bottom-sheet drawer, not disappear entirely. Currently hidden via !isMobile guard. [SURVIVES: Responsive layout. Engine canvas auto-scales, sidebar logic stays.] */}
           {/* TODO(steffen-design): Mobile bottom-sheet drawer UX -- design the swipe-up drawer for mobile. Should show: agent name/status at peek height, chat on half-pull, full panel on full-pull. Reference Steffen's c3-mobile-layout-spec.md. The notification cards currently overlap the bottom bar on mobile. [SURVIVES: Mobile UI design. Engine-independent.] */}
-          {!isMobile && !isTablet && selectedRoom && (selectedRoom === 'aom' || ROOM_LOOKUP[selectedRoom]) && (
+          {!isMobile && selectedRoom && (selectedRoom === 'aom' || ROOM_LOOKUP[selectedRoom]) && (
             <UnifiedPanel
               key={selectedRoom}
               room={ROOM_LOOKUP[selectedRoom]}
@@ -10432,7 +10393,7 @@ export default function GameDashboard() {
       )}
 
       {/* Mobile/tablet bottom sheet drawer (iOS-style, 3 snap points) */}
-      {(isMobile || isTablet) && drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
+      {(isMobile) && drawerOpen && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
         <MobileDrawer
           key={`drawer-${selectedRoom}`}
           room={ROOM_LOOKUP[selectedRoom]}
@@ -10517,6 +10478,11 @@ export default function GameDashboard() {
           <MessageSquare size={16} />
           {unreadCount}
         </motion.div>
+      )}
+
+      {/* Floating Action Button -- bottom-right, above HUD, expands upward */}
+      {(viewMode === 'game' || !viewMode) && (
+        <FloatingActionButton isNightMode={isNightMode} isMobile={isMobile} />
       )}
 
       {/* ChatBar REMOVED per Patrik directive: chat ONLY lives in the sidebar.
