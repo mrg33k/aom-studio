@@ -77,10 +77,11 @@ import { hudCtxBtn } from './components/CompactStats.jsx'
 //   (2) Unread messages -- compact agent message previews
 function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify, refetch }) {
   const isDaytime = isNightMode === false
-  const bg = isDaytime ? 'rgba(248,250,255,0.97)' : 'rgba(8,16,36,0.97)'
-  const border = isDaytime ? 'rgba(234,179,8,0.35)' : 'rgba(234,179,8,0.30)'
-  const textPrimary = isDaytime ? '#1E293B' : '#E2E8F0'
-  const textMuted = isDaytime ? '#64748B' : '#8BA4C4'
+  // Blue glass theme -- matches HUD panel style (SimCity/Vegas energy)
+  const bg = 'rgba(8,16,32,0.95)'
+  const border = 'rgba(100,180,255,0.22)'
+  const textPrimary = '#EDF2FA'
+  const textMuted = '#8BA4C4'
 
   // Track approve animation state per card key
   const [approvingId, setApprovingId] = useState(null)
@@ -120,10 +121,10 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
   return (
     <motion.div
       key="inbox-panel"
-      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+      initial={{ opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 16, scale: 0.97 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+      exit={{ opacity: 0, y: 12, scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 28 }}
       style={{
         position: 'absolute', bottom: '100%', left: 0, right: 0,
         marginBottom: 8,
@@ -131,36 +132,42 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
         borderRadius: '14px 14px 0 0',
         border: `1.5px solid ${border}`,
         borderBottom: 'none',
-        boxShadow: isDaytime
-          ? '0 -8px 32px rgba(234,179,8,0.12), 0 -2px 8px rgba(0,0,0,0.08)'
-          : '0 -8px 32px rgba(234,179,8,0.15), 0 -2px 8px rgba(0,0,0,0.3)',
+        boxShadow: '0 -8px 48px rgba(0,0,0,0.55), 0 -2px 0 rgba(100,180,255,0.12), inset 0 1px 0 rgba(100,180,255,0.08)',
         maxHeight: 360,
         overflowY: 'auto',
         zIndex: 50,
         scrollbarWidth: 'thin',
+        position: 'absolute',
       }}
     >
+      {/* Inner top glow */}
+      <div style={{
+        position: 'sticky', top: 0, left: 0, right: 0, height: 1,
+        background: 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.30) 40%, rgba(100,180,255,0.30) 60%, transparent 100%)',
+        pointerEvents: 'none', zIndex: 2,
+      }} />
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '10px 16px 8px',
-        borderBottom: `1px solid ${isDaytime ? 'rgba(234,179,8,0.20)' : 'rgba(234,179,8,0.18)'}`,
-        position: 'sticky', top: 0, background: bg, zIndex: 1,
+        borderBottom: 'none',
+        position: 'sticky', top: 1, background: bg, zIndex: 1,
       }}>
         <div style={{
-          width: 8, height: 8, borderRadius: '50%',
-          background: '#EAB308',
-          boxShadow: '0 0 8px #EAB308, 0 0 14px rgba(234,179,8,0.5)',
+          width: 7, height: 7, borderRadius: '50%',
+          background: '#F59E0B',
+          boxShadow: '0 0 8px rgba(245,158,11,0.8), 0 0 14px rgba(245,158,11,0.4)',
+          animation: 'statusPulse 2s ease-in-out infinite',
         }} />
         <span style={{
-          fontSize: 11, fontWeight: 700,
-          color: isDaytime ? '#92400E' : '#FCD34D',
+          fontSize: 10, fontWeight: 700,
+          color: '#8BA4C4',
           fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: '0.08em', textTransform: 'uppercase', flex: 1,
+          letterSpacing: '0.10em', textTransform: 'uppercase', flex: 1,
         }}>Inbox</span>
         {(doneTasks.length + unreadMsgs.length) > 0 && (
           <span style={{
-            fontSize: 11, fontWeight: 700, color: isDaytime ? '#92400E' : '#FCD34D',
+            fontSize: 10, fontWeight: 700, color: '#4A6080',
             fontFamily: "'JetBrains Mono', monospace",
           }}>{doneTasks.length + unreadMsgs.length}</span>
         )}
@@ -187,94 +194,116 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
               const isDenyFadingOut = denyingId === cardKey + '__fadeout' || denyingId === (t.taskId || t.text) + '__fadeout'
               const inboxCardClass = isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : isDenyGlowing ? 'task-denying' : isDenyFadingOut ? 'task-denied' : ''
               return (
-              <div key={cardKey} className={inboxCardClass} style={{
-                background: isDaytime
-                  ? 'linear-gradient(135deg, rgba(234,179,8,0.10) 0%, rgba(161,98,7,0.05) 100%)'
-                  : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(161,98,7,0.08) 100%)',
-                border: isDaytime ? '1.5px solid rgba(234,179,8,0.45)' : '1.5px solid rgba(234,179,8,0.45)',
-                borderLeft: '3px solid #EAB308',
-                borderRadius: 10,
-                padding: '10px 12px',
-                boxShadow: isDaytime
-                  ? '0 1px 6px rgba(234,179,8,0.10)'
-                  : '0 1px 8px rgba(234,179,8,0.15)',
-              }}>
+              <motion.div
+                key={cardKey}
+                className={inboxCardClass}
+                initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                style={{
+                  background: 'rgba(8,16,32,0.88)',
+                  border: '1.5px solid rgba(100,180,255,0.22)',
+                  borderLeft: '3px solid rgba(100,180,255,0.50)',
+                  borderRadius: 10,
+                  padding: '10px 12px',
+                  boxShadow: '0 2px 16px rgba(0,0,0,0.30), inset 0 1px 0 rgba(100,180,255,0.07)',
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                {/* Inner top glow */}
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.25) 40%, rgba(100,180,255,0.25) 60%, transparent 100%)',
+                  pointerEvents: 'none',
+                }} />
                 {/* Agent + label row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                   <div style={{
                     width: 6, height: 6, borderRadius: '50%',
-                    background: '#EAB308', boxShadow: '0 0 6px #EAB308',
+                    background: '#F59E0B', boxShadow: '0 0 6px rgba(245,158,11,0.7)',
+                    animation: 'statusPulse 2s ease-in-out infinite',
                   }} />
                   <span style={{
-                    fontSize: 10, fontWeight: 700,
-                    color: isDaytime ? '#92400E' : '#FCD34D',
+                    fontSize: 9, fontWeight: 700,
+                    color: '#8BA4C4',
                     fontFamily: "'JetBrains Mono', monospace",
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    letterSpacing: '0.10em', textTransform: 'uppercase',
                     flex: 1,
                   }}>
-                    {t.agent ? `${t.agent.charAt(0).toUpperCase()}${t.agent.slice(1)} -- ` : ''}Done
+                    {t.agent ? `${t.agent.charAt(0).toUpperCase()}${t.agent.slice(1)} ` : ''}DONE
                   </span>
-                  <span style={{ fontSize: 9, color: textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
-                    awaiting approval
+                  <span style={{ fontSize: 9, color: '#4A6080', fontFamily: "'JetBrains Mono', monospace" }}>
+                    awaiting review
                   </span>
                 </div>
-                {/* Task text */}
+                {/* Task text -- data readout */}
                 <div style={{
-                  fontSize: 13, fontWeight: 600, color: textPrimary,
+                  fontSize: 13, fontWeight: 500, color: '#EDF2FA',
                   fontFamily: "'Inter', system-ui, sans-serif",
                   lineHeight: 1.4, marginBottom: 8,
                   padding: '6px 10px',
-                  background: isDaytime ? 'rgba(255,255,255,0.65)' : 'rgba(10,18,35,0.55)',
+                  background: 'rgba(100,180,255,0.04)',
                   borderRadius: 7,
-                  border: isDaytime ? '1px solid rgba(234,179,8,0.18)' : '1px solid rgba(234,179,8,0.22)',
+                  border: '1px solid rgba(100,180,255,0.10)',
+                  boxShadow: 'inset 0 1px 0 rgba(100,180,255,0.05)',
+                  position: 'relative',
                 }}>
+                  <span style={{
+                    position: 'absolute', top: -8, left: 8,
+                    fontSize: 8, fontWeight: 700, color: '#3B9EFF',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    background: 'rgba(8,16,32,0.88)', padding: '0 4px',
+                  }}>task</span>
                   {t.text}
                 </div>
                 {/* Action buttons */}
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <motion.button
                     onClick={() => callAction(t.taskId, t.text, t.agent, 'approve')}
+                    whileHover={{ scale: 1.04, y: -1 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                     style={{
-                      flex: 1, padding: '7px 10px',
-                      background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
-                      border: '1.5px solid rgba(34,197,94,0.5)',
-                      borderRadius: 8, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                      color: '#FFF', fontSize: 12, fontWeight: 800,
+                      flex: 1, padding: '6px 8px',
+                      background: 'rgba(22,163,74,0.18)',
+                      border: '1.5px solid rgba(34,197,94,0.40)',
+                      borderRadius: 7, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                      color: '#4ADE80', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 1px 6px rgba(22,163,74,0.28)',
-                      transition: 'transform 80ms ease, box-shadow 80ms ease',
+                      boxShadow: '0 0 10px rgba(34,197,94,0.12), inset 0 1px 0 rgba(34,197,94,0.10)',
+                      letterSpacing: '0.04em',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)' }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                     Approve
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     onClick={() => callAction(t.taskId, t.text, t.agent, 'reject')}
+                    whileHover={{ scale: 1.04, y: -1 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                     style={{
-                      flex: 1, padding: '7px 10px',
-                      background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
-                      border: '1.5px solid rgba(239,68,68,0.5)',
-                      borderRadius: 8, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                      color: '#FFF', fontSize: 12, fontWeight: 800,
+                      flex: 1, padding: '6px 8px',
+                      background: 'rgba(220,38,38,0.18)',
+                      border: '1.5px solid rgba(239,68,68,0.38)',
+                      borderRadius: 7, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                      color: '#F87171', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 1px 6px rgba(220,38,38,0.28)',
-                      transition: 'transform 80ms ease, box-shadow 80ms ease',
+                      boxShadow: '0 0 10px rgba(239,68,68,0.12), inset 0 1px 0 rgba(239,68,68,0.08)',
+                      letterSpacing: '0.04em',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)' }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                     Deny
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
                     onClick={() => {
                       if (onClarify) {
                         onClarify(t.agent, t.text)
@@ -283,77 +312,82 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                       }
                       onClose?.()
                     }}
+                    whileHover={{ scale: 1.04, y: -1 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                     style={{
-                      flex: 1, padding: '7px 10px',
-                      background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                      border: '1.5px solid rgba(59,130,246,0.5)',
-                      borderRadius: 8, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                      color: '#FFF', fontSize: 12, fontWeight: 800,
+                      flex: 1, padding: '6px 8px',
+                      background: 'rgba(59,158,255,0.15)',
+                      border: '1.5px solid rgba(59,158,255,0.32)',
+                      borderRadius: 7, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                      color: '#5BB8FF', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 1px 6px rgba(37,99,235,0.28)',
-                      transition: 'transform 80ms ease, box-shadow 80ms ease',
+                      boxShadow: '0 0 10px rgba(59,158,255,0.10), inset 0 1px 0 rgba(100,180,255,0.08)',
+                      letterSpacing: '0.04em',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)' }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
                     Clarify
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
               )
             })}
             {unreadMsgs.length > 0 && (
-              <div style={{ height: 1, background: isDaytime ? 'rgba(234,179,8,0.18)' : 'rgba(234,179,8,0.15)', margin: '2px 0' }} />
+              <div style={{ height: 1, background: 'rgba(100,180,255,0.12)', margin: '2px 0' }} />
             )}
           </>
         )}
 
         {/* SECTION 2: Unread messages */}
         {unreadMsgs.map((m, idx) => (
-          <button
+          <motion.button
             key={m.id || `msg-${idx}`}
             onClick={() => onNavigateToAgent?.(m.agent)}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 28, delay: idx * 0.04 }}
             style={{
-              background: isDaytime ? 'rgba(59,130,246,0.07)' : 'rgba(59,130,246,0.10)',
-              border: isDaytime ? '1px solid rgba(59,130,246,0.20)' : '1px solid rgba(59,130,246,0.22)',
-              borderLeft: '3px solid #3B82F6',
+              background: 'rgba(59,130,246,0.08)',
+              border: '1.5px solid rgba(100,180,255,0.20)',
+              borderLeft: '3px solid rgba(59,158,255,0.50)',
               borderRadius: 8, padding: '8px 12px',
               display: 'flex', flexDirection: 'column', gap: 3,
               cursor: 'pointer', textAlign: 'left', width: '100%',
-              transition: 'background 120ms ease',
+              transition: 'background 120ms ease, border-color 120ms ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.16)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.07)' : 'rgba(59,130,246,0.10)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.14)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.35)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.08)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.20)' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{
-                fontSize: 11, fontWeight: 700, color: isDaytime ? '#2563EB' : '#60A5FA',
+                fontSize: 10, fontWeight: 700, color: '#5BB8FF',
                 fontFamily: "'JetBrains Mono', monospace",
-                letterSpacing: '0.06em', textTransform: 'uppercase',
+                letterSpacing: '0.08em', textTransform: 'uppercase',
               }}>{m.agent ? `${m.agent.charAt(0).toUpperCase()}${m.agent.slice(1)}` : 'Agent'}</span>
-              <span style={{ fontSize: 9, color: textMuted, marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace" }}>
+              <span style={{ fontSize: 9, color: '#4A6080', marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace" }}>
                 new msg
               </span>
             </div>
             <span style={{
-              fontSize: 12, color: textPrimary,
+              fontSize: 12, color: '#EDF2FA',
               fontFamily: "'Inter', system-ui, sans-serif",
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               maxWidth: '100%',
             }}>{m.text || m.preview || ''}</span>
-          </button>
+          </motion.button>
         ))}
 
         {doneTasks.length === 0 && unreadMsgs.length === 0 && (
           <div style={{
             padding: '16px 8px', textAlign: 'center',
-            color: textMuted, fontSize: 13,
-            fontFamily: "'Inter', system-ui, sans-serif",
-          }}>Inbox is empty</div>
+            color: '#4A6080', fontSize: 12,
+            fontFamily: "'JetBrains Mono', monospace",
+            letterSpacing: '0.06em',
+          }}>-- inbox clear --</div>
         )}
       </div>
     </motion.div>

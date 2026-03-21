@@ -8733,11 +8733,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           <div style={{
             flexShrink: 0,
             padding: '8px 16px',
-            borderTop: isDaytime ? '1.5px solid rgba(234,179,8,0.30)' : '1.5px solid rgba(234,179,8,0.25)',
+            borderTop: '1px solid rgba(100,180,255,0.12)',
             display: 'flex', flexDirection: 'column', gap: 8,
-            background: isDaytime
-              ? 'linear-gradient(180deg, rgba(254,252,232,0.60) 0%, rgba(255,255,255,0) 100%)'
-              : 'linear-gradient(180deg, rgba(20,15,5,0.45) 0%, transparent 100%)',
+            background: 'linear-gradient(180deg, rgba(8,16,32,0.55) 0%, transparent 100%)',
           }}>
             {(() => {
               const cardKey = t.taskId || t.text
@@ -8747,156 +8745,176 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               const isDenyFadingOut = denyingTaskId === cardKey + '__fadeout'
               const cardClass = isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : isDenyGlowing ? 'task-denying' : isDenyFadingOut ? 'task-denied' : ''
               return (
-            <div key={cardKey} className={cardClass} style={{
-              background: isDaytime
-                ? 'linear-gradient(135deg, rgba(234,179,8,0.12) 0%, rgba(161,98,7,0.06) 100%)'
-                : 'linear-gradient(135deg, rgba(234,179,8,0.18) 0%, rgba(161,98,7,0.10) 100%)',
-              border: isDaytime ? '1.5px solid rgba(234,179,8,0.45)' : '1.5px solid rgba(234,179,8,0.50)',
-              borderLeft: '3px solid #EAB308',
-              borderRadius: 12,
-              padding: '12px 16px',
-              boxShadow: isDaytime
-                ? '0 2px 12px rgba(234,179,8,0.12), 0 1px 3px rgba(0,0,0,0.10)'
-                : '0 2px 16px rgba(234,179,8,0.18), 0 1px 4px rgba(0,0,0,0.25)',
-            }}>
+            <motion.div
+              key={cardKey}
+              className={cardClass}
+              initial={{ opacity: 0, y: 10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+              style={{
+                background: 'rgba(8,16,32,0.92)',
+                border: '1.5px solid rgba(100,180,255,0.22)',
+                borderLeft: '3px solid rgba(100,180,255,0.55)',
+                borderRadius: 12,
+                padding: '12px 16px',
+                boxShadow: '0 -4px 32px rgba(100,180,255,0.06), 0 2px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(100,180,255,0.08)',
+                position: 'relative', overflow: 'hidden',
+              }}>
+              {/* Inner glow strip */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+                background: 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.28) 40%, rgba(100,180,255,0.28) 60%, transparent 100%)',
+                pointerEvents: 'none',
+              }} />
               {/* Header row: dot + label + (arrows + counter if multiple) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <div style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: '#EAB308',
-                  boxShadow: '0 0 8px #EAB308, 0 0 16px rgba(234,179,8,0.5)',
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: '#F59E0B',
+                  boxShadow: '0 0 8px rgba(245,158,11,0.8), 0 0 16px rgba(245,158,11,0.4)',
                   flexShrink: 0,
+                  animation: 'statusPulse 2s ease-in-out infinite',
                 }} />
                 <span style={{
-                  fontSize: 11, fontWeight: 700, color: isDaytime ? '#92400E' : '#FCD34D',
+                  fontSize: 10, fontWeight: 700, color: '#8BA4C4',
                   fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  letterSpacing: '0.10em', textTransform: 'uppercase',
                   flex: 1,
-                }}>Task Done -- Awaiting Approval</span>
+                }}>AWAITING REVIEW</span>
                 {total > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                    {/* Left arrow */}
                     <button
                       onClick={() => setConfirmIndex(i => (i - 1 + total) % total)}
                       style={{
-                        width: 22, height: 22, borderRadius: 6, border: 'none', cursor: 'pointer',
-                        background: isDaytime ? 'rgba(234,179,8,0.15)' : 'rgba(234,179,8,0.20)',
-                        color: isDaytime ? '#92400E' : '#FCD34D',
+                        width: 22, height: 22, borderRadius: 6, border: '1px solid rgba(100,180,255,0.18)',
+                        cursor: 'pointer', background: 'rgba(100,180,255,0.08)',
+                        color: '#8BA4C4',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 14, lineHeight: 1, padding: 0,
-                        transition: 'background 80ms ease',
+                        transition: 'background 80ms ease, border-color 80ms ease',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(234,179,8,0.30)' : 'rgba(234,179,8,0.35)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(234,179,8,0.15)' : 'rgba(234,179,8,0.20)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.35)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.18)' }}
                       aria-label="Previous task"
                     >&#8249;</button>
-                    {/* Counter */}
                     <span style={{
-                      fontSize: 11, fontWeight: 700,
-                      color: isDaytime ? '#92400E' : '#FCD34D',
+                      fontSize: 10, fontWeight: 700,
+                      color: '#4A6080',
                       fontFamily: "'JetBrains Mono', monospace",
                       minWidth: 28, textAlign: 'center',
                     }}>{safeIndex + 1}/{total}</span>
-                    {/* Right arrow */}
                     <button
                       onClick={() => setConfirmIndex(i => (i + 1) % total)}
                       style={{
-                        width: 22, height: 22, borderRadius: 6, border: 'none', cursor: 'pointer',
-                        background: isDaytime ? 'rgba(234,179,8,0.15)' : 'rgba(234,179,8,0.20)',
-                        color: isDaytime ? '#92400E' : '#FCD34D',
+                        width: 22, height: 22, borderRadius: 6, border: '1px solid rgba(100,180,255,0.18)',
+                        cursor: 'pointer', background: 'rgba(100,180,255,0.08)',
+                        color: '#8BA4C4',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 14, lineHeight: 1, padding: 0,
-                        transition: 'background 80ms ease',
+                        transition: 'background 80ms ease, border-color 80ms ease',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(234,179,8,0.30)' : 'rgba(234,179,8,0.35)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(234,179,8,0.15)' : 'rgba(234,179,8,0.20)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.35)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.18)' }}
                       aria-label="Next task"
                     >&#8250;</button>
                   </div>
                 )}
               </div>
-              {/* Task text */}
+              {/* Task text -- data readout panel */}
               <div style={{
-                fontSize: 14, fontWeight: 600, color: isDaytime ? '#1E293B' : '#E2E8F0',
+                fontSize: 14, fontWeight: 500, color: '#EDF2FA',
                 fontFamily: "'Inter', system-ui, sans-serif",
-                lineHeight: 1.4, marginBottom: 10,
-                padding: '7px 11px',
-                background: isDaytime ? 'rgba(255,255,255,0.6)' : 'rgba(15,27,45,0.6)',
+                lineHeight: 1.5, marginBottom: 10,
+                padding: '8px 12px',
+                background: 'rgba(100,180,255,0.04)',
                 borderRadius: 8,
-                border: isDaytime ? '1px solid rgba(234,179,8,0.20)' : '1px solid rgba(234,179,8,0.25)',
+                border: '1px solid rgba(100,180,255,0.12)',
+                boxShadow: 'inset 0 1px 0 rgba(100,180,255,0.06)',
+                position: 'relative',
               }}>
+                <span style={{
+                  position: 'absolute', top: -8, left: 10,
+                  fontSize: 9, fontWeight: 700, color: '#3B9EFF',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  background: 'rgba(8,16,32,0.92)', padding: '0 4px',
+                }}>task</span>
                 {t.text}
               </div>
               {/* Buttons */}
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 6 }}>
                 {/* Approve */}
-                <button
+                <motion.button
                   onClick={() => callTaskAction(t.taskId, t.text, 'approve')}
+                  whileHover={{ scale: 1.04, y: -1 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                   style={{
-                    flex: 1, padding: '9px 12px',
-                    background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
-                    border: '1.5px solid rgba(34,197,94,0.5)',
-                    borderRadius: 10, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    color: '#FFFFFF', fontSize: 13, fontWeight: 800,
+                    flex: 1, padding: '8px 10px',
+                    background: 'rgba(22,163,74,0.18)',
+                    border: '1.5px solid rgba(34,197,94,0.45)',
+                    borderRadius: 9, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    color: '#4ADE80', fontSize: 12, fontWeight: 800,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    boxShadow: '0 2px 8px rgba(22,163,74,0.3)',
-                    transition: 'transform 80ms ease, box-shadow 80ms ease',
+                    boxShadow: '0 0 12px rgba(34,197,94,0.15), inset 0 1px 0 rgba(34,197,94,0.12)',
+                    letterSpacing: '0.04em',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(22,163,74,0.45)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(22,163,74,0.3)' }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                   Approve
-                </button>
+                </motion.button>
                 {/* Deny */}
-                <button
+                <motion.button
                   onClick={() => callTaskAction(t.taskId, t.text, 'reject')}
+                  whileHover={{ scale: 1.04, y: -1 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                   style={{
-                    flex: 1, padding: '9px 12px',
-                    background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
-                    border: '1.5px solid rgba(239,68,68,0.5)',
-                    borderRadius: 10, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    color: '#FFFFFF', fontSize: 13, fontWeight: 800,
+                    flex: 1, padding: '8px 10px',
+                    background: 'rgba(220,38,38,0.18)',
+                    border: '1.5px solid rgba(239,68,68,0.40)',
+                    borderRadius: 9, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    color: '#F87171', fontSize: 12, fontWeight: 800,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    boxShadow: '0 2px 8px rgba(220,38,38,0.3)',
-                    transition: 'transform 80ms ease, box-shadow 80ms ease',
+                    boxShadow: '0 0 12px rgba(239,68,68,0.15), inset 0 1px 0 rgba(239,68,68,0.10)',
+                    letterSpacing: '0.04em',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(220,38,38,0.45)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(220,38,38,0.3)' }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                   Deny
-                </button>
+                </motion.button>
                 {/* Clarify */}
-                <button
+                <motion.button
                   onClick={() => handleClarify(t.text)}
+                  whileHover={{ scale: 1.04, y: -1 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                   style={{
-                    flex: 1, padding: '9px 12px',
-                    background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-                    border: '1.5px solid rgba(59,130,246,0.5)',
-                    borderRadius: 10, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    color: '#FFFFFF', fontSize: 13, fontWeight: 800,
+                    flex: 1, padding: '8px 10px',
+                    background: 'rgba(59,158,255,0.15)',
+                    border: '1.5px solid rgba(59,158,255,0.35)',
+                    borderRadius: 9, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    color: '#5BB8FF', fontSize: 12, fontWeight: 800,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
-                    transition: 'transform 80ms ease, box-shadow 80ms ease',
+                    boxShadow: '0 0 12px rgba(59,158,255,0.12), inset 0 1px 0 rgba(100,180,255,0.10)',
+                    letterSpacing: '0.04em',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(37,99,235,0.45)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(37,99,235,0.3)' }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                   Clarify
-                </button>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
               )
             })()}
           </div>
