@@ -2528,24 +2528,15 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
 }
 
 // ---- SEND-TO SMART PICKER ----
-// Shows recent agents (from localStorage history) + search. Appears at message position.
+// Shows recent agents + search. Appears at message position.
 function SendToMenu({ position, onClose, onSelect, currentAgent }) {
   const menuRef = useRef(null)
   const [search, setSearch] = useState('')
   const inputRef = useRef(null)
 
-  // Get recently visited agents from localStorage
+  // No persistent recent agents -- use empty array (no localStorage)
   const recentAgents = useMemo(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem('corner-recent-agents') || '[]')
-      return raw
-        .filter(slug => slug !== currentAgent)
-        .slice(0, 3)
-        .map(slug => AGENTS.find(a => a.slug === slug))
-        .filter(Boolean)
-    } catch {
-      return []
-    }
+    return []
   }, [currentAgent])
 
   // All agents filtered by search
@@ -3456,9 +3447,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
   const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done'
-  const [teamName, setTeamName] = useState(() => {
-    try { return localStorage.getItem('corner-team-name') || 'aom' } catch { return 'aom' }
-  })
+  const [teamName, setTeamName] = useState('aom')
   const [editingName, setEditingName] = useState(false)
   const teamRef = useRef(null)
   const [cornerConfig, setCornerConfig] = useState(null)
@@ -3487,10 +3476,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
     return () => document.removeEventListener('mousedown', handler)
   }, [teamOpen, activeProjectDropdown])
 
-  // Save team name
-  useEffect(() => {
-    try { localStorage.setItem('corner-team-name', teamName) } catch {}
-  }, [teamName])
+  // Team name is in-memory only (no persistence)
 
   // Agent statuses from data
   const agentStatuses = data?.agents || []
@@ -4145,11 +4131,6 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
               if (unstuckToast === 'loading') return
               setUnstuckToast('loading')
               try {
-                // Clear localStorage
-                try {
-                  localStorage.removeItem('corner-right-now-tasks')
-                  localStorage.removeItem('corner-task-rightnow')
-                } catch {}
                 // Call API
                 await onUnstuck?.()
                 setUnstuckToast('done')
@@ -5135,11 +5116,9 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const isDaytime = isNightMode === false
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
-  // Per-agent task list (localStorage-persisted)
+  // Per-agent task list (in-memory only, data comes from Supabase)
   const TASKS_KEY = `corner-tasks-${agentSlug}`
-  const [tasks, setTasks] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]') } catch { return [] }
-  })
+  const [tasks, setTasks] = useState([])
   const [taskInput, setTaskInput] = useState('')
   const [taskCtx, setTaskCtx] = useState(null)
   const taskLongPressRef = useRef(null)
@@ -5152,12 +5131,9 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [expandedTaskId, setExpandedTaskId] = useState(null) // Accordion expand state
   const [collapsedParents, setCollapsedParents] = useState({}) // Track collapsed sub-task groups
 
-  // Load/save per-task context notes from localStorage
-  const getTaskContext = (id) => {
-    try { return localStorage.getItem(`corner-task-context-${id}`) || '' } catch { return '' }
-  }
+  // Per-task context notes (in-memory only, persisted to Supabase)
+  const getTaskContext = (_id) => ''
   const saveTaskContext = (id, text) => {
-    try { localStorage.setItem(`corner-task-context-${id}`, text) } catch {}
     // Supabase: save context note (fire-and-forget)
     if (!IS_LOCAL) {
       const task = tasks.find(t => t.id === id)
@@ -5169,14 +5145,9 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     }
   }
 
-  // Persist tasks
+  // Reset tasks when switching agents (in-memory reset, Supabase fetch below handles reload)
   useEffect(() => {
-    try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)) } catch {}
-  }, [tasks, TASKS_KEY])
-
-  // Reset tasks when switching agents
-  useEffect(() => {
-    try { setTasks(JSON.parse(localStorage.getItem(TASKS_KEY) || '[]')) } catch { setTasks([]) }
+    setTasks([])
     setTaskCtx(null)
     setActiveFilter('all')
   }, [TASKS_KEY])
@@ -5272,12 +5243,6 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     const taskItem = tasks.find(t => t.id === id)
     if (!taskItem) return
     setTasks(prev => prev.filter(t => t.id !== id))
-    const targetKey = `corner-tasks-${targetAgent}`
-    try {
-      const targetTasks = JSON.parse(localStorage.getItem(targetKey) || '[]')
-      targetTasks.push({ ...taskItem, agent: targetAgent })
-      localStorage.setItem(targetKey, JSON.stringify(targetTasks))
-    } catch {}
     // Supabase: reassign to new agent (fire-and-forget)
     if (!IS_LOCAL) {
       fetch('/api/dashboard/task-action', {
@@ -5312,13 +5277,6 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null); return
       }
       setTasks(prev => prev.map(t => t.id === draggedTask.id ? { ...t, parentId: targetTaskId } : t))
-      try {
-        const subKey = `corner-task-subtasks-${targetTaskId}`
-        const existing = JSON.parse(localStorage.getItem(subKey) || '[]')
-        if (!existing.includes(draggedTask.id)) {
-          localStorage.setItem(subKey, JSON.stringify([...existing, draggedTask.id]))
-        }
-      } catch {}
     } else if (dragIdx !== idx) {
       // Normal reorder
       setTasks(prev => {
@@ -6935,19 +6893,11 @@ function parsePunchListSidebar(markdown) {
 // ---- OWNER NOTES (persistent notes for Patrik's profile) ----
 function OwnerNotes({ isNightMode, onAddToRightNow }) {
   const isDaytime = isNightMode === false
-  const STORAGE_KEY = 'corner-owner-notes'
-  const [notes, setNotes] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-    } catch { return [] }
-  })
+  const [notes, setNotes] = useState([])
   const [input, setInput] = useState('')
   const inputRef = useRef(null)
 
-  // Persist notes
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)) } catch {}
-  }, [notes])
+  // Notes are in-memory only (no persistence)
 
   const addNote = () => {
     const text = input.trim()
@@ -9065,26 +9015,13 @@ export default function GameDashboard() {
   }, [])
 
   // Right Now tasks: wire to useDataPipe (real-time from task-status.jsonl + agent-notifications.md)
-  // No longer using localStorage -- this is now live data from the server
+  // Live data from server -- no localStorage
   const pipeData = useDataPipe(parsePunchListSidebar)
   const rightNowTasks = pipeData?.rightNow || []
   const addToRightNow = useCallback((task) => {
     if (!task) return
     console.log('[addToRightNow] task:', task)
-    // 1. Write to both localStorage keys (TaskContextMenu + GameHUD consistency)
-    try {
-      const saved = JSON.parse(localStorage.getItem('corner-task-rightnow') || '[]')
-      if (!saved.includes(task.text)) saved.push(task.text)
-      localStorage.setItem('corner-task-rightnow', JSON.stringify(saved))
-    } catch {}
-    try {
-      const saved2 = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
-      if (!saved2.some(t => t.text === task.text)) {
-        saved2.push({ id: Date.now(), text: task.text, agent: task.agent || 'patrik', addedAt: new Date().toISOString() })
-        localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved2))
-      }
-    } catch {}
-    // 2. Local task-assign for local mode
+    // Local task-assign for local mode
     if (IS_LOCAL) {
       try {
         fetch('/api/local/task-assign', {
@@ -9285,13 +9222,8 @@ export default function GameDashboard() {
     }
   }, [])
   // Per-agent chat history: server files are source of truth
-  // localStorage is DISABLED for chat. Every agent switch loads fresh from server.
-  const [agentChats, setAgentChats] = useState(() => {
-    // Always start empty. Server files load on agent switch. No localStorage.
-    // Production uses /api/conversations (GitHub-backed). Local uses /api/local/conversations (file-backed).
-    try { localStorage.removeItem('corner-agent-chats') } catch {}
-    return {}
-  })
+  // Always start empty. Server files load on agent switch.
+  const [agentChats, setAgentChats] = useState({})
   // Convenience: current agent's messages
   const panelMessages = agentChats[selectedRoom] || { _all: [] }
   const setPanelMessages = useCallback((updater) => {
@@ -9606,10 +9538,8 @@ export default function GameDashboard() {
   const [pendingReplyMsg, setPendingReplyMsg] = useState(null) // { id, content } | null
   // Pending pill expand: set by "Add Task" on project context menu, consumed by GameHUD
   const [expandPillSection, setExpandPillSection] = useState(null)
-  // Hidden pills: archived via context menu
-  const [hiddenPills, setHiddenPills] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('corner-hidden-pills') || '[]') } catch { return [] }
-  })
+  // Hidden pills: in-memory only (no persistence)
+  const [hiddenPills, setHiddenPills] = useState([])
 
   // Handle message right-click / long-press
   const handleMessageContextMenu = useCallback((e, msg) => {
@@ -9619,30 +9549,10 @@ export default function GameDashboard() {
     setMsgContextMenu({ position: { x, y }, msg })
   }, [])
 
-  // Track recently visited agents in localStorage
-  useEffect(() => {
-    if (!selectedRoom) return
-    try {
-      const recent = JSON.parse(localStorage.getItem('corner-recent-agents') || '[]')
-      const filtered = recent.filter(s => s !== selectedRoom)
-      localStorage.setItem('corner-recent-agents', JSON.stringify([selectedRoom, ...filtered].slice(0, 10)))
-    } catch {}
-  }, [selectedRoom])
+  // Recent agents tracking removed (no localStorage)
 
-  // Checkbox state for task context menu actions (toggle done)
-  const [sidebarCheckedTasks, setSidebarCheckedTasks] = useState(() => {
-    try {
-      const saved = localStorage.getItem('corner-checks')
-      return saved ? JSON.parse(saved) : {}
-    } catch { return {} }
-  })
-
-  // Sync checkbox state to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('corner-checks', JSON.stringify(sidebarCheckedTasks))
-    } catch {}
-  }, [sidebarCheckedTasks])
+  // Checkbox state for task context menu actions (in-memory only)
+  const [sidebarCheckedTasks, setSidebarCheckedTasks] = useState({})
 
   // Handle task right-click on sidebar items
   const handleSidebarTaskContextMenu = useCallback((e, task) => {
@@ -9674,20 +9584,17 @@ export default function GameDashboard() {
 
   // C3: MODE STATE
   const [currentMode, setCurrentMode] = useState(() => {
-    // Check URL first, then localStorage, then default to 'game'
+    // Check URL only, default to 'game'
     const path = window.location.pathname
     if (path.includes('/checklist')) return 'checklist'
     if (path.includes('/megaboard')) return 'megaboard'
-    return localStorage.getItem('corner-mode') || 'game'
+    return 'game'
   })
 
   // VIEW MODE: 'game' = isometric canvas, 'board' = Trello/kanban columns
-  const [viewMode, setViewMode] = useState(() => {
-    try { return localStorage.getItem('corner-view-mode') || 'game' } catch { return 'game' }
-  })
+  const [viewMode, setViewMode] = useState('game')
   const handleViewModeSwitch = useCallback((mode) => {
     setViewMode(mode)
-    try { localStorage.setItem('corner-view-mode', mode) } catch {}
   }, [])
 
   // CAMERA STATE: start in overview to see the full building
@@ -10250,9 +10157,7 @@ export default function GameDashboard() {
         }
         break
       case 'set-home':
-        if (data?.roomId) {
-          try { localStorage.setItem('corner-home-room', data.roomId) } catch {}
-        }
+        // Home room is not persisted (no localStorage)
         break
       // Legacy / other menu types
       case 'chat':
@@ -10288,13 +10193,9 @@ export default function GameDashboard() {
         }
         break
       case 'archive':
-        // Hide pill until user re-enables it
+        // Hide pill until user re-enables it (in-memory only)
         if (data?.section) {
-          setHiddenPills(prev => {
-            const next = [...prev.filter(s => s !== data.section), data.section]
-            try { localStorage.setItem('corner-hidden-pills', JSON.stringify(next)) } catch {}
-            return next
-          })
+          setHiddenPills(prev => [...prev.filter(s => s !== data.section), data.section])
         }
         break
       case 'expand':
@@ -10317,11 +10218,6 @@ export default function GameDashboard() {
       case 'create-task': {
         if (!msg?.content) break
         const taskText = msg.content.slice(0, 120)
-        try {
-          const saved = JSON.parse(localStorage.getItem('corner-manual-tasks') || '[]')
-          saved.push({ text: taskText, agent: selectedRoom, done: false, id: `msg-task-${Date.now()}` })
-          localStorage.setItem('corner-manual-tasks', JSON.stringify(saved))
-        } catch {}
         // Supabase: create task from chat message (fire-and-forget)
         if (!IS_LOCAL) {
           fetch('/api/dashboard/agent-status', {
@@ -10570,8 +10466,8 @@ export default function GameDashboard() {
                   setPanelVisible(true)
                   setPanelActiveTab('tasks')
                 }}
-                onSetAsHome={(roomId) => {
-                  try { localStorage.setItem('corner-home-room', roomId) } catch {}
+                onSetAsHome={(_roomId) => {
+                  // Home room not persisted (no localStorage)
                 }}
               />
 
