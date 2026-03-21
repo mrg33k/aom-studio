@@ -388,7 +388,7 @@ export function useDataPipe(parsePunchList) {
           if (data.tasks) {
             const taskEntries = data.tasks
               .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
-              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, taskId: t.id }))
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, taskId: t.id, source: t.source || 'agent', isQueued: t.source === 'loadup' || t.source === 'user' }))
             active.push(...taskEntries)
           }
 

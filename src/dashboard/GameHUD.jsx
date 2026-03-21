@@ -1738,21 +1738,21 @@ function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onAddProjec
                 </button>
               )}
 
-              {/* LIVE badge for live agent tasks */}
+              {/* LIVE / QUEUED badge for agent tasks */}
               {task.isLive && (
                 <span style={{
                   fontFamily: 'JetBrains Mono, monospace',
                   fontSize: 9, fontWeight: 800,
-                  color: '#FF6B3D',
-                  background: 'rgba(255,107,61,0.12)',
+                  color: task.isQueued ? '#D946EF' : '#FF6B3D',
+                  background: task.isQueued ? 'rgba(217,70,239,0.12)' : 'rgba(255,107,61,0.12)',
                   padding: '2px 6px', borderRadius: 4,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  border: '1px solid rgba(255,107,61,0.25)',
+                  border: task.isQueued ? '1px solid rgba(217,70,239,0.25)' : '1px solid rgba(255,107,61,0.25)',
                   flexShrink: 0,
-                  animation: 'statusPulse 2s ease-in-out infinite',
+                  animation: task.isQueued ? 'none' : 'statusPulse 2s ease-in-out infinite',
                 }}>
-                  LIVE
+                  {task.isQueued ? 'QUEUED' : 'LIVE'}
                 </span>
               )}
 
