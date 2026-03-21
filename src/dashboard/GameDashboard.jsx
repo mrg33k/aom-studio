@@ -5147,6 +5147,10 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [tasks, setTasks] = useState([])
   const [taskInput, setTaskInput] = useState('')
   const [taskCtx, setTaskCtx] = useState(null)
+  // Shared context menu (TaskContextMenuShared) -- used for ALL task types including
+  // punch-list and Right Now tasks. Long-press (500ms) on touch devices triggers this
+  // via the onTouchStart handler in renderTaskCard. Same menu as desktop right-click.
+  const [sharedCtxMenu, setSharedCtxMenu] = useState(null) // { position:{x,y}, task }
   const taskLongPressRef = useRef(null)
   const [dragIdx, setDragIdx] = useState(null)
   const [dragOverIdx, setDragOverIdx] = useState(null)
@@ -5882,12 +5886,17 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       {showRightNow && liveRightNow.length > 0 && (
         <div style={{ marginBottom: 12 }}>
           {renderSectionHeader('RIGHT NOW', liveRightNow.length, '#FF6B3D', 'rightnow', true)}
-          {!collapsedSections.rightnow && liveRightNow.map((t, i) =>
-            renderTaskCard(
-              { id: t.id || t.taskId || `rn-${i}`, text: t.text || t.task || t.description || 'Running...', agent: t.agent, status: t.status },
-              { isLive: !t.isQueued && !t.isDoneAwaitingApproval, isQueued: !!t.isQueued, isDoneAwaitingApproval: !!t.isDoneAwaitingApproval, showAgent: true, idx: i, sectionName: 'Right Now', sectionColor: '#FF6B3D' }
+          {!collapsedSections.rightnow && liveRightNow.map((t, i) => {
+            const taskObj = { id: t.id || t.taskId || `rn-${i}`, text: t.text || t.task || t.description || 'Running...', agent: t.agent, status: t.status }
+            return renderTaskCard(
+              taskObj,
+              {
+                isLive: !t.isQueued && !t.isDoneAwaitingApproval, isQueued: !!t.isQueued, isDoneAwaitingApproval: !!t.isDoneAwaitingApproval,
+                showAgent: true, idx: i, sectionName: 'Right Now', sectionColor: '#FF6B3D',
+                onContextMenu: (e) => { e.preventDefault?.(); setSharedCtxMenu({ position: { x: e.clientX, y: e.clientY }, task: taskObj }) },
+              }
             )
-          )}
+          })}
         </div>
       )}
 
@@ -5902,12 +5911,17 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         return (
           <div key={section.section} style={{ marginBottom: 12 }}>
             {renderSectionHeader(section.name, openTasks.length, section.color, section.section, false, progressPct)}
-            {!collapsedSections[section.section] && openTasks.map((t, i) =>
-              renderTaskCard(
-                { id: t.id || `pl-${section.section}-${i}`, text: t.text, done: t.done, agent: t.agent, project: section.name },
-                { showAgent: !!t.agent && t.agent !== agentSlug, showProject: activeFilter === 'all', projectColor: section.color, idx: i, sectionName: section.name, sectionColor: section.color }
+            {!collapsedSections[section.section] && openTasks.map((t, i) => {
+              const taskObj = { id: t.id || `pl-${section.section}-${i}`, text: t.text, done: t.done, agent: t.agent, project: section.name, projectSection: section.section }
+              return renderTaskCard(
+                taskObj,
+                {
+                  showAgent: !!t.agent && t.agent !== agentSlug, showProject: activeFilter === 'all',
+                  projectColor: section.color, idx: i, sectionName: section.name, sectionColor: section.color,
+                  onContextMenu: (e) => { e.preventDefault?.(); setSharedCtxMenu({ position: { x: e.clientX, y: e.clientY }, task: taskObj }) },
+                }
               )
-            )}
+            })}
           </div>
         )
       })}
@@ -5935,8 +5949,8 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                     draggable: true,
                     idx: tasks.indexOf(t),
                     onContextMenu: (e) => {
-                      e.preventDefault()
-                      setTaskCtx({ id: t.id, x: e.clientX, y: e.clientY, text: t.text })
+                      e.preventDefault?.()
+                      setSharedCtxMenu({ position: { x: e.clientX, y: e.clientY }, task: { id: t.id, text: t.text, agent: t.agent, done: t.done } })
                     },
                   })}
                   {/* Sub-tasks */}
@@ -5975,8 +5989,8 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
                                 draggable: true,
                                 idx: tasks.indexOf(sub),
                                 onContextMenu: (e) => {
-                                  e.preventDefault()
-                                  setTaskCtx({ id: sub.id, x: e.clientX, y: e.clientY, text: sub.text })
+                                  e.preventDefault?.()
+                                  setSharedCtxMenu({ position: { x: e.clientX, y: e.clientY }, task: { id: sub.id, text: sub.text, agent: sub.agent, done: sub.done } })
                                 },
                               })}
                             </div>
@@ -6097,6 +6111,45 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           </button>
         </div>
       )}
+
+      {/* Full-featured shared context menu for ALL task types (local, punch-list, Right Now).
+          Triggered by right-click on desktop and long-press (500ms) on touch devices.
+          The 500ms onTouchStart timer is wired in renderTaskCard via the onContextMenu
+          handler -- touch captures e.touches[0] coordinates at press start and fires
+          ctxHandler({ clientX, clientY }) after 500ms if the finger hasn't moved. */}
+      <AnimatePresence>
+        {sharedCtxMenu && (
+          <TaskContextMenuShared
+            key={`tasks-tab-ctx-${sharedCtxMenu.position.x}-${sharedCtxMenu.position.y}`}
+            position={sharedCtxMenu.position}
+            task={sharedCtxMenu.task}
+            onClose={() => setSharedCtxMenu(null)}
+            onAction={(action, task, payload) => {
+              handleTaskContextAction(action, task, payload, null)
+              // Mirror to in-memory state for local tasks
+              if (action === 'toggle') {
+                const localTask = tasks.find(t => t.id === task.id)
+                if (localTask) toggleTask(task.id)
+              }
+              if (action === 'delete') {
+                const localTask = tasks.find(t => t.id === task.id)
+                if (localTask) deleteTask(task.id)
+              }
+              if (action === 'reassign') {
+                const localTask = tasks.find(t => t.id === task.id)
+                if (localTask) moveTask(task.id, payload)
+              }
+              if (action === 'addToRightNow') {
+                const localTask = tasks.find(t => t.id === task.id)
+                if (localTask && onAddToRightNow) onAddToRightNow(localTask)
+              }
+              setSharedCtxMenu(null)
+            }}
+            isNightMode={isNightMode}
+            projects={punchProjects || []}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
