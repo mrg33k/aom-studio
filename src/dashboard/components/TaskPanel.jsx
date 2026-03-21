@@ -14,7 +14,7 @@ import { PALETTE, HUD, STATUS_DOT, IS_LOCAL } from './HUDConstants.jsx'
 const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask }) {
+export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask, onDoneTaskAction }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
@@ -424,6 +424,11 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
 
           const taskKey = task.isManual ? `manual-${task.manualId}` : String(task.origIdx)
           const isDraggingThis = activeDragKey === taskKey
+          const isDoneAwaiting = !!task.isDoneAwaitingApproval
+
+          // Yellow palette for done-awaiting tasks
+          const doneBg = isDoneAwaiting ? 'rgba(245,158,11,0.10)' : null
+          const doneBorder = isDoneAwaiting ? '3px solid rgba(245,158,11,0.5)' : null
 
           return (
             <motion.div
@@ -435,7 +440,12 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
               onContextMenu={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                onTaskContextMenu?.(e, task, project)
+                if (isDoneAwaiting) {
+                  // Done tasks get approve/deny/clarify menu, not the generic task menu
+                  onDoneTaskAction?.(e, task, project, 'menu')
+                } else {
+                  onTaskContextMenu?.(e, task, project)
+                }
               }}
               onPointerDown={(e) => handleRowPointerDown(e, task)}
               style={{
@@ -443,24 +453,30 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 padding: '4px 8px',
                 minHeight: 44,
                 borderBottom: i < orderedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
-                opacity: isDone ? 0.45 : isDraggingThis ? 0.5 : 1,
+                opacity: isDone && !isDoneAwaiting ? 0.45 : isDraggingThis ? 0.5 : 1,
                 transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
                 touchAction: 'pan-y',
-                // Highlight when dragging, navigated-to, or context menu open
-                background: isDraggingThis
-                  ? (isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)')
-                  : highlightedTask && task.text === highlightedTask.text
-                    ? (isDaytime ? 'rgba(59,158,255,0.25)' : 'rgba(59,158,255,0.2)')
-                    : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
-                      ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.15)')
-                      : 'transparent',
-                borderLeft: isDraggingThis
-                  ? `3px solid ${project.color || '#3B82F6'}`
-                  : highlightedTask && task.text === highlightedTask.text
-                    ? `3px solid ${project.color || '#3B9EFF'}`
-                    : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
-                      ? `3px solid ${project.color || '#3B82F6'}`
-                      : '3px solid transparent',
+                // Yellow background for done-awaiting-approval tasks
+                background: isDoneAwaiting
+                  ? doneBg
+                  : isDraggingThis
+                    ? (isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)')
+                    : highlightedTask && task.text === highlightedTask.text
+                      ? (isDaytime ? 'rgba(59,158,255,0.25)' : 'rgba(59,158,255,0.2)')
+                      : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
+                        ? (isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.15)')
+                        : 'transparent',
+                borderLeft: isDoneAwaiting
+                  ? doneBorder
+                  : isDraggingThis
+                    ? `3px solid ${project.color || '#3B82F6'}`
+                    : highlightedTask && task.text === highlightedTask.text
+                      ? `3px solid ${project.color || '#3B9EFF'}`
+                      : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
+                        ? `3px solid ${project.color || '#3B82F6'}`
+                        : '3px solid transparent',
+                boxShadow: isDoneAwaiting ? 'inset 0 0 0 1px rgba(245,158,11,0.25)' : 'none',
+                borderRadius: isDoneAwaiting ? 6 : 0,
               }}
             >
               {/* Checkbox - CLICKABLE (44px touch target via wrapper div) */}
@@ -546,8 +562,26 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 </span>
               )}
 
+              {/* DONE badge for tasks awaiting approval (yellow) */}
+              {isDoneAwaiting && (
+                <span style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 9, fontWeight: 800,
+                  color: '#F59E0B',
+                  background: 'rgba(245,158,11,0.15)',
+                  padding: '2px 6px', borderRadius: 4,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  border: '1px solid rgba(245,158,11,0.4)',
+                  flexShrink: 0,
+                  animation: 'statusPulse 2s ease-in-out infinite',
+                }}>
+                  DONE
+                </span>
+              )}
+
               {/* LIVE badge for actively working tasks (orange) */}
-              {task.isLive && !task.isQueued && (
+              {task.isLive && !task.isQueued && !isDoneAwaiting && (
                 <span style={{
                   fontFamily: 'JetBrains Mono, monospace',
                   fontSize: 9, fontWeight: 800,

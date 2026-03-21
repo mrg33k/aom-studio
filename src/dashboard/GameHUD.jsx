@@ -113,6 +113,42 @@ export default function GameHUD({
     }
   }, [hudTaskCtx])
 
+  // Done-task approval context menu: Approve / Deny / Clarify
+  const [doneTaskCtx, setDoneTaskCtx] = useState(null) // { task, x, y }
+  useEffect(() => {
+    if (!doneTaskCtx) return
+    const timer = setTimeout(() => {
+      const handler = (e) => {
+        const menu = document.querySelector('[data-done-ctx-menu]')
+        if (menu && menu.contains(e.target)) return
+        setDoneTaskCtx(null)
+      }
+      document.addEventListener('mousedown', handler)
+      doneTaskCtx._cleanup = () => document.removeEventListener('mousedown', handler)
+    }, 50)
+    return () => {
+      clearTimeout(timer)
+      doneTaskCtx._cleanup?.()
+    }
+  }, [doneTaskCtx])
+
+  // Fire-and-forget: update task status via Supabase task-action API
+  const taskLifecycleAction = useCallback((action, task) => {
+    try {
+      fetch('/api/dashboard/task-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          taskText: task.text,
+          taskId: task.taskId || null,
+          agent: task.agent || null,
+          clientId: typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom',
+        }),
+      }).catch(err => console.warn('[Corner] task lifecycle action failed:', err))
+    } catch {}
+  }, [])
+
   // Daytime palette: brighter blue glass with vibrant accents (distinct from night)
   const isDaytime = isNightMode === false
   const hudPanelBg = isDaytime ? 'rgba(18, 42, 75, 0.95)' : HUD.panelBg
@@ -433,6 +469,11 @@ export default function GameHUD({
             hudTaskCtxId={hudTaskCtx?.taskId}
             onTaskContextMenu={(e, task, proj) => {
               setHudTaskCtx({ task, project: proj, taskId: task.isManual ? `manual-${task.manualId}` : task.origIdx })
+            }}
+            onDoneTaskAction={(e, task, proj, type) => {
+              if (type === 'menu') {
+                setDoneTaskCtx({ task, x: e.clientX, y: e.clientY })
+              }
             }}
             onNavigateToProject={navigateToProject}
             highlightedTask={highlightedTask}
@@ -946,6 +987,146 @@ export default function GameHUD({
           )}
         </div>
       )}
+
+      {/* Done-task approval context menu: Approve / Deny / Clarify */}
+      {doneTaskCtx && (() => {
+        // Clamp position to viewport
+        const menuW = 240
+        const menuH = 160
+        let x = doneTaskCtx.x
+        let y = doneTaskCtx.y
+        if (typeof window !== 'undefined') {
+          if (x + menuW > window.innerWidth - 8) x = window.innerWidth - menuW - 8
+          if (x < 8) x = 8
+          if (y + menuH > window.innerHeight - 8) y = window.innerHeight - menuH - 8
+          if (y < 8) y = 8
+        }
+        const { task } = doneTaskCtx
+        return (
+          <div data-done-ctx-menu style={{
+            position: 'fixed',
+            left: x, top: y,
+            zIndex: 9999,
+            background: 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)',
+            border: '2px solid rgba(245,158,11,0.35)',
+            borderRadius: 10, padding: '6px 0', minWidth: menuW,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(245,158,11,0.1)',
+            backdropFilter: 'blur(20px)',
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '8px 14px 6px',
+              fontSize: 12, fontWeight: 700,
+              color: '#F59E0B',
+              fontFamily: "'JetBrains Mono', monospace",
+              borderBottom: '1px solid rgba(245,158,11,0.15)',
+              marginBottom: 4,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+            }}>
+              {(task.text || '').slice(0, 36)}{(task.text || '').length > 36 ? '...' : ''}
+            </div>
+
+            {/* Approve */}
+            <button
+              onClick={() => {
+                taskLifecycleAction('toggle', { ...task, done: false }) // sets status to 'completed' via toggle(true) logic
+                // Use 'markDone' which sets status='done' -> but we want 'completed'
+                // Use direct fetch to set status=completed
+                try {
+                  fetch('/api/dashboard/task-action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'toggle',
+                      taskText: task.text,
+                      taskId: task.taskId || null,
+                      agent: task.agent || null,
+                      payload: true, // marks done=true => status:'done' in current API
+                      clientId: typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom',
+                    }),
+                  }).catch(() => {})
+                  // Also set to completed
+                  if (task.taskId) {
+                    fetch('/api/dashboard/task-action', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        action: 'markDone',
+                        taskText: task.text,
+                        taskId: task.taskId || null,
+                        agent: task.agent || null,
+                        clientId: typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom',
+                      }),
+                    }).catch(() => {})
+                  }
+                } catch {}
+                setDoneTaskCtx(null)
+              }}
+              style={{
+                ...hudCtxBtn(true),
+                color: '#22C55E', fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />
+              Approve
+            </button>
+
+            {/* Deny */}
+            <button
+              onClick={() => {
+                try {
+                  fetch('/api/dashboard/task-action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'markUndone',
+                      taskText: task.text,
+                      taskId: task.taskId || null,
+                      agent: task.agent || null,
+                      clientId: typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom',
+                    }),
+                  }).catch(() => {})
+                } catch {}
+                setDoneTaskCtx(null)
+              }}
+              style={{
+                ...hudCtxBtn(true),
+                color: '#EF4444', fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.10)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
+              Deny
+            </button>
+
+            <div style={{ height: 1, background: 'rgba(245,158,11,0.12)', margin: '4px 0' }} />
+
+            {/* Clarify */}
+            <button
+              onClick={() => {
+                if (task.agent) onAgentClick?.(task.agent)
+                setDoneTaskCtx(null)
+              }}
+              style={{
+                ...hudCtxBtn(true),
+                color: '#60A5FA', fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#60A5FA', flexShrink: 0 }} />
+              Clarify
+            </button>
+          </div>
+        )
+      })()}
     </div>
   )
 }

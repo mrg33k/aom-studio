@@ -407,6 +407,12 @@ export function useDataPipe(parsePunchList) {
               .filter(t => t.status === 'queued')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
             active.push(...queuedEntries)
+
+            // Done tasks awaiting approval -- agent marked done, Patrik must approve/deny/clarify
+            const doneEntries = data.tasks
+              .filter(t => t.status === 'done')
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task done`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
+            active.push(...doneEntries)
           }
 
           // Fallback: working agents from agent_status that have NO active tasks
@@ -421,10 +427,10 @@ export function useDataPipe(parsePunchList) {
           setRightNow(active)
         }
 
-        // Map tasks to completed feed
+        // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
         if (data.tasks) {
           const completed = data.tasks
-            .filter(t => t.status === 'completed' || t.status === 'done')
+            .filter(t => t.status === 'completed')
             .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
           setCompletedFeed(completed)
         }
