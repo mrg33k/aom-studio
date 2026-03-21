@@ -3121,7 +3121,17 @@ function MobileDrawer({
         boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.6)',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        // PERMANENT FIX: overflow:'clip' instead of overflow:'hidden'.
+        // Both clip children visually at the container boundary, but 'hidden' creates a
+        // CSS scroll container which iOS Safari marks as "clipped" for focus/keyboard
+        // purposes -- any input near the bottom edge gets treated as off-screen and
+        // won't receive focus when the drawer is at half-snap height.
+        // 'clip' does purely geometric clipping with no scroll context side-effects,
+        // so iOS Safari's hit-test path reaches all inputs regardless of snap position.
+        // border-radius visual clipping still works correctly with overflow:'clip'.
+        // This cannot regress because the root cause (scroll-container blocking iOS
+        // focus) is fully removed, not patched over with disabled/attribute hacks.
+        overflow: 'clip',
         willChange: 'transform',
       }}
     >
