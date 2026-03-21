@@ -44,8 +44,8 @@ export default async function handler(req, res) {
     const [agents, messages, activeTasks, recentDone] = await Promise.all([
       supabaseGet('agent_status', `order=slug${clientFilter}`),
       supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
-      // ALL non-done tasks (queued, active, todo, working, in_progress, blocked, done, rejected)
-      supabaseGet('tasks', `status=neq.completed&order=created_at.desc${clientFilter}`),
+      // Non-completed, non-blocked tasks (queued, active, todo, working, done, rejected, failed)
+      supabaseGet('tasks', `status=not.in.(completed,blocked)&order=created_at.desc${clientFilter}`),
       // Recent completed tasks (for completed feed)
       supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
     ]);
