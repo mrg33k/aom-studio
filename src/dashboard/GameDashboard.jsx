@@ -8382,6 +8382,25 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 const sourceLabel = isSameSource ? null : formatSource(msg.source)
                 const isNotif = !isUser && isSystemNotification(msg)
 
+                // ---- AOM TEAM ROOM: per-message agent identity ----
+                const isAomRoom = room?.id === 'aom'
+                // In AOM room, each message carries an agentTag (the agent slug who sent it)
+                const AOM_AGENT_COLORS = {
+                  bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',
+                  cleo: '#EC4899', steve: '#8B5CF6', alex: '#F97316',
+                  tony: '#EF4444', jacob: '#06B6D4', colton: '#3B9EFF',
+                  elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
+                  pixel: '#A78BFA', patrik: '#F59E0B',
+                }
+                const msgAgentSlug = isAomRoom ? (msg.agentTag || null) : null
+                const msgAgentObj = msgAgentSlug ? AGENTS.find(a => a.slug === msgAgentSlug) : null
+                const msgAgentColor = msgAgentSlug ? (AOM_AGENT_COLORS[msgAgentSlug] || msgAgentObj?.color || '#60A5FA') : agentColor
+                // Grouping: consecutive messages from the same agent in AOM room collapse avatar+name
+                const prevMsgAgentSlug = isAomRoom && i > 0 ? (chatMessages[i-1]?.agentTag || null) : null
+                const isSameAomAgent = isAomRoom && !isUser && prevMsgAgentSlug && prevMsgAgentSlug === msgAgentSlug
+                // Show avatar+name only on the first message of each agent run in AOM room
+                const showAomHeader = isAomRoom && !isUser && !isSameAomAgent
+
                 // ---- TASK CONFIRM CARD (Vegas vibes) ----
                 // Agent marked a task done -> special card with CHECK / MINUS buttons
                 if (msg.isTaskConfirm) {
@@ -8553,6 +8572,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       display: 'flex', gap: 10, alignItems: 'flex-start',
                       flexDirection: isUser ? 'row-reverse' : 'row',
                       position: 'relative',
+                      // AOM room: tighter spacing for consecutive same-agent messages
+                      marginTop: isSameAomAgent ? -6 : 0,
                     }}
                     onContextMenu={(e) => {
                       e.preventDefault()
@@ -8583,21 +8604,27 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       }}>
                         P
                       </div>
+                    ) : isSameAomAgent ? (
+                      // AOM room: consecutive same-agent messages -- spacer instead of avatar
+                      <div style={{ width: 36, flexShrink: 0 }} />
                     ) : (
-                      <SpriteAvatar agentSlug={room?.id} size={36} borderColor={agentColor}
+                      <SpriteAvatar
+                        agentSlug={isAomRoom && msgAgentSlug ? msgAgentSlug : room?.id}
+                        size={36}
+                        borderColor={isAomRoom && msgAgentSlug ? msgAgentColor : agentColor}
                         status={status}
                         style={{
                           flexShrink: 0,
                           borderWidth: 3,
-                          boxShadow: `0 0 12px ${agentColor}40, 0 2px 4px rgba(0,0,0,0.2)`,
+                          boxShadow: `0 0 12px ${isAomRoom && msgAgentSlug ? msgAgentColor : agentColor}40, 0 2px 4px rgba(0,0,0,0.2)`,
                         }}
                       />
                     )}
 
                     {/* Message content */}
                     <div style={{ maxWidth: '80%' }}>
-                      {/* Name + timestamp above bubble */}
-                      {!msg.streaming && (
+                      {/* Name + timestamp above bubble -- hidden for consecutive same-agent in AOM room */}
+                      {!msg.streaming && !isSameAomAgent && (
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: 6,
                           marginBottom: 3, padding: '0 2px',
@@ -8605,10 +8632,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         }}>
                           <span style={{
                             fontSize: 11, fontWeight: 600,
-                            color: isUser ? '#F59E0B' : agentColor,
+                            color: isUser ? '#F59E0B' : (isAomRoom && msgAgentColor ? msgAgentColor : agentColor),
                             fontFamily: "'Inter', system-ui, sans-serif",
                           }}>
-                            {isUser ? 'Patrik' : (agent?.name || agentSlug)}
+                            {isUser ? 'Patrik' : (isAomRoom && msgAgentObj ? msgAgentObj.name : (agent?.name || agentSlug))}
                           </span>
                           {msg.time && (
                             <span style={{
@@ -8616,53 +8643,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                               fontFamily: "'JetBrains Mono', monospace",
                             }}>
                               {formatChatTime(msg.time)}
-                            </span>
-                          )}
-                          {/* AOM Team Room: project tag chip showing which agent/branch this msg is from */}
-                          {room?.id === 'aom' && msg.agentTag && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 700,
-                              color: (() => {
-                                // Hash agent slug to a color
-                                const AGENT_COLORS = {
-                                  bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',
-                                  cleo: '#EC4899', steve: '#8B5CF6', alex: '#F97316',
-                                  tony: '#EF4444', jacob: '#06B6D4', colton: '#3B9EFF',
-                                  elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
-                                  pixel: '#A78BFA',
-                                }
-                                return AGENT_COLORS[msg.agentTag] || '#60A5FA'
-                              })(),
-                              background: (() => {
-                                const AGENT_COLORS = {
-                                  bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',
-                                  cleo: '#EC4899', steve: '#8B5CF6', alex: '#F97316',
-                                  tony: '#EF4444', jacob: '#06B6D4', colton: '#3B9EFF',
-                                  elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
-                                  pixel: '#A78BFA',
-                                }
-                                const c = AGENT_COLORS[msg.agentTag] || '#60A5FA'
-                                return `${c}18`
-                              })(),
-                              border: (() => {
-                                const AGENT_COLORS = {
-                                  bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',
-                                  cleo: '#EC4899', steve: '#8B5CF6', alex: '#F97316',
-                                  tony: '#EF4444', jacob: '#06B6D4', colton: '#3B9EFF',
-                                  elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
-                                  pixel: '#A78BFA',
-                                }
-                                const c = AGENT_COLORS[msg.agentTag] || '#60A5FA'
-                                return `1px solid ${c}40`
-                              })(),
-                              padding: '1px 5px',
-                              borderRadius: 4,
-                              letterSpacing: '0.06em',
-                              textTransform: 'uppercase',
-                              fontFamily: "'JetBrains Mono', monospace",
-                              flexShrink: 0,
-                            }}>
-                              {msg.agentTag}
                             </span>
                           )}
                         </div>
@@ -8699,7 +8679,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                               }
                             : {
                                 background: '#0F1B2D',
-                                border: `1px solid ${msg.streaming ? agentColor + '40' : 'rgba(255,255,255,0.08)'}`,
+                                border: `1px solid ${msg.streaming ? (isAomRoom && msgAgentColor ? msgAgentColor + '40' : agentColor + '40') : 'rgba(255,255,255,0.08)'}`,
+                                // AOM room: left accent border per agent so you can scan at a glance who said what
+                                ...(isAomRoom && msgAgentColor ? { borderLeft: `3px solid ${msgAgentColor}60` } : {}),
                                 color: '#F1F5F9',
                                 borderBottomLeftRadius: 3,
                               }
@@ -8713,8 +8695,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             </div>
                           ) : (
                             <div style={{ wordBreak: 'break-word', position: 'relative' }}>
-                              <MarkdownMessage text={msg.content} agentColor={agentColor} streaming={msg.streaming} />
-                              {msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}
+                              <MarkdownMessage text={msg.content} agentColor={isAomRoom && msgAgentColor ? msgAgentColor : agentColor} streaming={msg.streaming} />
+                              {msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: isAomRoom && msgAgentColor ? msgAgentColor : agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}
                             </div>
                           )
                         )}
