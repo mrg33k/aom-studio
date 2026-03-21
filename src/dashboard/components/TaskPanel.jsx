@@ -140,50 +140,52 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 24px 12px',
+        padding: '10px 16px 10px',
         borderBottom: `1px solid ${tpDivider}`,
         position: 'relative',
+        gap: 8,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
           <div style={{
-            width: 12, height: 12, borderRadius: 4,
+            width: 10, height: 10, borderRadius: 3, flexShrink: 0,
             background: project.color,
-            boxShadow: `0 0 12px ${project.color}44`,
+            boxShadow: `0 0 8px ${project.color}44`,
           }} />
           <span style={{
-            fontFamily: "'Inter', system-ui, sans-serif", fontSize: 26, fontWeight: 900,
+            fontFamily: "'Inter', system-ui, sans-serif", fontSize: 20, fontWeight: 900,
             color: tpTextPrimary,
             textTransform: 'uppercase',
             letterSpacing: '-0.02em',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {project.name}
           </span>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 600,
-            color: tpTextMuted,
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 600,
+            color: tpTextMuted, flexShrink: 0,
           }}>
             {doneTasks}/{totalTasks}
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Progress bar - THICKER per Steffen spec (12px) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          {/* Progress bar */}
           <div style={{
-            width: 100, height: 12, borderRadius: 6,
+            width: 80, height: 8, borderRadius: 4,
             background: tpProgressBg,
             overflow: 'hidden',
           }}>
             <div style={{
               width: `${progress}%`, height: '100%',
               background: `linear-gradient(90deg, ${project.color}AA, ${project.color})`,
-              borderRadius: 6,
+              borderRadius: 4,
               transition: 'width 300ms ease',
             }} />
           </div>
           <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 16, fontWeight: 700,
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
             color: project.color,
-            minWidth: 32,
+            minWidth: 30,
           }}>
             {progress}%
           </span>
@@ -192,23 +194,23 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
             onClick={onClose}
             style={{
               background: tpCloseBg, border: `1px solid ${tpDivider}`,
-              borderRadius: 8, cursor: 'pointer',
+              borderRadius: 7, cursor: 'pointer',
               color: tpTextMuted,
-              width: 44, height: 44, minWidth: 44, minHeight: 44,
+              width: 32, height: 32, minWidth: 32, minHeight: 32,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 150ms ease',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = tpCloseHoverBg; e.currentTarget.style.color = isDaytime ? '#8BA4C4' : HUD.textSecondary }}
             onMouseLeave={e => { e.currentTarget.style.background = tpCloseBg; e.currentTarget.style.color = tpTextMuted }}
           >
-            <X size={18} />
+            <X size={15} />
           </button>
         </div>
       </div>
 
       {/* Task list */}
       <div style={{
-        padding: '8px 16px 16px',
+        padding: '4px 12px 12px',
         overflowY: 'auto', maxHeight: 300,
         touchAction: 'pan-y',
         WebkitOverflowScrolling: 'touch',
@@ -226,8 +228,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.15 }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 8px',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 8px',
                   borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
                 }}
               >
@@ -337,11 +339,11 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 clearTimeout(e.currentTarget._longPressTimer)
               }}
               style={{
-                display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '12px 8px',
-                minHeight: 44,
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 8px',
+                minHeight: 40,
                 borderBottom: i < sortedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
-                opacity: isDone ? 0.35 : 1,
+                opacity: isDone ? 0.45 : 1,
                 transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
                 // Highlight when navigated-to OR context menu open
                 background: highlightedTask && task.text === highlightedTask.text
@@ -356,33 +358,33 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                     : '3px solid transparent',
               }}
             >
-              {/* Checkbox - CLICKABLE (44px touch target via padding) */}
-              <motion.div
-                onClick={() => {
-                  if (task.isManual) {
-                    onToggleManualTask?.(task.manualId)
-                  } else {
-                    toggleTask(task, task.origIdx)
-                  }
-                }}
-                whileHover={{ scale: 1.15 }}
-                whileTap={{ scale: 0.85 }}
-                style={{
-                  width: 24, height: 24, borderRadius: 6, flexShrink: 0, marginTop: 0,
-                  border: isDone ? 'none' : `1.5px solid ${tpCheckboxBorder}`,
-                  background: isDone ? (task.autoChecked ? '#22C55E' : project.color) : tpCheckboxBg,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 150ms ease',
-                  cursor: 'pointer',
-                  opacity: isSaving ? 0.5 : 1,
-                  boxShadow: task.autoChecked ? '0 0 8px rgba(34,197,94,0.4)' : 'none',
-                  // 44px touch target via invisible padding (checkbox visual stays 24px, tap area 44px)
-                  padding: 10, margin: -10, boxSizing: 'content-box',
-                }}>
-                {isDone && <Check size={14} color="#FFF" strokeWidth={3} />}
-              </motion.div>
+              {/* Checkbox - CLICKABLE (44px touch target via wrapper div) */}
+              <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <motion.div
+                  onClick={() => {
+                    if (task.isManual) {
+                      onToggleManualTask?.(task.manualId)
+                    } else {
+                      toggleTask(task, task.origIdx)
+                    }
+                  }}
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.85 }}
+                  style={{
+                    width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                    border: isDone ? 'none' : `1.5px solid ${tpCheckboxBorder}`,
+                    background: isDone ? (task.autoChecked ? '#22C55E' : project.color) : tpCheckboxBg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 150ms ease',
+                    cursor: 'pointer',
+                    opacity: isSaving ? 0.5 : 1,
+                    boxShadow: task.autoChecked ? '0 0 8px rgba(34,197,94,0.4)' : 'none',
+                  }}>
+                  {isDone && <Check size={12} color="#FFF" strokeWidth={3} />}
+                </motion.div>
+              </div>
 
-              {/* Task text - LARGER. Clickable if task has a project link. */}
+              {/* Task text - Clickable if task has a project link. */}
               <span
                 onClick={() => {
                   if (task.projectSource || task.projectSection) {
@@ -390,9 +392,9 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                   }
                 }}
                 style={{
-                  fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, fontWeight: 400,
+                  fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 400,
                   color: isDone ? tpTextMuted : tpTextPrimary,
-                  lineHeight: 1.45,
+                  lineHeight: 1.4,
                   textDecoration: isDone ? 'line-through' : 'none',
                   flex: 1,
                   cursor: (task.projectSource || task.projectSection) ? 'pointer' : 'default',
