@@ -164,6 +164,18 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, action: 'markUndone', result });
       }
 
+      case 'approve': {
+        // Patrik approved a done task -- mark as completed
+        const result = await supabasePatch(filter, { status: 'completed', completed_at: new Date().toISOString() });
+        return res.status(200).json({ ok: true, action: 'approve', result });
+      }
+
+      case 'reject': {
+        // Patrik rejected a done task -- send back to active so agent can redo
+        const result = await supabasePatch(filter, { status: 'active', completed_at: null });
+        return res.status(200).json({ ok: true, action: 'reject', result });
+      }
+
       default:
         return res.status(400).json({ error: `Unknown action: ${action}` });
     }

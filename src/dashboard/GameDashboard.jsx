@@ -8281,6 +8281,145 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   </div>
                 </div>
               )}
+              {/* ---- INLINE TASK CONFIRMATION CARDS ---- */}
+              {/* Rendered at end of messages list for tasks status='done' awaiting Patrik approval */}
+              {(() => {
+                const doneTasks = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug)
+                if (doneTasks.length === 0) return null
+                const callTaskAction = async (taskId, taskText, action) => {
+                  try {
+                    await fetch('/api/dashboard/task-action', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action, taskId, taskText, agent: agentSlug, clientId: getClientId() }),
+                    })
+                    pipeData?.refetch?.()
+                  } catch { /* silent fail */ }
+                }
+                const handleClarify = (taskText) => {
+                  const input = document.querySelector('[data-panel-chat-input]')
+                  if (input) {
+                    const prefix = `Re: "${taskText}" -- `
+                    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+                    if (nativeInputValueSetter) {
+                      nativeInputValueSetter.call(input, prefix)
+                      input.dispatchEvent(new Event('input', { bubbles: true }))
+                    }
+                    input.focus()
+                  }
+                }
+                return doneTasks.map((t) => (
+                  <div key={t.taskId || t.text} style={{
+                    margin: '8px 0',
+                    background: isDaytime
+                      ? 'linear-gradient(135deg, rgba(234,179,8,0.12) 0%, rgba(161,98,7,0.06) 100%)'
+                      : 'linear-gradient(135deg, rgba(234,179,8,0.18) 0%, rgba(161,98,7,0.10) 100%)',
+                    border: isDaytime ? '1.5px solid rgba(234,179,8,0.45)' : '1.5px solid rgba(234,179,8,0.50)',
+                    borderLeft: '3px solid #EAB308',
+                    borderRadius: 12,
+                    padding: '12px 16px',
+                    boxShadow: isDaytime
+                      ? '0 2px 12px rgba(234,179,8,0.12), 0 1px 3px rgba(0,0,0,0.12)'
+                      : '0 2px 16px rgba(234,179,8,0.18), 0 1px 4px rgba(0,0,0,0.25)',
+                  }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <div style={{
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: '#EAB308',
+                        boxShadow: '0 0 8px #EAB308, 0 0 16px rgba(234,179,8,0.5)',
+                        flexShrink: 0,
+                      }} />
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: isDaytime ? '#92400E' : '#FCD34D',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        letterSpacing: '0.08em', textTransform: 'uppercase',
+                      }}>Task Done -- Awaiting Approval</span>
+                    </div>
+                    {/* Task text */}
+                    <div style={{
+                      fontSize: 14, fontWeight: 600, color: isDaytime ? '#1E293B' : '#E2E8F0',
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      lineHeight: 1.4, marginBottom: 12,
+                      padding: '8px 12px',
+                      background: isDaytime ? 'rgba(255,255,255,0.6)' : 'rgba(15,27,45,0.6)',
+                      borderRadius: 8,
+                      border: isDaytime ? '1px solid rgba(234,179,8,0.20)' : '1px solid rgba(234,179,8,0.25)',
+                    }}>
+                      {t.text}
+                    </div>
+                    {/* Buttons */}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {/* Approve */}
+                      <button
+                        onClick={() => callTaskAction(t.taskId, t.text, 'approve')}
+                        style={{
+                          flex: 1, padding: '9px 12px',
+                          background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                          border: '1.5px solid rgba(34,197,94,0.5)',
+                          borderRadius: 10, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          color: '#FFFFFF', fontSize: 13, fontWeight: 800,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          boxShadow: '0 2px 8px rgba(22,163,74,0.3)',
+                          transition: 'transform 80ms ease, box-shadow 80ms ease',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(22,163,74,0.45)' }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(22,163,74,0.3)' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Approve
+                      </button>
+                      {/* Deny */}
+                      <button
+                        onClick={() => callTaskAction(t.taskId, t.text, 'reject')}
+                        style={{
+                          flex: 1, padding: '9px 12px',
+                          background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                          border: '1.5px solid rgba(239,68,68,0.5)',
+                          borderRadius: 10, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          color: '#FFFFFF', fontSize: 13, fontWeight: 800,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          boxShadow: '0 2px 8px rgba(220,38,38,0.3)',
+                          transition: 'transform 80ms ease, box-shadow 80ms ease',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(220,38,38,0.45)' }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(220,38,38,0.3)' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        Deny
+                      </button>
+                      {/* Clarify */}
+                      <button
+                        onClick={() => handleClarify(t.text)}
+                        style={{
+                          flex: 1, padding: '9px 12px',
+                          background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                          border: '1.5px solid rgba(59,130,246,0.5)',
+                          borderRadius: 10, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          color: '#FFFFFF', fontSize: 13, fontWeight: 800,
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+                          transition: 'transform 80ms ease, box-shadow 80ms ease',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(37,99,235,0.45)' }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(37,99,235,0.3)' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                        Clarify
+                      </button>
+                    </div>
+                  </div>
+                ))
+              })()}
               <div ref={messagesEndRef} />
             </div>
             {/* Scroll to bottom button (subtle, always available) */}
