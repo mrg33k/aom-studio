@@ -49,7 +49,7 @@ const PROJECT_COLS = PROJECTS.filter(p => !p.hidden).map(p => ({
   type: 'project',
 }))
 
-// Default order for localStorage
+// Default column order
 const DEFAULT_ORDER = [
   'rightnow',
   'completed',
@@ -64,21 +64,6 @@ const ALL_COLS = {
   ...Object.fromEntries(PROJECT_COLS.map(c => [c.key, c])),
 }
 
-function loadColOrder() {
-  try {
-    const stored = JSON.parse(localStorage.getItem('board-col-order') || 'null')
-    if (Array.isArray(stored) && stored.length > 0) {
-      // Merge: keep stored order, append any new cols not yet in stored
-      const extra = DEFAULT_ORDER.filter(k => !stored.includes(k))
-      return [...stored.filter(k => DEFAULT_ORDER.includes(k)), ...extra]
-    }
-  } catch {}
-  return [...DEFAULT_ORDER]
-}
-
-function saveColOrder(order) {
-  try { localStorage.setItem('board-col-order', JSON.stringify(order)) } catch {}
-}
 
 // ── BOARD CARD ──────────────────────────────────────────────────────────────
 
@@ -424,8 +409,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
   // Search
   const [search, setSearch] = useState('')
 
-  // Column order (drag to reorder columns later -- currently just stored)
-  const [colOrder, setColOrder] = useState(() => loadColOrder())
+  // Column order (drag to reorder columns later)
+  const [colOrder, setColOrder] = useState(() => [...DEFAULT_ORDER])
 
   // Drag state
   const [draggingCard, setDraggingCard] = useState(null) // key like "rightnow-0"
@@ -461,29 +446,19 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
   }, [boardCtxMenu])
 
   // Per-column task order (for within-column reordering)
-  const [taskOrders, setTaskOrders] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('board-task-orders') || '{}')
-    } catch { return {} }
-  })
+  const [taskOrders, setTaskOrders] = useState({})
 
   const saveTaskOrders = useCallback((orders) => {
     setTaskOrders(orders)
-    try { localStorage.setItem('board-task-orders', JSON.stringify(orders)) } catch {}
   }, [])
 
   // ── Build cards per column ─────────────────────────────────────────────
 
   // Track which tasks are "overridden" to a different column by drag-and-drop
-  const [cardOverrides, setCardOverrides] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('board-card-overrides') || '{}')
-    } catch { return {} }
-  })
+  const [cardOverrides, setCardOverrides] = useState({})
 
   const saveCardOverrides = useCallback((overrides) => {
     setCardOverrides(overrides)
-    try { localStorage.setItem('board-card-overrides', JSON.stringify(overrides)) } catch {}
   }, [])
 
   // Build the base card map (column -> cards[])
@@ -838,13 +813,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
             </div>
             {/* Promote to Right Now */}
             <button onClick={() => {
-              try {
-                const saved = JSON.parse(localStorage.getItem('corner-right-now-tasks') || '[]')
-                if (!saved.some(t => t.text === taskText)) {
-                  saved.push({ id: Date.now(), text: taskText, agent: entry.agent || 'patrik', addedAt: new Date().toISOString() })
-                  localStorage.setItem('corner-right-now-tasks', JSON.stringify(saved))
-                }
-              } catch {}
               // Supabase: promote task to active (fire-and-forget)
               if (!BOARD_IS_LOCAL) {
                 fetch('/api/dashboard/task-action', {
@@ -859,11 +827,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
             </button>
             {/* Create Task (add copy to manual tasks) */}
             <button onClick={() => {
-              try {
-                const all = JSON.parse(localStorage.getItem('corner-manual-tasks') || '[]')
-                all.push({ id: Date.now(), text: taskText, done: false, agent: entry.agent || 'patrik' })
-                localStorage.setItem('corner-manual-tasks', JSON.stringify(all))
-              } catch {}
               // Supabase: create task as todo (fire-and-forget)
               if (!BOARD_IS_LOCAL) {
                 fetch('/api/dashboard/agent-status', {
@@ -878,30 +841,17 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
             </button>
             {/* Mark done */}
             <button onClick={() => {
-              const key = taskText.slice(0, 60)
-              let wasDone = false
-              try {
-                const checks = JSON.parse(localStorage.getItem('corner-checks') || '{}')
-                wasDone = !!checks[key]
-                checks[key] = !checks[key]
-                localStorage.setItem('corner-checks', JSON.stringify(checks))
-              } catch {}
-              // Supabase: toggle done/undone (fire-and-forget)
+              // Supabase: mark done (fire-and-forget)
               if (!BOARD_IS_LOCAL) {
                 fetch('/api/dashboard/task-action', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ action: wasDone ? 'markUndone' : 'markDone', taskText, taskId: entry.taskId || entry.id || null }),
+                  body: JSON.stringify({ action: 'markDone', taskText, taskId: entry.taskId || entry.id || null }),
                 }).catch(() => {})
               }
               setBoardCtxMenu(null)
             }} style={boardCtxBtn('#22C55E')}>
-              {(() => {
-                try {
-                  const checks = JSON.parse(localStorage.getItem('corner-checks') || '{}')
-                  return checks[taskText.slice(0, 60)] ? 'Mark Undone' : 'Mark Done'
-                } catch { return 'Mark Done' }
-              })()}
+              Mark Done
             </button>
             <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
             {/* Copy text */}
