@@ -11185,6 +11185,123 @@ export default function GameDashboard() {
         .msg-bubble:hover .msg-reply-btn {
           display: flex !important;
         }
+        /* Markdown message rendering inside assistant bubbles */
+        .md-msg {
+          font-size: 13px;
+          line-height: 1.6;
+          color: #F1F5F9;
+          font-family: 'Inter', system-ui, sans-serif;
+          word-break: break-word;
+        }
+        .md-msg p {
+          margin: 0 0 8px 0;
+        }
+        .md-msg p:last-child {
+          margin-bottom: 0;
+        }
+        .md-msg strong, .md-msg b {
+          color: #fff;
+          font-weight: 700;
+        }
+        .md-msg em, .md-msg i {
+          font-style: italic;
+          color: #CBD5E1;
+        }
+        .md-msg h1, .md-msg h2, .md-msg h3, .md-msg h4 {
+          color: #fff;
+          font-weight: 700;
+          margin: 10px 0 6px 0;
+          line-height: 1.3;
+        }
+        .md-msg h1 { font-size: 16px; }
+        .md-msg h2 { font-size: 15px; }
+        .md-msg h3 { font-size: 14px; }
+        .md-msg h4 { font-size: 13px; }
+        .md-msg ul, .md-msg ol {
+          margin: 4px 0 8px 0;
+          padding-left: 18px;
+        }
+        .md-msg ul { list-style-type: disc; }
+        .md-msg ol { list-style-type: decimal; }
+        .md-msg li {
+          margin: 3px 0;
+          line-height: 1.5;
+          color: #F1F5F9;
+        }
+        .md-msg li::marker {
+          color: var(--agent-color, #7CB9FF);
+          opacity: 0.7;
+        }
+        .md-msg code {
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 4px;
+          padding: 1px 5px;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+          font-size: 12px;
+          color: #93C5FD;
+          word-break: break-all;
+        }
+        .md-msg pre {
+          background: rgba(0,0,0,0.35);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 6px;
+          padding: 10px 12px;
+          margin: 8px 0;
+          overflow-x: auto;
+          max-height: 300px;
+        }
+        .md-msg pre code {
+          background: transparent;
+          border: none;
+          padding: 0;
+          font-size: 12px;
+          color: #CBD5E1;
+          word-break: normal;
+          white-space: pre;
+        }
+        .md-msg blockquote {
+          border-left: 3px solid var(--agent-color, #7CB9FF);
+          margin: 6px 0;
+          padding: 4px 10px;
+          color: #8BA4C4;
+          font-style: italic;
+          background: rgba(255,255,255,0.03);
+          border-radius: 0 4px 4px 0;
+        }
+        .md-msg a {
+          color: var(--agent-color, #7CB9FF);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          word-break: break-all;
+        }
+        .md-msg hr {
+          border: none;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          margin: 10px 0;
+        }
+        .md-msg table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 8px 0;
+          font-size: 12px;
+        }
+        .md-msg th {
+          background: rgba(255,255,255,0.08);
+          color: #fff;
+          font-weight: 600;
+          padding: 5px 8px;
+          border: 1px solid rgba(255,255,255,0.1);
+          text-align: left;
+        }
+        .md-msg td {
+          padding: 4px 8px;
+          border: 1px solid rgba(255,255,255,0.07);
+          color: #CBD5E1;
+        }
+        .md-msg tr:nth-child(even) td {
+          background: rgba(255,255,255,0.03);
+        }
       `}</style>
     </div>
   )
