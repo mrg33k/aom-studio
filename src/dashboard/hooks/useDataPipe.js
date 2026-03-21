@@ -464,14 +464,20 @@ export function useDataPipe(parsePunchList) {
           const projectMap = new Map()
           const todayTasks = []
 
-          // Color palette for auto-generated project pills
+          // Color palette for known projects + dynamic hash for new ones
           const PROD_COLORS = {
             'rightnow': '#FF6B3D', 'your-todos': '#EF4444', 'schedule': '#FF6B3D',
             'finish-these': '#6B8AB0', 'corner': '#3B9EFF', 'ambition': '#F59E0B',
             'outreach': '#EF4444', 'infra': '#4CAF50', 'content': '#FF7043',
             'multi-tenant': '#7C3AED',
           }
-          const DEFAULT_COLOR = '#6B8AB0'
+          // Auto-generate a color for any project not in PROD_COLORS
+          const AUTO_COLORS = ['#7C3AED','#06B6D4','#F97316','#EC4899','#10B981','#8B5CF6','#F43F5E','#14B8A6','#E11D48','#0EA5E9']
+          function hashColor(name) {
+            let h = 0; for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0
+            return AUTO_COLORS[Math.abs(h) % AUTO_COLORS.length]
+          }
+          const getColor = (slug) => PROD_COLORS[slug] || hashColor(slug)
 
           for (const task of data.tasks) {
             const projectKey = task.project || task.section || 'general'
@@ -481,7 +487,7 @@ export function useDataPipe(parsePunchList) {
               projectMap.set(slug, {
                 name: task.project || projectKey.charAt(0).toUpperCase() + projectKey.slice(1),
                 section: slug,
-                color: PROD_COLORS[slug] || DEFAULT_COLOR,
+                color: getColor(slug),
                 icon: 'project',
                 tasks: [],
               })
