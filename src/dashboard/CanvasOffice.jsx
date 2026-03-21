@@ -7,7 +7,7 @@ import { ALL_ROOMS, PROJECTS } from './gridSpec.js'
 //
 // MEGA BUILD features:
 // 1. HEX GRID SHUFFLE: Rooms live in indexed hex SLOTS. Drag = pick up, hover = shuffle (iOS style).
-//    Drop snaps to nearest slot, others animate 200ms. Saves slot ORDER (not x/y) to localStorage.
+//    Drop snaps to nearest slot, others animate 200ms. Slot order resets to defaults on refresh.
 // 2. CELEBRATION WAVE BOUNCE: Domino wave jump, 150ms stagger, glow pulse.
 //    Auto-triggers every 15s for testing. Exposes triggerCelebration(roomId).
 // 3. DIM INACTIVE ROOMS: Rooms with inactive agentStatus get globalAlpha 0.4, locked idle, no crossfade.
@@ -52,30 +52,10 @@ const CAMERA_TRANSITION_MS = 400
 // Shuffle animation duration (ms)
 const SHUFFLE_ANIM_MS = 200
 
-// localStorage keys
-const SLOT_ORDER_KEY = 'corner-slot-order'
-const HIDDEN_ROOMS_KEY = 'corner-hidden-rooms'
-const CUSTOM_ROOMS_KEY = 'corner-custom-rooms'
-const FREE_POSITIONS_KEY = 'corner-free-positions'
-
-// Load free room positions from localStorage
+// Load free room positions -- no persistence, always start fresh
 // Returns: { [roomId]: { x, y } } or {}
 function loadFreePositions() {
-  try {
-    const raw = localStorage.getItem(FREE_POSITIONS_KEY)
-    if (raw) {
-      const saved = JSON.parse(raw)
-      if (saved && typeof saved === 'object') return saved
-    }
-  } catch (e) { /* ignore */ }
   return {}
-}
-
-// Save free room positions to localStorage
-function saveFreePositions(positions) {
-  try {
-    localStorage.setItem(FREE_POSITIONS_KEY, JSON.stringify(positions))
-  } catch (e) { /* ignore */ }
 }
 
 // ---- ROOM DATA FROM gridSpec.js (ALL_ROOMS = agents + projects) ----
@@ -94,42 +74,14 @@ function getDefaultRoomIDs() {
   return ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
 }
 
-// Load user-created custom rooms from localStorage
+// Custom rooms -- no persistence, always empty on load
 function loadCustomRooms() {
-  try {
-    const raw = localStorage.getItem(CUSTOM_ROOMS_KEY)
-    if (raw) {
-      const rooms = JSON.parse(raw)
-      if (Array.isArray(rooms)) return rooms
-    }
-  } catch (e) { /* ignore */ }
   return []
 }
 
-// Save custom rooms to localStorage
-function saveCustomRooms(rooms) {
-  try {
-    localStorage.setItem(CUSTOM_ROOMS_KEY, JSON.stringify(rooms))
-  } catch (e) { /* ignore */ }
-}
-
-// Load hidden room IDs from localStorage
+// Hidden rooms -- no persistence, always empty on load
 function loadHiddenRooms() {
-  try {
-    const raw = localStorage.getItem(HIDDEN_ROOMS_KEY)
-    if (raw) {
-      const ids = JSON.parse(raw)
-      if (Array.isArray(ids)) return ids
-    }
-  } catch (e) { /* ignore */ }
   return []
-}
-
-// Save hidden room IDs to localStorage
-function saveHiddenRooms(ids) {
-  try {
-    localStorage.setItem(HIDDEN_ROOMS_KEY, JSON.stringify(ids))
-  } catch (e) { /* ignore */ }
 }
 
 // Build the visible room ID list: ALL_ROOMS (non-hidden) + custom rooms (non-hidden) - user-hidden
@@ -412,41 +364,10 @@ function snapToNearestHexCell(wx, wy, originX, originY) {
   return hexPosition(nearest.row, nearest.col, originX, originY)
 }
 
-// ---- LOAD/SAVE SLOT ORDER FROM LOCALSTORAGE ----
-// Reconciles saved order with current visible rooms: removes rooms no longer visible,
-// appends new rooms that weren't in the saved order. Handles dynamic room counts.
+// ---- DEFAULT SLOT ORDER ----
+// No persistence -- always use default visible room order on load.
 function loadSlotOrder() {
-  const hiddenSet = new Set(loadHiddenRooms())
-  const visibleIDs = buildVisibleRoomIDs(hiddenSet)
-
-  try {
-    const raw = localStorage.getItem(SLOT_ORDER_KEY)
-    if (raw) {
-      const saved = JSON.parse(raw)
-      if (Array.isArray(saved)) {
-        const visibleSet = new Set(visibleIDs)
-        // Keep saved order for rooms that are still visible
-        const reconciled = saved.filter(id => visibleSet.has(id))
-        // Add any new rooms not in saved order
-        const reconciledSet = new Set(reconciled)
-        for (const id of visibleIDs) {
-          if (!reconciledSet.has(id)) reconciled.push(id)
-        }
-        if (reconciled.length > 0) return reconciled
-      }
-    }
-  } catch (e) {
-    // Ignore corrupt data
-  }
-  return visibleIDs
-}
-
-function saveSlotOrder(order) {
-  try {
-    localStorage.setItem(SLOT_ORDER_KEY, JSON.stringify(order))
-  } catch (e) {
-    // localStorage full or unavailable
-  }
+  return buildVisibleRoomIDs(new Set())
 }
 
 // ---- EASE-OUT CUBIC ----
@@ -941,7 +862,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   onOpenChat,    // (roomId) -> open chat panel for room
   onSendMessage, // (roomId) -> open chat + focus input
   onViewTasks,   // (roomId) -> switch to tasks tab for room
-  onSetAsHome,   // (roomId) -> save as default home room in localStorage
+  onSetAsHome,   // (roomId) -> set as default home room
   unreadAgents = {},  // { agentSlug: count } -- rooms with unread messages
 }, ref) {
   const canvasRef = useRef(null)
@@ -965,7 +886,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // ---- FREE POSITION OVERRIDES ----
   // When a room is dropped freely (no snap-to-slot), its {x, y} world position is saved here.
   // On render, freePositions[roomId] takes priority over slotWorldPos(slotIdx).
-  // Persisted to localStorage under FREE_POSITIONS_KEY.
+  // Session-only: resets to {} on refresh (no persistence until offline features are built).
   const freePositionsRef = useRef(loadFreePositions())
   // New room creation modal
   const [showNewRoomModal, setShowNewRoomModal] = useState(false)
@@ -1061,10 +982,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       }
     },
     resetLayout: () => {
-      // Clear free-position overrides AND saved slot order so rooms snap back to
+      // Clear free-position overrides so rooms snap back to
       // default grouped layout defined by ALL_ROOMS order in gridSpec.js
-      try { localStorage.removeItem(FREE_POSITIONS_KEY) } catch {}
-      try { localStorage.removeItem(SLOT_ORDER_KEY) } catch {}
       freePositionsRef.current = {}
       // Reload slot order from defaults (triggers re-render so rooms visually snap)
       setSlotOrder(loadSlotOrder())
@@ -2124,7 +2043,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ...freePositionsRef.current,
         [drag.roomId]: { x: snapped.x, y: snapped.y },
       }
-      saveFreePositions(freePositionsRef.current)
       drag.active = false
       drag.roomId = null
     } else {
@@ -2244,10 +2162,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   const handleResetOrder = useCallback(() => {
     // Clear hidden rooms and reset order
     setHiddenRooms(new Set())
-    saveHiddenRooms([])
     const defaultOrder = buildVisibleRoomIDs(new Set())
     setSlotOrder(defaultOrder)
-    saveSlotOrder(defaultOrder)
     showToast('Room order reset to default')
     setContextMenu(null)
   }, [showToast])
@@ -2263,12 +2179,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const newHidden = new Set(hiddenRooms)
     newHidden.add(roomId)
     setHiddenRooms(newHidden)
-    saveHiddenRooms([...newHidden])
     // Remove from slot order
     setSlotOrder(prev => {
-      const next = prev.filter(id => id !== roomId)
-      saveSlotOrder(next)
-      return next
+      return prev.filter(id => id !== roomId)
     })
     if (focusedRoom === roomId) setFocusedRoom(null)
     const meta = ROOM_META[roomId]
@@ -2285,15 +2198,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
     // Restore all hidden rooms
     setHiddenRooms(new Set())
-    saveHiddenRooms([])
     // Rebuild slot order with all rooms
     const allVisible = buildVisibleRoomIDs(new Set())
     setSlotOrder(prev => {
       const prevSet = new Set(prev)
       const newRooms = allVisible.filter(id => !prevSet.has(id))
-      const next = [...prev, ...newRooms]
-      saveSlotOrder(next)
-      return next
+      return [...prev, ...newRooms]
     })
     showToast(`${hiddenRooms.size} room${hiddenRooms.size > 1 ? 's' : ''} restored`)
     setContextMenu(null)
@@ -2305,11 +2215,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     if (!slug) { showToast('Invalid room name'); return }
     if (slotOrder.includes(slug)) { showToast('Room already exists'); return }
 
-    // Save to custom rooms in localStorage
-    const customRooms = loadCustomRooms()
-    customRooms.push({ slug, name, color, type: 'custom' })
-    saveCustomRooms(customRooms)
-
     // Register in ROOM_META
     ROOM_META[slug] = { name: name.toUpperCase(), color, type: 'custom' }
 
@@ -2317,11 +2222,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ensureRoomImages(slug)
 
     // Add to slot order at end
-    setSlotOrder(prev => {
-      const next = [...prev, slug]
-      saveSlotOrder(next)
-      return next
-    })
+    setSlotOrder(prev => [...prev, slug])
 
     showToast(`${name} room created`)
     setShowNewRoomModal(false)
@@ -2509,7 +2410,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           ...freePositionsRef.current,
           [drag.roomId]: { x: snapped.x, y: snapped.y },
         }
-        saveFreePositions(freePositionsRef.current)
         drag.active = false
         drag.roomId = null
       } else {
