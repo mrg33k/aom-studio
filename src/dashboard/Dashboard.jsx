@@ -287,7 +287,7 @@ function PasswordGate({ onAuth }) {
   const [shake, setShake] = useState(false)
 
   const attempt = () => {
-    if (input === DASHBOARD_PASSWORD) { localStorage.setItem('aom_ops_auth', '1'); onAuth() }
+    if (input === DASHBOARD_PASSWORD) { onAuth() }
     else { setShake(true); setInput(''); setTimeout(() => setShake(false), 600) }
   }
 
@@ -726,8 +726,8 @@ function ChatPanel({ isMobile, onRefresh }) {
   const [messages, setMessages] = useState([])
   const [sending, setSending] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const [selectedAgent, setSelectedAgent] = useState(() => localStorage.getItem('aom_chat_agent') || 'All')
-  const [selectedProject, setSelectedProject] = useState(() => localStorage.getItem('aom_chat_project') || 'None')
+  const [selectedAgent, setSelectedAgent] = useState('All')
+  const [selectedProject, setSelectedProject] = useState('None')
   const [replyingTo, setReplyingTo] = useState(null)
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false)
@@ -737,14 +737,6 @@ function ChatPanel({ isMobile, onRefresh }) {
 
   const agents = ['All', 'Bobby', 'Elon', 'Steffen', 'Cleo', 'Alex', 'Jacob', 'Tony', 'Steve', 'Mom', 'Paige']
   const projects = ['None', 'corner', 'ambition-mechanical', 'isa-energy', 'skylar', 'brandon-wiley', 'content-agent']
-
-  useEffect(() => {
-    localStorage.setItem('aom_chat_agent', selectedAgent)
-  }, [selectedAgent])
-
-  useEffect(() => {
-    localStorage.setItem('aom_chat_project', selectedProject)
-  }, [selectedProject])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -1101,7 +1093,7 @@ function ChatPanel({ isMobile, onRefresh }) {
 // ─── MAIN DASHBOARD ───────────────────────────────────────────────────────────
 export default function Dashboard() {
   const isMobile = useIsMobile()
-  const [authed, setAuthed] = useState(() => localStorage.getItem('aom_ops_auth') === '1')
+  const [authed, setAuthed] = useState(false)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [lastFetched, setLastFetched] = useState(null)
@@ -1261,7 +1253,7 @@ export default function Dashboard() {
             {isMobile ? '↻' : 'Refresh'}
           </button>
           <button
-            onClick={() => { localStorage.removeItem('aom_ops_auth'); setAuthed(false) }}
+            onClick={() => { setAuthed(false) }}
             style={{
               background: 'none', border: `1px solid ${C.border}`,
               borderRadius: 2, color: C.textDim, fontSize: 16,

@@ -1723,13 +1723,8 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
 
   const [selectedProject, setSelectedProject] = useState(null)
   const [collapsedProjects, setCollapsedProjects] = useState({})
-  // Persist checkbox state in localStorage until Supabase (C4)
-  const [checkedTasks, setCheckedTasks] = useState(() => {
-    try {
-      const saved = localStorage.getItem('corner-checks')
-      return saved ? JSON.parse(saved) : {}
-    } catch { return {} }
-  })
+  // TODO: Persist checkbox state in Supabase (C4) -- localStorage stripped
+  const [checkedTasks, setCheckedTasks] = useState({})
   const [newTaskText, setNewTaskText] = useState('')
   const inputRef = useRef(null)
 
@@ -1746,13 +1741,6 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const handleContextAction = useCallback((action, task, payload) => {
     handleTaskContextAction(action, task, payload, setCheckedTasks)
   }, [])
-
-  // Sync checkbox state to localStorage on every change
-  useEffect(() => {
-    try {
-      localStorage.setItem('corner-checks', JSON.stringify(checkedTasks))
-    } catch { /* quota exceeded or private browsing - ignore */ }
-  }, [checkedTasks])
 
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
   const {
@@ -1934,8 +1922,8 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             {visibleProjects.map(project => {
               const isCollapsed = collapsedProjects[project.section]
               // Filter out soft-deleted tasks + apply local check overrides
-              let deletedTasks = []
-              try { deletedTasks = JSON.parse(localStorage.getItem('corner-task-deleted') || '[]') } catch {}
+              // TODO: soft-delete state to come from Supabase (C4) -- localStorage stripped
+              const deletedTasks = []
               const tasks = project.tasks
                 .filter(t => !deletedTasks.includes(t.text))
                 .map(t => ({
