@@ -75,7 +75,7 @@ import { hudCtxBtn } from './components/CompactStats.jsx'
 // Shown when the Inbox pill is expanded. Two sections:
 //   (1) Done tasks awaiting approval -- amber cards with Approve / Deny / Clarify
 //   (2) Unread messages -- compact agent message previews
-function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToAgent, refetch }) {
+function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify, refetch }) {
   const isDaytime = isNightMode === false
   const bg = isDaytime ? 'rgba(248,250,255,0.97)' : 'rgba(8,16,36,0.97)'
   const border = isDaytime ? 'rgba(234,179,8,0.35)' : 'rgba(234,179,8,0.30)'
@@ -247,7 +247,14 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                     Deny
                   </button>
                   <button
-                    onClick={() => onNavigateToAgent?.(t.agent)}
+                    onClick={() => {
+                      if (onClarify) {
+                        onClarify(t.agent, t.text)
+                      } else {
+                        onNavigateToAgent?.(t.agent)
+                      }
+                      onClose?.()
+                    }}
                     style={{
                       flex: 1, padding: '7px 10px',
                       background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
@@ -335,6 +342,8 @@ export default function GameHUD({
   onAgentContextMenu, onProjectContextMenu,
   // Navigation -- used by InboxPanel to open agent chat from Inbox
   onNavigateToAgent,
+  // Clarify -- navigates to agent chat AND pre-fills the input with task context
+  onClarify,
   // Daytime/nighttime theme -- when false, bottom HUD goes white/vibrant blue to match top bar
   isNightMode: isNightModeProp,
 }) {
@@ -766,6 +775,7 @@ export default function GameHUD({
             onClose={() => setExpandedProject(null)}
             isNightMode={isNightMode}
             onNavigateToAgent={onNavigateToAgent}
+            onClarify={onClarify}
             refetch={() => {}}
           />
         ) : expandedProject ? (
@@ -1422,7 +1432,11 @@ export default function GameHUD({
             {/* Clarify */}
             <button
               onClick={() => {
-                if (task.agent) onAgentClick?.(task.agent)
+                if (onClarify && task.agent) {
+                  onClarify(task.agent, task.text)
+                } else if (task.agent) {
+                  onAgentClick?.(task.agent)
+                }
                 setDoneTaskCtx(null)
               }}
               style={{

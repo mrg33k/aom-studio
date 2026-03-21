@@ -8662,16 +8662,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           } catch { /* silent fail */ }
         }
         const handleClarify = (taskText) => {
-          const input = document.querySelector('[data-panel-chat-input]')
-          if (input) {
-            const prefix = `Re: "${taskText}" -- `
-            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
-            if (nativeInputValueSetter) {
-              nativeInputValueSetter.call(input, prefix)
-              input.dispatchEvent(new Event('input', { bubbles: true }))
-            }
-            input.focus()
-          }
+          const prefix = `Re: "${taskText}" -- `
+          // Switch to chat tab (if not already) so the input is visible
+          setPanelActiveTab('chat')
+          // Pre-fill via React state (instant, no DOM hack needed)
+          setPanelChatInput(prefix)
+          // Also focus the input after a tick so it's rendered + scrolled into view
+          requestAnimationFrame(() => {
+            const input = document.querySelector('[data-panel-chat-input]')
+            if (input) input.focus()
+          })
         }
         return (
           <div style={{
@@ -10905,6 +10905,20 @@ export default function GameDashboard() {
               setIsOverview(false)
               setCameraZoom(1.6)
               setPanelActiveTab('chat')
+            }}
+            onClarify={(slug, taskText) => {
+              // Navigate to agent chat + pre-fill input with task context
+              setCameraTarget(slug)
+              setSelectedRoom(slug)
+              setChatAgent(slug)
+              setIsOverview(false)
+              setCameraZoom(1.6)
+              setPanelActiveTab('chat')
+              setPanelChatInput(`Re: "${taskText}" -- `)
+              requestAnimationFrame(() => {
+                const input = document.querySelector('[data-panel-chat-input]')
+                if (input) input.focus()
+              })
             }}
             isNightMode={isNightMode}
             expandPillSection={expandPillSection}
