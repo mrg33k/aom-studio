@@ -10433,8 +10433,8 @@ export default function GameDashboard() {
       )}
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
-      {/* Bottom padding accounts for GameHUD (58px) -- ChatBar killed, chat lives in sidebar only */}
-      <div style={{ flex: 1, display: viewMode === 'board' ? 'none' : 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: isMobile ? 80 : 0, transition: 'padding-top 200ms ease' }}>
+      {/* GameHUD is position:fixed so no bottom padding needed on mobile -- removed to fix black gap */}
+      <div style={{ flex: 1, display: viewMode === 'board' ? 'none' : 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Dark background for game viewport. Hex grid lines are drawn on canvas (moves with camera). */}
