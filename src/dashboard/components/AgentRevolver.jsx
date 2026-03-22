@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Pause, Clock, X, Users } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { PALETTE, HUD, STATUS_DOT } from './HUDConstants.jsx'
+import { supabase } from '../lib/supabase.js'
 
 // ---- SIMS PLUMBOB SVG CLIP PATH (the iconic diamond shape) ------------------
 export function PlumbobClipDef({ id, size }) {
@@ -50,10 +51,46 @@ function getInitials(name) {
   return name.slice(0, 2).toUpperCase()
 }
 
+// ---- SPRITE AGENTS (who has a sprite image in /corner/sprites/) ----------------
+const SPRITE_AGENTS_FALLBACK = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
+export const SPRITE_AGENTS = SPRITE_AGENTS_FALLBACK // keep export for external consumers
+
+// Module-level cache: one fetch shared across all AgentPortrait/AgentRoster instances
+let _spriteCache = null
+let _spriteFetching = false
+const _spriteListeners = new Set()
+
+function _fetchSpriteAgents() {
+  if (_spriteCache || _spriteFetching || !supabase) return
+  _spriteFetching = true
+  supabase
+    .from('agent_status')
+    .select('slug')
+    .eq('has_sprite', true)
+    .then(({ data, error }) => {
+      _spriteFetching = false
+      if (!error && data && data.length > 0) {
+        _spriteCache = data.map(r => r.slug)
+        _spriteListeners.forEach(fn => fn(_spriteCache))
+      }
+    })
+}
+
+function useSpriteAgents() {
+  const [agents, setAgents] = useState(_spriteCache || SPRITE_AGENTS_FALLBACK)
+  useEffect(() => {
+    if (_spriteCache) { setAgents(_spriteCache); return }
+    _spriteListeners.add(setAgents)
+    _fetchSpriteAgents()
+    return () => _spriteListeners.delete(setAgents)
+  }, [])
+  return agents
+}
+
 // ---- AGENT PORTRAIT (LARGER: 52px desktop, plumbob shape, blue idle ring) ---
-export const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
 export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMenu, showName = false, index = 0 }) {
+  const spriteAgents = useSpriteAgents()
   const agent = AGENTS.find(a => a.slug === slug)
   const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
   const color = agent?.color || '#4A6080'
@@ -62,7 +99,7 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
   const isDone = status === 'DONE'
   const isWaiting = status === 'WAITING'
   const isPaused = status === 'PAUSED'
-  const hasSpriteFile = slug && SPRITE_AGENTS.includes(slug)
+  const hasSpriteFile = slug && spriteAgents.includes(slug)
   const clipId = `plumbob-clip-${slug}`
 
   const w = size
@@ -276,6 +313,7 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
 const DEFAULT_MAIN_AGENT = 'elon'
 
 export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
+  const spriteAgents = useSpriteAgents()
   const [expanded, setExpanded] = useState(false)
   const [revolverAgent, setRevolverAgent] = useState(null) // which agent triggered revolver
   const [revolverPos, setRevolverPos] = useState({ x: 0, y: 0 })
@@ -296,7 +334,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
   const mainAgent = AGENTS.find(a => a.slug === DEFAULT_MAIN_AGENT) || AGENTS[0]
   const mainStatus = agentStatus?.[mainAgent?.slug]?.status || 'IDLE'
   const mainCfg = STATUS_DOT[mainStatus] || STATUS_DOT.IDLE
-  const mainHasSpr = mainAgent && SPRITE_AGENTS.includes(mainAgent.slug)
+  const mainHasSpr = mainAgent && spriteAgents.includes(mainAgent.slug)
 
   // Close revolver on click outside
   useEffect(() => {
@@ -396,7 +434,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
         {expanded && sortedAgents.filter(a => a.slug !== mainAgent.slug).map((agent, idx) => {
           const status = agentStatus?.[agent.slug]?.status || 'IDLE'
           const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
-          const hasSpr = SPRITE_AGENTS.includes(agent.slug)
+          const hasSpr = spriteAgents.includes(agent.slug)
           return (
             <motion.div
               key={agent.slug}
@@ -477,7 +515,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
               {filteredAgents.map((agent, i) => {
                 const status = agentStatus?.[agent.slug]?.status || 'IDLE'
                 const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
-                const hasSpr = SPRITE_AGENTS.includes(agent.slug)
+                const hasSpr = spriteAgents.includes(agent.slug)
                 const isSelected = revolverAgent === agent.slug
                 return (
                   <motion.button
