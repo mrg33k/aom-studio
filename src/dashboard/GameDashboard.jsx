@@ -9660,10 +9660,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           !optimisticallyRemovedIds.has(t.taskId || t.text)
         )
         if (doneTasks.length === 0) return null
-        // On non-chat tabs, always render the slim bar (notification strip only).
-        // Clicking it navigates to chat and expands the full card.
-        const isOnChatTab = activeTab === 'chat'
-        const showSlimOnly = !isOnChatTab || confirmMinimized
         const safeIndex = Math.min(confirmIndex, doneTasks.length - 1)
         const t = doneTasks[safeIndex]
         const total = doneTasks.length
@@ -9672,56 +9668,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             flexShrink: 0,
             borderTop: isDaytime ? '1px solid rgba(59,130,246,0.35)' : '1px solid rgba(100,180,255,0.40)',
           }}>
-            {/* Minimized slim bar */}
             <AnimatePresence mode="wait">
-            {showSlimOnly ? (
-              <motion.div
-                key="confirm-minimized"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                transition={{ duration: 0.12, ease: 'easeOut' }}
-                onClick={() => {
-                  if (!isOnChatTab) {
-                    // Switch to chat tab and expand
-                    onActiveTabChange?.('chat')
-                    setConfirmMinimized(false)
-                  } else {
-                    setConfirmMinimized(false)
-                  }
-                }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  height: 32, padding: '0 14px',
-                  borderLeft: '3px solid #3B82F6',
-                  background: isDaytime ? 'rgba(235,243,255,0.96)' : 'rgba(6,16,40,0.88)',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                }}
-              >
-                <div style={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: '#3B82F6',
-                  boxShadow: '0 0 8px rgba(59,130,246,0.8)',
-                  flexShrink: 0,
-                  animation: 'vegasTypingBounce 2s ease-in-out infinite',
-                }} />
-                <span style={{
-                  fontSize: 11, fontWeight: 700, color: isDaytime ? '#1D4ED8' : '#93C5FD',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: '0.08em', flex: 1,
-                }}>
-                  {total} task{total > 1 ? 's' : ''} awaiting review
-                </span>
-                {/* Chevron up (expand) or right-arrow (navigate to chat) */}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDaytime ? '#1D4ED8' : '#93C5FD'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  {isOnChatTab
-                    ? <polyline points="18 15 12 9 6 15" />
-                    : <polyline points="9 18 15 12 9 6" />
-                  }
-                </svg>
-              </motion.div>
-            ) : (
             <motion.div
               key="confirm-expanded"
               initial={{ opacity: 0, y: 6 }}
@@ -9826,25 +9773,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     >&#8250;</button>
                   </div>
                 )}
-                {/* Minimize button -- collapses to slim bar */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); setConfirmMinimized(true) }}
-                  style={{
-                    width: 22, height: 22, borderRadius: 6, border: isDaytime ? '1px solid rgba(59,130,246,0.42)' : '1px solid rgba(100,180,255,0.42)',
-                    cursor: 'pointer', background: isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.14)',
-                    color: isDaytime ? '#2563EB' : '#93C5FD', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: 0,
-                    transition: 'background 80ms ease, border-color 80ms ease',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.24)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.62)' : 'rgba(100,180,255,0.65)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.14)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.42)' : 'rgba(100,180,255,0.42)' }}
-                  aria-label="Minimize confirmation box"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
               </div>
               {/* Task text -- data readout panel */}
               <div style={{
@@ -9970,7 +9898,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               )
             })()}
           </motion.div>
-            )}
             </AnimatePresence>
           </div>
         )
