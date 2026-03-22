@@ -1337,36 +1337,53 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const elapsed = (performance.now() - startTimeRef.current) / 1000
     const now = performance.now()
 
-    // ---- HEX GRID LINES: outlines drawn only at actual room slot positions ----
-    // SOURCE OF TRUTH: These vertices match the room PNG geometry.
-    // DO NOT CHANGE without re-rendering all room images.
-    // Vertices copied VERBATIM from drawRoom()'s clip path (rooms define the shape, grid follows).
-    // drawRoom uses ctx.translate(posX, posY) first, so its local (0,0) == world (ox,oy) here.
-    //
-    // Slot-based approach: iterate over the same (row, col) pairs as the room layout.
-    // This guarantees every outline perfectly aligns with its room -- no phantom cells from
-    // adjacent rows bleeding into the room cluster.
+    // ---- HEX GRID LINES: seamless infinite honeycomb matching room shape exactly ----
+    // Fills the entire visible canvas with hex outlines (not just room slot positions).
+    // Uses the same stagger pattern as the room layout and vertices copied VERBATIM
+    // from drawRoom() SOURCE OF TRUTH. Rooms define the shape -- grid follows.
+    // DO NOT change vertices independently of drawRoom().
     {
       ctx.save()
       ctx.strokeStyle = 'rgba(59, 130, 246, 0.18)'  // #3B82F6 visible honeycomb grid
       ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
 
       const S = ROOM_SIZE
-      const slots = getHexSlots(_currentTotalSlots)
+      // Pad by one full hex so cells at edges draw fully (no edge clipping artifacts)
+      const pad = S
+
+      // Canvas bounds in world space (we're inside translate(cam.x,cam.y) scale(cam.zoom))
+      const wxMin = -cam.x / cam.zoom - pad
+      const wxMax = (size.w - cam.x) / cam.zoom + pad
+      const wyMin = -cam.y / cam.zoom - pad
+      const wyMax = (size.h - cam.y) / cam.zoom + pad
+
+      // Row range covering visible world Y
+      const rowMin = Math.floor((wyMin - ORIGIN_Y) / HEX_ROW_STEP) - 1
+      const rowMax = Math.ceil((wyMax - ORIGIN_Y) / HEX_ROW_STEP) + 1
+
+      // Col range covering visible world X
+      const colMinRaw = Math.floor((wxMin - ORIGIN_X) / HEX_COL_STEP) - 2
+      const colMaxRaw = Math.ceil((wxMax - ORIGIN_X) / HEX_COL_STEP) + 2
 
       ctx.beginPath()
-      for (const { row, col } of slots) {
-        const ox = ORIGIN_X + col * HEX_COL_STEP
+      for (let row = rowMin; row <= rowMax; row++) {
         const oy = ORIGIN_Y + row * HEX_ROW_STEP
-        // !! DO NOT CHANGE !! Vertices copied VERBATIM from drawRoom() SOURCE OF TRUTH.
-        // Rooms define the shape -- grid follows. Never change these independently.
-        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top center (roof peak)
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right  !! DO NOT CHANGE
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right  !! DO NOT CHANGE
-        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom center
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left   !! DO NOT CHANGE
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left   !! DO NOT CHANGE
-        ctx.closePath()
+        // Parity matches room layout: even rows = even cols, odd rows = odd cols
+        const parity = ((row % 2) + 2) % 2
+        let colStart = colMinRaw
+        if (((colStart % 2) + 2) % 2 !== parity) colStart++
+        for (let col = colStart; col <= colMaxRaw; col += 2) {
+          const ox = ORIGIN_X + col * HEX_COL_STEP
+          // !! DO NOT CHANGE !! Vertices copied VERBATIM from drawRoom() SOURCE OF TRUTH.
+          // Rooms define the shape -- grid follows. Never change these independently.
+          ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top center (roof peak)
+          ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right  !! DO NOT CHANGE
+          ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right  !! DO NOT CHANGE
+          ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom center
+          ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left   !! DO NOT CHANGE
+          ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left   !! DO NOT CHANGE
+          ctx.closePath()
+        }
       }
       ctx.stroke()
       ctx.restore()
