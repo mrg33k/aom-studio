@@ -2,13 +2,14 @@
 // Upload images, view thumbnails, send to chat, full-size modal
 // Paste zone for large text (transcripts, notes) -- iPad-friendly
 // Storage: Supabase Storage (bucket: 'corner-files') + Supabase 'text_files' table
+//
+// All Supabase operations go through /api/dashboard/files (service role key server-side).
+// Upload flow: get signed URL from server, PUT file directly to Supabase (no Vercel body limit).
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft } from 'lucide-react'
-import { supabase } from './lib/supabase.js'
 
-const BUCKET = 'corner-files'
-const TEXT_TABLE = 'text_files'
+const FILES_API = '/api/dashboard/files'
 
 function formatDate(iso) {
   try {
@@ -64,33 +65,19 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
   // Load image files on mount or agent switch
   const loadFiles = useCallback(async () => {
     setFilesLoading(true)
-    if (!supabase) {
-      // No Supabase configured (missing env vars) -- show empty state
-      setFiles([])
-      setFilesLoading(false)
-      return
-    }
     try {
       const prefix = `${agentSlug}/${clientId || 'default'}/`
-      const { data, error: listErr } = await supabase.storage.from(BUCKET).list(prefix, {
-        limit: 100,
-        sortBy: { column: 'created_at', order: 'desc' },
-      })
-      if (listErr) throw listErr
-      const mapped = (data || [])
-        .filter(item => item.name && item.name !== '')
-        .map(item => ({
-          id: item.id,
-          name: item.name,
-          date: item.created_at,
-          url: supabase.storage.from(BUCKET).getPublicUrl(`${prefix}${item.name}`).data.publicUrl,
-          source: 'supabase',
-          agent: agentSlug,
-          clientId: clientId || 'default',
-        }))
-      setFiles(mapped)
+      const res = await fetch(`${FILES_API}?type=images&prefix=${encodeURIComponent(prefix)}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setFiles((data.files || []).map(item => ({
+        ...item,
+        source: 'supabase',
+        agent: agentSlug,
+        clientId: clientId || 'default',
+      })))
     } catch (err) {
-      console.warn('[FilesTab] Supabase storage unavailable:', err.message)
+      console.warn('[FilesTab] Failed to load files:', err.message)
       setFiles([])
     } finally {
       setFilesLoading(false)
@@ -100,21 +87,11 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
   // Load text files on mount or agent switch
   const loadTextFiles = useCallback(async () => {
     setTextFilesLoading(true)
-    if (!supabase) {
-      // No Supabase configured (missing env vars) -- show empty state
-      setTextFiles([])
-      setTextFilesLoading(false)
-      return
-    }
     try {
-      const { data, error: fetchErr } = await supabase
-        .from(TEXT_TABLE)
-        .select('*')
-        .eq('client_id', clientId || 'default')
-        .order('created_at', { ascending: false })
-        .limit(100)
-      if (fetchErr) throw fetchErr
-      setTextFiles((data || []).map(row => ({
+      const res = await fetch(`${FILES_API}?type=text&client=${encodeURIComponent(clientId || 'aom')}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setTextFiles((data.files || []).map(row => ({
         id: row.id,
         filename: row.filename,
         content: row.content,
@@ -125,7 +102,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
         clientId: clientId || 'default',
       })))
     } catch (err) {
-      console.warn('[FilesTab] Supabase text_files unavailable:', err.message)
+      console.warn('[FilesTab] Failed to load text files:', err.message)
       setTextFiles([])
     } finally {
       setTextFilesLoading(false)
@@ -137,7 +114,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
     loadTextFiles()
   }, [loadFiles, loadTextFiles])
 
-  // ---- Image upload handlers (unchanged) ----
+  // ---- Image upload handlers ----
 
   const handleUpload = useCallback(async (fileList) => {
     if (!fileList || fileList.length === 0) return
@@ -152,41 +129,57 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
     }
 
     for (const file of validFiles) {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      const ext = file.name.split('.').pop()
-      const fileName = `${id}.${ext}`
+      try {
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        const ext = file.name.split('.').pop()
+        const fileName = `${id}.${ext}`
+        const storagePath = `${agentSlug}/${clientId || 'default'}/${fileName}`
 
-      if (supabase) {
-        try {
-          const path = `${agentSlug}/${clientId || 'default'}/${fileName}`
-          const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
-            contentType: file.type,
-            upsert: false,
-          })
-          if (upErr) throw upErr
-          // Re-load from Supabase after upload
-          await loadFiles()
-          continue
-        } catch (err) {
-          console.warn('[FilesTab] Supabase upload failed:', err.message)
-          setError(`Failed to upload ${file.name}: ${err.message}`)
+        // Step 1: get a signed upload URL from the server (uses service role key)
+        const signRes = await fetch(FILES_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'sign-upload', path: storagePath, contentType: file.type }),
+        })
+        if (!signRes.ok) {
+          const errData = await signRes.json().catch(() => ({}))
+          throw new Error(errData.error || `Sign-upload failed (${signRes.status})`)
         }
+        const { uploadUrl } = await signRes.json()
+
+        // Step 2: PUT the file directly to Supabase Storage using the signed URL
+        const putRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        })
+        if (!putRes.ok) {
+          const errText = await putRes.text()
+          throw new Error(`Upload failed (${putRes.status}): ${errText}`)
+        }
+
+        // Refresh file list after successful upload
+        await loadFiles()
+      } catch (err) {
+        console.warn('[FilesTab] Upload failed:', err.message)
+        setError(`Failed to upload ${file.name}: ${err.message}`)
       }
     }
     setUploading(false)
   }, [agentSlug, clientId, loadFiles])
 
   const handleDelete = useCallback(async (file) => {
-    if (file.source === 'supabase' && supabase) {
-      try {
-        const path = `${agentSlug}/${clientId || 'default'}/${file.name}`
-        await supabase.storage.from(BUCKET).remove([path])
-        setFiles(prev => prev.filter(f => f.id !== file.id))
-        if (lightboxFile?.id === file.id) setLightboxFile(null)
-        return
-      } catch (err) {
-        console.warn('[FilesTab] Supabase delete failed:', err.message)
+    try {
+      const storagePath = `${agentSlug}/${clientId || 'default'}/${file.name}`
+      const res = await fetch(`${FILES_API}?type=image&path=${encodeURIComponent(storagePath)}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || `Delete failed (${res.status})`)
       }
+      setFiles(prev => prev.filter(f => f.id !== file.id))
+      if (lightboxFile?.id === file.id) setLightboxFile(null)
+    } catch (err) {
+      console.warn('[FilesTab] Delete failed:', err.message)
     }
   }, [agentSlug, clientId, lightboxFile])
 
@@ -198,43 +191,43 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
     setTextError(null)
     setSaving(true)
 
-    const filename = generateFilename(trimmed)
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    const now = new Date().toISOString()
-
-    if (supabase) {
-      try {
-        const { error: insertErr } = await supabase.from(TEXT_TABLE).insert({
-          client_id: clientId || 'default',
+    try {
+      const filename = generateFilename(trimmed)
+      const res = await fetch(FILES_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save-text',
+          client_id: clientId || 'aom',
           filename,
           content: trimmed,
-          type: 'text',
-          created_at: now,
-        })
-        if (insertErr) throw insertErr
-        setPasteContent('')
-        await loadTextFiles()
-        setSaving(false)
-        return
-      } catch (err) {
-        console.warn('[FilesTab] Supabase text save failed:', err.message)
-        setTextError(`Failed to save: ${err.message}`)
+        }),
+      })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || `Save failed (${res.status})`)
       }
+      setPasteContent('')
+      await loadTextFiles()
+    } catch (err) {
+      console.warn('[FilesTab] Text save failed:', err.message)
+      setTextError(`Failed to save: ${err.message}`)
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-  }, [pasteContent, agentSlug, clientId, loadTextFiles])
+  }, [pasteContent, clientId, loadTextFiles])
 
   const handleDeleteTextFile = useCallback(async (file) => {
-    if (file.source === 'supabase' && supabase) {
-      try {
-        const { error: delErr } = await supabase.from(TEXT_TABLE).delete().eq('id', file.id)
-        if (delErr) throw delErr
-        setTextFiles(prev => prev.filter(f => f.id !== file.id))
-        if (viewingFile?.id === file.id) setViewingFile(null)
-        return
-      } catch (err) {
-        console.warn('[FilesTab] Supabase text delete failed:', err.message)
+    try {
+      const res = await fetch(`${FILES_API}?type=text&id=${encodeURIComponent(file.id)}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || `Delete failed (${res.status})`)
       }
+      setTextFiles(prev => prev.filter(f => f.id !== file.id))
+      if (viewingFile?.id === file.id) setViewingFile(null)
+    } catch (err) {
+      console.warn('[FilesTab] Text delete failed:', err.message)
     }
   }, [viewingFile])
 
