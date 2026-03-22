@@ -2979,7 +2979,7 @@ function MobileFixedInput({
   chatInput, onChatInputChange, onSendMessage, streaming,
   agentColor, agentName, isNightMode,
   atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown,
-  powerupOpen, onPowerupToggle, selectedPowerups, onRemovePowerup,
+  powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup,
   onInputFocus,
 }) {
   const [kbOffset, setKbOffset] = useState(0)
@@ -3120,7 +3120,18 @@ function MobileFixedInput({
         </div>
       )}
 
-      {/* Input row: powerup trigger + input + send */}
+      {/* PowerupMenu panel -- hideTrigger=true so only the panel renders (trigger is the inline button inside the input on the left) */}
+      <PowerupMenu
+        isOpen={powerupOpen || false}
+        onToggle={(v) => onPowerupToggle?.(v)}
+        onActivate={(powerup) => onPowerupActivate?.(powerup)}
+        selectedSkills={selectedPowerups || []}
+        isMobile={true}
+        isNightMode={isNightMode}
+        hideTrigger={true}
+      />
+
+      {/* Input row: powerup trigger (left) + input + send (right) */}
       <form
         onSubmit={(e) => {
           isUserTypingRef.current = false
@@ -12030,6 +12041,7 @@ export default function GameDashboard() {
           onAtKeyDown={handleAtKeyDown}
           powerupOpen={powerupOpen}
           onPowerupToggle={setPowerupOpen}
+          onPowerupActivate={handlePowerupActivate}
           selectedPowerups={selectedPowerups}
           onRemovePowerup={(id) => setSelectedPowerups(prev => prev.filter(s => s.id !== id))}
           onInputFocus={() => {
