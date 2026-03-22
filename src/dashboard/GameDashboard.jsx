@@ -5573,7 +5573,6 @@ const ctxBtnStyle = (isDaytime) => ({
 
 function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode, onAddToRightNow, rightNowTasks, punchProjects }) {
   const isDaytime = isNightMode === false
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
   // Per-agent task list (in-memory only, data comes from Supabase)
   const TASKS_KEY = `corner-tasks-${agentSlug}`
@@ -5910,7 +5909,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         onTouchEnd={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
         onTouchMove={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
         style={{
-          marginBottom: isMobile ? 10 : 6,
+          marginBottom: 8,
           background: isDropTarget
             ? (isDaytime ? `${cardColor}20` : `${cardColor}18`)
             : lifecycleColor
@@ -5936,9 +5935,9 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         <div
           onClick={() => setExpandedTaskId(isExpanded ? null : cardKey)}
           style={{
-            display: 'flex', alignItems: 'flex-start', gap: isMobile ? 8 : 10,
-            padding: isMobile ? '8px 10px' : '10px 12px',
-            minHeight: isMobile ? 44 : undefined,
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            padding: '10px 12px',
+            minHeight: 44,
             cursor: 'pointer',
           }}
         >
@@ -5961,7 +5960,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             <div
               onClick={(e) => { e.stopPropagation(); onToggle(t.id) }}
               style={{
-                width: isMobile ? 24 : 20, height: isMobile ? 24 : 20, borderRadius: isMobile ? 6 : 5, flexShrink: 0, marginTop: 1,
+                width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 1,
                 border: t.done ? `2px solid ${cardColor}` : `2px solid ${cardColor}50`,
                 background: t.done ? cardColor : `${cardColor}08`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -5980,7 +5979,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
           {/* Task content (right column) */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
-              fontSize: isMobile ? 12 : 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
+              fontSize: 13, fontWeight: t.done ? 400 : 500, lineHeight: 1.4,
               color: t.done
                 ? (isDaytime ? '#6B8AB0' : '#475569')
                 : (isDaytime ? '#F1F5F9' : '#E2E8F0'),
