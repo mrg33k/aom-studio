@@ -46,14 +46,15 @@ import {
 import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import { supabase } from './lib/supabase.js'
 
-// Sprite avatar (duplicated here to avoid circular imports, small component)
-const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
+// Sprite avatar -- fallback used before Supabase resolves (or if unavailable)
+const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel'])
 
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
-function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) {
-  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
+  const hasSpriteFile = agentSlug && spriteAgents.has(agentSlug)
   const agent = AGENTS.find(a => a.slug === agentSlug)
   const color = borderColor || agent?.color || '#6B7280'
 
@@ -755,13 +756,13 @@ function TaskContextMenu({ position, task, onClose, onAction, isNightMode, proje
 }
 
 // ---- TASK ITEM CARD (with WORKING checkbox + right-click context menu) ------
-function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive }) {
+function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
   const [isHovered, setIsHovered] = useState(false)
   const isDone = task.done
 
   // Find agent info for badge
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
-  const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+  const hasSpr = task.agent && spriteAgents.has(task.agent)
 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault()
@@ -896,10 +897,10 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive })
 }
 
 // ---- RIGHT NOW TASK CARD (agent avatar + task + progress bar) ---------------
-function RightNowTaskCard({ task, index, isDaytime, onContextMenu }) {
+function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
   const [isHovered, setIsHovered] = useState(false)
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
-  const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+  const hasSpr = task.agent && spriteAgents.has(task.agent)
   const color = '#FF6B3D'
   const agentColor = agentInfo?.color || color
 
@@ -1038,7 +1039,7 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu }) {
 
 // ---- RIGHT NOW SECTION (ONLY running agents, dead simple) -------------------
 // PATRIK CORRECTION: "it should just link to what agents are running and what the task is"
-function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMenu }) {
+function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMenu, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
   const color = '#FF6B3D'
 
   // If no running agents, show "All clear"
@@ -1129,6 +1130,7 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMen
               index={i}
               isDaytime={isDaytime}
               onContextMenu={onContextMenu}
+              spriteAgents={spriteAgents}
             />
           ))}
         </AnimatePresence>
@@ -1304,10 +1306,10 @@ function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck, on
 }
 
 // ---- FINISH THESE TASK CARD (muted gray/amber, timestamp, stale nudge) ------
-function CheckingInTaskCard({ task, index, isDaytime, onContextMenu }) {
+function CheckingInTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
   const [isHovered, setIsHovered] = useState(false)
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
-  const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+  const hasSpr = task.agent && spriteAgents.has(task.agent)
 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault()
@@ -1416,7 +1418,7 @@ function CheckingInTaskCard({ task, index, isDaytime, onContextMenu }) {
 // ---- COMPLETED FEED SECTION (simplified activity feed of task completions) ---
 // PATRIK CORRECTION: "completed task beneath is as live as the activity feed.
 // but a simplified task based version." Clean one-liners, last 8 max.
-function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
+function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
   if (!tasks || tasks.length === 0) return null
 
   return (
@@ -1465,7 +1467,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
         <div style={{ paddingLeft: 8 }}>
           {tasks.map((task, i) => {
             const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
-            const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+            const hasSpr = task.agent && spriteAgents.has(task.agent)
             const agentColor = agentInfo?.color || '#22C55E'
 
             return (
@@ -1542,7 +1544,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime }) {
 }
 
 // ---- FINISH THESE SECTION (stale tasks, muted nudge -- was "Checking In") ----
-function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMenu }) {
+function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMenu, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
   if (!tasks || tasks.length === 0) return null
 
   return (
@@ -1599,6 +1601,7 @@ function CheckingInSection({ tasks, isCollapsed, onToggle, isDaytime, onContextM
               index={i}
               isDaytime={isDaytime}
               onContextMenu={onContextMenu}
+              spriteAgents={spriteAgents}
             />
           ))}
         </AnimatePresence>
@@ -1720,6 +1723,20 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     return () => clearInterval(timer)
   }, [])
   const isDaytime = !isNightMode
+
+  const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
+
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('agent_status')
+      .select('slug')
+      .eq('has_sprite', true)
+      .then(({ data: rows, error }) => {
+        if (error || !rows?.length) return
+        setSpriteAgents(new Set(rows.map(r => r.slug)))
+      })
+  }, [])
 
   const [selectedProject, setSelectedProject] = useState(null)
   const [collapsedProjects, setCollapsedProjects] = useState({})
@@ -1903,6 +1920,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 onToggle={() => toggleCollapse('rightnow-live')}
                 isDaytime={isDaytime}
                 onContextMenu={handleTaskContextMenu}
+                spriteAgents={spriteAgents}
               />
             )}
 
@@ -1982,6 +2000,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                           onContextMenu={handleTaskContextMenu}
                           index={i}
                           isLive={project.section === 'rightnow'}
+                          spriteAgents={spriteAgents}
                         />
                       ))}
 
@@ -2033,6 +2052,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 isCollapsed={collapsedProjects['completed-feed']}
                 onToggle={() => toggleCollapse('completed-feed')}
                 isDaytime={isDaytime}
+                spriteAgents={spriteAgents}
               />
             )}
 
@@ -2044,6 +2064,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                 onToggle={() => toggleCollapse('finish-these-live')}
                 isDaytime={isDaytime}
                 onContextMenu={handleTaskContextMenu}
+                spriteAgents={spriteAgents}
               />
             )}
           </div>
