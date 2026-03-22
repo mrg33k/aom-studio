@@ -6,7 +6,7 @@
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, Check } from 'lucide-react'
+import { X, Check, GripVertical } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { PALETTE, HUD, IS_LOCAL } from './HUDConstants.jsx'
 import { supabase } from '../lib/supabase.js'
@@ -82,10 +82,15 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
     })
   }, [tasks, localToggles])
 
-  // Drag-to-reorder state: stores an ordered array of task keys for the session
+  // Drag-to-reorder state: stores an ordered array of task keys, persists to localStorage
   // Only applies to the current pill's tasks (live tasks sort is per-pill)
-  const [dragOrder, setDragOrder] = useState(null) // null = use default sort
+  const DRAG_ORDER_KEY = project?.section ? `corner-task-order-${project.section}` : null
+  const [dragOrder, setDragOrder] = useState(() => {
+    if (!DRAG_ORDER_KEY) return null
+    try { return JSON.parse(localStorage.getItem(DRAG_ORDER_KEY) || 'null') } catch { return null }
+  })
   const [activeDragKey, setActiveDragKey] = useState(null) // key of the actively dragged row
+  const [hoveredKey, setHoveredKey] = useState(null) // key of hovered row (for grip handle visibility)
   const dragStateRef = useRef({
     active: false,
     dragKey: null,    // key of the card being dragged
@@ -137,8 +142,6 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
   }
 
   const handleRowPointerDown = useCallback((e, task) => {
-    // Only on touch devices (skip mouse -- mouse gets context menu instead)
-    if (e.pointerType === 'mouse') return
     // Skip add-prompt rows and live agent tasks (live tasks shouldn't be manually reordered)
     if (task.isAddPrompt || task.isLive) return
 
@@ -178,13 +181,18 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
     }
   }, [dragOrder, orderedTasks])
 
-  const handleRowPointerUp = useCallback(() => {
+  const handleRowPointerUp = useCallback((finalOrder) => {
     const state = dragStateRef.current
+    const wasDragging = state.active
     state.active = false
     state.dragKey = null
     state.pointerId = null
     setActiveDragKey(null)
-  }, [])
+    // Persist order to localStorage on drop so it survives panel close/reopen
+    if (wasDragging && finalOrder && DRAG_ORDER_KEY) {
+      try { localStorage.setItem(DRAG_ORDER_KEY, JSON.stringify(finalOrder)) } catch {}
+    }
+  }, [DRAG_ORDER_KEY])
 
   // Toggle checkbox: write to punch-list.md via API
   const toggleTask = useCallback(async (task, origIdx) => {
@@ -354,11 +362,12 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
           overflowY: 'auto', maxHeight: 300,
           touchAction: 'pan-y',
           WebkitOverflowScrolling: 'touch',
+          cursor: activeDragKey ? 'grabbing' : 'default',
         }}
         className="hud-scroll"
         onPointerMove={handleRowPointerMove}
-        onPointerUp={handleRowPointerUp}
-        onPointerCancel={handleRowPointerUp}
+        onPointerUp={() => handleRowPointerUp(dragOrder)}
+        onPointerCancel={() => handleRowPointerUp(null)}
       >
         {orderedTasks.map((task, i) => {
           const isDone = getTaskDone(task, task.origIdx)
@@ -520,6 +529,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 if (lpTimerRef.current) { clearTimeout(lpTimerRef.current); lpTimerRef.current = null }
               }}
               onPointerDown={(e) => handleRowPointerDown(e, task)}
+              onMouseEnter={() => setHoveredKey(taskKey)}
+              onMouseLeave={() => setHoveredKey(null)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '4px 8px',
@@ -551,6 +562,20 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 borderRadius: (isDoneAwaiting || isApproved) ? 6 : 0,
               }}
             >
+              {/* Drag handle -- visible on mouse hover; always at low opacity on touch so users know it's draggable */}
+              {!task.isLive && (
+                <div style={{
+                  flexShrink: 0,
+                  opacity: hoveredKey === taskKey || isDraggingThis ? 0.45 : 0.12,
+                  transition: 'opacity 100ms ease',
+                  cursor: isDraggingThis ? 'grabbing' : 'grab',
+                  display: 'flex', alignItems: 'center',
+                  touchAction: 'none',
+                }}>
+                  <GripVertical size={12} color={tpTextMuted} />
+                </div>
+              )}
+
               {/* Checkbox - CLICKABLE (44px touch target via wrapper div) */}
               <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <motion.div
