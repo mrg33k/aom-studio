@@ -307,6 +307,7 @@ export const AGENTS = GRID_SPEC.rooms
 AGENTS.push(
   { slug: 'paige', name: 'Paige', role: 'Client Success', color: '#66BB6A', statusColors: { active: '#66BB6A', idle: '#3A7A3A', offline: '#1A401A' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#FFB74D', monitorColor: '#A5D6A7' },
   { slug: 'pixel', name: 'Pixel', role: 'Extension', color: '#8B5CF6', statusColors: { active: '#8B5CF6', idle: '#5A3AA0', offline: '#2A1A50' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#CE93D8', monitorColor: '#B0BEC5' },
+  { slug: 'mark', name: 'Mark', role: 'Infrastructure', color: '#4CAF50', statusColors: { active: '#4CAF50', idle: '#2E7D32', offline: '#1B5E20' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81C784', monitorColor: '#A5D6A7' },
 )
 
 // ─── PROJECT ROOMS ──────────────────────────────────────────────────────────
