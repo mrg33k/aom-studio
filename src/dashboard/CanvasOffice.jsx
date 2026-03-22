@@ -1269,8 +1269,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const viewB = viewT + size.h / cam.zoom
 
       ctx.save()
-      ctx.strokeStyle = 'rgba(59, 130, 246, 0.14)'  // #3B82F6 at low opacity
-      ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.06)'  // #3B82F6 very subtle -- slot hints not maps
+      ctx.lineWidth = 1 / cam.zoom  // keep lines 1px on screen regardless of zoom
 
       // Hex vertex ratios match drawRoom()'s ctx.clip() path exactly:
       //   top=(0.50,0.00), upper-right=(0.99,0.31), lower-right=(0.99,0.72),
@@ -1318,10 +1318,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const occupant = slotOrder[snapSlotIdx]
         drag.swapTargetRoomId = (occupant && occupant !== drag.roomId) ? occupant : null
 
-        // Spring: lerp renderX/renderY toward snapX/snapY each frame (k=0.22 ~= 60fps spring)
-        const SPRING_K = 0.22
-        drag.renderX += (snap.x - drag.renderX) * SPRING_K
-        drag.renderY += (snap.y - drag.renderY) * SPRING_K
+        // Follow cursor freely -- snap happens on drop, not during drag
+        drag.renderX = rawX
+        drag.renderY = rawY
 
         const S = ROOM_SIZE
         const meta = ROOM_META[drag.roomId]
@@ -2197,9 +2196,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
         swapCooldownRef.current = now
       } else {
-        // Snap back to own slot -- clear any freePos so the room returns cleanly
+        // Snap to own slot with animation (cursor -> slot position)
+        const draggedRoomId = drag.roomId
+        const dragFromX = drag.renderX
+        const dragFromY = drag.renderY
+        const ownSlotIdx = slotOrder.indexOf(draggedRoomId)
+        const ownSlotPos = slotWorldPos(ownSlotIdx >= 0 ? ownSlotIdx : 0, ORIGIN_X, ORIGIN_Y)
+        shuffleAnimRef.current[draggedRoomId] = {
+          fromX: dragFromX,
+          fromY: dragFromY,
+          toX: ownSlotPos.x,
+          toY: ownSlotPos.y,
+          startTime: now,
+        }
         const newFreePos = { ...freePositionsRef.current }
-        delete newFreePos[drag.roomId]
+        delete newFreePos[draggedRoomId]
         freePositionsRef.current = newFreePos
       }
 
@@ -2614,9 +2625,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           })
           swapCooldownRef.current = now
         } else {
-          // Snap back to own slot -- clear any freePos so the room returns cleanly
+          // Snap to own slot with animation (cursor -> slot position)
+          const draggedRoomId = drag.roomId
+          const dragFromX = drag.renderX
+          const dragFromY = drag.renderY
+          const ownSlotIdx = slotOrder.indexOf(draggedRoomId)
+          const ownSlotPos = slotWorldPos(ownSlotIdx >= 0 ? ownSlotIdx : 0, ORIGIN_X, ORIGIN_Y)
+          shuffleAnimRef.current[draggedRoomId] = {
+            fromX: dragFromX,
+            fromY: dragFromY,
+            toX: ownSlotPos.x,
+            toY: ownSlotPos.y,
+            startTime: now,
+          }
           const newFreePos = { ...freePositionsRef.current }
-          delete newFreePos[drag.roomId]
+          delete newFreePos[draggedRoomId]
           freePositionsRef.current = newFreePos
         }
 
