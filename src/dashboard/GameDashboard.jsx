@@ -10,7 +10,7 @@ import {
   ArrowRight, Coffee, Play, ChevronLeft, ChevronRight,
   BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
   CalendarDays, Sparkles, Users, Search, Folder,
-  CornerDownLeft, Copy, RotateCcw, Reply, Building2, FileText, BarChart3,
+  CornerDownLeft, Copy, RotateCcw, Reply, Building2, Building, FileText, BarChart3, User,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
@@ -8260,6 +8260,22 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             <Building2 size={16} />
           </button>
 
+          {/* Person / Router shortcut -- navigates to main agent (Elon) */}
+          <button
+            onClick={() => onSelectAgent?.('elon')}
+            title="Main agent (Router)"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              transition: 'color 120ms, background 120ms', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >
+            <User size={14} />
+          </button>
+
           {/* Prev agent arrow */}
           <button
             onClick={(e) => {
@@ -8322,6 +8338,22 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
             onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
           >&#8250;</button>
+
+          {/* Buildings / AOM Team shortcut -- navigates to home team project */}
+          <button
+            onClick={() => onSelectAgent?.('aom-team')}
+            title="AOM Team"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 6, color: isNightMode ? '#4A6080' : '#6B8AB0',
+              transition: 'color 120ms, background 120ms', flexShrink: 0,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#60A5FA'; e.currentTarget.style.background = 'rgba(59,130,246,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = isNightMode ? '#4A6080' : '#6B8AB0'; e.currentTarget.style.background = 'none' }}
+          >
+            <Building size={14} />
+          </button>
 
           {/* Home / center camera icon */}
           <button
