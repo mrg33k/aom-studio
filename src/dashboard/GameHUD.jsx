@@ -205,32 +205,28 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
   )
 }
 
-// Meta-sections that always stay flat (never nest under AOM parent pill)
+// Meta-sections that always stay flat (never nest under AOM parent pill).
+// Everything else is project work and auto-nests under AOM.
+// This is intentionally permissive: new projects from Supabase nest automatically.
 const META_SECTIONS = new Set(['rightnow', 'inbox', 'to-do', 'completed-feed', 'your-todos', 'finish-these', 'checking-in', 'schedule', 'today'])
 
-// Project sections that group under the AOM parent pill.
-// Clicking AOM expands a popover showing these as individual child pills.
-// Any section not in META_SECTIONS and not in AOM_CHILDREN stays flat as-is.
-const AOM_CHILDREN = new Set([
-  'corner', 'kohrs', 'kohrs-client',
-  'ambition', 'ambition-client',
-  'aom-site', 'aom-phase2',
-  'gtm', 'outreach',
-  'cleo', 'content',
-  'isa', 'isa-client',
-  'skylar', 'skylar-client',
-  'brandon-client', 'nabi-client', 'lbx-client',
-  'infra', 'deadlines', 'week',
-])
-
 // Sub-grouping within the AOM popover: client work vs internal.
+// Handles both canonical slugs (e.g. 'ambition') and actual Supabase slugs (e.g. 'ambition-mechanical').
 // Used only for visual grouping inside the popover -- not for nesting logic.
 const AOM_CLIENT_SECTIONS = new Set([
+  // Canonical slugs (legacy/Supabase short form)
   'kohrs', 'kohrs-client',
   'ambition', 'ambition-client',
   'isa', 'isa-client',
   'skylar', 'skylar-client',
   'brandon-client', 'nabi-client', 'lbx-client',
+  // Actual Supabase slugs (from DEFAULT_PROJECTS_FALLBACK and projects table)
+  'ambition-mechanical',
+  'isa-energy',
+  'included-health',
+  'brandon-wiley',
+  'nabi',
+  'lbx',
 ])
 
 // ---- MAIN HUD ---------------------------------------------------------------
@@ -661,23 +657,21 @@ export default function GameHUD({
     )
   }, [projects, searchQuery])
 
-  // All pills flat: meta first, then AOM parent pill (collapsing all AOM children), then other project pills.
-  // All pills scroll horizontally -- no cap, no +N button. Restored from pre-yellow-change behavior.
+  // All pills: meta first, then one AOM parent pill (all non-meta projects collapse inside it).
+  // Any project not in META_SECTIONS auto-nests under AOM -- no hardcoded slug list to maintain.
+  // New projects from Supabase just work.
   const { visiblePills, overflowPills } = useMemo(() => {
     const meta = []
     const aomKids = []
-    const other = []
     for (const p of filteredProjects) {
       if (META_SECTIONS.has(p.section)) {
         meta.push(p)
-      } else if (AOM_CHILDREN.has(p.section)) {
-        aomKids.push(p)
       } else {
-        other.push(p)
+        aomKids.push(p)
       }
     }
     const all = [...meta]
-    // Collapse AOM children into one parent pill
+    // Collapse all non-meta projects into one AOM parent pill
     if (aomKids.length > 0) {
       const allAomTasks = aomKids.flatMap(p => p.tasks)
       all.push({
@@ -691,7 +685,6 @@ export default function GameHUD({
         tasks: allAomTasks,
       })
     }
-    all.push(...other)
     return {
       visiblePills: all,
       overflowPills: [],
