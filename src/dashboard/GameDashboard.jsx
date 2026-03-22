@@ -10338,6 +10338,36 @@ export default function GameDashboard() {
   // Live data from server -- no localStorage
   const pipeData = useDataPipe(parsePunchListSidebar)
   const rightNowTasks = pipeData?.rightNow || []
+
+  // Auto-inject inline confirm cards into chat when a Supabase task becomes isDoneAwaitingApproval.
+  // Tracks which taskIds have been injected so we don't duplicate on re-render.
+  const injectedConfirmTaskIdsRef = useRef(new Set())
+  useEffect(() => {
+    const doneTasks = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.taskId)
+    doneTasks.forEach(t => {
+      const key = String(t.taskId)
+      if (injectedConfirmTaskIdsRef.current.has(key)) return
+      injectedConfirmTaskIdsRef.current.add(key)
+      const confirmMsg = {
+        role: 'assistant',
+        content: `Task complete: "${t.text}"`,
+        time: new Date().toISOString(),
+        source: 'corner-task-confirm',
+        id: `confirm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        isTaskConfirm: true,
+        taskText: t.text,
+        taskId: t.taskId,
+      }
+      setAgentChats(prev => {
+        const agent = t.agent || 'elon'
+        const current = prev[agent] || { _all: [] }
+        // Guard: don't inject if a card for this task already exists in chat
+        if ((current._all || []).some(m => m.taskId === t.taskId)) return prev
+        return { ...prev, [agent]: { _all: [...(current._all || []), confirmMsg] } }
+      })
+    })
+  }, [rightNowTasks]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const addToRightNow = useCallback((task) => {
     if (!task) return
     console.log('[addToRightNow] task:', task)
@@ -10901,6 +10931,7 @@ export default function GameDashboard() {
         id: `confirm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         isTaskConfirm: true,
         taskText: task.text,
+        taskId: task.taskId || task.id,
       }
       setAgentChats(prev => {
         const agent = task.agent || selectedRoom || 'elon'
