@@ -1492,7 +1492,7 @@ const ROOM_LIGHT_OVERLAYS = {
   cleo:      'rgba(255, 183, 77, 0.06)',
   steffen:   'rgba(255, 216, 122, 0.07)',
   'main-hall': 'rgba(255, 183, 77, 0.04)',
-  elmo:      'rgba(240, 240, 240, 0.06)',
+  elmo:      'rgba(200, 220, 255, 0.06)',
   mom:       'rgba(245, 158, 11, 0.04)',
   alex:      'rgba(59, 130, 246, 0.04)',
   steve:     'rgba(124, 154, 114, 0.04)',
@@ -2865,7 +2865,7 @@ function MiniMap({ rooms, agentStatus, selectedRoom, cameraTarget, cameraZoom, i
                 x={x} y={y} width={w} height={h}
                 fill={room.agentColor || '#4A5568'}
                 opacity={isActive ? 0.6 : 0.3}
-                stroke={isCameraHere ? '#FDF6EC' : (selectedRoom === room.id ? '#FDF6EC' : 'rgba(255,255,255,0.1)')}
+                stroke={isCameraHere ? '#93C5FD' : (selectedRoom === room.id ? '#93C5FD' : 'rgba(100,180,255,0.15)')}
                 strokeWidth={isCameraHere ? 3 : (selectedRoom === room.id ? 2 : 0.5)}
                 rx={2}
                 style={{ cursor: room.agent ? 'pointer' : 'default' }}
@@ -3753,8 +3753,8 @@ function MobileDrawer({
       >
         <div style={{
           width: 48, height: 5, borderRadius: 3,
-          background: 'rgba(255, 255, 255, 0.35)',
-          boxShadow: !handlePulsed ? '0 0 8px rgba(255, 255, 255, 0.4)' : 'none',
+          background: 'rgba(100, 180, 255, 0.45)',
+          boxShadow: !handlePulsed ? '0 0 8px rgba(100, 180, 255, 0.45)' : 'none',
           animation: !handlePulsed ? 'handlePulse 1.5s ease-in-out infinite' : 'none',
         }} />
       </div>
@@ -5489,7 +5489,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 onClick={() => setFullscreen(true)}
                 style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', cursor: 'pointer' }}
               >
-                <div style={{ width: 48, height: 5, borderRadius: 3, background: 'rgba(255, 255, 255, 0.35)' }} />
+                <div style={{ width: 48, height: 5, borderRadius: 3, background: 'rgba(100, 180, 255, 0.45)' }} />
               </div>
             )}
 
@@ -9689,7 +9689,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               transition={{ type: 'spring', stiffness: 420, damping: 28 }}
               style={{
                 background: hasFailed
-                  ? (isDaytime ? 'rgba(254,242,242,0.97)' : 'rgba(60,10,10,0.93)')
+                  ? (isDaytime ? 'rgba(55,10,10,0.92)' : 'rgba(60,10,10,0.93)')
                   : (isDaytime ? 'linear-gradient(135deg, rgba(59,130,246,0.10) 0%, rgba(99,102,241,0.06) 100%)' : 'linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(99,102,241,0.10) 100%)'),
                 backdropFilter: 'blur(12px)',
                 border: hasFailed ? '1.5px solid rgba(239,68,68,0.65)' : (isDaytime ? '1.5px solid rgba(59,130,246,0.35)' : '1.5px solid rgba(99,102,241,0.40)'),
