@@ -6,8 +6,9 @@
 // All Supabase operations go through /api/dashboard/files (service role key server-side).
 // Upload flow: get signed URL from server, PUT file directly to Supabase (no Vercel body limit).
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft } from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft, Code } from 'lucide-react'
+import { marked } from 'marked'
 
 const FILES_API = '/api/dashboard/files'
 
@@ -38,6 +39,17 @@ function generateFilename(content) {
   return `${slug}-${date}.txt`
 }
 
+// ---- Markdown detection ----
+
+function isMarkdown(file) {
+  if (!file) return false
+  const name = (file.filename || '').toLowerCase()
+  if (name.endsWith('.md') || name.endsWith('.markdown')) return true
+  const content = (file.content || '').trim()
+  // Heuristic: headings, code fences, bold, or list patterns
+  return /^#{1,6}\s/m.test(content) || /^```/m.test(content) || /\*\*[^*]+\*\*/.test(content) || /^\s*[-*+]\s/m.test(content)
+}
+
 // ---- FilesTab Component ----
 
 export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileToChat }) {
@@ -57,6 +69,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
   const [pasteContent, setPasteContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [viewingFile, setViewingFile] = useState(null) // text file being viewed
+  const [rawMode, setRawMode] = useState(false) // show raw markdown vs rendered
   const [textError, setTextError] = useState(null)
   const textareaRef = useRef(null)
 
@@ -425,7 +438,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
                 mutedText={mutedText}
                 labelText={labelText}
                 accentColor={accentColor}
-                onView={() => setViewingFile(file)}
+                onView={() => { setViewingFile(file); setRawMode(false) }}
                 onDelete={() => handleDeleteTextFile(file)}
               />
             ))}
@@ -465,6 +478,27 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
             <span style={{ color: mutedText, fontSize: 11, flexShrink: 0 }}>
               {formatDate(viewingFile.created_at)}
             </span>
+            {/* Raw/Rendered toggle (only for markdown files) */}
+            {isMarkdown(viewingFile) && (
+              <button
+                onClick={() => setRawMode(r => !r)}
+                title={rawMode ? 'Show rendered' : 'Show raw'}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '0 8px',
+                  height: 28,
+                  background: rawMode ? accentBg : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${rawMode ? accentBorder : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: 6, color: rawMode ? accentColor : mutedText,
+                  fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+                  transition: 'all 150ms',
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                }}
+              >
+                <Code size={11} />
+                {rawMode ? 'Rendered' : 'Raw'}
+              </button>
+            )}
             <button
               onClick={() => handleDeleteTextFile(viewingFile)}
               style={{
@@ -479,31 +513,39 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
               <Trash2 size={12} />
             </button>
           </div>
-          {/* Read-only content */}
-          <div style={{ flex: 1, overflow: 'auto', padding: 14 }}>
-            <textarea
-              readOnly
-              value={viewingFile.content}
-              style={{
-                width: '100%',
-                height: '100%',
-                minHeight: 300,
-                padding: 12,
-                background: isDaytime ? '#0B1423' : '#060B14',
-                border: `1px solid ${borderColor}`,
-                borderRadius: 8,
-                color: isDaytime ? '#D1D9E6' : '#A0B0C8',
-                fontSize: 14,
-                lineHeight: 1.6,
-                fontFamily: "'Inter', system-ui, sans-serif",
-                resize: 'none',
-                outline: 'none',
-                boxSizing: 'border-box',
-                WebkitAppearance: 'none',
-                WebkitOverflowScrolling: 'touch',
-              }}
-            />
+
+          {/* Content: rendered markdown or raw */}
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {isMarkdown(viewingFile) && !rawMode ? (
+              <MarkdownDocViewer content={viewingFile.content} isDaytime={isDaytime} />
+            ) : (
+              <div style={{ padding: 14, height: '100%', boxSizing: 'border-box' }}>
+                <textarea
+                  readOnly
+                  value={viewingFile.content}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    minHeight: 300,
+                    padding: 12,
+                    background: isDaytime ? '#0B1423' : '#060B14',
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: 8,
+                    color: isDaytime ? '#D1D9E6' : '#A0B0C8',
+                    fontSize: 13,
+                    lineHeight: 1.6,
+                    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                    resize: 'none',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    WebkitAppearance: 'none',
+                    WebkitOverflowScrolling: 'touch',
+                  }}
+                />
+              </div>
+            )}
           </div>
+
           {/* Footer with stats */}
           <div style={{
             padding: '8px 14px',
@@ -513,6 +555,11 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
             gap: 12,
             flexShrink: 0,
           }}>
+            {isMarkdown(viewingFile) && !rawMode && (
+              <span style={{ fontSize: 11, color: accentColor, fontWeight: 600 }}>
+                MD
+              </span>
+            )}
             <span style={{ fontSize: 11, color: mutedText }}>
               {viewingFile.content.length.toLocaleString()} chars
             </span>
@@ -783,6 +830,141 @@ function FileThumbnail({ file, isDaytime, onView, onDelete, onSendToChat }) {
         <X size={10} style={{ color: '#F87171' }} />
       </button>
     </div>
+  )
+}
+
+// ---- Markdown Doc Viewer ----
+
+const MD_READER_STYLES = `
+  .md-reader {
+    color: #C0D0E8;
+    font-size: 14px;
+    line-height: 1.75;
+    font-family: 'Inter', system-ui, sans-serif;
+    word-break: break-word;
+  }
+  .md-reader h1, .md-reader h2, .md-reader h3,
+  .md-reader h4, .md-reader h5, .md-reader h6 {
+    color: #E8F0FC;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 1.4em 0 0.5em;
+  }
+  .md-reader h1 {
+    font-size: 20px;
+    border-bottom: 1px solid rgba(59,130,246,0.2);
+    padding-bottom: 0.35em;
+    margin-top: 0.5em;
+  }
+  .md-reader h2 { font-size: 17px; }
+  .md-reader h3 { font-size: 15px; color: #A8C0DC; }
+  .md-reader h4, .md-reader h5, .md-reader h6 { font-size: 13px; color: #7890A8; }
+  .md-reader p { margin: 0.65em 0; }
+  .md-reader p:first-child { margin-top: 0; }
+  .md-reader strong { color: #F0F6FF; font-weight: 700; }
+  .md-reader em { font-style: italic; }
+  .md-reader a { color: #60A5FA; text-decoration: none; }
+  .md-reader a:hover { text-decoration: underline; }
+  .md-reader code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #7DD3FC;
+    white-space: pre-wrap;
+  }
+  .md-reader pre {
+    background: #080F1E;
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 8px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 1em 0;
+  }
+  .md-reader pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #90B4CC;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .md-reader ul, .md-reader ol {
+    padding-left: 22px;
+    margin: 0.65em 0;
+  }
+  .md-reader li { margin: 0.25em 0; }
+  .md-reader li::marker { color: #60A5FA; }
+  .md-reader ul li::marker { content: "• "; }
+  .md-reader blockquote {
+    border-left: 3px solid rgba(59,130,246,0.5);
+    margin: 1em 0;
+    padding: 0.2em 0 0.2em 14px;
+    color: #6888A0;
+    background: rgba(59,130,246,0.04);
+    border-radius: 0 6px 6px 0;
+  }
+  .md-reader blockquote p { margin: 0.25em 0; }
+  .md-reader hr {
+    border: none;
+    border-top: 1px solid rgba(59,130,246,0.2);
+    margin: 1.5em 0;
+  }
+  .md-reader table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    font-size: 13px;
+  }
+  .md-reader th {
+    background: rgba(59,130,246,0.1);
+    color: #A8C0DC;
+    font-weight: 700;
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid rgba(59,130,246,0.18);
+  }
+  .md-reader td {
+    padding: 6px 12px;
+    border: 1px solid rgba(59,130,246,0.1);
+    color: #8AA8C0;
+  }
+  .md-reader tr:nth-child(even) td {
+    background: rgba(59,130,246,0.03);
+  }
+  .md-reader img {
+    max-width: 100%;
+    border-radius: 6px;
+    margin: 0.5em 0;
+  }
+  .md-reader-night h1, .md-reader-night h2, .md-reader-night h3 {
+    color: #C8DCF0;
+  }
+  .md-reader-night {
+    color: #8AA8C4;
+  }
+`
+
+function MarkdownDocViewer({ content, isDaytime }) {
+  const html = useMemo(() => {
+    try {
+      return marked.parse(content || '', { gfm: true, breaks: false })
+    } catch {
+      return '<p style="color:#F87171">Failed to render markdown.</p>'
+    }
+  }, [content])
+
+  return (
+    <>
+      <style>{MD_READER_STYLES}</style>
+      <div
+        className={`md-reader${isDaytime ? '' : ' md-reader-night'}`}
+        style={{ padding: '16px 18px' }}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </>
   )
 }
 
