@@ -168,13 +168,13 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
       }}>
         <div style={{
           width: 7, height: 7, borderRadius: '50%',
-          background: '#F59E0B',
-          boxShadow: '0 0 8px rgba(245,158,11,0.8), 0 0 14px rgba(245,158,11,0.4)',
-          animation: 'statusPulse 2s ease-in-out infinite',
+          background: '#3B82F6',
+          boxShadow: '0 0 8px rgba(59,130,246,0.8), 0 0 14px rgba(59,130,246,0.4)',
+          animation: 'vegasTypingBounce 2s ease-in-out infinite',
         }} />
         <span style={{
           fontSize: 10, fontWeight: 700,
-          color: '#8BA4C4',
+          color: '#60A5FA',
           fontFamily: "'JetBrains Mono', monospace",
           letterSpacing: '0.10em', textTransform: 'uppercase', flex: 1,
         }}>Inbox</span>
@@ -216,15 +216,17 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                 exit={{ opacity: 0, y: 4, scale: 0.97 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                 style={{
-                  background: 'rgba(6,16,42,0.92)',
+                  background: hasFailed
+                    ? 'linear-gradient(135deg, rgba(239,68,68,0.18) 0%, rgba(185,28,28,0.10) 100%)'
+                    : 'linear-gradient(135deg, rgba(59,130,246,0.22) 0%, rgba(99,102,241,0.12) 100%)',
                   backdropFilter: 'blur(12px)',
-                  border: hasFailed ? '1.5px solid rgba(239,68,68,0.65)' : '1.5px solid rgba(100,180,255,0.55)',
-                  borderLeft: hasFailed ? '3px solid rgba(239,68,68,0.85)' : '3px solid rgba(100,180,255,0.85)',
+                  border: hasFailed ? '1.5px solid rgba(239,68,68,0.65)' : '1.5px solid rgba(59,130,246,0.55)',
+                  borderLeft: hasFailed ? '3px solid rgba(239,68,68,0.85)' : '3px solid #3B82F6',
                   borderRadius: 10,
                   padding: '10px 12px',
                   boxShadow: hasFailed
                     ? '0 2px 16px rgba(239,68,68,0.15), inset 0 1px 0 rgba(239,68,68,0.07)'
-                    : '0 2px 20px rgba(0,0,0,0.38), 0 -2px 20px rgba(100,180,255,0.18), inset 0 1px 0 rgba(100,180,255,0.18), 0 0 0 1px rgba(100,180,255,0.08)',
+                    : '0 2px 20px rgba(59,130,246,0.25), inset 0 1px 0 rgba(100,180,255,0.20)',
                   position: 'relative', overflow: 'hidden',
                 }}>
                 {/* Inner top glow */}
@@ -239,24 +241,22 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                   <div style={{
                     width: 6, height: 6, borderRadius: '50%',
-                    background: hasFailed ? '#EF4444' : '#F59E0B',
-                    boxShadow: hasFailed ? '0 0 6px rgba(239,68,68,0.7)' : '0 0 6px rgba(245,158,11,0.7)',
-                    animation: 'statusPulse 2s ease-in-out infinite',
+                    background: hasFailed ? '#EF4444' : '#3B82F6',
+                    boxShadow: hasFailed ? '0 0 6px rgba(239,68,68,0.7)' : '0 0 8px rgba(59,130,246,0.8)',
+                    animation: 'vegasTypingBounce 2s ease-in-out infinite',
                   }} />
                   <span style={{
                     fontSize: 9, fontWeight: 700,
-                    color: hasFailed ? '#F87171' : '#8BA4C4',
+                    color: hasFailed ? '#F87171' : '#60A5FA',
                     fontFamily: "'JetBrains Mono', monospace",
                     letterSpacing: '0.10em', textTransform: 'uppercase',
                     flex: 1,
                   }}>
-                    {hasFailed
-                      ? 'FAILED -- TAP TO RETRY'
-                      : `${t.agent ? `${t.agent.charAt(0).toUpperCase()}${t.agent.slice(1)} ` : ''}DONE`}
+                    {hasFailed ? 'FAILED -- TAP TO RETRY' : 'TASK COMPLETE'}
                   </span>
                   {!hasFailed && (
                   <span style={{ fontSize: 9, color: '#93C5FD', fontFamily: "'JetBrains Mono', monospace" }}>
-                    awaiting review
+                    {t.agent ? `${t.agent.charAt(0).toUpperCase()}${t.agent.slice(1)}` : ''}
                   </span>
                   )}
                 </div>
@@ -290,13 +290,13 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                     transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                     style={{
                       flex: 1, padding: '6px 8px',
-                      background: 'rgba(22,163,74,0.22)',
-                      border: '1.5px solid rgba(34,197,94,0.72)',
+                      background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                      border: '1.5px solid rgba(34,197,94,0.5)',
                       borderRadius: 7, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      color: '#4ADE80', fontSize: 11, fontWeight: 800,
+                      color: '#FFFFFF', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 0 14px rgba(34,197,94,0.45), 0 0 5px rgba(34,197,94,0.22), inset 0 1px 0 rgba(34,197,94,0.12)',
+                      boxShadow: '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
                       letterSpacing: '0.04em',
                     }}
                   >
@@ -312,13 +312,13 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                     transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                     style={{
                       flex: 1, padding: '6px 8px',
-                      background: 'rgba(220,38,38,0.22)',
-                      border: '1.5px solid rgba(239,68,68,0.68)',
+                      background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                      border: '1.5px solid rgba(239,68,68,0.5)',
                       borderRadius: 7, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      color: '#F87171', fontSize: 11, fontWeight: 800,
+                      color: '#FFFFFF', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 0 14px rgba(239,68,68,0.40), 0 0 5px rgba(239,68,68,0.20), inset 0 1px 0 rgba(239,68,68,0.10)',
+                      boxShadow: '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
                       letterSpacing: '0.04em',
                     }}
                   >
@@ -341,13 +341,13 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                     transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                     style={{
                       flex: 1, padding: '6px 8px',
-                      background: 'rgba(59,158,255,0.18)',
-                      border: '1.5px solid rgba(59,158,255,0.65)',
+                      background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                      border: '1.5px solid rgba(59,130,246,0.5)',
                       borderRadius: 7, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      color: '#5BB8FF', fontSize: 11, fontWeight: 800,
+                      color: '#FFFFFF', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 0 14px rgba(59,158,255,0.40), 0 0 5px rgba(59,158,255,0.20), inset 0 1px 0 rgba(100,180,255,0.10)',
+                      boxShadow: '0 2px 8px rgba(29,78,216,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
                       letterSpacing: '0.04em',
                     }}
                   >
@@ -1459,19 +1459,19 @@ export default function GameHUD({
             position: 'fixed',
             left: x, top: y,
             zIndex: 9999,
-            background: 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)',
-            border: '2px solid rgba(245,158,11,0.35)',
+            background: 'linear-gradient(180deg, rgba(15,30,60,0.98) 0%, rgba(10,20,45,0.98) 100%)',
+            border: '2px solid rgba(59,130,246,0.45)',
             borderRadius: 10, padding: '6px 0', minWidth: menuW,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(245,158,11,0.1)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.15)',
             backdropFilter: 'blur(20px)',
           }}>
             {/* Header */}
             <div style={{
               padding: '8px 14px 6px',
               fontSize: 12, fontWeight: 700,
-              color: '#F59E0B',
+              color: '#60A5FA',
               fontFamily: "'JetBrains Mono', monospace",
-              borderBottom: '1px solid rgba(245,158,11,0.15)',
+              borderBottom: '1px solid rgba(59,130,246,0.20)',
               marginBottom: 4,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -1524,14 +1524,22 @@ export default function GameHUD({
                 setDoneTaskCtx(null)
               }}
               style={{
-                ...hudCtxBtn(true),
-                color: '#22C55E', fontWeight: 700,
+                display: 'block', width: 'calc(100% - 16px)', margin: '2px 8px',
+                padding: '7px 12px', cursor: 'pointer', borderRadius: 7,
+                background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                border: '1.5px solid rgba(34,197,94,0.5)',
+                boxShadow: '0 2px 8px rgba(22,163,74,0.30), inset 0 1px 0 rgba(255,255,255,0.15)',
+                color: '#FFFFFF', fontWeight: 700, fontSize: 13,
+                fontFamily: "'Inter', sans-serif",
                 display: 'flex', alignItems: 'center', gap: 8,
+                transition: 'opacity 100ms',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               Approve
             </button>
 
@@ -1554,18 +1562,26 @@ export default function GameHUD({
                 setDoneTaskCtx(null)
               }}
               style={{
-                ...hudCtxBtn(true),
-                color: '#EF4444', fontWeight: 700,
-                display: 'flex', alignItems: 'center', gap: 8,
+                display: 'flex', width: 'calc(100% - 16px)', margin: '2px 8px',
+                padding: '7px 12px', cursor: 'pointer', borderRadius: 7,
+                background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                border: '1.5px solid rgba(239,68,68,0.5)',
+                boxShadow: '0 2px 8px rgba(220,38,38,0.30), inset 0 1px 0 rgba(255,255,255,0.15)',
+                color: '#FFFFFF', fontWeight: 700, fontSize: 13,
+                fontFamily: "'Inter', sans-serif",
+                alignItems: 'center', gap: 8,
+                transition: 'opacity 100ms',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.10)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
               Deny
             </button>
 
-            <div style={{ height: 1, background: 'rgba(245,158,11,0.12)', margin: '4px 0' }} />
+            <div style={{ height: 1, background: 'rgba(59,130,246,0.15)', margin: '4px 0' }} />
 
             {/* Clarify */}
             <button
@@ -1578,14 +1594,22 @@ export default function GameHUD({
                 setDoneTaskCtx(null)
               }}
               style={{
-                ...hudCtxBtn(true),
-                color: '#60A5FA', fontWeight: 600,
-                display: 'flex', alignItems: 'center', gap: 8,
+                display: 'flex', width: 'calc(100% - 16px)', margin: '2px 8px',
+                padding: '7px 12px', cursor: 'pointer', borderRadius: 7,
+                background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                border: '1.5px solid rgba(59,130,246,0.5)',
+                boxShadow: '0 2px 8px rgba(29,78,216,0.30), inset 0 1px 0 rgba(255,255,255,0.15)',
+                color: '#FFFFFF', fontWeight: 600, fontSize: 13,
+                fontFamily: "'Inter', sans-serif",
+                alignItems: 'center', gap: 8,
+                transition: 'opacity 100ms',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
             >
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#60A5FA', flexShrink: 0 }} />
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
               Clarify
             </button>
           </div>

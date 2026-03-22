@@ -7984,10 +7984,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   }, [externalReplyTo]) // eslint-disable-line react-hooks/exhaustive-deps
   // Confirmation box carousel index -- resets when agent changes or task count drops
   const [confirmIndex, setConfirmIndex] = useState(0)
-  // Confirmation box minimized state -- collapses full card to slim bar above input
-  const [confirmMinimized, setConfirmMinimized] = useState(false)
   const confirmDoneCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug).length
-  useEffect(() => { setConfirmIndex(0); setConfirmMinimized(false) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setConfirmIndex(0) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
   // Track which task is currently animating the approve glow+fade (keyed by taskId or text)
   const [approvingTaskId, setApprovingTaskId] = useState(null)
   // Track which task is currently animating the deny/reject red glow+fade
@@ -9695,7 +9693,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   height: 32, padding: '0 14px',
-                  borderLeft: '3px solid rgba(245,158,11,0.90)',
+                  borderLeft: '3px solid #3B82F6',
                   background: isDaytime ? 'rgba(235,243,255,0.96)' : 'rgba(6,16,40,0.88)',
                   cursor: 'pointer',
                   userSelect: 'none',
@@ -9703,10 +9701,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               >
                 <div style={{
                   width: 6, height: 6, borderRadius: '50%',
-                  background: '#F59E0B',
-                  boxShadow: '0 0 6px rgba(245,158,11,0.8)',
+                  background: '#3B82F6',
+                  boxShadow: '0 0 8px rgba(59,130,246,0.8)',
                   flexShrink: 0,
-                  animation: 'statusPulse 2s ease-in-out infinite',
+                  animation: 'vegasTypingBounce 2s ease-in-out infinite',
                 }} />
                 <span style={{
                   fontSize: 11, fontWeight: 700, color: isDaytime ? '#1D4ED8' : '#93C5FD',
