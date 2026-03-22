@@ -2197,11 +2197,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
         swapCooldownRef.current = now
       } else {
-        // NORMAL SNAP DROP: no swap, just save free position
-        freePositionsRef.current = {
-          ...freePositionsRef.current,
-          [drag.roomId]: { x: snapped.x, y: snapped.y },
-        }
+        // Snap back to own slot -- clear any freePos so the room returns cleanly
+        const newFreePos = { ...freePositionsRef.current }
+        delete newFreePos[drag.roomId]
+        freePositionsRef.current = newFreePos
       }
 
       drag.active = false
@@ -2569,17 +2568,63 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const pan = panRef.current
 
       if (drag.active && drag.roomId) {
-        // SNAP DROP: snap to nearest hex grid cell
+        // SNAP + SWAP: mirror the mouse onUp logic so touch drag rearranges rooms
         const rawX = drag.worldX - drag.offsetX
         const rawY = drag.worldY - drag.offsetY
         const snapped = snapToNearestHexCell(rawX, rawY, ORIGIN_X, ORIGIN_Y)
-        freePositionsRef.current = {
-          ...freePositionsRef.current,
-          [drag.roomId]: { x: snapped.x, y: snapped.y },
+
+        const snapCenterX = snapped.x + ROOM_SIZE / 2
+        const snapCenterY = snapped.y + ROOM_SIZE / 2
+        const targetSlotIdx = findNearestSlot(snapCenterX, snapCenterY, ORIGIN_X, ORIGIN_Y, slotOrder.length)
+        const occupant = slotOrder[targetSlotIdx]
+        const now = performance.now()
+        const canSwap = occupant && occupant !== drag.roomId && (now - swapCooldownRef.current) >= SWAP_COOLDOWN_MS
+
+        if (canSwap) {
+          const draggedRoomId = drag.roomId
+          const dragFromSlot = slotOrder.indexOf(draggedRoomId)
+
+          const dragFromX = drag.renderX
+          const dragFromY = drag.renderY
+          const occupantFreePos = freePositionsRef.current[occupant]
+          const occupantSlotPos = slotWorldPos(targetSlotIdx, ORIGIN_X, ORIGIN_Y)
+          const occupantFromX = occupantFreePos ? occupantFreePos.x : occupantSlotPos.x
+          const occupantFromY = occupantFreePos ? occupantFreePos.y : occupantSlotPos.y
+
+          const dragToPos = slotWorldPos(targetSlotIdx, ORIGIN_X, ORIGIN_Y)
+          const occupantToPos = slotWorldPos(dragFromSlot >= 0 ? dragFromSlot : targetSlotIdx, ORIGIN_X, ORIGIN_Y)
+
+          const newFreePos = { ...freePositionsRef.current }
+          delete newFreePos[draggedRoomId]
+          delete newFreePos[occupant]
+          freePositionsRef.current = newFreePos
+
+          shuffleAnimRef.current[draggedRoomId] = { fromX: dragFromX, fromY: dragFromY, toX: dragToPos.x, toY: dragToPos.y, startTime: now }
+          shuffleAnimRef.current[occupant] = { fromX: occupantFromX, fromY: occupantFromY, toX: occupantToPos.x, toY: occupantToPos.y, startTime: now }
+
+          setSlotOrder(prev => {
+            const next = [...prev]
+            const idxA = next.indexOf(draggedRoomId)
+            const idxB = next.indexOf(occupant)
+            if (idxA >= 0 && idxB >= 0) {
+              next[idxA] = occupant
+              next[idxB] = draggedRoomId
+            }
+            return next
+          })
+          swapCooldownRef.current = now
+        } else {
+          // Snap back to own slot -- clear any freePos so the room returns cleanly
+          const newFreePos = { ...freePositionsRef.current }
+          delete newFreePos[drag.roomId]
+          freePositionsRef.current = newFreePos
         }
+
         drag.active = false
+        drag.swapTargetRoomId = null
         drag.roomId = null
       } else {
+        drag.swapTargetRoomId = null
         drag.roomId = null
       }
 
