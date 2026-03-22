@@ -1339,12 +1339,17 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     // Uses the same stagger pattern as the room layout and vertices copied VERBATIM
     // from drawRoom() SOURCE OF TRUTH. Rooms define the shape -- grid follows.
     // DO NOT change vertices independently of drawRoom().
+    //
+    // SIZE: S = ROOM_SIZE (matches drawRoom clip path exactly -- not VIS_W).
+    //   drawRoom clips at ROOM_SIZE via `const S = ROOM_SIZE`. Grid traces the SAME boundary.
+    //   VIS_W (= ROOM_SIZE * 0.94) is used ONLY for spacing (HEX_COL_STEP / HEX_ROW_STEP),
+    //   which makes rooms tile tightly and matches hexPosition(). Do not use VIS_W for S here.
     {
       ctx.save()
       ctx.strokeStyle = 'rgba(59, 130, 246, 0.18)'  // #3B82F6 visible honeycomb grid
       ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
 
-      const S = ROOM_SIZE
+      const S = ROOM_SIZE  // must match drawRoom() clip path size -- DO NOT change to VIS_W
       // Pad by one full hex so cells at edges draw fully (no edge clipping artifacts)
       const pad = S
 
