@@ -1833,6 +1833,27 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   const rooms = GRID_SPEC.rooms
   const containerRef = useRef(null)
 
+  // Room shuffle: roomPositions[roomId] = slotId (which slot that room is displayed in)
+  // Default: each room occupies its own matching slot.
+  const [roomPositions, setRoomPositions] = useState(() =>
+    Object.fromEntries(GRID_SPEC.rooms.map(r => [r.id, r.id]))
+  )
+  const [dragRoomId, setDragRoomId] = useState(null)
+  const [dropRoomId, setDropRoomId] = useState(null)
+  const swapCooldown = useRef(false)
+  const isRoomDragging = useRef(false)
+
+  const performSwap = useCallback((roomA, roomB) => {
+    if (swapCooldown.current || roomA === roomB) return
+    swapCooldown.current = true
+    setRoomPositions(prev => {
+      const next = { ...prev }
+      ;[next[roomA], next[roomB]] = [next[roomB], next[roomA]]
+      return next
+    })
+    setTimeout(() => { swapCooldown.current = false }, 1000)
+  }, [])
+
   // Wave animation: track if initial load animation has played
   const [hasLoaded, setHasLoaded] = useState(false)
   useEffect(() => {
@@ -1890,7 +1911,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   }, [panOffset])
 
   const handleMouseMove = useCallback((e) => {
-    if (!panState.current.dragging) return
+    if (!panState.current.dragging || isRoomDragging.current) return
     const newX = e.clientX - panState.current.startX
     const newY = e.clientY - panState.current.startY
     panState.current.velX = e.clientX - panState.current.lastX
@@ -8521,11 +8542,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 // Resolved name: from AGENTS obj, or AOM_AGENT_NAMES fallback, or slug capitalized
                 const msgAgentName = msgAgentObj?.name || (msgAgentSlug ? (AOM_AGENT_NAMES[msgAgentSlug] || (msgAgentSlug.charAt(0).toUpperCase() + msgAgentSlug.slice(1))) : null)
                 const msgAgentColor = msgAgentSlug ? (AOM_AGENT_COLORS[msgAgentSlug] || msgAgentObj?.color || '#60A5FA') : agentColor
-                // Grouping: consecutive messages from the same agent in AOM room collapse avatar+name
-                const prevMsgAgentSlug = isAomRoom && i > 0 ? (chatMessages[i-1]?.agentTag || null) : null
-                const isSameAomAgent = isAomRoom && !isUser && prevMsgAgentSlug && prevMsgAgentSlug === msgAgentSlug
-                // Show avatar+name only on the first message of each agent run in AOM room
-                const showAomHeader = isAomRoom && !isUser && !isSameAomAgent
+                // AOM Team Room: no grouping -- show avatar+name+project tag on every message
+                const isSameAomAgent = false
                 // Project path chip: match segments against PROJECTS for colored pill
                 const msgProjectPath = isAomRoom ? (msg.projectPath || null) : null
                 const msgProjectMatch = msgProjectPath
@@ -8745,8 +8763,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       display: 'flex', gap: 10, alignItems: 'flex-start',
                       flexDirection: isUser ? 'row-reverse' : 'row',
                       position: 'relative',
-                      // AOM room: tighter spacing for consecutive same-agent messages
-                      marginTop: isSameAomAgent ? -6 : 0,
+                      marginTop: 0,
                     }}
                     onContextMenu={(e) => {
                       e.preventDefault()
@@ -8777,9 +8794,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       }}>
                         P
                       </div>
-                    ) : isSameAomAgent ? (
-                      // AOM room: consecutive same-agent messages -- spacer instead of avatar
-                      <div style={{ width: 36, flexShrink: 0 }} />
                     ) : (
                       <SpriteAvatar
                         agentSlug={isAomRoom && msgAgentSlug ? msgAgentSlug : room?.id}
@@ -8796,17 +8810,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
                     {/* Message content */}
                     <div style={{ maxWidth: '80%' }}>
-                      {/* Name + timestamp + project chip -- always visible in AOM Team Room, collapsed for consecutive same-agent elsewhere */}
-                      {!msg.streaming && (!isSameAomAgent || (isAomRoom && !isUser)) && (
+                      {/* Name + timestamp + project chip -- on every message in AOM Team Room */}
+                      {!msg.streaming && (
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: 6,
                           marginBottom: 3, padding: '0 2px',
                           flexDirection: isUser ? 'row-reverse' : 'row',
-                          // Consecutive same-agent in AOM room: slightly muted so first-in-run stands out
-                          opacity: isSameAomAgent && isAomRoom ? 0.65 : 1,
+                          opacity: 1,
                         }}>
                           <span style={{
-                            fontSize: isSameAomAgent && isAomRoom ? 10 : 11,
+                            fontSize: 11,
                             fontWeight: 600,
                             color: isUser ? '#F59E0B' : (isAomRoom && msgAgentColor ? msgAgentColor : agentColor),
                             fontFamily: "'Inter', system-ui, sans-serif",
