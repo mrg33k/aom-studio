@@ -923,6 +923,19 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
     const applyRoomsData = (data) => {
       if (!data || data.length === 0) return
+      // Update ROOM_META with live name/color/type for all rooms (hidden or not).
+      // This means adding a new project in Supabase gets the right pill color + label
+      // without a code deploy.
+      data.forEach(r => {
+        if (r.name || r.color || r.type) {
+          ROOM_META[r.id] = {
+            name: (r.name || r.id).toUpperCase(),
+            color: r.color || ROOM_META[r.id]?.color || '#60A5FA',
+            type: r.type || ROOM_META[r.id]?.type || 'agent',
+          }
+        }
+      })
+      // Update hex grid layout order (visible rooms only)
       const visible = data.filter(r => !r.hidden).map(r => r.id)
       if (visible.length === 0) return
       _defaultLayoutOrder = visible
@@ -932,7 +945,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const fetchLayout = () =>
       supabase
         .from('rooms')
-        .select('id, hidden, grid_order')
+        .select('id, hidden, grid_order, name, color, type')
         .not('grid_order', 'is', null)
         .order('grid_order', { ascending: true })
         .then(({ data }) => applyRoomsData(data))
