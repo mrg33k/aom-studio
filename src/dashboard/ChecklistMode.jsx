@@ -40,7 +40,7 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion'
 import {
   ChevronRight, ChevronDown, Check, Plus, GripVertical,
   LayoutGrid, FolderKanban, Flame, CheckCircle2,
-  CheckSquare, Square, Trash2, ArrowUpCircle, ArrowRightCircle, ArrowDownCircle, UserCircle2,
+  CheckSquare, Square, Trash2, UserCircle2,
   Zap, AlertCircle, History,
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
@@ -567,15 +567,8 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
 
 // ---- TASK CONTEXT MENU (Linear/Notion style) --------------------------------
 // Right-click any task for quick actions: toggle done, set priority, reassign, delete.
-const PRIORITY_OPTIONS = [
-  { key: 'high', label: 'High priority', icon: ArrowUpCircle, color: '#EF4444' },
-  { key: 'med', label: 'Medium priority', icon: ArrowRightCircle, color: '#F59E0B' },
-  { key: 'low', label: 'Low priority', icon: ArrowDownCircle, color: '#6B7280' },
-]
-
-const ASSIGNABLE_AGENTS = AGENTS.filter(a =>
-  !['paige', 'pixel'].includes(a.slug)
-)
+// Priority options and assignable agents are now data-driven via Supabase
+// (task_priorities.sort_order, agents.is_assignable) inside the shared component.
 
 // TaskContextMenu: now uses shared component from ./components/TaskContextMenu.jsx
 // Kept as a thin wrapper for backwards compatibility with existing onAction interface
