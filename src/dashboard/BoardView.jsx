@@ -97,13 +97,19 @@ function removeTouchGhost() {
 
 // ── BOARD CARD ──────────────────────────────────────────────────────────────
 
-function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop, onDragOverCard }) {
+function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop, onDragOverCard, isNightMode = true }) {
   const agentSlug = entry.agent?.toLowerCase()
   const agentColor = getAgentColor(agentSlug)
   const taskText = entry.text || entry.description || entry.currentTask || 'No task'
   const agentName = entry.agent ? getAgentName(agentSlug) : null
   const projectTag = entry.project || null
   const cardRef = useRef(null)
+
+  // Night/day card colors
+  const cardBg = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
+  const cardBorder = isNightMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'
+  const cardHoverBg = isNightMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
+  const cardTextColor = isNightMode ? '#F1F5F9' : '#1E293B'
 
   // Pointer-based drag (works for both mouse and touch)
   const pointerDragRef = useRef({
@@ -114,7 +120,6 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
     pointerId: null,
     longPressTimer: null,
     inColInsertIdx: null,
-    crossColInsertIdx: null, // insert position in the TARGET column during cross-column drag
   })
 
   // Only show agent badge if it differs from the column we're in
@@ -176,7 +181,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         const allCols = document.querySelectorAll('[data-board-col]')
         allCols.forEach(c => c.setAttribute('data-drop-hover', c === colEl ? '1' : '0'))
 
-        // Compute insert position for same-column reorder OR cross-column drop target
+        // Compute within-column insert position for reorder feedback
         const toCol = colEl?.getAttribute('data-board-col')
         if (toCol === columnKey) {
           const cardEls = [...(colEl?.querySelectorAll('[data-board-card-idx]') || [])]
@@ -189,25 +194,9 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
             }
           }
           state.inColInsertIdx = insertIdx
-          state.crossColInsertIdx = null
           onDragOverCard?.(insertIdx)
-        } else if (colEl) {
-          // Cross-column: compute insert position in target column for correct card placement on drop
-          const cardEls = [...(colEl.querySelectorAll('[data-board-card-idx]') || [])]
-          let crossIdx = cardEls.length
-          for (const cardEl of cardEls) {
-            const r = cardEl.getBoundingClientRect()
-            if (e.clientY < r.top + r.height / 2) {
-              crossIdx = parseInt(cardEl.getAttribute('data-board-card-idx'))
-              break
-            }
-          }
-          state.crossColInsertIdx = crossIdx
-          state.inColInsertIdx = null
-          onDragOverCard?.(null)
         } else {
           state.inColInsertIdx = null
-          state.crossColInsertIdx = null
           onDragOverCard?.(null)
         }
       }
@@ -227,8 +216,8 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         const toCol = colEl.getAttribute('data-board-col')
         if (toCol) {
           if (toCol !== columnKey) {
-            // Cross-column drop -- pass the insert position so card lands at the right slot
-            onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex, insertIdx: state.crossColInsertIdx })
+            // Cross-column drop
+            onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex })
           } else {
             // Same-column: within-column reorder
             onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex, insertIdx: state.inColInsertIdx })
@@ -245,7 +234,6 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
     state.moved = false
     state.pointerId = null
     state.inColInsertIdx = null
-    state.crossColInsertIdx = null
   }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd, onDragOverCard])
 
   const handlePointerCancel = useCallback(() => {
@@ -261,7 +249,6 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
     state.moved = false
     state.pointerId = null
     state.inColInsertIdx = null
-    state.crossColInsertIdx = null
   }, [onDragEnd, onDragOverCard])
 
   return (
@@ -284,8 +271,8 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
       style={{
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: cardBg,
+        border: `1px solid ${cardBorder}`,
         borderLeft: `3px solid ${agentColor}`,
         borderRadius: 8,
         padding: '10px 12px',
@@ -299,12 +286,12 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
       }}
       onMouseEnter={e => {
         if (!isDragging) {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+          e.currentTarget.style.background = cardHoverBg
           e.currentTarget.style.boxShadow = `0 0 0 1px ${agentColor}30`
         }
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+        e.currentTarget.style.background = cardBg
         e.currentTarget.style.boxShadow = 'none'
       }}
     >
@@ -312,7 +299,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 14,
         fontWeight: 500,
-        color: '#F1F5F9',
+        color: cardTextColor,
         lineHeight: 1.45,
         marginBottom: (showAgentBadge || projectTag) ? 8 : 0,
         wordBreak: 'break-word',
@@ -399,11 +386,21 @@ function BoardColumn({
   onColDragOver,
   onColDrop,
   onColDragEnd,
+  isNightMode = true,
 }) {
   const config = ALL_COLS[colKey] || { label: colKey, color: '#6B7280', type: 'other' }
   const dragInsertRef = useRef(null)
   const [touchHover, setTouchHover] = useState(false)
   const [cardInsertIdx, setCardInsertIdx] = useState(null)
+
+  // Night/day column colors
+  const colBodyBg = isNightMode
+    ? 'rgba(255,255,255,0.015)'
+    : 'rgba(0,0,0,0.025)'
+  const colBodyHoverBg = isNightMode
+    ? `${config.color}08`
+    : `${config.color}10`
+  const emptyTextColor = isNightMode ? '#2D3F55' : '#94A3B8'
 
   // Keep touchHover in sync with data-drop-hover attribute changes
   useEffect(() => {
@@ -589,7 +586,7 @@ function BoardColumn({
         ref={dragInsertRef}
         style={{
           flex: 1,
-          background: isHighlighted ? `${config.color}08` : 'rgba(255,255,255,0.015)',
+          background: isHighlighted ? colBodyHoverBg : colBodyBg,
           border: `1.5px solid ${isHighlighted ? config.color : `${config.color}28`}`,
           borderTop: 'none',
           borderRadius: '0 0 10px 10px',
@@ -603,7 +600,7 @@ function BoardColumn({
           <div style={{
             fontFamily: "'Inter', system-ui, sans-serif",
             fontSize: 13,
-            color: '#2D3F55',
+            color: emptyTextColor,
             textAlign: 'center',
             paddingTop: 20,
             fontStyle: 'italic',
@@ -626,6 +623,7 @@ function BoardColumn({
                   onDragEnd={() => { setCardInsertIdx(null); onCardDragEnd() }}
                   onContextMenu={(ctx) => onContextMenu?.(ctx)}
                   onDragOverCard={(idx) => setCardInsertIdx(idx)}
+                  isNightMode={isNightMode}
                   onTouchDrop={(toCol, payload) => {
                     if (toCol === colKey && payload.insertIdx !== undefined) {
                       // Same-column pointer drag reorder
@@ -701,7 +699,7 @@ function FilterPill({ label, active, color, onClick }) {
 
 // ── MAIN BOARD VIEW ─────────────────────────────────────────────────────────
 
-export default function BoardView({ pipeData, isMobile, isNightMode }) {
+export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
   const rightNow = pipeData?.rightNow || []
   const completedFeed = pipeData?.completedFeed || []
   const punchData = pipeData?.punchData
@@ -711,8 +709,15 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
   const [showAgents, setShowAgents] = useState(true)
   const [showProjects, setShowProjects] = useState(true)
 
+  // Hide empty columns toggle
+  const [hideEmpty, setHideEmpty] = useState(false)
+
   // Search
   const [search, setSearch] = useState('')
+  const searchInputRef = useRef(null)
+
+  // Board scroll container ref (for auto-scroll during drag)
+  const boardScrollRef = useRef(null)
 
   // Column order (drag to reorder columns)
   const [colOrder, setColOrder] = useState(() => {
@@ -769,6 +774,70 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     setTaskOrders(orders)
     try { localStorage.setItem('corner-board-task-orders', JSON.stringify(orders)) } catch {}
   }, [])
+
+  // ── Keyboard shortcut: '/' to focus search, 'Escape' to clear ──────────
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const tag = e.target?.tagName?.toLowerCase()
+      const isEditable = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable
+
+      if (e.key === '/' && !isEditable) {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      } else if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
+        setSearch('')
+        searchInputRef.current?.blur()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // ── Auto-scroll during drag ─────────────────────────────────────────────
+  useEffect(() => {
+    const isDragging = draggingCard !== null || colDragging !== null
+    if (!isDragging) return
+
+    const container = boardScrollRef.current
+    if (!container) return
+
+    let rafId = null
+    let lastX = null
+
+    const handlePointerMove = (e) => {
+      lastX = e.clientX
+    }
+
+    const scroll = () => {
+      if (lastX === null) {
+        rafId = requestAnimationFrame(scroll)
+        return
+      }
+      const rect = container.getBoundingClientRect()
+      const EDGE = 80
+      const leftDist = lastX - rect.left
+      const rightDist = rect.right - lastX
+
+      if (leftDist < EDGE && leftDist >= 0) {
+        // Near left edge -- scroll left; closer = faster (max ~12px/frame)
+        const speed = Math.round((1 - leftDist / EDGE) * 12)
+        container.scrollLeft -= speed
+      } else if (rightDist < EDGE && rightDist >= 0) {
+        // Near right edge -- scroll right
+        const speed = Math.round((1 - rightDist / EDGE) * 12)
+        container.scrollLeft += speed
+      }
+      rafId = requestAnimationFrame(scroll)
+    }
+
+    container.addEventListener('pointermove', handlePointerMove)
+    rafId = requestAnimationFrame(scroll)
+
+    return () => {
+      container.removeEventListener('pointermove', handlePointerMove)
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, [draggingCard, colDragging])
 
   // ── Build cards per column ─────────────────────────────────────────────
 
@@ -864,6 +933,12 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
       if (col.type === 'agent' && !showAgents) return false
       if (col.type === 'project' && !showProjects) return false
 
+      // Hide empty columns when toggle is on and no search is active
+      if (hideEmpty && !search.trim()) {
+        const cards = cardMap[key] || []
+        if (cards.length === 0) return false
+      }
+
       // Search filter: only show columns that have matching cards (or if no search)
       if (search.trim()) {
         const q = search.toLowerCase()
@@ -879,7 +954,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
 
       return true
     })
-  }, [colOrder, showStatus, showAgents, showProjects, search, cardMap])
+  }, [colOrder, showStatus, showAgents, showProjects, hideEmpty, search, cardMap])
 
   // Filter cards by search within visible columns
   const filteredCardMap = useMemo(() => {
@@ -927,32 +1002,15 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     }).catch(() => {})
   }, [])
 
-  // Insert a dropped card at the correct position within the destination column's taskOrder
-  const insertCardInOrder = useCallback((toCol, entry, insertIdx) => {
-    if (insertIdx === null || insertIdx === undefined) return
-    const currentCards = cardMap[toCol] || []
-    const currentOrder = taskOrders[toCol] || []
-    // Rebuild the sorted text list for the destination column (mirrors BoardColumn.sortedCards)
-    const indexMap = new Map(currentOrder.map((t, i) => [t, i]))
-    const sortedTexts = [...currentCards]
-      .sort((a, b) => {
-        const ia = indexMap.has(a.text) ? indexMap.get(a.text) : 9999
-        const ib = indexMap.has(b.text) ? indexMap.get(b.text) : 9999
-        return ia - ib
-      })
-      .map(c => c.text)
-    // Insert at the specified index
-    const clampedIdx = Math.min(insertIdx, sortedTexts.length)
-    sortedTexts.splice(clampedIdx, 0, entry.text)
-    saveTaskOrders({ ...taskOrders, [toCol]: sortedTexts })
-  }, [cardMap, taskOrders, saveTaskOrders])
-
   const handleCardDrop = useCallback((toCol, payload) => {
-    const { entry, fromCol, insertIdx } = payload
+    const { entry, fromCol, taskIndex } = payload
     setDropTargetCol(null)
     setDraggingCard(null)
 
-    if (fromCol === toCol) return
+    if (fromCol === toCol) {
+      // Within same column -- reorder not implemented at card level yet
+      return
+    }
 
     // Persist to Supabase
     persistDrop(toCol, entry)
@@ -962,14 +1020,11 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     const card = { ...entry, _id: cardId }
     const newOverrides = { ...cardOverrides, [cardId]: { toCol, card } }
     saveCardOverrides(newOverrides)
-
-    // Position the card at the correct slot in the destination column
-    insertCardInOrder(toCol, entry, insertIdx)
-  }, [cardOverrides, saveCardOverrides, persistDrop, insertCardInOrder])
+  }, [cardOverrides, saveCardOverrides, persistDrop])
 
   // Touch drag handler -- same logic as handleCardDrop but triggered by Pointer Events
   const handleCardTouchDrop = useCallback((toCol, payload) => {
-    const { entry, fromCol, insertIdx } = payload
+    const { entry, fromCol, taskIndex } = payload
     if (fromCol === toCol) return
 
     // Persist to Supabase
@@ -979,12 +1034,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     const card = { ...entry, _id: cardId }
     const newOverrides = { ...cardOverrides, [cardId]: { toCol, card } }
     saveCardOverrides(newOverrides)
-
-    // Position the card at the correct slot in the destination column
-    insertCardInOrder(toCol, entry, insertIdx)
-
     setDraggingCard(null)
-  }, [cardOverrides, saveCardOverrides, persistDrop, insertCardInOrder])
+  }, [cardOverrides, saveCardOverrides, persistDrop])
 
   const handleDragOver = useCallback((colKey) => {
     setDropTargetCol(colKey)
@@ -1034,7 +1085,14 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     ? 'calc(48px + env(safe-area-inset-top, 0px))'
     : '52px'
 
-  const bgColor = isNightMode ? '#0A0F1E' : '#0F1B2D'
+  const bgColor = isNightMode ? '#0A0F1E' : '#F0F4F8'
+  const toolbarBorderColor = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
+  const dividerColor = isNightMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.12)'
+  const colCountColor = isNightMode ? '#334155' : '#94A3B8'
+
+  // Scroll shadow gradient (fades from bg to transparent at each edge)
+  const shadowLeft = `linear-gradient(to right, ${bgColor}, transparent)`
+  const shadowRight = `linear-gradient(to left, ${bgColor}, transparent)`
 
   return (
     <div style={{
@@ -1057,7 +1115,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
         gap: 8,
         padding: isMobile ? '8px 12px' : '10px 20px',
         flexShrink: 0,
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: `1px solid ${toolbarBorderColor}`,
         overflowX: 'auto',
         scrollbarWidth: 'none',
       }}>
@@ -1080,36 +1138,43 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
           color="#22C55E"
           onClick={() => setShowProjects(s => !s)}
         />
+        <FilterPill
+          label="Hide Empty"
+          active={hideEmpty}
+          color="#64748B"
+          onClick={() => setHideEmpty(v => !v)}
+        />
 
         {/* Divider */}
-        <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+        <div style={{ width: 1, height: 20, background: dividerColor, flexShrink: 0 }} />
 
         {/* Search */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          background: 'rgba(255,255,255,0.05)',
-          border: '1.5px solid rgba(255,255,255,0.1)',
+          background: isNightMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+          border: `1.5px solid ${isNightMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'}`,
           borderRadius: 8,
           padding: '4px 10px',
           flex: '0 1 220px',
           minWidth: 120,
         }}>
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.4 }}>
-            <circle cx="6.5" cy="6.5" r="5" stroke="#fff" strokeWidth="1.5"/>
-            <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="6.5" cy="6.5" r="5" stroke={isNightMode ? '#fff' : '#000'} strokeWidth="1.5"/>
+            <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke={isNightMode ? '#fff' : '#000'} strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
           <input
+            ref={searchInputRef}
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search cards..."
+            placeholder="Search cards... (/)"
             style={{
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              color: '#F1F5F9',
+              color: isNightMode ? '#F1F5F9' : '#1E293B',
               fontFamily: "'Inter', system-ui, sans-serif",
               fontSize: 12,
               fontWeight: 400,
@@ -1139,7 +1204,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 10,
           fontWeight: 600,
-          color: '#334155',
+          color: colCountColor,
           flexShrink: 0,
           marginLeft: 'auto',
           whiteSpace: 'nowrap',
@@ -1148,62 +1213,91 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
         </span>
       </div>
 
-      {/* ── KANBAN BOARD: horizontal scroll ─────────────────────────── */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'row',
-        gap: 12,
-        padding: isMobile ? '12px' : '16px 20px',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        alignItems: 'stretch',
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'rgba(59,130,246,0.2) transparent',
-      }}>
-        {visibleColKeys.map(key => (
-          <BoardColumn
-            key={key}
-            colKey={key}
-            cards={filteredCardMap[key] || []}
-            isDropTarget={dropTargetCol === key}
-            onDragOver={handleDragOver}
-            onDrop={handleCardDrop}
-            onDragLeave={handleDragLeave}
-            onCardDragStart={setDraggingCard}
-            onCardDragEnd={() => setDraggingCard(null)}
-            draggingKey={draggingCard}
-            isVisible={true}
-            taskOrder={taskOrders[key] || []}
-            onTaskReorder={(newOrder) => {
-              const updated = { ...taskOrders, [key]: newOrder }
-              saveTaskOrders(updated)
-            }}
-            onContextMenu={(ctx) => setBoardCtxMenu({ position: { x: ctx.x, y: ctx.y }, task: entryToTask(ctx.entry, ctx.columnKey) })}
-            onTouchDrop={handleCardTouchDrop}
-            isColDragging={colDragging === key}
-            colDragInsertSide={colDragInsert?.targetKey === key ? colDragInsert.side : null}
-            onColDragStart={handleColDragStart}
-            onColDragOver={handleColDragOver}
-            onColDrop={handleColDrop}
-            onColDragEnd={handleColDragEnd}
-          />
-        ))}
+      {/* ── KANBAN BOARD: horizontal scroll with shadow indicators ───── */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* Left scroll shadow */}
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 32,
+          background: shadowLeft,
+          zIndex: 10,
+          pointerEvents: 'none',
+        }} />
+        {/* Right scroll shadow */}
+        <div style={{
+          position: 'absolute',
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 32,
+          background: shadowRight,
+          zIndex: 10,
+          pointerEvents: 'none',
+        }} />
 
-        {visibleColKeys.length === 0 && (
-          <div style={{
+        <div
+          ref={boardScrollRef}
+          style={{
             flex: 1,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#334155',
-            fontFamily: "'Inter', system-ui, sans-serif",
-            fontSize: 14,
-            fontStyle: 'italic',
+            flexDirection: 'row',
+            gap: 12,
+            padding: isMobile ? '12px' : '16px 20px',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            alignItems: 'stretch',
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(59,130,246,0.2) transparent',
+            WebkitOverflowScrolling: 'touch',
           }}>
-            {search ? 'No cards match your search' : 'No columns visible -- turn on a filter above'}
-          </div>
-        )}
+          {visibleColKeys.map(key => (
+            <BoardColumn
+              key={key}
+              colKey={key}
+              cards={filteredCardMap[key] || []}
+              isDropTarget={dropTargetCol === key}
+              onDragOver={handleDragOver}
+              onDrop={handleCardDrop}
+              onDragLeave={handleDragLeave}
+              onCardDragStart={setDraggingCard}
+              onCardDragEnd={() => setDraggingCard(null)}
+              draggingKey={draggingCard}
+              isVisible={true}
+              taskOrder={taskOrders[key] || []}
+              onTaskReorder={(newOrder) => {
+                const updated = { ...taskOrders, [key]: newOrder }
+                saveTaskOrders(updated)
+              }}
+              onContextMenu={(ctx) => setBoardCtxMenu({ position: { x: ctx.x, y: ctx.y }, task: entryToTask(ctx.entry, ctx.columnKey) })}
+              onTouchDrop={handleCardTouchDrop}
+              isColDragging={colDragging === key}
+              colDragInsertSide={colDragInsert?.targetKey === key ? colDragInsert.side : null}
+              onColDragStart={handleColDragStart}
+              onColDragOver={handleColDragOver}
+              onColDrop={handleColDrop}
+              onColDragEnd={handleColDragEnd}
+              isNightMode={isNightMode}
+            />
+          ))}
+
+          {visibleColKeys.length === 0 && (
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: isNightMode ? '#334155' : '#94A3B8',
+              fontFamily: "'Inter', system-ui, sans-serif",
+              fontSize: 14,
+              fontStyle: 'italic',
+            }}>
+              {search ? 'No cards match your search' : 'No columns visible -- turn on a filter above'}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Board card context menu -- shared Supabase-driven component */}
@@ -1220,4 +1314,3 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     </div>
   )
 }
-
