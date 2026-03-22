@@ -944,6 +944,12 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           ...prev,
           [task._id]: { toCol: payload, card: { ...task, agent: payload, _id: task._id } },
         }))
+      } else if (action === 'moveToProject' && payload) {
+        // Move card to the project column immediately (only if column exists)
+        setCardOverrides(prev => ({
+          ...prev,
+          [task._id]: { toCol: payload, card: { ...task, project: payload, _id: task._id } },
+        }))
       }
     }
     setBoardCtxMenu(null)
@@ -1070,6 +1076,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             agent: task.agent,
             project: project.name,
             done: false,
+            id: task.id || null,
             _id: `punch-${project.section}-${task.text?.slice(0, 20)}`,
           }
 

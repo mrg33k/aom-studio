@@ -565,6 +565,7 @@ export function useDataPipe(parsePunchList) {
             const proj = projectMap.get(slug)
             const isDone = task.status === 'completed' || task.status === 'done'
             const taskObj = {
+              id: task.id || null,
               text: task.text || '',
               done: isDone,
               agent: task.agent || null,
