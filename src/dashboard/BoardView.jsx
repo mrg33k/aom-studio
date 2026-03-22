@@ -170,12 +170,10 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
   const showAgentBadge = agentName && agentSlug !== columnKey
 
   const handlePointerDown = useCallback((e) => {
-    // Only primary button for mouse, any for touch
-    if (e.pointerType === 'mouse' && e.button !== 0) return
+    // Mouse drag is handled by HTML5 drag API. Pointer events are for touch/pen only.
+    if (e.pointerType === 'mouse') return
     // Capture pointer so move/up events fire even when finger leaves the card bounds
-    if (e.pointerType !== 'mouse') {
-      try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
-    }
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
     const state = pointerDragRef.current
     state.startX = e.clientX
     state.startY = e.clientY
@@ -205,11 +203,6 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
       state.active = true
       state.moved = true
       clearTimeout(state.longPressTimer)
-
-      // Create ghost from card element
-      if (cardRef.current) {
-        createTouchGhost(cardRef.current)
-      }
       onDragStart?.()
     }
 
@@ -257,7 +250,6 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
 
     if (state.active) {
       // Find drop target column
-      removeTouchGhost()
       const el = document.elementFromPoint(e.clientX, e.clientY)
       const colEl = el?.closest('[data-board-col]')
       if (colEl) {
@@ -287,7 +279,6 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
   const handlePointerCancel = useCallback(() => {
     const state = pointerDragRef.current
     clearTimeout(state.longPressTimer)
-    removeTouchGhost()
     document.querySelectorAll('[data-board-col]').forEach(c => c.removeAttribute('data-drop-hover'))
     if (state.active) {
       onDragOverCard?.(null)
@@ -307,6 +298,9 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'move'
         e.dataTransfer.setData('text/plain', JSON.stringify({ entry, fromCol: columnKey, taskIndex }))
+        // Suppress browser ghost -- line indicator is the only drag feedback
+        const img = new Image()
+        e.dataTransfer.setDragImage(img, 0, 0)
         onDragStart?.()
       }}
       onDragEnd={() => onDragEnd?.()}
@@ -325,9 +319,8 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         borderRadius: 8,
         padding: '10px 12px',
         marginBottom: 7,
-        transition: 'background 150ms ease, box-shadow 150ms ease, opacity 150ms ease',
+        transition: 'background 150ms ease, box-shadow 150ms ease',
         cursor: 'grab',
-        opacity: isDragging ? 0.4 : 1,
         userSelect: 'none',
         WebkitUserSelect: 'none',
         touchAction: 'none',

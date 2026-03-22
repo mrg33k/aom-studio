@@ -76,11 +76,12 @@ import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 // Done-task approval is handled by the pinned TASK COMPLETE box in the sidebar.
 function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify }) {
   const isDaytime = isNightMode === false
-  // Blue glass theme -- daytime = white glass, nighttime = dark glass (SimCity/Vegas energy)
-  const bg = isDaytime ? 'rgba(248,250,255,0.97)' : 'rgba(8,16,32,0.95)'
+  // Match TaskPanel dark glass theme -- same bg/text as other expanded panels
+  const bg = isDaytime ? 'rgba(18,42,75,0.97)' : 'rgba(8,16,32,0.95)'
   const border = isDaytime ? 'rgba(59,130,246,0.30)' : 'rgba(100,180,255,0.22)'
-  const textPrimary = isDaytime ? '#1E293B' : '#EDF2FA'
-  const textMuted = isDaytime ? '#64748B' : '#8BA4C4'
+  const textPrimary = isDaytime ? '#F1F5F9' : '#EDF2FA'
+  const textMuted = isDaytime ? '#94B8D8' : '#8BA4C4'
+  const divider = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.10)'
 
 
 
@@ -95,12 +96,12 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
         position: 'absolute', bottom: '100%', left: 0, right: 0,
         marginBottom: 8,
         background: bg,
-        borderRadius: '14px 14px 0 0',
-        border: `1.5px solid ${border}`,
+        borderRadius: '12px 12px 0 0',
+        border: `2px solid ${border}`,
         borderBottom: 'none',
         boxShadow: isDaytime
-          ? '0 -8px 48px rgba(59,130,246,0.12), 0 -2px 0 rgba(59,130,246,0.10), inset 0 1px 0 rgba(59,130,246,0.06)'
-          : '0 -8px 48px rgba(0,0,0,0.55), 0 -2px 0 rgba(100,180,255,0.12), inset 0 1px 0 rgba(100,180,255,0.08)',
+          ? '0 -12px 48px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,180,255,0.12)'
+          : '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(100,180,255,0.08)',
         maxHeight: 360,
         overflowY: 'auto',
         zIndex: 50,
@@ -151,51 +152,50 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
         ><X size={14} /></button>
       </div>
 
-      <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: '0 0 4px' }}>
 
-        {/* SECTION 2: Unread messages */}
+        {/* Unread messages -- row-with-divider style matching TaskPanel */}
         {unreadMsgs.map((m, idx) => (
           <motion.button
             key={m.id || `msg-${idx}`}
             onClick={() => onNavigateToAgent?.(m.agent)}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ type: 'spring', stiffness: 420, damping: 28, delay: idx * 0.04 }}
             style={{
-              background: 'rgba(59,130,246,0.08)',
-              border: '1.5px solid rgba(100,180,255,0.20)',
-              borderLeft: '3px solid rgba(59,158,255,0.50)',
-              borderRadius: 8, padding: '8px 12px',
-              display: 'flex', flexDirection: 'column', gap: 3,
-              cursor: 'pointer', textAlign: 'left', width: '100%',
-              transition: 'background 120ms ease, border-color 120ms ease',
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '4px 16px',
+              minHeight: 44,
+              borderBottom: idx < unreadMsgs.length - 1 ? `1px solid ${divider}` : 'none',
+              background: 'none', border: 'none', cursor: 'pointer',
+              textAlign: 'left', width: '100%',
+              transition: 'background 120ms ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.14)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.35)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.08)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.20)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.07)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
               <span style={{
-                fontSize: 10, fontWeight: 700, color: isDaytime ? '#2563EB' : '#5BB8FF',
+                fontSize: 10, fontWeight: 700, color: '#60A5FA',
                 fontFamily: "'JetBrains Mono', monospace",
                 letterSpacing: '0.08em', textTransform: 'uppercase',
               }}>{m.agent ? `${m.agent.charAt(0).toUpperCase()}${m.agent.slice(1)}` : 'Agent'}</span>
-              <span style={{ fontSize: 9, color: isDaytime ? '#64748B' : '#4A6080', marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace" }}>
-                new msg
-              </span>
+              <span style={{
+                fontSize: 13, color: textPrimary,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{m.text || m.preview || ''}</span>
             </div>
-            <span style={{
-              fontSize: 12, color: isDaytime ? '#1E293B' : '#EDF2FA',
-              fontFamily: "'Inter', system-ui, sans-serif",
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              maxWidth: '100%',
-            }}>{m.text || m.preview || ''}</span>
+            <span style={{ fontSize: 9, color: textMuted, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+              new
+            </span>
           </motion.button>
         ))}
 
         {unreadMsgs.length === 0 && (
           <div style={{
             padding: '16px 8px', textAlign: 'center',
-            color: '#4A6080', fontSize: 12,
+            color: textMuted, fontSize: 12,
             fontFamily: "'JetBrains Mono', monospace",
             letterSpacing: '0.06em',
           }}>-- inbox clear --</div>
