@@ -26,7 +26,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // GHOST KILL: AnimatedAgentCharacter, CharacterAnimationStyles, CanvasRoom all REMOVED
 // Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
-import CrossyBackground from './CrossyBackground.jsx'
+
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import FloatingActionButton from './components/FloatingActionButton.jsx'
@@ -11189,7 +11189,7 @@ export default function GameDashboard() {
   const { data, error, loading } = useDashboardData()
   const isMobile = useIsMobile()
   const isTablet = useIsTablet() // iPad/tablet (768-1024px): compress sidebar profile header
-  const disableThreeJs = useIsMobileOrPWA() // Kill Three.js on mobile/PWA for performance
+
 
   // C3: WebSocket connection
   const wsHook = useWebSocket({
@@ -11857,11 +11857,8 @@ export default function GameDashboard() {
       <div style={{ flex: 1, display: viewMode === 'board' ? 'none' : 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
-              {/* Game background: CrossyBackground (Three.js city park) on desktop, dark on mobile */}
-              {currentMode === 'game' && !disableThreeJs && (
-                <CrossyBackground isNightMode={isNightMode} />
-              )}
-              {currentMode === 'game' && disableThreeJs && (
+              {/* Game background: clean dark */}
+              {currentMode === 'game' && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: '#0A0F1A' }} />
               )}
               <CanvasOffice

@@ -1322,38 +1322,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const elapsed = (performance.now() - startTimeRef.current) / 1000
     const now = performance.now()
 
-    // ---- HEX GRID LINES: outlines drawn only at actual room slot positions ----
-    // Vertices copied VERBATIM from drawRoom()'s clip path (the source of truth).
-    // drawRoom uses ctx.translate(posX, posY) first, so its local (0,0) == world (ox,oy) here.
-    // DO NOT change these independently -- always sync with drawRoom clip path or rooms will ghost.
-    //
-    // Slot-based approach: iterate over the same (row, col) pairs as the room layout.
-    // This guarantees every outline perfectly aligns with its room -- no phantom cells from
-    // adjacent rows bleeding into the room cluster.
-    {
-      ctx.save()
-      ctx.strokeStyle = 'rgba(59, 130, 246, 0.18)'  // #3B82F6 visible honeycomb grid
-      ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
-
-      const S = ROOM_SIZE
-      const slots = getHexSlots(_currentTotalSlots)
-
-      ctx.beginPath()
-      for (const { row, col } of slots) {
-        const ox = ORIGIN_X + col * HEX_COL_STEP
-        const oy = ORIGIN_Y + row * HEX_ROW_STEP
-        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.28)  // upper-right
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
-        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.28)  // upper-left
-        ctx.closePath()
-      }
-      ctx.stroke()
-      ctx.restore()
-    }
-
     // ---- DRAW SNAP INDICATOR (ghost diamond at snap target during room drag) ----
     {
       const drag = dragStateRef.current
