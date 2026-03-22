@@ -4,7 +4,7 @@
 // TODO(steffen-design): Checklist priority badges (TODAY, THIS WEEK) -- review color palette against brand. Current orange/red may clash with agent status colors. Ensure visual hierarchy: high-priority tasks pop, low-priority recede. [SURVIVES: Pure UI styling. No engine dependency.]
 // TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors. [SURVIVES: UI panel. Room colors may reference engine palette but sidebar logic stays.]
 // DONE(bobby2): Task right-click context menu -- right-click any task for: mark done/undone, set priority (high/med/low), reassign agent, delete. Linear/Notion style.
-// TODO(patrik): Task drag-and-drop -- click and drag to reorder priority within a project. Drag to move between projects. Trello card energy. Use react-beautiful-dnd or @dnd-kit/sortable. [SURVIVES: Drag-and-drop is React UI logic. No engine dependency.]
+// DONE(bobby): Task drag-and-drop -- drag grip handle to reorder priority within a project. Top = highest priority. Order persists in localStorage. Uses framer-motion Reorder (already installed, zero new deps).
 // DONE(bobby2): RIGHT NOW PILL (CHECKLIST) -- Right Now section at TOP of checklist (before Today). Shows active agent tasks with avatars + progress bars + LIVE badges. Data from agent-notifications.md TASK entries + relay activity. Drag-to target for priority escalation (drag-and-drop TODO(patrik) still open). Ref: Patrik feedback Pass 21.
 // DONE(bobby): LABEL SIDEBAR COUNTS (CHECKLIST) -- All count badges now show "N left" instead of bare numbers. Sidebar (mobile + desktop), project group headers all labeled. "Done" section already labeled. Ref: Patrik feedback Pass 22.
 //
@@ -36,7 +36,7 @@
 // ==========
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, Reorder } from 'framer-motion'
 import {
   ChevronRight, ChevronDown, Check, Plus, GripVertical,
   LayoutGrid, FolderKanban, Flame, CheckCircle2,
@@ -1601,6 +1601,30 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   // Right-click context menu state
   const [contextMenu, setContextMenu] = useState(null) // { position: {x,y}, task }
 
+  // Drag-to-reorder: { [section]: string[] } -- ordered task texts per project, persists in localStorage
+  const [taskOrders, setTaskOrders] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('checklist-task-orders') || '{}') } catch { return {} }
+  })
+  const getOrderedTasks = useCallback((section, tasks) => {
+    const order = taskOrders[section]
+    if (!order || order.length === 0) return tasks
+    return [...tasks].sort((a, b) => {
+      const ai = order.indexOf(a.text)
+      const bi = order.indexOf(b.text)
+      if (ai === -1 && bi === -1) return 0
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+  }, [taskOrders])
+  const handleReorder = useCallback((section, newItems) => {
+    setTaskOrders(prev => {
+      const next = { ...prev, [section]: newItems.map(t => t.text) }
+      try { localStorage.setItem('checklist-task-orders', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
+
   const handleTaskContextMenu = useCallback((e, task) => {
     e.preventDefault()
     setContextMenu({ position: { x: e.clientX, y: e.clientY }, task })
@@ -1843,23 +1867,40 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                     </div>
                   )}
 
-                  {/* Tasks */}
-                  {!isCollapsed && (
-                    <AnimatePresence>
-                      {activeTasks.map((task, i) => (
-                        <TaskCard
-                          key={`${project.section}-${i}-${task.text.slice(0,20)}`}
-                          task={task}
-                          projectColor={project.color}
-                          onCheck={handleCheck}
-                          onContextMenu={handleTaskContextMenu}
-                          index={i}
-                          isLive={project.section === 'rightnow'}
-                          spriteAgents={spriteAgents}
-                        />
-                      ))}
+                  {/* Tasks (drag-to-reorder -- top = highest priority) */}
+                  {!isCollapsed && (() => {
+                    const orderedActive = getOrderedTasks(project.section, activeTasks)
+                    return (
+                      <>
+                        <Reorder.Group
+                          as="div"
+                          axis="y"
+                          values={orderedActive}
+                          onReorder={(items) => handleReorder(project.section, items)}
+                          style={{ listStyle: 'none', padding: 0, margin: 0 }}
+                        >
+                          {orderedActive.map((task, i) => (
+                            <Reorder.Item
+                              key={task.text}
+                              value={task}
+                              as="div"
+                              style={{ cursor: 'grab' }}
+                              whileDrag={{ scale: 1.02, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 100 }}
+                            >
+                              <TaskCard
+                                task={task}
+                                projectColor={project.color}
+                                onCheck={handleCheck}
+                                onContextMenu={handleTaskContextMenu}
+                                index={i}
+                                isLive={project.section === 'rightnow'}
+                                spriteAgents={spriteAgents}
+                              />
+                            </Reorder.Item>
+                          ))}
+                        </Reorder.Group>
 
-                      {/* Done tasks (collapsed by default within each project) */}
+                        {/* Done tasks (collapsed by default within each project) */}
                       {doneTasks.length > 0 && (
                         <div style={{ marginTop: 8, marginBottom: 16 }}>
                           <button
@@ -1894,8 +1935,9 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                           ))}
                         </div>
                       )}
-                    </AnimatePresence>
-                  )}
+                      </>
+                    )
+                  })()}
                 </div>
               )
             })}
