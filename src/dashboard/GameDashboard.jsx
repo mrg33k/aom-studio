@@ -37,6 +37,7 @@ import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib
 import FilesTab from './FilesTab.jsx'
 import { getClientId, setClientIdFromUser } from './lib/clientConfig.js'
 import { marked } from 'marked'
+import OnboardingGuide from './OnboardingGuide.jsx'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -10387,6 +10388,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
 // ---- MAIN GAME DASHBOARD ---------------------------------------------------
 export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('corner_onboarded'))
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
   const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
@@ -13036,6 +13038,11 @@ export default function GameDashboard() {
           pointer-events: none;
         }
       `}</style>
+
+      {/* Onboarding: shown on first visit. Overlays the office with Elon guiding setup. */}
+      {showOnboarding && (
+        <OnboardingGuide onComplete={() => setShowOnboarding(false)} />
+      )}
     </div>
     </RoomsWithRendersContext.Provider>
     </SpriteAgentsContext.Provider>
