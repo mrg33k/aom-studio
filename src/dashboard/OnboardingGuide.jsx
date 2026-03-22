@@ -1,8 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from './lib/supabase.js'
 
-// ---- ONBOARDING GUIDE v4 -----------------------------------------------
+// ---- ONBOARDING GUIDE v5 -----------------------------------------------
+// v5: workspace name personalization + ghost office preview + keyboard nav.
+// - Step 3 heading uses workspace name: "Your first room is ready, [Name]."
+// - Step 4 heading: "[Name] is live."
+// - Room card label uses workspace name (captured at step transition)
+// - Ghost rooms appear on step 3+: 3 faint hexes hint at team expansion
+// - Space/Enter advances non-input steps
+// - Exit animation: scale out (1.0 -> 1.06) + fade for a more cinematic feel
 // v4: typewriter text effect. Elon "talks" to you.
 // - Typing indicator (bouncing dots) shows ~430ms before each step's text
 // - Heading streams in at 13ms/char, then body at 22ms/char
@@ -38,6 +45,7 @@ const STEPS = [
   {
     id: 'agent',
     sprite: 'working',
+    // heading resolved dynamically from workspaceName at step transition
     heading: 'Your first room is ready.',
     body: "Agents live in rooms. Tap a room to chat,\nassign tasks, and get work done.",
     primaryBefore: 'Place my first room',
@@ -47,6 +55,7 @@ const STEPS = [
   {
     id: 'done',
     sprite: 'done',
+    // heading resolved dynamically from workspaceName at step transition
     heading: "Your office is live.",
     body: "Elon's on standby. Tap any room to start.\nThe team is ready when you are.",
     primary: 'Enter Corner',
@@ -73,9 +82,17 @@ const AMBIENT_HEXES = [
   { cx: 87, cy: 38, size: 54, delay: 0.23 },
 ]
 
+// Ghost room placeholders -- hint at the team that's coming
+// Appear on the agent + done steps to show "there's more space here"
+const GHOST_ROOMS = [
+  { cx: 22, cy: 42, size: 76, delay: 0.15, label: '···' },
+  { cx: 78, cy: 42, size: 76, delay: 0.28, label: '···' },
+  { cx: 50, cy: 60, size: 72, delay: 0.40, label: '···' },
+]
+
 const HEX_CLIP = 'polygon(50% 0%, 99% 25%, 99% 75%, 50% 100%, 1% 75%, 1% 25%)'
 
-function HexGrid({ roomPlaced }) {
+function HexGrid({ roomPlaced, showGhosts }) {
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
       {/* ambient */}
@@ -97,6 +114,47 @@ function HexGrid({ roomPlaced }) {
           }}
         />
       ))}
+
+      {/* ghost rooms -- hint at future agents */}
+      <AnimatePresence>
+        {showGhosts && GHOST_ROOMS.map((g, i) => (
+          <motion.div
+            key={`ghost-${i}`}
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.7 }}
+            transition={{ delay: g.delay, duration: 0.7, ease: 'easeOut' }}
+            style={{
+              position: 'absolute',
+              left: `${g.cx}%`,
+              top: `${g.cy}%`,
+              transform: 'translate(-50%, -50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <div
+              style={{
+                width: g.size,
+                height: g.size,
+                clipPath: HEX_CLIP,
+                border: '1px solid rgba(255,255,255,0.07)',
+                background: 'rgba(255,255,255,0.015)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <span style={{ color: 'rgba(255,255,255,0.1)', fontSize: 11, letterSpacing: '0.1em' }}>
+                {g.label}
+              </span>
+            </div>
+            <div style={{ width: 28, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.05)' }} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
 
       {/* spotlight hex -- destination for first room */}
       <motion.div
@@ -197,7 +255,7 @@ function Particles() {
 }
 
 // ---- Room card that falls into the spotlight hex ----------------------------
-function DroppedRoom({ placed }) {
+function DroppedRoom({ placed, roomLabel }) {
   return (
     <AnimatePresence>
       {placed && (
@@ -252,8 +310,8 @@ function DroppedRoom({ placed }) {
           </div>
 
           {/* Room label */}
-          <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: 600, letterSpacing: '0.02em' }}>
-            Elon's Office
+          <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: 600, letterSpacing: '0.02em', textAlign: 'center', maxWidth: 110 }}>
+            {roomLabel}
           </div>
 
           {/* Live dot */}
@@ -444,9 +502,28 @@ export default function OnboardingGuide({ onComplete }) {
   const [roomPlaced, setRoomPlaced] = useState(false)
   // true once the spring animation has settled (~650ms after roomPlaced)
   const [roomLanded, setRoomLanded] = useState(false)
+  // resolved heading/roomLabel -- captured at step transition so workspace name
+  // is frozen in at the moment the user moves forward (not reactive to typing)
+  const [resolvedHeading, setResolvedHeading] = useState(STEPS[0].heading)
+  const [resolvedRoomLabel, setResolvedRoomLabel] = useState("Elon's Office")
   const inputRef = useRef(null)
   const current = STEPS[step]
   const isAgentStep = current.id === 'agent'
+  const isDoneStep = current.id === 'done'
+  const showGhosts = isAgentStep || isDoneStep
+
+  // Compute resolved heading when step changes (captures workspace name at that moment)
+  useEffect(() => {
+    const name = workspaceName.trim()
+    if (current.id === 'agent') {
+      setResolvedHeading(name ? `Your first room is ready, ${name}.` : 'Your first room is ready.')
+      setResolvedRoomLabel(name || "Elon's Office")
+    } else if (current.id === 'done') {
+      setResolvedHeading(name ? `${name} is live.` : "Your office is live.")
+    } else {
+      setResolvedHeading(current.heading)
+    }
+  }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-focus name input when landing on step 1 -- delay lets bubble animate in
   useEffect(() => {
@@ -474,7 +551,7 @@ export default function OnboardingGuide({ onComplete }) {
     setTimeout(onComplete, 580)
   }
 
-  const handlePrimary = () => {
+  const handlePrimary = useCallback(() => {
     if (step < STEPS.length - 1) {
       setStep(s => s + 1)
     } else {
@@ -487,12 +564,25 @@ export default function OnboardingGuide({ onComplete }) {
       }
       dismiss()
     }
-  }
+  }, [step, workspaceName]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSkip = () => {
     localStorage.setItem('corner_onboarded', '1')
     dismiss()
   }
+
+  // Keyboard navigation: Space/Enter advances non-input steps
+  useEffect(() => {
+    if (current.input) return // let the input handle its own Enter
+    const onKey = (e) => {
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault()
+        handlePrimary()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [current.input, handlePrimary])
 
   // Resolve button label: agent step shows contextual text based on landing state
   const primaryLabel = isAgentStep
@@ -502,7 +592,7 @@ export default function OnboardingGuide({ onComplete }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: exiting ? 0 : 1 }}
+      animate={{ opacity: exiting ? 0 : 1, scale: exiting ? 1.06 : 1 }}
       transition={{ duration: 0.52, ease: 'easeInOut' }}
       style={{
         position: 'fixed',
@@ -519,7 +609,7 @@ export default function OnboardingGuide({ onComplete }) {
       }}
     >
       {/* Environment layer */}
-      <HexGrid roomPlaced={roomPlaced} />
+      <HexGrid roomPlaced={roomPlaced} showGhosts={showGhosts} />
       <Particles />
 
       {/* Radial center glow */}
@@ -537,7 +627,7 @@ export default function OnboardingGuide({ onComplete }) {
       />
 
       {/* Room card -- lands in spotlight hex on step 2 */}
-      <DroppedRoom placed={roomPlaced} />
+      <DroppedRoom placed={roomPlaced} roomLabel={resolvedRoomLabel} />
 
       {/* Content column -- Elon + speech bubble + CTA */}
       <motion.div
@@ -609,8 +699,8 @@ export default function OnboardingGuide({ onComplete }) {
               WebkitBackdropFilter: 'blur(18px)',
             }}
           >
-            {/* Typewriter speech content */}
-            <SpeechContent heading={current.heading} body={current.body} />
+            {/* Typewriter speech content -- uses resolved heading (frozen at step transition) */}
+            <SpeechContent heading={resolvedHeading} body={current.body} />
 
             {/* Workspace name input */}
             {current.input && (
@@ -720,6 +810,18 @@ export default function OnboardingGuide({ onComplete }) {
             />
           ))}
         </div>
+
+        {/* Keyboard hint -- subtle, non-intrusive */}
+        {!current.input && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.2 }}
+            transition={{ delay: 1.8, duration: 0.6 }}
+            style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.03em' }}
+          >
+            press space to continue
+          </motion.div>
+        )}
       </motion.div>
     </motion.div>
   )
