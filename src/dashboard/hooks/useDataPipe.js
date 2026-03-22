@@ -418,56 +418,73 @@ export function useDataPipe(parsePunchList) {
       // PRODUCTION: read from Supabase via API
       try {
         const clientId = getClientId()
-        const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
+
+        // cage-match A: fetch active_processes (PID-verified truth) in parallel with main status
+        const [res, activeAgentsRes] = await Promise.all([
+          fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`),
+          fetch('/api/dashboard/active-agents').catch(() => null),
+        ])
         if (!res.ok) return
         const data = await res.json()
+        const activeAgentsData = activeAgentsRes?.ok ? await activeAgentsRes.json() : null
 
         // Map Supabase data to Right Now format
-        // Right Now shows TASKS not AGENTS. Each active task gets its own card.
-        // If an agent has 3 active tasks, they show as 3 separate Right Now items.
+        // cage-match A: Right Now = PID-verified processes from active_processes table.
+        // Tasks table status is NEVER used for Right Now (it drifts). Only used for
+        // queued/todo/done task pills.
         {
           const active = []
 
-          // Primary source: active tasks from tasks table (one card per task)
+          // PRIMARY SOURCE (cage-match A): processes confirmed alive by PID check on the Mac.
+          // Each row = an agent that has a live OS process right now. Zero drift possible.
+          if (activeAgentsData?.active?.length > 0) {
+            const pidVerifiedAgents = new Set()
+            for (const proc of activeAgentsData.active) {
+              pidVerifiedAgents.add(proc.agent)
+              active.push({
+                agent:    proc.agent,
+                text:     proc.task_text || `${proc.agent} is working`,
+                isLive:   true,
+                isQueued: false,
+                taskId:   proc.task_id || null,
+                // Surface heartbeat age so the UI can show "last seen Xs ago"
+                heartbeatAge: proc.age_seconds,
+              })
+            }
+          } else if (!activeAgentsData || !activeAgentsData.tableExists) {
+            // active_processes table not yet migrated -- fall back to tasks table
+            // (old behavior, same as contender B). Remove once table is live.
+            if (data.tasks) {
+              const workingEntries = data.tasks
+                .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
+                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, isQueued: false, taskId: t.id }))
+              active.push(...workingEntries)
+
+              const queuedEntries = data.tasks
+                .filter(t => t.status === 'queued')
+                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
+              active.push(...queuedEntries)
+            }
+          }
+
+          // ALWAYS: Done tasks awaiting approval -> Inbox pill (not Right Now)
           if (data.tasks) {
-            // Working/active tasks -- agent is actually running them
-            const workingEntries = data.tasks
-              .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
-              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, isQueued: false, taskId: t.id }))
-            active.push(...workingEntries)
-
-            // Queued tasks -- waiting for an agent to pick them up
-            const queuedEntries = data.tasks
-              .filter(t => t.status === 'queued')
-              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
-            active.push(...queuedEntries)
-
-            // Done tasks awaiting approval -- agent completed, Patrik needs to approve (Inbox only)
             const doneEntries = data.tasks
               .filter(t => t.status === 'done' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
             active.push(...doneEntries)
 
-            // Todo tasks -- queued/planned tasks for the To Do pill (NOT Inbox, NOT Right Now)
+            // Todo tasks for To Do pill (never shown in Right Now)
             const todoEntries = data.tasks
               .filter(t => t.status === 'todo' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
             setTodoItems(todoEntries)
 
-            // Personal todos: Patrik's own tasks (not agent completions)
+            // Patrik's personal tasks
             const patrikEntries = data.tasks
               .filter(t => t.agent === 'patrik' && t.status !== 'completed' && t.status !== 'done')
               .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
             setPersonalTodos(patrikEntries)
-          }
-
-          // Fallback: working agents from agent_status that have NO active tasks
-          if (data.agents) {
-            const agentsWithTasks = new Set(active.map(a => a.agent))
-            const agentFallback = data.agents
-              .filter(a => a.status === 'working' && !agentsWithTasks.has(a.slug))
-              .map(a => ({ agent: a.slug, text: a.currentTask || `${a.name} is working`, isLive: true }))
-            active.push(...agentFallback)
           }
 
           setRightNow(active)
