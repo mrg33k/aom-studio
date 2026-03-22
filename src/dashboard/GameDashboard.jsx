@@ -9528,7 +9528,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         return (
           <div style={{
             flexShrink: 0,
-            borderTop: '1px solid rgba(100,180,255,0.12)',
+            borderTop: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.12)',
           }}>
             {/* Minimized slim bar */}
             <AnimatePresence mode="wait">
@@ -9544,7 +9544,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   display: 'flex', alignItems: 'center', gap: 8,
                   height: 32, padding: '0 14px',
                   borderLeft: '3px solid rgba(245,158,11,0.65)',
-                  background: 'rgba(8,16,32,0.72)',
+                  background: isDaytime ? 'rgba(242,246,252,0.92)' : 'rgba(8,16,32,0.72)',
                   cursor: 'pointer',
                   userSelect: 'none',
                 }}
@@ -9557,14 +9557,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   animation: 'statusPulse 2s ease-in-out infinite',
                 }} />
                 <span style={{
-                  fontSize: 11, fontWeight: 700, color: '#8BA4C4',
+                  fontSize: 11, fontWeight: 700, color: isDaytime ? '#4A6585' : '#8BA4C4',
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.08em', flex: 1,
                 }}>
                   {total} task{total > 1 ? 's' : ''} awaiting review
                 </span>
                 {/* Chevron up */}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8BA4C4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDaytime ? '#4A6585' : '#8BA4C4'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="18 15 12 9 6 15" />
                 </svg>
               </motion.div>
@@ -9578,7 +9578,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               style={{
               padding: '8px 16px',
               display: 'flex', flexDirection: 'column', gap: 8,
-              background: 'linear-gradient(180deg, rgba(8,16,32,0.55) 0%, transparent 100%)',
+              background: isDaytime ? 'linear-gradient(180deg, rgba(240,246,255,0.55) 0%, transparent 100%)' : 'linear-gradient(180deg, rgba(8,16,32,0.55) 0%, transparent 100%)',
             }}>
             {(() => {
               const cardKey = t.taskId || t.text
@@ -9597,14 +9597,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               exit={{ opacity: 0, y: 6, scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 420, damping: 28 }}
               style={{
-                background: 'rgba(8,16,32,0.92)',
-                border: hasFailed ? '1.5px solid rgba(239,68,68,0.65)' : '1.5px solid rgba(100,180,255,0.22)',
-                borderLeft: hasFailed ? '3px solid rgba(239,68,68,0.85)' : '3px solid rgba(100,180,255,0.55)',
+                background: isDaytime ? 'rgba(248,251,255,0.97)' : 'rgba(8,16,32,0.92)',
+                border: hasFailed ? '1.5px solid rgba(239,68,68,0.65)' : (isDaytime ? '1.5px solid rgba(59,130,246,0.20)' : '1.5px solid rgba(100,180,255,0.22)'),
+                borderLeft: hasFailed ? '3px solid rgba(239,68,68,0.85)' : (isDaytime ? '3px solid rgba(59,130,246,0.50)' : '3px solid rgba(100,180,255,0.55)'),
                 borderRadius: 12,
                 padding: '12px 16px',
                 boxShadow: hasFailed
                   ? '0 -4px 32px rgba(239,68,68,0.10), 0 2px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(239,68,68,0.08)'
-                  : '0 -4px 32px rgba(100,180,255,0.06), 0 2px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(100,180,255,0.08)',
+                  : (isDaytime ? '0 -4px 32px rgba(59,130,246,0.06), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(59,130,246,0.08)' : '0 -4px 32px rgba(100,180,255,0.06), 0 2px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(100,180,255,0.08)'),
                 position: 'relative', overflow: 'hidden',
               }}>
               {/* Inner glow strip */}
@@ -9612,7 +9612,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 position: 'absolute', top: 0, left: 0, right: 0, height: 1,
                 background: hasFailed
                   ? 'linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.35) 40%, rgba(239,68,68,0.35) 60%, transparent 100%)'
-                  : 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.28) 40%, rgba(100,180,255,0.28) 60%, transparent 100%)',
+                  : (isDaytime ? 'linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.28) 40%, rgba(59,130,246,0.28) 60%, transparent 100%)' : 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.28) 40%, rgba(100,180,255,0.28) 60%, transparent 100%)'),
                 pointerEvents: 'none',
               }} />
               {/* Header row: dot + label + (error badge if failed) + (arrows + counter if multiple) */}
@@ -9627,7 +9627,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   animation: 'statusPulse 2s ease-in-out infinite',
                 }} />
                 <span style={{
-                  fontSize: 10, fontWeight: 700, color: hasFailed ? '#F87171' : '#8BA4C4',
+                  fontSize: 10, fontWeight: 700, color: hasFailed ? '#F87171' : (isDaytime ? '#4A6585' : '#8BA4C4'),
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.10em', textTransform: 'uppercase',
                   flex: 1,
@@ -9637,35 +9637,35 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     <button
                       onClick={() => setConfirmIndex(i => (i - 1 + total) % total)}
                       style={{
-                        width: 22, height: 22, borderRadius: 6, border: '1px solid rgba(100,180,255,0.18)',
-                        cursor: 'pointer', background: 'rgba(100,180,255,0.08)',
-                        color: '#8BA4C4',
+                        width: 22, height: 22, borderRadius: 6, border: isDaytime ? '1px solid rgba(59,130,246,0.20)' : '1px solid rgba(100,180,255,0.18)',
+                        cursor: 'pointer', background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.08)',
+                        color: isDaytime ? '#4A6585' : '#8BA4C4',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 14, lineHeight: 1, padding: 0,
                         transition: 'background 80ms ease, border-color 80ms ease',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.35)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.18)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.14)' : 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(100,180,255,0.35)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.20)' : 'rgba(100,180,255,0.18)' }}
                       aria-label="Previous task"
                     >&#8249;</button>
                     <span style={{
                       fontSize: 10, fontWeight: 700,
-                      color: '#4A6080',
+                      color: isDaytime ? '#6B8AB0' : '#4A6080',
                       fontFamily: "'JetBrains Mono', monospace",
                       minWidth: 28, textAlign: 'center',
                     }}>{safeIndex + 1}/{total}</span>
                     <button
                       onClick={() => setConfirmIndex(i => (i + 1) % total)}
                       style={{
-                        width: 22, height: 22, borderRadius: 6, border: '1px solid rgba(100,180,255,0.18)',
-                        cursor: 'pointer', background: 'rgba(100,180,255,0.08)',
-                        color: '#8BA4C4',
+                        width: 22, height: 22, borderRadius: 6, border: isDaytime ? '1px solid rgba(59,130,246,0.20)' : '1px solid rgba(100,180,255,0.18)',
+                        cursor: 'pointer', background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.08)',
+                        color: isDaytime ? '#4A6585' : '#8BA4C4',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 14, lineHeight: 1, padding: 0,
                         transition: 'background 80ms ease, border-color 80ms ease',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.35)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.18)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.14)' : 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(100,180,255,0.35)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.20)' : 'rgba(100,180,255,0.18)' }}
                       aria-label="Next task"
                     >&#8250;</button>
                   </div>
@@ -9674,15 +9674,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmMinimized(true) }}
                   style={{
-                    width: 22, height: 22, borderRadius: 6, border: '1px solid rgba(100,180,255,0.18)',
-                    cursor: 'pointer', background: 'rgba(100,180,255,0.08)',
-                    color: '#8BA4C4', flexShrink: 0,
+                    width: 22, height: 22, borderRadius: 6, border: isDaytime ? '1px solid rgba(59,130,246,0.20)' : '1px solid rgba(100,180,255,0.18)',
+                    cursor: 'pointer', background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.08)',
+                    color: isDaytime ? '#4A6585' : '#8BA4C4', flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     padding: 0,
                     transition: 'background 80ms ease, border-color 80ms ease',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.35)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(100,180,255,0.18)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.14)' : 'rgba(100,180,255,0.18)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(100,180,255,0.35)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(100,180,255,0.08)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.20)' : 'rgba(100,180,255,0.18)' }}
                   aria-label="Minimize confirmation box"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -9692,22 +9692,22 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               </div>
               {/* Task text -- data readout panel */}
               <div style={{
-                fontSize: 14, fontWeight: 500, color: '#EDF2FA',
+                fontSize: 14, fontWeight: 500, color: isDaytime ? '#1E2D3D' : '#EDF2FA',
                 fontFamily: "'Inter', system-ui, sans-serif",
                 lineHeight: 1.5, marginBottom: 10,
                 padding: '8px 12px',
-                background: 'rgba(100,180,255,0.04)',
+                background: isDaytime ? 'rgba(59,130,246,0.04)' : 'rgba(100,180,255,0.04)',
                 borderRadius: 8,
-                border: '1px solid rgba(100,180,255,0.12)',
-                boxShadow: 'inset 0 1px 0 rgba(100,180,255,0.06)',
+                border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.12)',
+                boxShadow: isDaytime ? 'inset 0 1px 0 rgba(59,130,246,0.06)' : 'inset 0 1px 0 rgba(100,180,255,0.06)',
                 position: 'relative',
               }}>
                 <span style={{
                   position: 'absolute', top: -8, left: 10,
-                  fontSize: 9, fontWeight: 700, color: '#3B9EFF',
+                  fontSize: 9, fontWeight: 700, color: isDaytime ? '#2563EB' : '#3B9EFF',
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.08em', textTransform: 'uppercase',
-                  background: 'rgba(8,16,32,0.92)', padding: '0 4px',
+                  background: isDaytime ? 'rgba(248,251,255,0.97)' : 'rgba(8,16,32,0.92)', padding: '0 4px',
                 }}>task</span>
                 {t.text}
               </div>
