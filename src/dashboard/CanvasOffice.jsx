@@ -1361,11 +1361,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         // !! DO NOT CHANGE !! Vertices copied VERBATIM from drawRoom() SOURCE OF TRUTH.
         // Rooms define the shape -- grid follows. Never change these independently.
         ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top center (roof peak)
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.28)  // upper-right  !! DO NOT CHANGE
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right  !! DO NOT CHANGE
         ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right  !! DO NOT CHANGE
         ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom center
         ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left   !! DO NOT CHANGE
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.28)  // upper-left   !! DO NOT CHANGE
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left   !! DO NOT CHANGE
         ctx.closePath()
       }
       ctx.stroke()
@@ -1604,11 +1604,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.beginPath()
         // !! DO NOT CHANGE !! Padded version derived from drawRoom() SOURCE OF TRUTH shape.
         ctx.moveTo(S * 0.50, S * 0.00 - pad)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.28 - pad * 0.5)  // !! DO NOT CHANGE
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.31 - pad * 0.5)  // !! DO NOT CHANGE
         ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.72 + pad * 0.5)  // !! DO NOT CHANGE
         ctx.lineTo(S * 0.50, S * 0.99 + pad)
         ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.72 + pad * 0.5)  // !! DO NOT CHANGE
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.28 - pad * 0.5)  // !! DO NOT CHANGE
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.31 - pad * 0.5)  // !! DO NOT CHANGE
         ctx.closePath()
         // Animated dashed stroke
         const dashLen = 14
@@ -1665,11 +1665,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           // !! DO NOT CHANGE !! Clip to neighbor's hex -- must match drawRoom() SOURCE OF TRUTH.
           ctx.beginPath()
           ctx.moveTo(S * 0.50, S * 0.00)  // top center (roof peak)
-          ctx.lineTo(S * 0.99, S * 0.28)  // upper-right  !! DO NOT CHANGE
+          ctx.lineTo(S * 0.99, S * 0.31)  // upper-right  !! DO NOT CHANGE
           ctx.lineTo(S * 0.99, S * 0.72)  // lower-right  !! DO NOT CHANGE
           ctx.lineTo(S * 0.50, S * 0.99)  // bottom center
           ctx.lineTo(S * 0.01, S * 0.72)  // lower-left   !! DO NOT CHANGE
-          ctx.lineTo(S * 0.01, S * 0.28)  // upper-left   !! DO NOT CHANGE
+          ctx.lineTo(S * 0.01, S * 0.31)  // upper-left   !! DO NOT CHANGE
           ctx.closePath()
           ctx.clip()
           ctx.globalAlpha = 0.85 // slightly translucent so visitors look like guests
@@ -1847,11 +1847,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.beginPath()
     const S = ROOM_SIZE
     ctx.moveTo(S * 0.50, S * 0.00)  // top center (roof peak)
-    ctx.lineTo(S * 0.99, S * 0.28)  // upper-right  !! DO NOT CHANGE
+    ctx.lineTo(S * 0.99, S * 0.31)  // upper-right  !! DO NOT CHANGE
     ctx.lineTo(S * 0.99, S * 0.72)  // lower-right  !! DO NOT CHANGE
     ctx.lineTo(S * 0.50, S * 0.99)  // bottom center
     ctx.lineTo(S * 0.01, S * 0.72)  // lower-left   !! DO NOT CHANGE
-    ctx.lineTo(S * 0.01, S * 0.28)  // upper-left   !! DO NOT CHANGE
+    ctx.lineTo(S * 0.01, S * 0.31)  // upper-left   !! DO NOT CHANGE
     ctx.closePath()
     ctx.clip()
 
