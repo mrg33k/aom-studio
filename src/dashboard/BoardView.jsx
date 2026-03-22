@@ -114,6 +114,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
     pointerId: null,
     longPressTimer: null,
     inColInsertIdx: null,
+    crossColInsertIdx: null, // insert position in the TARGET column during cross-column drag
   })
 
   // Only show agent badge if it differs from the column we're in
@@ -175,7 +176,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         const allCols = document.querySelectorAll('[data-board-col]')
         allCols.forEach(c => c.setAttribute('data-drop-hover', c === colEl ? '1' : '0'))
 
-        // Compute within-column insert position for reorder feedback
+        // Compute insert position for same-column reorder OR cross-column drop target
         const toCol = colEl?.getAttribute('data-board-col')
         if (toCol === columnKey) {
           const cardEls = [...(colEl?.querySelectorAll('[data-board-card-idx]') || [])]
@@ -188,9 +189,25 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
             }
           }
           state.inColInsertIdx = insertIdx
+          state.crossColInsertIdx = null
           onDragOverCard?.(insertIdx)
+        } else if (colEl) {
+          // Cross-column: compute insert position in target column for correct card placement on drop
+          const cardEls = [...(colEl.querySelectorAll('[data-board-card-idx]') || [])]
+          let crossIdx = cardEls.length
+          for (const cardEl of cardEls) {
+            const r = cardEl.getBoundingClientRect()
+            if (e.clientY < r.top + r.height / 2) {
+              crossIdx = parseInt(cardEl.getAttribute('data-board-card-idx'))
+              break
+            }
+          }
+          state.crossColInsertIdx = crossIdx
+          state.inColInsertIdx = null
+          onDragOverCard?.(null)
         } else {
           state.inColInsertIdx = null
+          state.crossColInsertIdx = null
           onDragOverCard?.(null)
         }
       }
@@ -210,8 +227,8 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         const toCol = colEl.getAttribute('data-board-col')
         if (toCol) {
           if (toCol !== columnKey) {
-            // Cross-column drop
-            onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex })
+            // Cross-column drop -- pass the insert position so card lands at the right slot
+            onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex, insertIdx: state.crossColInsertIdx })
           } else {
             // Same-column: within-column reorder
             onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex, insertIdx: state.inColInsertIdx })
@@ -228,6 +245,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
     state.moved = false
     state.pointerId = null
     state.inColInsertIdx = null
+    state.crossColInsertIdx = null
   }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd, onDragOverCard])
 
   const handlePointerCancel = useCallback(() => {
@@ -243,6 +261,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
     state.moved = false
     state.pointerId = null
     state.inColInsertIdx = null
+    state.crossColInsertIdx = null
   }, [onDragEnd, onDragOverCard])
 
   return (
@@ -451,7 +470,8 @@ function BoardColumn({
         texts.splice(insertAt, 0, payload.entry.text)
         onTaskReorder?.(texts)
       } else {
-        onDrop(colKey, payload)
+        // Cross-column drop -- pass cardInsertIdx so parent can position card correctly
+        onDrop(colKey, { ...payload, insertIdx: cardInsertIdx })
       }
     } catch {}
     setCardInsertIdx(null)
@@ -907,15 +927,32 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     }).catch(() => {})
   }, [])
 
+  // Insert a dropped card at the correct position within the destination column's taskOrder
+  const insertCardInOrder = useCallback((toCol, entry, insertIdx) => {
+    if (insertIdx === null || insertIdx === undefined) return
+    const currentCards = cardMap[toCol] || []
+    const currentOrder = taskOrders[toCol] || []
+    // Rebuild the sorted text list for the destination column (mirrors BoardColumn.sortedCards)
+    const indexMap = new Map(currentOrder.map((t, i) => [t, i]))
+    const sortedTexts = [...currentCards]
+      .sort((a, b) => {
+        const ia = indexMap.has(a.text) ? indexMap.get(a.text) : 9999
+        const ib = indexMap.has(b.text) ? indexMap.get(b.text) : 9999
+        return ia - ib
+      })
+      .map(c => c.text)
+    // Insert at the specified index
+    const clampedIdx = Math.min(insertIdx, sortedTexts.length)
+    sortedTexts.splice(clampedIdx, 0, entry.text)
+    saveTaskOrders({ ...taskOrders, [toCol]: sortedTexts })
+  }, [cardMap, taskOrders, saveTaskOrders])
+
   const handleCardDrop = useCallback((toCol, payload) => {
-    const { entry, fromCol, taskIndex } = payload
+    const { entry, fromCol, insertIdx } = payload
     setDropTargetCol(null)
     setDraggingCard(null)
 
-    if (fromCol === toCol) {
-      // Within same column -- reorder not implemented at card level yet
-      return
-    }
+    if (fromCol === toCol) return
 
     // Persist to Supabase
     persistDrop(toCol, entry)
@@ -925,11 +962,14 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     const card = { ...entry, _id: cardId }
     const newOverrides = { ...cardOverrides, [cardId]: { toCol, card } }
     saveCardOverrides(newOverrides)
-  }, [cardOverrides, saveCardOverrides, persistDrop])
+
+    // Position the card at the correct slot in the destination column
+    insertCardInOrder(toCol, entry, insertIdx)
+  }, [cardOverrides, saveCardOverrides, persistDrop, insertCardInOrder])
 
   // Touch drag handler -- same logic as handleCardDrop but triggered by Pointer Events
   const handleCardTouchDrop = useCallback((toCol, payload) => {
-    const { entry, fromCol, taskIndex } = payload
+    const { entry, fromCol, insertIdx } = payload
     if (fromCol === toCol) return
 
     // Persist to Supabase
@@ -939,8 +979,12 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     const card = { ...entry, _id: cardId }
     const newOverrides = { ...cardOverrides, [cardId]: { toCol, card } }
     saveCardOverrides(newOverrides)
+
+    // Position the card at the correct slot in the destination column
+    insertCardInOrder(toCol, entry, insertIdx)
+
     setDraggingCard(null)
-  }, [cardOverrides, saveCardOverrides, persistDrop])
+  }, [cardOverrides, saveCardOverrides, persistDrop, insertCardInOrder])
 
   const handleDragOver = useCallback((colKey) => {
     setDropTargetCol(colKey)
