@@ -4037,8 +4037,8 @@ function ShortcutsOverlay({ onClose }) {
             </span>
             <span style={{
               fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
-              color: '#6B7280', background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              color: '#8BA4C4', background: 'rgba(59,130,246,0.10)',
+              border: '1px solid rgba(59,130,246,0.20)',
               borderRadius: 4, padding: '2px 8px',
             }}>
               {s.key}
@@ -5604,8 +5604,8 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                         fontFamily: "'Inter', system-ui, sans-serif", lineHeight: 1.55,
                         ...(isUser
                           ? { background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.20)', borderRadius: '14px 4px 14px 14px', color: PALETTE.signText }
-                          : { background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%)',
-                              border: `1px solid ${msg.streaming ? agentColor + '30' : 'rgba(255, 255, 255, 0.08)'}`,
+                          : { background: 'rgba(15,25,50,0.85)',
+                              border: `1px solid ${msg.streaming ? agentColor + '30' : 'rgba(59,130,246,0.18)'}`,
                               borderRadius: '4px 14px 14px 14px', color: '#F0ECE6', transition: 'border-color 300ms ease' }
                         ),
                       }}>
@@ -12819,8 +12819,8 @@ export default function GameDashboard() {
           opacity: 0.7;
         }
         .md-msg code {
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(59,130,246,0.12);
+          border: 1px solid rgba(59,130,246,0.22);
           border-radius: 4px;
           padding: 1px 5px;
           font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -12873,11 +12873,11 @@ export default function GameDashboard() {
           font-size: 12px;
         }
         .md-msg th {
-          background: rgba(255,255,255,0.08);
+          background: rgba(59,130,246,0.14);
           color: #fff;
           font-weight: 600;
           padding: 5px 8px;
-          border: 1px solid rgba(255,255,255,0.1);
+          border: 1px solid rgba(59,130,246,0.25);
           text-align: left;
         }
         .md-msg td {

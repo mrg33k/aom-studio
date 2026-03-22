@@ -47,6 +47,7 @@ import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import { useLongPress } from './hooks/useLongPress.js'
 import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
 import { supabase } from './lib/supabase.js'
 import { parsePunchList, useSectionMappings, useRecencyWeights } from './components/HUDConstants.jsx'
 
@@ -1445,7 +1446,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
         {/* Progress bar */}
         <div style={{
           width: 80, height: 8, borderRadius: 4,
-          background: 'rgba(255,255,255,0.06)',
+          background: 'rgba(59,130,246,0.10)',
         }}>
           <div style={{
             width: `${progress}%`, height: '100%',
