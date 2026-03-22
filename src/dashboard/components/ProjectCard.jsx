@@ -309,6 +309,24 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {allDone && !isCompletedFeed && (
         <CheckCircle2 size={13} color={project.color} strokeWidth={2.5} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}44)` }} />
       )}
+
+      {/* Count badge for completed feed pill */}
+      {isCompletedFeed && totalTasks > 0 && (
+        <span style={{
+          fontFamily: "'Inter Tight', JetBrains Mono, monospace",
+          fontSize: 11, fontWeight: 800,
+          color: project.color,
+          background: `${project.color}1A`,
+          padding: '2px 7px', borderRadius: 8,
+          letterSpacing: '-0.01em',
+          lineHeight: 1,
+          border: `1.5px solid ${project.color}35`,
+          minWidth: 20, textAlign: 'center',
+          whiteSpace: 'nowrap',
+        }}>
+          {totalTasks}
+        </span>
+      )}
     </motion.button>
   )
 }

@@ -302,12 +302,23 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
           }}>
             {project.name}
           </span>
-          <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 600,
-            color: tpTextMuted, flexShrink: 0,
-          }}>
-            {doneTasks}/{totalTasks}
-          </span>
+          {project.isCompletedFeed ? (
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600,
+              color: project.color, flexShrink: 0,
+              background: `${project.color}18`, padding: '2px 8px', borderRadius: 5,
+              letterSpacing: '0.04em',
+            }}>
+              {totalTasks} DONE
+            </span>
+          ) : (
+            <span style={{
+              fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 600,
+              color: tpTextMuted, flexShrink: 0,
+            }}>
+              {doneTasks}/{totalTasks}
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -533,10 +544,10 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
               onMouseLeave={() => setHoveredKey(null)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                padding: '4px 8px',
-                minHeight: 44,
+                padding: project.isCompletedFeed ? '2px 8px' : '4px 8px',
+                minHeight: project.isCompletedFeed ? 36 : 44,
                 borderBottom: i < orderedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
-                opacity: isDone && !isDoneAwaiting ? 0.45 : isDraggingThis ? 0.5 : 1,
+                opacity: project.isCompletedFeed ? 0.85 : isDone && !isDoneAwaiting ? 0.45 : isDraggingThis ? 0.5 : 1,
                 transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
                 touchAction: 'pan-y',
                 // Yellow background for done-awaiting-approval tasks
@@ -562,8 +573,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 borderRadius: (isDoneAwaiting || isApproved) ? 6 : 0,
               }}
             >
-              {/* Drag handle -- visible on mouse hover; always at low opacity on touch so users know it's draggable */}
-              {!task.isLive && (
+              {/* Drag handle -- hidden for completed feed (log, not reorderable) */}
+              {!task.isLive && !project.isCompletedFeed && (
                 <div style={{
                   flexShrink: 0,
                   opacity: hoveredKey === taskKey || isDraggingThis ? 0.45 : 0.12,
@@ -576,25 +587,25 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 </div>
               )}
 
-              {/* Checkbox - CLICKABLE (44px touch target via wrapper div) */}
+              {/* Checkbox - CLICKABLE (44px touch target via wrapper div). Non-interactive for completed feed log. */}
               <div style={{ width: 24, height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <motion.div
-                  onClick={() => {
+                  onClick={project.isCompletedFeed ? undefined : () => {
                     if (task.isManual) {
                       onToggleManualTask?.(task.manualId)
                     } else {
                       toggleTask(task, task.origIdx)
                     }
                   }}
-                  whileHover={{ scale: 1.15 }}
-                  whileTap={{ scale: 0.85 }}
+                  whileHover={project.isCompletedFeed ? undefined : { scale: 1.15 }}
+                  whileTap={project.isCompletedFeed ? undefined : { scale: 0.85 }}
                   style={{
                     width: 20, height: 20, borderRadius: 5, flexShrink: 0,
                     border: isDone ? 'none' : `1.5px solid ${tpCheckboxBorder}`,
                     background: isDone ? (task.autoChecked ? '#22C55E' : project.color) : tpCheckboxBg,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 150ms ease',
-                    cursor: 'pointer',
+                    cursor: project.isCompletedFeed ? 'default' : 'pointer',
                     opacity: isSaving ? 0.5 : 1,
                     boxShadow: task.autoChecked ? '0 0 8px rgba(34,197,94,0.4)' : 'none',
                   }}>
@@ -611,9 +622,9 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 }}
                 style={{
                   fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 400,
-                  color: isDone ? tpTextMuted : tpTextPrimary,
+                  color: project.isCompletedFeed ? tpTextPrimary : isDone ? tpTextMuted : tpTextPrimary,
                   lineHeight: 1.4,
-                  textDecoration: isDone ? 'line-through' : 'none',
+                  textDecoration: project.isCompletedFeed ? 'none' : isDone ? 'line-through' : 'none',
                   flex: 1,
                   minWidth: 0,
                   wordBreak: 'break-word',
