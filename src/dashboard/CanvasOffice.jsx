@@ -1338,9 +1338,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const now = performance.now()
 
     // ---- HEX GRID LINES: outlines drawn only at actual room slot positions ----
-    // Vertices copied VERBATIM from drawRoom()'s clip path (the source of truth).
+    // SOURCE OF TRUTH: These vertices match the room PNG geometry.
+    // DO NOT CHANGE without re-rendering all room images.
+    // Vertices copied VERBATIM from drawRoom()'s clip path (rooms define the shape, grid follows).
     // drawRoom uses ctx.translate(posX, posY) first, so its local (0,0) == world (ox,oy) here.
-    // DO NOT change these independently -- always sync with drawRoom clip path or rooms will ghost.
     //
     // Slot-based approach: iterate over the same (row, col) pairs as the room layout.
     // This guarantees every outline perfectly aligns with its room -- no phantom cells from
@@ -1357,12 +1358,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       for (const { row, col } of slots) {
         const ox = ORIGIN_X + col * HEX_COL_STEP
         const oy = ORIGIN_Y + row * HEX_ROW_STEP
-        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.28)  // upper-right
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
-        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.28)  // upper-left
+        ctx.moveTo(ox + S * 0.50, oy + S * 0.05)  // top
+        ctx.lineTo(ox + S * 0.95, oy + S * 0.28)  // upper-right
+        ctx.lineTo(ox + S * 0.95, oy + S * 0.75)  // lower-right
+        ctx.lineTo(ox + S * 0.50, oy + S * 0.95)  // bottom
+        ctx.lineTo(ox + S * 0.05, oy + S * 0.75)  // lower-left
+        ctx.lineTo(ox + S * 0.05, oy + S * 0.28)  // upper-left
         ctx.closePath()
       }
       ctx.stroke()
@@ -1599,12 +1600,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.save()
         ctx.translate(posX, posY + celebOffsetY)
         ctx.beginPath()
-        ctx.moveTo(S * 0.50, -pad)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.28 - pad * 0.5)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.72 + pad * 0.5)
-        ctx.lineTo(S * 0.50, S * 0.99 + pad)
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.72 + pad * 0.5)
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.28 - pad * 0.5)
+        ctx.moveTo(S * 0.50, S * 0.05 - pad)
+        ctx.lineTo(S * 0.95 + pad * 0.87, S * 0.28 - pad * 0.5)
+        ctx.lineTo(S * 0.95 + pad * 0.87, S * 0.75 + pad * 0.5)
+        ctx.lineTo(S * 0.50, S * 0.95 + pad)
+        ctx.lineTo(S * 0.05 - pad * 0.87, S * 0.75 + pad * 0.5)
+        ctx.lineTo(S * 0.05 - pad * 0.87, S * 0.28 - pad * 0.5)
         ctx.closePath()
         // Animated dashed stroke
         const dashLen = 14
@@ -1658,14 +1659,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           }
           ctx.save()
           ctx.translate(nPosX, nPosY + nCelebOffsetY)
-          // Clip to neighbor's hex (tightened to match source-cropped content)
+          // Clip to neighbor's hex -- matches room PNG geometry (SOURCE OF TRUTH)
           ctx.beginPath()
-          ctx.moveTo(S * 0.50, S * 0.03)
-          ctx.lineTo(S * 0.97, S * 0.27)
-          ctx.lineTo(S * 0.97, S * 0.76)
-          ctx.lineTo(S * 0.50, S * 0.97)
-          ctx.lineTo(S * 0.03, S * 0.76)
-          ctx.lineTo(S * 0.03, S * 0.27)
+          ctx.moveTo(S * 0.50, S * 0.05)
+          ctx.lineTo(S * 0.95, S * 0.28)
+          ctx.lineTo(S * 0.95, S * 0.75)
+          ctx.lineTo(S * 0.50, S * 0.95)
+          ctx.lineTo(S * 0.05, S * 0.75)
+          ctx.lineTo(S * 0.05, S * 0.28)
           ctx.closePath()
           ctx.clip()
           ctx.globalAlpha = 0.85 // slightly translucent so visitors look like guests
@@ -1831,17 +1832,18 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.save()
     ctx.translate(offsetX, offsetY)
 
-    // Hex clip path -- SOURCE OF TRUTH for all hex geometry in this file.
-    // The hex grid lines (line ~1327) copy these EXACT vertex ratios verbatim.
+    // SOURCE OF TRUTH: These vertices match the room PNG geometry.
+    // DO NOT CHANGE without re-rendering all room images.
+    // The hex grid lines copy these EXACT vertex ratios verbatim.
     // If you change these, update the grid section too or rooms will ghost.
     ctx.beginPath()
     const S = ROOM_SIZE
-    ctx.moveTo(S * 0.50, S * 0.00)  // top
-    ctx.lineTo(S * 0.99, S * 0.28)  // upper-right
-    ctx.lineTo(S * 0.99, S * 0.72)  // lower-right
-    ctx.lineTo(S * 0.50, S * 0.99)  // bottom
-    ctx.lineTo(S * 0.01, S * 0.72)  // lower-left
-    ctx.lineTo(S * 0.01, S * 0.28)  // upper-left
+    ctx.moveTo(S * 0.50, S * 0.05)  // top
+    ctx.lineTo(S * 0.95, S * 0.28)  // upper-right
+    ctx.lineTo(S * 0.95, S * 0.75)  // lower-right
+    ctx.lineTo(S * 0.50, S * 0.95)  // bottom
+    ctx.lineTo(S * 0.05, S * 0.75)  // lower-left
+    ctx.lineTo(S * 0.05, S * 0.28)  // upper-left
     ctx.closePath()
     ctx.clip()
 
