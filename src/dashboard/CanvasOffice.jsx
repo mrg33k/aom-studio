@@ -1322,69 +1322,35 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const elapsed = (performance.now() - startTimeRef.current) / 1000
     const now = performance.now()
 
-    // ---- HEX GRID LINES: seamless background honeycomb extending to viewport bounds ----
+    // ---- HEX GRID LINES: outlines drawn only at actual room slot positions ----
     // Vertices copied VERBATIM from drawRoom()'s clip path (the source of truth).
     // drawRoom uses ctx.translate(posX, posY) first, so its local (0,0) == world (ox,oy) here.
     // DO NOT change these independently -- always sync with drawRoom clip path or rooms will ghost.
     //
-    // Vertex ratios (verbatim from drawRoom clip path):
-    //   top=(0.50,0.00), upper-right=(0.99,0.28), lower-right=(0.99,0.72),
-    //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.28)
-    //
-    // Grid extends beyond room cluster to fill the full visible viewport.
-    // Uses viewport bounds (in world space) to determine row/col iteration range.
+    // Slot-based approach: iterate over the same (row, col) pairs as the room layout.
+    // This guarantees every outline perfectly aligns with its room -- no phantom cells from
+    // adjacent rows bleeding into the room cluster.
     {
-      const viewL = -cam.x / cam.zoom
-      const viewT = -cam.y / cam.zoom
-      const viewR = viewL + size.w / cam.zoom
-      const viewB = viewT + size.h / cam.zoom
-
       ctx.save()
       ctx.strokeStyle = 'rgba(59, 130, 246, 0.18)'  // #3B82F6 visible honeycomb grid
       ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
 
       const S = ROOM_SIZE
+      const slots = getHexSlots(_currentTotalSlots)
 
-      // Determine row range from viewport bounds.
-      // hexPosition y = ORIGIN_Y + row * HEX_ROW_STEP
-      // A cell's bounding box spans [oy, oy + S] => visible when oy < viewB and oy + S > viewL
-      const rowMin = Math.floor((viewT - ORIGIN_Y - S) / HEX_ROW_STEP) - 1
-      const rowMax = Math.ceil((viewB - ORIGIN_Y) / HEX_ROW_STEP) + 1
-
-      for (let row = rowMin; row <= rowMax; row++) {
+      ctx.beginPath()
+      for (const { row, col } of slots) {
+        const ox = ORIGIN_X + col * HEX_COL_STEP
         const oy = ORIGIN_Y + row * HEX_ROW_STEP
-
-        // Each row uses cols with the correct parity (even rows: even cols, odd rows: odd cols)
-        // matching generateHexSlots. Column step = HEX_COL_STEP * 2 (columns skip by 2).
-        // hexPosition x = ORIGIN_X + col * HEX_COL_STEP
-        // Determine parity for this row
-        const parity = ((row % 2) + 2) % 2  // 0 for even rows, 1 for odd rows
-
-        // Find col range: cell visible when ox < viewR and ox + S > viewL
-        const colMinRaw = Math.floor((viewL - ORIGIN_X - S) / HEX_COL_STEP) - 2
-        const colMaxRaw = Math.ceil((viewR - ORIGIN_X) / HEX_COL_STEP) + 2
-
-        // Align colMin to correct parity
-        let colMin = colMinRaw
-        if (((colMin % 2) + 2) % 2 !== parity) colMin += 1
-
-        for (let col = colMin; col <= colMaxRaw; col += 2) {
-          const ox = ORIGIN_X + col * HEX_COL_STEP
-
-          // Viewport cull: skip if bounding box entirely off-screen
-          if (ox + S < viewL || ox > viewR || oy + S < viewT || oy > viewB) continue
-
-          ctx.beginPath()
-          ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
-          ctx.lineTo(ox + S * 0.99, oy + S * 0.28)  // upper-right
-          ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
-          ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
-          ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
-          ctx.lineTo(ox + S * 0.01, oy + S * 0.28)  // upper-left
-          ctx.closePath()
-          ctx.stroke()
-        }
+        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.28)  // upper-right
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
+        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.28)  // upper-left
+        ctx.closePath()
       }
+      ctx.stroke()
       ctx.restore()
     }
 
