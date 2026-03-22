@@ -3006,6 +3006,14 @@ function MobileFixedInput({
   // clipped by iOS Safari and focus events are blocked. Portaling to document.body
   // means there are ZERO overflow/transform/will-change ancestors. iOS Safari can
   // route keyboard focus to this input without any ancestor interference.
+  //
+  // Wrestlemania A fix: transform:translateZ(0) forces this element into its own
+  // GPU compositing layer. MobileDrawer has willChange:'transform' (composited).
+  // iOS Safari has a known bug where a composited element can steal touch/focus
+  // routing from a higher-z-index element that is NOT composited. By making this
+  // portal composited too, iOS correctly uses z-index (999 > 38/200) to route all
+  // focus and touch events here. Without translateZ(0), iOS may silently ignore
+  // taps on the portal input even though it visually appears on top.
   return createPortal(
     <div
       style={{
@@ -3014,6 +3022,7 @@ function MobileFixedInput({
         right: 0,
         bottom: kbOffset,
         zIndex: 999,
+        transform: 'translateZ(0)', // force own compositing layer (Wrestlemania A fix)
         background: isNightMode
           ? 'rgba(10, 15, 30, 0.98)'
           : 'rgba(10, 15, 30, 0.98)',
