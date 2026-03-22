@@ -3072,12 +3072,20 @@ function MobileFixedInput({
   const isUserTypingRef = useRef(false)
   const color = agentColor || '#6B7280'
 
-  // Track keyboard height via visualViewport API
+  // Track keyboard height via visualViewport API.
+  // BUG FIX: In iPhone PWA standalone mode, window.visualViewport.height can be ~75px
+  // less than window.innerHeight even with NO keyboard open (safe-area-inset + system
+  // reservations in standalone mode). Without a threshold, kbOffset = ~75 which shifts
+  // the chat input UP 75px, revealing the GameHUD bar below it as a "black gap".
+  // Fix: only count a reduction as a real keyboard if it exceeds 100px. Real keyboards
+  // are 200px+. Safe area (34px) and input assistant bar (~44px) are both below 100px.
+  // This aligns with MobileDrawer's keyboard check: kbOpen = vvh < wh - 50.
   useEffect(() => {
     if (!window.visualViewport) return
     const handler = () => {
-      const kbHeight = Math.max(0, window.innerHeight - window.visualViewport.height)
-      setKbOffset(kbHeight)
+      const reduction = window.innerHeight - window.visualViewport.height
+      // 100px threshold: ignore safe-area shrinkage (34px) and input assistant bars (~44px)
+      setKbOffset(reduction > 100 ? reduction : 0)
     }
     window.visualViewport.addEventListener('resize', handler)
     window.visualViewport.addEventListener('scroll', handler)
