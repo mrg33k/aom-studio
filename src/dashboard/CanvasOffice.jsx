@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
 import { ALL_ROOMS, PROJECTS } from './gridSpec.js'
+import { supabase } from './lib/supabase.js'
 
 // CanvasOffice: MULTI-ROOM hex tessellation with wave crossfade transitions
 //
@@ -188,9 +189,13 @@ function getRoomImageSources(id) {
 }
 
 // ---- CHARACTER LAYER SOURCES ----
-const ROOMS_WITH_CHARACTERS = [
+// Fallback used before Supabase resolves. Source of truth: agent_status.has_sprite in Supabase.
+const ROOMS_WITH_CHARACTERS_FALLBACK = new Set([
   'elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'jacob', 'tony', 'colton', 'elmo', 'paige',
-]
+])
+// Module-level mutable set so ensureRoomImages() always reads the latest value.
+// Updated by the CanvasOffice component once the Supabase fetch resolves.
+let _roomsWithChars = ROOMS_WITH_CHARACTERS_FALLBACK
 
 // Preload room images. For project/custom rooms, we draw a colored hex placeholder on canvas.
 const roomImages = {}
@@ -206,7 +211,7 @@ function ensureRoomImages(id) {
     idleImg.crossOrigin = 'anonymous'
     idleImg.src = sources.idle
     let charImg = null
-    if (ROOMS_WITH_CHARACTERS.includes(id)) {
+    if (_roomsWithChars.has(id)) {
       charImg = new Image()
       charImg.crossOrigin = 'anonymous'
       charImg.src = `/corner/${id}-room/character-layer.png`
@@ -949,6 +954,24 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   const [toast, setToast] = useState(null)
   const toastTimerRef = useRef(null)
 
+  // ---- ROOMS WITH CHARACTERS (Supabase-driven) ----
+  // Ref so the draw loop always reads the latest without triggering re-renders.
+  const roomsWithCharsRef = useRef(_roomsWithChars)
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('agent_status').select('slug').eq('has_sprite', true)
+      .then(({ data, error }) => {
+        if (error || !data?.length) return
+        const updated = new Set(data.map(r => r.slug))
+        _roomsWithChars = updated
+        roomsWithCharsRef.current = updated
+        // Clear cached room images for any newly-added agents so ensureRoomImages re-runs with the char layer
+        for (const slug of updated) {
+          if (!ROOMS_WITH_CHARACTERS_FALLBACK.has(slug)) delete roomImages[slug]
+        }
+      })
+  }, [])
+
   // ---- CHARACTER WALK STATE ----
   const characterWalkRef = useRef({})
   const lastWalkTimeRef = useRef(performance.now())
@@ -956,7 +979,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // Initialize walk states for all characters on mount
   useEffect(() => {
     const walkStates = {}
-    ROOMS_WITH_CHARACTERS.forEach(id => {
+    roomsWithCharsRef.current.forEach(id => {
       walkStates[id] = initCharWalkState(id)
     })
     characterWalkRef.current = walkStates
@@ -1317,7 +1340,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const walkPositions = {}       // room-local positions for home characters
     const visitingChars = []       // characters currently visiting (need second-pass drawing)
 
-    for (const charId of ROOMS_WITH_CHARACTERS) {
+    for (const charId of roomsWithCharsRef.current) {
       if (!walkStates[charId]) walkStates[charId] = initCharWalkState(charId)
       const state = walkStates[charId]
 
