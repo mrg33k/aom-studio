@@ -299,6 +299,7 @@ export function useDataPipe(parsePunchList) {
   const [completedFeed, setCompletedFeed] = useState([])
   const [inboxItems, setInboxItems] = useState([])
   const [personalTodos, setPersonalTodos] = useState([])
+  const [todoItems, setTodoItems] = useState([])
   const [punchData, setPunchData] = useState(null)
   const [punchLoading, setPunchLoading] = useState(IS_LOCAL)
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -409,11 +410,17 @@ export function useDataPipe(parsePunchList) {
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
             active.push(...queuedEntries)
 
-            // Done AND Todo tasks awaiting approval (agent-completed, exclude Patrik's personal tasks)
+            // Done tasks awaiting approval -- agent completed, Patrik needs to approve (Inbox only)
             const doneEntries = data.tasks
-              .filter(t => (t.status === 'done' || t.status === 'todo') && t.agent !== 'patrik')
+              .filter(t => t.status === 'done' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
             active.push(...doneEntries)
+
+            // Todo tasks -- queued/planned tasks for the To Do pill (NOT Inbox, NOT Right Now)
+            const todoEntries = data.tasks
+              .filter(t => t.status === 'todo' && t.agent !== 'patrik')
+              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
+            setTodoItems(todoEntries)
 
             // Personal todos: Patrik's own tasks (not agent completions)
             const patrikEntries = data.tasks
@@ -616,6 +623,7 @@ export function useDataPipe(parsePunchList) {
     rightNow: rightNow.length,
     yourTodos: yourTodos.length,
     personalTodos: personalTodos.length,
+    todoItems: todoItems.length,
     schedule: schedule.length,
     finishThese: finishThese.length,
     inbox: inboxItems.length,
@@ -636,6 +644,7 @@ export function useDataPipe(parsePunchList) {
     inboxItems,
     yourTodos,
     personalTodos,
+    todoItems,
     finishThese,
     schedule,
     projectProgress,
