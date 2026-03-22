@@ -356,7 +356,13 @@ export default function TaskContextMenu({
 
   // ---- Action handlers ----
   const handleToggleDone = () => {
-    onAction('toggle', task)
+    if (task?.done) {
+      // Task is currently done -- mark it undone (back to active)
+      onAction('toggle', task)
+    } else {
+      // Task is not done -- mark it completed (status='completed', goes to Completed feed)
+      onAction('markDone', task)
+    }
     onClose()
   }
 
@@ -920,6 +926,11 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
       })
     }
     supabaseTaskAction('toggle', task, !task.done)
+  } else if (action === 'markDone') {
+    // Mark task as fully completed (status='completed'). Direct Supabase PATCH + API fallback.
+    supabasePatchTaskStatus(task, 'completed')
+    supabaseTaskAction('markDone', task)
+    console.log(`[Corner] Task "${task.text}" marked done → completed`)
   } else if (action === 'priority') {
     supabaseTaskAction('priority', task, payload)
   } else if (action === 'reassign') {
