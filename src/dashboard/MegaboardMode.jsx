@@ -5,16 +5,17 @@
 // TODO(steffen-design): Party card polish -- HP/XP bars need consistent sizing. Agent portraits should use Steffen's latest state sprites (idle, working, done). Level badge positioning varies across cards. [SURVIVES: Megaboard is a data/UI panel, not a rendered game view. Portrait sprites may come from engine atlas but layout logic stays.]
 // TODO(steffen-design): Quest log visual design -- entries are text-heavy. Consider adding agent color bars on the left edge of each quest entry for quick scanning. IN PROGRESS / DONE badges need more visual contrast. [SURVIVES: Pure UI/data panel. No engine dependency.]
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2, GitCommit, ArrowRight, AlertTriangle, Terminal,
   ChevronLeft, ChevronRight, ChevronDown, Filter,
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
+import { supabase } from './lib/supabase.js'
 
-// Sprite avatar
-const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
+// Sprite avatar -- fallback used before Supabase resolves (or if unavailable)
+const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel'])
 
 // Generate 2-letter initials from agent name.
 // Multi-word: first letter of first + first letter of last word ("John Smith" -> "JS").
@@ -28,8 +29,8 @@ function getInitials(name) {
   return name.slice(0, 2).toUpperCase()
 }
 
-function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle }) {
-  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
+  const hasSpriteFile = agentSlug && spriteAgents.has(agentSlug)
   const agent = AGENTS.find(a => a.slug === agentSlug)
   const color = borderColor || agent?.color || '#6B7280'
 
@@ -146,7 +147,7 @@ function HPBar({ percent, label = 'HP' }) {
 }
 
 // Agent Character Card (Party Screen)
-function AgentCard({ agent, status, onClick, isMobile }) {
+function AgentCard({ agent, status, onClick, isMobile, spriteAgents }) {
   const [isHovered, setIsHovered] = useState(false)
   const isActive = status?.status === 'WORKING'
   const currentTask = status?.currentTask || 'Idle'
@@ -179,7 +180,7 @@ function AgentCard({ agent, status, onClick, isMobile }) {
     >
       {/* Top row: identity */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <SpriteAvatar agentSlug={agent.slug} size={36} borderColor={agent.color} />
+        <SpriteAvatar agentSlug={agent.slug} size={36} borderColor={agent.color} spriteAgents={spriteAgents} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 700, fontSize: 16,
@@ -235,7 +236,7 @@ function AgentCard({ agent, status, onClick, isMobile }) {
 }
 
 // Quest Log Item
-function QuestItem({ quest, onClick }) {
+function QuestItem({ quest, onClick, spriteAgents }) {
   const [isHovered, setIsHovered] = useState(false)
   const agent = AGENTS.find(a => a.slug === quest.agentSlug || a.name?.toLowerCase() === quest.agent?.toLowerCase())
 
@@ -261,7 +262,7 @@ function QuestItem({ quest, onClick }) {
         transition: 'background 100ms ease',
       }}
     >
-      <SpriteAvatar agentSlug={agent?.slug} size={24} borderColor={agent?.color} />
+      <SpriteAvatar agentSlug={agent?.slug} size={24} borderColor={agent?.color} spriteAgents={spriteAgents} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 13,
@@ -345,7 +346,7 @@ function FeedEvent({ event }) {
 }
 
 // Agent Deep-Dive View
-function AgentDeepDive({ agent, status, onBack }) {
+function AgentDeepDive({ agent, status, onBack, spriteAgents }) {
   const utilization = status?.status === 'WORKING' ? 85
     : status?.status === 'DONE' ? 60
     : status?.status === 'BLOCKED' ? 10
@@ -372,7 +373,7 @@ function AgentDeepDive({ agent, status, onBack }) {
 
       {/* Agent header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-        <SpriteAvatar agentSlug={agent.slug} size={56} borderColor={agent.color} />
+        <SpriteAvatar agentSlug={agent.slug} size={56} borderColor={agent.color} spriteAgents={spriteAgents} />
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{
@@ -496,6 +497,19 @@ function AgentDeepDive({ agent, status, onBack }) {
 export default function MegaboardMode({ agentStatus, data, isMobile }) {
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [questFilter, setQuestFilter] = useState('active')
+  const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
+
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('agent_status')
+      .select('slug')
+      .eq('has_sprite', true)
+      .then(({ data: rows, error }) => {
+        if (error || !rows?.length) return
+        setSpriteAgents(new Set(rows.map(r => r.slug)))
+      })
+  }, [])
 
   const agentList = AGENTS.filter(a => a.slug !== 'paige' && a.slug !== 'pixel')
 
@@ -543,6 +557,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
             agent={agent}
             status={agentStatus?.[selectedAgent]}
             onBack={() => setSelectedAgent(null)}
+            spriteAgents={spriteAgents}
           />
           {/* Quest Log persists on right */}
           {!isMobile && (
@@ -556,7 +571,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
                   QUEST LOG
                 </div>
                 {quests.map((q, i) => (
-                  <QuestItem key={i} quest={q} onClick={handleAgentClick} />
+                  <QuestItem key={i} quest={q} onClick={handleAgentClick} spriteAgents={spriteAgents} />
                 ))}
                 {quests.length === 0 && (
                   <div style={{
@@ -622,6 +637,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
                   status={agentStatus?.[agent.slug]}
                   onClick={handleAgentClick}
                   isMobile={true}
+                  spriteAgents={spriteAgents}
                 />
               ))}
             </div>
@@ -638,6 +654,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
                   status={agentStatus?.[agent.slug]}
                   onClick={handleAgentClick}
                   isMobile={false}
+                  spriteAgents={spriteAgents}
                 />
               ))}
             </div>
@@ -733,7 +750,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
 
           {/* Quest items */}
           {filteredQuests.map((q, i) => (
-            <QuestItem key={i} quest={q} onClick={handleAgentClick} />
+            <QuestItem key={i} quest={q} onClick={handleAgentClick} spriteAgents={spriteAgents} />
           ))}
           {filteredQuests.length === 0 && (
             <div style={{
