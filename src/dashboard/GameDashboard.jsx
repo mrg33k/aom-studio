@@ -3037,15 +3037,19 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
 // ---- MOBILE FIXED INPUT -------------------------------------------------------
 // Rendered OUTSIDE MobileDrawer/UnifiedPanel in the top-level return of GameDashboard.
 // This is the PERMANENT fix for iOS Safari focus bugs on half-drawer snap.
-// Key insight: any ancestor with overflow, transform, or position constraints can block
-// iOS Safari from opening the keyboard for an input. By being a direct child of the root
-// div (no overflow/transform ancestors), this input ALWAYS gets keyboard focus correctly.
+// Key insight: any ancestor with overflow, transform, OR CLIP can block iOS Safari from
+// routing keyboard focus to an input. The input must NEVER be a descendant of any of these.
 //
 // Previous failed approaches:
 //   #1: disabled={false} + iOS keyboard attrs -- overflow:hidden still blocked focus
 //   #2: overflow:clip on MobileDrawer -- still a stacking context, still blocked focus
 //   #3: sibling in GameDashboard return -- still inside root overflow:hidden. Still blocked.
-//   #4: (this component) -- React portal to document.body. Zero overflow/transform ancestors. THE fix.
+//   #4: React portal to document.body, wrapper had transform:translateZ(0) -- CORRECT structure,
+//       but transform:translateZ(0) on the wrapper made the input a descendant of a transform
+//       container. iOS Safari blocks keyboard focus on inputs inside transform ancestors.
+//   #5: (this component) -- React portal to document.body, NO transform anywhere on any ancestor.
+//       Wrapper is position:fixed only. Input's full ancestor chain: form -> portal-div -> body -> html.
+//       NONE of those have overflow, transform, clip, or will-change. This is the real fix.
 function MobileFixedInput({
   chatInput, onChatInputChange, onSendMessage, streaming,
   agentColor, agentName, isNightMode,
@@ -3073,18 +3077,16 @@ function MobileFixedInput({
   }, [])
 
   // Portal to document.body: renders completely outside the React app root div.
-  // GameDashboard's root div has overflow:hidden -- any child with position:fixed is
-  // clipped by iOS Safari and focus events are blocked. Portaling to document.body
-  // means there are ZERO overflow/transform/will-change ancestors. iOS Safari can
-  // route keyboard focus to this input without any ancestor interference.
+  // GameDashboard's root div has overflow:hidden and position:fixed -- any child with
+  // position:fixed is clipped by iOS Safari and keyboard focus is blocked.
+  // Portaling to document.body means ZERO overflow/transform/clip ancestors.
   //
-  // Wrestlemania A fix: transform:translateZ(0) forces this element into its own
-  // GPU compositing layer. MobileDrawer has willChange:'transform' (composited).
-  // iOS Safari has a known bug where a composited element can steal touch/focus
-  // routing from a higher-z-index element that is NOT composited. By making this
-  // portal composited too, iOS correctly uses z-index (999 > 38/200) to route all
-  // focus and touch events here. Without translateZ(0), iOS may silently ignore
-  // taps on the portal input even though it visually appears on top.
+  // CRITICAL: NO transform on the wrapper div. Previous attempt (#4) used
+  // transform:translateZ(0) for GPU compositing, but that made the input a descendant
+  // of a transform container -- iOS Safari blocks keyboard focus on inputs inside any
+  // transform ancestor, even if that ancestor is a direct child of document.body.
+  // z-index: 999 is sufficient to win stacking over MobileDrawer (38/200).
+  // We do NOT need compositing tricks -- we need zero transform ancestors.
   return createPortal(
     <div
       style={{
@@ -3093,10 +3095,11 @@ function MobileFixedInput({
         right: 0,
         bottom: kbOffset,
         zIndex: 999,
-        transform: 'translateZ(0)', // force own compositing layer (Wrestlemania A fix)
-        background: isNightMode
-          ? 'rgba(10, 15, 30, 0.98)'
-          : 'rgba(10, 15, 30, 0.98)',
+        // NO transform here -- transform creates a new containing block and iOS Safari
+        // blocks keyboard focus routing to inputs inside transform containers.
+        // position:fixed is sufficient. Ancestor chain: div -> body -> html. None have
+        // overflow, transform, clip, or will-change.
+        background: 'rgba(10, 15, 30, 0.98)',
         borderTop: isNightMode
           ? '2px solid rgba(59,130,246,0.12)'
           : '2px solid rgba(59,130,246,0.18)',
@@ -8562,19 +8565,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.1)' }} />
                 </div>
               )}
-              {!chatLoading && chatMessages && chatMessages.map((msg, i) => {
-                if (!msg || typeof msg !== 'object') return null // guard: skip null/malformed msgs
-                const isUser = msg.role === 'user'
-                // Only show source label on first message in a consecutive sequence from the same source
-                const prevMsg = i > 0 ? chatMessages[i - 1] : null
-                const isSameSource = prevMsg && prevMsg.role === msg.role && formatSource(prevMsg.source) === formatSource(msg.source)
-                const sourceLabel = isSameSource ? null : formatSource(msg.source)
-                const isNotif = !isUser && isSystemNotification(msg)
-
-                // ---- AOM TEAM ROOM: per-message agent identity ----
-                // room.id is 'aom-team' (from ROOM_LOOKUP); agentSlug covers the 'aom' fallback
-                const isAomRoom = room?.id === 'aom' || room?.id === 'aom-team' || agentSlug === 'aom' || agentSlug === 'aom-team'
-                // In AOM room, each message carries an agentTag (the agent slug who sent it)
+              {/* AOM Team Room: static maps hoisted outside the per-message loop */}
+              {(() => {
+                // Per-agent color palette for identity chips
                 const AOM_AGENT_COLORS = {
                   bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',
                   cleo: '#EC4899', steve: '#8B5CF6', alex: '#F97316',
@@ -8582,20 +8575,31 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
                   pixel: '#A78BFA', patrik: '#F59E0B',
                 }
-                // Name map for agents not in the AGENTS array (no room in GRID_SPEC)
+                // Display names for agents not in the AGENTS array (no room in GRID_SPEC)
                 const AOM_AGENT_NAMES = {
                   mom: 'Mom', alex: 'Alex', tony: 'Tony', jacob: 'Jacob',
                   colton: 'Colton', steve: 'Steve', elmo: 'Elmo',
                   patrik: 'Patrik', elon: 'Elon',
                 }
-                const msgAgentSlug = isAomRoom ? (msg.agentTag || null) : null
-                const msgAgentObj = msgAgentSlug ? AGENTS.find(a => a.slug === msgAgentSlug) : null
-                // Resolved name: from AGENTS obj, or AOM_AGENT_NAMES fallback, or slug capitalized
-                const msgAgentName = msgAgentObj?.name || (msgAgentSlug ? (AOM_AGENT_NAMES[msgAgentSlug] || (msgAgentSlug.charAt(0).toUpperCase() + msgAgentSlug.slice(1))) : null)
-                const msgAgentColor = msgAgentSlug ? (AOM_AGENT_COLORS[msgAgentSlug] || msgAgentObj?.color || '#60A5FA') : agentColor
-                // AOM Team Room: no grouping -- show avatar+name+project tag on every message
-                const isSameAomAgent = false
-                // Project path chip: match segments against PROJECTS for colored pill
+                // room.id is 'aom-team' (from ROOM_LOOKUP); agentSlug covers the 'aom' fallback
+                const isAomRoom = room?.id === 'aom' || room?.id === 'aom-team' || agentSlug === 'aom' || agentSlug === 'aom-team'
+                return !chatLoading && chatMessages && chatMessages.map((msg, i) => {
+                  if (!msg || typeof msg !== 'object') return null // guard: skip null/malformed msgs
+                  const isUser = msg.role === 'user'
+                  // Only show source label on first message in a consecutive sequence from the same source
+                  const prevMsg = i > 0 ? chatMessages[i - 1] : null
+                  const isSameSource = prevMsg && prevMsg.role === msg.role && formatSource(prevMsg.source) === formatSource(msg.source)
+                  const sourceLabel = isSameSource ? null : formatSource(msg.source)
+                  const isNotif = !isUser && isSystemNotification(msg)
+
+                  // ---- AOM TEAM ROOM: per-message agent identity ----
+                  // In AOM room, each message carries an agentTag (the agent slug who sent it)
+                  const msgAgentSlug = isAomRoom ? (msg.agentTag || null) : null
+                  const msgAgentObj = msgAgentSlug ? AGENTS.find(a => a.slug === msgAgentSlug) : null
+                  // Resolved name: from AGENTS obj, or AOM_AGENT_NAMES fallback, or slug capitalized
+                  const msgAgentName = msgAgentObj?.name || (msgAgentSlug ? (AOM_AGENT_NAMES[msgAgentSlug] || (msgAgentSlug.charAt(0).toUpperCase() + msgAgentSlug.slice(1))) : null)
+                  const msgAgentColor = msgAgentSlug ? (AOM_AGENT_COLORS[msgAgentSlug] || msgAgentObj?.color || '#60A5FA') : agentColor
+                  // Project path chip: match segments against PROJECTS for colored pill
                 const msgProjectPath = isAomRoom ? (msg.projectPath || null) : null
                 const msgProjectMatch = msgProjectPath
                   ? (() => {
