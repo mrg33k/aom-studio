@@ -10032,14 +10032,40 @@ export default function GameDashboard() {
       })
   }, [])
 
-  // Fetch rooms with pixel art renders from Supabase on mount.
+  // Fetch rooms with pixel art renders from Supabase on mount + Realtime subscription.
+  // New/updated rooms appear instantly without a page refresh.
   // Falls back to ROOMS_WITH_RENDERS_FALLBACK if table doesn't exist or returns empty.
   useEffect(() => {
     if (!supabase) return
+
+    // Initial fetch
     supabase.from('rooms').select('id').eq('has_render', true)
       .then(({ data }) => {
         if (data?.length > 0) setRoomsWithRenders(new Set(data.map(r => r.id)))
       })
+
+    // Realtime: keep the set live on any rooms change
+    const channel = supabase
+      .channel('rooms-has-render')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, (payload) => {
+        setRoomsWithRenders(prev => {
+          const next = new Set(prev)
+          if (payload.eventType === 'DELETE') {
+            next.delete(payload.old.id)
+          } else {
+            // INSERT or UPDATE
+            if (payload.new.has_render) {
+              next.add(payload.new.id)
+            } else {
+              next.delete(payload.new.id)
+            }
+          }
+          return next
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   const handleSignOut = useCallback(async () => {
