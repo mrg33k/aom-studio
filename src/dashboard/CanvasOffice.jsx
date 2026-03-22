@@ -1362,9 +1362,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         // Rooms define the shape -- grid follows. See drawRoom() SOURCE OF TRUTH comment.
         ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top center (roof peak)
         ctx.lineTo(ox + S * 0.99, oy + S * 0.40)  // upper-right
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.81)  // lower-right
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.76)  // lower-right  !! VERBATIM from drawRoom SOURCE OF TRUTH
         ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom center
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.81)  // lower-left
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.76)  // lower-left   !! VERBATIM from drawRoom SOURCE OF TRUTH
         ctx.lineTo(ox + S * 0.01, oy + S * 0.40)  // upper-left
         ctx.closePath()
       }
@@ -1605,9 +1605,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         // !! DO NOT CHANGE !! Padded version derived from drawRoom() SOURCE OF TRUTH shape.
         ctx.moveTo(S * 0.50, S * 0.00 - pad)
         ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.40 - pad * 0.5)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.81 + pad * 0.5)
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.76 + pad * 0.5)
         ctx.lineTo(S * 0.50, S * 0.99 + pad)
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.81 + pad * 0.5)
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.76 + pad * 0.5)
         ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.40 - pad * 0.5)
         ctx.closePath()
         // Animated dashed stroke
@@ -1666,9 +1666,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           ctx.beginPath()
           ctx.moveTo(S * 0.50, S * 0.00)  // top center (roof peak)
           ctx.lineTo(S * 0.99, S * 0.40)  // upper-right
-          ctx.lineTo(S * 0.99, S * 0.81)  // lower-right
+          ctx.lineTo(S * 0.99, S * 0.76)  // lower-right  !! VERBATIM from drawRoom SOURCE OF TRUTH
           ctx.lineTo(S * 0.50, S * 0.99)  // bottom center
-          ctx.lineTo(S * 0.01, S * 0.81)  // lower-left
+          ctx.lineTo(S * 0.01, S * 0.76)  // lower-left   !! VERBATIM from drawRoom SOURCE OF TRUTH
           ctx.lineTo(S * 0.01, S * 0.40)  // upper-left
           ctx.closePath()
           ctx.clip()
@@ -1836,22 +1836,25 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.translate(offsetX, offsetY)
 
     // !! DO NOT CHANGE !! SOURCE OF TRUTH for all hex geometry in this file.
-    // Derived from pixel analysis of room shell PNGs with SRC_CROP (X=80, Y=0, W=864, H=864):
-    //   hex content spans source x=[88,936] y=[0,862] → dest x=[1%,99%] y=[0%,99.8%]
-    //   upper corners: source y=350 → dest y=350/864*512=207px → ratio 0.40
-    //   lower corners: source y=698 → dest y=698/864*512=413px → ratio 0.81
-    //   (lower was 0.75 under OLD SRC_CROP Y=160,H=680 → source y=670. New SRC_CROP Y=0,H=864
-    //    gives 670/864=0.776. Shell rooms have lower content extending to crop_y=698 → 0.81.)
+    // Derived from pixel-boundary scan of ALL shell room PNGs with SRC_CROP (X=80, Y=0, W=864, H=864):
+    //   upper corners: at y=0.40-0.42 rooms reach full width (x≈0.01/0.99). y=0.40 is correct.
+    //   lower corners: ALL rooms are at full width through y=0.76, then ALL start narrowing at y=0.78.
+    //     Setting lower corner at y=0.76 puts clip exactly at the hex lower vertex.
+    //     Below y=0.76, clip diagonal from (0.01,0.76)→(0.50,0.99) matches room art diagonal (slope ≈2.1).
+    //     Result: <0.5% width bleed below the corner, invisible. Setting higher (e.g. 0.81) creates
+    //     visible dark background in the lower corners because the rectangular clip extends BELOW
+    //     where the hex actually narrows -- that is "rooms cutoff". Setting lower (e.g. 0.75) clips
+    //     the diagonal art prematurely. 0.76 is the confirmed correct value.
     // Rooms define the shape. Grid lines copy these values VERBATIM. DO NOT adjust grid
-    // lines independently. DO NOT "recalculate" these -- they ARE the calculation.
-    // Any change here WILL cut off room artwork or show background bleed. LOCKED FOREVER.
+    // lines independently. DO NOT "recalculate" without re-running the pixel boundary scan.
+    // Any change here WILL produce visible cutoff or background bleed. LOCKED.
     ctx.beginPath()
     const S = ROOM_SIZE
     ctx.moveTo(S * 0.50, S * 0.00)  // top center (roof peak)
     ctx.lineTo(S * 0.99, S * 0.40)  // upper-right
-    ctx.lineTo(S * 0.99, S * 0.81)  // lower-right
+    ctx.lineTo(S * 0.99, S * 0.76)  // lower-right  !! DO NOT CHANGE -- pixel scan confirmed, all rooms
     ctx.lineTo(S * 0.50, S * 0.99)  // bottom center
-    ctx.lineTo(S * 0.01, S * 0.81)  // lower-left
+    ctx.lineTo(S * 0.01, S * 0.76)  // lower-left   !! DO NOT CHANGE -- pixel scan confirmed, all rooms
     ctx.lineTo(S * 0.01, S * 0.40)  // upper-left
     ctx.closePath()
     ctx.clip()
