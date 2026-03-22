@@ -292,26 +292,30 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {/* Progress bar */}
-          <div style={{
-            width: 80, height: 8, borderRadius: 4,
-            background: tpProgressBg,
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              width: `${progress}%`, height: '100%',
-              background: `linear-gradient(90deg, ${project.color}AA, ${project.color})`,
-              borderRadius: 4,
-              transition: 'width 300ms ease',
-            }} />
-          </div>
-          <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
-            color: project.color,
-            minWidth: 30,
-          }}>
-            {progress}%
-          </span>
+          {/* Progress bar -- hidden for completed feed (always 100%, noise) */}
+          {!project.isCompletedFeed && (
+            <>
+              <div style={{
+                width: 80, height: 8, borderRadius: 4,
+                background: tpProgressBg,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: `${progress}%`, height: '100%',
+                  background: `linear-gradient(90deg, ${project.color}AA, ${project.color})`,
+                  borderRadius: 4,
+                  transition: 'width 300ms ease',
+                }} />
+              </div>
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
+                color: project.color,
+                minWidth: 30,
+              }}>
+                {progress}%
+              </span>
+            </>
+          )}
 
           <button
             onClick={onClose}

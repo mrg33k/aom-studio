@@ -490,13 +490,15 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           >
             {p.section === 'rightnow' ? (
               <Zap size={16} color={p.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${p.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
+            ) : p.section === 'completed-feed' ? (
+              <CheckCircle2 size={14} color={p.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${p.color}66)` }} />
             ) : isSchedule ? (
               <Flame size={16} color={p.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${p.color}66)` }} />
             ) : (
               <div style={{ width: 12, height: 12, borderRadius: 4, background: p.color, flexShrink: 0, boxShadow: `0 0 8px ${p.color}33` }} />
             )}
             <span style={{ flex: 1, letterSpacing: '-0.01em' }}>{p.name}</span>
-            {/* Remaining count with label */}
+            {/* Remaining count or all-done badge */}
             {remaining > 0 ? (
               <span style={{
                 fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
@@ -507,21 +509,23 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               }}>
                 {remaining} left
               </span>
-            ) : totalTasks > 0 ? (
+            ) : totalTasks > 0 && p.section !== 'completed-feed' ? (
               <CheckCircle2 size={16} color={p.color} strokeWidth={2} style={{ opacity: 0.5 }} />
             ) : null}
 
-            {/* Progress bar at bottom */}
-            <div style={{
-              position: 'absolute', bottom: 0, left: 16, right: 16, height: 5,
-              background: 'rgba(255,255,255,0.06)', borderRadius: 3,
-            }}>
+            {/* Progress bar at bottom -- edge-to-edge, no inset. Hidden for completed-feed (always 100%). */}
+            {p.section !== 'completed-feed' && (
               <div style={{
-                width: `${progress}%`, height: '100%',
-                background: p.color, borderRadius: 1,
-                transition: 'width 400ms ease',
-              }} />
-            </div>
+                position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
+                background: 'rgba(255,255,255,0.06)', borderRadius: 0,
+              }}>
+                <div style={{
+                  width: `${progress}%`, height: '100%',
+                  background: p.color, borderRadius: 0,
+                  transition: 'width 400ms ease',
+                }} />
+              </div>
+            )}
           </button>
         )
       })}
@@ -1281,20 +1285,20 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime, spriteA
         onClick={onToggle}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 0 8px', marginBottom: 4,
+          padding: '14px 0 10px', marginBottom: 4,
           background: 'none', border: 'none', cursor: 'pointer',
           textAlign: 'left',
         }}
       >
-        {isCollapsed ? <ChevronRight size={14} color={isDaytime ? '#6B8AB0' : '#6B7280'} /> : <ChevronDown size={14} color={isDaytime ? '#6B8AB0' : '#6B7280'} />}
+        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} />}
 
-        <CheckCircle2 size={16} color="#22C55E" style={{
+        <CheckCircle2 size={18} color="#22C55E" style={{
           filter: 'drop-shadow(0 0 4px rgba(34,197,94,0.3))',
         }} />
 
         <span style={{
           fontFamily: "'Inter Tight', system-ui, sans-serif",
-          fontSize: 16, fontWeight: 700,
+          fontSize: 18, fontWeight: 800,
           color: isDaytime ? '#8BA4C4' : '#8BA4C4',
           textTransform: 'uppercase',
           letterSpacing: '-0.01em',
@@ -1317,7 +1321,7 @@ function CompletedFeedSection({ tasks, isCollapsed, onToggle, isDaytime, spriteA
 
       {/* Compact completion entries */}
       {!isCollapsed && (
-        <div style={{ paddingLeft: 8 }}>
+        <div style={{ paddingLeft: 0 }}>
           {tasks.map((task, i) => {
             const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
             const hasSpr = task.agent && spriteAgents.has(task.agent)

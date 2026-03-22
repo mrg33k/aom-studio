@@ -23,6 +23,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
   const isRightNow = project.section === 'rightnow'
   const isTodoList = project.section === 'your-todos'
   const isFinishThese = project.section === 'finish-these' || project.section === 'checking-in'
+  const isCompletedFeed = project.section === 'completed-feed'
   const hasLiveTasks = isRightNow && project.tasks.some(t => t.isLive)
   const isClient = project.isClient
   const allDone = remaining === 0 && totalTasks > 0
@@ -110,15 +111,17 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
                   : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
       }}
     >
-      {/* Bottom progress fill - THICKER */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0,
-        width: `${progress}%`, height: 6,
-        background: `linear-gradient(90deg, ${project.color}70, ${project.color})`,
-        transition: 'width 500ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-        borderRadius: '0 0 14px 14px',
-        boxShadow: `0 0 8px ${project.color}44`,
-      }} />
+      {/* Bottom progress fill - THICKER. Hidden for completed feed (100% is always true, redundant). */}
+      {!isCompletedFeed && (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0,
+          width: `${progress}%`, height: 6,
+          background: `linear-gradient(90deg, ${project.color}70, ${project.color})`,
+          transition: 'width 500ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+          borderRadius: '0 0 16px 16px',
+          boxShadow: `0 0 8px ${project.color}44`,
+        }} />
+      )}
 
       {/* Side accent for Right Now, Schedule, Your TODOs, or RED clients - THICKER */}
       {(isRightNow || isSchedule || isTodoList || (isClient && project.statusTag === 'RED')) && (
@@ -134,6 +137,8 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {/* Project indicator - BIGGER on desktop, compact on mobile/tablet. */}
       {isRightNow ? (
         <Zap size={isCompact ? 12 : 18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+      ) : isCompletedFeed ? (
+        <CheckCircle2 size={isCompact ? 12 : 18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isTodoList ? (
         <AlertCircle size={isCompact ? 12 : 18} color="#EF4444" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.6))' }} />
       ) : isFinishThese ? (
@@ -297,7 +302,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         </span>
       )}
 
-      {allDone && (
+      {allDone && !isCompletedFeed && (
         <CheckCircle2 size={18} color={project.color} strokeWidth={2.5} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}44)` }} />
       )}
     </motion.button>
