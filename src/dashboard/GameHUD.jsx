@@ -1638,14 +1638,14 @@ export default function GameHUD({
                 setDoneTaskCtx(null)
               }}
               style={{
-                display: 'block', width: 'calc(100% - 16px)', margin: '2px 8px',
+                display: 'flex', alignItems: 'center', gap: 8,
+                width: 'calc(100% - 16px)', margin: '2px 8px',
                 padding: '7px 12px', cursor: 'pointer', borderRadius: 7,
                 background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
                 border: '1.5px solid rgba(34,197,94,0.5)',
                 boxShadow: '0 2px 8px rgba(22,163,74,0.30), inset 0 1px 0 rgba(255,255,255,0.15)',
                 color: '#FFFFFF', fontWeight: 700, fontSize: 13,
                 fontFamily: "'Inter', sans-serif",
-                display: 'flex', alignItems: 'center', gap: 8,
                 transition: 'opacity 100ms',
               }}
               onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
@@ -1810,7 +1810,7 @@ export default function GameHUD({
                     } catch {}
                     setTickerCtxMenu(null)
                   }}
-                  style={{ ...hudCtxBtn(true), color: '#22C55E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{ ...hudCtxBtn(true, 'flex'), color: '#22C55E', fontWeight: 700, alignItems: 'center', gap: 8 }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
@@ -1830,7 +1830,7 @@ export default function GameHUD({
                     } catch {}
                     setTickerCtxMenu(null)
                   }}
-                  style={{ ...hudCtxBtn(true), color: '#EF4444', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{ ...hudCtxBtn(true, 'flex'), color: '#EF4444', fontWeight: 700, alignItems: 'center', gap: 8 }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.10)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
@@ -1850,7 +1850,7 @@ export default function GameHUD({
                     }
                     setTickerCtxMenu(null)
                   }}
-                  style={{ ...hudCtxBtn(true), color: '#60A5FA', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{ ...hudCtxBtn(true, 'flex'), color: '#60A5FA', fontWeight: 600, alignItems: 'center', gap: 8 }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
@@ -1867,7 +1867,7 @@ export default function GameHUD({
                       handleUndoMarkDone(tcmPcKey)
                       setTickerCtxMenu(null)
                     }}
-                    style={{ ...hudCtxBtn(true), color: '#60A5FA', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                    style={{ ...hudCtxBtn(true, 'flex'), color: '#60A5FA', fontWeight: 700, alignItems: 'center', gap: 8 }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
@@ -1887,7 +1887,7 @@ export default function GameHUD({
                       setPendingCompletion(prev => ({ ...prev, [tcmPcKey]: { task: capturedTask, timerId, checkedAt: Date.now() } }))
                       setTickerCtxMenu(null)
                     }}
-                    style={{ ...hudCtxBtn(true), color: '#22C55E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                    style={{ ...hudCtxBtn(true, 'flex'), color: '#22C55E', fontWeight: 700, alignItems: 'center', gap: 8 }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
@@ -1902,7 +1902,7 @@ export default function GameHUD({
                     taskLifecycleAction('remove', task)
                     setTickerCtxMenu(null)
                   }}
-                  style={{ ...hudCtxBtn(true), color: '#94A3B8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{ ...hudCtxBtn(true, 'flex'), color: '#94A3B8', fontWeight: 600, alignItems: 'center', gap: 8 }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(148,163,184,0.10)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
@@ -1917,7 +1917,7 @@ export default function GameHUD({
                     onViewTask?.(task)
                     setTickerCtxMenu(null)
                   }}
-                  style={{ ...hudCtxBtn(true), color: '#60A5FA', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{ ...hudCtxBtn(true, 'flex'), color: '#60A5FA', fontWeight: 600, alignItems: 'center', gap: 8 }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >

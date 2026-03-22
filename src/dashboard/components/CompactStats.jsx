@@ -2,8 +2,8 @@ import React from 'react'
 import { HUD } from './HUDConstants.jsx'
 
 // Shared style for HUD context menu buttons
-export const hudCtxBtn = (isNight) => ({
-  display: 'block', width: '100%', textAlign: 'left',
+export const hudCtxBtn = (isNight, display = 'block') => ({
+  display, width: '100%', textAlign: 'left',
   padding: '8px 14px', background: 'none', border: 'none',
   fontSize: 13, fontWeight: 600, cursor: 'pointer',
   color: isNight ? '#E2E8F0' : '#1E293B',

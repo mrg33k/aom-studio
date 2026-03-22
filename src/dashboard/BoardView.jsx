@@ -938,6 +938,12 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           ...prev,
           [task._id]: { toCol: 'rightnow', card: { ...task, status: 'active', isLive: true, _id: task._id } },
         }))
+      } else if (action === 'reassign' && payload) {
+        // Move card to the assigned agent's column immediately
+        setCardOverrides(prev => ({
+          ...prev,
+          [task._id]: { toCol: payload, card: { ...task, agent: payload, _id: task._id } },
+        }))
       }
     }
     setBoardCtxMenu(null)

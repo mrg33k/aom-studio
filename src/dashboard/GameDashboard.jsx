@@ -5814,11 +5814,16 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     setCollapsedSections({})
     setExpandedTaskId(focusTaskId)
     onFocusTaskHandled?.()
-    // Scroll the expanded task into view -- longer delay to allow uncollapse animation
-    setTimeout(() => {
+    // Scroll the expanded task into view -- retry up to 3 times (tasks may still be loading from Supabase)
+    const tryScroll = (attempts) => {
       const el = document.querySelector(`[data-task-key="${CSS.escape(String(focusTaskId))}"]`)
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 300)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } else if (attempts < 3) {
+        setTimeout(() => tryScroll(attempts + 1), 400)
+      }
+    }
+    setTimeout(() => tryScroll(0), 300)
   }, [focusTaskId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Per-task context notes (in-memory only, persisted to Supabase)
