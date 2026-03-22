@@ -9780,13 +9780,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               </div>
               {/* Task text -- data readout panel */}
               <div style={{
-                fontSize: 14, fontWeight: 600, color: isDaytime ? '#1E293B' : '#E2E8F0',
+                fontSize: 14, fontWeight: 600, color: isDaytime ? '#C8D8F0' : '#E2E8F0',
                 fontFamily: "'Inter', system-ui, sans-serif",
                 lineHeight: 1.4, marginBottom: 12,
                 padding: '8px 12px',
-                background: isDaytime ? 'rgba(255,255,255,0.6)' : 'rgba(15,27,45,0.6)',
+                background: 'transparent',
                 borderRadius: 8,
-                border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(99,102,241,0.20)',
+                border: isDaytime ? '1px solid rgba(59,130,246,0.20)' : '1px solid rgba(99,102,241,0.20)',
                 position: 'relative',
               }}>
                 <span style={{
@@ -11003,25 +11003,9 @@ export default function GameDashboard() {
   // Task context menu action handler
   const handleSidebarContextAction = useCallback((action, task, payload) => {
     handleTaskContextAction(action, task, payload, setSidebarCheckedTasks)
-    // FIX 2: When a task is marked done, inject a confirmation message into chat
-    if (action === 'toggle' && !task.done) {
-      const confirmMsg = {
-        role: 'assistant',
-        content: `Task marked done: "${task.text}"\n\nConfirmed done or needs more work?`,
-        time: new Date().toISOString(),
-        source: 'corner-task-confirm',
-        id: `confirm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        isTaskConfirm: true,
-        taskText: task.text,
-        taskId: task.taskId || task.id,
-      }
-      setAgentChats(prev => {
-        const agent = task.agent || selectedRoom || 'elon'
-        const current = prev[agent] || { _all: [] }
-        return { ...prev, [agent]: { _all: [...(current._all || []), confirmMsg] } }
-      })
-    }
-  }, [selectedRoom])
+    // NOTE: task confirm injection removed. Confirmations go through the pinned
+    // TASK COMPLETE box only (lines ~9602+). No inline chat cards.
+  }, [])
 
   // C3: MODE STATE
   const [currentMode, setCurrentMode] = useState(() => {
