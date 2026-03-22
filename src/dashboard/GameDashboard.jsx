@@ -4127,8 +4127,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             <span style={{
               fontSize: 11, fontWeight: 700,
               color: '#22C55E',
-              background: 'rgba(34,197,94,0.1)',
-              border: '1px solid rgba(34,197,94,0.2)',
+              background: 'rgba(34,197,94,0.14)',
+              border: '1px solid rgba(34,197,94,0.45)',
               borderRadius: 4, padding: '2px 6px',
               textTransform: 'uppercase', letterSpacing: '0.08em',
               fontFamily: "'Inter', sans-serif",
@@ -4142,8 +4142,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           <span style={{
             fontSize: 11, fontWeight: 700,
             color: '#60A5FA',
-            background: 'rgba(96,165,250,0.1)',
-            border: '1px solid rgba(96,165,250,0.2)',
+            background: 'rgba(96,165,250,0.14)',
+            border: '1px solid rgba(96,165,250,0.45)',
             borderRadius: 4, padding: '2px 6px',
             textTransform: 'uppercase', letterSpacing: '0.08em',
             fontFamily: "'Inter', sans-serif",
@@ -4202,14 +4202,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   position: 'absolute', top: 'calc(100% + 8px)', left: 0,
                   minWidth: 260,
                   background: isNightMode
-                    ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.95) 100%)'
-                    : 'rgba(26,35,50,0.98)',
+                    ? 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
+                    : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
                   backdropFilter: 'blur(20px)',
-                  border: isNightMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
+                  border: isNightMode ? '1.5px solid rgba(59,130,246,0.42)' : '1.5px solid rgba(59,130,246,0.38)',
                   borderRadius: 12,
                   boxShadow: isNightMode
-                    ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
-                    : '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.1)',
+                    ? '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.18), 0 0 24px rgba(59,130,246,0.09)'
+                    : '0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(59,130,246,0.18), 0 0 24px rgba(59,130,246,0.07)',
                   padding: '8px 0',
                   zIndex: 100,
                 }}
@@ -4510,14 +4510,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                         position: 'absolute', top: 'calc(100% + 8px)', left: 0,
                         minWidth: 220,
                         background: isNightMode
-                          ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.95) 100%)'
-                          : 'rgba(26,35,50,0.98)',
+                          ? 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
+                          : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
                         backdropFilter: 'blur(20px)',
-                        border: isNightMode ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
+                        border: isNightMode ? '1.5px solid rgba(59,130,246,0.42)' : '1.5px solid rgba(59,130,246,0.38)',
                         borderRadius: 12,
                         boxShadow: isNightMode
-                          ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
-                          : '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.1)',
+                          ? '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.18), 0 0 24px rgba(59,130,246,0.09)'
+                          : '0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(59,130,246,0.18), 0 0 24px rgba(59,130,246,0.07)',
                         padding: '8px 0',
                         zIndex: 100,
                       }}
@@ -4701,14 +4701,18 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   style={{
                     position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
                     transform: 'translateX(-50%)',
-                    background: isNightMode ? 'rgba(15,23,42,0.95)' : 'rgba(15,23,42,0.92)',
-                    border: '1px solid rgba(59,130,246,0.3)',
+                    background: isNightMode
+                      ? 'linear-gradient(135deg, rgba(8,18,44,0.98) 0%, rgba(6,14,36,0.98) 100%)'
+                      : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
+                    border: isNightMode ? '1.5px solid rgba(59,130,246,0.45)' : '1.5px solid rgba(59,130,246,0.40)',
                     borderRadius: 6, padding: '5px 10px',
                     whiteSpace: 'nowrap', zIndex: 200,
-                    fontSize: 12, fontWeight: 600,
+                    fontSize: 12, fontWeight: 700,
                     color: '#60A5FA',
                     fontFamily: "'Inter', sans-serif",
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    boxShadow: isNightMode
+                      ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(59,130,246,0.12)'
+                      : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(59,130,246,0.08)',
                     pointerEvents: 'none',
                   }}
                 >
@@ -4738,29 +4742,38 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               gap: 5, flexShrink: 0,
-              background: 'transparent',
-              border: isNightMode ? '1.5px solid rgba(234,179,8,0.22)' : '1.5px solid rgba(234,179,8,0.3)',
+              background: isNightMode
+                ? 'linear-gradient(135deg, rgba(234,179,8,0.18) 0%, rgba(202,138,4,0.12) 100%)'
+                : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(202,138,4,0.10) 100%)',
+              border: isNightMode ? '1.5px solid rgba(234,179,8,0.58)' : '1.5px solid rgba(234,179,8,0.52)',
               borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
               cursor: unstuckToast === 'loading' ? 'default' : 'pointer',
               transition: 'all 150ms ease',
               position: 'relative',
               opacity: unstuckToast === 'loading' ? 0.6 : 1,
+              boxShadow: '0 2px 8px rgba(234,179,8,0.2), inset 0 1px 0 rgba(255,255,255,0.08)',
             }}
             onMouseEnter={e => {
               if (unstuckToast === 'loading') return
-              e.currentTarget.style.background = isNightMode ? 'rgba(234,179,8,0.1)' : 'rgba(234,179,8,0.08)'
-              e.currentTarget.style.borderColor = 'rgba(234,179,8,0.5)'
+              e.currentTarget.style.background = isNightMode
+                ? 'linear-gradient(135deg, rgba(234,179,8,0.28) 0%, rgba(202,138,4,0.20) 100%)'
+                : 'linear-gradient(135deg, rgba(234,179,8,0.24) 0%, rgba(202,138,4,0.16) 100%)'
+              e.currentTarget.style.borderColor = 'rgba(234,179,8,0.75)'
+              e.currentTarget.style.boxShadow = '0 2px 12px rgba(234,179,8,0.35), inset 0 1px 0 rgba(255,255,255,0.12)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.borderColor = isNightMode ? 'rgba(234,179,8,0.22)' : 'rgba(234,179,8,0.3)'
+              e.currentTarget.style.background = isNightMode
+                ? 'linear-gradient(135deg, rgba(234,179,8,0.18) 0%, rgba(202,138,4,0.12) 100%)'
+                : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(202,138,4,0.10) 100%)'
+              e.currentTarget.style.borderColor = isNightMode ? 'rgba(234,179,8,0.58)' : 'rgba(234,179,8,0.52)'
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(234,179,8,0.2), inset 0 1px 0 rgba(255,255,255,0.08)'
             }}
           >
-            <Zap size={13} color={isNightMode ? '#A16207' : '#CA8A04'} />
+            <Zap size={13} color={isNightMode ? '#EAB308' : '#CA8A04'} />
             {!isMobile && (
               <span style={{
-                fontSize: 12, fontWeight: 600,
-                color: isNightMode ? '#A16207' : '#CA8A04',
+                fontSize: 12, fontWeight: 700,
+                color: isNightMode ? '#EAB308' : '#CA8A04',
                 fontFamily: "'Inter', sans-serif",
               }}>
                 {unstuckToast === 'loading' ? '...' : 'Unstuck'}
@@ -4777,14 +4790,18 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   style={{
                     position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
                     transform: 'translateX(-50%)',
-                    background: isNightMode ? 'rgba(15,23,42,0.95)' : 'rgba(15,23,42,0.92)',
-                    border: '1px solid rgba(234,179,8,0.35)',
+                    background: isNightMode
+                      ? 'linear-gradient(135deg, rgba(32,20,4,0.98) 0%, rgba(20,14,4,0.98) 100%)'
+                      : 'linear-gradient(135deg, rgba(255,248,220,0.99) 0%, rgba(255,240,180,0.98) 100%)',
+                    border: isNightMode ? '1.5px solid rgba(234,179,8,0.55)' : '1.5px solid rgba(202,138,4,0.50)',
                     borderRadius: 6, padding: '5px 10px',
                     whiteSpace: 'nowrap', zIndex: 200,
-                    fontSize: 12, fontWeight: 600,
-                    color: '#EAB308',
+                    fontSize: 12, fontWeight: 700,
+                    color: isNightMode ? '#EAB308' : '#92400E',
                     fontFamily: "'Inter', sans-serif",
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    boxShadow: isNightMode
+                      ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(234,179,8,0.15)'
+                      : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(234,179,8,0.12)',
                     pointerEvents: 'none',
                   }}
                 >
@@ -4856,12 +4873,13 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         {/* View mode toggle: Game | Board */}
         <div style={{
           display: 'flex', alignItems: 'center',
-          background: isNightMode ? 'rgba(15,27,45,0.8)' : 'rgba(10,18,35,0.6)',
-          border: isNightMode ? '1.5px solid rgba(59,130,246,0.18)' : '1.5px solid rgba(59,130,246,0.25)',
+          background: isNightMode ? 'rgba(8,16,38,0.85)' : 'rgba(12,24,52,0.65)',
+          border: isNightMode ? '1.5px solid rgba(59,130,246,0.35)' : '1.5px solid rgba(59,130,246,0.40)',
           borderRadius: 10,
           padding: 3,
           gap: 2,
           flexShrink: 0,
+          boxShadow: isNightMode ? '0 2px 8px rgba(59,130,246,0.1)' : '0 2px 8px rgba(59,130,246,0.12)',
         }}>
           {[
             { id: 'game', label: isMobile ? null : 'Game', icon: '⬡' },
@@ -6769,10 +6787,14 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
       {taskCtx && (
         <div style={{
           position: 'fixed', left: taskCtx.x, top: taskCtx.y, zIndex: 200,
-          background: isDaytime ? '#162D52' : 'rgba(15,23,42,0.98)',
-          border: isDaytime ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
+          background: isDaytime
+            ? 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)'
+            : 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)',
+          border: isDaytime ? '1.5px solid rgba(59,130,246,0.38)' : '1.5px solid rgba(59,130,246,0.42)',
           borderRadius: 8, padding: '4px 0', minWidth: 180,
-          boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
+          boxShadow: isDaytime
+            ? '0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(59,130,246,0.14), 0 0 14px rgba(59,130,246,0.06)'
+            : '0 4px 16px rgba(0,0,0,0.45), 0 0 0 1px rgba(59,130,246,0.16), 0 0 14px rgba(59,130,246,0.08)',
         }}>
           <button onClick={() => {
             setTasks(prev => {
@@ -7873,10 +7895,14 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
       {ctxMenu && (
         <div style={{
           position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 200,
-          background: isDaytime ? '#162D52' : 'rgba(15,23,42,0.98)',
-          border: isDaytime ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(59,130,246,0.2)',
+          background: isDaytime
+            ? 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)'
+            : 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)',
+          border: isDaytime ? '1.5px solid rgba(59,130,246,0.38)' : '1.5px solid rgba(59,130,246,0.42)',
           borderRadius: 8, padding: '4px 0', minWidth: 160,
-          boxShadow: isDaytime ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.5)',
+          boxShadow: isDaytime
+            ? '0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(59,130,246,0.14), 0 0 14px rgba(59,130,246,0.06)'
+            : '0 4px 16px rgba(0,0,0,0.45), 0 0 0 1px rgba(59,130,246,0.16), 0 0 14px rgba(59,130,246,0.08)',
         }}>
           {[
             { label: ctxMenu.pinned ? 'Unpin' : 'Pin to top', action: () => togglePin(ctxMenu.id) },
@@ -8559,10 +8585,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           {agentSwitcherOpen && (
             <div style={{
               position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
-              background: isNightMode ? '#0F1B2D' : '#142846',
-              border: '1px solid rgba(59,130,246,0.25)', borderRadius: 6,
+              background: isNightMode
+                ? 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
+                : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
+              border: isNightMode ? '1.5px solid rgba(59,130,246,0.42)' : '1.5px solid rgba(59,130,246,0.38)',
+              borderRadius: 6,
               minWidth: 160, maxHeight: 280, overflowY: 'auto',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              boxShadow: isNightMode
+                ? '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(59,130,246,0.15), 0 0 16px rgba(59,130,246,0.08)'
+                : '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(59,130,246,0.15), 0 0 16px rgba(59,130,246,0.06)',
             }}>
               {AGENTS.map(a => {
                 const isSelected = a.slug === agentSlug
@@ -8628,10 +8659,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           {projectSwitcherOpen && (
             <div style={{
               position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
-              background: isNightMode ? '#0F1B2D' : '#142846',
-              border: '1px solid rgba(59,130,246,0.25)', borderRadius: 6,
+              background: isNightMode
+                ? 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
+                : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
+              border: isNightMode ? '1.5px solid rgba(59,130,246,0.42)' : '1.5px solid rgba(59,130,246,0.38)',
+              borderRadius: 6,
               minWidth: 180, maxHeight: 260, overflowY: 'auto',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              boxShadow: isNightMode
+                ? '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(59,130,246,0.15), 0 0 16px rgba(59,130,246,0.08)'
+                : '0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(59,130,246,0.15), 0 0 16px rgba(59,130,246,0.06)',
             }}>
               {/* None option */}
               <button onClick={(e) => { e.stopPropagation(); onSelectProject?.(null); setProjectSwitcherOpen(false) }} style={{
@@ -9652,8 +9688,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       {/* ---- PINNED TASK CONFIRMATION BOX ---- */}
       {/* Sits between the tab content and the chat input. Always visible when the agent has
           done tasks awaiting approval -- not sorted chronologically with messages.
-          Multiple done tasks stack here. Zero done tasks = nothing rendered.
-          On non-chat tabs: always shows slim bar so user knows review is pending. */}
+          Multiple done tasks stack here with arrow nav (1/N). Zero done tasks = nothing rendered.
+          Single style: bright TASK COMPLETE card. No slim bar. No AWAITING REVIEW. */}
       {(() => {
         const doneTasks = (rightNowTasks || []).filter(t =>
           t.isDoneAwaitingApproval && t.agent === agentSlug &&
