@@ -870,7 +870,7 @@ export default function GameHUD({
             allProjects={projects}
             hudTaskCtxId={hudTaskCtx?.taskId}
             onTaskContextMenu={(e, task, proj) => {
-              setHudTaskCtx({ task, project: proj, taskId: task.isManual ? `manual-${task.manualId}` : task.origIdx })
+              setHudTaskCtx({ task, project: proj, taskId: task.isManual ? `manual-${task.manualId}` : task.origIdx, x: e.clientX, y: e.clientY })
             }}
             onDoneTaskAction={(e, task, proj, type) => {
               if (type === 'menu') {
@@ -1455,12 +1455,19 @@ export default function GameHUD({
       `}</style>
 
       {/* Task right-click context menu (rendered outside all overflow containers) */}
-      {hudTaskCtx && (
+      {hudTaskCtx && (() => {
+        const menuW = 240, menuH = 200
+        let cx = hudTaskCtx.x || window.innerWidth / 2
+        let cy = hudTaskCtx.y || (window.innerHeight - 120)
+        if (cx + menuW > window.innerWidth - 8) cx = window.innerWidth - menuW - 8
+        if (cx < 8) cx = 8
+        if (cy + menuH > window.innerHeight - 8) cy = cy - menuH - 8
+        if (cy < 8) cy = 8
+        return (
         <div data-hud-ctx-menu style={{
           position: 'fixed',
-          bottom: 80,
-          left: '50%',
-          transform: 'translateX(-50%)',
+          left: cx,
+          top: cy,
           zIndex: 9999,
           background: isNightMode
             ? 'rgba(8,14,28,0.95)'
@@ -1520,7 +1527,10 @@ export default function GameHUD({
             fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.08em',
           }}>Move to pill</div>
           {(projects || []).filter(p => p.name !== hudTaskCtx.project?.name).slice(0, 5).map(p => (
-            <button key={p.name} onClick={() => setHudTaskCtx(null)}
+            <button key={p.name} onClick={() => {
+              handleTaskContextAction('moveToProject', hudTaskCtx.task, p.section, null)
+              setHudTaskCtx(null)
+            }}
               style={hudCtxBtn(isNightMode)}
               onMouseEnter={e => e.currentTarget.style.background = isNightMode ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)'}
               onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -1541,7 +1551,8 @@ export default function GameHUD({
             </button>
           )}
         </div>
-      )}
+        )
+      })()}
 
       {/* Done-task approval context menu: Approve / Deny / Clarify */}
       {doneTaskCtx && (() => {

@@ -12089,6 +12089,8 @@ export default function GameDashboard() {
               setDrawerSnap('half')
               setMobileDrawerActiveTab('tasks')
             } else {
+              // Switch out of board view so the sidebar is visible
+              setViewMode('game')
               setPanelActiveTab('tasks')
               setPanelVisible(true)
             }
@@ -12331,6 +12333,8 @@ export default function GameDashboard() {
                 setDrawerSnap('half')
                 setMobileDrawerActiveTab('tasks')
               } else {
+                // Switch out of board view so the sidebar is visible
+                if (viewMode === 'board') setViewMode('game')
                 setPanelActiveTab('tasks')
                 setPanelVisible(true)
               }
