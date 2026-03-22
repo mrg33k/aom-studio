@@ -5,8 +5,10 @@
 // DONE(bobby): touch drag-and-drop for iPad/mobile using Pointer Events API
 
 import { useState, useRef, useCallback, useMemo, useEffect, Fragment } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 import TaskContextMenu, { handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
 
 const BOARD_IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -113,7 +115,7 @@ function removeColGhost() {
 
 // ── BOARD CARD ──────────────────────────────────────────────────────────────
 
-function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop, onDragOverCard, isNightMode = true }) {
+function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop, onDragOverCard, isNightMode = true, isExpanded, onExpand }) {
   const agentSlug = entry.agent?.toLowerCase()
   const agentColor = getAgentColor(agentSlug)
   const taskText = entry.text || entry.description || entry.currentTask || 'No task'
@@ -123,9 +125,14 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
 
   // Night/day card colors -- blue glass
   const cardBg = isNightMode ? 'rgba(15,45,140,0.22)' : 'rgba(30,80,220,0.28)'
+  const cardBgExpanded = isNightMode ? 'rgba(25,65,170,0.35)' : 'rgba(40,100,255,0.38)'
   const cardBorder = isNightMode ? 'rgba(60,120,255,0.22)' : 'rgba(80,150,255,0.45)'
+  const cardBorderExpanded = isNightMode ? 'rgba(80,150,255,0.45)' : 'rgba(100,180,255,0.65)'
   const cardHoverBg = isNightMode ? 'rgba(20,60,180,0.32)' : 'rgba(40,100,255,0.40)'
   const cardTextColor = isNightMode ? '#F1F5F9' : '#EEF4FF'
+
+  // Track if a mouse HTML5 drag happened -- prevents onClick from expanding after drag
+  const didMouseDragRef = useRef(false)
 
   // Pointer-based drag (works for both mouse and touch)
   const pointerDragRef = useRef({
@@ -232,13 +239,16 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
       document.querySelectorAll('[data-board-col]').forEach(c => c.removeAttribute('data-drop-hover'))
       onDragOverCard?.(null)
       onDragEnd?.()
+    } else if (!state.moved && state.pointerId !== null) {
+      // Clean tap (no drag) -- expand the card
+      onExpand?.()
     }
 
     state.active = false
     state.moved = false
     state.pointerId = null
     state.inColInsertIdx = null
-  }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd, onDragOverCard])
+  }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd, onDragOverCard, onExpand])
 
   const handlePointerCancel = useCallback(() => {
     const state = pointerDragRef.current
@@ -254,119 +264,165 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
     state.inColInsertIdx = null
   }, [onDragEnd, onDragOverCard])
 
+  // Build the task object expected by TaskDetailAccordion
+  const accordionTask = {
+    text: taskText,
+    agent: entry.agent || null,
+    done: entry.done === true || entry.status === 'completed',
+    isLive: entry.isLive || entry.status === 'active',
+    note: entry.note || entry.context || '',
+    id: entry.taskId || entry.id || null,
+  }
+  const accordionProject = {
+    name: ALL_COLS[columnKey]?.label || columnKey,
+    color: ALL_COLS[columnKey]?.color || '#6B7280',
+  }
+
   return (
-    <div
-      ref={cardRef}
-      data-board-card-idx={taskIndex}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = 'move'
-        e.dataTransfer.setData('text/plain', JSON.stringify({ entry, fromCol: columnKey, taskIndex }))
-        // Suppress browser drag ghost -- insertion line is the only drag feedback
-        const ghost = document.createElement('div')
-        ghost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px'
-        document.body.appendChild(ghost)
-        e.dataTransfer.setDragImage(ghost, 0, 0)
-        setTimeout(() => ghost.remove(), 0)
-        onDragStart?.()
-      }}
-      onDragEnd={() => onDragEnd?.()}
-      onContextMenu={(e) => {
-        e.preventDefault()
-        onContextMenu?.({ x: e.clientX, y: e.clientY, entry, columnKey })
-      }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
-      style={{
-        background: cardBg,
-        border: `1px solid ${cardBorder}`,
-        borderLeft: `3px solid ${agentColor}`,
-        borderRadius: 8,
-        padding: '10px 12px',
-        marginBottom: 7,
-        transition: 'background 150ms ease, box-shadow 150ms ease',
-        cursor: 'grab',
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        touchAction: 'none',
-      }}
-      onMouseEnter={e => {
-        if (!isDragging) {
-          e.currentTarget.style.background = cardHoverBg
-          e.currentTarget.style.boxShadow = `0 0 0 1px ${agentColor}30`
-        }
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = cardBg
-        e.currentTarget.style.boxShadow = 'none'
-      }}
-    >
-      <div style={{
-        fontFamily: "'Inter', system-ui, sans-serif",
-        fontSize: 14,
-        fontWeight: 500,
-        color: cardTextColor,
-        lineHeight: 1.45,
-        marginBottom: (showAgentBadge || projectTag) ? 8 : 0,
-        wordBreak: 'break-word',
-      }}>
-        {taskText}
+    <div style={{ marginBottom: isExpanded ? 10 : 7 }}>
+      <div
+        ref={cardRef}
+        data-board-card-idx={taskIndex}
+        draggable
+        onDragStart={(e) => {
+          didMouseDragRef.current = true
+          e.dataTransfer.effectAllowed = 'move'
+          e.dataTransfer.setData('text/plain', JSON.stringify({ entry, fromCol: columnKey, taskIndex }))
+          // Suppress browser drag ghost -- insertion line is the only drag feedback
+          const ghost = document.createElement('div')
+          ghost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px'
+          document.body.appendChild(ghost)
+          e.dataTransfer.setDragImage(ghost, 0, 0)
+          setTimeout(() => ghost.remove(), 0)
+          onDragStart?.()
+        }}
+        onDragEnd={() => {
+          onDragEnd?.()
+          // Reset after a tick so the onClick that fires after dragEnd doesn't trigger expand
+          setTimeout(() => { didMouseDragRef.current = false }, 0)
+        }}
+        onClick={() => {
+          // Mouse tap: expand only if no drag happened
+          if (didMouseDragRef.current) { didMouseDragRef.current = false; return }
+          onExpand?.()
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          onContextMenu?.({ x: e.clientX, y: e.clientY, entry, columnKey })
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        style={{
+          background: isExpanded ? cardBgExpanded : cardBg,
+          border: `1px solid ${isExpanded ? cardBorderExpanded : cardBorder}`,
+          borderLeft: `3px solid ${agentColor}`,
+          borderRadius: isExpanded ? '8px 8px 0 0' : 8,
+          padding: '10px 12px',
+          transition: 'background 150ms ease, box-shadow 150ms ease, border-radius 100ms ease',
+          cursor: 'grab',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          touchAction: 'none',
+        }}
+        onMouseEnter={e => {
+          if (!isDragging && !isExpanded) {
+            e.currentTarget.style.background = cardHoverBg
+            e.currentTarget.style.boxShadow = `0 0 0 1px ${agentColor}30`
+          }
+        }}
+        onMouseLeave={e => {
+          if (!isExpanded) {
+            e.currentTarget.style.background = cardBg
+            e.currentTarget.style.boxShadow = 'none'
+          }
+        }}
+      >
+        <div style={{
+          fontFamily: "'Inter', system-ui, sans-serif",
+          fontSize: 14,
+          fontWeight: 500,
+          color: cardTextColor,
+          lineHeight: 1.45,
+          marginBottom: (showAgentBadge || projectTag) ? 8 : 0,
+          wordBreak: 'break-word',
+        }}>
+          {taskText}
+        </div>
+
+        {(showAgentBadge || projectTag) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {showAgentBadge && (
+              <span style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                fontWeight: 700,
+                color: agentColor,
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+                background: `${agentColor}18`,
+                border: `1px solid ${agentColor}30`,
+                borderRadius: 4,
+                padding: '1px 5px',
+                flexShrink: 0,
+              }}>
+                {agentName}
+              </span>
+            )}
+            {projectTag && (
+              <span style={{
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: 10,
+                fontWeight: 500,
+                color: isNightMode ? 'rgba(140,180,255,0.7)' : 'rgba(160,200,255,0.85)',
+                background: isNightMode ? 'rgba(30,70,180,0.2)' : 'rgba(60,130,255,0.18)',
+                border: `1px solid ${isNightMode ? 'rgba(80,130,255,0.28)' : 'rgba(100,160,255,0.35)'}`,
+                borderRadius: 4,
+                padding: '1px 5px',
+                flexShrink: 0,
+              }}>
+                {projectTag}
+              </span>
+            )}
+            {entry.isLive && (
+              <span style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 9,
+                fontWeight: 700,
+                color: '#F97316',
+                background: 'rgba(249,115,22,0.15)',
+                border: '1px solid rgba(249,115,22,0.35)',
+                borderRadius: 4,
+                padding: '1px 5px',
+                letterSpacing: '0.05em',
+                flexShrink: 0,
+              }}>
+                LIVE
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {(showAgentBadge || projectTag) && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          {showAgentBadge && (
-            <span style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 10,
-              fontWeight: 700,
-              color: agentColor,
-              textTransform: 'uppercase',
-              letterSpacing: '0.07em',
-              background: `${agentColor}18`,
-              border: `1px solid ${agentColor}30`,
-              borderRadius: 4,
-              padding: '1px 5px',
-              flexShrink: 0,
-            }}>
-              {agentName}
-            </span>
-          )}
-          {projectTag && (
-            <span style={{
-              fontFamily: "'Inter', system-ui, sans-serif",
-              fontSize: 10,
-              fontWeight: 500,
-              color: isNightMode ? 'rgba(140,180,255,0.7)' : 'rgba(160,200,255,0.85)',
-              background: isNightMode ? 'rgba(30,70,180,0.2)' : 'rgba(60,130,255,0.18)',
-              border: `1px solid ${isNightMode ? 'rgba(80,130,255,0.28)' : 'rgba(100,160,255,0.35)'}`,
-              borderRadius: 4,
-              padding: '1px 5px',
-              flexShrink: 0,
-            }}>
-              {projectTag}
-            </span>
-          )}
-          {entry.isLive && (
-            <span style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 9,
-              fontWeight: 700,
-              color: '#F97316',
-              background: 'rgba(249,115,22,0.15)',
-              border: '1px solid rgba(249,115,22,0.35)',
-              borderRadius: 4,
-              padding: '1px 5px',
-              letterSpacing: '0.05em',
-              flexShrink: 0,
-            }}>
-              LIVE
-            </span>
-          )}
-        </div>
-      )}
+      {/* Inline task detail accordion */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <TaskDetailAccordion
+              task={accordionTask}
+              project={accordionProject}
+              isNightMode={isNightMode}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -395,6 +451,8 @@ function BoardColumn({
   onColDrop,
   onColDragEnd,
   isNightMode = true,
+  expandedCardId,
+  onExpandCard,
 }) {
   const config = ALL_COLS[colKey] || { label: colKey, color: '#6B7280', type: 'other' }
   const dragInsertRef = useRef(null)
@@ -700,6 +758,8 @@ function BoardColumn({
                   onContextMenu={(ctx) => onContextMenu?.(ctx)}
                   onDragOverCard={(idx) => setCardInsertIdx(idx)}
                   isNightMode={isNightMode}
+                  isExpanded={expandedCardId === card._id}
+                  onExpand={() => onExpandCard?.(card._id)}
                   onTouchDrop={(toCol, payload) => {
                     if (toCol === colKey && payload.insertIdx !== undefined) {
                       // Same-column pointer drag reorder
@@ -816,6 +876,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
     return [...DEFAULT_ORDER]
   })
 
+  const [expandedCardId, setExpandedCardId] = useState(null)
   const [colDragging, setColDragging] = useState(null) // colKey being dragged
   const [colDragInsert, setColDragInsert] = useState(null) // { targetKey, side: 'before'|'after' }
 
@@ -1367,6 +1428,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
               onColDrop={handleColDrop}
               onColDragEnd={handleColDragEnd}
               isNightMode={isNightMode}
+              expandedCardId={expandedCardId}
+              onExpandCard={(id) => setExpandedCardId(prev => prev === id ? null : id)}
             />
           ))}
 

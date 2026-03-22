@@ -493,8 +493,8 @@ function TaskContextMenu({ position, task, onClose, onAction, isNightMode, proje
   )
 }
 
-// ---- TASK ITEM CARD (with WORKING checkbox + right-click context menu) ------
-function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
+// ---- TASK ITEM CARD (with WORKING checkbox + right-click context menu + tap-to-expand accordion) ------
+function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, spriteAgents = SPRITE_AGENTS_FALLBACK, isExpanded, onExpand, project, isNightMode }) {
   const [isHovered, setIsHovered] = useState(false)
   const isDone = task.done
 
@@ -511,133 +511,166 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
   }, [task, onContextMenu])
   const longPress = useLongPress(handleLongPress)
 
+  const handleCardClick = useCallback(() => {
+    onExpand?.(task)
+  }, [task, onExpand])
+
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.15, delay: index * 0.02 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onContextMenu={handleContextMenu}
-      {...longPress}
-      style={{
-        position: 'relative',
-        minHeight: 48,
-        background: isDone
-          ? 'rgba(255,255,255,0.01)'
-          : isHovered
-            ? 'rgba(255,255,255,0.04)'
-            : 'rgba(255,255,255,0.02)',
-        border: `1px solid ${isHovered ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'}`,
-        borderRadius: 10,
-        padding: '12px 16px',
-        marginBottom: 6,
-        display: 'flex', alignItems: 'flex-start', gap: 12,
-        cursor: 'default',
-        transition: 'background 100ms ease, border-color 100ms ease',
-        opacity: isDone ? 0.5 : 1,
-      }}
-    >
-      {/* Priority bar indicator (left edge) */}
-      <TaskPriorityBar taskText={task.text} />
-
-      {/* Drag handle (visible on hover) */}
-      <div style={{
-        opacity: isHovered ? 0.5 : 0,
-        transition: 'opacity 100ms ease',
-        cursor: 'grab',
-        display: 'flex', flexDirection: 'column', gap: 2,
-        paddingTop: 3,
-      }}>
-        <GripVertical size={14} color="#4A5568" />
-      </div>
-
-      {/* Checkbox -- WIRED to onCheck */}
-      <button
-        onClick={() => onCheck?.(task)}
+    <div style={{ marginBottom: isExpanded ? 8 : 6 }}>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.15, delay: index * 0.02 }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onContextMenu={handleContextMenu}
+        {...longPress}
+        onClick={handleCardClick}
         style={{
-          width: 22, height: 22, flexShrink: 0,
-          border: `2px solid ${isDone ? projectColor : 'rgba(255,255,255,0.18)'}`,
-          borderRadius: 6,
-          background: isDone ? projectColor : 'transparent',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 200ms ease',
-          marginTop: 1,
-          padding: 0,
-          WebkitAppearance: 'none', appearance: 'none',
+          position: 'relative',
+          minHeight: 48,
+          background: isDone
+            ? 'rgba(255,255,255,0.01)'
+            : isExpanded
+              ? 'rgba(59,130,246,0.08)'
+              : isHovered
+                ? 'rgba(255,255,255,0.04)'
+                : 'rgba(255,255,255,0.02)',
+          border: `1px solid ${isExpanded ? 'rgba(59,130,246,0.30)' : isHovered ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'}`,
+          borderRadius: isExpanded ? '10px 10px 0 0' : 10,
+          padding: '12px 16px',
+          display: 'flex', alignItems: 'flex-start', gap: 12,
+          cursor: 'pointer',
+          transition: 'background 100ms ease, border-color 100ms ease, border-radius 100ms ease',
+          opacity: isDone ? 0.5 : 1,
         }}
       >
-        {isDone && <Check size={14} color="#FDF6EC" strokeWidth={3} />}
-      </button>
+        {/* Priority bar indicator (left edge) */}
+        <TaskPriorityBar taskText={task.text} />
 
-      {/* Task text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 16,
-          color: isDone ? '#6B7280' : '#F0ECE6',
-          lineHeight: 1.45,
-          textDecoration: isDone ? 'line-through' : 'none',
-        }}>
-          {task.text}
+        {/* Drag handle (visible on hover) -- stopPropagation so drag doesn't trigger expand */}
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            opacity: isHovered ? 0.5 : 0,
+            transition: 'opacity 100ms ease',
+            cursor: 'grab',
+            display: 'flex', flexDirection: 'column', gap: 2,
+            paddingTop: 3,
+          }}
+        >
+          <GripVertical size={14} color="#4A5568" />
         </div>
 
-        {/* Agent badge + LIVE badge row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: agentInfo || isLive ? 6 : 0 }}>
-          {agentInfo && hasSpr && (
-            <div style={{
-              width: 20, height: 20, borderRadius: '50%',
-              border: `1.5px solid ${agentInfo.color}`,
-              overflow: 'hidden', flexShrink: 0, background: '#0A0F1E',
-            }}>
-              <img
-                src={`/corner/sprites/${task.agent}-idle.png`}
-                alt=""
-                style={{
-                  width: 34, height: 34,
-                  objectFit: 'cover', objectPosition: '20% 8%',
-                  imageRendering: 'pixelated', display: 'block',
-                  marginLeft: -5, marginTop: -3,
-                }}
-              />
-            </div>
-          )}
-          {agentInfo && (
-            <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-              color: agentInfo.color,
-            }}>
-              {agentInfo.name}
-            </span>
-          )}
-          {isLive && (
-            <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 11,
-              textTransform: 'uppercase', letterSpacing: '0.15em',
-              color: '#FF6B3D',
-              background: 'rgba(255,107,61,0.12)',
-              border: '1px solid rgba(255,107,61,0.3)',
-              borderRadius: 4, padding: '2px 8px',
-              display: 'flex', alignItems: 'center', gap: 5,
-              animation: 'rightNowPulse 2s ease-in-out infinite',
-            }}>
+        {/* Checkbox -- WIRED to onCheck -- stopPropagation so check doesn't toggle expand */}
+        <button
+          onClick={e => { e.stopPropagation(); onCheck?.(task) }}
+          style={{
+            width: 22, height: 22, flexShrink: 0,
+            border: `2px solid ${isDone ? projectColor : 'rgba(255,255,255,0.18)'}`,
+            borderRadius: 6,
+            background: isDone ? projectColor : 'transparent',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 200ms ease',
+            marginTop: 1,
+            padding: 0,
+            WebkitAppearance: 'none', appearance: 'none',
+          }}
+        >
+          {isDone && <Check size={14} color="#FDF6EC" strokeWidth={3} />}
+        </button>
+
+        {/* Task text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 16,
+            color: isDone ? '#6B7280' : '#F0ECE6',
+            lineHeight: 1.45,
+            textDecoration: isDone ? 'line-through' : 'none',
+          }}>
+            {task.text}
+          </div>
+
+          {/* Agent badge + LIVE badge row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: agentInfo || isLive ? 6 : 0 }}>
+            {agentInfo && hasSpr && (
               <div style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: '#FF6B3D',
-                boxShadow: '0 0 6px #FF6B3D',
-                animation: 'rightNowDotPulse 1.5s ease-in-out infinite',
-              }} />
-              LIVE
-            </span>
-          )}
+                width: 20, height: 20, borderRadius: '50%',
+                border: `1.5px solid ${agentInfo.color}`,
+                overflow: 'hidden', flexShrink: 0, background: '#0A0F1E',
+              }}>
+                <img
+                  src={`/corner/sprites/${task.agent}-idle.png`}
+                  alt=""
+                  style={{
+                    width: 34, height: 34,
+                    objectFit: 'cover', objectPosition: '20% 8%',
+                    imageRendering: 'pixelated', display: 'block',
+                    marginLeft: -5, marginTop: -3,
+                  }}
+                />
+              </div>
+            )}
+            {agentInfo && (
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                color: agentInfo.color,
+              }}>
+                {agentInfo.name}
+              </span>
+            )}
+            {isLive && (
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: 11,
+                textTransform: 'uppercase', letterSpacing: '0.15em',
+                color: '#FF6B3D',
+                background: 'rgba(255,107,61,0.12)',
+                border: '1px solid rgba(255,107,61,0.3)',
+                borderRadius: 4, padding: '2px 8px',
+                display: 'flex', alignItems: 'center', gap: 5,
+                animation: 'rightNowPulse 2s ease-in-out infinite',
+              }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: '#FF6B3D',
+                  boxShadow: '0 0 6px #FF6B3D',
+                  animation: 'rightNowDotPulse 1.5s ease-in-out infinite',
+                }} />
+                LIVE
+              </span>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Context note indicator (right side) */}
-      <TaskNoteIndicator taskText={task.text} style={{ alignSelf: 'center', flexShrink: 0 }} />
-    </motion.div>
+        {/* Expand chevron + context note indicator (right side) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
+          <TaskNoteIndicator taskText={task.text} />
+          <ChevronDown
+            size={14}
+            color={isExpanded ? 'rgba(59,130,246,0.8)' : 'rgba(255,255,255,0.2)'}
+            style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease', flexShrink: 0 }}
+          />
+        </div>
+      </motion.div>
+
+      {/* Inline task detail accordion */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <TaskDetailAccordion task={task} project={project} isNightMode={isNightMode} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
@@ -1528,6 +1561,9 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const [newTaskText, setNewTaskText] = useState('')
   const inputRef = useRef(null)
 
+  // Task detail accordion: which task is expanded inline (key = `${section}:${taskText}`)
+  const [expandedTaskKey, setExpandedTaskKey] = useState(null)
+
   // Right-click context menu state
   const [contextMenu, setContextMenu] = useState(null) // { position: {x,y}, task }
 
@@ -1570,6 +1606,16 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     e.preventDefault()
     setContextMenu({ position: { x: e.clientX, y: e.clientY }, task })
   }, [])
+
+  // Expand a task's accordion inline. Also navigates sidebar to that project if in all-view.
+  const handleExpandTask = useCallback((task, projectSection) => {
+    const key = `${projectSection}:${task.text}`
+    setExpandedTaskKey(prev => prev === key ? null : key)
+    // Navigate sidebar to the task's project when in all-view (selectedProject === null)
+    if (!selectedProject) {
+      setSelectedProject(projectSection)
+    }
+  }, [selectedProject])
 
   // Context menu action handler: delegates to shared handler from TaskContextMenu.jsx
   // Supports all 7 actions: toggle, priority, reassign, delete, addToRightNow, moveToProject, addContext
@@ -1866,6 +1912,10 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                                 index={i}
                                 isLive={project.section === 'rightnow'}
                                 spriteAgents={spriteAgents}
+                                isExpanded={expandedTaskKey === `${project.section}:${task.text}`}
+                                onExpand={(t) => handleExpandTask(t, project.section)}
+                                project={project}
+                                isNightMode={isNightMode}
                               />
                             </Reorder.Item>
                           ))}
@@ -1902,6 +1952,10 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                               onCheck={handleCheck}
                               onContextMenu={handleTaskContextMenu}
                               index={i}
+                              isExpanded={expandedTaskKey === `${project.section}:${task.text}`}
+                              onExpand={(t) => handleExpandTask(t, project.section)}
+                              project={project}
+                              isNightMode={isNightMode}
                             />
                           ))}
                         </div>
