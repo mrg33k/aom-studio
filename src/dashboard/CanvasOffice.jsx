@@ -1358,12 +1358,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       for (const { row, col } of slots) {
         const ox = ORIGIN_X + col * HEX_COL_STEP
         const oy = ORIGIN_Y + row * HEX_ROW_STEP
-        ctx.moveTo(ox + S * 0.50, oy + S * 0.05)  // top
-        ctx.lineTo(ox + S * 0.95, oy + S * 0.28)  // upper-right
-        ctx.lineTo(ox + S * 0.95, oy + S * 0.75)  // lower-right
-        ctx.lineTo(ox + S * 0.50, oy + S * 0.95)  // bottom
-        ctx.lineTo(ox + S * 0.05, oy + S * 0.75)  // lower-left
-        ctx.lineTo(ox + S * 0.05, oy + S * 0.28)  // upper-left
+        // Vertices copied VERBATIM from drawRoom() clip path -- rooms define the shape, grid follows.
+        // DO NOT change these independently. See drawRoom() SOURCE OF TRUTH comment.
+        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.40)  // upper-right
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.75)  // lower-right
+        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.75)  // lower-left
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.40)  // upper-left
         ctx.closePath()
       }
       ctx.stroke()
@@ -1600,12 +1602,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.save()
         ctx.translate(posX, posY + celebOffsetY)
         ctx.beginPath()
-        ctx.moveTo(S * 0.50, S * 0.05 - pad)
-        ctx.lineTo(S * 0.95 + pad * 0.87, S * 0.28 - pad * 0.5)
-        ctx.lineTo(S * 0.95 + pad * 0.87, S * 0.75 + pad * 0.5)
-        ctx.lineTo(S * 0.50, S * 0.95 + pad)
-        ctx.lineTo(S * 0.05 - pad * 0.87, S * 0.75 + pad * 0.5)
-        ctx.lineTo(S * 0.05 - pad * 0.87, S * 0.28 - pad * 0.5)
+        ctx.moveTo(S * 0.50, S * 0.00 - pad)
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.40 - pad * 0.5)
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.75 + pad * 0.5)
+        ctx.lineTo(S * 0.50, S * 0.99 + pad)
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.75 + pad * 0.5)
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.40 - pad * 0.5)
         ctx.closePath()
         // Animated dashed stroke
         const dashLen = 14
@@ -1661,12 +1663,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           ctx.translate(nPosX, nPosY + nCelebOffsetY)
           // Clip to neighbor's hex -- matches room PNG geometry (SOURCE OF TRUTH)
           ctx.beginPath()
-          ctx.moveTo(S * 0.50, S * 0.05)
-          ctx.lineTo(S * 0.95, S * 0.28)
-          ctx.lineTo(S * 0.95, S * 0.75)
-          ctx.lineTo(S * 0.50, S * 0.95)
-          ctx.lineTo(S * 0.05, S * 0.75)
-          ctx.lineTo(S * 0.05, S * 0.28)
+          // Vertices match drawRoom() clip path -- DO NOT change independently.
+          ctx.moveTo(S * 0.50, S * 0.00)
+          ctx.lineTo(S * 0.99, S * 0.40)
+          ctx.lineTo(S * 0.99, S * 0.75)
+          ctx.lineTo(S * 0.50, S * 0.99)
+          ctx.lineTo(S * 0.01, S * 0.75)
+          ctx.lineTo(S * 0.01, S * 0.40)
           ctx.closePath()
           ctx.clip()
           ctx.globalAlpha = 0.85 // slightly translucent so visitors look like guests
@@ -1832,18 +1835,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.save()
     ctx.translate(offsetX, offsetY)
 
-    // SOURCE OF TRUTH: These vertices match the room PNG geometry.
-    // DO NOT CHANGE without re-rendering all room images.
-    // The hex grid lines copy these EXACT vertex ratios verbatim.
-    // If you change these, update the grid section too or rooms will ghost.
+    // !! DO NOT CHANGE !! SOURCE OF TRUTH for all hex geometry in this file.
+    // Values derived from SRC_CROP (X=80, Y=0, W=864, H=864) + pixel analysis of room PNGs:
+    //   hex content spans source x=[88,936] y=[0,862] → dest x=[1%,99%] y=[0%,99.8%]
+    //   upper corners: source y=350 → dest y=350/864=0.405≈0.40
+    //   lower corners: source y=650 → dest y=650/864=0.752≈0.75
+    // Grid lines (line ~1360) copy these EXACT values verbatim. Do NOT adjust grid lines
+    // independently -- rooms define the shape, grid follows.
     ctx.beginPath()
     const S = ROOM_SIZE
-    ctx.moveTo(S * 0.50, S * 0.05)  // top
-    ctx.lineTo(S * 0.95, S * 0.28)  // upper-right
-    ctx.lineTo(S * 0.95, S * 0.75)  // lower-right
-    ctx.lineTo(S * 0.50, S * 0.95)  // bottom
-    ctx.lineTo(S * 0.05, S * 0.75)  // lower-left
-    ctx.lineTo(S * 0.05, S * 0.28)  // upper-left
+    ctx.moveTo(S * 0.50, S * 0.00)  // top
+    ctx.lineTo(S * 0.99, S * 0.40)  // upper-right
+    ctx.lineTo(S * 0.99, S * 0.75)  // lower-right
+    ctx.lineTo(S * 0.50, S * 0.99)  // bottom
+    ctx.lineTo(S * 0.01, S * 0.75)  // lower-left
+    ctx.lineTo(S * 0.01, S * 0.40)  // upper-left
     ctx.closePath()
     ctx.clip()
 
