@@ -4112,7 +4112,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
       paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
       background: isNightMode
         ? 'rgba(15,27,45,0.95)'
-        : 'rgba(18, 42, 75, 0.96)',
+        : 'rgba(15,25,50,0.85)',
     }}>
       {/* Top bar */}
       <div style={{
@@ -4120,7 +4120,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         transition: 'background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)'
-          : 'rgba(18, 42, 75, 0.96)',
+          : 'rgba(15,25,50,0.85)',
         backdropFilter: 'blur(12px)',
         borderBottom: isNightMode
           ? '1px solid rgba(59,130,246,0.15)'
@@ -6483,7 +6483,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
             style={{
               position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
               zIndex: 20, padding: '12px 14px',
-              background: isDaytime ? 'rgba(18, 42, 75, 0.98)' : 'rgba(8, 16, 32, 0.98)',
+              background: isDaytime ? 'rgba(15,25,50,0.85)' : 'rgba(8,14,28,0.95)',
               overflowY: 'auto',
             }}
           >
@@ -12918,7 +12918,7 @@ export default function GameDashboard() {
           color: #CBD5E1;
         }
         .md-msg tr:nth-child(even) td {
-          background: rgba(255,255,255,0.03);
+          background: rgba(59,130,246,0.05);
         }
         /* Approve animation: green glow flash then fade+slide out */
         @keyframes approveGlow {

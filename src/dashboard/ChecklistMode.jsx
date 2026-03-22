@@ -532,7 +532,7 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
           position: 'relative',
           minHeight: 48,
           background: isDone
-            ? 'rgba(255,255,255,0.01)'
+            ? 'rgba(59,130,246,0.02)'
             : isExpanded
               ? 'rgba(59,130,246,0.08)'
               : isHovered

@@ -78,7 +78,7 @@ import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify }) {
   const isDaytime = isNightMode === false
   // Match TaskPanel dark glass theme -- same bg/text as other expanded panels
-  const bg = isDaytime ? 'rgba(18,42,75,0.97)' : 'rgba(8,16,32,0.95)'
+  const bg = isDaytime ? 'rgba(15,25,50,0.85)' : 'rgba(8,14,28,0.95)'
   const border = isDaytime ? 'rgba(59,130,246,0.30)' : 'rgba(100,180,255,0.22)'
   const textPrimary = isDaytime ? '#F1F5F9' : '#EDF2FA'
   const textMuted = isDaytime ? '#94B8D8' : '#8BA4C4'
@@ -349,7 +349,7 @@ export default function GameHUD({
 
   // Daytime palette: brighter blue glass with vibrant accents (distinct from night)
   const isDaytime = isNightMode === false
-  const hudPanelBg = isDaytime ? 'rgba(18, 42, 75, 0.95)' : HUD.panelBg
+  const hudPanelBg = isDaytime ? 'rgba(15,25,50,0.85)' : HUD.panelBg
   const hudPanelBorder = isDaytime ? 'rgba(59, 130, 246, 0.3)' : HUD.panelBorder
   const hudPanelShadow = isDaytime
     ? '0 -8px 48px rgba(0,0,0,0.3), 0 -2px 0 rgba(59,130,246,0.2), inset 0 1px 0 rgba(100,180,255,0.12)'

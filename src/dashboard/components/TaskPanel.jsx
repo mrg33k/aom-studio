@@ -22,7 +22,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
   // Right Now is always orange/fire. Never inherit yellow from Supabase section_mappings.
   const panelColor = project.section === 'rightnow' ? '#FF6B3D' : project.color
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
-  const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
+  const tpBg = isDaytime ? 'rgba(15,25,50,0.85)' : HUD.panelBg
   const tpBorder = isDaytime ? 'rgba(59, 130, 246, 0.3)' : HUD.panelBorder
   const tpShadow = isDaytime
     ? '0 -12px 48px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,180,255,0.12)'
