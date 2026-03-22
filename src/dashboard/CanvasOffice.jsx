@@ -1949,22 +1949,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       ctx.lineTo(S * 0.03, S * 0.30)
       ctx.closePath()
       ctx.stroke()
-      // Project icon: folder shape in the center
-      const iconSize = S * 0.18
-      const ix = S * 0.5 - iconSize * 0.5
-      const iy = S * 0.45 - iconSize * 0.5
-      ctx.fillStyle = nameColor + '80'
-      // Simple folder shape
-      ctx.beginPath()
-      ctx.moveTo(ix, iy + iconSize * 0.2)
-      ctx.lineTo(ix + iconSize * 0.35, iy + iconSize * 0.2)
-      ctx.lineTo(ix + iconSize * 0.42, iy)
-      ctx.lineTo(ix + iconSize * 0.7, iy)
-      ctx.lineTo(ix + iconSize, iy + iconSize * 0.2)
-      ctx.lineTo(ix + iconSize, iy + iconSize)
-      ctx.lineTo(ix, iy + iconSize)
-      ctx.closePath()
-      ctx.fill()
+      // Initials: first 2 chars of nameText, centered in hex
+      const initials = nameText
+        ? nameText.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase() || nameText.slice(0, 1).toUpperCase()
+        : '?'
+      const fontSize = Math.round(S * 0.22)
+      ctx.font = `700 ${fontSize}px 'Inter Tight','Inter',sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = nameColor + 'DD'
+      ctx.fillText(initials, S * 0.5, S * 0.5)
       ctx.restore()
     }
 
