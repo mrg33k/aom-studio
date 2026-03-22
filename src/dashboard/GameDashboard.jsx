@@ -3533,7 +3533,11 @@ function MobileDrawer({
         position: 'fixed',
         left: 0,
         right: 0,
-        bottom: keyboardOpen ? kbBottomOffset : (isFullSnap ? 0 : 'env(safe-area-inset-bottom, 0px)'),
+        bottom: keyboardOpen ? kbBottomOffset : 0,
+        // Half snap: extend drawer to screen bottom, protect content from home indicator via paddingBottom.
+        // This ensures CanvasOffice's visibleH = viewH - drawerH is accurate (no sab offset skew).
+        // Full snap handles its own sab via inner content paddingBottom (line ~3701).
+        paddingBottom: keyboardOpen ? 0 : (isFullSnap ? 0 : 'env(safe-area-inset-bottom, 0px)'),
         height: sheetHeight,
         zIndex: isFullSnap || keyboardOpen ? 200 : 38,
         background: 'rgba(10, 15, 30, 0.98)',
