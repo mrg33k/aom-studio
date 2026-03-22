@@ -12722,7 +12722,7 @@ export default function GameDashboard() {
           border-radius: 6px;
           padding: 10px 12px;
           margin: 8px 0;
-          overflow-x: auto;
+          overflow: hidden;
           max-height: 300px;
         }
         .md-msg pre code {
@@ -12731,8 +12731,8 @@ export default function GameDashboard() {
           padding: 0;
           font-size: 12px;
           color: #CBD5E1;
-          word-break: normal;
-          white-space: pre;
+          word-break: break-word;
+          white-space: pre-wrap;
         }
         .md-msg blockquote {
           border-left: 3px solid var(--agent-color, #7CB9FF);

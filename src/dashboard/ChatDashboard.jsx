@@ -2549,14 +2549,15 @@ export default function ChatDashboard() {
           padding: 0.6em 0.8em;
           margin: 0.4em 0;
           max-width: 100%;
-          overflow-x: auto;
-          overflow-y: hidden;
+          overflow: hidden;
           font-size: 0.85em;
         }
         .chat-md pre code {
           background: none;
           padding: 0;
           font-size: 1em;
+          white-space: pre-wrap;
+          word-break: break-word;
         }
         .chat-md strong { font-weight: 700; }
         .chat-md a { color: #3B9EFF; text-decoration: underline; }
