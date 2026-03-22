@@ -67,34 +67,6 @@ const ALL_COLS = {
 }
 
 
-// ── TOUCH DRAG GHOST ────────────────────────────────────────────────────────
-// Creates a floating ghost element during touch drag. Appended to document.body.
-function createTouchGhost(sourceEl) {
-  const rect = sourceEl.getBoundingClientRect()
-  const ghost = sourceEl.cloneNode(true)
-  ghost.id = 'board-touch-ghost'
-  ghost.style.cssText = [
-    `position: fixed`,
-    `left: ${rect.left}px`,
-    `top: ${rect.top}px`,
-    `width: ${rect.width}px`,
-    `pointer-events: none`,
-    `z-index: 99999`,
-    `opacity: 0.85`,
-    `transform: rotate(2deg) scale(1.04)`,
-    `box-shadow: 0 12px 40px rgba(0,0,0,0.6)`,
-    `transition: none`,
-    `border-radius: 8px`,
-  ].join(';')
-  document.body.appendChild(ghost)
-  return ghost
-}
-
-function removeTouchGhost() {
-  const existing = document.getElementById('board-touch-ghost')
-  if (existing) existing.remove()
-}
-
 // ── COLUMN TOUCH GHOST ──────────────────────────────────────────────────────
 // Floating pill badge that follows the finger during touch column drag.
 function createColGhost(colKey) {
@@ -290,9 +262,12 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'move'
         e.dataTransfer.setData('text/plain', JSON.stringify({ entry, fromCol: columnKey, taskIndex }))
-        // Suppress browser ghost -- line indicator is the only drag feedback
-        const img = new Image()
-        e.dataTransfer.setDragImage(img, 0, 0)
+        // Suppress browser drag ghost -- insertion line is the only drag feedback
+        const ghost = document.createElement('div')
+        ghost.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px'
+        document.body.appendChild(ghost)
+        e.dataTransfer.setDragImage(ghost, 0, 0)
+        setTimeout(() => ghost.remove(), 0)
         onDragStart?.()
       }}
       onDragEnd={() => onDragEnd?.()}
@@ -713,7 +688,7 @@ function BoardColumn({
             {sortedCards.map((card, i) => (
               <Fragment key={`${colKey}-${card.text?.slice(0, 20)}-${i}`}>
                 {cardInsertIdx === i && (
-                  <div style={{ height: 2, background: '#3B82F6', borderRadius: 2, marginBottom: 6, pointerEvents: 'none' }} />
+                  <div style={{ height: 3, background: '#3B82F6', borderRadius: 2, marginBottom: 6, pointerEvents: 'none', boxShadow: '0 0 6px rgba(59,130,246,0.8)' }} />
                 )}
                 <BoardCard
                   entry={card}
@@ -743,7 +718,7 @@ function BoardColumn({
               </Fragment>
             ))}
             {cardInsertIdx === sortedCards.length && (
-              <div style={{ height: 2, background: '#3B82F6', borderRadius: 2, marginTop: 4, pointerEvents: 'none' }} />
+              <div style={{ height: 3, background: '#3B82F6', borderRadius: 2, marginTop: 4, pointerEvents: 'none', boxShadow: '0 0 6px rgba(59,130,246,0.8)' }} />
             )}
           </>
         )}
