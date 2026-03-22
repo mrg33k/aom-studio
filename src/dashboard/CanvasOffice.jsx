@@ -1299,10 +1299,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
     const cam = cameraRef.current
     const dpr = window.devicePixelRatio || 1
-    canvas.width = size.w * dpr
-    canvas.height = size.h * dpr
-    canvas.style.width = `${size.w}px`
-    canvas.style.height = `${size.h}px`
+    // Only resize canvas when dimensions actually change -- prevents GPU texture re-upload every frame
+    // (setting canvas.width even to the same value clears the canvas AND can stutter on mobile Safari)
+    const targetW = size.w * dpr
+    const targetH = size.h * dpr
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW
+      canvas.height = targetH
+      canvas.style.width = `${size.w}px`
+      canvas.style.height = `${size.h}px`
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     ctx.clearRect(0, 0, size.w, size.h)
@@ -2192,15 +2198,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           mouseDownRef.current.didDrag = true
           cameraAnimRef.current = null
         }
-        // Track velocity for momentum
+        // Track velocity in px/ms (frame-rate-independent momentum, same as touch path)
         const now = performance.now()
-        const dt = now - pan.lastTouchTime
-        if (dt > 0) {
-          const ivx = (e.clientX - pan.lastTouchX) / dt * 16.67
-          const ivy = (e.clientY - pan.lastTouchY) / dt * 16.67
-          pan.velX = pan.velX * 0.2 + ivx * 0.8
-          pan.velY = pan.velY * 0.2 + ivy * 0.8
-        }
+        const dt = Math.max(4, now - pan.lastTouchTime)
+        const ivx = (e.clientX - pan.lastTouchX) / dt  // px/ms
+        const ivy = (e.clientY - pan.lastTouchY) / dt  // px/ms
+        pan.velX = pan.velX * 0.2 + ivx * 0.8  // mouse stays 80/20: responsive feel
+        pan.velY = pan.velY * 0.2 + ivy * 0.8
         pan.lastTouchX = e.clientX
         pan.lastTouchY = e.clientY
         pan.lastTouchTime = now
@@ -2312,23 +2316,27 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       drag.roomId = null
     }
 
-    // Start momentum after mouse pan
+    // Start momentum after mouse pan (time-based, matches touch path)
     if (pan.active) {
       pan.active = false
-      const FRICTION = 0.94
-      const MIN_VELOCITY = 0.3
-      if (Math.abs(pan.velX) > MIN_VELOCITY || Math.abs(pan.velY) > MIN_VELOCITY) {
+      const FRICTION_PER_FRAME = 0.94  // slightly less coast than touch (mouse = more precise)
+      const MIN_VEL = 0.005            // px/ms
+      if (Math.abs(pan.velX) > MIN_VEL || Math.abs(pan.velY) > MIN_VEL) {
         let vx = pan.velX
         let vy = pan.velY
-        const applyMomentum = () => {
-          vx *= FRICTION
-          vy *= FRICTION
-          if (Math.abs(vx) < MIN_VELOCITY && Math.abs(vy) < MIN_VELOCITY) {
+        let lastMomentumTime = performance.now()
+        const applyMomentum = (timestamp) => {
+          const dt = Math.min(timestamp - lastMomentumTime, 64)
+          lastMomentumTime = timestamp
+          const decay = Math.pow(FRICTION_PER_FRAME, dt / 16.67)
+          vx *= decay
+          vy *= decay
+          if (Math.abs(vx) < MIN_VEL && Math.abs(vy) < MIN_VEL) {
             pan.momentumFrame = null
             return
           }
-          cameraRef.current.x += vx
-          cameraRef.current.y += vy
+          cameraRef.current.x += vx * dt
+          cameraRef.current.y += vy * dt
           pan.momentumFrame = requestAnimationFrame(applyMomentum)
         }
         pan.momentumFrame = requestAnimationFrame(applyMomentum)
@@ -2643,15 +2651,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         pan.lastTouchTime = performance.now()
       }
 
-      // Track velocity for momentum (weighted moving average)
-      // Clamp dt to 8ms minimum -- tiny dt causes velocity spikes on high refresh rate screens
+      // Track velocity in px/ms (NOT normalized to fps) so momentum is frame-rate-independent.
+      // 120Hz ProMotion: rAF fires every 8ms. If velocity were in px/frame it would double-speed.
+      // Clamp dt to 4ms minimum to avoid division spikes on very rapid events.
       const now = performance.now()
-      const dt = Math.max(8, now - pan.lastTouchTime)
-      const instantVelX = (t.clientX - pan.lastTouchX) / dt * 16.67 // normalize to ~60fps frame
-      const instantVelY = (t.clientY - pan.lastTouchY) / dt * 16.67
-      // Balanced EMA (50/50) -- smoother than 80/20, less noisy velocity on lift
-      pan.velX = pan.velX * 0.5 + instantVelX * 0.5
-      pan.velY = pan.velY * 0.5 + instantVelY * 0.5
+      const dt = Math.max(4, now - pan.lastTouchTime)
+      const instantVelX = (t.clientX - pan.lastTouchX) / dt  // px/ms
+      const instantVelY = (t.clientY - pan.lastTouchY) / dt  // px/ms
+      // EMA 60/40: slightly favor history for smoother lift-off velocity vs jittery last-sample
+      pan.velX = pan.velX * 0.6 + instantVelX * 0.4
+      pan.velY = pan.velY * 0.6 + instantVelY * 0.4
       pan.lastTouchX = t.clientX
       pan.lastTouchY = t.clientY
       pan.lastTouchTime = now
@@ -2751,28 +2760,37 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       // Start momentum animation after map pan (Clash of Clans feel)
       if (pan.active) {
         pan.active = false
-        const FRICTION = 0.93       // Deceleration factor per frame (higher = longer coast)
-        const MIN_VELOCITY = 0.1    // Stop threshold (lower = smoother tail-off)
 
-        // If finger was stationary before lifting (>80ms since last move), kill velocity
+        // Kill velocity if finger was stationary before lifting (stale = intentional stop)
         const staleMs = performance.now() - pan.lastTouchTime
         if (staleMs > 80) { pan.velX = 0; pan.velY = 0 }
 
-        const startVelX = pan.velX
-        const startVelY = pan.velY
+        const startVelX = pan.velX  // px/ms
+        const startVelY = pan.velY  // px/ms
 
-        if (Math.abs(startVelX) > MIN_VELOCITY || Math.abs(startVelY) > MIN_VELOCITY) {
+        // Friction: 0.93 per 60fps frame = 0.93^(dt/16.67) per actual frame -- frame-rate-independent.
+        // MIN_VEL in px/ms: 0.005 px/ms ≈ 0.08 px at 60fps -- smooth tail-off without endless drift.
+        const FRICTION_PER_FRAME = 0.93
+        const MIN_VEL = 0.005  // px/ms
+
+        if (Math.abs(startVelX) > MIN_VEL || Math.abs(startVelY) > MIN_VEL) {
           let vx = startVelX
           let vy = startVelY
-          const applyMomentum = () => {
-            vx *= FRICTION
-            vy *= FRICTION
-            if (Math.abs(vx) < MIN_VELOCITY && Math.abs(vy) < MIN_VELOCITY) {
+          let lastMomentumTime = performance.now()
+          const applyMomentum = (timestamp) => {
+            // Cap dt to 64ms so a tab-switch or backgrounding doesn't teleport the camera
+            const dt = Math.min(timestamp - lastMomentumTime, 64)
+            lastMomentumTime = timestamp
+            // Frame-rate-independent decay: same deceleration curve at 60Hz, 90Hz, 120Hz
+            const decay = Math.pow(FRICTION_PER_FRAME, dt / 16.67)
+            vx *= decay
+            vy *= decay
+            if (Math.abs(vx) < MIN_VEL && Math.abs(vy) < MIN_VEL) {
               pan.momentumFrame = null
               return
             }
-            cameraRef.current.x += vx
-            cameraRef.current.y += vy
+            cameraRef.current.x += vx * dt  // px/ms × ms = px
+            cameraRef.current.y += vy * dt
             pan.momentumFrame = requestAnimationFrame(applyMomentum)
           }
           pan.momentumFrame = requestAnimationFrame(applyMomentum)
