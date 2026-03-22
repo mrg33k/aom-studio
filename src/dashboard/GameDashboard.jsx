@@ -3343,6 +3343,142 @@ function MobileFixedInput({
   )
 }
 
+// ---- MINI NOW BAR (full-snap drawer top strip) --------------------------------
+// Static draggable list of Right Now tasks shown above chat when drawer is full-height.
+// No auto-scroll. User can long-press and drag to reorder.
+function MiniNowBar({ tasks, onNavigateToAgent }) {
+  const [orderedTasks, setOrderedTasks] = useState(() => tasks)
+  const [draggingIdx, setDraggingIdx] = useState(null)
+  const dragOverIdx = useRef(null)
+
+  // Keep ordered in sync when external tasks change (new tasks arrive, etc.)
+  useEffect(() => {
+    setOrderedTasks(tasks)
+  }, [tasks])
+
+  const handleDragStartItem = useCallback((e, idx) => {
+    setDraggingIdx(idx)
+    e.dataTransfer.effectAllowed = 'move'
+  }, [])
+
+  const handleDragOverItem = useCallback((e, idx) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    dragOverIdx.current = idx
+  }, [])
+
+  const handleDropItem = useCallback((e, idx) => {
+    e.preventDefault()
+    if (draggingIdx === null || draggingIdx === idx) {
+      setDraggingIdx(null)
+      return
+    }
+    setOrderedTasks(prev => {
+      const next = [...prev]
+      const [moved] = next.splice(draggingIdx, 1)
+      next.splice(idx, 0, moved)
+      return next
+    })
+    setDraggingIdx(null)
+  }, [draggingIdx])
+
+  const handleDragEndItem = useCallback(() => {
+    setDraggingIdx(null)
+  }, [])
+
+  return (
+    <div style={{
+      flexShrink: 0,
+      borderBottom: '1px solid rgba(255, 107, 61, 0.15)',
+      background: 'rgba(255, 107, 61, 0.04)',
+      padding: '4px 12px',
+    }}>
+      {/* Section label */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        marginBottom: 4,
+      }}>
+        <Zap size={10} color="#FF6B3D" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 3px rgba(255,107,61,0.6))' }} />
+        <span style={{
+          fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 800,
+          color: '#FF6B3D', letterSpacing: '0.12em', textTransform: 'uppercase',
+        }}>NOW</span>
+      </div>
+      {/* Draggable task rows */}
+      {orderedTasks.map((t, idx) => {
+        const dotColor = t.isDoneAwaitingApproval
+          ? '#F59E0B'
+          : t.isQueued
+            ? '#E91E90'
+            : '#FF6B3D'
+        const taskAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
+        const taskText = t.text || t.task || t.description || 'Running...'
+        const isDragging = draggingIdx === idx
+        return (
+          <div
+            key={t.taskId || t.text || idx}
+            draggable
+            onDragStart={(e) => handleDragStartItem(e, idx)}
+            onDragOver={(e) => handleDragOverItem(e, idx)}
+            onDrop={(e) => handleDropItem(e, idx)}
+            onDragEnd={handleDragEndItem}
+            onClick={() => taskAgent && onNavigateToAgent?.(taskAgent.slug)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '5px 8px',
+              marginBottom: 3,
+              background: isDragging
+                ? 'rgba(255,107,61,0.15)'
+                : 'rgba(255,107,61,0.06)',
+              border: `1px solid ${isDragging ? dotColor + '55' : dotColor + '22'}`,
+              borderRadius: 8,
+              cursor: 'grab',
+              opacity: isDragging ? 0.5 : 1,
+              transition: 'background 0.15s, opacity 0.15s',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+            }}
+          >
+            {/* Drag handle dots */}
+            <span style={{
+              display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0, opacity: 0.4,
+            }}>
+              <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#94A3B8', display: 'block' }} />
+              <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#94A3B8', display: 'block' }} />
+            </span>
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: dotColor,
+              boxShadow: `0 0 4px ${dotColor}80`,
+              animation: 'statusPulse 1.8s ease-in-out infinite',
+              flexShrink: 0,
+            }} />
+            {taskAgent && (
+              <span style={{
+                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                color: taskAgent.agentColor || taskAgent.color || '#6B7280',
+                textTransform: 'uppercase', letterSpacing: '0.08em',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}>
+                {taskAgent.name?.split(' ')[0] || t.agent}
+              </span>
+            )}
+            <span style={{
+              fontFamily: "'Inter', system-ui, sans-serif",
+              fontSize: 11, fontWeight: 500,
+              color: '#CBD5E1',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              flex: 1,
+            }}>
+              {taskText}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // Snap points: HIDDEN (off-screen), HALF (~50% screen), FULL (100% screen)
 // Anchored to bottom of screen. Animates HEIGHT with spring physics.
 // Content (chat input, task lists) always fills the visible area correctly.
@@ -3619,119 +3755,12 @@ function MobileDrawer({
         }} />
       </div>
 
-      {/* Mini Right Now ticker -- only shown when drawer is at full-height snap.
-          Auto-scrolling marquee (doubled content for seamless loop).
-          Swipe down anywhere on the bar collapses drawer back to half. */}
-      {isFullSnap && rightNowTasks && rightNowTasks.length > 0 && (() => {
-        // Duplicate tasks for seamless CSS marquee: translateX(-50%) = one full loop
-        const tickerTasks = [...rightNowTasks, ...rightNowTasks]
-        // Duration: 4s per task, min 8s
-        const duration = Math.max(8, rightNowTasks.length * 4)
-        return (
-          <div
-            onTouchStart={handleDragStart}
-            onTouchMove={handleDragMove}
-            onTouchEnd={handleDragEnd}
-            style={{
-              position: 'relative',
-              height: 36, flexShrink: 0,
-              borderBottom: '1px solid rgba(255, 107, 61, 0.15)',
-              background: 'rgba(255, 107, 61, 0.05)',
-              overflow: 'hidden',
-              touchAction: 'none',
-              cursor: 'grab',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-            }}
-          >
-            {/* Scrolling ticker strip -- doubled content for seamless -50% loop */}
-            <div style={{
-              position: 'absolute', left: 0, top: 0, bottom: 0,
-              display: 'flex', alignItems: 'center',
-              animation: `tickerScroll ${duration}s linear infinite`,
-              willChange: 'transform',
-            }}>
-              {tickerTasks.map((t, idx) => {
-                const dotColor = t.isDoneAwaitingApproval
-                  ? '#F59E0B'
-                  : t.isQueued
-                    ? '#E91E90'
-                    : '#FF6B3D'
-                const taskAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
-                const taskText = t.text || t.task || t.description || 'Running...'
-                return (
-                  <div
-                    key={`ticker-${idx}`}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
-                      padding: '3px 9px',
-                      background: t.isDoneAwaitingApproval
-                        ? 'rgba(245,158,11,0.08)'
-                        : t.isQueued
-                          ? 'rgba(233,30,144,0.08)'
-                          : 'rgba(255,107,61,0.08)',
-                      border: `1px solid ${dotColor}22`,
-                      borderRadius: 8,
-                      flexShrink: 0,
-                      marginRight: 14,
-                    }}
-                  >
-                    <span style={{
-                      width: 6, height: 6, borderRadius: '50%',
-                      background: dotColor,
-                      boxShadow: `0 0 4px ${dotColor}80`,
-                      animation: 'statusPulse 1.8s ease-in-out infinite',
-                      flexShrink: 0,
-                    }} />
-                    {taskAgent && (
-                      <span style={{
-                        fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
-                        color: taskAgent.agentColor || taskAgent.color || '#6B7280',
-                        textTransform: 'uppercase', letterSpacing: '0.08em',
-                        whiteSpace: 'nowrap', flexShrink: 0,
-                      }}>
-                        {taskAgent.name?.split(' ')[0] || t.agent}
-                      </span>
-                    )}
-                    <span style={{
-                      fontFamily: "'Inter', system-ui, sans-serif",
-                      fontSize: 11, fontWeight: 600,
-                      color: '#CBD5E1',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {taskText}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-            {/* "⚡ NOW |" label pinned left with gradient mask -- acts as the exit veil */}
-            <div style={{
-              position: 'absolute', left: 0, top: 0, bottom: 0,
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '0 8px 0 12px',
-              zIndex: 2,
-              pointerEvents: 'none',
-              background: 'linear-gradient(to right, rgba(10,15,30,0.99) 68%, rgba(10,15,30,0.6) 88%, transparent 100%)',
-              width: 92,
-            }}>
-              <Zap size={11} color="#FF6B3D" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(255,107,61,0.6))' }} />
-              <span style={{
-                fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 800,
-                color: '#FF6B3D', letterSpacing: '0.12em', textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
-              }}>NOW</span>
-              <div style={{ width: 1, height: 14, background: 'rgba(255,107,61,0.3)' }} />
-            </div>
-            {/* Right-edge fade */}
-            <div style={{
-              position: 'absolute', right: 0, top: 0, bottom: 0, width: 28,
-              background: 'linear-gradient(to left, rgba(10,15,30,0.92) 0%, transparent 100%)',
-              zIndex: 2, pointerEvents: 'none',
-            }} />
-          </div>
-        )
-      })()}
+      {/* Mini Right Now bar -- only shown when drawer is at full-height snap.
+          Static list of tasks. Draggable to reorder (same as homepage pills).
+          No auto-scroll. Swipe down on the handle above collapses back to half. */}
+      {isFullSnap && rightNowTasks && rightNowTasks.length > 0 && (
+        <MiniNowBar tasks={rightNowTasks} onNavigateToAgent={onNavigateToAgent} />
+      )}
 
       {/* Agent info header (compact) */}
       <div style={{
@@ -12100,7 +12129,7 @@ export default function GameDashboard() {
       {/* Wrapped in a container that constrains fixed positioning to the game viewport only.
           transform creates a new containing block, so GameHUD's position:fixed becomes relative to this container.
           On desktop with sidebar visible: HUD only covers game area, not sidebar.
-          HIDDEN on mobile when drawer is open (pills vs drawer mutual exclusion).
+          Always visible -- bottom HUD and full-screen drawer coexist (HUD is game layer, drawer is chat layer).
           HIDDEN in board view mode. */}
       {viewMode !== 'board' && (
         <div style={{
@@ -12109,11 +12138,11 @@ export default function GameDashboard() {
           left: 0,
           right: (!isMobile && selectedRoom && ROOM_LOOKUP[selectedRoom]) ? (panelExtended ? '65%' : '30%') : 0,
           zIndex: 40,
-          transition: 'right 250ms ease, bottom 200ms ease, opacity 200ms ease',
+          transition: 'right 250ms ease, bottom 200ms ease',
           pointerEvents: 'none',
-          opacity: (isMobile && drawerOpen) ? 0 : 1,
+          opacity: 1,
         }}>
-        <div style={{ position: 'relative', width: '100%', height: 0, transform: 'translateZ(0)', pointerEvents: (isMobile && drawerOpen) ? 'none' : 'auto' }}>
+        <div style={{ position: 'relative', width: '100%', height: 0, transform: 'translateZ(0)', pointerEvents: 'auto' }}>
         <Suspense fallback={null}>
           <GameHUD
             agentStatus={agentStatus}
