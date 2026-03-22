@@ -149,11 +149,11 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
   const projectTag = entry.project || null
   const cardRef = useRef(null)
 
-  // Night/day card colors
-  const cardBg = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'
-  const cardBorder = isNightMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)'
-  const cardHoverBg = isNightMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'
-  const cardTextColor = isNightMode ? '#F1F5F9' : '#1E293B'
+  // Night/day card colors -- blue glass
+  const cardBg = isNightMode ? 'rgba(15,45,140,0.20)' : 'rgba(80,150,255,0.12)'
+  const cardBorder = isNightMode ? 'rgba(60,120,255,0.20)' : 'rgba(100,170,255,0.30)'
+  const cardHoverBg = isNightMode ? 'rgba(20,60,180,0.30)' : 'rgba(80,150,255,0.22)'
+  const cardTextColor = isNightMode ? '#F1F5F9' : '#EEF4FF'
 
   // Pointer-based drag (works for both mouse and touch)
   const pointerDragRef = useRef({
@@ -208,38 +208,30 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
 
     if (state.active) {
       e.preventDefault()
-      const ghost = document.getElementById('board-touch-ghost')
-      if (ghost) {
-        const rect = cardRef.current?.getBoundingClientRect()
-        const offsetX = rect ? e.clientX - state.startX : 0
-        const offsetY = rect ? e.clientY - state.startY : 0
-        ghost.style.left = `${(rect?.left ?? 0) + offsetX}px`
-        ghost.style.top = `${(rect?.top ?? 0) + offsetY}px`
 
-        // Highlight drop target column
-        const el = document.elementFromPoint(e.clientX, e.clientY)
-        const colEl = el?.closest('[data-board-col]')
-        const allCols = document.querySelectorAll('[data-board-col]')
-        allCols.forEach(c => c.setAttribute('data-drop-hover', c === colEl ? '1' : '0'))
+      // Highlight drop target column
+      const el = document.elementFromPoint(e.clientX, e.clientY)
+      const colEl = el?.closest('[data-board-col]')
+      const allCols = document.querySelectorAll('[data-board-col]')
+      allCols.forEach(c => c.setAttribute('data-drop-hover', c === colEl ? '1' : '0'))
 
-        // Compute within-column insert position for reorder feedback
-        const toCol = colEl?.getAttribute('data-board-col')
-        if (toCol === columnKey) {
-          const cardEls = [...(colEl?.querySelectorAll('[data-board-card-idx]') || [])]
-          let insertIdx = cardEls.length
-          for (const cardEl of cardEls) {
-            const r = cardEl.getBoundingClientRect()
-            if (e.clientY < r.top + r.height / 2) {
-              insertIdx = parseInt(cardEl.getAttribute('data-board-card-idx'))
-              break
-            }
+      // Compute within-column insert position for reorder feedback
+      const toCol = colEl?.getAttribute('data-board-col')
+      if (toCol === columnKey) {
+        const cardEls = [...(colEl?.querySelectorAll('[data-board-card-idx]') || [])]
+        let insertIdx = cardEls.length
+        for (const cardEl of cardEls) {
+          const r = cardEl.getBoundingClientRect()
+          if (e.clientY < r.top + r.height / 2) {
+            insertIdx = parseInt(cardEl.getAttribute('data-board-card-idx'))
+            break
           }
-          state.inColInsertIdx = insertIdx
-          onDragOverCard?.(insertIdx)
-        } else {
-          state.inColInsertIdx = null
-          onDragOverCard?.(null)
         }
+        state.inColInsertIdx = insertIdx
+        onDragOverCard?.(insertIdx)
+      } else {
+        state.inColInsertIdx = null
+        onDragOverCard?.(null)
       }
     }
   }, [onDragStart, onDragOverCard, columnKey])
@@ -498,14 +490,14 @@ function BoardColumn({
     s.active = false; s.moved = false; s.pointerId = null
   }, [onColDragEnd])
 
-  // Night/day column colors
+  // Night/day column colors -- blue glass
   const colBodyBg = isNightMode
-    ? 'rgba(255,255,255,0.015)'
-    : 'rgba(0,0,0,0.025)'
+    ? 'rgba(20,50,130,0.25)'
+    : 'rgba(60,130,255,0.15)'
   const colBodyHoverBg = isNightMode
-    ? `${config.color}08`
-    : `${config.color}10`
-  const emptyTextColor = isNightMode ? '#2D3F55' : '#94A3B8'
+    ? `${config.color}18`
+    : `${config.color}28`
+  const emptyTextColor = isNightMode ? 'rgba(80,120,200,0.5)' : 'rgba(140,190,255,0.55)'
 
   // Keep touchHover in sync with data-drop-hover attribute changes
   useEffect(() => {
@@ -645,7 +637,7 @@ function BoardColumn({
           onPointerMove={handleColGripMove}
           onPointerUp={handleColGripUp}
           onPointerCancel={handleColGripCancel}
-          style={{ cursor: 'grab', touchAction: 'none', color: '#334155', display: 'flex', alignItems: 'center', padding: '0 2px 0 0', flexShrink: 0 }}
+          style={{ cursor: 'grab', touchAction: 'none', color: 'rgba(150,190,255,0.5)', display: 'flex', alignItems: 'center', padding: '0 2px 0 0', flexShrink: 0 }}
         >
           <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
             <circle cx="2" cy="2" r="1.3"/><circle cx="6" cy="2" r="1.3"/>
@@ -1194,10 +1186,10 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
     ? 'calc(48px + env(safe-area-inset-top, 0px))'
     : '52px'
 
-  const bgColor = isNightMode ? '#0A0F1E' : '#F0F4F8'
-  const toolbarBorderColor = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'
-  const dividerColor = isNightMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.12)'
-  const colCountColor = isNightMode ? '#334155' : '#94A3B8'
+  const bgColor = isNightMode ? '#060E1C' : '#0C3070'
+  const toolbarBorderColor = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(80,150,255,0.20)'
+  const dividerColor = isNightMode ? 'rgba(255,255,255,0.08)' : 'rgba(80,150,255,0.20)'
+  const colCountColor = isNightMode ? '#334155' : '#88B8E8'
 
   // Scroll shadow gradient (fades from bg to transparent at each edge)
   const shadowLeft = `linear-gradient(to right, ${bgColor}, transparent)`
@@ -1262,16 +1254,16 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          background: isNightMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-          border: `1.5px solid ${isNightMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)'}`,
+          background: isNightMode ? 'rgba(255,255,255,0.05)' : 'rgba(60,130,255,0.12)',
+          border: `1.5px solid ${isNightMode ? 'rgba(255,255,255,0.1)' : 'rgba(100,170,255,0.25)'}`,
           borderRadius: 8,
           padding: '4px 10px',
           flex: '0 1 220px',
           minWidth: 120,
         }}>
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.4 }}>
-            <circle cx="6.5" cy="6.5" r="5" stroke={isNightMode ? '#fff' : '#000'} strokeWidth="1.5"/>
-            <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke={isNightMode ? '#fff' : '#000'} strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="6.5" cy="6.5" r="5" stroke="#fff" strokeWidth="1.5"/>
+            <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
           <input
             ref={searchInputRef}
@@ -1283,7 +1275,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              color: isNightMode ? '#F1F5F9' : '#1E293B',
+              color: '#EEF4FF',
               fontFamily: "'Inter', system-ui, sans-serif",
               fontSize: 12,
               fontWeight: 400,
