@@ -32,7 +32,7 @@ export const HUD = {
 }
 
 // ---- STATUS CONFIG ----------------------------------------------------------
-export const STATUS_DOT = {
+const STATUS_DOT_FALLBACK = {
   WORKING:  { color: '#22C55E', glow: 'rgba(34,197,94,0.5)',  label: 'Active',   ring: '#22C55E' },
   IDLE:     { color: '#4A6080', glow: 'rgba(74,96,128,0.2)',   label: 'Idle',     ring: '#3A5070' },
   BLOCKED:  { color: '#EF4444', glow: 'rgba(239,68,68,0.5)',  label: 'Blocked',  ring: '#EF4444' },
@@ -40,6 +40,44 @@ export const STATUS_DOT = {
   WAITING:  { color: '#F59E0B', glow: 'rgba(245,158,11,0.4)', label: 'Thinking', ring: '#F59E0B' },
   PAUSED:   { color: '#F97316', glow: 'rgba(249,115,22,0.4)', label: 'Paused',   ring: '#F97316' },
 }
+
+// Module-level cache: one fetch shared across all consumers per page load
+let _statusDotCache = null
+let _statusDotFetching = false
+const _statusDotListeners = new Set()
+
+function _fetchStatusDot() {
+  if (_statusDotCache || _statusDotFetching || !supabase) return
+  _statusDotFetching = true
+  supabase
+    .from('agent_statuses')
+    .select('slug,color,glow,label,ring')
+    .then(({ data, error }) => {
+      _statusDotFetching = false
+      if (!error && data && data.length > 0) {
+        const built = {}
+        data.forEach(row => {
+          built[row.slug.toUpperCase()] = { color: row.color, glow: row.glow, label: row.label, ring: row.ring }
+        })
+        _statusDotCache = built
+        _statusDotListeners.forEach(fn => fn(built))
+      }
+    })
+}
+
+export function useStatusDot() {
+  const [statusDot, setStatusDot] = useState(_statusDotCache || STATUS_DOT_FALLBACK)
+  useEffect(() => {
+    if (_statusDotCache) { setStatusDot(_statusDotCache); return }
+    _statusDotListeners.add(setStatusDot)
+    _fetchStatusDot()
+    return () => _statusDotListeners.delete(setStatusDot)
+  }, [])
+  return statusDot
+}
+
+// Backward-compat static export -- consumers that don't need live updates keep working
+export const STATUS_DOT = STATUS_DOT_FALLBACK
 
 // ---- SECTION MAPS (fallbacks used until Supabase fetch resolves) -------------
 const SECTION_MAP_FALLBACK = {

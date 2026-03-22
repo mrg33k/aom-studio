@@ -9,7 +9,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Pause, Clock, X, Users } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
-import { PALETTE, HUD, STATUS_DOT } from './HUDConstants.jsx'
+import { PALETTE, HUD, STATUS_DOT, useStatusDot } from './HUDConstants.jsx'
 import { supabase } from '../lib/supabase.js'
 
 // ---- SIMS PLUMBOB SVG CLIP PATH (the iconic diamond shape) ------------------
@@ -91,8 +91,9 @@ function useSpriteAgents() {
 
 export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onContextMenu, showName = false, index = 0 }) {
   const spriteAgents = useSpriteAgents()
+  const statusDot = useStatusDot()
   const agent = AGENTS.find(a => a.slug === slug)
-  const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
+  const cfg = statusDot[status] || statusDot.IDLE
   const color = agent?.color || '#4A6080'
   const isActive = status === 'WORKING'
   const isBlocked = status === 'BLOCKED'
@@ -314,6 +315,7 @@ const DEFAULT_MAIN_AGENT = 'elon'
 
 export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
   const spriteAgents = useSpriteAgents()
+  const statusDot = useStatusDot()
   const [expanded, setExpanded] = useState(false)
   const [revolverAgent, setRevolverAgent] = useState(null) // which agent triggered revolver
   const [revolverPos, setRevolverPos] = useState({ x: 0, y: 0 })
@@ -333,7 +335,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
 
   const mainAgent = AGENTS.find(a => a.slug === DEFAULT_MAIN_AGENT) || AGENTS[0]
   const mainStatus = agentStatus?.[mainAgent?.slug]?.status || 'IDLE'
-  const mainCfg = STATUS_DOT[mainStatus] || STATUS_DOT.IDLE
+  const mainCfg = statusDot[mainStatus] || statusDot.IDLE
   const mainHasSpr = mainAgent && spriteAgents.includes(mainAgent.slug)
 
   // Close revolver on click outside
@@ -433,7 +435,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
       <AnimatePresence>
         {expanded && sortedAgents.filter(a => a.slug !== mainAgent.slug).map((agent, idx) => {
           const status = agentStatus?.[agent.slug]?.status || 'IDLE'
-          const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
+          const cfg = statusDot[status] || statusDot.IDLE
           const hasSpr = spriteAgents.includes(agent.slug)
           return (
             <motion.div
@@ -514,7 +516,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
             <div style={{ maxHeight: 200, overflowY: 'auto', padding: '0 4px' }}>
               {filteredAgents.map((agent, i) => {
                 const status = agentStatus?.[agent.slug]?.status || 'IDLE'
-                const cfg = STATUS_DOT[status] || STATUS_DOT.IDLE
+                const cfg = statusDot[status] || statusDot.IDLE
                 const hasSpr = spriteAgents.includes(agent.slug)
                 const isSelected = revolverAgent === agent.slug
                 return (
