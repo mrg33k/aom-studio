@@ -1087,21 +1087,19 @@ export default function GameHUD({
                   onTouchMove={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
                   whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
                   whileTap={{ scale: 0.94 }}
-                  className={task.done ? '' : (task.isDoneAwaitingApproval ? 'ticker-task-new' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-new')}
+                  className={task.done ? '' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-done'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: isMobile ? '10px 14px' : '4px 12px',
                     minHeight: isMobile ? 44 : 'auto',
                     background: task.done
                       ? 'rgba(34,197,94,0.12)'
-                      : task.isDoneAwaitingApproval
-                        ? 'rgba(245,158,11,0.12)'
+                      : task.isLive && !task.isQueued
+                        ? 'rgba(255,107,61,0.12)'
                         : task.isQueued
                           ? 'rgba(233,30,144,0.12)'
-                          : task.isLive
-                            ? 'rgba(255,107,61,0.12)'
-                            : 'rgba(100,180,255,0.08)',
-                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isDoneAwaitingApproval ? 'rgba(245,158,11,0.35)' : task.isQueued ? 'rgba(233,30,144,0.25)' : task.isLive ? 'rgba(255,107,61,0.25)' : 'rgba(100,180,255,0.15)'}`,
+                          : 'rgba(245,158,11,0.12)',
+                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isLive && !task.isQueued ? 'rgba(255,107,61,0.25)' : task.isQueued ? 'rgba(233,30,144,0.25)' : 'rgba(245,158,11,0.35)'}`,
                     borderRadius: 10,
                     cursor: 'pointer',
                     flexShrink: 0,
@@ -1131,7 +1129,14 @@ export default function GameHUD({
                       animation: 'statusPulse 1.5s ease-in-out infinite',
                       flexShrink: 0,
                     }} />
-                  ) : null}
+                  ) : (
+                    <span style={{
+                      width: 7, height: 7, borderRadius: '50%', background: '#F59E0B',
+                      boxShadow: '0 0 6px rgba(245,158,11,0.7)',
+                      animation: 'statusPulse 2s ease-in-out infinite',
+                      flexShrink: 0,
+                    }} />
+                  )}
                   <span style={{
                     fontFamily: "'Inter', system-ui, sans-serif",
                     fontSize: 13, fontWeight: 600,
@@ -1424,6 +1429,13 @@ export default function GameHUD({
           40% { transform: rotate(1.5deg); }
           60% { transform: rotate(-1deg); }
           80% { transform: rotate(1deg); }
+        }
+        @keyframes tickerFlashAmber {
+          0%, 100% { box-shadow: 0 0 0 rgba(245,158,11,0); }
+          30% { box-shadow: 0 0 12px rgba(245,158,11,0.5); }
+        }
+        .ticker-task-done {
+          animation: tickerFlashAmber 1.2s ease-out 1, tickerWiggle 0.5s ease-in-out 1 0.15s;
         }
         .ticker-task-new {
           animation: tickerFlash 1.2s ease-out 1, tickerWiggle 0.5s ease-in-out 1 0.15s;
