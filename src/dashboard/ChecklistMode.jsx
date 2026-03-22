@@ -230,10 +230,10 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
             height: 40, padding: '0 14px',
             background: !selectedProject
               ? (isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(59,158,255,0.15)')
-              : 'rgba(255,255,255,0.04)',
+              : 'rgba(59,130,246,0.05)',
             border: `1.5px solid ${!selectedProject
               ? (isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(59,158,255,0.4)')
-              : 'rgba(255,255,255,0.07)'}`,
+              : 'rgba(59,130,246,0.10)'}`,
             borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
             cursor: 'pointer', scrollSnapAlign: 'start',
             color: !selectedProject ? '#3B82F6' : '#CBD5E1',
@@ -536,9 +536,9 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
             : isExpanded
               ? 'rgba(59,130,246,0.08)'
               : isHovered
-                ? 'rgba(255,255,255,0.04)'
-                : 'rgba(255,255,255,0.02)',
-          border: `1px solid ${isExpanded ? 'rgba(59,130,246,0.30)' : isHovered ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'}`,
+                ? 'rgba(59,130,246,0.06)'
+                : 'rgba(59,130,246,0.02)',
+          border: `1px solid ${isExpanded ? 'rgba(59,130,246,0.30)' : isHovered ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.08)'}`,
           borderRadius: isExpanded ? '10px 10px 0 0' : 10,
           padding: '12px 16px',
           display: 'flex', alignItems: 'flex-start', gap: 12,
@@ -569,7 +569,7 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
           onClick={e => { e.stopPropagation(); onCheck?.(task) }}
           style={{
             width: 22, height: 22, flexShrink: 0,
-            border: `2px solid ${isDone ? projectColor : 'rgba(255,255,255,0.18)'}`,
+            border: `2px solid ${isDone ? projectColor : 'rgba(59,130,246,0.30)'}`,
             borderRadius: 6,
             background: isDone ? projectColor : 'transparent',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1995,7 +1995,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         {/* Add task input */}
         <form onSubmit={handleAddTask} style={{
           padding: '12px 16px',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          borderTop: '1px solid rgba(59,130,246,0.10)',
           background: 'rgba(10, 15, 30, 0.8)',
           backdropFilter: 'blur(8px)',
           flexShrink: 0,

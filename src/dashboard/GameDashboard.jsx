@@ -2253,7 +2253,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                       : 'rgba(10, 18, 35, 0.7)',
                     border: (isHovered || isSelected)
                       ? `1px solid ${agentColor}60`
-                      : '1px solid rgba(255,255,255,0.1)',
+                      : '1px solid rgba(59,130,246,0.15)',
                     borderRadius: 4,
                     padding: '2px 8px',
                     color: (isHovered || isSelected) ? '#fff' : 'rgba(26,35,50,0.85)',
@@ -2841,7 +2841,7 @@ function MiniMap({ rooms, agentStatus, selectedRoom, cameraTarget, cameraZoom, i
         position: 'fixed', bottom: 80, left: 16, zIndex: 35,
         width: 160, height: 120,
         background: 'rgba(10, 15, 30, 0.9)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(59,130,246,0.12)',
         borderRadius: 6,
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
         padding: 8,
@@ -3016,7 +3016,7 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
       minHeight: 48,
       background: 'rgba(10, 15, 30, 0.98)',
       backdropFilter: 'blur(16px)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+      borderTop: '1px solid rgba(59,130,246,0.10)',
       display: 'flex', alignItems: 'center',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
@@ -4012,7 +4012,7 @@ function ShortcutsOverlay({ onClose }) {
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#0C1120', border: '1px solid rgba(255,255,255,0.08)',
+          background: '#0C1120', border: '1px solid rgba(59,130,246,0.12)',
           borderRadius: 12, padding: 24, width: 360,
           boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
         }}
@@ -4028,7 +4028,7 @@ function ShortcutsOverlay({ onClose }) {
           <div key={s.key} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '8px 0',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            borderBottom: '1px solid rgba(59,130,246,0.08)',
           }}>
             <span style={{
               fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, color: '#A8A29E',
@@ -4049,7 +4049,7 @@ function ShortcutsOverlay({ onClose }) {
           onClick={onClose}
           style={{
             width: '100%', marginTop: 16, padding: '10px',
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.12)',
             borderRadius: 6, color: '#6B7280', cursor: 'pointer',
             fontFamily: "'Inter', system-ui, sans-serif", fontSize: 12,
           }}
@@ -5101,13 +5101,13 @@ function AddTaskTab() {
       <input type="text" placeholder="Add a task for any agent..."
         style={{
           width: '100%', background: 'transparent',
-          border: 'none', borderBottom: '2px solid rgba(255, 255, 255, 0.15)',
+          border: 'none', borderBottom: '2px solid rgba(59,130,246,0.25)',
           color: '#FDF6EC', padding: '12px 0', fontSize: 14,
           fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400,
           outline: 'none',
         }}
         onFocus={e => e.target.style.borderBottomColor = '#E85D26'}
-        onBlur={e => e.target.style.borderBottomColor = 'rgba(255, 255, 255, 0.15)'}
+        onBlur={e => e.target.style.borderBottomColor = 'rgba(59,130,246,0.25)'}
       />
 
       {/* Agent pills */}
@@ -5120,7 +5120,7 @@ function AddTaskTab() {
                 display: 'flex', alignItems: 'center', gap: 6,
                 height: 28, padding: '4px 12px', borderRadius: 14,
                 background: sel ? `${a.color}26` : 'transparent',
-                border: `1px solid ${sel ? `${a.color}4D` : 'rgba(255,255,255,0.08)'}`,
+                border: `1px solid ${sel ? `${a.color}4D` : 'rgba(59,130,246,0.12)'}`,
                 color: sel ? a.color : '#8A847C',
                 fontSize: 12, fontWeight: 500, fontFamily: "'Inter', system-ui, sans-serif",
                 cursor: 'pointer', transition: 'all 150ms ease',
@@ -5497,7 +5497,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '0 20px', height: fullscreen ? 56 : 44,
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              borderBottom: '1px solid rgba(59,130,246,0.10)',
               flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -5636,7 +5636,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
             <form onSubmit={sendMessage} style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 16px', height: 56,
-              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              borderTop: '1px solid rgba(59,130,246,0.10)',
               flexShrink: 0, background: 'rgba(0, 0, 0, 0.15)',
             }}>
               <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
@@ -5684,7 +5684,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
             background: 'rgba(10, 15, 30, 0.92)',
             backdropFilter: 'blur(16px)',
             borderTop: `1px solid ${agentColor}18`,
-            borderBottom: `1px solid rgba(255,255,255,0.04)`,
+            borderBottom: `1px solid rgba(59,130,246,0.08)`,
             boxShadow: '0 -2px 16px rgba(0, 0, 0, 0.35)',
           }}>
             <div onClick={() => setExpanded(true)} style={{ cursor: 'pointer' }}>
@@ -9192,7 +9192,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                               }
                             : {
                                 background: '#0F1B2D',
-                                border: `1px solid ${msg.streaming ? (isAomRoom && msgAgentColor ? msgAgentColor + '40' : agentColor + '40') : 'rgba(255,255,255,0.08)'}`,
+                                border: `1px solid ${msg.streaming ? (isAomRoom && msgAgentColor ? msgAgentColor + '40' : agentColor + '40') : 'rgba(59,130,246,0.12)'}`,
                                 // AOM room: left accent border per agent so you can scan at a glance who said what
                                 ...(isAomRoom && msgAgentColor ? { borderLeft: `3px solid ${msgAgentColor}60` } : {}),
                                 color: '#F1F5F9',
@@ -10270,7 +10270,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
       transition: 'right 300ms ease, opacity 200ms ease',
       display: 'flex', flexDirection: 'column', gap: 4,
       background: 'rgba(10,15,30,0.85)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      border: '1px solid rgba(59,130,246,0.12)',
       borderRadius: 8,
       padding: 4,
       opacity: (isMobile && drawerOpen) ? 0 : 1,
@@ -12529,7 +12529,7 @@ export default function GameDashboard() {
       {showRelayDebug && relayDebugData && (
         <div style={{
           position: 'fixed', top: 60, right: 16, zIndex: 9999,
-          background: 'rgba(0,0,0,0.92)', border: '1px solid rgba(255,255,255,0.15)',
+          background: 'rgba(0,0,0,0.92)', border: '1px solid rgba(59,130,246,0.25)',
           borderRadius: 8, padding: 16, maxWidth: 480, maxHeight: 'calc(100vh - 120px)',
           overflow: 'auto', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
           color: '#E5E7EB', backdropFilter: 'blur(12px)',
@@ -12712,7 +12712,7 @@ export default function GameDashboard() {
           30% { transform: translateY(-3px) scale(1.02); }
           60% { transform: translateY(-1px) scale(0.99); }
         }
-        @keyframes handlePulse { 0%,100%{box-shadow:0 0 6px rgba(255,255,255,0.2)} 50%{box-shadow:0 0 14px rgba(255,255,255,0.6)} }
+        @keyframes handlePulse { 0%,100%{box-shadow:0 0 6px rgba(59,130,246,0.3)} 50%{box-shadow:0 0 14px rgba(59,130,246,0.7)} }
         @keyframes tickerScroll { 0%{transform:translateX(0%)} 100%{transform:translateX(-50%)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes dotPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
@@ -12862,7 +12862,7 @@ export default function GameDashboard() {
         }
         .md-msg pre {
           background: rgba(0,0,0,0.35);
-          border: 1px solid rgba(255,255,255,0.08);
+          border: 1px solid rgba(59,130,246,0.15);
           border-radius: 6px;
           padding: 10px 12px;
           margin: 8px 0;
@@ -12895,7 +12895,7 @@ export default function GameDashboard() {
         }
         .md-msg hr {
           border: none;
-          border-top: 1px solid rgba(255,255,255,0.1);
+          border-top: 1px solid rgba(59,130,246,0.15);
           margin: 10px 0;
         }
         .md-msg table {
@@ -12914,7 +12914,7 @@ export default function GameDashboard() {
         }
         .md-msg td {
           padding: 4px 8px;
-          border: 1px solid rgba(255,255,255,0.07);
+          border: 1px solid rgba(59,130,246,0.12);
           color: #CBD5E1;
         }
         .md-msg tr:nth-child(even) td {
