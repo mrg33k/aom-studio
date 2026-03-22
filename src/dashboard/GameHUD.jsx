@@ -176,16 +176,16 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{
-                fontSize: 10, fontWeight: 700, color: '#5BB8FF',
+                fontSize: 10, fontWeight: 700, color: isDaytime ? '#2563EB' : '#5BB8FF',
                 fontFamily: "'JetBrains Mono', monospace",
                 letterSpacing: '0.08em', textTransform: 'uppercase',
               }}>{m.agent ? `${m.agent.charAt(0).toUpperCase()}${m.agent.slice(1)}` : 'Agent'}</span>
-              <span style={{ fontSize: 9, color: '#4A6080', marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace" }}>
+              <span style={{ fontSize: 9, color: isDaytime ? '#64748B' : '#4A6080', marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace" }}>
                 new msg
               </span>
             </div>
             <span style={{
-              fontSize: 12, color: '#EDF2FA',
+              fontSize: 12, color: isDaytime ? '#1E293B' : '#EDF2FA',
               fontFamily: "'Inter', system-ui, sans-serif",
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               maxWidth: '100%',
@@ -1137,21 +1137,21 @@ export default function GameHUD({
           zIndex: 9999,
           background: isNightMode
             ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)'
-            : 'rgba(26,35,50,0.98)',
-          border: isNightMode ? '2px solid rgba(59,130,246,0.25)' : '1px solid rgba(59,130,246,0.2)',
+            : 'rgba(248,250,255,0.98)',
+          border: isNightMode ? '2px solid rgba(59,130,246,0.35)' : '2px solid rgba(59,130,246,0.30)',
           borderRadius: 10, padding: '6px 0', minWidth: 240, maxWidth: 320,
           boxShadow: isNightMode
             ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
-            : '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.1)',
+            : '0 8px 32px rgba(59,130,246,0.15), 0 0 0 1px rgba(59,130,246,0.10)',
           backdropFilter: 'blur(20px)',
         }}>
           {/* Task name header */}
           <div style={{
             padding: '8px 14px 6px',
             fontSize: 12, fontWeight: 700,
-            color: isNightMode ? '#94A3B8' : '#8BA4C4',
+            color: isNightMode ? '#94A3B8' : '#475569',
             fontFamily: "'Inter', sans-serif",
-            borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.1)' : '1px solid rgba(59,130,246,0.1)',
+            borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(59,130,246,0.18)',
             marginBottom: 4,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>

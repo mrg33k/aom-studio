@@ -6,7 +6,7 @@ export const hudCtxBtn = (isNight) => ({
   display: 'block', width: '100%', textAlign: 'left',
   padding: '8px 14px', background: 'none', border: 'none',
   fontSize: 13, fontWeight: 600, cursor: 'pointer',
-  color: isNight ? '#E2E8F0' : '#E2E8F0',
+  color: isNight ? '#E2E8F0' : '#1E293B',
   fontFamily: "'Inter', sans-serif",
   transition: 'background 100ms',
 })

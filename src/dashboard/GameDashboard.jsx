@@ -9876,15 +9876,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                   style={{
                     flex: 1, padding: '8px 10px',
-                    background: isDaytime
-                      ? 'linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(99,102,241,0.08) 100%)'
-                      : 'linear-gradient(135deg, rgba(59,130,246,0.20) 0%, rgba(99,102,241,0.14) 100%)',
-                    border: '1.5px solid rgba(59,130,246,0.45)',
+                    background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
+                    border: '1.5px solid rgba(59,130,246,0.5)',
                     borderRadius: 9, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                    color: isDaytime ? '#2563EB' : '#60A5FA', fontSize: 12, fontWeight: 800,
+                    color: '#FFFFFF', fontSize: 12, fontWeight: 800,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    boxShadow: '0 2px 8px rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+                    boxShadow: '0 2px 8px rgba(29,78,216,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
                     letterSpacing: '0.04em',
                   }}
                 >
