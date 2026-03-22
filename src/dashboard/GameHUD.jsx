@@ -247,10 +247,10 @@ export default function GameHUD({
   // Height reporting: called with HUD pixel height so canvas can adjust camera offset
   onHeightChange,
 }) {
-  // Override: HUD switches to night at 8pm AZ time (GameDashboard uses 9pm, but HUD owns its own threshold)
-  const [nightOverride, setNightOverride] = useState(() => new Date().getHours() >= 20)
+  // Override: ALWAYS dark mode. White theme disabled per Patrik directive.
+  const [nightOverride, setNightOverride] = useState(() => true)
   useEffect(() => {
-    const check = () => setNightOverride(new Date().getHours() >= 20)
+    const check = () => setNightOverride(true)
     const timer = setInterval(check, 60000)
     return () => clearInterval(timer)
   }, [])
