@@ -4164,18 +4164,27 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           )
         )}
 
-        {/* DEMO badge (production) */}
+        {/* WEB badge (production) */}
         {!IS_LOCAL && (
           <span style={{
+            display: 'flex', alignItems: 'center', gap: 5,
             fontSize: 11, fontWeight: 700,
-            color: '#60A5FA',
-            background: 'rgba(96,165,250,0.14)',
-            border: '1px solid rgba(96,165,250,0.45)',
-            borderRadius: 4, padding: '2px 6px',
+            color: '#34D399',
+            background: 'rgba(52,211,153,0.12)',
+            border: '1px solid rgba(52,211,153,0.35)',
+            borderRadius: 4, padding: '2px 7px',
             textTransform: 'uppercase', letterSpacing: '0.08em',
             fontFamily: "'Inter', sans-serif",
             flexShrink: 0,
-          }}>DEMO</span>
+          }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#34D399',
+              boxShadow: '0 0 6px rgba(52,211,153,0.8)',
+              flexShrink: 0,
+            }} />
+            WEB
+          </span>
         )}
 
         {/* Team pill */}
