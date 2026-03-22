@@ -70,10 +70,9 @@ ALL_ROOMS.forEach(r => {
   }
 })
 
-// The default room order: all non-hidden rooms from ALL_ROOMS
-function getDefaultRoomIDs() {
-  return ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
-}
+// Mutable default layout order -- seeded from gridSpec, overwritten by Supabase on mount.
+// Using a let so the Supabase fetch can update it without a re-import.
+let _defaultLayoutOrder = ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
 
 // Custom rooms -- no persistence, always empty on load
 function loadCustomRooms() {
@@ -85,7 +84,7 @@ function loadHiddenRooms() {
   return []
 }
 
-// Build the visible room ID list: ALL_ROOMS (non-hidden) + custom rooms (non-hidden) - user-hidden
+// Build the visible room ID list: _defaultLayoutOrder + custom rooms - user-hidden
 function buildVisibleRoomIDs(hiddenSet) {
   const customRooms = loadCustomRooms()
   // Register custom rooms in ROOM_META if not already there
@@ -95,7 +94,7 @@ function buildVisibleRoomIDs(hiddenSet) {
     }
   })
   const allSlugs = [
-    ...ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug),
+    ..._defaultLayoutOrder,
     ...customRooms.map(cr => cr.slug),
   ]
   return allSlugs.filter(id => !hiddenSet.has(id))
@@ -900,6 +899,26 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   useEffect(() => {
     _currentTotalSlots = slotOrder.length
   }, [slotOrder])
+
+  // ---- LAYOUT FROM SUPABASE ----
+  // On mount: fetch rooms ORDER BY grid_order from Supabase and replace the
+  // module-level default layout order. Falls back to gridSpec ALL_ROOMS if
+  // Supabase returns empty or grid_order has never been seeded.
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('rooms')
+      .select('id, hidden, grid_order')
+      .not('grid_order', 'is', null)
+      .order('grid_order', { ascending: true })
+      .then(({ data }) => {
+        if (!data || data.length === 0) return
+        const visible = data.filter(r => !r.hidden).map(r => r.id)
+        if (visible.length === 0) return
+        _defaultLayoutOrder = visible
+        setSlotOrder(visible)
+      })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shuffle animation: tracks rooms transitioning between slots
   // Map<roomId, { fromX, fromY, toX, toY, startTime }>
