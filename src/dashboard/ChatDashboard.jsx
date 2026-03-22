@@ -1263,7 +1263,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               </div>
 
               {/* Bubble + meta */}
-              <div className={`flex flex-col max-w-[78%] ${isUser ? 'items-end' : 'items-start'}`}>
+              <div className={`flex flex-col max-w-[78%] min-w-0 ${isUser ? 'items-end' : 'items-start'}`}>
                 {/* Message bubble */}
                 <div
                   className={`px-3.5 py-2.5 text-sm leading-relaxed ${
@@ -1379,7 +1379,7 @@ function ThroughputBar({ throughput }) {
   ]
 
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 bg-[#141412] border-b border-[#292524] gap-2 overflow-x-auto">
+    <div className="flex items-center justify-between px-4 py-2.5 bg-[#141412] border-b border-[#292524] gap-2 overflow-x-hidden">
       {metrics.map(m => (
         <div key={m.label} className="flex items-center gap-1.5 shrink-0">
           <span className="text-lg font-black italic tracking-tight" style={{ color: m.color, fontFamily: "'Inter Tight', sans-serif" }}>
@@ -1628,6 +1628,7 @@ export default function ChatDashboard() {
         .chat-messages-area::-webkit-scrollbar-track { background: transparent; }
         .chat-messages-area::-webkit-scrollbar-thumb { background: rgba(120,113,108,0.3); border-radius: 4px; }
         .chat-messages-area::-webkit-scrollbar-thumb:hover { background: rgba(120,113,108,0.5); }
+        .chat-md { overflow-wrap: break-word; word-break: break-word; }
         .chat-md p { margin: 0 0 0.4em 0; }
         .chat-md p:last-child { margin-bottom: 0; }
         .chat-md ul, .chat-md ol { margin: 0.3em 0; padding-left: 1.4em; }
@@ -1645,7 +1646,9 @@ export default function ChatDashboard() {
           border-radius: 8px;
           padding: 0.6em 0.8em;
           margin: 0.4em 0;
+          max-width: 100%;
           overflow-x: auto;
+          overflow-y: hidden;
           font-size: 0.85em;
         }
         .chat-md pre code {
