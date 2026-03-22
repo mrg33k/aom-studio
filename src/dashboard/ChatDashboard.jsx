@@ -114,13 +114,12 @@ function deduplicateMessages(messages) {
 }
 
 // Extract agent name from [AGENT] prefix in relay messages (e.g., "[ELON] ..." -> "elon")
-function extractAgentSource(msg) {
+function extractAgentSource(msg, knownSlugs = KNOWN_SLUGS_FALLBACK) {
   if (msg.agent) return msg.agent
   if (!msg.message) return null
   const match = msg.message.match(/^\[([A-Z]+)\]/)
   if (!match) return null
   const name = match[1].toLowerCase()
-  const knownSlugs = ['bobby','steffen','cleo','elon','steve','alex','mom','jacob','paige','tony','elmo','colton','pixel']
   return knownSlugs.includes(name) ? name : null
 }
 
@@ -147,6 +146,9 @@ const AGENTS = [
   { slug: 'colton',  name: 'Colton',  role: 'Backup Builder',    img: null },
   { slug: 'pixel',   name: 'Pixel',   role: 'Extension',         img: null },
 ]
+
+// Fallback slug list derived from static AGENTS -- used before Supabase resolves
+const KNOWN_SLUGS_FALLBACK = AGENTS.map(a => a.slug)
 
 const STATUS_CONFIG = {
   WORKING:  { color: '#22C55E', bg: 'rgba(34,197,94,0.12)',  label: 'Working',  icon: Zap },
@@ -423,6 +425,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     }, 5000)
     return () => clearInterval(interval)
   }, [streaming, motivationalPhrases.length])
+  const knownSlugsRef = useRef(KNOWN_SLUGS_FALLBACK)
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
@@ -437,6 +440,18 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const userTypingTimeoutRef = useRef(null)
   const prevMessageCountRef = useRef(0)
   const userJustSentRef = useRef(false)
+
+  // Fetch agent slugs from Supabase on mount. Falls back to KNOWN_SLUGS_FALLBACK if unavailable.
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('agent_status')
+      .select('slug')
+      .then(({ data: rows, error }) => {
+        if (error || !rows?.length) return
+        knownSlugsRef.current = rows.map(r => r.slug)
+      })
+  }, [])
 
   const status = statusData?.status || 'IDLE'
   const task = statusData?.currentTask || 'Standing by'
@@ -458,8 +473,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     if (s === 'telegram') return { text: 'telegram' }
     if (s === 'terminal' || s === 'cli') return { text: 'terminal' }
     if (s === 'system') return { text: 'system' }
-    const knownSlugs = ['bobby','steffen','cleo','elon','steve','alex','mom','jacob','paige','tony','elmo','colton','pixel']
-    if (knownSlugs.includes(s)) return { text: s }
+    if (knownSlugsRef.current.includes(s)) return { text: s }
     if (s && s.length < 20) return { text: s }
     return null
   }
@@ -540,7 +554,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               }
               const cleaned = sanitizeRelayMessage(msg.message)
               if (!cleaned) continue
-              all.push({ role: 'assistant', content: cleaned, time: msg.timestamp, source: extractAgentSource(msg) || 'system', id: msg.id })
+              all.push({ role: 'assistant', content: cleaned, time: msg.timestamp, source: extractAgentSource(msg, knownSlugsRef.current) || 'system', id: msg.id })
             }
             all.sort((a, b) => new Date(a.time) - new Date(b.time))
             const deduped = deduplicateMessages(all)
@@ -885,7 +899,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
               role: 'assistant',
               content: cleaned,
               time: msg.timestamp || new Date().toISOString(),
-              source: extractAgentSource(msg) || 'system',
+              source: extractAgentSource(msg, knownSlugsRef.current) || 'system',
               id: msg.id,
             })
             added++
