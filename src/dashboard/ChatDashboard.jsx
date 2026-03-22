@@ -969,6 +969,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
             const latest = responses[responses.length - 1]
             const cleaned = sanitizeRelayMessage(latest.message) || latest.message
             setMessages(prev => {
+              // ONE WRITER RULE: skip if already added by Supabase Realtime (same UUID in outbox + Supabase)
+              if (latest.id && prev.some(m => m.id === latest.id)) return prev
               // Remove streaming placeholders, add real response, re-sort
               const filtered = prev.filter(m => !m.streaming)
               filtered.push({
