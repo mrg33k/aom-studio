@@ -5707,12 +5707,17 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [taskInput, setTaskInput] = useState('')
   const [taskCtx, setTaskCtx] = useState(null)
   // Shared context menu (TaskContextMenuShared) -- used for ALL task types including
-  // punch-list and Right Now tasks. Long-press (500ms) on touch devices triggers this
-  // via the onTouchStart handler in renderTaskCard. Same menu as desktop right-click.
+  // punch-list and Right Now tasks. Two-tier long-press on touch:
+  //   500ms = context menu (short press)
+  //   800ms = drag to reorder (long press, draggable cards only)
   const [sharedCtxMenu, setSharedCtxMenu] = useState(null) // { position:{x,y}, task }
-  const taskLongPressRef = useRef(null)
-  const taskLongPressStartRef = useRef(null) // { x, y } touch start position for movement threshold
-  const taskLongPressFiredRef = useRef(false) // true after long-press fires, suppresses following tap
+  const taskContextTimerRef = useRef(null)    // 500ms → context menu
+  const taskDragTimerRef = useRef(null)       // 800ms → drag to reorder
+  const taskLongPressStartRef = useRef(null)  // { x, y } touch start position
+  const taskLongPressFiredRef = useRef(false) // true after context menu fires, suppresses tap
+  // Touch drag-to-reorder state (parallel to HTML5 drag, works on iOS)
+  const touchDragFromIdxRef = useRef(null)    // source task index for the active touch drag
+  const touchDragGhostRef = useRef(null)      // ghost DOM element that follows the finger
   const [dragIdx, setDragIdx] = useState(null)
   const [dragOverIdx, setDragOverIdx] = useState(null)
   const [dragOverTaskId, setDragOverTaskId] = useState(null) // Track sub-task drop target (drag ON a task)
@@ -5882,6 +5887,104 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     setDragOverTaskId(null)
   }
 
+  // Touch drag-to-reorder (800ms long-press gesture, iOS-safe pointer-event approach)
+  const startTouchDrag = (fromIdx, startX, startY, task) => {
+    touchDragFromIdxRef.current = fromIdx
+    taskLongPressFiredRef.current = true // suppress tap-click after drag ends
+    setDragIdx(fromIdx) // reuse HTML5 drag visual state (fades source card)
+
+    // Ghost element: fixed-position pill that follows the finger
+    const ghost = document.createElement('div')
+    const label = typeof task?.text === 'string' ? task.text : 'Task'
+    ghost.textContent = label.length > 40 ? label.slice(0, 40) + '…' : label
+    ghost.style.cssText = [
+      'position:fixed',
+      `left:${startX - 20}px`,
+      `top:${startY - 28}px`,
+      `background:${agentColor}`,
+      'color:#fff',
+      'padding:8px 14px',
+      'border-radius:8px',
+      'font-size:13px',
+      'font-weight:600',
+      "font-family:'Inter',sans-serif",
+      'pointer-events:none',
+      'z-index:99999',
+      'opacity:0.92',
+      'box-shadow:0 8px 24px rgba(0,0,0,0.32)',
+      'max-width:240px',
+      'white-space:nowrap',
+      'overflow:hidden',
+      'text-overflow:ellipsis',
+      'transform:rotate(-2deg) scale(1.04)',
+      'transition:transform 80ms',
+    ].join(';')
+    document.body.appendChild(ghost)
+    touchDragGhostRef.current = ghost
+
+    const onMove = (ev) => {
+      const touch = ev.touches?.[0]
+      if (!touch) return
+      ev.preventDefault() // prevent page scroll while dragging
+      const cx = touch.clientX
+      const cy = touch.clientY
+      ghost.style.left = `${cx - 20}px`
+      ghost.style.top = `${cy - 28}px`
+      // Find the card under the finger (hide ghost so elementFromPoint sees through it)
+      ghost.style.display = 'none'
+      const el = document.elementFromPoint(cx, cy)
+      ghost.style.display = ''
+      const cardEl = el?.closest('[data-task-drag-idx]')
+      if (cardEl) {
+        const overIdx = parseInt(cardEl.getAttribute('data-task-drag-idx'), 10)
+        const taskId = cardEl.getAttribute('data-task-id') || null
+        if (!isNaN(overIdx)) setDragOverIdx(overIdx)
+        setDragOverTaskId(taskId)
+      } else {
+        setDragOverIdx(null)
+        setDragOverTaskId(null)
+      }
+    }
+
+    const onEnd = (ev) => {
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('touchend', onEnd)
+      document.removeEventListener('touchcancel', onEnd)
+      if (ghost.parentNode) ghost.parentNode.removeChild(ghost)
+      touchDragGhostRef.current = null
+
+      // Commit reorder using the final drop target
+      const touch = ev.changedTouches?.[0]
+      if (touch) {
+        ghost.style.display = 'none'
+        const el = document.elementFromPoint(touch.clientX, touch.clientY)
+        ghost.style.display = ''
+        const cardEl = el?.closest('[data-task-drag-idx]')
+        if (cardEl) {
+          const overIdx = parseInt(cardEl.getAttribute('data-task-drag-idx'), 10)
+          const srcIdx = touchDragFromIdxRef.current
+          if (!isNaN(overIdx) && srcIdx !== null && srcIdx !== overIdx) {
+            setTasks(prev => {
+              const copy = [...prev]
+              const [moved] = copy.splice(srcIdx, 1)
+              copy.splice(overIdx, 0, moved)
+              return copy
+            })
+          }
+        }
+      }
+      touchDragFromIdxRef.current = null
+      setDragIdx(null)
+      setDragOverIdx(null)
+      setDragOverTaskId(null)
+      taskLongPressFiredRef.current = false
+    }
+
+    document.addEventListener('touchmove', onMove, { passive: false })
+    document.addEventListener('touchend', onEnd)
+    document.addEventListener('touchcancel', onEnd)
+  }
+
   const toggleSection = (key) => {
     setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }))
   }
@@ -6020,6 +6123,8 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     return (
       <div
         key={cardKey}
+        data-task-drag-idx={isDraggable && !isExpanded ? idx : undefined}
+        data-task-id={isDraggable && !isExpanded ? (t.id || '') : undefined}
         draggable={isDraggable && !isExpanded}
         onDragStart={isDraggable && !isExpanded ? () => handleDragStart(idx) : undefined}
         onDragOver={isDraggable && !isExpanded ? (e) => handleDragOver(e, idx, t.id) : undefined}
@@ -6027,32 +6132,53 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         onDrop={isDraggable && !isExpanded ? () => handleDrop(idx, t.id) : undefined}
         onDragEnd={isDraggable && !isExpanded ? () => { setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null) } : undefined}
         onContextMenu={ctxHandler}
-        onTouchStart={ctxHandler ? (e) => {
+        onTouchStart={(e) => {
           if (e.touches.length !== 1) return
           const touch = e.touches[0]
           const cx = touch.clientX
           const cy = touch.clientY
           taskLongPressStartRef.current = { x: cx, y: cy }
           taskLongPressFiredRef.current = false
-          taskLongPressRef.current = setTimeout(() => {
-            taskLongPressFiredRef.current = true
-            ctxHandler({ clientX: cx, clientY: cy, preventDefault: () => {} })
-          }, 500)
-        } : undefined}
-        onTouchEnd={ctxHandler ? (e) => {
-          clearTimeout(taskLongPressRef.current)
+          clearTimeout(taskContextTimerRef.current)
+          clearTimeout(taskDragTimerRef.current)
+          // 500ms → context menu
+          if (ctxHandler) {
+            taskContextTimerRef.current = setTimeout(() => {
+              taskLongPressFiredRef.current = true
+              ctxHandler({ clientX: cx, clientY: cy, preventDefault: () => {} })
+              // 300ms later (800ms total) → drag to reorder (draggable cards only)
+              if (isDraggable && !isExpanded) {
+                taskDragTimerRef.current = setTimeout(() => {
+                  setSharedCtxMenu(null) // dismiss context menu
+                  startTouchDrag(idx, cx, cy, t)
+                }, 300)
+              }
+            }, 500)
+          } else if (isDraggable && !isExpanded) {
+            // No context menu — go straight to 800ms drag
+            taskDragTimerRef.current = setTimeout(() => {
+              startTouchDrag(idx, cx, cy, t)
+            }, 800)
+          }
+        }}
+        onTouchEnd={(e) => {
+          clearTimeout(taskContextTimerRef.current)
+          clearTimeout(taskDragTimerRef.current)
           if (taskLongPressFiredRef.current) {
             e.preventDefault() // suppress tap/click after long-press so accordion doesn't toggle
             taskLongPressFiredRef.current = false
           }
-        } : undefined}
-        onTouchMove={ctxHandler ? (e) => {
-          if (!taskLongPressStartRef.current || !taskLongPressRef.current) return
+        }}
+        onTouchMove={(e) => {
+          if (!taskLongPressStartRef.current) return
           const touch = e.touches[0]
           const dx = Math.abs(touch.clientX - taskLongPressStartRef.current.x)
           const dy = Math.abs(touch.clientY - taskLongPressStartRef.current.y)
-          if (dx > 10 || dy > 10) clearTimeout(taskLongPressRef.current)
-        } : undefined}
+          if (dx > 10 || dy > 10) {
+            clearTimeout(taskContextTimerRef.current)
+            clearTimeout(taskDragTimerRef.current)
+          }
+        }}
         style={{
           marginBottom: 8,
           background: isDropTarget
