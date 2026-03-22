@@ -214,8 +214,8 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
   return (
     <div style={{
       height: 56, width: '100%', overflowX: 'auto', overflowY: 'hidden',
-        background: isDaytime ? 'rgba(248,250,252,0.95)' : 'rgba(10, 15, 30, 0.5)',
-        borderBottom: `1px solid ${isDaytime ? 'rgba(0,0,0,0.07)' : 'rgba(255, 255, 255, 0.06)'}`,
+        background: isDaytime ? 'rgba(15,25,50,0.85)' : 'rgba(8,14,28,0.95)',
+        borderBottom: `1px solid ${isDaytime ? 'rgba(59,130,246,0.15)' : 'rgba(100, 180, 255, 0.06)'}`,
         padding: '8px 12px',
         display: 'flex', gap: 8,
         WebkitOverflowScrolling: 'touch',
@@ -228,14 +228,14 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
             display: 'flex', alignItems: 'center', gap: 6,
             height: 40, padding: '0 14px',
             background: !selectedProject
-              ? (isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(59,158,255,0.15)')
-              : (isDaytime ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'),
+              ? (isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(59,158,255,0.15)')
+              : 'rgba(255,255,255,0.04)',
             border: `1.5px solid ${!selectedProject
               ? (isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(59,158,255,0.4)')
-              : (isDaytime ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)')}`,
+              : 'rgba(255,255,255,0.07)'}`,
             borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
             cursor: 'pointer', scrollSnapAlign: 'start',
-            color: !selectedProject ? '#3B82F6' : (isDaytime ? '#374151' : '#F0ECE6'),
+            color: !selectedProject ? '#3B82F6' : '#CBD5E1',
             fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
             textTransform: 'uppercase',
           }}

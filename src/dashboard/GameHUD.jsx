@@ -1201,15 +1201,15 @@ export default function GameHUD({
                             const totalDone = allTasks.filter(t => t.done).length
                             const clientKids = project.children.filter(c => AOM_CLIENT_SECTIONS.has(c.section))
                             const internalKids = project.children.filter(c => !AOM_CLIENT_SECTIONS.has(c.section))
-                            const popBg = isDaytime ? 'rgba(248,250,255,0.98)' : 'rgba(8,14,28,0.97)'
-                            const popBorder = isDaytime ? '1.5px solid rgba(59,130,246,0.18)' : '1.5px solid rgba(59,130,246,0.25)'
+                            const popBg = isDaytime ? 'rgba(15,25,50,0.85)' : 'rgba(8,14,28,0.95)'
+                            const popBorder = isDaytime ? '1.5px solid rgba(59,130,246,0.28)' : '1.5px solid rgba(59,130,246,0.25)'
                             const popShadow = isDaytime
-                              ? '0 -8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(59,130,246,0.08), inset 0 1px 0 rgba(255,255,255,0.9)'
+                              ? '0 -8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(59,130,246,0.08), inset 0 1px 0 rgba(100,180,255,0.08)'
                               : '0 -8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(59,130,246,0.06), inset 0 1px 0 rgba(59,130,246,0.08)'
-                            const labelColor = isDaytime ? '#2563EB' : 'rgba(59,130,246,0.7)'
-                            const dividerColor = isDaytime ? 'rgba(59,130,246,0.10)' : 'rgba(59,130,246,0.12)'
-                            const sectionLabelColor = isDaytime ? '#94A3B8' : 'rgba(100,180,255,0.38)'
-                            const statTextColor = isDaytime ? '#64748B' : '#4A6080'
+                            const labelColor = isDaytime ? 'rgba(100,180,255,0.9)' : 'rgba(59,130,246,0.7)'
+                            const dividerColor = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)'
+                            const sectionLabelColor = isDaytime ? 'rgba(100,180,255,0.55)' : 'rgba(100,180,255,0.38)'
+                            const statTextColor = isDaytime ? '#94B8D8' : '#4A6080'
                             let childIndex = 0
                             const renderGroup = (kids, groupLabel) => {
                               if (!kids.length) return null
@@ -1562,8 +1562,8 @@ export default function GameHUD({
           transform: 'translateX(-50%)',
           zIndex: 9999,
           background: isNightMode
-            ? 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)'
-            : 'rgba(248,250,255,0.98)',
+            ? 'rgba(8,14,28,0.95)'
+            : 'rgba(15,25,50,0.85)',
           border: isNightMode ? '2px solid rgba(59,130,246,0.35)' : '2px solid rgba(59,130,246,0.30)',
           borderRadius: 10, padding: '6px 0', minWidth: 240, maxWidth: 320,
           boxShadow: isNightMode
@@ -1575,9 +1575,9 @@ export default function GameHUD({
           <div style={{
             padding: '8px 14px 6px',
             fontSize: 12, fontWeight: 700,
-            color: isNightMode ? '#94A3B8' : '#475569',
+            color: '#94A3B8',
             fontFamily: "'Inter', sans-serif",
-            borderBottom: isNightMode ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(59,130,246,0.18)',
+            borderBottom: '1px solid rgba(59,130,246,0.15)',
             marginBottom: 4,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>

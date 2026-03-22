@@ -9797,10 +9797,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               }}>
                 <span style={{
                   position: 'absolute', top: -8, left: 10,
-                  fontSize: 9, fontWeight: 700, color: isDaytime ? '#2563EB' : '#3B9EFF',
+                  fontSize: 9, fontWeight: 700, color: isDaytime ? '#60A5FA' : '#3B9EFF',
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.08em', textTransform: 'uppercase',
-                  background: isDaytime ? 'rgba(248,251,255,0.97)' : 'rgba(8,16,32,0.92)', padding: '0 4px',
+                  background: isDaytime ? 'rgba(15,25,50,0.85)' : 'rgba(8,14,28,0.95)', padding: '0 4px',
                 }}>task</span>
                 {t.text}
               </div>
