@@ -387,11 +387,60 @@ function localDashboardPlugin() {
       // Conversation JSONL endpoint -- unified source of truth for all messages
       // Reads from conversations/agents/{slug}.jsonl which contains BOTH user + assistant messages
       // from ALL sources (terminal, dashboard, telegram, auto-responder).
+      // ?all=true: aggregate from ALL agent JSONL files (for AOM Team Room)
       server.middlewares.use('/api/local/conversations', (req, res) => {
         const url = new URL(req.url, 'http://localhost')
         const slug = url.searchParams.get('agent')
         const since = url.searchParams.get('since')
         const limit = parseInt(url.searchParams.get('limit') || '100', 10)
+        const all = url.searchParams.get('all') === 'true' || url.searchParams.get('all') === '1'
+
+        // ?all=true -- AOM Team Room: aggregate messages from ALL agent JSONL files
+        if (all) {
+          // Static agent -> project_path mapping (local dev doesn't have Supabase project_path column)
+          const AGENT_PROJECT_PATH = {
+            bobby: 'AOM -> Corner', colton: 'AOM -> Corner',
+            elon: 'AOM -> Corner', steffen: 'AOM -> Corner',
+            steve: 'AOM -> Advisory', alex: 'AOM -> Strategy',
+            cleo: 'AOM -> Content', tony: 'AOM -> Content',
+            jacob: 'AOM -> Outreach',
+            mom: 'AOM -> Internal', elmo: 'AOM -> Internal', pixel: 'AOM -> Internal',
+            paige: 'AOM -> Clients',
+          }
+          const agentsDir = resolve(AOM_EA_ROOT, 'conversations', 'agents')
+          const allMessages = []
+          try {
+            const agentFiles = fs.readdirSync(agentsDir).filter(f => f.endsWith('.jsonl'))
+            for (const file of agentFiles) {
+              const agentSlug = file.replace('.jsonl', '')
+              try {
+                const lines = fs.readFileSync(resolve(agentsDir, file), 'utf-8').split('\n').filter(l => l.trim())
+                for (const line of lines) {
+                  try {
+                    const msg = JSON.parse(line)
+                    if (since && msg.timestamp && msg.timestamp <= since) continue
+                    // Ensure agent field is set; add project_path from static map
+                    allMessages.push({
+                      ...msg,
+                      agent: msg.agent || agentSlug,
+                      project_path: msg.project_path || AGENT_PROJECT_PATH[agentSlug] || null,
+                    })
+                  } catch {}
+                }
+              } catch {}
+            }
+          } catch {}
+          // Sort by timestamp ascending, take latest N
+          allMessages.sort((a, b) => {
+            const ta = a.timestamp || ''
+            const tb = b.timestamp || ''
+            return ta < tb ? -1 : ta > tb ? 1 : 0
+          })
+          const messages = allMessages.slice(-limit)
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ messages, agent: 'aom', timestamp: new Date().toISOString() }))
+          return
+        }
 
         if (!slug) {
           res.statusCode = 400

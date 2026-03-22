@@ -10851,6 +10851,31 @@ export default function GameDashboard() {
     }
 
     function loadFromGitHub(slug) {
+      const isAomTeamRoom = slug === 'aom' || slug === 'aom-team'
+      // AOM Team Room: use local aggregate endpoint (?all=true) instead of aom-internal project file
+      if (IS_LOCAL && isAomTeamRoom) {
+        fetch(`/api/local/conversations?all=true&limit=200`)
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            const msgs = (data?.messages || []).map(m => ({
+              role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
+              content: m.text || '',
+              time: m.timestamp || '',
+              source: m.source || 'file',
+              id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+              agentTag: m.agent || null,
+              projectPath: m.project_path || null,
+            })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+            console.log(`[Corner] Local aggregate: loaded ${msgs.length} msgs for AOM Team Room`)
+            setAgentChats(prev => ({ ...prev, [slug]: { _all: msgs } }))
+            setPanelChatLoading(false)
+          })
+          .catch(() => {
+            setAgentChats(prev => ({ ...prev, [slug]: { _all: [] } }))
+            setPanelChatLoading(false)
+          })
+        return
+      }
       const roomMeta = ROOM_LOOKUP[slug]
       const isProject = roomMeta?.type === 'project' || roomMeta?.type === 'special' || slug === 'aom'
       const convTarget = slug === 'aom' ? 'aom-internal' : slug
@@ -10946,12 +10971,15 @@ export default function GameDashboard() {
     }
 
     // --- LOCAL: file-backed poll ---
+    const isLocalAomRoom = selectedRoom === 'aom' || selectedRoom === 'aom-team'
     const pollRoomMeta = ROOM_LOOKUP[selectedRoom]
-    const isProj = pollRoomMeta?.type === 'project' || pollRoomMeta?.type === 'special' || selectedRoom === 'aom' || selectedRoom === 'aom-team'
-    const pollTarget = selectedRoom === 'aom' || selectedRoom === 'aom-team' ? 'aom-internal' : selectedRoom
-    const pollType = isProj ? 'project' : 'agent'
+    const isProj = pollRoomMeta?.type === 'project' || pollRoomMeta?.type === 'special' || isLocalAomRoom
+    // AOM Team Room: use aggregate endpoint; others use per-agent endpoint
+    const pollUrl = isLocalAomRoom
+      ? `/api/local/conversations?all=true&limit=200`
+      : `${CONV_API_BASE}?target=${selectedRoom}&type=${isProj ? 'project' : 'agent'}&limit=50`
     const poll = setInterval(() => {
-      fetch(`${CONV_API_BASE}?target=${pollTarget}&type=${pollType}&limit=50`)
+      fetch(pollUrl)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (!data?.messages?.length) return
@@ -10963,6 +10991,8 @@ export default function GameDashboard() {
               time: m.timestamp || '',
               source: m.source || 'file',
               id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+              // AOM Team Room: carry agent tag + project path from aggregate data
+              ...(isLocalAomRoom ? { agentTag: m.agent || null, projectPath: m.project_path || null } : {}),
             })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
 
             // MERGE instead of replace: keep local-only optimistic messages
