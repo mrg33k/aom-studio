@@ -3110,6 +3110,11 @@ function MobileFixedInput({
         // blocks keyboard focus routing to inputs inside transform containers.
         // position:fixed is sufficient. Ancestor chain: div -> body -> html. None have
         // overflow, transform, clip, or will-change.
+        // WRESTLEMANIA A FIX: touchAction:'manipulation' is iOS-specific. It prevents
+        // double-tap zoom (which can steal the first tap before the input receives it)
+        // while still allowing tap-to-focus on the input inside. 'manipulation' = allow
+        // single tap + long press, disable double-tap zoom and pan gestures on the wrapper.
+        touchAction: 'manipulation',
         background: 'rgba(10, 15, 30, 0.98)',
         borderTop: isNightMode
           ? '2px solid rgba(59,130,246,0.12)'
@@ -9640,13 +9645,18 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       {/* ---- PINNED TASK CONFIRMATION BOX ---- */}
       {/* Sits between the tab content and the chat input. Always visible when the agent has
           done tasks awaiting approval -- not sorted chronologically with messages.
-          Multiple done tasks stack here. Zero done tasks = nothing rendered. */}
-      {activeTab === 'chat' && (() => {
+          Multiple done tasks stack here. Zero done tasks = nothing rendered.
+          On non-chat tabs: always shows slim bar so user knows review is pending. */}
+      {(() => {
         const doneTasks = (rightNowTasks || []).filter(t =>
           t.isDoneAwaitingApproval && t.agent === agentSlug &&
           !optimisticallyRemovedIds.has(t.taskId || t.text)
         )
         if (doneTasks.length === 0) return null
+        // On non-chat tabs, always render the slim bar (notification strip only).
+        // Clicking it navigates to chat and expands the full card.
+        const isOnChatTab = activeTab === 'chat'
+        const showSlimOnly = !isOnChatTab || confirmMinimized
         const safeIndex = Math.min(confirmIndex, doneTasks.length - 1)
         const t = doneTasks[safeIndex]
         const total = doneTasks.length
@@ -9657,14 +9667,22 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           }}>
             {/* Minimized slim bar */}
             <AnimatePresence mode="wait">
-            {confirmMinimized ? (
+            {showSlimOnly ? (
               <motion.div
                 key="confirm-minimized"
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.12, ease: 'easeOut' }}
-                onClick={() => setConfirmMinimized(false)}
+                onClick={() => {
+                  if (!isOnChatTab) {
+                    // Switch to chat tab and expand
+                    onActiveTabChange?.('chat')
+                    setConfirmMinimized(false)
+                  } else {
+                    setConfirmMinimized(false)
+                  }
+                }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   height: 32, padding: '0 14px',
@@ -9688,9 +9706,12 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 }}>
                   {total} task{total > 1 ? 's' : ''} awaiting review
                 </span>
-                {/* Chevron up */}
+                {/* Chevron up (expand) or right-arrow (navigate to chat) */}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDaytime ? '#4A6585' : '#8BA4C4'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="18 15 12 9 6 15" />
+                  {isOnChatTab
+                    ? <polyline points="18 15 12 9 6 15" />
+                    : <polyline points="9 18 15 12 9 6" />
+                  }
                 </svg>
               </motion.div>
             ) : (
@@ -10542,15 +10563,24 @@ export default function GameDashboard() {
   const removeFromRightNow = useCallback((id) => {
     // For future: removal logic
   }, [])
-  // HMR state recovery: restore selected room + tab from sessionStorage if HMR just reloaded
+  // HMR state recovery: restore selected room + tab from sessionStorage if HMR just reloaded.
+  // WRESTLEMANIA A FIX (first-load Elon chat drawer): validate saved slug against ROOM_LOOKUP.
+  // Stale sessionStorage can hold a slug that no longer exists (e.g. 'aom' before the room was
+  // renamed to 'aom-team'). If the slug isn't in ROOM_LOOKUP the MobileDrawer render condition
+  // fails silently (ROOM_LOOKUP check) -- drawer stays closed even though drawerSnap is 'half'.
+  // MobileFixedInput then renders as an orphaned input bar with no drawer above it.
+  // Validating here guarantees first-load always shows DEFAULT_AGENT (Elon) when the saved
+  // slug is stale, so the drawer opens correctly on iPhone without needing a room tap.
   const [selectedRoom, setSelectedRoom] = useState(() => {
     const saved = sessionStorage.getItem('corner-selected-room')
-    return saved || DEFAULT_AGENT
+    if (saved && ROOM_LOOKUP[saved]) return saved
+    return DEFAULT_AGENT
   })
   const [hoveredRoom, setHoveredRoom] = useState(null)
   const [chatAgent, setChatAgent] = useState(() => {
     const saved = sessionStorage.getItem('corner-selected-room')
-    return saved || DEFAULT_AGENT
+    if (saved && ROOM_LOOKUP[saved]) return saved
+    return DEFAULT_AGENT
   })
   // Selected project for chat scoping (null = no project, slug = project context)
   const [selectedProject, setSelectedProject] = useState(null)
@@ -12383,8 +12413,12 @@ export default function GameDashboard() {
           IMPORTANT: onInputFocus must NOT call setDrawerSnap('full'). MobileDrawer's own
           visualViewport.resize handler saves the pre-keyboard snap ('half') and snaps to full
           when the keyboard opens. Snapping here prematurely causes MobileDrawer to save 'full'
-          as the restore point -- drawer never returns to half when keyboard is dismissed. */}
-      {isMobile && drawerOpen && mobileDrawerActiveTab === 'chat' && selectedRoom && (
+          as the restore point -- drawer never returns to half when keyboard is dismissed.
+          WRESTLEMANIA A FIX: added ROOM_LOOKUP[selectedRoom] guard to match MobileDrawer's
+          condition exactly. Without it, a stale selectedRoom that's not in ROOM_LOOKUP causes
+          MobileDrawer to not render but MobileFixedInput to render -- orphaned input bar with
+          no drawer above it. Now both components gate on the same set of conditions. */}
+      {isMobile && drawerOpen && mobileDrawerActiveTab === 'chat' && selectedRoom && ROOM_LOOKUP[selectedRoom] && (
         <MobileFixedInput
           chatInput={panelChatInput}
           onChatInputChange={handleAtInputChange}
