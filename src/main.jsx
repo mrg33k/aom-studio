@@ -2,7 +2,8 @@ import React, { lazy, Suspense, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import Login from './pages/Login.jsx'
-import { onAuthStateChange } from './dashboard/lib/auth.js'
+import ChangePassword from './pages/ChangePassword.jsx'
+import { onAuthStateChange, isTempPassword } from './dashboard/lib/auth.js'
 import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
 import BrandGuidelines from './pages/BrandGuidelines.jsx'
@@ -83,9 +84,17 @@ function AuthGuard({ children }) {
     // onAuthStateChange fires immediately with current session, then on changes.
     const unsubscribe = onAuthStateChange((session) => {
       if (session) {
+        // Admin-created accounts must change their temp password first
+        if (isTempPassword(session.user)) {
+          setChecked(true)
+          setAuthed(false)
+          navigate('/change-password', { replace: true })
+          return
+        }
         // Check onboarding status from user_metadata or localStorage fallback
         const isOnboarded =
           session.user?.user_metadata?.onboarded === true ||
+          session.user?.user_metadata?.has_completed_onboarding === true ||
           localStorage.getItem('corner-onboarded') === 'true'
         if (!isOnboarded) {
           // First-time user -- send to onboarding before dashboard
@@ -172,6 +181,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/elon-room" element={<ElonRoomCanvas />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<AuthGuard><GameDashboard /></AuthGuard>} />
           <Route path="/dashboard/agent/:slug" element={<AuthGuard><GameDashboard /></AuthGuard>} />
