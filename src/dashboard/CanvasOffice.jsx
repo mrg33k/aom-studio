@@ -873,6 +873,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   isNightMode = true,
   drawerSnap = null,
   isMobile = false,
+  mobileHudHeight = 0, // Height of the fixed GameHUD bar (px) -- used to center room above it
   initialFocusRoom = null, // If set, start camera focused on this room instead of overview
   onOpenChat,    // (roomId) -> open chat panel for room
   onSendMessage, // (roomId) -> open chat + focus input
@@ -1184,10 +1185,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       // Keep room centered in top ~20%
       const visibleCenterY = viewH * 0.10
       panY = visibleCenterY - roomCY * zoomFocus
+    } else if (isMobile && !drawerSnap && mobileHudHeight > 0) {
+      // No drawer open: GameHUD bar covers the bottom mobileHudHeight px of the canvas.
+      // Center the room in the visible area ABOVE the HUD, not in the full viewport.
+      const visibleH = Math.max(100, viewH - mobileHudHeight)
+      panY = visibleH / 2 - roomCY * zoomFocus
     }
 
     return { x: panX, y: panY, zoom: zoomFocus }
-  }, [slotOrder, ORIGIN_X, ORIGIN_Y, getOverviewCamera, isMobile, drawerSnap])
+  }, [slotOrder, ORIGIN_X, ORIGIN_Y, getOverviewCamera, isMobile, drawerSnap, mobileHudHeight])
 
   // ---- ANIMATE CAMERA TRANSITION ----
   const animateCamera = useCallback((targetCamera) => {

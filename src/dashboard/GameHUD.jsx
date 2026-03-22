@@ -434,6 +434,8 @@ export default function GameHUD({
   onClarify,
   // Daytime/nighttime theme -- when false, bottom HUD goes white/vibrant blue to match top bar
   isNightMode: isNightModeProp,
+  // Height reporting: called with HUD pixel height so canvas can adjust camera offset
+  onHeightChange,
 }) {
   // Override: HUD switches to night at 8pm AZ time (GameDashboard uses 9pm, but HUD owns its own threshold)
   const [nightOverride, setNightOverride] = useState(() => new Date().getHours() >= 20)
@@ -573,6 +575,17 @@ export default function GameHUD({
   const inboxCount = donePendingTasks.length + (inboxItems || []).length
   const hudRef = useRef(null)
   const weights = useRecencyWeights()
+
+  // Report HUD height to GameDashboard so CanvasOffice can adjust camera offset
+  useEffect(() => {
+    if (!onHeightChange || !hudRef.current) return
+    const ro = new ResizeObserver(() => {
+      if (hudRef.current) onHeightChange(hudRef.current.getBoundingClientRect().height)
+    })
+    ro.observe(hudRef.current)
+    onHeightChange(hudRef.current.getBoundingClientRect().height)
+    return () => ro.disconnect()
+  }, [onHeightChange])
 
   // MANUAL TASKS for Right Now -- in-memory only (no localStorage until offline features built)
   const [manualTasks, setManualTasks] = useState([])

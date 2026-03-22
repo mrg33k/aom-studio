@@ -10257,6 +10257,8 @@ export default function GameDashboard() {
     return null
   })
   const drawerOpen = drawerSnap === 'half' || drawerSnap === 'full'
+  // GameHUD bar height (px) -- reported by GameHUD via onHeightChange, used by CanvasOffice to offset camera
+  const [hudBarHeight, setHudBarHeight] = useState(60) // 60px = safe estimate before first measurement
   // Mobile drawer active tab: lifted from MobileDrawer so MobileFixedInput can react to it
   const [mobileDrawerActiveTab, setMobileDrawerActiveTab] = useState('chat')
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
@@ -11670,6 +11672,7 @@ export default function GameDashboard() {
                 isNightMode={isNightMode}
                 drawerSnap={drawerSnap}
                 isMobile={isMobile}
+                mobileHudHeight={isMobile ? hudBarHeight : 0}
                 initialFocusRoom={isMobile ? DEFAULT_AGENT : null}
                 unreadAgents={unreadAgents}
                 onOpenChat={(roomId) => {
@@ -11850,6 +11853,7 @@ export default function GameDashboard() {
             }}
             isMobile={isMobile}
             isTablet={isTablet}
+            onHeightChange={isMobile ? setHudBarHeight : undefined}
             chatAgent={chatAgent}
             onChatSubmit={(slug, text) => {
               // Route chat to sidebar: select the agent and switch to chat tab
