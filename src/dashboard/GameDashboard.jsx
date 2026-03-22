@@ -9904,13 +9904,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                   style={{
                     flex: 1, padding: '8px 10px',
-                    background: 'rgba(22,163,74,0.22)',
-                    border: '1.5px solid rgba(34,197,94,0.75)',
+                    background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                    border: '1.5px solid rgba(34,197,94,0.5)',
                     borderRadius: 9, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                    color: '#4ADE80', fontSize: 12, fontWeight: 800,
+                    color: '#FFFFFF', fontSize: 12, fontWeight: 800,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    boxShadow: '0 0 18px rgba(34,197,94,0.45), 0 0 6px rgba(34,197,94,0.25), inset 0 1px 0 rgba(34,197,94,0.15)',
+                    boxShadow: '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
                     letterSpacing: '0.04em',
                   }}
                 >
@@ -9927,13 +9927,13 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                   style={{
                     flex: 1, padding: '8px 10px',
-                    background: 'rgba(220,38,38,0.22)',
-                    border: '1.5px solid rgba(239,68,68,0.70)',
+                    background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
+                    border: '1.5px solid rgba(239,68,68,0.5)',
                     borderRadius: 9, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                    color: '#F87171', fontSize: 12, fontWeight: 800,
+                    color: '#FFFFFF', fontSize: 12, fontWeight: 800,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    boxShadow: '0 0 18px rgba(239,68,68,0.42), 0 0 6px rgba(239,68,68,0.22), inset 0 1px 0 rgba(239,68,68,0.12)',
+                    boxShadow: '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
                     letterSpacing: '0.04em',
                   }}
                 >
@@ -9950,13 +9950,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   transition={{ type: 'spring', stiffness: 500, damping: 18 }}
                   style={{
                     flex: 1, padding: '8px 10px',
-                    background: 'rgba(59,158,255,0.18)',
-                    border: '1.5px solid rgba(59,158,255,0.68)',
+                    background: isDaytime
+                      ? 'linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(99,102,241,0.08) 100%)'
+                      : 'linear-gradient(135deg, rgba(59,130,246,0.20) 0%, rgba(99,102,241,0.14) 100%)',
+                    border: '1.5px solid rgba(59,130,246,0.45)',
                     borderRadius: 9, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                    color: '#5BB8FF', fontSize: 12, fontWeight: 800,
+                    color: isDaytime ? '#2563EB' : '#60A5FA', fontSize: 12, fontWeight: 800,
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    boxShadow: '0 0 18px rgba(59,158,255,0.42), 0 0 6px rgba(59,158,255,0.22), inset 0 1px 0 rgba(100,180,255,0.12)',
+                    boxShadow: '0 2px 8px rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
                     letterSpacing: '0.04em',
                   }}
                 >
