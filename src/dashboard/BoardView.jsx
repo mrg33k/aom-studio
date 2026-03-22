@@ -364,9 +364,9 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
               fontFamily: "'Inter', system-ui, sans-serif",
               fontSize: 10,
               fontWeight: 500,
-              color: '#64748B',
-              background: 'rgba(100,116,139,0.1)',
-              border: '1px solid rgba(100,116,139,0.2)',
+              color: isNightMode ? 'rgba(140,180,255,0.7)' : 'rgba(160,200,255,0.85)',
+              background: isNightMode ? 'rgba(30,70,180,0.2)' : 'rgba(60,130,255,0.18)',
+              border: `1px solid ${isNightMode ? 'rgba(80,130,255,0.28)' : 'rgba(100,160,255,0.35)'}`,
               borderRadius: 4,
               padding: '1px 5px',
               flexShrink: 0,
@@ -754,7 +754,14 @@ function BoardColumn({
 
 // ── FILTER TOGGLE PILL ──────────────────────────────────────────────────────
 
-function FilterPill({ label, active, color, onClick }) {
+function FilterPill({ label, active, color, onClick, isNightMode = true }) {
+  const inactiveBg = isNightMode ? 'rgba(255,255,255,0.04)' : 'rgba(60,130,255,0.12)'
+  const inactiveBorder = isNightMode ? 'rgba(255,255,255,0.1)' : 'rgba(100,170,255,0.28)'
+  const inactiveText = isNightMode ? '#64748B' : '#8BBCE8'
+  const hoverBg = isNightMode ? 'rgba(255,255,255,0.07)' : 'rgba(60,130,255,0.22)'
+  const hoverBorder = isNightMode ? 'rgba(255,255,255,0.2)' : 'rgba(100,170,255,0.45)'
+  const hoverText = isNightMode ? '#94A3B8' : '#BDDEFF'
+
   return (
     <button
       onClick={onClick}
@@ -765,9 +772,9 @@ function FilterPill({ label, active, color, onClick }) {
         height: 26,
         padding: '0 10px',
         borderRadius: 13,
-        background: active ? `${color}22` : 'rgba(255,255,255,0.04)',
-        border: `1.5px solid ${active ? color : 'rgba(255,255,255,0.1)'}`,
-        color: active ? color : '#64748B',
+        background: active ? `${color}22` : inactiveBg,
+        border: `1.5px solid ${active ? color : inactiveBorder}`,
+        color: active ? color : inactiveText,
         fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 11,
         fontWeight: 700,
@@ -780,16 +787,16 @@ function FilterPill({ label, active, color, onClick }) {
       }}
       onMouseEnter={e => {
         if (!active) {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.07)'
-          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'
-          e.currentTarget.style.color = '#94A3B8'
+          e.currentTarget.style.background = hoverBg
+          e.currentTarget.style.borderColor = hoverBorder
+          e.currentTarget.style.color = hoverText
         }
       }}
       onMouseLeave={e => {
         if (!active) {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-          e.currentTarget.style.color = '#64748B'
+          e.currentTarget.style.background = inactiveBg
+          e.currentTarget.style.borderColor = inactiveBorder
+          e.currentTarget.style.color = inactiveText
         }
       }}
     >
@@ -1226,24 +1233,28 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
           active={showStatus}
           color="#F97316"
           onClick={() => setShowStatus(s => !s)}
+          isNightMode={isNightMode}
         />
         <FilterPill
           label="Agents"
           active={showAgents}
           color="#3B82F6"
           onClick={() => setShowAgents(s => !s)}
+          isNightMode={isNightMode}
         />
         <FilterPill
           label="Projects"
           active={showProjects}
           color="#22C55E"
           onClick={() => setShowProjects(s => !s)}
+          isNightMode={isNightMode}
         />
         <FilterPill
           label="Hide Empty"
           active={hideEmpty}
-          color="#64748B"
+          color="#4A90D9"
           onClick={() => setHideEmpty(v => !v)}
+          isNightMode={isNightMode}
         />
 
         {/* Divider */}
