@@ -470,6 +470,8 @@ export default function GameHUD({
 
   // Done-task approval context menu: Approve / Deny / Clarify
   const [doneTaskCtx, setDoneTaskCtx] = useState(null) // { task, x, y }
+  // Track approved task IDs for green glow animation (clears after 4s, then poll moves to Completed feed)
+  const [approvedTaskIds, setApprovedTaskIds] = useState(new Set())
   useEffect(() => {
     if (!doneTaskCtx) return
     const timer = setTimeout(() => {
@@ -997,6 +999,7 @@ export default function GameHUD({
             }}
             onNavigateToProject={navigateToProject}
             highlightedTask={highlightedTask}
+            approvedTaskIds={approvedTaskIds}
           />
         ) : null}
       </AnimatePresence>
@@ -1630,6 +1633,14 @@ export default function GameHUD({
             {/* Approve */}
             <button
               onClick={() => {
+                // Start green glow animation on the task row (clears after 4s, poll moves to Completed feed)
+                if (task.taskId) {
+                  const tid = String(task.taskId)
+                  setApprovedTaskIds(prev => { const n = new Set(prev); n.add(tid); return n })
+                  setTimeout(() => {
+                    setApprovedTaskIds(prev => { const n = new Set(prev); n.delete(tid); return n })
+                  }, 4000)
+                }
                 taskLifecycleAction('toggle', { ...task, done: false }) // sets status to 'completed' via toggle(true) logic
                 // Use 'markDone' which sets status='done' -> but we want 'completed'
                 // Use direct fetch to set status=completed

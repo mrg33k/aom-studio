@@ -16,7 +16,7 @@ import { useLongPress } from '../hooks/useLongPress.js'
 const SPRITE_AGENTS_FALLBACK = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask, onDoneTaskAction }) {
+export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask, onDoneTaskAction, approvedTaskIds }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
@@ -223,6 +223,17 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
   }, [localToggles])
 
   return (
+    <>
+    <style>{`
+      @keyframes taskApprovedGlow {
+        0%   { box-shadow: inset 0 0 0 1px rgba(34,197,94,0.5), 0 0 10px rgba(34,197,94,0.35); }
+        50%  { box-shadow: inset 0 0 0 1px rgba(34,197,94,0.9), 0 0 24px rgba(34,197,94,0.55), 0 0 48px rgba(34,197,94,0.2); }
+        100% { box-shadow: inset 0 0 0 1px rgba(34,197,94,0.5), 0 0 10px rgba(34,197,94,0.35); }
+      }
+      .task-approved-glow {
+        animation: taskApprovedGlow 1.2s ease-in-out infinite;
+      }
+    `}</style>
     <motion.div
       initial={{ height: 0, opacity: 0 }}
       animate={{ height: 'auto', opacity: 1 }}
@@ -451,15 +462,17 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
           const taskKey = task.isManual ? `manual-${task.manualId}` : String(task.origIdx)
           const isDraggingThis = activeDragKey === taskKey
           const isDoneAwaiting = !!task.isDoneAwaitingApproval
+          const isApproved = !!(task.taskId && approvedTaskIds?.has(String(task.taskId)))
 
-          // Yellow palette for done-awaiting tasks
-          const doneBg = isDoneAwaiting ? 'rgba(245,158,11,0.10)' : null
-          const doneBorder = isDoneAwaiting ? '3px solid rgba(245,158,11,0.5)' : null
+          // Green palette overrides yellow when approved; yellow for awaiting approval
+          const doneBg = isApproved ? 'rgba(34,197,94,0.12)' : isDoneAwaiting ? 'rgba(245,158,11,0.10)' : null
+          const doneBorder = isApproved ? '3px solid rgba(34,197,94,0.6)' : isDoneAwaiting ? '3px solid rgba(245,158,11,0.5)' : null
 
           return (
             <motion.div
               key={task.isManual ? `manual-${task.manualId}` : task.origIdx}
               data-task-row
+              className={isApproved ? 'task-approved-glow' : undefined}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.03, duration: 0.15 }}
@@ -534,8 +547,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                       : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
                         ? `3px solid ${project.color || '#3B82F6'}`
                         : '3px solid transparent',
-                boxShadow: isDoneAwaiting ? 'inset 0 0 0 1px rgba(245,158,11,0.25)' : 'none',
-                borderRadius: isDoneAwaiting ? 6 : 0,
+                boxShadow: isApproved ? undefined : isDoneAwaiting ? 'inset 0 0 0 1px rgba(245,158,11,0.25)' : 'none',
+                borderRadius: (isDoneAwaiting || isApproved) ? 6 : 0,
               }}
             >
               {/* Checkbox - CLICKABLE (44px touch target via wrapper div) */}
@@ -698,5 +711,6 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
       </div>
 
     </motion.div>
+    </>
   )
 }
