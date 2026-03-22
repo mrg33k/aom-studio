@@ -1278,8 +1278,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     // drawRoom()'s clip path. This guarantees rooms sit perfectly inside their grid cells.
     //
     // Vertex ratios (match drawRoom clip path exactly):
-    //   top=(0.50,0.00), upper-right=(0.99,0.31), lower-right=(0.99,0.72),
-    //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.31)
+    //   top=(0.50,0.00), upper-right=(0.99,0.28), lower-right=(0.99,0.72),
+    //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.28)
     //
     // Grid extends beyond room cluster to fill the full visible viewport.
     // Uses viewport bounds (in world space) to determine row/col iteration range.
@@ -1326,11 +1326,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
           ctx.beginPath()
           ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
-          ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right
+          ctx.lineTo(ox + S * 0.99, oy + S * 0.28)  // upper-right
           ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
           ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
           ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
-          ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left
+          ctx.lineTo(ox + S * 0.01, oy + S * 0.28)  // upper-left
           ctx.closePath()
           ctx.stroke()
         }
@@ -1587,11 +1587,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.translate(posX, posY + celebOffsetY)
         ctx.beginPath()
         ctx.moveTo(S * 0.50, -pad)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.31 - pad * 0.5)
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.28 - pad * 0.5)
         ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.72 + pad * 0.5)
         ctx.lineTo(S * 0.50, S * 0.99 + pad)
         ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.72 + pad * 0.5)
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.31 - pad * 0.5)
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.28 - pad * 0.5)
         ctx.closePath()
         // Animated dashed stroke
         const dashLen = 14
@@ -1822,11 +1822,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.beginPath()
     const S = ROOM_SIZE
     ctx.moveTo(S * 0.50, S * 0.00)
-    ctx.lineTo(S * 0.99, S * 0.31)
+    ctx.lineTo(S * 0.99, S * 0.28)
     ctx.lineTo(S * 0.99, S * 0.72)
     ctx.lineTo(S * 0.50, S * 0.99)
     ctx.lineTo(S * 0.01, S * 0.72)
-    ctx.lineTo(S * 0.01, S * 0.31)
+    ctx.lineTo(S * 0.01, S * 0.28)
     ctx.closePath()
     ctx.clip()
 
