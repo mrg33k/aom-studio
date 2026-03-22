@@ -453,9 +453,10 @@ export default function CreateRoomModal({ isOpen, onClose, isNightMode, onRoomCr
                 border: `2px solid ${selectedRole.color}`,
                 background: `${selectedRole.color}18`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16, fontWeight: 700, color: selectedRole.color, flexShrink: 0,
+                fontSize: 14, fontWeight: 700, color: selectedRole.color, flexShrink: 0,
+                letterSpacing: '0.02em',
               }}>
-                {agentName.charAt(0).toUpperCase()}
+                {(agentName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase()) || agentName.slice(0, 1).toUpperCase()}
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: textPrimary, fontFamily: "'Inter Tight','Inter',sans-serif" }}>
