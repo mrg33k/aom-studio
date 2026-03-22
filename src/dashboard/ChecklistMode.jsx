@@ -1932,7 +1932,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                               padding: '6px 0', width: '100%',
                             }}
                           >
-                            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.04)' }} />
+                            <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)' }} />
                             <span style={{
                               fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,
                               color: '#4A6080', textTransform: 'uppercase',
@@ -1941,7 +1941,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                               {collapsedProjects[`${project.section}-done`] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                               Done ({doneTasks.length})
                             </span>
-                            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.04)' }} />
+                            <div style={{ flex: 1, height: 1, background: isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)' }} />
                           </button>
 
                           {collapsedProjects[`${project.section}-done`] && doneTasks.map((task, i) => (
@@ -2008,15 +2008,15 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             placeholder={`Add a task${selectedProjectData ? ` to ${selectedProjectData.name}` : ''}...`}
             style={{
               width: '100%', height: isMobile ? 44 : 42,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.08)'}`,
               borderRadius: 10, padding: '0 16px',
               fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 15,
               color: '#FDF6EC', outline: 'none',
               transition: 'border-color 150ms ease',
             }}
             onFocus={e => e.target.style.borderColor = `${selectedProjectData?.color || '#3B9EFF'}66`}
-            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+            onBlur={e => e.target.style.borderColor = isDaytime ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.08)'}
           />
         </form>
       </div>

@@ -4990,13 +4990,13 @@ function TaskCard({ entry, agentColor, onContextMenu }) {
   return (
     <div style={{
       position: 'relative',
-      minHeight: 64, background: 'rgba(255, 255, 255, 0.03)',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
+      minHeight: 64, background: 'rgba(59,130,246,0.05)',
+      border: '1px solid rgba(59,130,246,0.12)',
       borderRadius: 6, padding: '14px 16px',
       cursor: 'pointer', transition: 'background 150ms ease, border-color 150ms ease',
     }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)' }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.10)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.25)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.05)'; e.currentTarget.style.borderColor = 'rgba(59,130,246,0.12)' }}
       onContextMenu={(e) => {
         if (onContextMenu) {
           e.preventDefault()
@@ -5644,14 +5644,14 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 inputMode="text" enterKeyHint="send"
                 autoComplete="off" autoCorrect="off" autoCapitalize="sentences" spellCheck={false}
                 style={{
-                  flex: 1, background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  flex: 1, background: 'rgba(59,130,246,0.08)',
+                  border: '1px solid rgba(59,130,246,0.15)',
                   borderRadius: 10, height: 38, padding: '0 16px',
                   color: PALETTE.signText, fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif",
                   outline: 'none', transition: 'border-color 200ms ease, box-shadow 200ms ease',
                 }}
                 onFocus={e => { e.target.style.borderColor = `${agentColor}66`; e.target.style.boxShadow = `0 0 0 2px ${agentColor}15` }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255, 255, 255, 0.08)'; e.target.style.boxShadow = 'none' }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.15)'; e.target.style.boxShadow = 'none' }}
               />
               <button type="submit" disabled={!input.trim() || streaming}
                 style={{
@@ -5712,8 +5712,8 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
               inputMode="text" enterKeyHint="send"
               autoComplete="off" autoCorrect="off" autoCapitalize="sentences" spellCheck={false}
               style={{
-                flex: 1, background: 'rgba(255, 255, 255, 0.04)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                flex: 1, background: 'rgba(59,130,246,0.08)',
+                border: '1px solid rgba(59,130,246,0.15)',
                 borderRadius: 10, height: 36, padding: '0 16px',
                 color: PALETTE.signText, fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif",
                 outline: 'none', margin: '0 4px', transition: 'border-color 200ms ease',
@@ -10288,7 +10288,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
           color: '#A0A0A0', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'color 150ms, background 150ms',
         }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#FDF6EC'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#FDF6EC'; e.currentTarget.style.background = 'rgba(59,130,246,0.12)' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.background = 'transparent' }}
       >
         <ZoomIn size={iconSize} />
@@ -10313,14 +10313,14 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
           color: '#A0A0A0', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'color 150ms, background 150ms',
         }}
-        onMouseEnter={e => { e.currentTarget.style.color = '#FDF6EC'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#FDF6EC'; e.currentTarget.style.background = 'rgba(59,130,246,0.12)' }}
         onMouseLeave={e => { e.currentTarget.style.color = '#A0A0A0'; e.currentTarget.style.background = 'transparent' }}
       >
         <ZoomOut size={iconSize} />
       </button>
 
       {/* Divider */}
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '2px 4px' }} />
+      <div style={{ height: 1, background: 'rgba(59,130,246,0.15)', margin: '2px 4px' }} />
 
       {/* Home / go to main agent */}
       <button onClick={onHomeRoom}
@@ -10331,7 +10331,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
           cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'color 150ms, background 150ms',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.12)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
       >
         <Home size={iconSize} />
@@ -10346,7 +10346,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
           cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'color 150ms, background 150ms',
         }}
-        onMouseEnter={e => { if (!isOverview) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+        onMouseEnter={e => { if (!isOverview) e.currentTarget.style.background = 'rgba(59,130,246,0.12)' }}
         onMouseLeave={e => { if (!isOverview) e.currentTarget.style.background = 'transparent' }}
       >
         <MapIcon size={iconSize} />
@@ -12884,7 +12884,7 @@ export default function GameDashboard() {
           padding: 4px 10px;
           color: #8BA4C4;
           font-style: italic;
-          background: rgba(255,255,255,0.03);
+          background: rgba(59,130,246,0.06);
           border-radius: 0 4px 4px 0;
         }
         .md-msg a {
