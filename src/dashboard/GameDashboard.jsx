@@ -8013,8 +8013,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const confirmDoneCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug).length
   useEffect(() => { setConfirmIndex(0) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
   // Confirmation box minimize toggle -- collapses to slim bar, resets on agent switch or task count drops
-  const [confirmMinimized, setConfirmMinimized] = useState(false)
-  useEffect(() => { setConfirmMinimized(false) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [confirmMinimized, setConfirmMinimized] = useState(true)
+  useEffect(() => { setConfirmMinimized(true) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
   // Track which task is currently animating the approve glow+fade (keyed by taskId or text)
   const [approvingTaskId, setApprovingTaskId] = useState(null)
   // Track which task is currently animating the deny/reject red glow+fade
@@ -9603,7 +9603,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '0 16px',
                   height: 36,
-                  background: isDaytime ? 'linear-gradient(90deg, rgba(235,242,255,0.7) 0%, transparent 100%)' : 'linear-gradient(90deg, rgba(6,16,40,0.7) 0%, transparent 100%)',
+                  background: 'transparent',
                   cursor: 'pointer',
                 }}
                 onClick={() => setConfirmMinimized(false)}
@@ -9634,7 +9634,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               style={{
               padding: '8px 16px',
               display: 'flex', flexDirection: 'column', gap: 8,
-              background: isDaytime ? 'linear-gradient(180deg, rgba(235,242,255,0.65) 0%, transparent 100%)' : 'linear-gradient(180deg, rgba(6,16,40,0.65) 0%, transparent 100%)',
+              background: 'transparent',
             }}>
             {(() => {
               const cardKey = t.taskId || t.text

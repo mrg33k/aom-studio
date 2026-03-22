@@ -973,16 +973,19 @@ export default function GameHUD({
             <Search size={isMobile ? 18 : 15} />
           </motion.button>
 
-          {/* Pill bar: fixed count (6-8 visible), overflow behind +N button. No scroll arrows. */}
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            gap: isMobile ? 6 : 8,
-            padding: '2px 4px',
-            overflow: 'hidden',
-          }}>
+          {/* Pill bar: horizontally scrollable, pills fill available space. */}
+          <div
+            className="hud-pills-scroll"
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              gap: isMobile ? 6 : 8,
+              padding: '2px 4px',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+            }}>
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
                 <Loader2 size={16} style={{ color: hudTextMuted, animation: 'spin 1s linear infinite' }} />
