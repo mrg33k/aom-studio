@@ -25,13 +25,11 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
   const isFinishThese = project.section === 'finish-these' || project.section === 'checking-in'
   const isCompletedFeed = project.section === 'completed-feed'
   const hasLiveTasks = isRightNow && project.tasks.some(t => t.isLive)
-  const hasPendingApproval = isRightNow && project.tasks.some(t => t.isDoneAwaitingApproval)
   const isClient = project.isClient
   const allDone = remaining === 0 && totalTasks > 0
 
   // Pill color: Right Now is ALWAYS orange (#FF6B3D). Never yellow.
-  // The yellow REVIEW badge communicates pending approval -- the pill itself stays orange.
-  // Task CARDS inside Right Now can be orange (active), fuchsia (queued), yellow (done) -- separate concern.
+  // isDoneAwaitingApproval tasks are excluded from Right Now (handled by sidebar pinned box).
   const pillColor = isRightNow ? '#FF6B3D' : project.color
 
   // Client status tag colors

@@ -72,9 +72,8 @@ import { hudCtxBtn } from './components/CompactStats.jsx'
 import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 
 // ---- INBOX PANEL ------------------------------------------------------------
-// Shown when the Inbox pill is expanded. Two sections:
-//   (1) Done tasks awaiting approval -- amber cards with Approve / Deny / Clarify
-//   (2) Unread messages -- compact agent message previews
+// Shown when the Inbox pill is expanded. Shows unread messages only.
+// Done-task approval is handled by the pinned TASK COMPLETE box in the sidebar.
 function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify }) {
   const isDaytime = isNightMode === false
   // Blue glass theme -- daytime = white glass, nighttime = dark glass (SimCity/Vegas energy)
@@ -375,11 +374,7 @@ export default function GameHUD({
     punchLoading: loading,
   } = useDataPipe(parseFn)
 
-  // Inbox: done tasks awaiting approval + unread messages
-  const donePendingTasks = useMemo(() =>
-    (liveRightNowTasks || []).filter(t => t.isDoneAwaitingApproval),
-    [liveRightNowTasks]
-  )
+  // Inbox: unread messages only. Done-task approval handled by pinned TASK COMPLETE box.
   const inboxCount = (inboxItems || []).length
   const hudRef = useRef(null)
   const weights = useRecencyWeights()
