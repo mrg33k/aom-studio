@@ -67,6 +67,7 @@ import {
   useRecencyWeights,
 } from './components/HUDConstants.jsx'
 import { TaskPanel } from './components/TaskPanel.jsx'
+import { ChildPillsDrawer } from './components/ChildPillsDrawer.jsx'
 import { ProjectCard, ParentPill } from './components/ProjectCard.jsx'
 import { hudCtxBtn } from './components/CompactStats.jsx'
 import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
@@ -364,10 +365,6 @@ export default function GameHUD({
   const [pillOverflowOpen, setPillOverflowOpen] = useState(false)
   const overflowBtnRef = useRef(null)
   const overflowPanelRef = useRef(null)
-  // AOM parent pill: toggles a popover showing all AOM child project pills
-  const [expandedParentKey, setExpandedParentKey] = useState(null)
-  const parentPillBtnRef = useRef(null)
-  const parentPillPanelRef = useRef(null)
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -776,25 +773,6 @@ export default function GameHUD({
     }
   }, [pillOverflowOpen])
 
-  // Close AOM parent popover on click outside
-  useEffect(() => {
-    if (!expandedParentKey) return
-    const handler = (e) => {
-      if (
-        parentPillBtnRef.current && !parentPillBtnRef.current.contains(e.target) &&
-        parentPillPanelRef.current && !parentPillPanelRef.current.contains(e.target)
-      ) {
-        setExpandedParentKey(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    document.addEventListener('touchstart', handler, { passive: true })
-    return () => {
-      document.removeEventListener('mousedown', handler)
-      document.removeEventListener('touchstart', handler)
-    }
-  }, [expandedParentKey])
-
   const totalTasks = filteredProjects.reduce((sum, p) => sum + p.tasks.length, 0)
   const totalDone = filteredProjects.reduce((sum, p) => sum + p.tasks.filter(t => t.done).length, 0)
   const overallProgress = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0
@@ -829,9 +807,22 @@ export default function GameHUD({
         pointerEvents: 'auto',
       }}
     >
-      {/* Expanded task panel -- Inbox gets a custom approval panel; all others use TaskPanel */}
+      {/* Expanded task panel -- AOM parent shows child pills drawer; Inbox gets approval panel; all others use TaskPanel */}
       <AnimatePresence>
-        {expandedProject && expandedProject.section === 'inbox' ? (
+        {expandedProject && expandedProject.isParent ? (
+          <ChildPillsDrawer
+            key="aom-children"
+            project={expandedProject}
+            clientKids={expandedProject.children.filter(c => AOM_CLIENT_SECTIONS.has(c.section))}
+            internalKids={expandedProject.children.filter(c => !AOM_CLIENT_SECTIONS.has(c.section))}
+            onClose={() => setExpandedProject(null)}
+            onSelectChild={(child) => setExpandedProject(child)}
+            isNightMode={isNightMode}
+            expandedProject={null}
+            isMobile={isMobile}
+            isTablet={isTablet}
+          />
+        ) : expandedProject && expandedProject.section === 'inbox' ? (
           <InboxPanel
             key="inbox"
             unreadMsgs={inboxItems || []}
@@ -1181,161 +1172,18 @@ export default function GameHUD({
             ) : (
               <>
                 {visiblePills.map(project => {
-                  // Parent pill (AOM): click toggles child popover, never opens TaskPanel directly
+                  // Parent pill (AOM): click opens ChildPillsDrawer (slide-up, blue glass)
                   if (project.isParent) {
                     return (
-                      <div key={project.section} ref={parentPillBtnRef} style={{ position: 'relative', flexShrink: 0 }}>
-                        <ParentPill
-                          project={project}
-                          isExpanded={expandedParentKey === project.parentKey}
-                          onClick={() => setExpandedParentKey(
-                            expandedParentKey === project.parentKey ? null : project.parentKey
-                          )}
-                          isNightMode={isNightMode}
-                        />
-                        {/* AOM children popover -- fixed above HUD bar, aligned to parent pill */}
-                        <AnimatePresence>
-                          {expandedParentKey === project.parentKey && (() => {
-                            const allTasks = project.tasks.filter(t => !t.isAddPrompt)
-                            const totalRemaining = allTasks.filter(t => !t.done).length
-                            const totalDone = allTasks.filter(t => t.done).length
-                            const clientKids = project.children.filter(c => AOM_CLIENT_SECTIONS.has(c.section))
-                            const internalKids = project.children.filter(c => !AOM_CLIENT_SECTIONS.has(c.section))
-                            const popBg = isDaytime ? 'rgba(15,25,50,0.85)' : 'rgba(8,14,28,0.95)'
-                            const popBorder = isDaytime ? '1.5px solid rgba(59,130,246,0.28)' : '1.5px solid rgba(59,130,246,0.25)'
-                            const popShadow = isDaytime
-                              ? '0 -8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(59,130,246,0.08), inset 0 1px 0 rgba(100,180,255,0.08)'
-                              : '0 -8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(59,130,246,0.06), inset 0 1px 0 rgba(59,130,246,0.08)'
-                            const labelColor = isDaytime ? 'rgba(100,180,255,0.9)' : 'rgba(59,130,246,0.7)'
-                            const dividerColor = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)'
-                            const sectionLabelColor = isDaytime ? 'rgba(100,180,255,0.55)' : 'rgba(100,180,255,0.38)'
-                            const statTextColor = isDaytime ? '#94B8D8' : '#4A6080'
-                            let childIndex = 0
-                            const renderGroup = (kids, groupLabel) => {
-                              if (!kids.length) return null
-                              return (
-                                <div key={groupLabel} style={{ width: '100%' }}>
-                                  <div style={{
-                                    paddingBottom: 4, marginBottom: 4,
-                                    borderBottom: `1px solid ${dividerColor}`,
-                                    display: 'flex', alignItems: 'center', gap: 5,
-                                  }}>
-                                    <span style={{
-                                      fontFamily: "'JetBrains Mono', monospace",
-                                      fontSize: 9, fontWeight: 700,
-                                      color: sectionLabelColor,
-                                      letterSpacing: '0.09em',
-                                      textTransform: 'uppercase',
-                                    }}>{groupLabel}</span>
-                                  </div>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                                    {kids.map(child => {
-                                      const delay = (childIndex++) * 0.04
-                                      return (
-                                        <motion.div
-                                          key={child.section}
-                                          initial={{ opacity: 0, x: -5 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          transition={{ delay, type: 'spring', damping: 20, stiffness: 320 }}
-                                        >
-                                          <ProjectCard
-                                            project={child}
-                                            isExpanded={expandedProject?.section === child.section}
-                                            onClick={() => {
-                                              setExpandedProject(
-                                                expandedProject?.section === child.section ? null : child
-                                              )
-                                              setExpandedParentKey(null)
-                                            }}
-                                            onContextMenu={onProjectContextMenu}
-                                            isNightMode={isNightMode}
-                                            wiggle={false}
-                                            isMobile={isMobile}
-                                            isTablet={isTablet}
-                                          />
-                                        </motion.div>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                              )
-                            }
-                            return (
-                              <motion.div
-                                ref={parentPillPanelRef}
-                                data-aom-parent-panel=""
-                                initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                                transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-                                style={{
-                                  position: 'fixed',
-                                  bottom: isMobile ? 68 : 80,
-                                  left: (() => {
-                                    if (!parentPillBtnRef.current) return 'auto'
-                                    const rect = parentPillBtnRef.current.getBoundingClientRect()
-                                    const panelW = Math.min(Math.max(project.children.length * 100, 260), 420)
-                                    return rect.left + panelW > window.innerWidth - 8
-                                      ? `${Math.max(8, window.innerWidth - panelW - 8)}px`
-                                      : `${rect.left}px`
-                                  })(),
-                                  maxWidth: 'calc(100vw - 16px)',
-                                  minWidth: 240,
-                                  background: popBg,
-                                  backdropFilter: 'blur(20px)',
-                                  border: popBorder,
-                                  borderRadius: 14,
-                                  boxShadow: popShadow,
-                                  padding: '10px 10px 8px',
-                                  zIndex: 200,
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: 8,
-                                }}
-                              >
-                                {/* Header: label + aggregate stats */}
-                                <div style={{
-                                  display: 'flex', alignItems: 'center', gap: 6,
-                                  paddingBottom: 6,
-                                  borderBottom: `1px solid ${dividerColor}`,
-                                }}>
-                                  <span style={{
-                                    fontFamily: "'JetBrains Mono', monospace",
-                                    fontSize: 10, fontWeight: 700,
-                                    color: labelColor,
-                                    letterSpacing: '0.10em',
-                                    textTransform: 'uppercase',
-                                    flex: 1,
-                                  }}>AOM Projects</span>
-                                  {totalRemaining > 0 && (
-                                    <span style={{
-                                      fontFamily: "'Inter Tight', monospace",
-                                      fontSize: 10, fontWeight: 700,
-                                      color: '#3B9EFF',
-                                      background: 'rgba(59,158,255,0.12)',
-                                      padding: '1px 6px', borderRadius: 6,
-                                      border: '1px solid rgba(59,158,255,0.20)',
-                                      whiteSpace: 'nowrap',
-                                    }}>{totalRemaining} left</span>
-                                  )}
-                                  {totalDone > 0 && (
-                                    <span style={{
-                                      fontFamily: "'Inter Tight', monospace",
-                                      fontSize: 10, fontWeight: 600,
-                                      color: statTextColor,
-                                      whiteSpace: 'nowrap',
-                                    }}>{totalDone} done</span>
-                                  )}
-                                </div>
-                                {/* Client projects group */}
-                                {renderGroup(clientKids, 'Clients')}
-                                {/* Internal projects group */}
-                                {renderGroup(internalKids, 'Internal')}
-                              </motion.div>
-                            )
-                          })()}
-                        </AnimatePresence>
-                      </div>
+                      <ParentPill
+                        key={project.section}
+                        project={project}
+                        isExpanded={expandedProject?.section === project.section}
+                        onClick={() => setExpandedProject(
+                          expandedProject?.section === project.section ? null : project
+                        )}
+                        isNightMode={isNightMode}
+                      />
                     )
                   }
 
