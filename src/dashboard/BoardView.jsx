@@ -910,6 +910,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const entryToTask = useCallback((entry, columnKey) => ({
     text: entry?.text || entry?.description || entry?.currentTask || '',
     id: entry?.taskId || entry?.id || null,
+    _id: entry?._id || null,   // board-local card ID for optimistic column moves
     agent: entry?.agent || null,
     projectSection: entry?.project || columnKey || null,
     done: entry?.done === true || entry?.status === 'completed',
@@ -925,8 +926,23 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       setBoardCtxMenu(null)
       return
     }
+    // Optimistic column moves so the card shifts immediately (data pipe catches up in 3-10s)
+    if (task._id) {
+      if (action === 'markDone') {
+        setCardOverrides(prev => ({
+          ...prev,
+          [task._id]: { toCol: 'completed', card: { ...task, done: true, status: 'completed', _id: task._id } },
+        }))
+      } else if (action === 'addToRightNow') {
+        setCardOverrides(prev => ({
+          ...prev,
+          [task._id]: { toCol: 'rightnow', card: { ...task, status: 'active', isLive: true, _id: task._id } },
+        }))
+      }
+    }
+    setBoardCtxMenu(null)
     handleTaskContextAction(action, task, payload, null)
-  }, [onViewDetail])
+  }, [onViewDetail, setCardOverrides])
 
   // Persist column order to localStorage
   useEffect(() => {

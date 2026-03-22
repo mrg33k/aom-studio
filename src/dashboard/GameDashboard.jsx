@@ -3504,6 +3504,9 @@ function MobileDrawer({
   // Height of the GameHUD bar in px. At full-snap, the drawer leaves this space at the
   // bottom so the HUD ticker is always visible. Default 60 matches hudBarHeight estimate.
   hudHeight = 60,
+  // Focus task: when set, tasks tab auto-expands this task (from HUD "View Task")
+  focusTaskId,
+  onFocusTaskHandled,
 }) {
   const sheetRef = useRef(null)
   const dragStartY = useRef(0)
@@ -3923,6 +3926,8 @@ function MobileDrawer({
               onAddToRightNow={onAddToRightNow}
               rightNowTasks={rightNowTasks}
               cornerConfig={cornerConfig}
+              focusTaskId={focusTaskId}
+              onFocusTaskHandled={onFocusTaskHandled}
               onInputFocus={() => {
                 if (snap !== 'full') {
                   preKeyboardSnapRef.current = snap
@@ -5803,6 +5808,8 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   // Auto-expand task when focusTaskId is set (e.g., from HUD "View Task" or Trello "View Detail")
   useEffect(() => {
     if (!focusTaskId) return
+    // Reset filter to 'all' so Right Now + all sections are visible
+    setActiveFilter('all')
     // Uncollapse all sections so the task card renders (it may be in a collapsed section)
     setCollapsedSections({})
     setExpandedTaskId(focusTaskId)
@@ -12078,8 +12085,13 @@ export default function GameDashboard() {
               setCameraTarget(task.agent)
               setIsOverview(false)
             }
-            setPanelActiveTab('tasks')
-            setPanelVisible(true)
+            if (isMobile) {
+              setDrawerSnap('half')
+              setMobileDrawerActiveTab('tasks')
+            } else {
+              setPanelActiveTab('tasks')
+              setPanelVisible(true)
+            }
           }}
         />
       )}
@@ -12314,8 +12326,14 @@ export default function GameDashboard() {
                 setCameraTarget(task.agent)
                 setIsOverview(false)
               }
-              setPanelActiveTab('tasks')
-              setPanelVisible(true)
+              if (isMobile) {
+                // Mobile: open drawer to tasks tab
+                setDrawerSnap('half')
+                setMobileDrawerActiveTab('tasks')
+              } else {
+                setPanelActiveTab('tasks')
+                setPanelVisible(true)
+              }
             }}
           />
         </Suspense>
@@ -12477,6 +12495,8 @@ export default function GameDashboard() {
             setMobileDrawerActiveTab('chat')
           }}
           hudHeight={hudBarHeight}
+          focusTaskId={sidebarFocusTaskId}
+          onFocusTaskHandled={() => setSidebarFocusTaskId(null)}
         />
       )}
 
