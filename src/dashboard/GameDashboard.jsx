@@ -4236,7 +4236,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   minWidth: 260,
                   background: isNightMode
                     ? 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
-                    : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
+                    : 'linear-gradient(135deg, rgba(15,25,50,0.92) 0%, rgba(10,18,40,0.95) 100%)',
                   backdropFilter: 'blur(20px)',
                   border: isNightMode ? '1.5px solid rgba(59,130,246,0.42)' : '1.5px solid rgba(59,130,246,0.38)',
                   borderRadius: 12,
@@ -4544,7 +4544,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                         minWidth: 220,
                         background: isNightMode
                           ? 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
-                          : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
+                          : 'linear-gradient(135deg, rgba(15,25,50,0.92) 0%, rgba(10,18,40,0.95) 100%)',
                         backdropFilter: 'blur(20px)',
                         border: isNightMode ? '1.5px solid rgba(59,130,246,0.42)' : '1.5px solid rgba(59,130,246,0.38)',
                         borderRadius: 12,
@@ -4736,7 +4736,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     transform: 'translateX(-50%)',
                     background: isNightMode
                       ? 'linear-gradient(135deg, rgba(8,18,44,0.98) 0%, rgba(6,14,36,0.98) 100%)'
-                      : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
+                      : 'linear-gradient(135deg, rgba(15,25,50,0.92) 0%, rgba(10,18,40,0.95) 100%)',
                     border: isNightMode ? '1.5px solid rgba(59,130,246,0.45)' : '1.5px solid rgba(59,130,246,0.40)',
                     borderRadius: 6, padding: '5px 10px',
                     whiteSpace: 'nowrap', zIndex: 200,
@@ -6823,7 +6823,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         <div style={{
           position: 'fixed', left: taskCtx.x, top: taskCtx.y, zIndex: 200,
           background: isDaytime
-            ? 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)'
+            ? 'linear-gradient(135deg, rgba(15,25,50,0.92) 0%, rgba(10,18,40,0.95) 100%)'
             : 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)',
           border: isDaytime ? '1.5px solid rgba(59,130,246,0.38)' : '1.5px solid rgba(59,130,246,0.42)',
           borderRadius: 8, padding: '4px 0', minWidth: 180,
@@ -7931,7 +7931,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
         <div style={{
           position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 200,
           background: isDaytime
-            ? 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)'
+            ? 'linear-gradient(135deg, rgba(15,25,50,0.92) 0%, rgba(10,18,40,0.95) 100%)'
             : 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)',
           border: isDaytime ? '1.5px solid rgba(59,130,246,0.38)' : '1.5px solid rgba(59,130,246,0.42)',
           borderRadius: 8, padding: '4px 0', minWidth: 160,
@@ -8625,7 +8625,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
               background: isNightMode
                 ? 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
-                : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
+                : 'linear-gradient(135deg, rgba(15,25,50,0.92) 0%, rgba(10,18,40,0.95) 100%)',
               border: isNightMode ? '1.5px solid rgba(59,130,246,0.42)' : '1.5px solid rgba(59,130,246,0.38)',
               borderRadius: 6,
               minWidth: 160, maxHeight: 280, overflowY: 'auto',
@@ -8699,7 +8699,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
               background: isNightMode
                 ? 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
-                : 'linear-gradient(135deg, rgba(235,243,255,0.99) 0%, rgba(220,234,255,0.98) 100%)',
+                : 'linear-gradient(135deg, rgba(15,25,50,0.92) 0%, rgba(10,18,40,0.95) 100%)',
               border: isNightMode ? '1.5px solid rgba(59,130,246,0.42)' : '1.5px solid rgba(59,130,246,0.38)',
               borderRadius: 6,
               minWidth: 180, maxHeight: 260, overflowY: 'auto',
