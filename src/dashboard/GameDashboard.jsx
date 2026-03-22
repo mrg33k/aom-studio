@@ -4066,8 +4066,292 @@ function ShortcutsOverlay({ onClose }) {
   )
 }
 
+// ---- AOM MODALS (Preferences, Create World, Worlds List) -------------------
+
+function PreferencesModal({ isOpen, onClose, currentUser, isNightMode, onSignOut }) {
+  if (!isOpen) return null
+  const bg = 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
+  const border = '1.5px solid rgba(59,130,246,0.35)'
+  const labelStyle = { fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif", marginBottom: 4 }
+  const valueStyle = { fontSize: 14, fontWeight: 500, color: '#E2E8F0', fontFamily: "'Inter', sans-serif" }
+  const sectionStyle = { padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        transition={{ duration: 0.18 }}
+        style={{ width: '100%', maxWidth: 420, background: bg, border, borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflow: 'hidden' }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: '#E2E8F0', fontFamily: "'Inter', sans-serif" }}>Preferences</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center', padding: 4 }}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        {/* Account section */}
+        <div style={sectionStyle}>
+          <div style={labelStyle}>Account</div>
+          <div style={valueStyle}>{currentUser?.email || 'Not signed in'}</div>
+          {currentUser?.user_metadata?.full_name && (
+            <div style={{ ...valueStyle, fontSize: 12, color: '#64748B', marginTop: 4 }}>{currentUser.user_metadata.full_name}</div>
+          )}
+        </div>
+        {/* World section */}
+        <div style={sectionStyle}>
+          <div style={labelStyle}>World</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
+            <span style={valueStyle}>{currentUser?.user_metadata?.world || 'aom'}</span>
+          </div>
+        </div>
+        {/* App info */}
+        <div style={sectionStyle}>
+          <div style={labelStyle}>App</div>
+          <div style={{ ...valueStyle, fontSize: 13 }}>Corner <span style={{ color: '#E85D26' }}>.</span></div>
+          <div style={{ fontSize: 11, color: '#334155', fontFamily: "'Inter', sans-serif", marginTop: 2 }}>Built by AOM</div>
+        </div>
+        {/* Actions */}
+        <div style={{ padding: '12px 20px' }}>
+          <button
+            onClick={() => { onSignOut?.(); onClose() }}
+            style={{ width: '100%', padding: '9px 16px', background: 'rgba(239,68,68,0.08)', border: '1.5px solid rgba(239,68,68,0.25)', borderRadius: 8, color: '#F87171', fontSize: 13, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: 'pointer', transition: 'all 150ms ease' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.45)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)' }}
+          >
+            Sign out
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
+function CreateWorldModal({ isOpen, onClose, isNightMode, onTestAsNewUser }) {
+  const [email, setEmail] = useState('')
+  const [worldSlug, setWorldSlug] = useState('')
+  const [name, setName] = useState('')
+  const [tempPass, setTempPass] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState(null) // null | { ok, world } | { error }
+
+  if (!isOpen) return null
+  const bg = 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
+  const border = '1.5px solid rgba(232,93,38,0.35)'
+  const inputStyle = {
+    width: '100%', padding: '8px 12px', borderRadius: 8,
+    background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)',
+    color: '#E2E8F0', fontSize: 13, fontFamily: "'Inter', sans-serif",
+    outline: 'none', boxSizing: 'border-box',
+  }
+  const labelStyle = { fontSize: 11, fontWeight: 600, color: '#64748B', fontFamily: "'Inter', sans-serif", display: 'block', marginBottom: 5 }
+
+  const handleCreate = async () => {
+    if (!email || !worldSlug || !tempPass) return
+    setLoading(true)
+    setResult(null)
+    try {
+      const r = await fetch('/api/dashboard/worlds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, world: worldSlug, name, password: tempPass }),
+      })
+      const d = await r.json()
+      if (r.ok) {
+        setResult({ ok: true, world: d.world })
+        setEmail(''); setWorldSlug(''); setName(''); setTempPass('')
+      } else {
+        setResult({ error: d.error || 'Failed to create world' })
+      }
+    } catch (err) {
+      setResult({ error: err.message })
+    }
+    setLoading(false)
+  }
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        transition={{ duration: 0.18 }}
+        style={{ width: '100%', maxWidth: 440, background: bg, border, borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflow: 'hidden' }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: '#E2E8F0', fontFamily: "'Inter', sans-serif" }}>Create World</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center', padding: 4 }}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        {/* Test as new user */}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(232,93,38,0.04)' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#E85D26', fontFamily: "'Inter', sans-serif", marginBottom: 6 }}>Test as new user</div>
+          <div style={{ fontSize: 12, color: '#64748B', fontFamily: "'Inter', sans-serif", marginBottom: 10 }}>
+            Reset your onboarding state and experience Corner as a first-time user.
+          </div>
+          <button
+            onClick={() => { onTestAsNewUser?.(); onClose() }}
+            style={{ padding: '7px 14px', background: 'rgba(232,93,38,0.1)', border: '1.5px solid rgba(232,93,38,0.35)', borderRadius: 8, color: '#E85D26', fontSize: 12, fontWeight: 600, fontFamily: "'Inter', sans-serif", cursor: 'pointer', transition: 'all 150ms ease' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,93,38,0.18)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(232,93,38,0.1)' }}
+          >
+            Reset &amp; test onboarding
+          </button>
+        </div>
+        {/* Create new world form */}
+        <div style={{ padding: '16px 20px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#64748B', fontFamily: "'Inter', sans-serif", marginBottom: 14 }}>Create a new client world</div>
+          {result?.ok && (
+            <div style={{ marginBottom: 12, padding: '10px 14px', background: 'rgba(34,197,94,0.1)', border: '1.5px solid rgba(34,197,94,0.3)', borderRadius: 8, fontSize: 12, color: '#4ADE80', fontFamily: "'Inter', sans-serif" }}>
+              World <strong>{result.world}</strong> created. Share the login with your client.
+            </div>
+          )}
+          {result?.error && (
+            <div style={{ marginBottom: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.3)', borderRadius: 8, fontSize: 12, color: '#F87171', fontFamily: "'Inter', sans-serif" }}>
+              {result.error}
+            </div>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <label style={labelStyle}>Client email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="client@company.com" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Client name</label>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Acme Corp" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>World slug</label>
+              <input
+                type="text" value={worldSlug}
+                onChange={e => setWorldSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                placeholder="acme-corp"
+                style={inputStyle}
+              />
+              <div style={{ fontSize: 10, color: '#334155', fontFamily: "'Inter', sans-serif", marginTop: 4 }}>Lowercase, hyphens only. Used as client_id.</div>
+            </div>
+            <div>
+              <label style={labelStyle}>Temp password</label>
+              <input type="password" value={tempPass} onChange={e => setTempPass(e.target.value)} placeholder="min 6 chars" style={inputStyle} />
+            </div>
+            <button
+              onClick={handleCreate}
+              disabled={!email || !worldSlug || !tempPass || loading}
+              style={{
+                padding: '10px 20px', background: (!email || !worldSlug || !tempPass || loading) ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.15)',
+                border: '1.5px solid rgba(59,130,246,0.35)', borderRadius: 8,
+                color: (!email || !worldSlug || !tempPass || loading) ? '#334155' : '#60A5FA',
+                fontSize: 13, fontWeight: 700, fontFamily: "'Inter', sans-serif",
+                cursor: (!email || !worldSlug || !tempPass || loading) ? 'not-allowed' : 'pointer',
+                transition: 'all 150ms ease',
+              }}
+            >
+              {loading ? 'Creating...' : 'Create world'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
+function WorldsModal({ isOpen, onClose, worlds, worldsLoading, onEnterWorld, currentWorldId, isNightMode }) {
+  const [query, setQuery] = useState('')
+  if (!isOpen) return null
+  const bg = 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)'
+  const border = '1.5px solid rgba(59,130,246,0.35)'
+  const filtered = query
+    ? worlds.filter(w => w.world.includes(query.toLowerCase()) || w.name.toLowerCase().includes(query.toLowerCase()) || w.email.toLowerCase().includes(query.toLowerCase()))
+    : worlds
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        transition={{ duration: 0.18 }}
+        style={{ width: '100%', maxWidth: 480, maxHeight: '80vh', background: bg, border, borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          <div>
+            <span style={{ fontSize: 16, fontWeight: 800, color: '#E2E8F0', fontFamily: "'Inter', sans-serif" }}>Worlds</span>
+            {!worldsLoading && <span style={{ fontSize: 12, color: '#475569', fontFamily: "'Inter', sans-serif", marginLeft: 8 }}>{worlds.length} total</span>}
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center', padding: 4 }}>
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        {/* Search */}
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          <input
+            type="text" value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="Search worlds..."
+            style={{ width: '100%', padding: '7px 12px', background: 'rgba(255,255,255,0.04)', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#E2E8F0', fontSize: 13, fontFamily: "'Inter', sans-serif", outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+        {/* List */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {worldsLoading ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#475569', fontSize: 13, fontFamily: "'Inter', sans-serif" }}>Loading worlds...</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#475569', fontSize: 13, fontFamily: "'Inter', sans-serif" }}>{query ? 'No matches.' : 'No worlds found.'}</div>
+          ) : filtered.map(w => {
+            const isCurrent = w.world === currentWorldId
+            return (
+              <button
+                key={w.id}
+                onClick={() => { onEnterWorld?.(w); onClose() }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '10px 16px', background: isCurrent ? 'rgba(59,130,246,0.1)' : 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', textAlign: 'left' }}
+                onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = 'transparent' }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(59,130,246,0.12)', border: '1.5px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#60A5FA', fontFamily: "'Inter', sans-serif" }}>
+                    {(w.name || w.world)[0]?.toUpperCase() || 'W'}
+                  </span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: isCurrent ? '#60A5FA' : '#E2E8F0', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {w.name || w.world}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#475569', fontFamily: "'Inter', sans-serif" }}>{w.world}</div>
+                </div>
+                {isCurrent && (
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', boxShadow: '0 0 6px rgba(34,197,94,0.6)', flexShrink: 0 }} />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks, onPrefs, onCreateWorld, worlds, worldsLoading, onEnterWorld, onOpenWorldsModal, onFetchWorlds, currentWorldId }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
   const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done'
@@ -4077,6 +4361,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
   const [cornerConfig, setCornerConfig] = useState(null)
   const [activeProjectDropdown, setActiveProjectDropdown] = useState(null)
   const projectPillRefs = useRef({})
+  const [aomOpen, setAomOpen] = useState(false)
+  const aomMenuRef = useRef(null)
 
   // Fetch corner config for project teams
   useEffect(() => {
@@ -4086,19 +4372,20 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
       .catch(() => {})
   }, [])
 
-  // Close team popout on outside click
+  // Close team popout / aom menu on outside click
   useEffect(() => {
-    if (!teamOpen && !activeProjectDropdown) return
+    if (!teamOpen && !activeProjectDropdown && !aomOpen) return
     const handler = (e) => {
       if (teamOpen && teamRef.current && !teamRef.current.contains(e.target)) setTeamOpen(false)
       if (activeProjectDropdown) {
         const ref = projectPillRefs.current[activeProjectDropdown]
         if (ref && !ref.contains(e.target)) setActiveProjectDropdown(null)
       }
+      if (aomOpen && aomMenuRef.current && !aomMenuRef.current.contains(e.target)) setAomOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [teamOpen, activeProjectDropdown])
+  }, [teamOpen, activeProjectDropdown, aomOpen])
 
   // Team name is in-memory only (no persistence)
 
@@ -4197,6 +4484,157 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             WEB
           </span>
         )}
+
+        {/* AOM badge -- world switcher + admin menu */}
+        <div ref={aomMenuRef} style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            onClick={() => {
+              const next = !aomOpen
+              setAomOpen(next)
+              if (next && worlds.length === 0 && !worldsLoading) onFetchWorlds?.()
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: aomOpen ? 'rgba(232,93,38,0.15)' : 'rgba(232,93,38,0.08)',
+              border: aomOpen ? '1.5px solid rgba(232,93,38,0.55)' : '1.5px solid rgba(232,93,38,0.28)',
+              borderRadius: 8, padding: isMobile ? '4px 8px' : '5px 11px',
+              cursor: 'pointer', transition: 'all 150ms ease',
+            }}
+            onMouseEnter={e => { if (!aomOpen) { e.currentTarget.style.background = 'rgba(232,93,38,0.12)'; e.currentTarget.style.borderColor = 'rgba(232,93,38,0.4)' } }}
+            onMouseLeave={e => { if (!aomOpen) { e.currentTarget.style.background = 'rgba(232,93,38,0.08)'; e.currentTarget.style.borderColor = 'rgba(232,93,38,0.28)' } }}
+          >
+            <span style={{ fontSize: isMobile ? 12 : 13, fontWeight: 800, color: '#E85D26', fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em' }}>
+              {(currentWorldId || 'AOM').toUpperCase()}
+            </span>
+            <svg width={10} height={10} viewBox="0 0 24 24" fill="none"
+              stroke="#E85D26" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+              style={{ transform: aomOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease', flexShrink: 0 }}
+            >
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          {/* AOM dropdown */}
+          <AnimatePresence>
+            {aomOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+                  minWidth: 220, maxWidth: 300,
+                  background: 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1.5px solid rgba(232,93,38,0.3)',
+                  borderRadius: 12,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,93,38,0.1), 0 0 24px rgba(232,93,38,0.06)',
+                  overflow: 'hidden',
+                  zIndex: 100,
+                }}
+              >
+                {/* Menu header: current world */}
+                <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
+                    {(currentWorldId || 'aom').toUpperCase()}
+                  </div>
+                  {currentUser?.email && (
+                    <div style={{ fontSize: 11, color: '#475569', fontFamily: "'Inter', sans-serif", marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}>
+                      {currentUser.email}
+                    </div>
+                  )}
+                </div>
+
+                {/* Preferences */}
+                {[
+                  {
+                    label: 'Preferences',
+                    icon: <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+                    onClick: () => { onPrefs?.(); setAomOpen(false) },
+                  },
+                  {
+                    label: 'Create World',
+                    icon: <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+                    onClick: () => { onCreateWorld?.(); setAomOpen(false) },
+                  },
+                ].map(item => (
+                  <button
+                    key={item.label}
+                    onClick={item.onClick}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 14px', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', textAlign: 'left' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <span style={{ color: '#64748B', flexShrink: 0 }}>{item.icon}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#CBD5E1', fontFamily: "'Inter', sans-serif" }}>{item.label}</span>
+                  </button>
+                ))}
+
+                {/* Worlds section */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px 4px' }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
+                      Worlds {worldsLoading ? '…' : worlds.length > 0 ? `(${worlds.length})` : ''}
+                    </span>
+                  </div>
+
+                  {worldsLoading && (
+                    <div style={{ padding: '8px 14px 10px', fontSize: 12, color: '#475569', fontFamily: "'Inter', sans-serif" }}>Loading…</div>
+                  )}
+
+                  {!worldsLoading && worlds.length === 0 && (
+                    <div style={{ padding: '8px 14px 10px', fontSize: 12, color: '#334155', fontFamily: "'Inter', sans-serif" }}>No worlds found</div>
+                  )}
+
+                  {!worldsLoading && worlds.length > 0 && worlds.length <= 30 && (
+                    // Inline list (≤30)
+                    <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                      {worlds.map(w => {
+                        const isCurrent = w.world === currentWorldId
+                        return (
+                          <button
+                            key={w.id}
+                            onClick={() => { onEnterWorld?.(w); setAomOpen(false) }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '7px 14px', background: isCurrent ? 'rgba(59,130,246,0.08)' : 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', textAlign: 'left' }}
+                            onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                            onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.background = isCurrent ? 'rgba(59,130,246,0.08)' : 'transparent' }}
+                          >
+                            <div style={{ width: 24, height: 24, borderRadius: 6, background: isCurrent ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: isCurrent ? '#60A5FA' : '#64748B', fontFamily: "'Inter', sans-serif" }}>
+                                {(w.name || w.world)[0]?.toUpperCase() || 'W'}
+                              </span>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: isCurrent ? '#60A5FA' : '#CBD5E1', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {w.name || w.world}
+                              </div>
+                              <div style={{ fontSize: 10, color: '#334155', fontFamily: "'Inter', sans-serif" }}>{w.world}</div>
+                            </div>
+                            {isCurrent && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {!worldsLoading && worlds.length > 30 && (
+                    // View All button (>30)
+                    <button
+                      onClick={() => { onOpenWorldsModal?.(); setAomOpen(false) }}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 14px 12px', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#60A5FA', fontFamily: "'Inter', sans-serif" }}>View all {worlds.length} worlds</span>
+                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Team pill */}
         <div ref={teamRef} style={{ position: 'relative', flexShrink: 0 }}>
@@ -10167,6 +10605,11 @@ export default function GameDashboard() {
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('corner_onboarded'))
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
+  const [showPrefsModal, setShowPrefsModal] = useState(false)
+  const [showCreateWorldModal, setShowCreateWorldModal] = useState(false)
+  const [showWorldsModal, setShowWorldsModal] = useState(false)
+  const [worlds, setWorlds] = useState([])
+  const [worldsLoading, setWorldsLoading] = useState(false)
   const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
   const [agentAssets, setAgentAssets] = useState(AGENT_ASSETS_DEFAULT)
   const [roomsWithRenders, setRoomsWithRenders] = useState(ROOMS_WITH_RENDERS_FALLBACK)
@@ -10284,6 +10727,27 @@ export default function GameDashboard() {
     await authSignOut()
     sessionStorage.removeItem('dash-auth')
     window.location.href = '/login'
+  }, [])
+
+  // Fetch worlds from Supabase admin (lazy -- called when AOM menu opens)
+  const fetchWorlds = useCallback(async () => {
+    if (worldsLoading) return
+    setWorldsLoading(true)
+    try {
+      const r = await fetch('/api/dashboard/worlds')
+      if (r.ok) {
+        const d = await r.json()
+        setWorlds(d.worlds || [])
+      }
+    } catch {}
+    setWorldsLoading(false)
+  }, [worldsLoading])
+
+  // Enter a world by switching client_id via URL param
+  const handleEnterWorld = useCallback((world) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('client', world.world)
+    window.location.href = url.toString()
   }, [])
 
   // Right Now tasks: wire to useDataPipe (real-time from task-status.jsonl + agent-notifications.md)
@@ -11839,7 +12303,7 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 
@@ -12907,6 +13371,45 @@ export default function GameDashboard() {
       {showOnboarding && (
         <OnboardingGuide onComplete={() => setShowOnboarding(false)} />
       )}
+
+      {/* AOM Modals */}
+      <AnimatePresence>
+        {showPrefsModal && (
+          <PreferencesModal
+            isOpen={showPrefsModal}
+            onClose={() => setShowPrefsModal(false)}
+            currentUser={currentUser}
+            isNightMode={isNightMode}
+            onSignOut={handleSignOut}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showCreateWorldModal && (
+          <CreateWorldModal
+            isOpen={showCreateWorldModal}
+            onClose={() => setShowCreateWorldModal(false)}
+            isNightMode={isNightMode}
+            onTestAsNewUser={() => {
+              localStorage.removeItem('corner_onboarded')
+              setShowOnboarding(true)
+            }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showWorldsModal && (
+          <WorldsModal
+            isOpen={showWorldsModal}
+            onClose={() => setShowWorldsModal(false)}
+            worlds={worlds}
+            worldsLoading={worldsLoading}
+            onEnterWorld={handleEnterWorld}
+            currentWorldId={getClientId()}
+            isNightMode={isNightMode}
+          />
+        )}
+      </AnimatePresence>
     </div>
     </RoomsWithRendersContext.Provider>
     </SpriteAgentsContext.Provider>
