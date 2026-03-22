@@ -1274,10 +1274,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const now = performance.now()
 
     // ---- HEX GRID LINES: seamless background honeycomb extending to viewport bounds ----
-    // Draws hex outlines using the EXACT same hexPosition() formula and vertex ratios as
-    // drawRoom()'s clip path. This guarantees rooms sit perfectly inside their grid cells.
+    // Vertices copied VERBATIM from drawRoom()'s clip path (the source of truth).
+    // drawRoom uses ctx.translate(posX, posY) first, so its local (0,0) == world (ox,oy) here.
+    // DO NOT change these independently -- always sync with drawRoom clip path or rooms will ghost.
     //
-    // Vertex ratios (match drawRoom clip path exactly):
+    // Vertex ratios (verbatim from drawRoom clip path):
     //   top=(0.50,0.00), upper-right=(0.99,0.28), lower-right=(0.99,0.72),
     //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.28)
     //
@@ -1818,15 +1819,17 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.save()
     ctx.translate(offsetX, offsetY)
 
-    // Hex clip path (tightened to match source-cropped content)
+    // Hex clip path -- SOURCE OF TRUTH for all hex geometry in this file.
+    // The hex grid lines (line ~1327) copy these EXACT vertex ratios verbatim.
+    // If you change these, update the grid section too or rooms will ghost.
     ctx.beginPath()
     const S = ROOM_SIZE
-    ctx.moveTo(S * 0.50, S * 0.00)
-    ctx.lineTo(S * 0.99, S * 0.28)
-    ctx.lineTo(S * 0.99, S * 0.72)
-    ctx.lineTo(S * 0.50, S * 0.99)
-    ctx.lineTo(S * 0.01, S * 0.72)
-    ctx.lineTo(S * 0.01, S * 0.28)
+    ctx.moveTo(S * 0.50, S * 0.00)  // top
+    ctx.lineTo(S * 0.99, S * 0.28)  // upper-right
+    ctx.lineTo(S * 0.99, S * 0.72)  // lower-right
+    ctx.lineTo(S * 0.50, S * 0.99)  // bottom
+    ctx.lineTo(S * 0.01, S * 0.72)  // lower-left
+    ctx.lineTo(S * 0.01, S * 0.28)  // upper-left
     ctx.closePath()
     ctx.clip()
 
