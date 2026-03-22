@@ -81,7 +81,7 @@ export function ChildPillsDrawer({
       exit={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
       style={{
-        position: 'absolute', bottom: '100%', left: 8, right: 8,
+        margin: '0 8px',
         background: bg,
         backdropFilter: 'blur(24px)',
         border: `2px solid ${borderColor}`,

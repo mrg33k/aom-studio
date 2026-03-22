@@ -94,8 +94,6 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
       exit={{ opacity: 0, y: 12, scale: 0.97 }}
       transition={{ type: 'spring', stiffness: 420, damping: 28 }}
       style={{
-        position: 'absolute', bottom: '100%', left: 0, right: 0,
-        marginBottom: 8,
         background: bg,
         borderRadius: '12px 12px 0 0',
         border: `2px solid ${border}`,
@@ -107,7 +105,6 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
         overflowY: 'auto',
         zIndex: 50,
         scrollbarWidth: 'thin',
-        position: 'absolute',
       }}
     >
       {/* Inner top glow */}
@@ -812,6 +809,8 @@ export default function GameHUD({
         left: 0, right: 0,
         zIndex: 40,
         pointerEvents: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {/* Expanded task panel -- AOM parent shows child pills drawer; Inbox gets approval panel; all others use TaskPanel */}

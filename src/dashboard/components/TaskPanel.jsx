@@ -285,7 +285,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
       onTouchStart={handleSwipeTouchStart}
       onTouchEnd={handleSwipeTouchEnd}
       style={{
-        position: 'absolute', bottom: '100%', left: 8, right: 8,
+        margin: '0 8px',
         background: tpBg,
         backdropFilter: 'blur(24px)',
         border: `2px solid ${tpBorder}`,
