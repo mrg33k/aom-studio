@@ -6051,7 +6051,9 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   }
 
   // Build sections from punch-list data + local tasks + right now
-  const liveRightNow = rightNowTasks || []
+  // isDoneAwaitingApproval tasks are handled exclusively by the TASK COMPLETE pinned box.
+  // Filter them out here so they don't render as yellow "dark boxes" in the task list.
+  const liveRightNow = (rightNowTasks || []).filter(t => !t.isDoneAwaitingApproval)
   const projectSections = punchProjects || []
 
   // Agent's projects (which projects is this agent on?)
