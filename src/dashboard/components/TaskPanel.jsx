@@ -10,6 +10,7 @@ import { X, Check, GripVertical } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { PALETTE, HUD, IS_LOCAL } from './HUDConstants.jsx'
 import { supabase } from '../lib/supabase.js'
+import { getClientId } from '../lib/clientConfig.js'
 import { useLongPress } from '../hooks/useLongPress.js'
 
 // Fallback list used on localhost or if Supabase is unavailable
@@ -82,13 +83,32 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
     })
   }, [tasks, localToggles])
 
-  // Drag-to-reorder state: stores an ordered array of task keys, persists to localStorage
+  // Drag-to-reorder state: stores an ordered array of task keys, persists to Supabase + localStorage fallback
   // Only applies to the current pill's tasks (live tasks sort is per-pill)
   const DRAG_ORDER_KEY = project?.section ? `corner-task-order-${project.section}` : null
   const [dragOrder, setDragOrder] = useState(() => {
     if (!DRAG_ORDER_KEY) return null
     try { return JSON.parse(localStorage.getItem(DRAG_ORDER_KEY) || 'null') } catch { return null }
   })
+
+  // On mount: load persisted order from Supabase (overrides localStorage if present)
+  useEffect(() => {
+    if (!supabase || !DRAG_ORDER_KEY || !project?.section) return
+    const clientId = getClientId()
+    supabase
+      .from('task_orders')
+      .select('ordered_keys')
+      .eq('client_id', clientId)
+      .eq('section', project.section)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!error && data?.ordered_keys && Array.isArray(data.ordered_keys) && data.ordered_keys.length > 0) {
+          setDragOrder(data.ordered_keys)
+          try { localStorage.setItem(DRAG_ORDER_KEY, JSON.stringify(data.ordered_keys)) } catch {}
+        }
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.section])
   const [activeDragKey, setActiveDragKey] = useState(null) // key of the actively dragged row
   const [hoveredKey, setHoveredKey] = useState(null) // key of hovered row (for grip handle visibility)
   const dragStateRef = useRef({
@@ -188,11 +208,24 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
     state.dragKey = null
     state.pointerId = null
     setActiveDragKey(null)
-    // Persist order to localStorage on drop so it survives panel close/reopen
     if (wasDragging && finalOrder && DRAG_ORDER_KEY) {
+      // Persist to localStorage (instant, device-local)
       try { localStorage.setItem(DRAG_ORDER_KEY, JSON.stringify(finalOrder)) } catch {}
+      // Persist to Supabase (survives refresh, cross-device) -- fire-and-forget
+      if (supabase && project?.section) {
+        const clientId = getClientId()
+        supabase
+          .from('task_orders')
+          .upsert(
+            { client_id: clientId, section: project.section, ordered_keys: finalOrder, updated_at: new Date().toISOString() },
+            { onConflict: 'client_id,section' }
+          )
+          .then(({ error }) => {
+            if (error) console.warn('[Corner] task_orders upsert failed:', error.message)
+          })
+      }
     }
-  }, [DRAG_ORDER_KEY])
+  }, [DRAG_ORDER_KEY, project?.section])
 
   // Toggle checkbox: write to punch-list.md via API
   const toggleTask = useCallback(async (task, origIdx) => {
