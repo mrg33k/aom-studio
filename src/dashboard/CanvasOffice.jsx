@@ -2010,14 +2010,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     return () => el.removeEventListener('wheel', handler)
   }, [])
 
-  // iPad touch drag fix: register non-passive touchmove listener so e.preventDefault()
-  // can block Safari scroll/zoom interference during room drag. React synthetic events
-  // are passive by default and cannot call preventDefault().
+  // Non-passive touchmove listener: blocks Safari/iOS scroll/zoom interference
+  // during both room drag AND map pan. React synthetic events are passive by default
+  // and cannot call preventDefault(). This native listener runs first.
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     const handler = (e) => {
-      if (dragStateRef.current.active && dragStateRef.current.roomId) {
+      const isDraggingRoom = dragStateRef.current.active && dragStateRef.current.roomId
+      const isPanningMap = panRef.current.active
+      if (isDraggingRoom || isPanningMap) {
         e.preventDefault()
       }
     }
@@ -2616,23 +2618,30 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           clearTimeout(longPressTimerRef.current)
           longPressTimerRef.current = null
         }
+        // Re-anchor to current touch position so pan starts from 0 offset (no jump)
+        pan.startTouchX = t.clientX
+        pan.startTouchY = t.clientY
+        pan.startCamX = cameraRef.current.x
+        pan.startCamY = cameraRef.current.y
+        pan.lastTouchX = t.clientX
+        pan.lastTouchY = t.clientY
+        pan.lastTouchTime = performance.now()
       }
 
       // Track velocity for momentum (weighted moving average)
+      // Clamp dt to 8ms minimum -- tiny dt causes velocity spikes on high refresh rate screens
       const now = performance.now()
-      const dt = now - pan.lastTouchTime
-      if (dt > 0) {
-        const instantVelX = (t.clientX - pan.lastTouchX) / dt * 16.67 // normalize to ~60fps frame
-        const instantVelY = (t.clientY - pan.lastTouchY) / dt * 16.67
-        // Smooth velocity (80% new, 20% old) for natural feel
-        pan.velX = pan.velX * 0.2 + instantVelX * 0.8
-        pan.velY = pan.velY * 0.2 + instantVelY * 0.8
-      }
+      const dt = Math.max(8, now - pan.lastTouchTime)
+      const instantVelX = (t.clientX - pan.lastTouchX) / dt * 16.67 // normalize to ~60fps frame
+      const instantVelY = (t.clientY - pan.lastTouchY) / dt * 16.67
+      // Balanced EMA (50/50) -- smoother than 80/20, less noisy velocity on lift
+      pan.velX = pan.velX * 0.5 + instantVelX * 0.5
+      pan.velY = pan.velY * 0.5 + instantVelY * 0.5
       pan.lastTouchX = t.clientX
       pan.lastTouchY = t.clientY
       pan.lastTouchTime = now
 
-      // Apply pan offset directly to camera
+      // Apply pan offset directly to camera (anchored to re-anchored start = no jitter)
       const dx = t.clientX - pan.startTouchX
       const dy = t.clientY - pan.startTouchY
       cameraRef.current.x = pan.startCamX + dx
@@ -2727,8 +2736,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       // Start momentum animation after map pan (Clash of Clans feel)
       if (pan.active) {
         pan.active = false
-        const FRICTION = 0.94       // Deceleration factor per frame (higher = longer coast)
-        const MIN_VELOCITY = 0.3    // Stop threshold
+        const FRICTION = 0.93       // Deceleration factor per frame (higher = longer coast)
+        const MIN_VELOCITY = 0.1    // Stop threshold (lower = smoother tail-off)
+
+        // If finger was stationary before lifting (>80ms since last move), kill velocity
+        const staleMs = performance.now() - pan.lastTouchTime
+        if (staleMs > 80) { pan.velX = 0; pan.velY = 0 }
+
         const startVelX = pan.velX
         const startVelY = pan.velY
 
