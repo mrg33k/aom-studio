@@ -247,10 +247,10 @@ export default function GameHUD({
   // Height reporting: called with HUD pixel height so canvas can adjust camera offset
   onHeightChange,
 }) {
-  // Override: ALWAYS dark mode. White theme disabled per Patrik directive.
-  const [nightOverride, setNightOverride] = useState(() => true)
+  // Override: Day=brighter blue, Night=darker blue. No WHITE backgrounds anywhere.
+  const [nightOverride, setNightOverride] = useState(() => new Date().getHours() >= 20)
   useEffect(() => {
-    const check = () => setNightOverride(true)
+    const check = () => setNightOverride(new Date().getHours() >= 20)
     const timer = setInterval(check, 60000)
     return () => clearInterval(timer)
   }, [])
