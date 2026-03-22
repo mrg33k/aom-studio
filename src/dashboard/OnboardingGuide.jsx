@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from './lib/supabase.js'
 
-// ---- ONBOARDING GUIDE v3 -----------------------------------------------
-// First-time user experience for Corner.
-// v3 vs v2: dynamic button text on agent step (changes after room lands);
-// landing impact ring when room hits the hex; Supabase metadata save for
-// workspace_name on authenticated users.
+// ---- ONBOARDING GUIDE v4 -----------------------------------------------
+// v4: typewriter text effect. Elon "talks" to you.
+// - Typing indicator (bouncing dots) shows ~430ms before each step's text
+// - Heading streams in at 13ms/char, then body at 22ms/char
+// - Orange blinking cursor while typing
+// - Click anywhere in the bubble to skip to full text instantly
+// v3: dynamic button text on agent step; landing impact ring; Supabase save.
 // v2: solid dark bg + room springs in from above.
 // v1: backdrop-filter blur + 4-step flow.
 // Marks complete via localStorage('corner_onboarded').
@@ -272,6 +274,168 @@ function DroppedRoom({ placed }) {
   )
 }
 
+// ---- Typing indicator (bouncing dots) ------------------------------------
+function TypingIndicator() {
+  return (
+    <div style={{ display: 'flex', gap: 5, alignItems: 'center', height: 22, padding: '2px 0' }}>
+      {[0, 1, 2].map(i => (
+        <motion.div
+          key={i}
+          animate={{ y: [0, -5, 0], opacity: [0.22, 0.7, 0.22] }}
+          transition={{ duration: 0.72, delay: i * 0.18, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.55)',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ---- Blinking cursor while typing ----------------------------------------
+function BlinkCursor() {
+  return (
+    <motion.span
+      animate={{ opacity: [1, 0] }}
+      transition={{ duration: 0.52, repeat: Infinity, repeatType: 'reverse' }}
+      style={{
+        display: 'inline-block',
+        width: 2,
+        height: '0.85em',
+        background: ORANGE,
+        marginLeft: 2,
+        verticalAlign: 'middle',
+        borderRadius: 1,
+      }}
+    />
+  )
+}
+
+// ---- SpeechContent: managed typewriter animation -------------------------
+// Phases: 'indicator' -> 'heading' -> 'body' -> 'done'
+// Click anywhere to skip to full text.
+const HEADING_SPEED = 13  // ms / char
+const BODY_SPEED    = 22  // ms / char
+const INDICATOR_MS  = 420 // dots show this long before text starts
+const HEAD_BODY_GAP = 120 // pause between heading done + body start
+
+function SpeechContent({ heading, body }) {
+  const [dispH, setDispH] = useState('')
+  const [dispB, setDispB] = useState('')
+  const [phase, setPhase] = useState('indicator')
+  const skipRef = useRef(false)
+  const timersRef = useRef([])
+
+  const clearAll = () => {
+    timersRef.current.forEach(id => clearTimeout(id))
+    timersRef.current = []
+  }
+
+  const skip = () => {
+    if (skipRef.current) return
+    skipRef.current = true
+    clearAll()
+    setDispH(heading)
+    setDispB(body)
+    setPhase('done')
+  }
+
+  useEffect(() => {
+    skipRef.current = false
+    setDispH('')
+    setDispB('')
+    setPhase('indicator')
+    timersRef.current = []
+
+    let hIdx = 0
+    let bIdx = 0
+
+    const typeBody = () => {
+      setPhase('body')
+      const tick = () => {
+        if (skipRef.current) return
+        bIdx++
+        setDispB(body.slice(0, bIdx))
+        if (bIdx < body.length) {
+          const t = setTimeout(tick, BODY_SPEED)
+          timersRef.current.push(t)
+        } else {
+          setPhase('done')
+        }
+      }
+      tick()
+    }
+
+    const typeHeading = () => {
+      setPhase('heading')
+      const tick = () => {
+        if (skipRef.current) return
+        hIdx++
+        setDispH(heading.slice(0, hIdx))
+        if (hIdx < heading.length) {
+          const t = setTimeout(tick, HEADING_SPEED)
+          timersRef.current.push(t)
+        } else {
+          const t = setTimeout(typeBody, HEAD_BODY_GAP)
+          timersRef.current.push(t)
+        }
+      }
+      tick()
+    }
+
+    const t0 = setTimeout(typeHeading, INDICATOR_MS)
+    timersRef.current.push(t0)
+
+    return clearAll
+  }, [heading, body]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div
+      onClick={skip}
+      style={{ cursor: phase !== 'done' ? 'pointer' : 'default', minHeight: 82 }}
+    >
+      {phase === 'indicator' ? (
+        <TypingIndicator />
+      ) : (
+        <>
+          <h2
+            style={{
+              color: '#fff',
+              fontSize: 17,
+              fontWeight: 700,
+              margin: 0,
+              marginBottom: (phase === 'body' || phase === 'done') ? 8 : 0,
+              lineHeight: 1.3,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {dispH}
+            {phase === 'heading' && <BlinkCursor />}
+          </h2>
+
+          {(phase === 'body' || phase === 'done') && dispB && (
+            <p
+              style={{
+                color: 'rgba(255,255,255,0.48)',
+                fontSize: 14,
+                margin: 0,
+                lineHeight: 1.65,
+                whiteSpace: 'pre-line',
+              }}
+            >
+              {dispB}
+              {phase === 'body' && <BlinkCursor />}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // ---- Main component --------------------------------------------------------
 export default function OnboardingGuide({ onComplete }) {
   const [step, setStep] = useState(0)
@@ -284,7 +448,7 @@ export default function OnboardingGuide({ onComplete }) {
   const current = STEPS[step]
   const isAgentStep = current.id === 'agent'
 
-  // Auto-focus name input when landing on step 1
+  // Auto-focus name input when landing on step 1 -- delay lets bubble animate in
   useEffect(() => {
     if (current.input) {
       const t = setTimeout(() => inputRef.current?.focus(), 380)
@@ -445,30 +609,8 @@ export default function OnboardingGuide({ onComplete }) {
               WebkitBackdropFilter: 'blur(18px)',
             }}
           >
-            <h2
-              style={{
-                color: '#fff',
-                fontSize: 17,
-                fontWeight: 700,
-                margin: 0,
-                marginBottom: 8,
-                lineHeight: 1.3,
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {current.heading}
-            </h2>
-            <p
-              style={{
-                color: 'rgba(255,255,255,0.48)',
-                fontSize: 14,
-                margin: 0,
-                lineHeight: 1.65,
-                whiteSpace: 'pre-line',
-              }}
-            >
-              {current.body}
-            </p>
+            {/* Typewriter speech content */}
+            <SpeechContent heading={current.heading} body={current.body} />
 
             {/* Workspace name input */}
             {current.input && (
