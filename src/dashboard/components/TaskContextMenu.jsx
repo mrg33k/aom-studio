@@ -32,7 +32,13 @@ const ASSIGNABLE_AGENTS_FALLBACK = AGENTS.filter(a =>
   !['paige', 'pixel'].includes(a.slug)
 )
 
-const PRIORITY_OPTIONS = [
+const PRIORITY_ICON_MAP = {
+  high: ArrowUpCircle,
+  med: ArrowRightCircle,
+  low: ArrowDownCircle,
+}
+
+const PRIORITY_OPTIONS_FALLBACK = [
   { key: 'high', label: 'High priority', icon: ArrowUpCircle, color: '#EF4444' },
   { key: 'med', label: 'Medium priority', icon: ArrowRightCircle, color: '#F59E0B' },
   { key: 'low', label: 'Low priority', icon: ArrowDownCircle, color: '#6B7280' },
@@ -140,6 +146,24 @@ export default function TaskContextMenu({
       .order('name')
       .then(({ data, error }) => {
         if (!error && data && data.length > 0) setAssignableAgents(data)
+      })
+  }, [])
+
+  // Priority options from Supabase (falls back to static list if table not ready)
+  const [priorityOptions, setPriorityOptions] = useState(PRIORITY_OPTIONS_FALLBACK)
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('task_priorities')
+      .select('key,label,color')
+      .order('sort_order', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          setPriorityOptions(data.map(p => ({
+            ...p,
+            icon: PRIORITY_ICON_MAP[p.key] || ArrowRightCircle,
+          })))
+        }
       })
   }, [])
 
@@ -586,7 +610,7 @@ export default function TaskContextMenu({
         <AnimatePresence>
           {showPriority && (
             <Submenu parentRef={priorityItemRef} isNightMode={isNightMode}>
-              {PRIORITY_OPTIONS.map(opt => (
+              {priorityOptions.map(opt => (
                 <button
                   key={opt.key}
                   style={{
