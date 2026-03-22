@@ -229,7 +229,7 @@ function AgentCard({ agent, status, onClick, isMobile, spriteAgents }) {
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>
         <span style={{ color: MB.textMuted }}>{'> '}</span>
-        {currentTask}
+        {currentTask.length > 40 ? currentTask.slice(0, 40) + '\u2026' : currentTask}
       </div>
     </motion.div>
   )
@@ -418,7 +418,7 @@ function AgentDeepDive({ agent, status, onBack, spriteAgents }) {
           fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 400, fontSize: 14,
           color: MB.textPrimary, marginBottom: 4,
         }}>
-          {status?.currentTask || 'Idle'}
+          {((t) => t.length > 40 ? t.slice(0, 40) + '\u2026' : t)(status?.currentTask || 'Idle')}
         </div>
         <div style={{
           fontFamily: 'JetBrains Mono, monospace', fontWeight: 400, fontSize: 12,

@@ -5566,7 +5566,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                       {currentAgent?.name}
                     </div>
                     <div style={{ fontSize: 12, marginTop: 4, color: '#6B7280', fontFamily: "'Inter', system-ui, sans-serif" }}>
-                      {task}
+                      {task.length > 40 ? task.slice(0, 40) + '\u2026' : task}
                     </div>
                   </div>
                 </div>
@@ -8515,6 +8515,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               {(() => {
                 const activeTask = liveAgents?.find(t => t.agent === agentSlug)
                 const subtitle = activeTask?.text || (status === 'WORKING' ? 'Active' : 'Idle')
+                const subtitleTrunc = subtitle.length > 40 ? subtitle.slice(0, 40) + '\u2026' : subtitle
                 return (
                   <div style={{
                     fontSize: 10, fontStyle: 'italic', color: '#8BA4C4',
@@ -8522,7 +8523,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     maxWidth: '100%', marginTop: 2, lineHeight: 1.3,
                     fontFamily: "'Inter', system-ui, sans-serif",
                   }}>
-                    {subtitle}
+                    {subtitleTrunc}
                   </div>
                 )
               })()}
