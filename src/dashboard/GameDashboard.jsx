@@ -11979,9 +11979,14 @@ export default function GameDashboard() {
         </motion.div>
       )}
 
-      {/* Floating Action Button -- bottom-right, above HUD, expands upward */}
+      {/* Floating Action Button -- top-right of game view, left of sidebar */}
       {(viewMode === 'game' || !viewMode) && (
-        <FloatingActionButton isNightMode={isNightMode} isMobile={isMobile} onRoomCreated={() => pipeData?.refetch?.()} />
+        <FloatingActionButton
+          isNightMode={isNightMode}
+          isMobile={isMobile}
+          sidebarWidthPct={(!isMobile && selectedRoom && (selectedRoom === 'aom' || selectedRoom === 'aom-team' || ROOM_LOOKUP[selectedRoom])) ? (panelExtended ? 65 : 30) : 0}
+          onRoomCreated={() => pipeData?.refetch?.()}
+        />
       )}
 
       {/* ChatBar REMOVED per Patrik directive: chat ONLY lives in the sidebar.

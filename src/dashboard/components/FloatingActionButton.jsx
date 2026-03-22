@@ -18,7 +18,7 @@ const FAB_SIZE   = 48  // px -- main button diameter (slightly smaller for top c
 const OPTION_H   = 44 // px -- each option row height (44px = proper mobile touch target)
 const OPTION_GAP = 8  // px -- gap between options
 
-export default function FloatingActionButton({ isNightMode, isMobile, onRoomCreated }) {
+export default function FloatingActionButton({ isNightMode, isMobile, sidebarWidthPct = 0, onRoomCreated }) {
   const [open, setOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState('agent') // 'agent' | 'project'
@@ -54,13 +54,18 @@ export default function FloatingActionButton({ isNightMode, isMobile, onRoomCrea
   const optionBg   = isNightMode ? 'rgba(20,12,50,0.96)' : 'rgba(10,20,50,0.96)'
   const optionBorder = isNightMode ? 'rgba(120,80,255,0.35)' : 'rgba(59,130,246,0.35)'
 
+  const rightVal = sidebarWidthPct > 0
+    ? `calc(${sidebarWidthPct}% + ${FAB_RIGHT}px)`
+    : `${FAB_RIGHT}px`
+
   return (
     <div
       ref={fabRef}
       style={{
         position: 'fixed',
         top: FAB_TOP,
-        right: FAB_RIGHT,
+        right: rightVal,
+        transition: 'right 250ms ease',
         zIndex: 55,
         display: 'flex',
         flexDirection: 'column', // button on top, options expand downward
