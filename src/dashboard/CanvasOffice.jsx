@@ -1184,11 +1184,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const padY = bounds.h * padRatio
     const totalW = bounds.w + padX * 2
     const totalH = bounds.h + padY * 2
-    const zoomFit = Math.min(viewW / totalW, viewH / totalH)
+    // On mobile with HUD bar, fit the grid in the visible area above the HUD (not full viewport)
+    const effectiveH = (isMobile && mobileHudHeight > 0) ? Math.max(100, viewH - mobileHudHeight) : viewH
+    const zoomFit = Math.min(viewW / totalW, effectiveH / totalH)
     const cx = (viewW - bounds.w * zoomFit) / 2 - bounds.minX * zoomFit
-    const cy = (viewH - bounds.h * zoomFit) / 2 - bounds.minY * zoomFit
+    const cy = (effectiveH - bounds.h * zoomFit) / 2 - bounds.minY * zoomFit
     return { x: cx, y: cy, zoom: zoomFit }
-  }, [getGridBounds])
+  }, [getGridBounds, isMobile, mobileHudHeight])
 
   // ---- FOCUS CAMERA (neighbors visible) ----
   // Zoom so focused room fills ~40% viewport (not 60%) so neighbors are visible around it
@@ -1230,9 +1232,12 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       panY = visibleCenterY - roomCY * zoomFocus
     } else if (isMobile && !drawerSnap && mobileHudHeight > 0) {
       // No drawer open: GameHUD bar covers the bottom mobileHudHeight px of the canvas.
-      // Center the room in the visible area ABOVE the HUD, not in the full viewport.
+      // Push room so the hex bottom tip sits at the HUD top edge (same principle as half-drawer fix).
+      // visibleH / 2 would leave ~250px of dark canvas below the room -- this eliminates it.
       const visibleH = Math.max(100, viewH - mobileHudHeight)
-      panY = visibleH / 2 - roomCY * zoomFocus
+      const hexBottomBelowCenter = ROOM_SIZE * 0.49 * zoomFocus  // center to hex bottom tip
+      const visibleCenterY = Math.max(visibleH * 0.45, visibleH - hexBottomBelowCenter + 5)
+      panY = visibleCenterY - roomCY * zoomFocus
     }
 
     return { x: panX, y: panY, zoom: zoomFocus }
