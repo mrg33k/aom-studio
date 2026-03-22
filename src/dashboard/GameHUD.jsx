@@ -217,16 +217,16 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                 transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                 style={{
                   background: hasFailed
-                    ? 'linear-gradient(135deg, rgba(239,68,68,0.18) 0%, rgba(185,28,28,0.10) 100%)'
-                    : 'linear-gradient(135deg, rgba(59,130,246,0.22) 0%, rgba(99,102,241,0.12) 100%)',
+                    ? 'linear-gradient(135deg, rgba(239,68,68,0.32) 0%, rgba(185,28,28,0.20) 100%)'
+                    : 'linear-gradient(135deg, rgba(59,130,246,0.38) 0%, rgba(99,102,241,0.24) 100%)',
                   backdropFilter: 'blur(12px)',
-                  border: hasFailed ? '1.5px solid rgba(239,68,68,0.65)' : '1.5px solid rgba(59,130,246,0.55)',
-                  borderLeft: hasFailed ? '3px solid rgba(239,68,68,0.85)' : '3px solid #3B82F6',
+                  border: hasFailed ? '1.5px solid rgba(239,68,68,0.90)' : '1.5px solid #3B82F6',
+                  borderLeft: hasFailed ? '3px solid #EF4444' : '3px solid #3B82F6',
                   borderRadius: 10,
                   padding: '10px 12px',
                   boxShadow: hasFailed
-                    ? '0 2px 16px rgba(239,68,68,0.15), inset 0 1px 0 rgba(239,68,68,0.07)'
-                    : '0 2px 20px rgba(59,130,246,0.25), inset 0 1px 0 rgba(100,180,255,0.20)',
+                    ? '0 4px 24px rgba(239,68,68,0.35), inset 0 1px 0 rgba(239,68,68,0.20)'
+                    : '0 4px 28px rgba(59,130,246,0.45), inset 0 1px 0 rgba(100,180,255,0.40)',
                   position: 'relative', overflow: 'hidden',
                 }}>
                 {/* Inner top glow */}
@@ -266,10 +266,10 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                   fontFamily: "'Inter', system-ui, sans-serif",
                   lineHeight: 1.4, marginBottom: 8,
                   padding: '6px 10px',
-                  background: 'rgba(100,180,255,0.08)',
+                  background: 'rgba(100,180,255,0.16)',
                   borderRadius: 7,
-                  border: '1px solid rgba(100,180,255,0.30)',
-                  boxShadow: 'inset 0 1px 0 rgba(100,180,255,0.14)',
+                  border: '1px solid rgba(100,180,255,0.55)',
+                  boxShadow: 'inset 0 1px 0 rgba(100,180,255,0.30)',
                   position: 'relative',
                 }}>
                   <span style={{
@@ -291,12 +291,12 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                     style={{
                       flex: 1, padding: '6px 8px',
                       background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
-                      border: '1.5px solid rgba(34,197,94,0.5)',
+                      border: '1.5px solid #22C55E',
                       borderRadius: 7, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                       color: '#FFFFFF', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+                      boxShadow: '0 3px 12px rgba(22,163,74,0.55), inset 0 1px 0 rgba(255,255,255,0.20)',
                       letterSpacing: '0.04em',
                     }}
                   >
@@ -313,12 +313,12 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                     style={{
                       flex: 1, padding: '6px 8px',
                       background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
-                      border: '1.5px solid rgba(239,68,68,0.5)',
+                      border: '1.5px solid #EF4444',
                       borderRadius: 7, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                       color: '#FFFFFF', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+                      boxShadow: '0 3px 12px rgba(220,38,38,0.55), inset 0 1px 0 rgba(255,255,255,0.20)',
                       letterSpacing: '0.04em',
                     }}
                   >
@@ -342,12 +342,12 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
                     style={{
                       flex: 1, padding: '6px 8px',
                       background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
-                      border: '1.5px solid rgba(59,130,246,0.5)',
+                      border: '1.5px solid #3B82F6',
                       borderRadius: 7, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                       color: '#FFFFFF', fontSize: 11, fontWeight: 800,
                       fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 2px 8px rgba(29,78,216,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+                      boxShadow: '0 3px 12px rgba(29,78,216,0.55), inset 0 1px 0 rgba(255,255,255,0.20)',
                       letterSpacing: '0.04em',
                     }}
                   >

@@ -521,8 +521,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
           const isApproved = !!(task.taskId && approvedTaskIds?.has(String(task.taskId)))
 
           // Green palette overrides yellow when approved; yellow for awaiting approval
-          const doneBg = isApproved ? 'rgba(34,197,94,0.12)' : isDoneAwaiting ? 'rgba(245,158,11,0.10)' : null
-          const doneBorder = isApproved ? '3px solid rgba(34,197,94,0.6)' : isDoneAwaiting ? '3px solid rgba(245,158,11,0.5)' : null
+          const doneBg = isApproved ? 'rgba(34,197,94,0.18)' : isDoneAwaiting ? 'rgba(245,158,11,0.20)' : null
+          const doneBorder = isApproved ? '3px solid #22C55E' : isDoneAwaiting ? '3px solid #F59E0B' : null
 
           return (
             <motion.div
@@ -609,7 +609,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                       : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
                         ? `3px solid ${project.color || '#3B82F6'}`
                         : '3px solid transparent',
-                boxShadow: isApproved ? undefined : isDoneAwaiting ? 'inset 0 0 0 1px rgba(245,158,11,0.25)' : 'none',
+                boxShadow: isApproved ? undefined : isDoneAwaiting ? 'inset 0 0 0 1px rgba(245,158,11,0.55), 0 2px 12px rgba(245,158,11,0.20)' : 'none',
                 borderRadius: (isDoneAwaiting || isApproved) ? 6 : 0,
               }}
             >
@@ -736,12 +736,12 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 <span style={{
                   fontFamily: 'JetBrains Mono, monospace',
                   fontSize: 9, fontWeight: 800,
-                  color: '#F59E0B',
-                  background: 'rgba(245,158,11,0.15)',
+                  color: '#FBBF24',
+                  background: 'rgba(245,158,11,0.28)',
                   padding: '2px 6px', borderRadius: 4,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  border: '1px solid rgba(245,158,11,0.4)',
+                  border: '1px solid #F59E0B',
                   flexShrink: 0,
                   animation: 'statusPulse 2s ease-in-out infinite',
                 }}>
