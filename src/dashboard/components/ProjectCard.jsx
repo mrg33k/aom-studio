@@ -314,11 +314,11 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
           fontFamily: "'Inter Tight', JetBrains Mono, monospace",
           fontSize: 11, fontWeight: 800,
           color: '#FFF',
-          background: `linear-gradient(135deg, ${project.color}, ${project.color}DD)`,
+          background: `linear-gradient(135deg, ${pillColor}, ${pillColor}DD)`,
           padding: '2px 7px', borderRadius: 8,
           letterSpacing: '-0.01em',
           lineHeight: 1,
-          boxShadow: `0 3px 12px ${project.color}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
+          boxShadow: `0 3px 12px ${pillColor}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
           minWidth: 20, textAlign: 'center',
           whiteSpace: 'nowrap',
         }}>
@@ -327,7 +327,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       )}
 
       {allDone && !isCompletedFeed && (
-        <CheckCircle2 size={13} color={project.color} strokeWidth={2.5} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}44)` }} />
+        <CheckCircle2 size={13} color={pillColor} strokeWidth={2.5} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${pillColor}44)` }} />
       )}
 
       {/* Count badge for completed feed pill */}

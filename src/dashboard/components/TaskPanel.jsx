@@ -19,6 +19,8 @@ const SPRITE_AGENTS_FALLBACK = ['patrik','mom','alex','steve','steffen','bobby',
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
 export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask, onDoneTaskAction, approvedTaskIds, pendingCompletion, onUndoMarkDone }) {
   const isDaytime = isNightMode === false
+  // Right Now is always orange/fire. Never inherit yellow from Supabase section_mappings.
+  const panelColor = project.section === 'rightnow' ? '#FF6B3D' : project.color
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
   const tpBorder = isDaytime ? 'rgba(59, 130, 246, 0.3)' : HUD.panelBorder
@@ -323,8 +325,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
           <div style={{
             width: 10, height: 10, borderRadius: 3, flexShrink: 0,
-            background: project.color,
-            boxShadow: `0 0 8px ${project.color}44`,
+            background: panelColor,
+            boxShadow: `0 0 8px ${panelColor}44`,
           }} />
           <span style={{
             fontFamily: "'Inter', system-ui, sans-serif", fontSize: 20, fontWeight: 900,
@@ -338,8 +340,8 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
           {project.isCompletedFeed ? (
             <span style={{
               fontFamily: 'JetBrains Mono, monospace', fontSize: 12, fontWeight: 600,
-              color: project.color, flexShrink: 0,
-              background: `${project.color}18`, padding: '2px 8px', borderRadius: 5,
+              color: panelColor, flexShrink: 0,
+              background: `${panelColor}18`, padding: '2px 8px', borderRadius: 5,
               letterSpacing: '0.04em',
             }}>
               {totalTasks} DONE
@@ -365,14 +367,14 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
               }}>
                 <div style={{
                   width: `${progress}%`, height: '100%',
-                  background: `linear-gradient(90deg, ${project.color}AA, ${project.color})`,
+                  background: `linear-gradient(90deg, ${panelColor}AA, ${panelColor})`,
                   borderRadius: 4,
                   transition: 'width 300ms ease',
                 }} />
               </div>
               <span style={{
                 fontFamily: 'JetBrains Mono, monospace', fontSize: 13, fontWeight: 700,
-                color: project.color,
+                color: panelColor,
                 minWidth: 30,
               }}>
                 {progress}%
@@ -603,11 +605,11 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 borderLeft: isDoneAwaiting
                   ? doneBorder
                   : isDraggingThis
-                    ? `3px solid ${project.color || '#3B82F6'}`
+                    ? `3px solid ${panelColor || '#3B82F6'}`
                     : highlightedTask && task.text === highlightedTask.text
-                      ? `3px solid ${project.color || '#3B9EFF'}`
+                      ? `3px solid ${panelColor || '#3B9EFF'}`
                       : hudTaskCtxId === (task.isManual ? `manual-${task.manualId}` : task.origIdx)
-                        ? `3px solid ${project.color || '#3B82F6'}`
+                        ? `3px solid ${panelColor || '#3B82F6'}`
                         : '3px solid transparent',
                 boxShadow: isApproved ? undefined : isDoneAwaiting ? 'inset 0 0 0 1px rgba(245,158,11,0.55), 0 2px 12px rgba(245,158,11,0.20)' : 'none',
                 borderRadius: (isDoneAwaiting || isApproved) ? 6 : 0,
@@ -642,7 +644,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                   style={{
                     width: 20, height: 20, borderRadius: 5, flexShrink: 0,
                     border: isDone ? 'none' : `1.5px solid ${tpCheckboxBorder}`,
-                    background: isDone ? (task.autoChecked ? '#22C55E' : project.color) : tpCheckboxBg,
+                    background: isDone ? (task.autoChecked ? '#22C55E' : panelColor) : tpCheckboxBg,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 150ms ease',
                     cursor: project.isCompletedFeed ? 'default' : 'pointer',
