@@ -966,13 +966,23 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     fetchLayout()
 
     // Realtime: re-fetch full sorted layout on any rooms table change.
-    // Re-fetch (not incremental) because ordering requires the full sorted list.
+    // Debounced: a full batch upsert (16 rows) fires 16 Realtime events rapidly.
+    // Without debounce that's 16 fetchLayout() calls. Debounce coalesces them to 1.
+    let layoutDebounceTimer = null
+    const debouncedFetchLayout = () => {
+      if (layoutDebounceTimer) clearTimeout(layoutDebounceTimer)
+      layoutDebounceTimer = setTimeout(fetchLayout, 200)
+    }
+
     const channel = supabase
       .channel('rooms-layout')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, fetchLayout)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, debouncedFetchLayout)
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      if (layoutDebounceTimer) clearTimeout(layoutDebounceTimer)
+      supabase.removeChannel(channel)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shuffle animation: tracks rooms transitioning between slots
@@ -2228,25 +2238,28 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           isSwap: true,
         }
 
-        // Perform the swap in slotOrder
-        setSlotOrder(prev => {
-          const next = [...prev]
-          const idxA = next.indexOf(draggedRoomId)
-          const idxB = next.indexOf(occupant)
-          if (idxA >= 0 && idxB >= 0) {
-            next[idxA] = occupant
-            next[idxB] = draggedRoomId
-          }
-          return next
-        })
+        // Compute the full new slotOrder (swap the two rooms)
+        const newOrder = [...slotOrder]
+        const idxA = newOrder.indexOf(draggedRoomId)
+        const idxB = newOrder.indexOf(occupant)
+        if (idxA >= 0 && idxB >= 0) {
+          newOrder[idxA] = occupant
+          newOrder[idxB] = draggedRoomId
+        }
 
-        // Persist swap to Supabase so order survives refresh
+        // Apply swap in state
+        setSlotOrder(newOrder)
+
+        // Persist full layout to Supabase: all visible rooms get their new grid_order.
+        // Full batch (not 2-row) so the DB is always a complete snapshot of the layout.
+        // Any previous partial failures are self-healing on the next swap.
         if (supabase) {
-          const occupantNewOrder = dragFromSlot >= 0 ? dragFromSlot : targetSlotIdx
-          supabase.from('rooms').upsert([
-            { id: draggedRoomId, grid_order: targetSlotIdx },
-            { id: occupant, grid_order: occupantNewOrder },
-          ], { onConflict: 'id' }).then(() => {})
+          supabase.from('rooms').upsert(
+            newOrder.map((id, idx) => ({ id, grid_order: idx })),
+            { onConflict: 'id' }
+          ).then(({ error }) => {
+            if (error) console.error('[CanvasOffice] grid_order persist failed:', error.message)
+          })
         }
 
         swapCooldownRef.current = now
@@ -2680,24 +2693,26 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           shuffleAnimRef.current[draggedRoomId] = { fromX: dragFromX, fromY: dragFromY, toX: dragToPos.x, toY: dragToPos.y, startTime: now }
           shuffleAnimRef.current[occupant] = { fromX: occupantFromX, fromY: occupantFromY, toX: occupantToPos.x, toY: occupantToPos.y, startTime: now }
 
-          setSlotOrder(prev => {
-            const next = [...prev]
-            const idxA = next.indexOf(draggedRoomId)
-            const idxB = next.indexOf(occupant)
-            if (idxA >= 0 && idxB >= 0) {
-              next[idxA] = occupant
-              next[idxB] = draggedRoomId
-            }
-            return next
-          })
+          // Compute the full new slotOrder (swap the two rooms)
+          const newOrder = [...slotOrder]
+          const idxA = newOrder.indexOf(draggedRoomId)
+          const idxB = newOrder.indexOf(occupant)
+          if (idxA >= 0 && idxB >= 0) {
+            newOrder[idxA] = occupant
+            newOrder[idxB] = draggedRoomId
+          }
 
-          // Persist swap to Supabase so order survives refresh
+          // Apply swap in state
+          setSlotOrder(newOrder)
+
+          // Persist full layout to Supabase (same pattern as mouse onUp)
           if (supabase) {
-            const occupantNewOrder = dragFromSlot >= 0 ? dragFromSlot : targetSlotIdx
-            supabase.from('rooms').upsert([
-              { id: draggedRoomId, grid_order: targetSlotIdx },
-              { id: occupant, grid_order: occupantNewOrder },
-            ], { onConflict: 'id' }).then(() => {})
+            supabase.from('rooms').upsert(
+              newOrder.map((id, idx) => ({ id, grid_order: idx })),
+              { onConflict: 'id' }
+            ).then(({ error }) => {
+              if (error) console.error('[CanvasOffice] grid_order persist failed (touch):', error.message)
+            })
           }
 
           swapCooldownRef.current = now
