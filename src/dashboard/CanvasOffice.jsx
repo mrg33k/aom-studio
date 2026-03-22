@@ -1358,14 +1358,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       for (const { row, col } of slots) {
         const ox = ORIGIN_X + col * HEX_COL_STEP
         const oy = ORIGIN_Y + row * HEX_ROW_STEP
-        // !! DO NOT CHANGE !! Vertices copied VERBATIM from drawRoom() clip path.
-        // Rooms define the shape -- grid follows. See drawRoom() SOURCE OF TRUTH comment.
+        // !! DO NOT CHANGE !! Vertices copied VERBATIM from drawRoom() SOURCE OF TRUTH.
+        // Rooms define the shape -- grid follows. Never change these independently.
         ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top center (roof peak)
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.40)  // upper-right
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.76)  // lower-right  !! VERBATIM from drawRoom SOURCE OF TRUTH
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.28)  // upper-right  !! DO NOT CHANGE
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right  !! DO NOT CHANGE
         ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom center
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.76)  // lower-left   !! VERBATIM from drawRoom SOURCE OF TRUTH
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.40)  // upper-left
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left   !! DO NOT CHANGE
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.28)  // upper-left   !! DO NOT CHANGE
         ctx.closePath()
       }
       ctx.stroke()
@@ -1604,11 +1604,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.beginPath()
         // !! DO NOT CHANGE !! Padded version derived from drawRoom() SOURCE OF TRUTH shape.
         ctx.moveTo(S * 0.50, S * 0.00 - pad)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.40 - pad * 0.5)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.76 + pad * 0.5)
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.28 - pad * 0.5)  // !! DO NOT CHANGE
+        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.72 + pad * 0.5)  // !! DO NOT CHANGE
         ctx.lineTo(S * 0.50, S * 0.99 + pad)
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.76 + pad * 0.5)
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.40 - pad * 0.5)
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.72 + pad * 0.5)  // !! DO NOT CHANGE
+        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.28 - pad * 0.5)  // !! DO NOT CHANGE
         ctx.closePath()
         // Animated dashed stroke
         const dashLen = 14
@@ -1665,11 +1665,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           // !! DO NOT CHANGE !! Clip to neighbor's hex -- must match drawRoom() SOURCE OF TRUTH.
           ctx.beginPath()
           ctx.moveTo(S * 0.50, S * 0.00)  // top center (roof peak)
-          ctx.lineTo(S * 0.99, S * 0.40)  // upper-right
-          ctx.lineTo(S * 0.99, S * 0.76)  // lower-right  !! VERBATIM from drawRoom SOURCE OF TRUTH
+          ctx.lineTo(S * 0.99, S * 0.28)  // upper-right  !! DO NOT CHANGE
+          ctx.lineTo(S * 0.99, S * 0.72)  // lower-right  !! DO NOT CHANGE
           ctx.lineTo(S * 0.50, S * 0.99)  // bottom center
-          ctx.lineTo(S * 0.01, S * 0.76)  // lower-left   !! VERBATIM from drawRoom SOURCE OF TRUTH
-          ctx.lineTo(S * 0.01, S * 0.40)  // upper-left
+          ctx.lineTo(S * 0.01, S * 0.72)  // lower-left   !! DO NOT CHANGE
+          ctx.lineTo(S * 0.01, S * 0.28)  // upper-left   !! DO NOT CHANGE
           ctx.closePath()
           ctx.clip()
           ctx.globalAlpha = 0.85 // slightly translucent so visitors look like guests
@@ -1836,26 +1836,22 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.translate(offsetX, offsetY)
 
     // !! DO NOT CHANGE !! SOURCE OF TRUTH for all hex geometry in this file.
-    // Derived from pixel-boundary scan of ALL shell room PNGs with SRC_CROP (X=80, Y=0, W=864, H=864):
-    //   upper corners: at y=0.40-0.42 rooms reach full width (x≈0.01/0.99). y=0.40 is correct.
-    //   lower corners: ALL rooms are at full width through y=0.76, then ALL start narrowing at y=0.78.
-    //     Setting lower corner at y=0.76 puts clip exactly at the hex lower vertex.
-    //     Below y=0.76, clip diagonal from (0.01,0.76)→(0.50,0.99) matches room art diagonal (slope ≈2.1).
-    //     Result: <0.5% width bleed below the corner, invisible. Setting higher (e.g. 0.81) creates
-    //     visible dark background in the lower corners because the rectangular clip extends BELOW
-    //     where the hex actually narrows -- that is "rooms cutoff". Setting lower (e.g. 0.75) clips
-    //     the diagonal art prematurely. 0.76 is the confirmed correct value.
-    // Rooms define the shape. Grid lines copy these values VERBATIM. DO NOT adjust grid
-    // lines independently. DO NOT "recalculate" without re-running the pixel boundary scan.
-    // Any change here WILL produce visible cutoff or background bleed. LOCKED.
+    // This is the ORIGINAL shape confirmed working before the revert loop started.
+    // Hex shape: top(0.50,0.00) → upper-right(0.99,0.28) → lower-right(0.99,0.72)
+    //            → bottom(0.50,0.99) → lower-left(0.01,0.72) → upper-left(0.01,0.28)
+    // Upper corners at y=0.28, lower corners at y=0.72. These values show the full
+    // room art without cutoff. DO NOT change to 0.40/0.76 or any other value --
+    // that shape clips the upper corners of the room art (the "rooms cutoff" bug).
+    // Grid lines copy these values VERBATIM. Rooms define the shape; grid follows.
+    // DO NOT adjust grid lines independently. LOCKED. DO NOT CHANGE.
     ctx.beginPath()
     const S = ROOM_SIZE
     ctx.moveTo(S * 0.50, S * 0.00)  // top center (roof peak)
-    ctx.lineTo(S * 0.99, S * 0.40)  // upper-right
-    ctx.lineTo(S * 0.99, S * 0.76)  // lower-right  !! DO NOT CHANGE -- pixel scan confirmed, all rooms
+    ctx.lineTo(S * 0.99, S * 0.28)  // upper-right  !! DO NOT CHANGE
+    ctx.lineTo(S * 0.99, S * 0.72)  // lower-right  !! DO NOT CHANGE
     ctx.lineTo(S * 0.50, S * 0.99)  // bottom center
-    ctx.lineTo(S * 0.01, S * 0.76)  // lower-left   !! DO NOT CHANGE -- pixel scan confirmed, all rooms
-    ctx.lineTo(S * 0.01, S * 0.40)  // upper-left
+    ctx.lineTo(S * 0.01, S * 0.72)  // lower-left   !! DO NOT CHANGE
+    ctx.lineTo(S * 0.01, S * 0.28)  // upper-left   !! DO NOT CHANGE
     ctx.closePath()
     ctx.clip()
 
