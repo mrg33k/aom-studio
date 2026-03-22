@@ -46,7 +46,7 @@ import {
 import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import { useLongPress } from './hooks/useLongPress.js'
-import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
+import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction, supabasePatchTaskStatus } from './components/TaskContextMenu.jsx'
 import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
 import { supabase } from './lib/supabase.js'
 import { parsePunchList, useSectionMappings, useRecencyWeights } from './components/HUDConstants.jsx'
@@ -593,6 +593,31 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
             {task.text}
           </div>
 
+          {/* Undo window: 30s countdown before task moves to Done */}
+          {task.isPending && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 500,
+                color: '#4A6080', letterSpacing: '0.02em',
+              }}>
+                Moving to Done in {task.pendingSecondsLeft}s
+              </span>
+              <button
+                onClick={e => { e.stopPropagation(); onCheck?.(task) }}
+                style={{
+                  fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700,
+                  color: '#3B82F6', background: 'rgba(59,130,246,0.10)',
+                  border: '1px solid rgba(59,130,246,0.25)', borderRadius: 4,
+                  padding: '2px 8px', cursor: 'pointer',
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  WebkitAppearance: 'none', appearance: 'none',
+                }}
+              >
+                Undo
+              </button>
+            </div>
+          )}
+
           {/* Agent badge + LIVE badge row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: agentInfo || isLive ? 6 : 0 }}>
             {agentInfo && hasSpr && (
@@ -1023,6 +1048,30 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck, onContextMenu }) {
             }}>
               from {task.projectSource}
             </span>
+          )}
+          {/* Undo window */}
+          {task.isPending && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 500,
+                color: '#4A6080', letterSpacing: '0.02em',
+              }}>
+                Moving to Done in {task.pendingSecondsLeft}s
+              </span>
+              <button
+                onClick={e => { e.stopPropagation(); onCheck?.(task) }}
+                style={{
+                  fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700,
+                  color: '#EF4444', background: 'rgba(239,68,68,0.08)',
+                  border: '1px solid rgba(239,68,68,0.2)', borderRadius: 4,
+                  padding: '2px 8px', cursor: 'pointer',
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  WebkitAppearance: 'none', appearance: 'none',
+                }}
+              >
+                Undo
+              </button>
+            </div>
           )}
         </div>
 
@@ -1558,6 +1607,9 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const [collapsedProjects, setCollapsedProjects] = useState({})
   // TODO: Persist checkbox state in Supabase (C4) -- localStorage stripped
   const [checkedTasks, setCheckedTasks] = useState({})
+  const [pendingCompletion, setPendingCompletion] = useState({}) // { taskKey: { task, checkedAt } } -- 30s undo window
+  const [tick, setTick] = useState(0) // increments every second when tasks are pending (drives countdown display)
+  const pendingRef = useRef({}) // stable ref so the interval can read pending state without re-creating
   const [newTaskText, setNewTaskText] = useState('')
   const inputRef = useRef(null)
 
@@ -1722,27 +1774,77 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     setCollapsedProjects(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
-  // Handle checkbox toggle -- local state for now, Supabase in C4
+  // Handle checkbox toggle with 30s undo window
   const handleCheck = useCallback((task) => {
-    const key = task.text // Use text as key since we don't have IDs yet
-    setCheckedTasks(prev => {
-      const next = { ...prev }
-      if (next[key] !== undefined) {
-        // Toggle back to original
+    const key = task.text
+    // Pending → undo (user clicked again during the 30s window)
+    if (pendingRef.current[key]) {
+      setPendingCompletion(prev => {
+        const next = { ...prev }
         delete next[key]
-      } else {
-        // Toggle to opposite of original
-        next[key] = !task.done
-      }
-      return next
-    })
+        return next
+      })
+      return
+    }
+    // Already committed done → toggle back immediately (no undo window needed for un-checking)
+    if (task.done) {
+      setCheckedTasks(prev => {
+        const next = { ...prev }
+        next[key] = false
+        return next
+      })
+      return
+    }
+    // Not done → start 30s pending window
+    setPendingCompletion(prev => ({
+      ...prev,
+      [key]: { task, checkedAt: Date.now() },
+    }))
   }, [])
+
+  // Keep pendingRef in sync so the stable interval can read current state
+  useEffect(() => {
+    pendingRef.current = pendingCompletion
+  }, [pendingCompletion])
+
+  // Countdown tick + expiry: runs every 1s, uses ref to avoid stale closure
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const pending = pendingRef.current
+      if (Object.keys(pending).length === 0) return
+      const now = Date.now()
+      const expired = Object.entries(pending).filter(([, v]) => now - v.checkedAt >= 30000)
+      if (expired.length > 0) {
+        setCheckedTasks(prev => {
+          const next = { ...prev }
+          expired.forEach(([key]) => { next[key] = true })
+          return next
+        })
+        setPendingCompletion(prev => {
+          const next = { ...prev }
+          expired.forEach(([key]) => { delete next[key] })
+          return next
+        })
+      } else {
+        setTick(t => t + 1) // force re-render to update countdown display
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, []) // stable -- reads pending state via ref
 
   // Get effective done state for a task
   const isTaskDone = (task) => {
     const key = task.text
+    if (pendingRef.current[key]) return true // pending = visually done (strikethrough)
     if (checkedTasks[key] !== undefined) return checkedTasks[key]
     return task.done
+  }
+
+  // Get pending undo state for a task (returns null if not pending)
+  const getTaskPending = (task) => {
+    const entry = pendingCompletion[task.text]
+    if (!entry) return null
+    return { secondsLeft: Math.max(0, Math.ceil((30000 - (Date.now() - entry.checkedAt)) / 1000)) }
   }
 
   const handleAddTask = (e) => {
@@ -1823,7 +1925,10 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             {/* 2. YOUR TODOS section: Patrik's personal blocked items */}
             {showTodos && (
               <YourTodosSection
-                tasks={patrikTodos}
+                tasks={patrikTodos.map(t => {
+                  const pending = getTaskPending(t)
+                  return { ...t, done: isTaskDone(t), isPending: !!pending, pendingSecondsLeft: pending?.secondsLeft ?? null }
+                })}
                 isCollapsed={collapsedProjects['your-todos-live']}
                 onToggle={() => toggleCollapse('your-todos-live')}
                 isDaytime={isDaytime}
@@ -1840,12 +1945,18 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
               const deletedTasks = []
               const tasks = project.tasks
                 .filter(t => !deletedTasks.includes(t.text))
-                .map(t => ({
-                  ...t,
-                  done: isTaskDone(t),
-                }))
-              const activeTasks = tasks.filter(t => !t.done)
-              const doneTasks = tasks.filter(t => t.done)
+                .map(t => {
+                  const pending = getTaskPending(t)
+                  return {
+                    ...t,
+                    done: isTaskDone(t),
+                    isPending: !!pending,
+                    pendingSecondsLeft: pending?.secondsLeft ?? null,
+                  }
+                })
+              // Pending tasks stay in the active list during the undo window (crossed out but not yet committed)
+              const activeTasks = tasks.filter(t => !t.done || t.isPending)
+              const doneTasks = tasks.filter(t => t.done && !t.isPending)
 
               return (
                 <div key={project.section} style={{ marginBottom: 8 }}>
