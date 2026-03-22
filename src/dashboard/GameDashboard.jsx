@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, useContext, createContext } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useMotionValue, animate as fmAnimate } from 'framer-motion'
 import {
   MessageSquare, Send, X, ChevronUp, ChevronDown,
@@ -2972,7 +2973,8 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
 // Previous failed approaches:
 //   #1: disabled={false} + iOS keyboard attrs -- overflow:hidden still blocked focus
 //   #2: overflow:clip on MobileDrawer -- still a stacking context, still blocked focus
-//   #3: (this component) -- lives entirely outside MobileDrawer tree. Cannot be blocked.
+//   #3: sibling in GameDashboard return -- still inside root overflow:hidden. Still blocked.
+//   #4: (this component) -- React portal to document.body. Zero overflow/transform ancestors. THE fix.
 function MobileFixedInput({
   chatInput, onChatInputChange, onSendMessage, streaming,
   agentColor, agentName, isNightMode,
@@ -2999,7 +3001,12 @@ function MobileFixedInput({
     }
   }, [])
 
-  return (
+  // Portal to document.body: renders completely outside the React app root div.
+  // GameDashboard's root div has overflow:hidden -- any child with position:fixed is
+  // clipped by iOS Safari and focus events are blocked. Portaling to document.body
+  // means there are ZERO overflow/transform/will-change ancestors. iOS Safari can
+  // route keyboard focus to this input without any ancestor interference.
+  return createPortal(
     <div
       style={{
         position: 'fixed',
@@ -3204,7 +3211,8 @@ function MobileFixedInput({
           {streaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
         </button>
       </form>
-    </div>
+    </div>,
+    document.body
   )
 }
 
