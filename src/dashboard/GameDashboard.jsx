@@ -3223,11 +3223,11 @@ function MobileFixedInput({
             width: 32, height: 32, borderRadius: 8, zIndex: 2, flexShrink: 0,
             background: powerupOpen
               ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)'
-              : 'rgba(124, 58, 237, 0.18)',
+              : 'rgba(124, 58, 237, 0.38)',
             border: powerupOpen
-              ? '1.5px solid rgba(124,58,237,0.7)'
-              : '1.5px solid rgba(124,58,237,0.45)',
-            color: powerupOpen ? '#FFF' : 'rgba(180,140,255,0.9)',
+              ? '1.5px solid rgba(124,58,237,0.8)'
+              : '1.5px solid rgba(124,58,237,0.6)',
+            color: '#FFF',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 150ms ease',
           }}
@@ -5690,6 +5690,8 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   // via the onTouchStart handler in renderTaskCard. Same menu as desktop right-click.
   const [sharedCtxMenu, setSharedCtxMenu] = useState(null) // { position:{x,y}, task }
   const taskLongPressRef = useRef(null)
+  const taskLongPressStartRef = useRef(null) // { x, y } touch start position for movement threshold
+  const taskLongPressFiredRef = useRef(false) // true after long-press fires, suppresses following tap
   const [dragIdx, setDragIdx] = useState(null)
   const [dragOverIdx, setDragOverIdx] = useState(null)
   const [dragOverTaskId, setDragOverTaskId] = useState(null) // Track sub-task drop target (drag ON a task)
@@ -6005,15 +6007,31 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
         onDragEnd={isDraggable && !isExpanded ? () => { setDragIdx(null); setDragOverIdx(null); setDragOverTaskId(null) } : undefined}
         onContextMenu={ctxHandler}
         onTouchStart={ctxHandler ? (e) => {
+          if (e.touches.length !== 1) return
           const touch = e.touches[0]
-          const cx = touch ? touch.clientX : 0
-          const cy = touch ? touch.clientY : 0
+          const cx = touch.clientX
+          const cy = touch.clientY
+          taskLongPressStartRef.current = { x: cx, y: cy }
+          taskLongPressFiredRef.current = false
           taskLongPressRef.current = setTimeout(() => {
+            taskLongPressFiredRef.current = true
             ctxHandler({ clientX: cx, clientY: cy, preventDefault: () => {} })
           }, 500)
         } : undefined}
-        onTouchEnd={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
-        onTouchMove={ctxHandler ? () => clearTimeout(taskLongPressRef.current) : undefined}
+        onTouchEnd={ctxHandler ? (e) => {
+          clearTimeout(taskLongPressRef.current)
+          if (taskLongPressFiredRef.current) {
+            e.preventDefault() // suppress tap/click after long-press so accordion doesn't toggle
+            taskLongPressFiredRef.current = false
+          }
+        } : undefined}
+        onTouchMove={ctxHandler ? (e) => {
+          if (!taskLongPressStartRef.current || !taskLongPressRef.current) return
+          const touch = e.touches[0]
+          const dx = Math.abs(touch.clientX - taskLongPressStartRef.current.x)
+          const dy = Math.abs(touch.clientY - taskLongPressStartRef.current.y)
+          if (dx > 10 || dy > 10) clearTimeout(taskLongPressRef.current)
+        } : undefined}
         style={{
           marginBottom: 8,
           background: isDropTarget
@@ -7296,6 +7314,26 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                         e.preventDefault()
                         handleSidebarTaskContextMenu(e, { text: a.task || a.name, agent: a.slug, done: false })
                       }}
+                      onTouchStart={(e) => {
+                        if (e.touches.length !== 1) return
+                        const touch = e.touches[0]
+                        const cx = touch.clientX; const cy = touch.clientY
+                        taskLongPressStartRef.current = { x: cx, y: cy }
+                        taskLongPressFiredRef.current = false
+                        taskLongPressRef.current = setTimeout(() => {
+                          taskLongPressFiredRef.current = true
+                          handleSidebarTaskContextMenu({ clientX: cx, clientY: cy, preventDefault: () => {} }, { text: a.task || a.name, agent: a.slug, done: false })
+                        }, 500)
+                      }}
+                      onTouchEnd={(e) => {
+                        clearTimeout(taskLongPressRef.current)
+                        if (taskLongPressFiredRef.current) { e.preventDefault(); taskLongPressFiredRef.current = false }
+                      }}
+                      onTouchMove={(e) => {
+                        if (!taskLongPressStartRef.current || !taskLongPressRef.current) return
+                        const t = e.touches[0]
+                        if (Math.abs(t.clientX - taskLongPressStartRef.current.x) > 10 || Math.abs(t.clientY - taskLongPressStartRef.current.y) > 10) clearTimeout(taskLongPressRef.current)
+                      }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         padding: '6px 10px', borderRadius: 8,
@@ -7348,6 +7386,26 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                       onContextMenu={(e) => {
                         e.preventDefault()
                         handleSidebarTaskContextMenu(e, { text: t.text, agent: t.agent || 'patrik', done: t.done || false, projectSection: t.projectSection })
+                      }}
+                      onTouchStart={(e) => {
+                        if (e.touches.length !== 1) return
+                        const touch = e.touches[0]
+                        const cx = touch.clientX; const cy = touch.clientY
+                        taskLongPressStartRef.current = { x: cx, y: cy }
+                        taskLongPressFiredRef.current = false
+                        taskLongPressRef.current = setTimeout(() => {
+                          taskLongPressFiredRef.current = true
+                          handleSidebarTaskContextMenu({ clientX: cx, clientY: cy, preventDefault: () => {} }, { text: t.text, agent: t.agent || 'patrik', done: t.done || false, projectSection: t.projectSection })
+                        }, 500)
+                      }}
+                      onTouchEnd={(e) => {
+                        clearTimeout(taskLongPressRef.current)
+                        if (taskLongPressFiredRef.current) { e.preventDefault(); taskLongPressFiredRef.current = false }
+                      }}
+                      onTouchMove={(e) => {
+                        if (!taskLongPressStartRef.current || !taskLongPressRef.current) return
+                        const touch = e.touches[0]
+                        if (Math.abs(touch.clientX - taskLongPressStartRef.current.x) > 10 || Math.abs(touch.clientY - taskLongPressStartRef.current.y) > 10) clearTimeout(taskLongPressRef.current)
                       }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8,
@@ -9962,11 +10020,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   width: 32, height: 32, borderRadius: 8,
                   background: powerupOpen
                     ? 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%)'
-                    : 'rgba(124, 58, 237, 0.18)',
+                    : 'rgba(124, 58, 237, 0.38)',
                   border: powerupOpen
-                    ? '1.5px solid rgba(124,58,237,0.7)'
-                    : '1.5px solid rgba(124,58,237,0.45)',
-                  color: powerupOpen ? '#FFF' : 'rgba(180,140,255,0.9)',
+                    ? '1.5px solid rgba(124,58,237,0.8)'
+                    : '1.5px solid rgba(124,58,237,0.6)',
+                  color: '#FFF',
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 150ms ease',
