@@ -191,7 +191,7 @@ function getRoomImageSources(id) {
 }
 
 // ---- CHARACTER LAYER SOURCES ----
-// Fallback used before Supabase resolves. Source of truth: agent_status.has_sprite in Supabase.
+// Fallback used before Supabase resolves. Source of truth: agents.has_sprite in Supabase.
 const ROOMS_WITH_CHARACTERS_FALLBACK = new Set([
   'elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'jacob', 'tony', 'colton', 'elmo', 'paige',
   'patrik',  // Patrik has sprites at /corner/sprites/ -- use idle sprite as character layer
@@ -995,7 +995,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   const roomsWithCharsRef = useRef(_roomsWithChars)
   useEffect(() => {
     if (!supabase) return
-    supabase.from('agent_status').select('slug').eq('has_sprite', true)
+    supabase.from('agents').select('slug').eq('has_sprite', true)
       .then(({ data, error }) => {
         if (error || !data?.length) return
         const updated = new Set(data.map(r => r.slug))
