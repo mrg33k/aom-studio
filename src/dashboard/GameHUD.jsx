@@ -978,11 +978,13 @@ export default function GameHUD({
             <Search size={isMobile ? 18 : 15} />
           </motion.button>
 
-          {/* Pill bar: horizontally scrollable, pills fill available space. */}
+          {/* Pill bar: horizontally scrollable. minWidth:0 is critical -- without it, flex:1
+              child expands to content width and overflowX:auto never triggers. */}
           <div
             className="hud-pills-scroll"
             style={{
               flex: 1,
+              minWidth: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-start',
