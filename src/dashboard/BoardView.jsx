@@ -122,9 +122,9 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
   const cardRef = useRef(null)
 
   // Night/day card colors -- blue glass
-  const cardBg = isNightMode ? 'rgba(15,45,140,0.20)' : 'rgba(80,150,255,0.12)'
-  const cardBorder = isNightMode ? 'rgba(60,120,255,0.20)' : 'rgba(100,170,255,0.30)'
-  const cardHoverBg = isNightMode ? 'rgba(20,60,180,0.30)' : 'rgba(80,150,255,0.22)'
+  const cardBg = isNightMode ? 'rgba(15,45,140,0.22)' : 'rgba(30,80,220,0.28)'
+  const cardBorder = isNightMode ? 'rgba(60,120,255,0.22)' : 'rgba(80,150,255,0.45)'
+  const cardHoverBg = isNightMode ? 'rgba(20,60,180,0.32)' : 'rgba(40,100,255,0.40)'
   const cardTextColor = isNightMode ? '#F1F5F9' : '#EEF4FF'
 
   // Pointer-based drag (works for both mouse and touch)
@@ -467,11 +467,11 @@ function BoardColumn({
 
   // Night/day column colors -- blue glass
   const colBodyBg = isNightMode
-    ? 'rgba(20,50,130,0.25)'
-    : 'rgba(60,130,255,0.15)'
+    ? 'rgba(20,50,130,0.28)'
+    : 'rgba(25,70,200,0.35)'
   const colBodyHoverBg = isNightMode
-    ? `${config.color}18`
-    : `${config.color}28`
+    ? `${config.color}20`
+    : `${config.color}38`
   const emptyTextColor = isNightMode ? 'rgba(80,120,200,0.5)' : 'rgba(140,190,255,0.55)'
 
   // Keep touchHover in sync with data-drop-hover attribute changes
@@ -592,8 +592,8 @@ function BoardColumn({
         display: 'flex',
         alignItems: 'center',
         gap: 8,
-        background: `${config.color}12`,
-        border: `2px solid ${isHighlighted ? config.color : `${config.color}38`}`,
+        background: isNightMode ? `${config.color}14` : `${config.color}22`,
+        border: `2px solid ${isHighlighted ? config.color : `${config.color}50`}`,
         borderRadius: '10px 10px 0 0',
         padding: '9px 14px',
         transition: 'border-color 150ms ease',
@@ -1168,7 +1168,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
     ? 'calc(48px + env(safe-area-inset-top, 0px))'
     : '52px'
 
-  const bgColor = isNightMode ? '#060E1C' : '#0C3070'
+  const bgColor = isNightMode ? '#060E1C' : '#0A2060'
   const toolbarBorderColor = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(80,150,255,0.20)'
   const dividerColor = isNightMode ? 'rgba(255,255,255,0.08)' : 'rgba(80,150,255,0.20)'
   const colCountColor = isNightMode ? '#334155' : '#88B8E8'
