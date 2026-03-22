@@ -11899,12 +11899,15 @@ export default function GameDashboard() {
         />
       )}
 
-      {/* MobileFixedInput: chat input rendered as a DIRECT SIBLING of MobileDrawer in the root
-          return -- no overflow/transform/position ancestors can interfere.
-          This is attempt #3. Previous attempts failed because the input was still inside
-          MobileDrawer (which has overflow:clip) or inside UnifiedPanel (same problem).
-          The ONLY cure on iOS Safari: input must live in the top-level stacking context.
-          Hide when drawer is closed OR when active tab is not 'chat'. */}
+      {/* MobileFixedInput: React portal to document.body (attempt #4 -- THE permanent fix).
+          Attempt #3 was a direct sibling in this return -- still inside GameDashboard's root div
+          which has overflow:hidden. iOS Safari still blocked focus. The portal puts the node
+          OUTSIDE the root div entirely: zero overflow/transform/will-change ancestors above it.
+          Hide when drawer is closed OR when active tab is not 'chat'.
+          IMPORTANT: onInputFocus must NOT call setDrawerSnap('full'). MobileDrawer's own
+          visualViewport.resize handler saves the pre-keyboard snap ('half') and snaps to full
+          when the keyboard opens. Snapping here prematurely causes MobileDrawer to save 'full'
+          as the restore point -- drawer never returns to half when keyboard is dismissed. */}
       {isMobile && drawerOpen && mobileDrawerActiveTab === 'chat' && selectedRoom && (
         <MobileFixedInput
           chatInput={panelChatInput}
@@ -11925,7 +11928,10 @@ export default function GameDashboard() {
           onRemovePowerup={(id) => setSelectedPowerups(prev => prev.filter(s => s.id !== id))}
           onInputFocus={() => {
             clearUnreadForRoom(selectedRoom)
-            if (drawerSnap !== 'full') setDrawerSnap('full')
+            // DO NOT snap to 'full' here. MobileDrawer's visualViewport.resize handler
+            // saves preKeyboardSnapRef.current = 'half' and snaps to full when the
+            // keyboard actually opens. Snapping here first causes it to save 'full'
+            // as the restore point, so the drawer never returns to half on keyboard close.
           }}
         />
       )}
