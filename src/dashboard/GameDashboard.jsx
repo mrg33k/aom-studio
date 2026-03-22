@@ -9299,8 +9299,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             borderTop: '1px solid rgba(100,180,255,0.12)',
           }}>
             {/* Minimized slim bar */}
+            <AnimatePresence mode="wait">
             {confirmMinimized ? (
-              <div
+              <motion.div
+                key="confirm-minimized"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.12, ease: 'easeOut' }}
                 onClick={() => setConfirmMinimized(false)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
@@ -9329,9 +9335,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8BA4C4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="18 15 12 9 6 15" />
                 </svg>
-              </div>
+              </motion.div>
             ) : (
-            <div style={{
+            <motion.div
+              key="confirm-expanded"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.14, ease: 'easeOut' }}
+              style={{
               padding: '8px 16px',
               display: 'flex', flexDirection: 'column', gap: 8,
               background: 'linear-gradient(180deg, rgba(8,16,32,0.55) 0%, transparent 100%)',
@@ -9568,8 +9580,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             </motion.div>
               )
             })()}
-          </div>
+          </motion.div>
             )}
+            </AnimatePresence>
           </div>
         )
       })()}
