@@ -1,21 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// ---- ONBOARDING GUIDE ---------------------------------------------------
-// Shows on first visit to Corner. Overlays the game with a dark/blur layer.
-// Elon walks the user through 4 steps: Welcome > Name > Agent > Done.
+// ---- ONBOARDING GUIDE v2 -----------------------------------------------
+// First-time user experience for Corner.
+// v2 vs v1: solid dark bg (true empty office) instead of blurred game behind;
+// room card flies in from above and lands in spotlight hex with spring physics;
+// Elon positioned inside the space, not just as a UI widget.
 // Marks complete via localStorage('corner_onboarded').
-// Works with or without Supabase. No backend changes required.
 // -------------------------------------------------------------------------
 
 const ORANGE = '#E85D26'
+const BG = '#060A13'
 
 const STEPS = [
   {
     id: 'welcome',
     sprite: 'speaking',
     heading: 'Hey. Welcome to Corner.',
-    body: "I'm Elon. I keep things running.\nLet me show you around real quick.",
+    body: "I'm Elon. I keep things running around here.\nLet me get your office set up.",
     primary: "Let's go",
     showSkip: true,
   },
@@ -23,96 +25,143 @@ const STEPS = [
     id: 'name',
     sprite: 'thinking',
     heading: 'What should we call your workspace?',
-    body: "Your company name, team name — whatever fits.\nYou can change this later.",
-    primary: 'Next',
+    body: "Your company, your team — whatever fits.\nYou can change this later.",
+    primary: 'Got it',
     input: true,
     placeholder: 'e.g. Acme Corp, AOM Studio...',
   },
   {
     id: 'agent',
     sprite: 'working',
-    heading: 'Your first agent is ready.',
-    body: "Agents live in rooms. Rooms live in your office.\nClick a room to chat, assign tasks, and get work done.",
-    primary: 'Add my first agent',
-    showRoom: true,
+    heading: 'Your first room is ready.',
+    body: "Agents live in rooms. Tap a room to chat,\nassign tasks, and get work done.",
+    primary: 'Place my first room',
+    showDropIn: true,
   },
   {
     id: 'done',
     sprite: 'done',
-    heading: "You're in.",
-    body: "Your office is set up.\nThe team is ready. Let's get to work.",
-    primary: 'Open my office',
+    heading: "Your office is live.",
+    body: "Elon's on standby. Tap any room to start.\nThe team is ready when you are.",
+    primary: 'Enter Corner',
   },
 ]
 
-// Faint hex outlines scattered in the background -- hint at the grid
-function HexGridHints({ activeStep }) {
-  const positions = [
-    { x: '12%', y: '22%', delay: 0.0 },
-    { x: '28%', y: '12%', delay: 0.08 },
-    { x: '48%', y: '18%', delay: 0.16 },
-    { x: '68%', y: '12%', delay: 0.24 },
-    { x: '84%', y: '22%', delay: 0.10 },
-    { x: '14%', y: '64%', delay: 0.20 },
-    { x: '32%', y: '74%', delay: 0.05 },
-    { x: '52%', y: '68%', delay: 0.28 },
-    { x: '72%', y: '74%', delay: 0.12 },
-    { x: '86%', y: '62%', delay: 0.18 },
-  ]
+// ---- Hex grid background ---------------------------------------------------
+// One "spotlight" hex where the first room will land (upper center).
+// Ambient hexes scattered around at low opacity to hint at the grid.
 
-  // On "agent" step, one hex glows orange
-  const glowIdx = activeStep >= 2 ? 4 : -1
+const SPOTLIGHT = { cx: 50, cy: 28, size: 88 } // % of screen
 
+const AMBIENT_HEXES = [
+  { cx: 8,  cy: 18, size: 56, delay: 0.0  },
+  { cx: 24, cy: 9,  size: 48, delay: 0.07 },
+  { cx: 40, cy: 14, size: 64, delay: 0.13 },
+  { cx: 60, cy: 14, size: 64, delay: 0.19 },
+  { cx: 76, cy: 9,  size: 48, delay: 0.07 },
+  { cx: 92, cy: 18, size: 56, delay: 0.0  },
+  { cx: 6,  cy: 52, size: 60, delay: 0.09 },
+  { cx: 20, cy: 66, size: 52, delay: 0.15 },
+  { cx: 36, cy: 74, size: 68, delay: 0.05 },
+  { cx: 64, cy: 74, size: 68, delay: 0.11 },
+  { cx: 80, cy: 66, size: 52, delay: 0.17 },
+  { cx: 94, cy: 52, size: 60, delay: 0.03 },
+  { cx: 13, cy: 38, size: 54, delay: 0.21 },
+  { cx: 87, cy: 38, size: 54, delay: 0.23 },
+]
+
+const HEX_CLIP = 'polygon(50% 0%, 99% 25%, 99% 75%, 50% 100%, 1% 75%, 1% 25%)'
+
+function HexGrid({ roomPlaced }) {
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      {positions.map((pos, i) => (
+      {/* ambient */}
+      {AMBIENT_HEXES.map((h, i) => (
         <motion.div
           key={i}
-          initial={{ opacity: 0, scale: 0.7 }}
-          animate={{
-            opacity: i === glowIdx ? 0.45 : 0.07,
-            scale: 1,
-          }}
-          transition={{ delay: pos.delay + 0.2, duration: 0.7, ease: 'easeOut' }}
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 0.042, scale: 1 }}
+          transition={{ delay: h.delay + 0.25, duration: 0.9, ease: 'easeOut' }}
           style={{
             position: 'absolute',
-            left: pos.x,
-            top: pos.y,
+            left: `${h.cx}%`,
+            top: `${h.cy}%`,
             transform: 'translate(-50%, -50%)',
-            width: 72,
-            height: 72,
-            border: `1.5px solid ${i === glowIdx ? ORANGE : 'rgba(255,255,255,0.5)'}`,
-            clipPath: 'polygon(50% 0%, 99% 25%, 99% 75%, 50% 100%, 1% 75%, 1% 25%)',
-            boxShadow: i === glowIdx ? `0 0 24px rgba(232,93,38,0.5), inset 0 0 16px rgba(232,93,38,0.15)` : 'none',
-            transition: 'border-color 0.4s, box-shadow 0.4s',
+            width: h.size,
+            height: h.size,
+            border: '1px solid rgba(255,255,255,0.9)',
+            clipPath: HEX_CLIP,
           }}
         />
       ))}
+
+      {/* spotlight hex -- destination for first room */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{
+          opacity: roomPlaced ? 0.0 : 0.28,
+        }}
+        transition={{ duration: 0.6 }}
+        style={{
+          position: 'absolute',
+          left: `${SPOTLIGHT.cx}%`,
+          top: `${SPOTLIGHT.cy}%`,
+          transform: 'translate(-50%, -50%)',
+          width: SPOTLIGHT.size,
+          height: SPOTLIGHT.size,
+          border: `1.5px solid ${ORANGE}`,
+          clipPath: HEX_CLIP,
+        }}
+      />
+
+      {/* spotlight hex pulse ring -- only when empty */}
+      <AnimatePresence>
+        {!roomPlaced && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.15, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+            style={{
+              position: 'absolute',
+              left: `${SPOTLIGHT.cx}%`,
+              top: `${SPOTLIGHT.cy}%`,
+              transform: 'translate(-50%, -50%)',
+              width: SPOTLIGHT.size + 24,
+              height: SPOTLIGHT.size + 24,
+              border: `1px solid ${ORANGE}`,
+              clipPath: HEX_CLIP,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-// Floating ambient particle dots in the background
-function AmbientDots() {
-  const dots = Array.from({ length: 18 }, (_, i) => ({
-    x: `${8 + (i * 91 % 84)}%`,
-    y: `${10 + (i * 73 % 80)}%`,
-    size: 2 + (i % 3),
-    delay: i * 0.15,
-    dur: 3 + (i % 4),
+// ---- Ambient floating particles -------------------------------------------
+function Particles() {
+  const pts = Array.from({ length: 20 }, (_, i) => ({
+    x: (i * 67 % 92) + 4,
+    y: (i * 53 % 86) + 7,
+    r: 1.5 + (i % 3) * 0.5,
+    delay: i * 0.18,
+    dur: 4 + (i % 5),
   }))
   return (
-    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-      {dots.map((d, i) => (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      {pts.map((p, i) => (
         <motion.div
           key={i}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0.04, 0.12, 0.04] }}
-          transition={{ delay: d.delay, duration: d.dur, repeat: Infinity, ease: 'easeInOut' }}
+          animate={{ opacity: [0, 0.09, 0], y: [0, -7, 0] }}
+          transition={{ delay: p.delay, duration: p.dur, repeat: Infinity, ease: 'easeInOut' }}
           style={{
             position: 'absolute',
-            left: d.x, top: d.y,
-            width: d.size, height: d.size,
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.r * 2,
+            height: p.r * 2,
             borderRadius: '50%',
             background: '#fff',
           }}
@@ -122,79 +171,123 @@ function AmbientDots() {
   )
 }
 
-// Room preview card shown on the "agent" step
-function RoomPreviewCard() {
+// ---- Room card that falls into the spotlight hex ----------------------------
+// Appears above Elon when step === 'agent'. Spring-physics drop-in.
+function DroppedRoom({ placed }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.92 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: 0.25, duration: 0.4, type: 'spring', bounce: 0.35 }}
-      style={{
-        marginTop: 16,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 14px',
-        background: 'rgba(232,93,38,0.08)',
-        border: '1px solid rgba(232,93,38,0.3)',
-        borderRadius: 10,
-        boxShadow: '0 0 20px rgba(232,93,38,0.12)',
-      }}
-    >
-      <img
-        src="/corner/sprites/elon-idle.png"
-        alt=""
-        style={{ width: 40, height: 40, imageRendering: 'pixelated' }}
-      />
-      <div style={{ flex: 1 }}>
-        <div style={{ color: '#fff', fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
-          Elon's Office
-        </div>
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
-          System orchestrator
-        </div>
-      </div>
-      <motion.div
-        animate={{ opacity: [0.7, 1, 0.7] }}
-        transition={{ duration: 2, repeat: Infinity }}
-        style={{
-          width: 8, height: 8,
-          borderRadius: '50%',
-          background: '#4ade80',
-          boxShadow: '0 0 8px #4ade80',
-        }}
-      />
-    </motion.div>
+    <AnimatePresence>
+      {placed && (
+        <motion.div
+          key="room"
+          initial={{ y: -180, opacity: 0, scale: 0.65, rotate: -8 }}
+          animate={{ y: 0, opacity: 1, scale: 1, rotate: 0 }}
+          exit={{ y: -180, opacity: 0, scale: 0.65 }}
+          transition={{ type: 'spring', stiffness: 240, damping: 18, delay: 0.1 }}
+          style={{
+            position: 'absolute',
+            left: `${SPOTLIGHT.cx}%`,
+            top: `${SPOTLIGHT.cy}%`,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 5,
+            pointerEvents: 'none',
+          }}
+        >
+          {/* Hex room */}
+          <div
+            style={{
+              width: SPOTLIGHT.size,
+              height: SPOTLIGHT.size,
+              clipPath: HEX_CLIP,
+              background: 'rgba(232,93,38,0.13)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              position: 'relative',
+            }}
+          >
+            {/* hex border overlay */}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                clipPath: HEX_CLIP,
+                border: `2px solid rgba(232,93,38,0.5)`,
+                boxSizing: 'border-box',
+              }}
+            />
+            <img
+              src="/corner/sprites/elon-idle.png"
+              alt="Elon"
+              style={{ width: 44, height: 44, imageRendering: 'pixelated', position: 'relative', zIndex: 1 }}
+            />
+          </div>
+
+          {/* Room label */}
+          <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: 600, letterSpacing: '0.02em' }}>
+            Elon's Office
+          </div>
+
+          {/* Live dot */}
+          <motion.div
+            animate={{ opacity: [0.55, 1, 0.55], scale: [1, 1.15, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{
+              width: 7, height: 7,
+              borderRadius: '50%',
+              background: '#4ade80',
+              boxShadow: '0 0 10px #4ade80',
+              marginTop: -2,
+            }}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
+// ---- Main component --------------------------------------------------------
 export default function OnboardingGuide({ onComplete }) {
   const [step, setStep] = useState(0)
   const [workspaceName, setWorkspaceName] = useState('')
   const [exiting, setExiting] = useState(false)
+  const [roomPlaced, setRoomPlaced] = useState(false)
   const inputRef = useRef(null)
   const current = STEPS[step]
+  const isAgentStep = current.id === 'agent'
 
-  // Auto-focus name input when we land on step 1
+  // Auto-focus name input when landing on step 1
   useEffect(() => {
     if (current.input) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 350)
-      return () => clearTimeout(timer)
+      const t = setTimeout(() => inputRef.current?.focus(), 380)
+      return () => clearTimeout(t)
     }
   }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Drop the room in with a small delay after entering the agent step
+  useEffect(() => {
+    if (isAgentStep) {
+      const t = setTimeout(() => setRoomPlaced(true), 550)
+      return () => clearTimeout(t)
+    } else {
+      setRoomPlaced(false)
+    }
+  }, [isAgentStep])
+
   const dismiss = () => {
     setExiting(true)
-    setTimeout(onComplete, 550)
+    setTimeout(onComplete, 580)
   }
 
   const handlePrimary = () => {
     if (step < STEPS.length - 1) {
       setStep(s => s + 1)
     } else {
-      if (workspaceName.trim()) {
-        localStorage.setItem('corner_workspace_name', workspaceName.trim())
-      }
+      if (workspaceName.trim()) localStorage.setItem('corner_workspace_name', workspaceName.trim())
       localStorage.setItem('corner_onboarded', '1')
       dismiss()
     }
@@ -205,79 +298,69 @@ export default function OnboardingGuide({ onComplete }) {
     dismiss()
   }
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && current.input) {
-      handlePrimary()
-    }
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: exiting ? 0 : 1 }}
-      transition={{ duration: 0.45, ease: 'easeInOut' }}
+      transition={{ duration: 0.52, ease: 'easeInOut' }}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
+        background: BG,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         fontFamily: 'Inter, system-ui, sans-serif',
         WebkitFontSmoothing: 'antialiased',
+        overflow: 'hidden',
       }}
     >
-      {/* Backdrop: blurs and darkens the office behind */}
+      {/* Environment layer */}
+      <HexGrid roomPlaced={roomPlaced} />
+      <Particles />
+
+      {/* Radial center glow */}
       <div
         style={{
           position: 'absolute',
-          inset: 0,
-          backdropFilter: 'blur(12px) brightness(0.14) saturate(0.4)',
-          WebkitBackdropFilter: 'blur(12px) brightness(0.14) saturate(0.4)',
-          background: 'rgba(8, 11, 22, 0.72)',
-        }}
-      />
-
-      {/* Ambient atmosphere */}
-      <AmbientDots />
-      <HexGridHints activeStep={step} />
-
-      {/* Radial glow behind content */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%', top: '50%',
+          left: '50%',
+          top: '42%',
           transform: 'translate(-50%, -50%)',
-          width: 480, height: 480,
-          background: 'radial-gradient(circle, rgba(232,93,38,0.08) 0%, transparent 70%)',
+          width: 540,
+          height: 540,
+          background: 'radial-gradient(circle, rgba(232,93,38,0.07) 0%, transparent 65%)',
           pointerEvents: 'none',
         }}
       />
 
-      {/* Main content column */}
-      <div
+      {/* Room card -- lands in spotlight hex on step 2 */}
+      <DroppedRoom placed={roomPlaced} />
+
+      {/* Content column -- Elon + speech bubble + CTA */}
+      <motion.div
+        animate={{ y: isAgentStep ? 60 : 0 }}
+        transition={{ duration: 0.38, ease: 'easeInOut' }}
         style={{
           position: 'relative',
-          zIndex: 1,
+          zIndex: 10,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 0,
-          padding: '0 16px',
           width: '100%',
-          maxWidth: 400,
+          maxWidth: 374,
+          padding: '0 18px',
         }}
       >
         {/* Elon sprite */}
         <AnimatePresence mode="wait">
           <motion.div
             key={current.sprite}
-            initial={{ scale: 0.75, opacity: 0, y: 12 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.85, opacity: 0, y: -8 }}
-            transition={{ duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }}
-            style={{ position: 'relative' }}
+            initial={{ opacity: 0, scale: 0.74, y: 14 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.86, y: -10 }}
+            transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
           >
             <motion.img
               src={`/corner/sprites/elon-${current.sprite}.png`}
@@ -285,24 +368,24 @@ export default function OnboardingGuide({ onComplete }) {
               animate={{ y: [0, -5, 0] }}
               transition={{ repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
               style={{
-                width: 112,
-                height: 112,
+                width: 106,
+                height: 106,
                 imageRendering: 'pixelated',
-                filter: 'drop-shadow(0 10px 28px rgba(232,93,38,0.45))',
+                filter: 'drop-shadow(0 10px 30px rgba(232,93,38,0.48))',
                 display: 'block',
               }}
             />
           </motion.div>
         </AnimatePresence>
 
-        {/* Bubble pointer triangle */}
+        {/* Bubble pointer */}
         <div
           style={{
             width: 0, height: 0,
-            borderLeft: '9px solid transparent',
-            borderRight: '9px solid transparent',
-            borderBottom: '9px solid rgba(255,255,255,0.07)',
-            marginTop: 2,
+            borderLeft: '8px solid transparent',
+            borderRight: '8px solid transparent',
+            borderBottom: '8px solid rgba(255,255,255,0.055)',
+            marginTop: 3,
           }}
         />
 
@@ -310,28 +393,28 @@ export default function OnboardingGuide({ onComplete }) {
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
-            initial={{ opacity: 0, y: 10, scale: 0.96 }}
+            initial={{ opacity: 0, y: 11, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.96 }}
-            transition={{ duration: 0.24, ease: 'easeOut' }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
             style={{
               width: '100%',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.11)',
-              borderRadius: 16,
-              padding: '24px 26px',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
+              background: 'rgba(255,255,255,0.038)',
+              border: '1px solid rgba(255,255,255,0.085)',
+              borderRadius: 14,
+              padding: '22px 24px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.055)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
             }}
           >
             <h2
               style={{
                 color: '#fff',
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: 700,
                 margin: 0,
-                marginBottom: 10,
+                marginBottom: 8,
                 lineHeight: 1.3,
                 letterSpacing: '-0.01em',
               }}
@@ -340,7 +423,7 @@ export default function OnboardingGuide({ onComplete }) {
             </h2>
             <p
               style={{
-                color: 'rgba(255,255,255,0.55)',
+                color: 'rgba(255,255,255,0.48)',
                 fontSize: 14,
                 margin: 0,
                 lineHeight: 1.65,
@@ -356,15 +439,16 @@ export default function OnboardingGuide({ onComplete }) {
                 ref={inputRef}
                 value={workspaceName}
                 onChange={e => setWorkspaceName(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={e => e.key === 'Enter' && handlePrimary()}
                 placeholder={current.placeholder}
+                autoComplete="off"
                 style={{
                   display: 'block',
                   width: '100%',
-                  marginTop: 18,
+                  marginTop: 16,
                   padding: '11px 14px',
                   background: 'rgba(255,255,255,0.07)',
-                  border: '1px solid rgba(255,255,255,0.14)',
+                  border: '1px solid rgba(255,255,255,0.11)',
                   borderRadius: 9,
                   color: '#fff',
                   fontSize: 15,
@@ -374,29 +458,26 @@ export default function OnboardingGuide({ onComplete }) {
                   transition: 'border-color 0.2s',
                 }}
                 onFocus={e => { e.target.style.borderColor = 'rgba(232,93,38,0.5)' }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.14)' }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.11)' }}
               />
             )}
-
-            {/* First room preview card */}
-            {current.showRoom && <RoomPreviewCard />}
           </motion.div>
         </AnimatePresence>
 
-        {/* CTA */}
+        {/* CTAs */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 12,
-            marginTop: 20,
+            gap: 10,
+            marginTop: 16,
             width: '100%',
           }}
         >
           <motion.button
             onClick={handlePrimary}
-            whileHover={{ scale: 1.04, boxShadow: '0 6px 28px rgba(232,93,38,0.55)' }}
+            whileHover={{ scale: 1.03, boxShadow: '0 8px 32px rgba(232,93,38,0.58)' }}
             whileTap={{ scale: 0.97 }}
             style={{
               width: '100%',
@@ -410,8 +491,7 @@ export default function OnboardingGuide({ onComplete }) {
               cursor: 'pointer',
               fontFamily: 'inherit',
               letterSpacing: '-0.01em',
-              boxShadow: '0 4px 20px rgba(232,93,38,0.38)',
-              transition: 'box-shadow 0.2s',
+              boxShadow: '0 4px 22px rgba(232,93,38,0.38)',
             }}
           >
             {current.primary}
@@ -423,7 +503,7 @@ export default function OnboardingGuide({ onComplete }) {
               style={{
                 background: 'none',
                 border: 'none',
-                color: 'rgba(255,255,255,0.28)',
+                color: 'rgba(255,255,255,0.22)',
                 fontSize: 13,
                 cursor: 'pointer',
                 fontFamily: 'inherit',
@@ -431,29 +511,26 @@ export default function OnboardingGuide({ onComplete }) {
                 letterSpacing: '-0.01em',
               }}
             >
-              Skip tour
+              Skip for now
             </button>
           )}
         </div>
 
-        {/* Step progress dots */}
-        <div style={{ display: 'flex', gap: 6, marginTop: 24 }}>
+        {/* Progress dots */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 20 }}>
           {STEPS.map((_, i) => (
             <motion.div
               key={i}
               animate={{
                 width: i === step ? 22 : 6,
-                background: i === step ? ORANGE : 'rgba(255,255,255,0.16)',
+                background: i === step ? ORANGE : i < step ? 'rgba(232,93,38,0.35)' : 'rgba(255,255,255,0.14)',
               }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              style={{
-                height: 6,
-                borderRadius: 3,
-              }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}
+              style={{ height: 6, borderRadius: 3 }}
             />
           ))}
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   )
 }
