@@ -225,7 +225,7 @@ function getTimeAz() {
 }
 
 // ─── AGENTS CONFIG ────────────────────────────────────────────────────────────
-const AGENTS_CONFIG = [
+const AGENTS_CONFIG_FALLBACK = [
   { name: 'Bobby', role: 'Web Dev', agentFile: 'projects/bobby/AGENT.md' },
   { name: 'Jacob', role: 'Outreach & Pipeline', agentFile: 'projects/jacob/AGENT.md' },
   { name: 'Alex', role: 'Deal Architect', agentFile: 'projects/aom-strategy/AGENT.md' },
@@ -1098,7 +1098,23 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [lastFetched, setLastFetched] = useState(null)
   const [refreshProgress, setRefreshProgress] = useState(0)
+  const agentsConfigRef = useRef(AGENTS_CONFIG_FALLBACK)
   const progressRef = useRef(null)
+
+  // Fetch agents from Supabase via /api/dashboard/agents; fall back to hardcoded list
+  useEffect(() => {
+    fetch('/api/dashboard/agents')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(({ agents }) => {
+        if (!agents || agents.length === 0) return
+        agentsConfigRef.current = agents.map(a => ({
+          name: a.name,
+          role: a.role,
+          agentFile: a.agent_file_path || null,
+        }))
+      })
+      .catch(() => { /* keep fallback */ })
+  }, [])
 
   const load = useCallback(async () => {
     if (!GITHUB_TOKEN) { setData(null); return }
@@ -1110,14 +1126,14 @@ export default function Dashboard() {
         fetchFile('punch-list.md'),
         fetchFile('context/actions-log.md'),
         fetchFile('context/email-status.md'),
-        ...AGENTS_CONFIG.map(a => a.agentFile ? fetchFile(a.agentFile) : Promise.resolve(null)),
+        ...agentsConfigRef.current.map(a => a.agentFile ? fetchFile(a.agentFile) : Promise.resolve(null)),
       ])
 
       const priorities = parsePrioritiesV2(prioritiesMd)
       const emails = parseEmailStatus(emailMd)
       const punchItems = punchMd ? parsePunchList(punchMd) : []
       const actions = parseActionsLog(actionsMd)
-      const agentResults = AGENTS_CONFIG.map((a, i) => ({
+      const agentResults = agentsConfigRef.current.map((a, i) => ({
         name: a.name,
         role: a.role,
         results: agentMds[i] ? parseAgentResults(agentMds[i]) : [],
