@@ -53,6 +53,9 @@ const CAMERA_TRANSITION_MS = 400
 // Shuffle animation duration (ms)
 const SHUFFLE_ANIM_MS = 200
 
+// Swap cooldown: minimum ms between swaps to prevent accidental chain-swaps
+const SWAP_COOLDOWN_MS = 500
+
 // Load free room positions -- no persistence, always start fresh
 // Returns: { [roomId]: { x, y } } or {}
 function loadFreePositions() {
@@ -924,6 +927,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // Map<roomId, { fromX, fromY, toX, toY, startTime }>
   const shuffleAnimRef = useRef({})
 
+  // Swap cooldown: timestamp (ms) of last swap. Prevents accidental chain-swaps.
+  const swapCooldownRef = useRef(0)
+
   // Drag state for grid shuffle
   const dragStateRef = useRef({
     active: false,
@@ -943,6 +949,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     // Spring-animated render position: lerps toward snapX/snapY each frame
     renderX: 0,
     renderY: 0,
+    // Swap target: roomId that occupies the snap target slot (null if empty)
+    swapTargetRoomId: null,
   })
   const mouseDownRef = useRef({ active: false, didDrag: false, startX: 0, startY: 0 })
 
@@ -1303,6 +1311,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         drag.snapX = snap.x
         drag.snapY = snap.y
 
+        // Determine which slot the snap position maps to and whether it's occupied
+        const snapCenterX = snap.x + ROOM_SIZE / 2
+        const snapCenterY = snap.y + ROOM_SIZE / 2
+        const snapSlotIdx = findNearestSlot(snapCenterX, snapCenterY, ORIGIN_X, ORIGIN_Y, slotOrder.length)
+        const occupant = slotOrder[snapSlotIdx]
+        drag.swapTargetRoomId = (occupant && occupant !== drag.roomId) ? occupant : null
+
         // Spring: lerp renderX/renderY toward snapX/snapY each frame (k=0.22 ~= 60fps spring)
         const SPRING_K = 0.22
         drag.renderX += (snap.x - drag.renderX) * SPRING_K
@@ -1313,8 +1328,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const color = meta?.color || '#3B82F6'
         ctx.save()
         ctx.strokeStyle = color
-        ctx.globalAlpha = 0.35
-        ctx.lineWidth = 2.5 / (cameraRef.current?.zoom || 1)
+        ctx.globalAlpha = drag.swapTargetRoomId ? 0.6 : 0.35
+        ctx.lineWidth = (drag.swapTargetRoomId ? 3.5 : 2.5) / (cameraRef.current?.zoom || 1)
         ctx.setLineDash([8, 6])
         const px = snap.x + S / 2
         const py = snap.y + S / 2
@@ -1328,6 +1343,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.closePath()
         ctx.stroke()
         ctx.restore()
+      } else {
+        drag.swapTargetRoomId = null
       }
     }
 
@@ -1494,8 +1511,32 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         celebOffsetY -= 12
       }
 
+      // ---- SWAP TARGET HIGHLIGHT: pulse outline when dragged room hovers over this room ----
+      const isSwapTarget = drag.active && roomId === drag.swapTargetRoomId
+      if (isSwapTarget) {
+        const S = ROOM_SIZE
+        const pulse = 0.55 + 0.45 * Math.sin(now * 0.008) // 0..1 pulse at ~1.3 Hz
+        ctx.save()
+        ctx.strokeStyle = meta?.color || '#3B82F6'
+        ctx.globalAlpha = 0.45 + 0.35 * pulse
+        ctx.lineWidth = (3 + 2 * pulse) / (cameraRef.current?.zoom || 1)
+        ctx.setLineDash([])
+        const px = posX + S / 2
+        const py = posY + celebOffsetY + S / 2
+        const hw = S / 2 * 0.96
+        const hh = S / 4 * 0.96
+        ctx.beginPath()
+        ctx.moveTo(px, py - hh)
+        ctx.lineTo(px + hw, py)
+        ctx.lineTo(px, py + hh)
+        ctx.lineTo(px - hw, py)
+        ctx.closePath()
+        ctx.stroke()
+        ctx.restore()
+      }
+
       // All rooms full brightness (dimming off for now, can be a setting later)
-      drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL, cam.zoom, celebGlow, walkPositions[roomId])
+      drawRoom(ctx, posX, posY + celebOffsetY, imgs.working, imgs.idle, imgs.character, alpha, meta.name, meta.color, isHL || isSwapTarget, cam.zoom, celebGlow, walkPositions[roomId])
 
       // Queue badge for deferred rendering (on top of all rooms)
       badgeQueue.push({ roomId, offsetX: posX, offsetY: posY + celebOffsetY, nameText: meta.name, nameColor: meta.color, currentZoom: cam.zoom })
@@ -2089,17 +2130,85 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const pan = panRef.current
 
     if (drag.active && drag.roomId) {
-      // SNAP DROP: snap to nearest hex grid cell, save that position
       const rawX = drag.worldX - drag.offsetX
       const rawY = drag.worldY - drag.offsetY
       const snapped = snapToNearestHexCell(rawX, rawY, ORIGIN_X, ORIGIN_Y)
-      freePositionsRef.current = {
-        ...freePositionsRef.current,
-        [drag.roomId]: { x: snapped.x, y: snapped.y },
+
+      // Check if snap target slot has another room (potential swap)
+      const snapCenterX = snapped.x + ROOM_SIZE / 2
+      const snapCenterY = snapped.y + ROOM_SIZE / 2
+      const targetSlotIdx = findNearestSlot(snapCenterX, snapCenterY, ORIGIN_X, ORIGIN_Y, slotOrder.length)
+      const occupant = slotOrder[targetSlotIdx]
+      const now = performance.now()
+      const canSwap = occupant && occupant !== drag.roomId && (now - swapCooldownRef.current) >= SWAP_COOLDOWN_MS
+
+      if (canSwap) {
+        // SWAP: exchange slot positions between dragged room and occupant
+        const draggedRoomId = drag.roomId
+        const dragFromSlot = slotOrder.indexOf(draggedRoomId)
+
+        // Capture current world positions for animation start points
+        // Dragged room: currently at drag.renderX/Y (spring-animated position)
+        const dragFromX = drag.renderX
+        const dragFromY = drag.renderY
+        // Occupant: currently at its slot position (or freePos if it has one)
+        const occupantFreePos = freePositionsRef.current[occupant]
+        const occupantSlotPos = slotWorldPos(targetSlotIdx, ORIGIN_X, ORIGIN_Y)
+        const occupantFromX = occupantFreePos ? occupantFreePos.x : occupantSlotPos.x
+        const occupantFromY = occupantFreePos ? occupantFreePos.y : occupantSlotPos.y
+
+        // New slot positions after swap
+        const dragToPos = slotWorldPos(targetSlotIdx, ORIGIN_X, ORIGIN_Y)
+        const occupantToPos = slotWorldPos(dragFromSlot >= 0 ? dragFromSlot : targetSlotIdx, ORIGIN_X, ORIGIN_Y)
+
+        // Clear free positions so both rooms render from slotOrder after swap
+        const newFreePos = { ...freePositionsRef.current }
+        delete newFreePos[draggedRoomId]
+        delete newFreePos[occupant]
+        freePositionsRef.current = newFreePos
+
+        // Animate both rooms to their new positions
+        shuffleAnimRef.current[draggedRoomId] = {
+          fromX: dragFromX,
+          fromY: dragFromY,
+          toX: dragToPos.x,
+          toY: dragToPos.y,
+          startTime: now,
+        }
+        shuffleAnimRef.current[occupant] = {
+          fromX: occupantFromX,
+          fromY: occupantFromY,
+          toX: occupantToPos.x,
+          toY: occupantToPos.y,
+          startTime: now,
+        }
+
+        // Perform the swap in slotOrder
+        setSlotOrder(prev => {
+          const next = [...prev]
+          const idxA = next.indexOf(draggedRoomId)
+          const idxB = next.indexOf(occupant)
+          if (idxA >= 0 && idxB >= 0) {
+            next[idxA] = occupant
+            next[idxB] = draggedRoomId
+          }
+          return next
+        })
+
+        swapCooldownRef.current = now
+      } else {
+        // NORMAL SNAP DROP: no swap, just save free position
+        freePositionsRef.current = {
+          ...freePositionsRef.current,
+          [drag.roomId]: { x: snapped.x, y: snapped.y },
+        }
       }
+
       drag.active = false
+      drag.swapTargetRoomId = null
       drag.roomId = null
     } else {
+      drag.swapTargetRoomId = null
       drag.roomId = null
     }
 
@@ -2127,7 +2236,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
 
     mouseDownRef.current.active = false
-  }, [ORIGIN_X, ORIGIN_Y])
+  }, [ORIGIN_X, ORIGIN_Y, slotOrder])
 
   // ---- CLICK: Focus/unfocus room + recall visiting character ----
   const onClick = useCallback((e) => {
