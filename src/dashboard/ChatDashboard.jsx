@@ -150,6 +150,28 @@ const AGENTS = [
 // Fallback slug list derived from static AGENTS -- used before Supabase resolves
 const KNOWN_SLUGS_FALLBACK = AGENTS.map(a => a.slug)
 
+// ─── AGENT COLORS ─────────────────────────────────────────────────────────────
+// Each agent has a distinct accent color used in team room avatars + message labels.
+const AGENT_COLORS = {
+  elon:    '#22C55E',
+  bobby:   '#F97316',
+  steffen: '#8B5CF6',
+  cleo:    '#EC4899',
+  steve:   '#3B82F6',
+  alex:    '#EAB308',
+  mom:     '#F43F5E',
+  jacob:   '#06B6D4',
+  paige:   '#14B8A6',
+  tony:    '#A78BFA',
+  elmo:    '#FB923C',
+  colton:  '#64748B',
+  pixel:   '#A1A1AA',
+}
+
+// ─── TEAM ROOM ─────────────────────────────────────────────────────────────────
+// Special pseudo-agent for the AOM group chat (reads from aom-internal.jsonl).
+const TEAM_ROOM = { slug: 'aom-internal', name: 'AOM Team', role: 'All Agents', type: 'project', img: null }
+
 const STATUS_CONFIG = {
   WORKING:  { color: '#22C55E', bg: 'rgba(34,197,94,0.12)',  label: 'Working',  icon: Zap },
   IDLE:     { color: '#78716C', bg: 'rgba(120,113,108,0.12)', label: 'Idle',     icon: Clock },
@@ -1366,6 +1388,595 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   )
 }
 
+// ─── TEAM ROOM CARD ───────────────────────────────────────────────────────────
+// Featured card at the top of the roster. Shows overlapping agent avatars.
+function TeamRoomCard({ onOpen, isActive, agentStatus }) {
+  const activeCount = AGENTS.filter(a => {
+    const s = agentStatus[a.slug]?.status
+    return s === 'WORKING' || s === 'ACTIVE'
+  }).length
+  const avatarSlice = AGENTS.slice(0, 6)
+
+  return (
+    <motion.button
+      onClick={onOpen}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.01, y: -1 }}
+      whileTap={{ scale: 0.99 }}
+      className={`relative w-full text-left rounded-sm overflow-hidden transition-all duration-300 group ${
+        isActive ? 'ring-2 ring-[#E85D26]/60 bg-[#1A1A17]' : 'bg-[#141412] hover:bg-[#1A1A17]'
+      }`}
+      style={{ border: `1px solid ${isActive ? 'rgba(232,93,38,0.4)' : '#2D2B28'}` }}
+    >
+      <div className="flex items-center gap-4 px-4 py-3">
+        {/* Overlapping agent avatar cluster */}
+        <div className="flex items-center -space-x-2 shrink-0">
+          {avatarSlice.map((a, idx) => {
+            const color = AGENT_COLORS[a.slug] || '#78716C'
+            return (
+              <div
+                key={a.slug}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2"
+                style={{ background: `${color}20`, borderColor: '#141412', color, zIndex: 6 - idx, position: 'relative' }}
+              >
+                {a.name.charAt(0)}
+              </div>
+            )
+          })}
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border-2 bg-[#292524] text-[#78716C]"
+            style={{ borderColor: '#141412', zIndex: 0, position: 'relative' }}
+          >
+            +{AGENTS.length - 6}
+          </div>
+        </div>
+
+        {/* Labels */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[#F0ECE6] font-bold text-base tracking-tight">AOM Team</span>
+            {activeCount > 0 && (
+              <span className="text-[10px] font-mono text-[#22C55E] bg-[#22C55E]/10 px-1.5 py-0.5 rounded-full border border-[#22C55E]/20">
+                {activeCount} active
+              </span>
+            )}
+          </div>
+          <p className="text-[#78716C] text-[12px] font-mono uppercase tracking-wider">
+            All agents · Anyone can reply
+          </p>
+        </div>
+        <MessageSquare className="w-4 h-4 text-[#78716C] group-hover:text-[#E85D26] transition-colors shrink-0" />
+      </div>
+
+      {/* Rainbow left border */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px]"
+        style={{ background: 'linear-gradient(to bottom, #E85D26, #8B5CF6, #22C55E)' }}
+      />
+    </motion.button>
+  )
+}
+
+// ─── TEAM ROOM PANEL ──────────────────────────────────────────────────────────
+// Multi-agent group chat. Reads from conversations/projects/aom-internal.jsonl.
+// Shows per-agent colored avatars + name labels. Sends to main relay (Elon).
+function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
+  const [messages, setMessages] = useState([])
+  const [input, setInput] = useState('')
+  const [streaming, setStreaming] = useState(false)
+  const [relayConnected, setRelayConnected] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [streamStartTime, setStreamStartTime] = useState(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
+
+  const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
+  const inputRef = useRef(null)
+  const searchInputRef = useRef(null)
+  const lastConvTimestampRef = useRef(null)
+  const convPollRef = useRef(null)
+  const chatTimeoutRef = useRef(null)
+  const streamingRef = useRef(false)
+  const historyLoadedRef = useRef(false)
+  const isNearBottomRef = useRef(true)
+  const prevMessageCountRef = useRef(0)
+  const hasNewMessagesRef = useRef(false)
+
+  useEffect(() => { streamingRef.current = streaming }, [streaming])
+
+  // Elapsed timer while waiting
+  useEffect(() => {
+    if (!streaming || !streamStartTime) { setElapsedSeconds(0); return }
+    const interval = setInterval(() => setElapsedSeconds(Math.floor((Date.now() - streamStartTime) / 1000)), 1000)
+    return () => clearInterval(interval)
+  }, [streaming, streamStartTime])
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    if (isNaN(d)) return ''
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Phoenix' })
+  }
+
+  const parseMsg = (msg) => {
+    const text = msg.text || msg.message || ''
+    const cleaned = sanitizeRelayMessage(text)
+    if (!cleaned) return null
+    return {
+      role: msg.role || 'assistant',
+      content: cleaned,
+      time: msg.timestamp,
+      source: msg.source || 'unknown',
+      agent: msg.agent || null,
+      id: msg.id,
+    }
+  }
+
+  // Load conversation history from aom-internal.jsonl
+  useEffect(() => {
+    if (historyLoadedRef.current) return
+    historyLoadedRef.current = true
+    const load = async () => {
+      try {
+        const endpoint = IS_LOCAL
+          ? '/api/local/conversations?target=aom-internal&type=project&limit=150'
+          : `${CONV_API_BASE}?target=aom-internal&type=project&limit=100`
+        const res = await fetch(endpoint)
+        if (res.ok) {
+          const data = await res.json()
+          const msgs = (data.messages || []).map(parseMsg).filter(Boolean)
+          msgs.sort((a, b) => new Date(a.time) - new Date(b.time))
+          const deduped = deduplicateMessages(msgs)
+          const recent = deduped.slice(-100)
+          if (recent.length > 0) {
+            setMessages(recent)
+            lastConvTimestampRef.current = recent[recent.length - 1].time
+          }
+        }
+        setRelayConnected(true)
+      } catch (err) {
+        console.warn('TeamRoom history load failed:', err)
+        setRelayConnected(false)
+      }
+    }
+    load()
+  }, [])
+
+  // Poll for new messages
+  useEffect(() => {
+    const pollInterval = IS_LOCAL ? 2500 : 5000
+    convPollRef.current = setInterval(async () => {
+      try {
+        const sinceParam = lastConvTimestampRef.current ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}` : ''
+        const endpoint = IS_LOCAL
+          ? `/api/local/conversations?target=aom-internal&type=project&limit=50${sinceParam}`
+          : `${CONV_API_BASE}?target=aom-internal&type=project&limit=50${sinceParam}`
+        const res = await fetch(endpoint)
+        if (!res.ok) return
+        const data = await res.json()
+        const newMsgs = data.messages || []
+        if (newMsgs.length === 0) return
+
+        const latestTs = newMsgs[newMsgs.length - 1].timestamp
+        if (latestTs) lastConvTimestampRef.current = latestTs
+
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id).filter(Boolean))
+          let added = 0
+          const updated = [...prev]
+          for (const msg of newMsgs) {
+            if (existingIds.has(msg.id)) continue
+            const parsed = parseMsg(msg)
+            if (!parsed) continue
+            updated.push(parsed)
+            added++
+          }
+          if (added === 0) return prev
+          const withoutStreaming = updated.filter(m => !m.streaming)
+          withoutStreaming.sort((a, b) => new Date(a.time) - new Date(b.time))
+          return deduplicateMessages(withoutStreaming.slice(-100))
+        })
+
+        if (newMsgs.some(m => m.role === 'assistant') && streamingRef.current) {
+          setStreaming(false)
+          setStreamStartTime(null)
+          if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+        }
+      } catch {}
+    }, pollInterval)
+    return () => { if (convPollRef.current) clearInterval(convPollRef.current) }
+  }, [])
+
+  // New message indicator
+  useEffect(() => {
+    const newCount = messages.length
+    const prevCount = prevMessageCountRef.current
+    prevMessageCountRef.current = newCount
+    if (newCount > prevCount && !isNearBottomRef.current) {
+      hasNewMessagesRef.current = true
+      setShowNewMsgIndicator(true)
+    }
+  }, [messages])
+
+  // Auto-scroll
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  // Focus input on open
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 300) }, [])
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (convPollRef.current) clearInterval(convPollRef.current)
+      if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+    }
+  }, [])
+
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current
+    if (!el) return
+    const nearBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 120
+    isNearBottomRef.current = nearBottom
+    if (nearBottom) { setShowNewMsgIndicator(false); hasNewMessagesRef.current = false }
+  }, [])
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setShowNewMsgIndicator(false)
+    isNearBottomRef.current = true
+  }, [])
+
+  const sendMessage = async (e) => {
+    e?.preventDefault()
+    const text = input.trim()
+    if (!text) return
+    setIsSending(true)
+    const sentTime = new Date().toISOString()
+    setInput('')
+    setMessages(prev => {
+      const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard', agent: null, id: crypto.randomUUID() }]
+      sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
+      if (!sorted.some(m => m.streaming)) {
+        sorted.push({ role: 'assistant', content: '', streaming: true, time: sentTime })
+      }
+      return sorted
+    })
+    setStreaming(true)
+    setStreamStartTime(Date.now())
+    chatTimeoutRef.current = setTimeout(() => {
+      setMessages(prev => {
+        const updated = [...prev]
+        const last = updated[updated.length - 1]
+        if (last?.role === 'assistant' && last.streaming) {
+          updated[updated.length - 1] = { ...last, content: 'Team is processing. Message saved.', streaming: false, time: new Date().toISOString() }
+        }
+        return updated
+      })
+      setStreaming(false)
+      setStreamStartTime(null)
+    }, 60000)
+
+    try {
+      if (IS_LOCAL) {
+        const res = await fetch('/api/local/relay-send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent: 'elon', message: text, source: 'corner-dashboard' }),
+        })
+        if (!res.ok) throw new Error('Failed to write to relay')
+      } else if (supabase) {
+        const { error: insertErr } = await supabase.from('messages').insert({
+          id: crypto.randomUUID(), agent: 'elon', role: 'user', text, source: 'corner-dashboard',
+        })
+        if (insertErr) throw new Error(`Supabase insert failed: ${insertErr.message}`)
+      } else {
+        const res = await fetch(RELAY_SEND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, agent: 'elon' }),
+        })
+        if (!res.ok) throw new Error('Failed to send via relay')
+      }
+    } catch (err) {
+      setMessages(prev => {
+        const updated = [...prev]
+        const last = updated[updated.length - 1]
+        if (last?.role === 'assistant' && last.streaming) {
+          updated[updated.length - 1] = { ...last, content: `Failed: ${err.message}`, streaming: false }
+        }
+        return updated
+      })
+      setStreaming(false)
+      setStreamStartTime(null)
+      if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={isMobile ? { x: '100%' } : { opacity: 0, x: 20 }}
+      animate={isMobile ? { x: 0 } : { opacity: 1, x: 0 }}
+      exit={isMobile ? { x: '100%' } : { opacity: 0, x: 20 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+      className={`flex flex-col bg-[#0A0A08] overflow-x-hidden ${
+        isMobile ? 'fixed inset-0 z-50' : 'h-full border-l border-[#292524]'
+      }`}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#292524] bg-[#0F0F0D] shrink-0">
+        <button onClick={onClose} className="p-1.5 hover:bg-[#292524] rounded-full transition-colors">
+          {isMobile ? <ArrowLeft className="w-5 h-5 text-[#A8A29E]" /> : <X className="w-4 h-4 text-[#A8A29E]" />}
+        </button>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {/* Overlapping avatar cluster in header */}
+          <div className="flex items-center -space-x-1.5 shrink-0">
+            {AGENTS.slice(0, 5).map((a) => {
+              const color = AGENT_COLORS[a.slug] || '#78716C'
+              const isActive = agentStatus[a.slug]?.status === 'WORKING' || agentStatus[a.slug]?.status === 'ACTIVE'
+              return (
+                <div
+                  key={a.slug}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold border border-[#0F0F0D]"
+                  style={{
+                    background: `${color}${isActive ? '30' : '15'}`,
+                    color: isActive ? color : `${color}80`,
+                    boxShadow: isActive ? `0 0 0 1px ${color}40` : 'none',
+                  }}
+                >
+                  {a.name.charAt(0)}
+                </div>
+              )
+            })}
+          </div>
+          <div className="min-w-0">
+            <div className="text-[#F0ECE6] font-bold text-base tracking-tight">AOM Team</div>
+            <p className="text-[#78716C] text-[12px] font-mono">All agents · Group chat</p>
+          </div>
+        </div>
+        <button
+          onClick={() => { setSearchOpen(o => !o); setTimeout(() => searchInputRef.current?.focus(), 100) }}
+          className={`p-1.5 rounded-full transition-colors ${searchOpen ? 'bg-[#3B82F6]/20 text-[#3B82F6]' : 'hover:bg-[#292524] text-[#78716C]'}`}
+        >
+          <SearchIcon className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Radio className={`w-3 h-3 ${relayConnected ? 'text-[#22C55E]' : 'text-[#78716C]'}`} />
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#78716C]">
+            {IS_LOCAL ? 'LOCAL' : 'RELAY'}
+          </span>
+        </div>
+      </div>
+
+      {/* Search bar */}
+      <AnimatePresence>
+        {searchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden border-b border-[#292524] bg-[#0F0F0D] shrink-0"
+          >
+            <div className="px-4 py-2 flex items-center gap-2">
+              <SearchIcon className="w-3.5 h-3.5 text-[#78716C] shrink-0" />
+              <input
+                ref={searchInputRef} type="text" value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search team messages..."
+                className="flex-1 bg-transparent text-[#F0ECE6] text-sm focus:outline-none placeholder:text-[#78716C]/40"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="text-[#78716C] hover:text-[#A8A29E]">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Messages */}
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 space-y-4 scroll-smooth chat-messages-area relative"
+      >
+        {messages.length === 0 && !searchQuery && (
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+            <div className="flex -space-x-2 mb-4 justify-center">
+              {AGENTS.slice(0, 5).map(a => {
+                const color = AGENT_COLORS[a.slug] || '#78716C'
+                return (
+                  <div
+                    key={a.slug}
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold border-2"
+                    style={{ background: `${color}20`, borderColor: '#0A0A08', color }}
+                  >
+                    {a.name.charAt(0)}
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-[#A8A29E] text-sm mb-1">AOM Team Room</p>
+            <p className="text-[#78716C] text-xs font-mono mb-3">All agents · Group chat</p>
+            <p className="text-[#78716C]/40 text-[11px] font-mono">Any agent can reply when relevant</p>
+          </div>
+        )}
+
+        {messages.length > 0 && !searchQuery && (
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 h-px bg-[#292524]" />
+            <span className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#78716C]">Today</span>
+            <div className="flex-1 h-px bg-[#292524]" />
+          </div>
+        )}
+
+        {searchQuery && (
+          <div className="text-center py-2">
+            <span className="text-[11px] font-mono text-[#78716C]">
+              {messages.filter(m => m.content?.toLowerCase().includes(searchQuery.toLowerCase())).length} results for "{searchQuery}"
+            </span>
+          </div>
+        )}
+
+        {messages
+          .filter(msg => !searchQuery || msg.content?.toLowerCase().includes(searchQuery.toLowerCase()))
+          .map((msg, i) => {
+            const isUser = msg.role === 'user'
+            const agentSlug = msg.agent
+            const agentColor = agentSlug ? (AGENT_COLORS[agentSlug] || '#78716C') : '#C026D3'
+            const agentInitialChar = agentSlug ? agentSlug.charAt(0).toUpperCase() : '?'
+            const agentObj = agentSlug ? AGENTS.find(a => a.slug === agentSlug) : null
+            const agentName = agentObj?.name || (agentSlug ? agentSlug.charAt(0).toUpperCase() + agentSlug.slice(1) : 'Agent')
+            const timeStr = msg.time && !msg.streaming ? formatTime(msg.time) : null
+
+            // Typing indicator
+            if (msg.streaming && !msg.content) {
+              return (
+                <div key={msg.id || `typing-team-${i}`} className="flex flex-col gap-1">
+                  <div className="flex items-end gap-2.5 flex-row">
+                    <div
+                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2"
+                      style={{ background: '#22C55E20', borderColor: '#22C55E50', color: '#22C55E' }}
+                    >
+                      E
+                    </div>
+                    <div className="bg-[#1C1C1A] border border-[#2A2A28] rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#78716C] text-xs font-mono">Team is working...</span>
+                        {elapsedSeconds > 0 && (
+                          <span className="text-[#78716C]/50 text-xs font-mono">{elapsedSeconds}s</span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          {[0, 1, 2].map(j => (
+                            <span
+                              key={j}
+                              className="inline-block w-1.5 h-1.5 rounded-full bg-[#22C55E]/60"
+                              style={{ animation: `chatBounce 1.4s ease-in-out ${j * 0.2}s infinite` }}
+                            />
+                          ))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <div key={msg.id || i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                {/* Avatar: agent-colored initial or "P" for user */}
+                <div
+                  className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
+                    isUser ? 'border-[#3B82F6]/40 bg-[#3B82F6]/10 text-[#3B82F6]' : ''
+                  }`}
+                  style={!isUser ? {
+                    background: `${agentColor}20`,
+                    borderColor: `${agentColor}50`,
+                    color: agentColor,
+                  } : {}}
+                >
+                  {isUser ? 'P' : agentInitialChar}
+                </div>
+
+                {/* Bubble + meta */}
+                <div className={`flex flex-col max-w-[78%] min-w-0 ${isUser ? 'items-end' : 'items-start'}`}>
+                  {/* Agent name label (assistant messages only) */}
+                  {!isUser && agentSlug && (
+                    <span
+                      className="text-[10px] font-mono font-bold uppercase tracking-[0.15em] mb-0.5 px-1"
+                      style={{ color: agentColor }}
+                    >
+                      {agentName}
+                    </span>
+                  )}
+
+                  {/* Message bubble */}
+                  <div
+                    className={`px-3.5 py-2.5 text-sm leading-relaxed ${
+                      isUser
+                        ? 'bg-[#1E3A5F] text-[#F0ECE6] rounded-2xl rounded-br-sm'
+                        : 'bg-[#1C1C1A] text-[#F0ECE6] border border-[#2A2A28] rounded-2xl rounded-bl-sm'
+                    }`}
+                    style={!isUser ? { borderLeftColor: `${agentColor}40` } : {}}
+                  >
+                    {msg.role === 'assistant' && msg.content && !msg.streaming ? (
+                      <div className="chat-md break-words" dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                    ) : (
+                      <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                    )}
+                    {msg.streaming && msg.content && (
+                      <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse rounded-full" style={{ background: agentColor }} />
+                    )}
+                  </div>
+
+                  {/* Timestamp */}
+                  {timeStr && (
+                    <div className={`flex items-center gap-1.5 mt-1 px-1 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <span className="text-[10px] font-mono text-[#78716C]/40">{timeStr}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* New messages indicator */}
+      <AnimatePresence>
+        {showNewMsgIndicator && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+            className="relative z-10 flex justify-center"
+            style={{ marginTop: -44 }}
+          >
+            <button
+              onClick={scrollToBottom}
+              className="bg-[#3B82F6] text-white text-xs font-mono font-bold px-4 py-1.5 rounded-full shadow-lg hover:bg-[#2563EB] transition-colors flex items-center gap-1.5"
+            >
+              <ChevronDown size={14} strokeWidth={2.5} />
+              {hasNewMessagesRef.current ? 'New messages' : 'Jump to latest'}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Input */}
+      <form onSubmit={sendMessage} className="shrink-0 px-4 py-2 border-t border-[#292524]/50 bg-[#0F0F0D]">
+        <div
+          className="flex items-center gap-3 bg-[#1A1A17] border border-[#292524] rounded-full px-4 py-1 focus-within:border-[#22C55E]/40 focus-within:shadow-[0_0_0_2px_rgba(34,197,94,0.1)] transition-all"
+          style={{ touchAction: 'auto' }}
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder={streaming ? 'Team is working...' : 'Message the team...'}
+            className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60"
+            style={{ touchAction: 'manipulation', WebkitUserSelect: 'text' }}
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || isSending}
+            className="w-9 h-9 flex items-center justify-center bg-[#22C55E] text-white rounded-full hover:bg-[#16A34A] disabled:opacity-20 disabled:cursor-not-allowed transition-all shrink-0"
+          >
+            {isSending
+              ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <Send className="w-4 h-4 ml-0.5" />
+            }
+          </button>
+        </div>
+      </form>
+    </motion.div>
+  )
+}
+
 // ─── THROUGHPUT BAR ──────────────────────────────────────────────────────────
 function ThroughputBar({ throughput }) {
   if (!throughput) return null
@@ -1465,9 +2076,15 @@ export default function ChatDashboard() {
   const { data, error, loading } = useDashboardData(30000)
   const isMobile = useIsMobile()
 
-  // Check URL for agent slug on mount (supports both /dashboard/agent/X and /dashboard/chat/agent/X)
+  // Check URL for agent slug or team room on mount
   useEffect(() => {
     const path = window.location.pathname
+    // Team room: /dashboard/chat/team
+    if (path.includes('/dashboard/chat/team')) {
+      setActiveAgent(TEAM_ROOM)
+      return
+    }
+    // Individual agent: /dashboard/agent/X or /dashboard/chat/agent/X
     const match = path.match(/\/dashboard\/(?:chat\/)?agent\/(.+)/)
     if (match) {
       const slug = match[1]
@@ -1482,12 +2099,14 @@ export default function ChatDashboard() {
     return () => clearInterval(timer)
   }, [])
 
-  // Update URL when agent changes
+  // Update URL when agent or team room changes
   useEffect(() => {
-    if (activeAgent) {
-      window.history.replaceState(null, '', `/dashboard/chat/agent/${activeAgent.slug}`)
-    } else {
+    if (!activeAgent) {
       window.history.replaceState(null, '', '/dashboard/chat')
+    } else if (activeAgent.slug === 'aom-internal') {
+      window.history.replaceState(null, '', '/dashboard/chat/team')
+    } else {
+      window.history.replaceState(null, '', `/dashboard/chat/agent/${activeAgent.slug}`)
     }
   }, [activeAgent])
 
@@ -1558,6 +2177,15 @@ export default function ChatDashboard() {
               </span>
             </div>
 
+            {/* Team Room (featured card above agent grid) */}
+            <div className="mb-4">
+              <TeamRoomCard
+                onOpen={() => setActiveAgent(TEAM_ROOM)}
+                isActive={activeAgent?.slug === 'aom-internal'}
+                agentStatus={agentStatus}
+              />
+            </div>
+
             {/* Agent grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
               {AGENTS.map((agent, i) => (
@@ -1589,13 +2217,22 @@ export default function ChatDashboard() {
         <AnimatePresence>
           {activeAgent && (
             <div className={`${isMobile ? '' : 'w-1/2 xl:w-[45%]'}`}>
-              <ChatPanel
-                key={activeAgent.slug}
-                agent={activeAgent}
-                statusData={agentStatus[activeAgent.slug]}
-                onClose={closeChat}
-                isMobile={isMobile}
-              />
+              {activeAgent.slug === 'aom-internal' ? (
+                <TeamRoomPanel
+                  key="team-room"
+                  agentStatus={agentStatus}
+                  onClose={closeChat}
+                  isMobile={isMobile}
+                />
+              ) : (
+                <ChatPanel
+                  key={activeAgent.slug}
+                  agent={activeAgent}
+                  statusData={agentStatus[activeAgent.slug]}
+                  onClose={closeChat}
+                  isMobile={isMobile}
+                />
+              )}
             </div>
           )}
         </AnimatePresence>
