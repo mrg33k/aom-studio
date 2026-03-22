@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { supabase } from './lib/supabase.js'
 
-// ---- ONBOARDING GUIDE v2 -----------------------------------------------
+// ---- ONBOARDING GUIDE v3 -----------------------------------------------
 // First-time user experience for Corner.
-// v2 vs v1: solid dark bg (true empty office) instead of blurred game behind;
-// room card flies in from above and lands in spotlight hex with spring physics;
-// Elon positioned inside the space, not just as a UI widget.
+// v3 vs v2: dynamic button text on agent step (changes after room lands);
+// landing impact ring when room hits the hex; Supabase metadata save for
+// workspace_name on authenticated users.
+// v2: solid dark bg + room springs in from above.
+// v1: backdrop-filter blur + 4-step flow.
 // Marks complete via localStorage('corner_onboarded').
 // -------------------------------------------------------------------------
 
@@ -35,7 +38,8 @@ const STEPS = [
     sprite: 'working',
     heading: 'Your first room is ready.',
     body: "Agents live in rooms. Tap a room to chat,\nassign tasks, and get work done.",
-    primary: 'Place my first room',
+    primaryBefore: 'Place my first room',
+    primaryAfter: 'Continue',
     showDropIn: true,
   },
   {
@@ -48,9 +52,6 @@ const STEPS = [
 ]
 
 // ---- Hex grid background ---------------------------------------------------
-// One "spotlight" hex where the first room will land (upper center).
-// Ambient hexes scattered around at low opacity to hint at the grid.
-
 const SPOTLIGHT = { cx: 50, cy: 28, size: 88 } // % of screen
 
 const AMBIENT_HEXES = [
@@ -98,9 +99,7 @@ function HexGrid({ roomPlaced }) {
       {/* spotlight hex -- destination for first room */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{
-          opacity: roomPlaced ? 0.0 : 0.28,
-        }}
+        animate={{ opacity: roomPlaced ? 0.0 : 0.28 }}
         transition={{ duration: 0.6 }}
         style={{
           position: 'absolute',
@@ -130,6 +129,30 @@ function HexGrid({ roomPlaced }) {
               width: SPOTLIGHT.size + 24,
               height: SPOTLIGHT.size + 24,
               border: `1px solid ${ORANGE}`,
+              clipPath: HEX_CLIP,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* landing impact ring -- fires once when room is placed */}
+      <AnimatePresence>
+        {roomPlaced && (
+          <motion.div
+            key="impact"
+            initial={{ opacity: 0.7, scale: 0.8 }}
+            animate={{ opacity: 0, scale: 1.7 }}
+            exit={{}}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            style={{
+              position: 'absolute',
+              left: `${SPOTLIGHT.cx}%`,
+              top: `${SPOTLIGHT.cy}%`,
+              transform: 'translate(-50%, -50%)',
+              width: SPOTLIGHT.size,
+              height: SPOTLIGHT.size,
+              border: `2px solid ${ORANGE}`,
               clipPath: HEX_CLIP,
               pointerEvents: 'none',
             }}
@@ -172,7 +195,6 @@ function Particles() {
 }
 
 // ---- Room card that falls into the spotlight hex ----------------------------
-// Appears above Elon when step === 'agent'. Spring-physics drop-in.
 function DroppedRoom({ placed }) {
   return (
     <AnimatePresence>
@@ -256,6 +278,8 @@ export default function OnboardingGuide({ onComplete }) {
   const [workspaceName, setWorkspaceName] = useState('')
   const [exiting, setExiting] = useState(false)
   const [roomPlaced, setRoomPlaced] = useState(false)
+  // true once the spring animation has settled (~650ms after roomPlaced)
+  const [roomLanded, setRoomLanded] = useState(false)
   const inputRef = useRef(null)
   const current = STEPS[step]
   const isAgentStep = current.id === 'agent'
@@ -271,10 +295,13 @@ export default function OnboardingGuide({ onComplete }) {
   // Drop the room in with a small delay after entering the agent step
   useEffect(() => {
     if (isAgentStep) {
-      const t = setTimeout(() => setRoomPlaced(true), 550)
-      return () => clearTimeout(t)
+      const t1 = setTimeout(() => setRoomPlaced(true), 550)
+      // Button text switches after spring settles (~spring duration ~650ms)
+      const t2 = setTimeout(() => setRoomLanded(true), 1300)
+      return () => { clearTimeout(t1); clearTimeout(t2) }
     } else {
       setRoomPlaced(false)
+      setRoomLanded(false)
     }
   }, [isAgentStep])
 
@@ -287,8 +314,13 @@ export default function OnboardingGuide({ onComplete }) {
     if (step < STEPS.length - 1) {
       setStep(s => s + 1)
     } else {
-      if (workspaceName.trim()) localStorage.setItem('corner_workspace_name', workspaceName.trim())
+      const name = workspaceName.trim()
+      if (name) localStorage.setItem('corner_workspace_name', name)
       localStorage.setItem('corner_onboarded', '1')
+      // Persist workspace name to Supabase auth metadata if authenticated
+      if (name && supabase) {
+        supabase.auth.updateUser({ data: { workspace_name: name } }).catch(() => {})
+      }
       dismiss()
     }
   }
@@ -297,6 +329,11 @@ export default function OnboardingGuide({ onComplete }) {
     localStorage.setItem('corner_onboarded', '1')
     dismiss()
   }
+
+  // Resolve button label: agent step shows contextual text based on landing state
+  const primaryLabel = isAgentStep
+    ? (roomLanded ? current.primaryAfter : current.primaryBefore)
+    : current.primary
 
   return (
     <motion.div
@@ -494,7 +531,18 @@ export default function OnboardingGuide({ onComplete }) {
               boxShadow: '0 4px 22px rgba(232,93,38,0.38)',
             }}
           >
-            {current.primary}
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={primaryLabel}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18 }}
+                style={{ display: 'block' }}
+              >
+                {primaryLabel}
+              </motion.span>
+            </AnimatePresence>
           </motion.button>
 
           {current.showSkip && (
