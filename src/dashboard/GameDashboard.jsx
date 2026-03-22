@@ -2576,6 +2576,13 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
           { divider: true },
           { id: 'archive', label: 'Archive Pill', icon: ArrowRight },
         ]
+      case 'rightnow-review':
+        return [
+          { id: 'approve-pending', label: 'Approve', icon: CheckCircle2, accent: true },
+          { id: 'deny-pending', label: 'Deny', icon: X, danger: true },
+          { divider: true },
+          { id: 'open-inbox', label: 'Open in Inbox', icon: MessageSquare },
+        ]
       case 'message':
         return [
           { id: 'create-task', label: 'Create Task from Message', icon: Plus, accent: true },
@@ -7854,6 +7861,55 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   // Long-press timer for message context menu (mobile)
   const msgLongPressRef = useRef(null)
 
+  // Shared task action handler -- used by BOTH the inline chat confirm card and the pinned confirm box.
+  // Optimistic removal + animation + API call + error recovery.
+  const callTaskAction = (taskId, taskText, action) => {
+    const key = taskId || taskText
+    setOptimisticallyRemovedIds(prev => new Set([...prev, key]))
+    setFailedTaskIds(prev => { const n = new Set(prev); n.delete(key); return n })
+    const runAnim = async () => {
+      if (action === 'approve') {
+        setApprovingTaskId(key)
+        await new Promise(r => setTimeout(r, 300))
+        setApprovingTaskId(key + '__fadeout')
+        await new Promise(r => setTimeout(r, 250))
+        setApprovingTaskId(null)
+      } else if (action === 'reject') {
+        setDenyingTaskId(key)
+        await new Promise(r => setTimeout(r, 300))
+        setDenyingTaskId(key + '__fadeout')
+        await new Promise(r => setTimeout(r, 250))
+        setDenyingTaskId(null)
+      }
+    }
+    runAnim()
+    fetch('/api/dashboard/task-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, taskId, taskText, agent: agentSlug, clientId: getClientId() }),
+    })
+      .then(res => { if (!res.ok) throw new Error('non-ok') })
+      .catch(() => {
+        setOptimisticallyRemovedIds(prev => { const n = new Set(prev); n.delete(key); return n })
+        setFailedTaskIds(prev => new Set([...prev, key]))
+      })
+  }
+  // Shared clarify handler -- pre-fills chat input, stores clarifyingTaskId for reply linking.
+  const handleClarifyTask = (taskId, taskText) => {
+    const prefix = `Re: "${taskText}" -- `
+    setClarifyingTaskId(taskId)
+    setActiveTab('chat')
+    onChatInputChange?.(prefix)
+    requestAnimationFrame(() => {
+      const input = document.querySelector('[data-panel-chat-input]')
+      if (input) {
+        input.focus()
+      } else {
+        setTimeout(() => { document.querySelector('[data-panel-chat-input]')?.focus() }, 100)
+      }
+    })
+  }
+
   // Close switcher dropdowns on outside click
   useEffect(() => {
     if (!agentSwitcherOpen && !projectSwitcherOpen) return
@@ -8743,7 +8799,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       <div style={{ display: 'flex', gap: 8 }}>
                         {/* APPROVE -- confirmed done */}
                         <button
-                          onClick={() => onDismissMessage?.(msg.id)}
+                          onClick={() => { callTaskAction(msg.taskId, msg.taskText, 'approve'); onDismissMessage?.(msg.id) }}
                           style={{
                             flex: 1, padding: '10px 12px',
                             background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
@@ -8765,7 +8821,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         </button>
                         {/* DENY -- not done, rerun with new approach */}
                         <button
-                          onClick={() => onTaskNotDone?.(msg.id, msg.taskText || '')}
+                          onClick={() => { callTaskAction(msg.taskId, msg.taskText, 'reject'); onDismissMessage?.(msg.id) }}
                           style={{
                             flex: 1, padding: '10px 12px',
                             background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
@@ -8785,18 +8841,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           </svg>
                           Deny
                         </button>
-                        {/* CLARIFY -- dismiss card, pre-fill input, focus */}
+                        {/* CLARIFY -- pre-fill input with task context, store reply link */}
                         <button
-                          onClick={() => {
-                            onDismissMessage?.(msg.id)
-                            const prefix = msg.taskText ? `Re: "${msg.taskText}" -- ` : ''
-                            onChatInputChange?.(prefix)
-                            requestAnimationFrame(() => {
-                              const input = document.querySelector('[data-panel-chat-input]')
-                              if (input) input.focus()
-                              else setTimeout(() => document.querySelector('[data-panel-chat-input]')?.focus(), 100)
-                            })
-                          }}
+                          onClick={() => { handleClarifyTask(msg.taskId, msg.taskText); onDismissMessage?.(msg.id) }}
                           style={{
                             flex: 1, padding: '10px 12px',
                             background: isDaytime
@@ -9477,68 +9524,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         const safeIndex = Math.min(confirmIndex, doneTasks.length - 1)
         const t = doneTasks[safeIndex]
         const total = doneTasks.length
-        const callTaskAction = (taskId, taskText, action) => {
-          const key = taskId || taskText
-          // 1. Optimistically remove from UI immediately
-          setOptimisticallyRemovedIds(prev => new Set([...prev, key]))
-          // Clear any prior failure badge for this key
-          setFailedTaskIds(prev => { const n = new Set(prev); n.delete(key); return n })
-          // 2. Fire animation in background (non-blocking)
-          const runAnim = async () => {
-            if (action === 'approve') {
-              setApprovingTaskId(key)
-              await new Promise(r => setTimeout(r, 300))
-              setApprovingTaskId(key + '__fadeout')
-              await new Promise(r => setTimeout(r, 250))
-              setApprovingTaskId(null)
-            } else if (action === 'reject') {
-              setDenyingTaskId(key)
-              await new Promise(r => setTimeout(r, 300))
-              setDenyingTaskId(key + '__fadeout')
-              await new Promise(r => setTimeout(r, 250))
-              setDenyingTaskId(null)
-            }
-          }
-          runAnim()
-          // 3. Fire API in background -- re-add card with error badge on failure
-          fetch('/api/dashboard/task-action', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, taskId, taskText, agent: agentSlug, clientId: getClientId() }),
-          })
-            .then(res => {
-              if (!res.ok) throw new Error('non-ok')
-              pipeData?.refetch?.()
-            })
-            .catch(() => {
-              // Error recovery: restore card with failure badge
-              setOptimisticallyRemovedIds(prev => { const n = new Set(prev); n.delete(key); return n })
-              setFailedTaskIds(prev => new Set([...prev, key]))
-            })
-        }
-        const handleClarify = (taskId, taskText) => {
-          const prefix = `Re: "${taskText}" -- `
-          // Store the task ID so the next message send includes reply_to_task
-          setClarifyingTaskId(taskId)
-          // Switch to chat tab using the prop-based setter (setActiveTab = onActiveTabChange)
-          setActiveTab('chat')
-          // Pre-fill chat input via prop handler (onChatInputChange -> handleAtInputChange -> setPanelChatInput)
-          onChatInputChange?.(prefix)
-          // Focus the input after a tick so it's rendered + scrolled into view
-          // Use both rAF and a short setTimeout for mobile reliability (touch events)
-          requestAnimationFrame(() => {
-            const input = document.querySelector('[data-panel-chat-input]')
-            if (input) {
-              input.focus()
-            } else {
-              // Fallback for mobile: input may not render until tab switch completes
-              setTimeout(() => {
-                const inp = document.querySelector('[data-panel-chat-input]')
-                if (inp) inp.focus()
-              }, 100)
-            }
-          })
-        }
         return (
           <div style={{
             flexShrink: 0,
@@ -9801,7 +9786,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 </motion.button>
                 {/* Clarify */}
                 <motion.button
-                  onClick={(e) => { e.stopPropagation(); handleClarify(t.taskId, t.text) }}
+                  onClick={(e) => { e.stopPropagation(); handleClarifyTask(t.taskId, t.text) }}
                   whileHover={{ scale: 1.04, y: -1 }}
                   whileTap={{ scale: 0.96 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 18 }}
@@ -11630,10 +11615,29 @@ export default function GameDashboard() {
       case 'expand':
         handleModeSwitch('checklist')
         break
+      // Right Now pill review actions (yellow pill: agent completed, awaiting approval)
+      case 'approve-pending':
+      case 'deny-pending': {
+        const action = actionId === 'approve-pending' ? 'approve' : 'reject'
+        const tasks = data?.pendingTasks || []
+        tasks.forEach(t => {
+          fetch('/api/dashboard/task-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, taskId: t.taskId, taskText: t.text, agent: t.agent, clientId: getClientId() }),
+          }).catch(() => {})
+        })
+        setContextMenu(null)
+        break
+      }
+      case 'open-inbox':
+        setExpandPillSection('inbox')
+        setContextMenu(null)
+        break
       default:
         break
     }
-  }, [handleModeSwitch])
+  }, [handleModeSwitch, setExpandPillSection])
 
   // Message context menu action handler
   const handleMsgContextAction = useCallback((actionId, data) => {
@@ -12048,9 +12052,12 @@ export default function GameDashboard() {
             }}
             onProjectContextMenu={(e, project) => {
               e.preventDefault()
+              const pendingTasks = project.section === 'rightnow'
+                ? (project.tasks || []).filter(t => t.isDoneAwaitingApproval)
+                : []
               setContextMenu({
-                type: 'project',
-                data: { ...project, label: project.name },
+                type: pendingTasks.length > 0 ? 'rightnow-review' : 'project',
+                data: { ...project, label: project.name, pendingTasks },
                 position: { x: e.clientX, y: e.clientY },
               })
             }}

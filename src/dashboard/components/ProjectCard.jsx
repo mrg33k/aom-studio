@@ -25,8 +25,12 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
   const isFinishThese = project.section === 'finish-these' || project.section === 'checking-in'
   const isCompletedFeed = project.section === 'completed-feed'
   const hasLiveTasks = isRightNow && project.tasks.some(t => t.isLive)
+  const hasPendingApproval = isRightNow && project.tasks.some(t => t.isDoneAwaitingApproval)
   const isClient = project.isClient
   const allDone = remaining === 0 && totalTasks > 0
+
+  // Yellow override for Right Now pill when agent completed but awaiting review
+  const pillColor = hasPendingApproval ? '#EAB308' : project.color
 
   // Client status tag colors
   const STATUS_TAG_COLORS = {
@@ -73,22 +77,26 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         height: 30, padding: '0 10px', minWidth: isRightNow ? 72 : 56,
         background: isDaytime
           ? (isExpanded
-              ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
+              ? `linear-gradient(135deg, ${pillColor}18, ${pillColor}08)`
               : isClient
-                ? `linear-gradient(135deg, ${project.color}0C, ${project.color}06)`
+                ? `linear-gradient(135deg, ${pillColor}0C, ${pillColor}06)`
                 : isSchedule
                   ? 'linear-gradient(135deg, rgba(255,107,61,0.08), rgba(255,107,61,0.03))'
-                  : 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02))')
+                  : hasPendingApproval
+                    ? 'linear-gradient(135deg, rgba(234,179,8,0.10), rgba(234,179,8,0.04))'
+                    : 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02))')
           : (isExpanded
-              ? `linear-gradient(135deg, ${project.color}22, ${project.color}0C)`
+              ? `linear-gradient(135deg, ${pillColor}22, ${pillColor}0C)`
               : isClient
-                ? `linear-gradient(135deg, ${project.color}14, ${project.color}06)`
+                ? `linear-gradient(135deg, ${pillColor}14, ${pillColor}06)`
                 : isSchedule
                   ? 'linear-gradient(135deg, rgba(255, 107, 61, 0.14), rgba(255, 107, 61, 0.06))'
-                  : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))'),
+                  : hasPendingApproval
+                    ? 'linear-gradient(135deg, rgba(234,179,8,0.15), rgba(234,179,8,0.06))'
+                    : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))'),
         border: isDaytime
-          ? `2px solid ${isExpanded ? `${project.color}40` : isClient ? `${project.color}25` : isSchedule ? 'rgba(255,107,61,0.2)' : 'rgba(59,130,246,0.15)'}`
-          : `2px solid ${isExpanded ? `${project.color}55` : isClient ? `${project.color}30` : isSchedule ? 'rgba(255, 107, 61, 0.28)' : 'rgba(100,180,255,0.14)'}`,
+          ? `2px solid ${isExpanded ? `${pillColor}40` : isClient ? `${pillColor}25` : isSchedule ? 'rgba(255,107,61,0.2)' : hasPendingApproval ? 'rgba(234,179,8,0.45)' : 'rgba(59,130,246,0.15)'}`
+          : `2px solid ${isExpanded ? `${pillColor}55` : isClient ? `${pillColor}30` : isSchedule ? 'rgba(255, 107, 61, 0.28)' : hasPendingApproval ? 'rgba(234,179,8,0.50)' : 'rgba(100,180,255,0.14)'}`,
         borderRadius: 16,
         cursor: 'pointer',
         flexShrink: 0,
@@ -102,17 +110,21 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         // VEGAS + CROSSY ROAD: Physical drop shadow. Chunky grabbable pills.
         boxShadow: isDaytime
           ? (isExpanded
-              ? `0 4px 16px ${project.color}20, 0 1px 4px rgba(0,0,0,0.08)`
+              ? `0 4px 16px ${pillColor}20, 0 1px 4px rgba(0,0,0,0.08)`
               : isClient && project.statusTag === 'RED'
                 ? '0 2px 12px rgba(239,68,68,0.2), 0 1px 3px rgba(0,0,0,0.2)'
-                : '0 2px 8px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.15)')
+                : hasPendingApproval
+                  ? '0 2px 12px rgba(234,179,8,0.25), 0 1px 3px rgba(0,0,0,0.15)'
+                  : '0 2px 8px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.15)')
           : (isExpanded
-              ? `0 6px 24px ${project.color}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
+              ? `0 6px 24px ${pillColor}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
               : isClient && project.statusTag === 'RED'
                 ? `0 4px 20px rgba(239,68,68,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)`
                 : isSchedule
                   ? '0 4px 20px rgba(255,107,61,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
-                  : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
+                  : hasPendingApproval
+                    ? '0 4px 20px rgba(234,179,8,0.30), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
+                    : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
       }}
     >
       {/* Bottom progress fill - THICKER. Hidden for completed feed (100% is always true, redundant). */}
@@ -120,10 +132,10 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         <div style={{
           position: 'absolute', bottom: 0, left: 0,
           width: `${progress}%`, height: 3,
-          background: `linear-gradient(90deg, ${project.color}70, ${project.color})`,
+          background: `linear-gradient(90deg, ${pillColor}70, ${pillColor})`,
           transition: 'width 500ms cubic-bezier(0.34, 1.56, 0.64, 1)',
           borderRadius: '0 0 16px 16px',
-          boxShadow: `0 0 8px ${project.color}44`,
+          boxShadow: `0 0 8px ${pillColor}44`,
         }} />
       )}
 
@@ -132,15 +144,15 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         <div style={{
           position: 'absolute', left: 0, top: 6, bottom: 6,
           width: 3, borderRadius: 2,
-          background: isTodoList ? '#EF4444' : isRightNow ? project.color : isSchedule ? project.color : '#EF4444',
-          boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isSchedule) ? project.color : 'rgba(239,68,68,0.6)'}88`,
-          animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
+          background: isTodoList ? '#EF4444' : isRightNow ? pillColor : isSchedule ? project.color : '#EF4444',
+          boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isSchedule) ? pillColor : 'rgba(239,68,68,0.6)'}88`,
+          animation: (isRightNow && (hasLiveTasks || hasPendingApproval)) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
         }} />
       )}
 
       {/* Project indicator - BIGGER on desktop, compact on mobile/tablet. */}
       {isRightNow ? (
-        <Zap size={12} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+        <Zap size={12} color={pillColor} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${pillColor}AA)`, animation: (hasLiveTasks || hasPendingApproval) ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
       ) : isCompletedFeed ? (
         <CheckCircle2 size={12} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isTodoList ? (
@@ -187,7 +199,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       </span>
 
       {/* LIVE badge for Right Now pill */}
-      {isRightNow && hasLiveTasks && (
+      {isRightNow && hasLiveTasks && !hasPendingApproval && (
         <span style={{
           display: 'flex', alignItems: 'center', gap: 4,
           fontFamily: 'JetBrains Mono, monospace',
@@ -208,6 +220,31 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
             animation: 'statusPulse 1.5s ease-in-out infinite',
           }} />
           LIVE
+        </span>
+      )}
+
+      {/* REVIEW badge -- yellow, shown when agent completed task awaiting approval */}
+      {isRightNow && hasPendingApproval && (
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 11, fontWeight: 800,
+          color: '#EAB308',
+          background: 'rgba(234,179,8,0.12)',
+          padding: '2px 6px', borderRadius: 5,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          border: '1.5px solid rgba(234,179,8,0.35)',
+          whiteSpace: 'nowrap',
+          animation: 'statusPulse 2s ease-in-out infinite',
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#EAB308',
+            boxShadow: '0 0 6px rgba(234,179,8,0.7)',
+            animation: 'statusPulse 1.5s ease-in-out infinite',
+          }} />
+          REVIEW
         </span>
       )}
 
