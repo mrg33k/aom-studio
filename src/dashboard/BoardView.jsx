@@ -115,7 +115,7 @@ function removeColGhost() {
 
 // ── BOARD CARD ──────────────────────────────────────────────────────────────
 
-function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop, onDragOverCard, isNightMode = true, isExpanded, onExpand }) {
+function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop, onDragOverCard, isNightMode = true, isExpanded, onExpand, onTaskTap }) {
   const agentSlug = entry.agent?.toLowerCase()
   const agentColor = getAgentColor(agentSlug)
   const taskText = entry.text || entry.description || entry.currentTask || 'No task'
@@ -240,15 +240,32 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
       onDragOverCard?.(null)
       onDragEnd?.()
     } else if (!state.moved && state.pointerId !== null) {
-      // Clean tap (no drag) -- expand the card
-      onExpand?.()
+      // Clean tap (no drag) -- open task detail sheet on mobile, inline expand on desktop
+      if (onTaskTap) {
+        onTaskTap(
+          {
+            text: entry.text || entry.description || entry.currentTask || 'No task',
+            agent: entry.agent || null,
+            done: entry.done === true || entry.status === 'completed',
+            isLive: entry.isLive || entry.status === 'active',
+            note: entry.note || entry.context || '',
+            id: entry.taskId || entry.id || null,
+          },
+          {
+            name: ALL_COLS[columnKey]?.label || columnKey,
+            color: ALL_COLS[columnKey]?.color || '#6B7280',
+          }
+        )
+      } else {
+        onExpand?.()
+      }
     }
 
     state.active = false
     state.moved = false
     state.pointerId = null
     state.inColInsertIdx = null
-  }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd, onDragOverCard, onExpand])
+  }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd, onDragOverCard, onExpand, onTaskTap])
 
   const handlePointerCancel = useCallback(() => {
     const state = pointerDragRef.current
@@ -453,6 +470,7 @@ function BoardColumn({
   isNightMode = true,
   expandedCardId,
   onExpandCard,
+  onTaskTap,
 }) {
   const config = ALL_COLS[colKey] || { label: colKey, color: '#6B7280', type: 'other' }
   const dragInsertRef = useRef(null)
@@ -760,6 +778,7 @@ function BoardColumn({
                   isNightMode={isNightMode}
                   isExpanded={expandedCardId === card._id}
                   onExpand={() => onExpandCard?.(card._id)}
+                  onTaskTap={onTaskTap}
                   onTouchDrop={(toCol, payload) => {
                     if (toCol === colKey && payload.insertIdx !== undefined) {
                       // Same-column pointer drag reorder
@@ -842,7 +861,7 @@ function FilterPill({ label, active, color, onClick, isNightMode = true }) {
 
 // ── MAIN BOARD VIEW ─────────────────────────────────────────────────────────
 
-export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
+export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, onTaskTap }) {
   const rightNow = pipeData?.rightNow || []
   const completedFeed = pipeData?.completedFeed || []
   const punchData = pipeData?.punchData
@@ -1245,7 +1264,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
       top: 0,
       background: bgColor,
       paddingTop: topPadding,
-      paddingBottom: isMobile ? 80 : 12,
+      paddingBottom: hudHeight + 12,
       display: 'flex',
       flexDirection: 'column',
       zIndex: 15,
@@ -1430,6 +1449,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true }) {
               isNightMode={isNightMode}
               expandedCardId={expandedCardId}
               onExpandCard={(id) => setExpandedCardId(prev => prev === id ? null : id)}
+              onTaskTap={onTaskTap}
             />
           ))}
 
