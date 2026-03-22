@@ -10242,7 +10242,11 @@ export default function GameDashboard() {
   const [panelVisible, setPanelVisible] = useState(true) // Panel shown by default
   const [panelExtended, setPanelExtended] = useState(false) // Extended sidebar width
   // Mobile drawer state: null = hidden, 'half' = 50% screen, 'full' = 100% screen
-  const [drawerSnap, setDrawerSnap] = useState(null)
+  // First-load: on mobile, auto-open to 'half' so Elon chat is immediately visible without needing a tap.
+  const [drawerSnap, setDrawerSnap] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'half'
+    return null
+  })
   const drawerOpen = drawerSnap === 'half' || drawerSnap === 'full'
   // Mobile drawer active tab: lifted from MobileDrawer so MobileFixedInput can react to it
   const [mobileDrawerActiveTab, setMobileDrawerActiveTab] = useState('chat')
