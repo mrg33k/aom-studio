@@ -41,13 +41,15 @@ export default async function handler(req, res) {
   const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
 
   try {
-    const [agents, messages, activeTasks, recentDone] = await Promise.all([
+    const [agents, messages, activeTasks, recentDone, projectDefs] = await Promise.all([
       supabaseGet('agent_status', `order=slug${clientFilter}`),
       supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
       // Non-completed, non-blocked tasks (queued, active, todo, working, done, rejected, failed)
       supabaseGet('tasks', `status=not.in.(completed,blocked)&order=created_at.desc${clientFilter}`),
       // Recent completed tasks (for completed feed)
       supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
+      // Projects table: active projects ordered by recency weight (not client-scoped, global per AOM config)
+      supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc`),
     ]);
     const tasks = [...activeTasks, ...recentDone];
 
@@ -82,6 +84,7 @@ export default async function handler(req, res) {
     res.status(200).json({
       agents: agentStatuses,
       projects: projectList,
+      projectDefs,
       messages: messages.reverse(), // oldest first
       tasks,
       blockers,
