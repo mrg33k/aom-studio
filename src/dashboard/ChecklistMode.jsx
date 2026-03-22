@@ -1996,7 +1996,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         <form onSubmit={handleAddTask} style={{
           padding: '12px 16px',
           borderTop: '1px solid rgba(59,130,246,0.10)',
-          background: 'rgba(10, 15, 30, 0.8)',
+          background: 'rgba(15,25,50,0.80)',
           backdropFilter: 'blur(8px)',
           flexShrink: 0,
         }}>

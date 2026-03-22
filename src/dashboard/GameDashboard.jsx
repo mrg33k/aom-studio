@@ -31,6 +31,7 @@ import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import FloatingActionButton from './components/FloatingActionButton.jsx'
 import BoardView from './BoardView.jsx'
+import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
 import briefsIndex from '../data/briefs-index.json'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
@@ -317,7 +318,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, i
                 }),
                 maxHeight: isMobile ? '60vh' : 480,
                 overflowY: 'auto',
-                background: 'rgba(15, 23, 42, 0.97)',
+                background: 'rgba(15,25,50,0.97)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
                 border: '2px solid rgba(59, 130, 246, 0.2)',
@@ -521,7 +522,7 @@ function PowerupTile({ powerup, index, onActivate, isMobile, isSelected }) {
               bottom: 'calc(100% + 6px)',
               left: '50%',
               transform: 'translateX(-50%)',
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'rgba(15,25,50,0.95)',
               border: '1px solid rgba(59, 130, 246, 0.2)',
               borderRadius: 8,
               padding: '6px 10px',
@@ -1141,7 +1142,7 @@ function PasswordGate({ onAuth }) {
             onBlur={() => setFocused(false)}
             style={{
               width: '100%',
-              background: 'rgba(15,27,45,0.8)',
+              background: 'rgba(15,25,50,0.80)',
               border: `2px solid ${focused ? 'rgba(59,130,246,0.5)' : 'rgba(59,130,246,0.15)'}`,
               color: '#F1F5F9', padding: '14px 18px',
               fontSize: 16, fontFamily: "'JetBrains Mono', monospace",
@@ -1626,7 +1627,7 @@ function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, on
       {isAway && (
         <div style={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          background: 'rgba(10, 15, 30, 0.9)', border: '1px solid rgba(245, 158, 11, 0.3)',
+          background: 'rgba(15,25,50,0.90)', border: '1px solid rgba(245, 158, 11, 0.3)',
           borderRadius: 12, padding: '4px 12px',
           color: '#F59E0B', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
           fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -2358,7 +2359,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 {isAway && (
                   <div style={{
                     position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                    background: 'rgba(10, 15, 30, 0.9)', border: '1px solid rgba(245, 158, 11, 0.3)',
+                    background: 'rgba(15,25,50,0.90)', border: '1px solid rgba(245, 158, 11, 0.3)',
                     borderRadius: 12, padding: '4px 12px',
                     color: '#F59E0B', fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
                     fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -2611,7 +2612,7 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
         top: adjusted.y,
         zIndex: 200,
         minWidth: 200,
-        background: 'rgba(12, 18, 35, 0.96)',
+        background: 'rgba(15,25,50,0.96)',
         backdropFilter: 'blur(20px)',
         border: '2px solid rgba(100, 180, 255, 0.18)',
         borderRadius: 10,
@@ -2757,7 +2758,7 @@ function SendToMenu({ position, onClose, onSelect, currentAgent }) {
         top: adjusted.y,
         zIndex: 210,
         width: 240,
-        background: 'rgba(10, 16, 30, 0.97)',
+        background: 'rgba(15,25,50,0.97)',
         backdropFilter: 'blur(20px)',
         border: '2px solid rgba(100, 180, 255, 0.18)',
         borderRadius: 10,
@@ -2840,7 +2841,7 @@ function MiniMap({ rooms, agentStatus, selectedRoom, cameraTarget, cameraZoom, i
       style={{
         position: 'fixed', bottom: 80, left: 16, zIndex: 35,
         width: 160, height: 120,
-        background: 'rgba(10, 15, 30, 0.9)',
+        background: 'rgba(15,25,50,0.90)',
         border: '1px solid rgba(59,130,246,0.12)',
         borderRadius: 6,
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
@@ -2930,7 +2931,7 @@ function NotificationToast({ notifications, onDismiss, onClickNotification, queu
               onMouseLeave={() => setHoveredId(null)}
               style={{
                 width: 320, cursor: n.type !== 'system' ? 'pointer' : 'default',
-                background: 'rgba(10, 15, 30, 0.95)',
+                background: 'rgba(15,25,50,0.95)',
                 backdropFilter: 'blur(12px)',
                 border: `1px solid ${accentColor}33`,
                 borderLeft: `3px solid ${accentColor}`,
@@ -3014,7 +3015,7 @@ function MobileModeBar({ currentMode, onModeSwitch }) {
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 29,
       minHeight: 48,
-      background: 'rgba(10, 15, 30, 0.98)',
+      background: 'rgba(15,25,50,0.98)',
       backdropFilter: 'blur(16px)',
       borderTop: '1px solid rgba(59,130,246,0.10)',
       display: 'flex', alignItems: 'center',
@@ -3129,7 +3130,7 @@ function MobileFixedInput({
         // while still allowing tap-to-focus on the input inside. 'manipulation' = allow
         // single tap + long press, disable double-tap zoom and pan gestures on the wrapper.
         touchAction: 'manipulation',
-        background: 'rgba(10, 15, 30, 0.98)',
+        background: 'rgba(15,25,50,0.98)',
         borderTop: isNightMode
           ? '2px solid rgba(59,130,246,0.12)'
           : '2px solid rgba(59,130,246,0.18)',
@@ -3705,7 +3706,7 @@ function MobileDrawer({
         paddingBottom: keyboardOpen ? 0 : (isFullSnap ? 0 : 'env(safe-area-inset-bottom, 0px)'),
         height: sheetHeight,
         zIndex: isFullSnap || keyboardOpen ? 200 : 38,
-        background: 'rgba(10, 15, 30, 0.98)',
+        background: 'rgba(15,25,50,0.98)',
         borderRadius: (isFullSnap || keyboardOpen) ? 0 : '16px 16px 0 0',
         boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.6)',
         display: 'flex',
@@ -3758,13 +3759,6 @@ function MobileDrawer({
           animation: !handlePulsed ? 'handlePulse 1.5s ease-in-out infinite' : 'none',
         }} />
       </div>
-
-      {/* Mini Right Now bar -- only shown when drawer is at full-height snap.
-          Static list of tasks. Draggable to reorder (same as homepage pills).
-          No auto-scroll. Swipe down on the handle above collapses back to half. */}
-      {isFullSnap && rightNowTasks && rightNowTasks.length > 0 && (
-        <MiniNowBar tasks={rightNowTasks} onNavigateToAgent={onNavigateToAgent} />
-      )}
 
       {/* Agent info header (compact) */}
       <div style={{
@@ -5474,7 +5468,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
               y: { duration: 0.25, ease: [0.32, 0.72, 0, 1] },
             }}
             style={{
-              background: fullscreen ? PALETTE.background : 'rgba(10, 15, 30, 0.96)',
+              background: fullscreen ? PALETTE.background : 'rgba(15,25,50,0.96)',
               backdropFilter: fullscreen ? 'none' : 'blur(24px)',
               borderTop: `1px solid ${agentColor}22`,
               boxShadow: `0 -4px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 ${agentColor}15`,
@@ -5681,7 +5675,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
           <form onSubmit={sendMessage} style={{
             display: 'flex', alignItems: 'center', gap: 8,
             height: 56, padding: '0 16px',
-            background: 'rgba(10, 15, 30, 0.92)',
+            background: 'rgba(15,25,50,0.92)',
             backdropFilter: 'blur(16px)',
             borderTop: `1px solid ${agentColor}18`,
             borderBottom: `1px solid rgba(59,130,246,0.08)`,
@@ -9235,7 +9229,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                               position: 'absolute',
                               ...(isUser ? { left: -32 } : { right: -32 }),
                               top: '50%', transform: 'translateY(-50%)',
-                              background: 'rgba(15,27,45,0.9)',
+                              background: 'rgba(15,25,50,0.90)',
                               border: '1px solid rgba(100,180,255,0.2)',
                               borderRadius: 6, width: 26, height: 26,
                               cursor: 'pointer', color: '#8BA4C4',
@@ -10269,7 +10263,7 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
       position: 'absolute', top: isMobile ? 60 : 16, right: panelVisible ? 396 : 16, zIndex: 32,
       transition: 'right 300ms ease, opacity 200ms ease',
       display: 'flex', flexDirection: 'column', gap: 4,
-      background: 'rgba(10,15,30,0.85)',
+      background: 'rgba(15,25,50,0.85)',
       border: '1px solid rgba(59,130,246,0.12)',
       borderRadius: 8,
       padding: 4,
@@ -10570,6 +10564,8 @@ export default function GameDashboard() {
   const drawerOpen = drawerSnap === 'half' || drawerSnap === 'full'
   // GameHUD bar height (px) -- reported by GameHUD via onHeightChange, used by CanvasOffice to offset camera
   const [hudBarHeight, setHudBarHeight] = useState(60) // 60px = safe estimate before first measurement
+  const [hudKbOpen, setHudKbOpen] = useState(false) // keyboard visible on mobile -- tuck HUD behind keyboard
+  const [taskDetailSheet, setTaskDetailSheet] = useState(null) // { task, project } -- Trello tap detail sheet
   // Mobile drawer active tab: lifted from MobileDrawer so MobileFixedInput can react to it
   const [mobileDrawerActiveTab, setMobileDrawerActiveTab] = useState('chat')
   const [panelActiveTab, setPanelActiveTab] = useState(() => sessionStorage.getItem('corner-panel-tab') || 'chat') // Sidebar active tab, HMR-safe
@@ -10605,6 +10601,17 @@ export default function GameDashboard() {
       .then(data => { if (data) setCornerConfig(data) })
       .catch(() => {})
   }, [])
+
+  // Track keyboard open for HUD tuck -- when keyboard appears on mobile, slide HUD off screen
+  useEffect(() => {
+    if (!isMobile || !window.visualViewport) return
+    const handler = () => {
+      const reduction = window.innerHeight - window.visualViewport.height
+      setHudKbOpen(reduction > 100)
+    }
+    window.visualViewport.addEventListener('resize', handler)
+    return () => window.visualViewport.removeEventListener('resize', handler)
+  }, [isMobile])
 
   // Build @ autocomplete options from cornerConfig
   const atOptions = useMemo(() => {
@@ -12001,7 +12008,13 @@ export default function GameDashboard() {
 
       {/* Board view: Trello/kanban mode -- shown when viewMode === 'board', hides game canvas */}
       {viewMode === 'board' && (
-        <BoardView pipeData={pipeData} isMobile={isMobile} isNightMode={isNightMode} />
+        <BoardView
+          pipeData={pipeData}
+          isMobile={isMobile}
+          isNightMode={isNightMode}
+          hudHeight={hudBarHeight}
+          onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
+        />
       )}
 
       {/* Main content area -- game + sidebar side by side (flex row) */}
@@ -12135,12 +12148,11 @@ export default function GameDashboard() {
       {/* Wrapped in a container that constrains fixed positioning to the game viewport only.
           transform creates a new containing block, so GameHUD's position:fixed becomes relative to this container.
           On desktop with sidebar visible: HUD only covers game area, not sidebar.
-          Always visible -- bottom HUD and full-screen drawer coexist (HUD is game layer, drawer is chat layer).
-          HIDDEN in board view mode. */}
-      {viewMode !== 'board' && (
+          Persistent across ALL views (game, checklist, trello, board).
+          On mobile: tucks behind keyboard when keyboard opens. */}
         <div style={{
           position: 'fixed',
-          bottom: 0,
+          bottom: (isMobile && hudKbOpen) ? -(hudBarHeight + 20) : 0,
           left: 0,
           right: (!isMobile && selectedRoom && ROOM_LOOKUP[selectedRoom]) ? (panelExtended ? '65%' : '30%') : 0,
           zIndex: 40,
@@ -12182,7 +12194,7 @@ export default function GameDashboard() {
             }}
             isMobile={isMobile}
             isTablet={isTablet}
-            onHeightChange={isMobile ? setHudBarHeight : undefined}
+            onHeightChange={setHudBarHeight}
             chatAgent={chatAgent}
             onChatSubmit={(slug, text) => {
               // Route chat to sidebar: select the agent and switch to chat tab
@@ -12228,7 +12240,6 @@ export default function GameDashboard() {
         </Suspense>
         </div>
         </div>
-      )}
 
       {/* Mobile mode tab bar: KILLED per Patrik Round 2 directive. Mode switching via top bar only. */}
       {/* {isMobile && <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />} */}
@@ -12260,6 +12271,60 @@ export default function GameDashboard() {
           </Suspense>
         </div>
       )}
+
+      {/* Task detail sheet -- slides up when a Trello card is tapped on mobile */}
+      <AnimatePresence>
+        {taskDetailSheet && (
+          <>
+            <motion.div
+              key="task-detail-scrim"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.55 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setTaskDetailSheet(null)}
+              style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 48, touchAction: 'none' }}
+            />
+            <motion.div
+              key="task-detail-sheet"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              style={{
+                position: 'fixed',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 49,
+                background: isNightMode ? 'rgba(8,14,28,0.98)' : 'rgba(15,25,50,0.98)',
+                borderRadius: '16px 16px 0 0',
+                paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+                maxHeight: '72vh',
+                overflowY: 'auto',
+                borderTop: '1px solid rgba(59,130,246,0.18)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(100,180,255,0.4)' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 16px 4px' }}>
+                <button
+                  onClick={() => setTaskDetailSheet(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, display: 'flex', alignItems: 'center' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <TaskDetailAccordion
+                task={taskDetailSheet.task}
+                project={taskDetailSheet.project}
+                isNightMode={isNightMode}
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Drawer backdrop scrim (dims map when drawer is open) */}
       {isMobile && drawerOpen && (
