@@ -35,9 +35,9 @@ const ROOM_SIZE = 512        // Base room size (px, scales with zoom)
 // We crop to an 864x864 square centered on the hex content, then draw it
 // into the full ROOM_SIZE destination so rooms fill tighter with less gap.
 const SRC_CROP_X = 80
-const SRC_CROP_Y = 160
+const SRC_CROP_Y = 0
 const SRC_CROP_W = 864
-const SRC_CROP_H = 680
+const SRC_CROP_H = 864
 
 // Wave timing
 const CYCLE_TIME = 10        // Full working+idle cycle in seconds
