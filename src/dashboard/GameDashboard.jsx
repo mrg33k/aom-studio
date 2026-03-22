@@ -8923,129 +8923,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     : null
                 const msgProjectColor = msgProjectMatch ? msgProjectMatch.color : null
 
-                // ---- TASK CONFIRM CARD (Vegas vibes) ----
-                // Agent marked a task done -> special card with CHECK / MINUS buttons
-                if (msg.isTaskConfirm) {
-                  return (
-                    <div key={msg.id || i} style={{
-                      margin: '8px 0',
-                      background: isDaytime
-                        ? 'linear-gradient(135deg, rgba(59,130,246,0.10) 0%, rgba(99,102,241,0.06) 100%)'
-                        : 'linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(99,102,241,0.10) 100%)',
-                      border: isDaytime ? '1.5px solid rgba(59,130,246,0.35)' : '1.5px solid rgba(99,102,241,0.40)',
-                      borderLeft: '3px solid #3B82F6',
-                      borderRadius: 12,
-                      padding: '12px 16px',
-                      boxShadow: isDaytime
-                        ? '0 2px 12px rgba(59,130,246,0.15), 0 1px 3px rgba(0,0,0,0.15)'
-                        : '0 2px 16px rgba(59,130,246,0.22), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04)',
-                    }}>
-                      {/* Header row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                        <div style={{
-                          width: 8, height: 8, borderRadius: '50%',
-                          background: '#3B82F6',
-                          boxShadow: '0 0 8px #3B82F6, 0 0 16px rgba(59,130,246,0.5)',
-                          flexShrink: 0,
-                          animation: 'vegasTypingBounce 2s ease-in-out infinite',
-                        }} />
-                        <span style={{
-                          fontSize: 11, fontWeight: 700, color: isDaytime ? '#3B82F6' : '#60A5FA',
-                          fontFamily: "'JetBrains Mono', monospace",
-                          letterSpacing: '0.08em', textTransform: 'uppercase',
-                        }}>Task Complete</span>
-                        {msg.time && (
-                          <span style={{ marginLeft: 'auto', fontSize: 10, color: isDaytime ? '#6B8AB0' : '#8BA4C4', fontFamily: "'JetBrains Mono', monospace" }}>
-                            {formatChatTime(msg.time)}
-                          </span>
-                        )}
-                      </div>
-                      {/* Task text */}
-                      <div style={{
-                        fontSize: 14, fontWeight: 600, color: isDaytime ? '#1E293B' : '#E2E8F0',
-                        fontFamily: "'Inter', system-ui, sans-serif",
-                        lineHeight: 1.4, marginBottom: 12,
-                        padding: '8px 12px',
-                        background: isDaytime ? 'rgba(255,255,255,0.6)' : 'rgba(15,27,45,0.6)',
-                        borderRadius: 8,
-                        border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(99,102,241,0.20)',
-                      }}>
-                        {msg.taskText || msg.content?.replace('Task marked done: ', '').replace('\n\nConfirmed done or needs more work?', '') || msg.content}
-                      </div>
-                      {/* Buttons: Approve / Deny / Clarify */}
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        {/* APPROVE -- confirmed done */}
-                        <button
-                          onClick={() => { callTaskAction(msg.taskId, msg.taskText, 'approve'); onDismissMessage?.(msg.id) }}
-                          style={{
-                            flex: 1, padding: '10px 12px',
-                            background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
-                            border: '1.5px solid rgba(34,197,94,0.5)',
-                            borderRadius: 10, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            color: '#FFFFFF', fontSize: 13, fontWeight: 800,
-                            fontFamily: "'Inter', system-ui, sans-serif",
-                            boxShadow: '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
-                            transition: 'transform 80ms ease, box-shadow 80ms ease',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(22,163,74,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}
-                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          Approve
-                        </button>
-                        {/* DENY -- not done, rerun with new approach */}
-                        <button
-                          onClick={() => { callTaskAction(msg.taskId, msg.taskText, 'reject'); onDismissMessage?.(msg.id) }}
-                          style={{
-                            flex: 1, padding: '10px 12px',
-                            background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
-                            border: '1.5px solid rgba(239,68,68,0.5)',
-                            borderRadius: 10, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            color: '#FFFFFF', fontSize: 13, fontWeight: 800,
-                            fontFamily: "'Inter', system-ui, sans-serif",
-                            boxShadow: '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
-                            transition: 'transform 80ms ease, box-shadow 80ms ease',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}
-                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                          Deny
-                        </button>
-                        {/* CLARIFY -- pre-fill input with task context, store reply link */}
-                        <button
-                          onClick={() => { handleClarifyTask(msg.taskId, msg.taskText); onDismissMessage?.(msg.id) }}
-                          style={{
-                            flex: 1, padding: '10px 12px',
-                            background: isDaytime
-                              ? 'linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(99,102,241,0.08) 100%)'
-                              : 'linear-gradient(135deg, rgba(59,130,246,0.20) 0%, rgba(99,102,241,0.14) 100%)',
-                            border: '1.5px solid rgba(59,130,246,0.45)',
-                            borderRadius: 10, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            color: isDaytime ? '#2563EB' : '#60A5FA', fontSize: 13, fontWeight: 800,
-                            fontFamily: "'Inter', system-ui, sans-serif",
-                            boxShadow: '0 2px 8px rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
-                            transition: 'transform 80ms ease, box-shadow 80ms ease',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(59,130,246,0.35), inset 0 1px 0 rgba(255,255,255,0.06)' }}
-                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.06)' }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                          </svg>
-                          Clarify
-                        </button>
-                      </div>
-                    </div>
-                  )
-                }
+                // ---- TASK CONFIRM CARD: inline version removed ----
+                // Task completion cards are handled exclusively by the pinned TASK COMPLETE
+                // confirmation box below chat (lines ~9691+). That box has minimize toggle,
+                // arrow nav (1/N), and Approve/Deny/Clarify buttons. Do not render inline duplicates.
+                if (msg.isTaskConfirm) return null
 
                 // System notification inline (commit messages, etc.)
                 if (isNotif && !msg.streaming) {
@@ -10527,34 +10409,8 @@ export default function GameDashboard() {
   const pipeData = useDataPipe(parsePunchListSidebar)
   const rightNowTasks = pipeData?.rightNow || []
 
-  // Auto-inject inline confirm cards into chat when a Supabase task becomes isDoneAwaitingApproval.
-  // Tracks which taskIds have been injected so we don't duplicate on re-render.
-  const injectedConfirmTaskIdsRef = useRef(new Set())
-  useEffect(() => {
-    const doneTasks = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.taskId)
-    doneTasks.forEach(t => {
-      const key = String(t.taskId)
-      if (injectedConfirmTaskIdsRef.current.has(key)) return
-      injectedConfirmTaskIdsRef.current.add(key)
-      const confirmMsg = {
-        role: 'assistant',
-        content: `Task complete: "${t.text}"`,
-        time: new Date().toISOString(),
-        source: 'corner-task-confirm',
-        id: `confirm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        isTaskConfirm: true,
-        taskText: t.text,
-        taskId: t.taskId,
-      }
-      setAgentChats(prev => {
-        const agent = t.agent || 'elon'
-        const current = prev[agent] || { _all: [] }
-        // Guard: don't inject if a card for this task already exists in chat
-        if ((current._all || []).some(m => m.taskId === t.taskId)) return prev
-        return { ...prev, [agent]: { _all: [...(current._all || []), confirmMsg] } }
-      })
-    })
-  }, [rightNowTasks]) // eslint-disable-line react-hooks/exhaustive-deps
+  // NOTE: inline confirm card injection removed. Task completion is handled exclusively
+  // by the pinned TASK COMPLETE box below chat. No inline duplicate cards needed.
 
   const addToRightNow = useCallback((task) => {
     if (!task) return
