@@ -916,9 +916,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // On render, freePositions[roomId] takes priority over slotWorldPos(slotIdx).
   // Session-only: resets to {} on refresh (no persistence until offline features are built).
   const freePositionsRef = useRef(loadFreePositions())
-  // New room creation modal
-  const [showNewRoomModal, setShowNewRoomModal] = useState(false)
-
   // Keep the module-level slot count in sync with visible rooms
   useEffect(() => {
     _currentTotalSlots = slotOrder.length
@@ -2481,25 +2478,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     setContextMenu(null)
   }, [hiddenRooms, showToast])
 
-  // ---- CREATE NEW ROOM ----
-  const handleCreateRoom = useCallback((name, color) => {
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    if (!slug) { showToast('Invalid room name'); return }
-    if (slotOrder.includes(slug)) { showToast('Room already exists'); return }
-
-    // Register in ROOM_META
-    ROOM_META[slug] = { name: name.toUpperCase(), color, type: 'custom' }
-
-    // Ensure image entry
-    ensureRoomImages(slug)
-
-    // Add to slot order at end
-    setSlotOrder(prev => [...prev, slug])
-
-    showToast(`${name} room created`)
-    setShowNewRoomModal(false)
-  }, [slotOrder, showToast])
-
   // ---- TOUCH EVENTS ----
   const onTouchStart = useCallback((e) => {
     setContextMenu(null)
@@ -2977,45 +2955,6 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         </div>
       )}
 
-      {/* ---- + NEW ROOM BUTTON ---- */}
-      <div
-        onClick={() => setShowNewRoomModal(true)}
-        style={{
-          position: 'absolute',
-          bottom: 20,
-          right: 20,
-          zIndex: 50,
-          width: 44,
-          height: 44,
-          borderRadius: 10,
-          background: 'rgba(12, 16, 30, 0.85)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(96, 165, 250, 0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          fontSize: 22,
-          color: 'rgba(96, 165, 250, 0.8)',
-          fontWeight: 300,
-          transition: 'all 0.15s ease',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(96, 165, 250, 0.2)'; e.currentTarget.style.color = '#fff' }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(12, 16, 30, 0.85)'; e.currentTarget.style.color = 'rgba(96, 165, 250, 0.8)' }}
-        title="Create new room"
-      >
-        +
-      </div>
-
-      {/* ---- NEW ROOM MODAL ---- */}
-      {showNewRoomModal && (
-        <NewRoomModal
-          onClose={() => setShowNewRoomModal(false)}
-          onCreate={handleCreateRoom}
-        />
-      )}
-
       {/* ---- LOADING OVERLAY ---- */}
       {!loaded && (
         <div style={{
@@ -3077,135 +3016,6 @@ function ContextMenuItem({ label, icon, onClick, accent = false }) {
         {icon}
       </span>
       {label}
-    </div>
-  )
-}
-
-// ---- NEW ROOM MODAL COMPONENT ----
-const PRESET_COLORS = [
-  '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-  '#EC4899', '#06B6D4', '#F97316', '#4CAF50', '#AB47BC',
-  '#26A69A', '#78909C',
-]
-
-function NewRoomModal({ onClose, onCreate }) {
-  const [name, setName] = useState('')
-  const [color, setColor] = useState(PRESET_COLORS[0])
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (name.trim()) onCreate(name.trim(), color)
-  }
-
-  return (
-    <div
-      style={{
-        position: 'absolute', inset: 0, zIndex: 200,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: 'rgba(12, 16, 30, 0.97)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(96, 165, 250, 0.3)',
-          borderRadius: 12,
-          padding: 24,
-          minWidth: 280,
-          boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-          fontFamily: "'Inter', system-ui, sans-serif",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{
-          fontSize: 14, fontWeight: 700, color: '#EDF2FA',
-          marginBottom: 16, letterSpacing: '0.02em',
-        }}>
-          NEW ROOM
-        </div>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Room name..."
-            autoFocus
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(96, 165, 250, 0.2)',
-              borderRadius: 6,
-              color: '#EDF2FA',
-              fontSize: 14,
-              fontFamily: "'Inter', system-ui, sans-serif",
-              outline: 'none',
-              marginBottom: 14,
-              boxSizing: 'border-box',
-            }}
-            onFocus={(e) => { e.target.style.borderColor = 'rgba(96, 165, 250, 0.5)' }}
-            onBlur={(e) => { e.target.style.borderColor = 'rgba(96, 165, 250, 0.2)' }}
-          />
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#78716C', marginBottom: 8, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              Color
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {PRESET_COLORS.map(c => (
-                <div
-                  key={c}
-                  onClick={() => setColor(c)}
-                  style={{
-                    width: 28, height: 28,
-                    borderRadius: 6,
-                    background: c,
-                    cursor: 'pointer',
-                    border: color === c ? '2px solid #fff' : '2px solid transparent',
-                    transition: 'border-color 0.1s',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                flex: 1, padding: '8px 0',
-                background: 'transparent',
-                border: '1px solid rgba(96, 165, 250, 0.2)',
-                borderRadius: 6,
-                color: '#A8A29E',
-                fontSize: 13, fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: "'Inter', system-ui, sans-serif",
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim()}
-              style={{
-                flex: 1, padding: '8px 0',
-                background: name.trim() ? color : 'rgba(255,255,255,0.06)',
-                border: 'none',
-                borderRadius: 6,
-                color: name.trim() ? '#fff' : '#78716C',
-                fontSize: 13, fontWeight: 700,
-                cursor: name.trim() ? 'pointer' : 'default',
-                fontFamily: "'Inter', system-ui, sans-serif",
-                transition: 'all 0.15s',
-              }}
-            >
-              Create
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   )
 }

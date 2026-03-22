@@ -10345,6 +10345,15 @@ export default function GameDashboard() {
         // Supabase-authenticated users bypass the legacy PasswordGate.
         sessionStorage.setItem('dash-auth', '1')
         setAuthed(true)
+        // Existing accounts: skip onboarding. Only show it for accounts
+        // created in the last 10 minutes (brand new signups).
+        if (user.created_at) {
+          const ageMs = Date.now() - new Date(user.created_at).getTime()
+          if (ageMs > 10 * 60 * 1000) {
+            localStorage.setItem('corner_onboarded', '1')
+            setShowOnboarding(false)
+          }
+        }
       }
       window.__cornerClientId = getClientId()
     })
@@ -12010,31 +12019,6 @@ export default function GameDashboard() {
                   // Home room not persisted (no localStorage)
                 }}
               />
-
-              {/* SimCity floating stats overlay (bottom-left of game viewport) */}
-              {!isMobile && (
-                <div style={{
-                  position: 'absolute', bottom: 16, left: 16, zIndex: 10,
-                  background: isNightMode ? 'rgba(15,27,45,0.8)' : 'rgba(26,35,50,0.85)',
-                  border: isNightMode ? '1px solid rgba(59,130,246,0.15)' : '1.5px solid rgba(59,130,246,0.25)',
-                  borderRadius: 8,
-                  padding: '6px 12px',
-                  display: 'flex', gap: 12, alignItems: 'center',
-                  backdropFilter: 'blur(8px)',
-                  pointerEvents: 'none',
-                  opacity: cameraZoom > 2.5 ? 0 : 1,
-                  transition: 'opacity 300ms ease, background 500ms ease',
-                  boxShadow: isNightMode ? 'none' : '0 2px 8px rgba(0,0,0,0.3)',
-                }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#16A34A', fontFamily: "'Inter', system-ui, sans-serif" }}>
-                    {Object.values(agentStatus).filter(a => a?.status === 'WORKING').length} Active
-                  </span>
-                  <span style={{ color: isNightMode ? 'rgba(59,130,246,0.3)' : '#4A6585' }}>|</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#DC2626', fontFamily: "'Inter', system-ui, sans-serif" }}>
-                    {Object.values(agentStatus).filter(a => a?.status === 'BLOCKED').length} Blocked
-                  </span>
-                </div>
-              )}
 
               {/* Camera controls REMOVED per Patrik directive. Zoom/home/overview via keyboard only. */}
 

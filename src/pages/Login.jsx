@@ -1,20 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { signInWithPassword, signUp, updatePassword, onAuthStateChange, isTempPassword, getCurrentUser } from '../dashboard/lib/auth.js'
+import { signInWithPassword, signUp, getCurrentUser } from '../dashboard/lib/auth.js'
 
 // ---- Login / Sign-up / Force Password Change for Corner dashboard ----
 
 export default function Login() {
   const navigate = useNavigate()
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'change-password'
+  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
-  const [pendingUser, setPendingUser] = useState(null)
   const [checkingSession, setCheckingSession] = useState(true)
   const emailRef = useRef(null)
 
@@ -42,14 +39,6 @@ export default function Login() {
       const { user, error: authError } = await signInWithPassword(email.trim(), password)
       if (authError) {
         setError(authError.message || 'Invalid email or password.')
-        setLoading(false)
-        return
-      }
-      if (user && isTempPassword(user)) {
-        // Force password change
-        setPendingUser(user)
-        setMode('change-password')
-        setPassword('')
         setLoading(false)
         return
       }
@@ -88,27 +77,6 @@ export default function Login() {
     }
   }
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault()
-    if (loading) return
-    setError('')
-    if (!newPassword || newPassword.length < 8) { setError('New password must be at least 8 characters.'); return }
-    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return }
-    setLoading(true)
-    try {
-      const { error: updateError } = await updatePassword(newPassword)
-      if (updateError) {
-        setError(updateError.message || 'Failed to update password.')
-        setLoading(false)
-        return
-      }
-      navigate('/dashboard', { replace: true })
-    } catch (err) {
-      setError('Something went wrong. Try again.')
-      setLoading(false)
-    }
-  }
-
   if (checkingSession) {
     return (
       <div style={{
@@ -122,7 +90,6 @@ export default function Login() {
     )
   }
 
-  const isChangingPassword = mode === 'change-password'
   const isSignUp = mode === 'signup'
 
   return (
@@ -176,11 +143,7 @@ export default function Login() {
             fontSize: 14, fontWeight: 400,
             color: '#64748B',
           }}>
-            {isChangingPassword
-              ? 'Set a new password to continue'
-              : isSignUp
-              ? 'Create your account'
-              : 'Welcome back'}
+            {isSignUp ? 'Create your account' : 'Welcome back'}
           </div>
         </div>
 
@@ -210,43 +173,8 @@ export default function Login() {
           </div>
         )}
 
-        {/* Change Password form */}
-        {isChangingPassword && (
-          <form onSubmit={handleChangePassword} noValidate>
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={e => { setNewPassword(e.target.value); setError('') }}
-                placeholder="At least 8 characters"
-                autoFocus
-                style={inputStyle}
-                onFocus={e => { e.target.style.borderColor = 'rgba(232,93,38,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(232,93,38,0.12)' }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.2)'; e.target.style.boxShadow = 'none' }}
-              />
-            </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={labelStyle}>Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={e => { setConfirmPassword(e.target.value); setError('') }}
-                placeholder="Repeat new password"
-                style={inputStyle}
-                onFocus={e => { e.target.style.borderColor = 'rgba(232,93,38,0.6)'; e.target.style.boxShadow = '0 0 0 3px rgba(232,93,38,0.12)' }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(59,130,246,0.2)'; e.target.style.boxShadow = 'none' }}
-              />
-            </div>
-            <button type="submit" disabled={loading} style={primaryBtnStyle(loading)}>
-              {loading ? 'Updating...' : 'Set New Password'}
-            </button>
-          </form>
-        )}
-
         {/* Sign In / Sign Up form */}
-        {!isChangingPassword && (
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} noValidate>
+        <form onSubmit={isSignUp ? handleSignUp : handleSignIn} noValidate>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Email</label>
               <input
@@ -281,29 +209,26 @@ export default function Login() {
                 : (isSignUp ? 'Create Account' : 'Sign In')}
             </button>
           </form>
-        )}
 
         {/* Mode toggle */}
-        {!isChangingPassword && (
-          <div style={{
-            marginTop: 20, textAlign: 'center',
-            fontSize: 13, color: '#475569',
-          }}>
-            {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-            <button
-              type="button"
-              onClick={() => { setMode(isSignUp ? 'signin' : 'signup'); setError(''); setSuccess('') }}
-              style={{
-                background: 'none', border: 'none', padding: 0,
-                color: '#60A5FA', cursor: 'pointer', fontWeight: 600,
-                fontSize: 13, fontFamily: 'inherit',
-                textDecoration: 'underline', textUnderlineOffset: 2,
-              }}
-            >
-              {isSignUp ? 'Sign in' : 'Sign up'}
-            </button>
-          </div>
-        )}
+        <div style={{
+          marginTop: 20, textAlign: 'center',
+          fontSize: 13, color: '#475569',
+        }}>
+          {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+          <button
+            type="button"
+            onClick={() => { setMode(isSignUp ? 'signin' : 'signup'); setError(''); setSuccess('') }}
+            style={{
+              background: 'none', border: 'none', padding: 0,
+              color: '#60A5FA', cursor: 'pointer', fontWeight: 600,
+              fontSize: 13, fontFamily: 'inherit',
+              textDecoration: 'underline', textUnderlineOffset: 2,
+            }}
+          >
+            {isSignUp ? 'Sign in' : 'Sign up'}
+          </button>
+        </div>
       </div>
 
       {/* Spinner keyframe */}
