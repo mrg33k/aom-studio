@@ -96,7 +96,7 @@ const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/relay'
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
 
 // ---- POWERUP MENU CONFIG ----
-const POWERUPS = [
+const POWERUPS_FALLBACK = [
   { id: 'htt', name: 'Hold That Thought', slash: '/htt', icon: BookmarkPlus, color: '#D97706', subtitle: 'park an idea' },
   { id: 'gbit', name: 'Time Travel', slash: '/gbit', icon: History, color: '#7C3AED', subtitle: 'search history' },
   { id: 'eyes', name: 'Eyes & Ears', slash: '/eyes-and-ears', icon: ScanEye, color: '#0D9488', subtitle: 'analyze media' },
@@ -132,10 +132,35 @@ const POWERUPS = [
   { id: 'do-research', name: 'Research', slash: '/do-research', icon: Search, color: '#3B82F6', subtitle: 'deep research' },
 ]
 
+// Maps icon name strings (as stored in Supabase skills table) to Lucide components
+const POWERUPS_ICON_MAP = {
+  BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar, CalendarDays,
+  Sparkles, Users, Search, MessageSquare, CheckCircle2, Zap, Activity,
+  FileText, LayoutDashboard, Send, ListTodo, MapIcon, BarChart3, GitCommit,
+}
+
 // ---- POWERUP MENU COMPONENT ----
 function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, isNightMode, hideTrigger }) {
   const panelRef = useRef(null)
   const [particles, setParticles] = useState([])
+  const [powerups, setPowerups] = useState(POWERUPS_FALLBACK)
+
+  // Fetch live skills list from Supabase on mount; keep fallback if unavailable
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('skills').select('id,name,slash_command,icon,color,description').eq('enabled', true)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return
+        setPowerups(data.map(row => ({
+          id: row.id,
+          name: row.name,
+          slash: row.slash_command,
+          icon: POWERUPS_ICON_MAP[row.icon] || Zap,
+          color: row.color || '#6B8AB0',
+          subtitle: row.description || '',
+        })))
+      })
+  }, [])
 
   // Close on click outside (desktop only)
   useEffect(() => {
@@ -165,7 +190,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, i
         const num = e.key === '0' ? 10 : parseInt(e.key)
         if (num >= 1 && num <= 10) {
           e.preventDefault()
-          const pu = POWERUPS[num - 1]
+          const pu = powerups[num - 1]
           if (pu) handleActivate(pu)
         }
       }
@@ -338,7 +363,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, i
                 gap: 6,
                 padding: 10,
               }}>
-                {POWERUPS.map((pu, idx) => (
+                {powerups.map((pu, idx) => (
                   <PowerupTile
                     key={pu.id}
                     powerup={pu}
