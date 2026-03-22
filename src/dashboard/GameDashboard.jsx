@@ -11847,7 +11847,7 @@ export default function GameDashboard() {
       {/* {isMobile && <MobileModeBar currentMode={currentMode} onModeSwitch={handleModeSwitch} />} */}
 
       {/* Mobile fullscreen Checklist/Megaboard overlays */}
-      {isMobile && currentMode === 'checklist' && (
+      {isMobile && currentMode === 'checklist' && viewMode !== 'board' && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 45,
           paddingTop: 48, paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -11860,7 +11860,7 @@ export default function GameDashboard() {
           </Suspense>
         </div>
       )}
-      {isMobile && currentMode === 'megaboard' && (
+      {isMobile && currentMode === 'megaboard' && viewMode !== 'board' && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 45,
           paddingTop: 48, paddingBottom: 'env(safe-area-inset-bottom, 0px)',

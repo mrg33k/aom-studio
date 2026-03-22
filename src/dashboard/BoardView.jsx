@@ -1121,7 +1121,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
         padding: isMobile ? '12px' : '16px 20px',
         overflowX: 'auto',
         overflowY: 'hidden',
-        alignItems: 'flex-start',
+        alignItems: 'stretch',
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgba(59,130,246,0.2) transparent',
       }}>
