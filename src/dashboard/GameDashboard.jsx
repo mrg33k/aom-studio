@@ -8510,8 +8510,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   elmo: '#10B981', mom: '#F43F5E', paige: '#14B8A6',
                   pixel: '#A78BFA', patrik: '#F59E0B',
                 }
+                // Name map for agents not in the AGENTS array (no room in GRID_SPEC)
+                const AOM_AGENT_NAMES = {
+                  mom: 'Mom', alex: 'Alex', tony: 'Tony', jacob: 'Jacob',
+                  colton: 'Colton', steve: 'Steve', elmo: 'Elmo',
+                  patrik: 'Patrik', elon: 'Elon',
+                }
                 const msgAgentSlug = isAomRoom ? (msg.agentTag || null) : null
                 const msgAgentObj = msgAgentSlug ? AGENTS.find(a => a.slug === msgAgentSlug) : null
+                // Resolved name: from AGENTS obj, or AOM_AGENT_NAMES fallback, or slug capitalized
+                const msgAgentName = msgAgentObj?.name || (msgAgentSlug ? (AOM_AGENT_NAMES[msgAgentSlug] || (msgAgentSlug.charAt(0).toUpperCase() + msgAgentSlug.slice(1))) : null)
                 const msgAgentColor = msgAgentSlug ? (AOM_AGENT_COLORS[msgAgentSlug] || msgAgentObj?.color || '#60A5FA') : agentColor
                 // Grouping: consecutive messages from the same agent in AOM room collapse avatar+name
                 const prevMsgAgentSlug = isAomRoom && i > 0 ? (chatMessages[i-1]?.agentTag || null) : null
@@ -8788,19 +8796,22 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
 
                     {/* Message content */}
                     <div style={{ maxWidth: '80%' }}>
-                      {/* Name + timestamp above bubble -- hidden for consecutive same-agent in AOM room */}
-                      {!msg.streaming && !isSameAomAgent && (
+                      {/* Name + timestamp + project chip -- always visible in AOM Team Room, collapsed for consecutive same-agent elsewhere */}
+                      {!msg.streaming && (!isSameAomAgent || (isAomRoom && !isUser)) && (
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: 6,
                           marginBottom: 3, padding: '0 2px',
                           flexDirection: isUser ? 'row-reverse' : 'row',
+                          // Consecutive same-agent in AOM room: slightly muted so first-in-run stands out
+                          opacity: isSameAomAgent && isAomRoom ? 0.65 : 1,
                         }}>
                           <span style={{
-                            fontSize: 11, fontWeight: 600,
+                            fontSize: isSameAomAgent && isAomRoom ? 10 : 11,
+                            fontWeight: 600,
                             color: isUser ? '#F59E0B' : (isAomRoom && msgAgentColor ? msgAgentColor : agentColor),
                             fontFamily: "'Inter', system-ui, sans-serif",
                           }}>
-                            {isUser ? 'Patrik' : (isAomRoom && msgAgentObj ? msgAgentObj.name : (agent?.name || agentSlug))}
+                            {isUser ? 'Patrik' : (isAomRoom && msgAgentName ? msgAgentName : (agent?.name || agentSlug))}
                           </span>
                           {msg.time && (
                             <span style={{

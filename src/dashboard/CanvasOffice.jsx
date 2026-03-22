@@ -406,6 +406,18 @@ function easeOutBounce(t) {
   }
 }
 
+// ---- EASE-OUT SPRING (for room swaps) ----
+// Overshoots target by ~11% then settles -- physical spring feel.
+// Based on easeOutBack with c1=1.0 (mild overshoot).
+function easeOutSpring(t) {
+  const c1 = 1.0
+  const c3 = c1 + 1
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
+}
+
+// Spring animation duration: longer than shuffle to let overshoot complete
+const SWAP_SPRING_ANIM_MS = 400
+
 // ---- CELEBRATION BOUNCE ----
 const CELEBRATION_JUMP_PX = 18
 const CELEBRATION_UP_MS = 300
@@ -1512,9 +1524,10 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     function getRoomWorldPos(roomId, slotIdx) {
       let posX, posY
       const shuffleAnim = shuffleAnimRef.current[roomId]
-      if (shuffleAnim && now < shuffleAnim.startTime + SHUFFLE_ANIM_MS) {
-        const t = (now - shuffleAnim.startTime) / SHUFFLE_ANIM_MS
-        const e = easeOutCubic(t)
+      const animDur = shuffleAnim?.isSwap ? SWAP_SPRING_ANIM_MS : SHUFFLE_ANIM_MS
+      if (shuffleAnim && now < shuffleAnim.startTime + animDur) {
+        const t = (now - shuffleAnim.startTime) / animDur
+        const e = shuffleAnim.isSwap ? easeOutSpring(t) : easeOutCubic(t)
         posX = shuffleAnim.fromX + (shuffleAnim.toX - shuffleAnim.fromX) * e
         posY = shuffleAnim.fromY + (shuffleAnim.toY - shuffleAnim.fromY) * e
       } else {
@@ -2241,13 +2254,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         delete newFreePos[occupant]
         freePositionsRef.current = newFreePos
 
-        // Animate both rooms to their new positions
+        // Animate both rooms to their new positions (spring easing)
         shuffleAnimRef.current[draggedRoomId] = {
           fromX: dragFromX,
           fromY: dragFromY,
           toX: dragToPos.x,
           toY: dragToPos.y,
           startTime: now,
+          isSwap: true,
         }
         shuffleAnimRef.current[occupant] = {
           fromX: occupantFromX,
@@ -2255,6 +2269,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           toX: occupantToPos.x,
           toY: occupantToPos.y,
           startTime: now,
+          isSwap: true,
         }
 
         // Perform the swap in slotOrder
