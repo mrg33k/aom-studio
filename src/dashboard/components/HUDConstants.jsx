@@ -116,39 +116,66 @@ const CLIENT_SUBSECTION_MAP_FALLBACK = {
   'LBX':                { name: 'LBX',       section: 'lbx-client',      color: '#6B7280', icon: 'client', statusColor: '#6B7280' },
 }
 
-// Module-level cache. null = not yet fetched; fallback used until populated.
-let _sectionMap = null
-let _clientSubsectionMap = null
+// Module-level cache + pub/sub (same pattern as useStatusDot).
+// One network call per page load regardless of how many components call the hook.
+let _smCache = null
+let _csmCache = null
+let _smFetching = false
+const _smListeners = new Set()
 
-// Hook: fetch section_mappings from Supabase once on mount.
-// Updates module-level cache so all subsequent parsePunchList calls use live data.
-// Call this in any component that renders HUD pills or a checklist (GameHUD, ChecklistMode).
-export function useSectionMappings() {
-  useEffect(() => {
-    if (!supabase) return
-    supabase
-      .from('section_mappings')
-      .select('markdown_header,ui_name,section_slug,color,icon,is_client_section')
-      .then(({ data, error }) => {
-        if (error || !data?.length) return
-        const sm = {}
-        const csm = {}
-        for (const row of data) {
-          const entry = { name: row.ui_name, section: row.section_slug, color: row.color, icon: row.icon }
-          if (row.is_client_section) {
-            csm[row.markdown_header] = { ...entry, statusColor: row.color }
-          } else {
-            sm[row.markdown_header] = entry
-          }
+function _fetchSectionMappings() {
+  if ((_smCache && _csmCache) || _smFetching || !supabase) return
+  _smFetching = true
+  supabase
+    .from('section_mappings')
+    .select('markdown_header,ui_name,section_slug,color,icon,is_client_section')
+    .then(({ data, error }) => {
+      _smFetching = false
+      if (error || !data?.length) return
+      const sm = {}
+      const csm = {}
+      for (const row of data) {
+        const entry = { name: row.ui_name, section: row.section_slug, color: row.color, icon: row.icon }
+        if (row.is_client_section) {
+          csm[row.markdown_header] = { ...entry, statusColor: row.color }
+        } else {
+          sm[row.markdown_header] = entry
         }
-        if (Object.keys(sm).length > 0) _sectionMap = sm
-        if (Object.keys(csm).length > 0) _clientSubsectionMap = csm
-      })
+      }
+      if (Object.keys(sm).length > 0) _smCache = sm
+      if (Object.keys(csm).length > 0) _csmCache = csm
+      const payload = {
+        sectionMap: _smCache || SECTION_MAP_FALLBACK,
+        clientSubsectionMap: _csmCache || CLIENT_SUBSECTION_MAP_FALLBACK,
+      }
+      _smListeners.forEach(fn => fn(payload))
+    })
+}
+
+// Returns { sectionMap, clientSubsectionMap } -- live from Supabase, instant fallback.
+// One fetch per page load; subsequent consumers subscribe and get notified on arrival.
+export function useSectionMappings() {
+  const [maps, setMaps] = useState({
+    sectionMap: _smCache || SECTION_MAP_FALLBACK,
+    clientSubsectionMap: _csmCache || CLIENT_SUBSECTION_MAP_FALLBACK,
+  })
+  useEffect(() => {
+    if (_smCache && _csmCache) {
+      setMaps({ sectionMap: _smCache, clientSubsectionMap: _csmCache })
+      return
+    }
+    _smListeners.add(setMaps)
+    _fetchSectionMappings()
+    return () => _smListeners.delete(setMaps)
   }, [])
+  return maps
 }
 
 // ---- PUNCH LIST PARSER ------------------------------------------------------
-export function parsePunchList(markdown) {
+// sectionMap / clientSubsectionMap are optional -- callers should pass the values
+// returned by useSectionMappings() so React re-renders drive fresh data immediately.
+// Falls back to module-level cache then hardcoded fallback if not provided.
+export function parsePunchList(markdown, sectionMap, clientSubsectionMap) {
   if (!markdown) return { projects: [], todayTasks: [] }
 
   const lines = markdown.split('\n')
@@ -157,9 +184,9 @@ export function parsePunchList(markdown) {
   let currentSection = ''
   let currentProject = null
 
-  // Use live Supabase data when available, fall back to hardcoded maps
-  const SECTION_MAP = _sectionMap || SECTION_MAP_FALLBACK
-  const CLIENT_SUBSECTION_MAP = _clientSubsectionMap || CLIENT_SUBSECTION_MAP_FALLBACK
+  // Caller-provided maps > module-level cache > hardcoded fallback
+  const SECTION_MAP = sectionMap || _smCache || SECTION_MAP_FALLBACK
+  const CLIENT_SUBSECTION_MAP = clientSubsectionMap || _csmCache || CLIENT_SUBSECTION_MAP_FALLBACK
 
   let inClientProjects = false // track when we're inside ## CLIENT PROJECTS
 

@@ -555,8 +555,13 @@ export default function GameHUD({
   const [rightNowWiggle, setRightNowWiggle] = useState(false)
   // navigateToProject uses a ref so it doesn't depend on projects useMemo (avoids ordering issue)
   const projectsRef = useRef([]);
-  // Populate section_mappings cache from Supabase (once on mount)
-  useSectionMappings()
+  // Live section_mappings from Supabase -- pub/sub, one fetch per page load
+  const { sectionMap, clientSubsectionMap } = useSectionMappings()
+  // Memoized so useDataPipe's parseFnRef only updates when maps actually change
+  const parseFn = useCallback(
+    (md) => parsePunchList(md, sectionMap, clientSubsectionMap),
+    [sectionMap, clientSubsectionMap]
+  )
 
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
   const {
@@ -569,7 +574,7 @@ export default function GameHUD({
     isAutoChecked,
     punchData,
     punchLoading: loading,
-  } = useDataPipe(parsePunchList)
+  } = useDataPipe(parseFn)
 
   // Inbox: done tasks awaiting approval + unread messages
   const donePendingTasks = useMemo(() =>

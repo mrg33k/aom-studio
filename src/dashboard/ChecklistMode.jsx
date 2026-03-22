@@ -1668,8 +1668,13 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     handleTaskContextAction(action, task, payload, setCheckedTasks)
   }, [])
 
-  // Populate section_mappings cache from Supabase (once on mount)
-  useSectionMappings()
+  // Live section_mappings from Supabase -- pub/sub, one fetch per page load
+  const { sectionMap, clientSubsectionMap } = useSectionMappings()
+  // Memoized so useDataPipe's parseFnRef only updates when maps actually change
+  const parseFn = useCallback(
+    (md) => parsePunchList(md, sectionMap, clientSubsectionMap),
+    [sectionMap, clientSubsectionMap]
+  )
 
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
   const {
@@ -1680,7 +1685,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     isAutoChecked,
     punchData,
     punchLoading: loading,
-  } = useDataPipe(parsePunchList)
+  } = useDataPipe(parseFn)
   const weights = useRecencyWeights()
 
   // Right Now: ONLY running agents (local: from active-missions.md, prod: demo data)
