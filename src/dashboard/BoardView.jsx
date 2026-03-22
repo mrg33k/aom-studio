@@ -6,6 +6,7 @@
 
 import { useState, useRef, useCallback, useMemo, useEffect, Fragment } from 'react'
 import { AGENTS, PROJECTS } from './gridSpec.js'
+import TaskContextMenu, { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 
 const BOARD_IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -714,34 +715,25 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
   const [draggingCard, setDraggingCard] = useState(null) // key like "rightnow-0"
   const [dropTargetCol, setDropTargetCol] = useState(null)
 
-  // Context menu state
-  const [boardCtxMenu, setBoardCtxMenu] = useState(null) // { x, y, entry, columnKey }
-  const boardCtxRef = useRef(null)
+  // Context menu state -- { position: {x,y}, task } -- drives shared TaskContextMenu (Supabase-driven)
+  const [boardCtxMenu, setBoardCtxMenu] = useState(null)
 
-  // Dismiss context menu on outside click / Escape
-  useEffect(() => {
-    if (!boardCtxMenu) return
-    const delay = 150
-    const timer = setTimeout(() => {
-      const handler = (e) => {
-        if (boardCtxRef.current && boardCtxRef.current.contains(e.target)) return
-        setBoardCtxMenu(null)
-      }
-      const keyHandler = (e) => { if (e.key === 'Escape') setBoardCtxMenu(null) }
-      document.addEventListener('mousedown', handler)
-      document.addEventListener('touchstart', handler, { passive: true })
-      document.addEventListener('keydown', keyHandler)
-      boardCtxMenu._cleanup = () => {
-        document.removeEventListener('mousedown', handler)
-        document.removeEventListener('touchstart', handler)
-        document.removeEventListener('keydown', keyHandler)
-      }
-    }, delay)
-    return () => {
-      clearTimeout(timer)
-      boardCtxMenu._cleanup?.()
-    }
-  }, [boardCtxMenu])
+  // Map a board entry to the task shape expected by TaskContextMenu
+  const entryToTask = useCallback((entry, columnKey) => ({
+    text: entry?.text || entry?.description || entry?.currentTask || '',
+    id: entry?.taskId || entry?.id || null,
+    agent: entry?.agent || null,
+    projectSection: entry?.project || columnKey || null,
+    done: entry?.done === true || entry?.status === 'completed',
+    status: entry?.status,
+    rightNow: entry?.status === 'active',
+    priority: entry?.priority || null,
+    note: entry?.note || entry?.context || '',
+  }), [])
+
+  const handleContextAction = useCallback((action, task, payload) => {
+    handleTaskContextAction(action, task, payload, null)
+  }, [])
 
   // Persist column order to localStorage
   useEffect(() => {
@@ -1143,7 +1135,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
               const updated = { ...taskOrders, [key]: newOrder }
               saveTaskOrders(updated)
             }}
-            onContextMenu={(ctx) => setBoardCtxMenu(ctx)}
+            onContextMenu={(ctx) => setBoardCtxMenu({ position: { x: ctx.x, y: ctx.y }, task: entryToTask(ctx.entry, ctx.columnKey) })}
             onTouchDrop={handleCardTouchDrop}
             isColDragging={colDragging === key}
             colDragInsertSide={colDragInsert?.targetKey === key ? colDragInsert.side : null}
@@ -1170,107 +1162,18 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
         )}
       </div>
 
-      {/* Board card context menu */}
-      {boardCtxMenu && (() => {
-        const menuW = 220
-        const menuH = 200
-        const x = Math.min(boardCtxMenu.x, window.innerWidth - menuW - 8)
-        const y = boardCtxMenu.y + menuH > window.innerHeight - 8
-          ? boardCtxMenu.y - menuH - 4
-          : boardCtxMenu.y + 4
-        const entry = boardCtxMenu.entry
-        const taskText = entry?.text || entry?.description || entry?.currentTask || ''
-        return (
-          <div
-            ref={boardCtxRef}
-            style={{
-              position: 'fixed', left: x, top: y, zIndex: 9999,
-              minWidth: menuW,
-              background: 'rgba(12, 18, 35, 0.97)',
-              backdropFilter: 'blur(20px)',
-              border: '2px solid rgba(100, 180, 255, 0.18)',
-              borderRadius: 10,
-              padding: '6px 0',
-              boxShadow: '0 12px 48px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
-              fontFamily: "'Inter', system-ui, sans-serif",
-            }}
-          >
-            {/* Task name header */}
-            <div style={{
-              padding: '6px 14px 8px',
-              fontSize: 11, fontWeight: 700, color: '#4A6080',
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-              borderBottom: '1px solid rgba(100,180,255,0.08)',
-              marginBottom: 2,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {taskText.slice(0, 40)}{taskText.length > 40 ? '...' : ''}
-            </div>
-            {/* Promote to Right Now */}
-            <button onClick={() => {
-              // Supabase: promote task to active (fire-and-forget)
-              if (!BOARD_IS_LOCAL) {
-                fetch('/api/dashboard/task-action', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ action: 'addToRightNow', taskText, taskId: entry.taskId || entry.id || null, agent: entry.agent || 'patrik' }),
-                }).catch(() => {})
-              }
-              setBoardCtxMenu(null)
-            }} style={boardCtxBtn('#FF6B3D')}>
-              Send to Right Now
-            </button>
-            {/* Create Task (add copy to manual tasks) */}
-            <button onClick={() => {
-              // Supabase: create task as todo (fire-and-forget)
-              if (!BOARD_IS_LOCAL) {
-                fetch('/api/dashboard/agent-status', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ text: taskText, agent: entry.agent || 'elon', status: 'todo' }),
-                }).catch(() => {})
-              }
-              setBoardCtxMenu(null)
-            }} style={boardCtxBtn('#5BB8FF')}>
-              Add to HUD Pill
-            </button>
-            {/* Mark done */}
-            <button onClick={() => {
-              // Supabase: mark done (fire-and-forget)
-              if (!BOARD_IS_LOCAL) {
-                fetch('/api/dashboard/task-action', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ action: 'markDone', taskText, taskId: entry.taskId || entry.id || null }),
-                }).catch(() => {})
-              }
-              setBoardCtxMenu(null)
-            }} style={boardCtxBtn('#22C55E')}>
-              Mark Done
-            </button>
-            <div style={{ height: 1, background: 'rgba(100,180,255,0.08)', margin: '4px 10px' }} />
-            {/* Copy text */}
-            <button onClick={() => {
-              try { navigator.clipboard.writeText(taskText) } catch {}
-              setBoardCtxMenu(null)
-            }} style={boardCtxBtn('#D0D8E8')}>
-              Copy Text
-            </button>
-          </div>
-        )
-      })()}
+      {/* Board card context menu -- shared Supabase-driven component */}
+      {boardCtxMenu && (
+        <TaskContextMenu
+          position={boardCtxMenu.position}
+          task={boardCtxMenu.task}
+          onClose={() => setBoardCtxMenu(null)}
+          onAction={handleContextAction}
+          isNightMode={isNightMode}
+          projects={[]}
+        />
+      )}
     </div>
   )
 }
 
-function boardCtxBtn(color) {
-  return {
-    width: '100%', display: 'flex', alignItems: 'center',
-    padding: '9px 14px',
-    background: 'none', border: 'none', cursor: 'pointer',
-    color, fontSize: 14, fontWeight: 500,
-    fontFamily: "'Inter', system-ui, sans-serif",
-    textAlign: 'left',
-    transition: 'background 80ms ease',
-  }
-}
