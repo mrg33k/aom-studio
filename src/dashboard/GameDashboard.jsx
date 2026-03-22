@@ -8554,18 +8554,18 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       }}>
                         {msg.taskText || msg.content?.replace('Task marked done: ', '').replace('\n\nConfirmed done or needs more work?', '') || msg.content}
                       </div>
-                      {/* Buttons */}
+                      {/* Buttons: Approve / Deny / Clarify */}
                       <div style={{ display: 'flex', gap: 8 }}>
-                        {/* CHECK -- confirmed done */}
+                        {/* APPROVE -- confirmed done */}
                         <button
                           onClick={() => onDismissMessage?.(msg.id)}
                           style={{
-                            flex: 1, padding: '10px 16px',
+                            flex: 1, padding: '10px 12px',
                             background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
                             border: '1.5px solid rgba(34,197,94,0.5)',
                             borderRadius: 10, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                            color: '#FFFFFF', fontSize: 14, fontWeight: 800,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            color: '#FFFFFF', fontSize: 13, fontWeight: 800,
                             fontFamily: "'Inter', system-ui, sans-serif",
                             boxShadow: '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
                             transition: 'transform 80ms ease, box-shadow 80ms ease',
@@ -8573,21 +8573,21 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(22,163,74,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}
                           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
-                          Done
+                          Approve
                         </button>
-                        {/* MINUS -- not done, rerun */}
+                        {/* DENY -- not done, rerun with new approach */}
                         <button
                           onClick={() => onTaskNotDone?.(msg.id, msg.taskText || '')}
                           style={{
-                            flex: 1, padding: '10px 16px',
+                            flex: 1, padding: '10px 12px',
                             background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
                             border: '1.5px solid rgba(239,68,68,0.5)',
                             borderRadius: 10, cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                            color: '#FFFFFF', fontSize: 14, fontWeight: 800,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            color: '#FFFFFF', fontSize: 13, fontWeight: 800,
                             fontFamily: "'Inter', system-ui, sans-serif",
                             boxShadow: '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
                             transition: 'transform 80ms ease, box-shadow 80ms ease',
@@ -8595,10 +8595,43 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.15)' }}
                           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(220,38,38,0.35), inset 0 1px 0 rgba(255,255,255,0.15)' }}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12" />
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                           </svg>
-                          Rerun
+                          Deny
+                        </button>
+                        {/* CLARIFY -- dismiss card, pre-fill input, focus */}
+                        <button
+                          onClick={() => {
+                            onDismissMessage?.(msg.id)
+                            const prefix = msg.taskText ? `Re: "${msg.taskText}" -- ` : ''
+                            onChatInputChange?.(prefix)
+                            requestAnimationFrame(() => {
+                              const input = document.querySelector('[data-panel-chat-input]')
+                              if (input) input.focus()
+                              else setTimeout(() => document.querySelector('[data-panel-chat-input]')?.focus(), 100)
+                            })
+                          }}
+                          style={{
+                            flex: 1, padding: '10px 12px',
+                            background: isDaytime
+                              ? 'linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(99,102,241,0.08) 100%)'
+                              : 'linear-gradient(135deg, rgba(59,130,246,0.20) 0%, rgba(99,102,241,0.14) 100%)',
+                            border: '1.5px solid rgba(59,130,246,0.45)',
+                            borderRadius: 10, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            color: isDaytime ? '#2563EB' : '#60A5FA', fontSize: 13, fontWeight: 800,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            boxShadow: '0 2px 8px rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.06)',
+                            transition: 'transform 80ms ease, box-shadow 80ms ease',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(59,130,246,0.35), inset 0 1px 0 rgba(255,255,255,0.06)' }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.06)' }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                          </svg>
+                          Clarify
                         </button>
                       </div>
                     </div>
