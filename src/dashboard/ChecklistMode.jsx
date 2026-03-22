@@ -45,6 +45,7 @@ import {
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
+import { useLongPress } from './hooks/useLongPress.js'
 import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import { supabase } from './lib/supabase.js'
 import { parsePunchList, useSectionMappings, useRecencyWeights } from './components/HUDConstants.jsx'
@@ -600,6 +601,10 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
     e.preventDefault()
     onContextMenu?.(e, task)
   }, [task, onContextMenu])
+  const handleLongPress = useCallback(({ clientX, clientY }) => {
+    onContextMenu?.({ clientX, clientY, preventDefault: () => {} }, task)
+  }, [task, onContextMenu])
+  const longPress = useLongPress(handleLongPress)
 
   return (
     <motion.div
@@ -611,6 +616,7 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onContextMenu={handleContextMenu}
+      {...longPress}
       style={{
         position: 'relative',
         minHeight: 48,
@@ -740,6 +746,10 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents 
     e.preventDefault()
     onContextMenu?.(e, task)
   }, [task, onContextMenu])
+  const handleLongPress = useCallback(({ clientX, clientY }) => {
+    onContextMenu?.({ clientX, clientY, preventDefault: () => {} }, task)
+  }, [task, onContextMenu])
+  const longPress = useLongPress(handleLongPress)
 
   return (
     <motion.div
@@ -751,6 +761,7 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onContextMenu={handleContextMenu}
+      {...longPress}
       style={{
         background: isHovered
           ? (isDaytime ? 'rgba(255,107,61,0.12)' : 'rgba(255,107,61,0.06)')
@@ -980,6 +991,10 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck, onContextMenu }) {
     e.preventDefault()
     onContextMenu?.(e, task)
   }, [task, onContextMenu])
+  const handleLongPress = useCallback(({ clientX, clientY }) => {
+    onContextMenu?.({ clientX, clientY, preventDefault: () => {} }, task)
+  }, [task, onContextMenu])
+  const longPress = useLongPress(handleLongPress)
 
   return (
     <motion.div
@@ -991,6 +1006,7 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck, onContextMenu }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onContextMenu={handleContextMenu}
+      {...longPress}
       style={{
         background: isHovered
           ? (isDaytime ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)')
@@ -1147,6 +1163,10 @@ function CheckingInTaskCard({ task, index, isDaytime, onContextMenu, spriteAgent
     e.preventDefault()
     onContextMenu?.(e, task)
   }, [task, onContextMenu])
+  const handleLongPress = useCallback(({ clientX, clientY }) => {
+    onContextMenu?.({ clientX, clientY, preventDefault: () => {} }, task)
+  }, [task, onContextMenu])
+  const longPress = useLongPress(handleLongPress)
 
   return (
     <motion.div
@@ -1158,6 +1178,7 @@ function CheckingInTaskCard({ task, index, isDaytime, onContextMenu, spriteAgent
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onContextMenu={handleContextMenu}
+      {...longPress}
       style={{
         background: isHovered
           ? (isDaytime ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.05)')

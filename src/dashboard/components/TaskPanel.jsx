@@ -10,6 +10,7 @@ import { X, Check } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { PALETTE, HUD, STATUS_DOT, IS_LOCAL } from './HUDConstants.jsx'
 import { supabase } from '../lib/supabase.js'
+import { useLongPress } from '../hooks/useLongPress.js'
 
 // Fallback list used on localhost or if Supabase is unavailable
 const SPRITE_AGENTS_FALLBACK = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
@@ -92,6 +93,11 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
     pointerId: null,
   })
   const taskListRef = useRef(null)
+
+  // Long-press state (single set of refs -- only one finger can long-press at a time)
+  const lpTimerRef = useRef(null)
+  const lpStartRef = useRef(null)
+  const lpFiredRef = useRef(false)
 
   // Get the task key for drag ordering
   const getTaskKey = (task) => task.isManual ? `manual-${task.manualId}` : String(task.origIdx)
@@ -462,6 +468,39 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 } else {
                   onTaskContextMenu?.(e, task, project)
                 }
+              }}
+              onTouchStart={(e) => {
+                if (e.touches.length !== 1) return
+                const { clientX, clientY } = e.touches[0]
+                lpFiredRef.current = false
+                lpStartRef.current = { x: clientX, y: clientY }
+                if (lpTimerRef.current) clearTimeout(lpTimerRef.current)
+                lpTimerRef.current = setTimeout(() => {
+                  lpFiredRef.current = true
+                  const synth = { clientX, clientY, preventDefault: () => {}, stopPropagation: () => {} }
+                  if (isDoneAwaiting) {
+                    onDoneTaskAction?.(synth, task, project, 'menu')
+                  } else {
+                    onTaskContextMenu?.(synth, task, project)
+                  }
+                }, 500)
+              }}
+              onTouchMove={(e) => {
+                if (!lpTimerRef.current || !lpStartRef.current) return
+                const t = e.touches[0]
+                const dx = Math.abs(t.clientX - lpStartRef.current.x)
+                const dy = Math.abs(t.clientY - lpStartRef.current.y)
+                if (dx > 10 || dy > 10) {
+                  clearTimeout(lpTimerRef.current)
+                  lpTimerRef.current = null
+                }
+              }}
+              onTouchEnd={(e) => {
+                if (lpTimerRef.current) { clearTimeout(lpTimerRef.current); lpTimerRef.current = null }
+                if (lpFiredRef.current) { e.preventDefault(); lpFiredRef.current = false }
+              }}
+              onTouchCancel={() => {
+                if (lpTimerRef.current) { clearTimeout(lpTimerRef.current); lpTimerRef.current = null }
               }}
               onPointerDown={(e) => handleRowPointerDown(e, task)}
               style={{
