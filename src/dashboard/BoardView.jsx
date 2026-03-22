@@ -730,6 +730,35 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
 
   // ── Drag handlers ──────────────────────────────────────────────────────
 
+  // Persist a card move to Supabase (fire-and-forget)
+  const persistDrop = useCallback((toCol, entry) => {
+    if (BOARD_IS_LOCAL) return
+    const taskText = entry.text || entry.description || entry.currentTask
+    const taskId = entry.taskId || entry.id || null
+    if (!taskText && !taskId) return
+
+    const colType = ALL_COLS[toCol]?.type
+    let body
+
+    if (toCol === 'rightnow') {
+      body = { action: 'addToRightNow', taskText, taskId, agent: entry.agent || 'elon' }
+    } else if (toCol === 'completed') {
+      body = { action: 'markDone', taskText, taskId }
+    } else if (colType === 'agent') {
+      body = { action: 'reassign', taskText, taskId, payload: toCol }
+    } else if (colType === 'project') {
+      body = { action: 'moveToProject', taskText, taskId, payload: toCol }
+    } else {
+      return
+    }
+
+    fetch('/api/dashboard/task-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).catch(() => {})
+  }, [])
+
   const handleCardDrop = useCallback((toCol, payload) => {
     const { entry, fromCol, taskIndex } = payload
     setDropTargetCol(null)
@@ -740,23 +769,30 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
       return
     }
 
-    // Move card to new column
+    // Persist to Supabase
+    persistDrop(toCol, entry)
+
+    // Move card to new column (immediate visual feedback)
     const cardId = entry._id || `override-${entry.text?.slice(0, 20)}-${Date.now()}`
     const card = { ...entry, _id: cardId }
     const newOverrides = { ...cardOverrides, [cardId]: { toCol, card } }
     saveCardOverrides(newOverrides)
-  }, [cardOverrides, saveCardOverrides])
+  }, [cardOverrides, saveCardOverrides, persistDrop])
 
   // Touch drag handler -- same logic as handleCardDrop but triggered by Pointer Events
   const handleCardTouchDrop = useCallback((toCol, payload) => {
     const { entry, fromCol, taskIndex } = payload
     if (fromCol === toCol) return
+
+    // Persist to Supabase
+    persistDrop(toCol, entry)
+
     const cardId = entry._id || `override-${entry.text?.slice(0, 20)}-${Date.now()}`
     const card = { ...entry, _id: cardId }
     const newOverrides = { ...cardOverrides, [cardId]: { toCol, card } }
     saveCardOverrides(newOverrides)
     setDraggingCard(null)
-  }, [cardOverrides, saveCardOverrides])
+  }, [cardOverrides, saveCardOverrides, persistDrop])
 
   const handleDragOver = useCallback((colKey) => {
     setDropTargetCol(colKey)
