@@ -65,8 +65,7 @@ import {
   HUD,
   parsePunchList,
   useSectionMappings,
-  useConversationRecency,
-  DEFAULT_RECENCY_WEIGHTS,
+  useRecencyWeights,
 } from './components/HUDConstants.jsx'
 import { TaskPanel } from './components/TaskPanel.jsx'
 import { ProjectCard } from './components/ProjectCard.jsx'
@@ -551,7 +550,7 @@ export default function GameHUD({
   )
   const inboxCount = donePendingTasks.length + (inboxItems || []).length
   const hudRef = useRef(null)
-  const conversationScores = useConversationRecency()
+  const weights = useRecencyWeights()
 
   // MANUAL TASKS for Right Now -- in-memory only (no localStorage until offline features built)
   const [manualTasks, setManualTasks] = useState([])
@@ -741,7 +740,6 @@ export default function GameHUD({
       }
     }
 
-    const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     // Sort order (Patrik directive): Right Now > Inbox > Your TODOs > Schedule > Finish These > rest
     return [...merged].sort((a, b) => {
       // Right Now is always first (running agents)
@@ -772,7 +770,7 @@ export default function GameHUD({
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks, manualTasks, inboxItems])
+  }, [punchData, weights, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks, manualTasks, inboxItems])
 
   // Keep ref in sync for navigateToProject callback
   projectsRef.current = projects
