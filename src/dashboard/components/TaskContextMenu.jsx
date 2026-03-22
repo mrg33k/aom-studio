@@ -76,20 +76,20 @@ function getPalette(isNightMode) {
       inputText: '#F0ECE6',
     }
   }
-  // Day mode
+  // Day mode -- blue glass (brighter blue, matches BoardView day palette)
   return {
-    panelBg: 'rgba(255, 255, 255, 0.96)',
-    panelBorder: 'rgba(0, 0, 0, 0.08)',
-    panelShadow: '0 12px 48px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)',
-    itemText: '#1E293B',
-    headerText: '#94A3B8',
-    divider: 'rgba(0,0,0,0.06)',
-    hoverBg: 'rgba(0,0,0,0.04)',
-    dangerColor: '#DC2626',
-    accentColor: '#2563EB',
-    inputBg: 'rgba(0,0,0,0.03)',
-    inputBorder: 'rgba(0,0,0,0.1)',
-    inputText: '#1E293B',
+    panelBg: 'rgba(15, 25, 50, 0.95)',
+    panelBorder: 'rgba(100, 170, 255, 0.22)',
+    panelShadow: '0 12px 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(100,180,255,0.08)',
+    itemText: '#D0D8E8',
+    headerText: '#4A6080',
+    divider: 'rgba(100,180,255,0.10)',
+    hoverBg: 'rgba(100,180,255,0.10)',
+    dangerColor: '#EF4444',
+    accentColor: '#5BB8FF',
+    inputBg: 'rgba(255,255,255,0.04)',
+    inputBorder: 'rgba(100,180,255,0.15)',
+    inputText: '#F0ECE6',
   }
 }
 
