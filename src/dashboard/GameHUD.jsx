@@ -69,6 +69,7 @@ import {
 import { TaskPanel } from './components/TaskPanel.jsx'
 import { ProjectCard } from './components/ProjectCard.jsx'
 import { hudCtxBtn } from './components/CompactStats.jsx'
+import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 
 // ---- INBOX PANEL ------------------------------------------------------------
 // Shown when the Inbox pill is expanded. Two sections:
@@ -1378,14 +1379,18 @@ export default function GameHUD({
             {hudTaskCtx.task.text?.slice(0, 40)}{hudTaskCtx.task.text?.length > 40 ? '...' : ''}
           </div>
           <button onClick={() => {
-            if (hudTaskCtx.task.isManual) toggleManualTask?.(hudTaskCtx.task.manualId)
+            if (hudTaskCtx.task.isManual) {
+              toggleManualTask?.(hudTaskCtx.task.manualId)
+            } else {
+              handleTaskContextAction('markDone', hudTaskCtx.task, null, null)
+            }
             setHudTaskCtx(null)
           }} style={hudCtxBtn(isNightMode)}>
             {hudTaskCtx.task.done ? 'Mark Undone' : 'Mark Done'}
           </button>
 
           <button onClick={() => {
-            addManualTask(hudTaskCtx.task.text)
+            handleTaskContextAction('addToRightNow', hudTaskCtx.task, null, null)
             setHudTaskCtx(null)
           }} style={{ ...hudCtxBtn(isNightMode), color: '#FF6B3D', fontWeight: 700 }}>
             Send to Right Now

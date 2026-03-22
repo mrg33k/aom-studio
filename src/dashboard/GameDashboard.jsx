@@ -1505,6 +1505,7 @@ const ROOM_LIGHT_OVERLAYS = {
 const ROOMS_WITH_RENDERS_FALLBACK = new Set([
   'patrik', 'mom', 'alex', 'steve', 'steffen', 'main-hall',
   'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon',
+  'aom-team', // PNG at /rooms/aom-team-room.png (not /corner/rooms/)
 ])
 const RoomsWithRendersContext = createContext(ROOMS_WITH_RENDERS_FALLBACK)
 
@@ -1522,7 +1523,10 @@ function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, on
   const isAway = agentAnimation?.state === 'away'
   const baseBrightness = isAway ? 0.3 : (isActive ? 1.0 : (status === 'DONE' ? 0.95 : (status === 'IDLE' ? 0.75 : 0.85)))
   const hasRoomRender = roomsWithRenders.has(room.id)
-  const roomImgSrc = `/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`
+  // Some rooms have non-standard paths (not under /corner/rooms/). Use overrides for those.
+  const ROOM_IMG_PATH_OVERRIDES = { 'aom-team': '/rooms/aom-team-room.png' }
+  const roomImgSrc = ROOM_IMG_PATH_OVERRIDES[room.id]
+    || `/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`
   const showAmbient = detailLevel !== 'overview'
 
   return (
