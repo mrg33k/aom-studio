@@ -75,61 +75,15 @@ import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 // Shown when the Inbox pill is expanded. Two sections:
 //   (1) Done tasks awaiting approval -- amber cards with Approve / Deny / Clarify
 //   (2) Unread messages -- compact agent message previews
-function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify, refetch }) {
+function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify }) {
   const isDaytime = isNightMode === false
-  // Blue glass theme -- matches HUD panel style (SimCity/Vegas energy)
-  const bg = 'rgba(8,16,32,0.95)'
-  const border = 'rgba(100,180,255,0.22)'
-  const textPrimary = '#EDF2FA'
-  const textMuted = '#8BA4C4'
+  // Blue glass theme -- daytime = white glass, nighttime = dark glass (SimCity/Vegas energy)
+  const bg = isDaytime ? 'rgba(248,250,255,0.97)' : 'rgba(8,16,32,0.95)'
+  const border = isDaytime ? 'rgba(59,130,246,0.30)' : 'rgba(100,180,255,0.22)'
+  const textPrimary = isDaytime ? '#1E293B' : '#EDF2FA'
+  const textMuted = isDaytime ? '#64748B' : '#8BA4C4'
 
-  // Track approve animation state per card key
-  const [approvingId, setApprovingId] = useState(null)
-  // Track deny/reject animation state per card key
-  const [denyingId, setDenyingId] = useState(null)
-  // Optimistic removal: keys hidden immediately on approve/deny
-  const [optimisticallyRemovedIds, setOptimisticallyRemovedIds] = useState(new Set())
-  // Failed task keys: shown with red border error badge for retry
-  const [failedTaskIds, setFailedTaskIds] = useState(new Set())
 
-  const callAction = (taskId, taskText, agent, action) => {
-    const key = taskId || taskText
-    // 1. Optimistically remove from UI immediately
-    setOptimisticallyRemovedIds(prev => new Set([...prev, key]))
-    // Clear any prior failure badge
-    setFailedTaskIds(prev => { const n = new Set(prev); n.delete(key); return n })
-    // 2. Fire animation in background (non-blocking)
-    const runAnim = async () => {
-      if (action === 'approve') {
-        setApprovingId(key)
-        await new Promise(r => setTimeout(r, 300))
-        setApprovingId(key + '__fadeout')
-        await new Promise(r => setTimeout(r, 250))
-        setApprovingId(null)
-      } else if (action === 'reject') {
-        setDenyingId(key)
-        await new Promise(r => setTimeout(r, 300))
-        setDenyingId(key + '__fadeout')
-        await new Promise(r => setTimeout(r, 250))
-        setDenyingId(null)
-      }
-    }
-    runAnim()
-    // 3. Fire API in background -- re-add with error badge on failure
-    fetch('/api/dashboard/task-action', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, taskId, taskText, agent, clientId: getClientId() }),
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('non-ok')
-        refetch?.()
-      })
-      .catch(() => {
-        setOptimisticallyRemovedIds(prev => { const n = new Set(prev); n.delete(key); return n })
-        setFailedTaskIds(prev => new Set([...prev, key]))
-      })
-  }
 
   return (
     <motion.div
@@ -145,7 +99,9 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
         borderRadius: '14px 14px 0 0',
         border: `1.5px solid ${border}`,
         borderBottom: 'none',
-        boxShadow: '0 -8px 48px rgba(0,0,0,0.55), 0 -2px 0 rgba(100,180,255,0.12), inset 0 1px 0 rgba(100,180,255,0.08)',
+        boxShadow: isDaytime
+          ? '0 -8px 48px rgba(59,130,246,0.12), 0 -2px 0 rgba(59,130,246,0.10), inset 0 1px 0 rgba(59,130,246,0.06)'
+          : '0 -8px 48px rgba(0,0,0,0.55), 0 -2px 0 rgba(100,180,255,0.12), inset 0 1px 0 rgba(100,180,255,0.08)',
         maxHeight: 360,
         overflowY: 'auto',
         zIndex: 50,
@@ -156,7 +112,9 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
       {/* Inner top glow */}
       <div style={{
         position: 'sticky', top: 0, left: 0, right: 0, height: 1,
-        background: 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.30) 40%, rgba(100,180,255,0.30) 60%, transparent 100%)',
+        background: isDaytime
+          ? 'linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.22) 40%, rgba(59,130,246,0.22) 60%, transparent 100%)'
+          : 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.30) 40%, rgba(100,180,255,0.30) 60%, transparent 100%)',
         pointerEvents: 'none', zIndex: 2,
       }} />
       {/* Header */}
@@ -178,11 +136,11 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
           fontFamily: "'JetBrains Mono', monospace",
           letterSpacing: '0.10em', textTransform: 'uppercase', flex: 1,
         }}>Inbox</span>
-        {(doneTasks.length + unreadMsgs.length) > 0 && (
+        {unreadMsgs.length > 0 && (
           <span style={{
             fontSize: 10, fontWeight: 700, color: '#4A6080',
             fontFamily: "'JetBrains Mono', monospace",
-          }}>{doneTasks.length + unreadMsgs.length}</span>
+          }}>{unreadMsgs.length}</span>
         )}
         <button
           onClick={onClose}
@@ -195,176 +153,6 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
       </div>
 
       <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-
-        {/* SECTION 1: Done tasks awaiting approval */}
-        {doneTasks.filter(t => !optimisticallyRemovedIds.has(t.taskId || t.text)).length > 0 && (
-          <>
-            {doneTasks.filter(t => !optimisticallyRemovedIds.has(t.taskId || t.text)).map((t, idx) => {
-              const cardKey = t.taskId || `done-${idx}`
-              const isGlowing = approvingId === cardKey || approvingId === (t.taskId || t.text)
-              const isFadingOut = approvingId === cardKey + '__fadeout' || approvingId === (t.taskId || t.text) + '__fadeout'
-              const isDenyGlowing = denyingId === cardKey || denyingId === (t.taskId || t.text)
-              const isDenyFadingOut = denyingId === cardKey + '__fadeout' || denyingId === (t.taskId || t.text) + '__fadeout'
-              const hasFailed = failedTaskIds.has(cardKey) || failedTaskIds.has(t.taskId || t.text)
-              const inboxCardClass = isGlowing ? 'task-approving' : isFadingOut ? 'task-approved' : isDenyGlowing ? 'task-denying' : isDenyFadingOut ? 'task-denied' : ''
-              return (
-              <motion.div
-                key={cardKey}
-                className={inboxCardClass}
-                initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-                style={{
-                  background: hasFailed
-                    ? 'linear-gradient(135deg, rgba(239,68,68,0.32) 0%, rgba(185,28,28,0.20) 100%)'
-                    : 'linear-gradient(135deg, rgba(59,130,246,0.38) 0%, rgba(99,102,241,0.24) 100%)',
-                  backdropFilter: 'blur(12px)',
-                  border: hasFailed ? '1.5px solid rgba(239,68,68,0.90)' : '1.5px solid #3B82F6',
-                  borderLeft: hasFailed ? '3px solid #EF4444' : '3px solid #3B82F6',
-                  borderRadius: 10,
-                  padding: '10px 12px',
-                  boxShadow: hasFailed
-                    ? '0 4px 24px rgba(239,68,68,0.35), inset 0 1px 0 rgba(239,68,68,0.20)'
-                    : '0 4px 28px rgba(59,130,246,0.45), inset 0 1px 0 rgba(100,180,255,0.40)',
-                  position: 'relative', overflow: 'hidden',
-                }}>
-                {/* Inner top glow */}
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-                  background: hasFailed
-                    ? 'linear-gradient(90deg, transparent 0%, rgba(239,68,68,0.35) 40%, rgba(239,68,68,0.35) 60%, transparent 100%)'
-                    : 'linear-gradient(90deg, transparent 0%, rgba(100,180,255,0.65) 40%, rgba(100,180,255,0.65) 60%, transparent 100%)',
-                  pointerEvents: 'none',
-                }} />
-                {/* Agent + label row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <div style={{
-                    width: 6, height: 6, borderRadius: '50%',
-                    background: hasFailed ? '#EF4444' : '#3B82F6',
-                    boxShadow: hasFailed ? '0 0 6px rgba(239,68,68,0.7)' : '0 0 8px rgba(59,130,246,0.8)',
-                    animation: 'vegasTypingBounce 2s ease-in-out infinite',
-                  }} />
-                  <span style={{
-                    fontSize: 9, fontWeight: 700,
-                    color: hasFailed ? '#F87171' : '#60A5FA',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    letterSpacing: '0.10em', textTransform: 'uppercase',
-                    flex: 1,
-                  }}>
-                    {hasFailed ? 'FAILED -- TAP TO RETRY' : 'TASK COMPLETE'}
-                  </span>
-                  {!hasFailed && (
-                  <span style={{ fontSize: 9, color: '#93C5FD', fontFamily: "'JetBrains Mono', monospace" }}>
-                    {t.agent ? `${t.agent.charAt(0).toUpperCase()}${t.agent.slice(1)}` : ''}
-                  </span>
-                  )}
-                </div>
-                {/* Task text -- data readout */}
-                <div style={{
-                  fontSize: 13, fontWeight: 500, color: '#EDF2FA',
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  lineHeight: 1.4, marginBottom: 8,
-                  padding: '6px 10px',
-                  background: 'rgba(100,180,255,0.16)',
-                  borderRadius: 7,
-                  border: '1px solid rgba(100,180,255,0.55)',
-                  boxShadow: 'inset 0 1px 0 rgba(100,180,255,0.30)',
-                  position: 'relative',
-                }}>
-                  <span style={{
-                    position: 'absolute', top: -8, left: 8,
-                    fontSize: 8, fontWeight: 700, color: '#3B9EFF',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                    background: 'rgba(6,16,42,0.92)', padding: '0 4px',
-                  }}>task</span>
-                  {t.text}
-                </div>
-                {/* Action buttons */}
-                <div style={{ display: 'flex', gap: 5 }}>
-                  <motion.button
-                    onClick={() => callAction(t.taskId, t.text, t.agent, 'approve')}
-                    whileHover={{ scale: 1.04, y: -1 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-                    style={{
-                      flex: 1, padding: '6px 8px',
-                      background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
-                      border: '1.5px solid #22C55E',
-                      borderRadius: 7, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      color: '#FFFFFF', fontSize: 11, fontWeight: 800,
-                      fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 3px 12px rgba(22,163,74,0.55), inset 0 1px 0 rgba(255,255,255,0.20)',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    Approve
-                  </motion.button>
-                  <motion.button
-                    onClick={() => callAction(t.taskId, t.text, t.agent, 'reject')}
-                    whileHover={{ scale: 1.04, y: -1 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-                    style={{
-                      flex: 1, padding: '6px 8px',
-                      background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
-                      border: '1.5px solid #EF4444',
-                      borderRadius: 7, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      color: '#FFFFFF', fontSize: 11, fontWeight: 800,
-                      fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 3px 12px rgba(220,38,38,0.55), inset 0 1px 0 rgba(255,255,255,0.20)',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                    Deny
-                  </motion.button>
-                  <motion.button
-                    onClick={() => {
-                      if (onClarify) {
-                        onClarify(t.agent, t.text)
-                      } else {
-                        onNavigateToAgent?.(t.agent)
-                      }
-                      onClose?.()
-                    }}
-                    whileHover={{ scale: 1.04, y: -1 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 18 }}
-                    style={{
-                      flex: 1, padding: '6px 8px',
-                      background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
-                      border: '1.5px solid #3B82F6',
-                      borderRadius: 7, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                      color: '#FFFFFF', fontSize: 11, fontWeight: 800,
-                      fontFamily: "'Inter', system-ui, sans-serif",
-                      boxShadow: '0 3px 12px rgba(29,78,216,0.55), inset 0 1px 0 rgba(255,255,255,0.20)',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    Clarify
-                  </motion.button>
-                </div>
-              </motion.div>
-              )
-            })}
-            {unreadMsgs.length > 0 && (
-              <div style={{ height: 1, background: 'rgba(100,180,255,0.12)', margin: '2px 0' }} />
-            )}
-          </>
-        )}
 
         {/* SECTION 2: Unread messages */}
         {unreadMsgs.map((m, idx) => (
@@ -405,7 +193,7 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
           </motion.button>
         ))}
 
-        {doneTasks.length === 0 && unreadMsgs.length === 0 && (
+        {unreadMsgs.length === 0 && (
           <div style={{
             padding: '16px 8px', textAlign: 'center',
             color: '#4A6080', fontSize: 12,
@@ -573,7 +361,7 @@ export default function GameHUD({
     (liveRightNowTasks || []).filter(t => t.isDoneAwaitingApproval),
     [liveRightNowTasks]
   )
-  const inboxCount = donePendingTasks.length + (inboxItems || []).length
+  const inboxCount = (inboxItems || []).length
   const hudRef = useRef(null)
   const weights = useRecencyWeights()
 
@@ -665,26 +453,15 @@ export default function GameHUD({
       tasks: rightNowTasks,
     })
 
-    // INBOX pill = done tasks awaiting approval + unread messages
-    // Only render when there's something to show
-    const donePending = (liveRightNowTasks || []).filter(t => t.isDoneAwaitingApproval)
+    // INBOX pill = unread messages only. Done tasks confirmed via pinned TASK COMPLETE box.
     const unreadMsgs = inboxItems || []
-    if (donePending.length > 0 || unreadMsgs.length > 0) {
+    if (unreadMsgs.length > 0) {
       merged.push({
         name: 'Inbox',
         section: 'inbox',
-        color: '#EAB308',
+        color: '#3B82F6',
         icon: 'inbox',
         tasks: [
-          ...donePending.map(t => ({
-            text: t.text,
-            agent: t.agent,
-            taskId: t.taskId,
-            done: false,
-            raw: '',
-            isLive: false,
-            isDoneAwaitingApproval: true,
-          })),
           ...unreadMsgs.map(m => ({
             text: m.text || m.preview || '',
             agent: m.agent,
@@ -961,7 +738,6 @@ export default function GameHUD({
         {expandedProject && expandedProject.section === 'inbox' ? (
           <InboxPanel
             key="inbox"
-            doneTasks={donePendingTasks}
             unreadMsgs={inboxItems || []}
             onClose={() => setExpandedProject(null)}
             isNightMode={isNightMode}
