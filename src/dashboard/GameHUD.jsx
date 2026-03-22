@@ -485,6 +485,26 @@ export default function GameHUD({
     }
   }, [doneTaskCtx])
 
+  // RTN ticker right-click / long-press context menu
+  const [tickerCtxMenu, setTickerCtxMenu] = useState(null) // { task, x, y }
+  const tickerLPRef = useRef(null)
+  useEffect(() => {
+    if (!tickerCtxMenu) return
+    const timer = setTimeout(() => {
+      const handler = (e) => {
+        const menu = document.querySelector('[data-ticker-ctx-menu]')
+        if (menu && menu.contains(e.target)) return
+        setTickerCtxMenu(null)
+      }
+      document.addEventListener('mousedown', handler)
+      tickerCtxMenu._cleanup = () => document.removeEventListener('mousedown', handler)
+    }, 50)
+    return () => {
+      clearTimeout(timer)
+      tickerCtxMenu._cleanup?.()
+    }
+  }, [tickerCtxMenu])
+
   // Fire-and-forget: update task status via Supabase task-action API
   const taskLifecycleAction = useCallback((action, task) => {
     try {
@@ -1052,6 +1072,19 @@ export default function GameHUD({
                     // Expand the Right Now pill to show task detail
                     setExpandedProject(rightNowProject)
                   }}
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    setTickerCtxMenu({ task, x: e.clientX, y: e.clientY })
+                  }}
+                  onTouchStart={(e) => {
+                    const touch = e.touches[0]
+                    tickerLPRef.current = setTimeout(() => {
+                      tickerLPRef.current = null
+                      setTickerCtxMenu({ task, x: touch.clientX, y: Math.max(8, touch.clientY - 120) })
+                    }, 500)
+                  }}
+                  onTouchEnd={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
+                  onTouchMove={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
                   whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
                   whileTap={{ scale: 0.94 }}
                   className={task.done ? '' : (task.isDoneAwaitingApproval ? 'ticker-task-new' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-new')}
@@ -1649,6 +1682,163 @@ export default function GameHUD({
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#60A5FA', flexShrink: 0 }} />
               Clarify
             </button>
+          </div>
+        )
+      })()}
+
+      {/* RTN ticker right-click / long-press context menu */}
+      {tickerCtxMenu && (() => {
+        const menuW = 240
+        const menuH = tickerCtxMenu.task.isDoneAwaitingApproval ? 185 : 130
+        let x = tickerCtxMenu.x
+        let y = tickerCtxMenu.y
+        if (typeof window !== 'undefined') {
+          if (x + menuW > window.innerWidth - 8) x = window.innerWidth - menuW - 8
+          if (x < 8) x = 8
+          if (y + menuH > window.innerHeight - 8) y = window.innerHeight - menuH - 8
+          if (y < 8) y = 8
+        }
+        const { task } = tickerCtxMenu
+        const borderColor = task.isDoneAwaitingApproval
+          ? 'rgba(245,158,11,0.35)'
+          : task.isQueued
+            ? 'rgba(233,30,144,0.35)'
+            : task.isLive
+              ? 'rgba(255,107,61,0.35)'
+              : 'rgba(100,180,255,0.25)'
+        const headerColor = task.isDoneAwaitingApproval
+          ? '#F59E0B'
+          : task.isQueued
+            ? '#E91E90'
+            : task.isLive
+              ? '#FF6B3D'
+              : '#60A5FA'
+        const clientId = typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom'
+        return (
+          <div data-ticker-ctx-menu style={{
+            position: 'fixed',
+            left: x, top: y,
+            zIndex: 9999,
+            background: 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)',
+            border: `2px solid ${borderColor}`,
+            borderRadius: 10, padding: '6px 0', minWidth: menuW,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(20px)',
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '8px 14px 6px',
+              fontSize: 12, fontWeight: 700,
+              color: headerColor,
+              fontFamily: "'JetBrains Mono', monospace",
+              borderBottom: `1px solid ${borderColor.replace('0.35', '0.15').replace('0.25', '0.12')}`,
+              marginBottom: 4,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+            }}>
+              {(task.text || '').slice(0, 36)}{(task.text || '').length > 36 ? '...' : ''}
+            </div>
+
+            {task.isDoneAwaitingApproval ? (
+              <>
+                {/* Approve */}
+                <button
+                  onClick={() => {
+                    try {
+                      fetch('/api/dashboard/task-action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'toggle', taskText: task.text, taskId: task.taskId || null, agent: task.agent || null, payload: true, clientId }),
+                      }).catch(() => {})
+                      if (task.taskId) {
+                        fetch('/api/dashboard/task-action', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ action: 'markDone', taskText: task.text, taskId: task.taskId || null, agent: task.agent || null, clientId }),
+                        }).catch(() => {})
+                      }
+                    } catch {}
+                    setTickerCtxMenu(null)
+                  }}
+                  style={{ ...hudCtxBtn(true), color: '#22C55E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />
+                  Approve
+                </button>
+
+                {/* Deny */}
+                <button
+                  onClick={() => {
+                    try {
+                      fetch('/api/dashboard/task-action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'markUndone', taskText: task.text, taskId: task.taskId || null, agent: task.agent || null, clientId }),
+                      }).catch(() => {})
+                    } catch {}
+                    setTickerCtxMenu(null)
+                  }}
+                  style={{ ...hudCtxBtn(true), color: '#EF4444', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.10)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
+                  Deny
+                </button>
+
+                <div style={{ height: 1, background: 'rgba(245,158,11,0.12)', margin: '4px 0' }} />
+
+                {/* Clarify */}
+                <button
+                  onClick={() => {
+                    if (onClarify && task.agent) {
+                      onClarify(task.agent, task.text)
+                    } else if (task.agent) {
+                      onAgentClick?.(task.agent)
+                    }
+                    setTickerCtxMenu(null)
+                  }}
+                  style={{ ...hudCtxBtn(true), color: '#60A5FA', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#60A5FA', flexShrink: 0 }} />
+                  Clarify
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Mark Done */}
+                <button
+                  onClick={() => {
+                    taskLifecycleAction('markDone', task)
+                    setTickerCtxMenu(null)
+                  }}
+                  style={{ ...hudCtxBtn(true), color: '#22C55E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />
+                  Mark Done
+                </button>
+
+                {/* Remove */}
+                <button
+                  onClick={() => {
+                    taskLifecycleAction('remove', task)
+                    setTickerCtxMenu(null)
+                  }}
+                  style={{ ...hudCtxBtn(true), color: '#94A3B8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(148,163,184,0.10)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#94A3B8', flexShrink: 0 }} />
+                  Remove
+                </button>
+              </>
+            )}
           </div>
         )
       })()}

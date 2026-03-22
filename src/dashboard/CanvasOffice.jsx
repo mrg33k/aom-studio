@@ -155,10 +155,10 @@ const AGENT_FOLDER_ROOMS = [
   'kohrs', 'nabi', 'outreach', 'ai-advisory', 'included-health',
 ]
 
-// Rooms with a single static PNG (no working/idle pair). 512x512 transparent PNGs.
-// Crop coords are scaled by (naturalWidth/1024) so these render identically to 1024px rooms.
+// Rooms with a single static PNG (no working/idle pair).
+// Crop coords are scaled by (naturalWidth/1024) so both 512px and 1024px render identically.
 const SINGLE_IMAGE_ROOMS = {
-  'patrik': '/rooms/patrik-office.png',
+  'patrik': '/corner/rooms/patrik-room.png',   // 1024x1024 -- upgraded from 512px patrik-office.png
   'aom-team': '/rooms/aom-team-room.png',
 }
 
@@ -194,10 +194,17 @@ function getRoomImageSources(id) {
 // Fallback used before Supabase resolves. Source of truth: agent_status.has_sprite in Supabase.
 const ROOMS_WITH_CHARACTERS_FALLBACK = new Set([
   'elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'jacob', 'tony', 'colton', 'elmo', 'paige',
+  'patrik',  // Patrik has sprites at /corner/sprites/ -- use idle sprite as character layer
 ])
 // Module-level mutable set so ensureRoomImages() always reads the latest value.
 // Updated by the CanvasOffice component once the Supabase fetch resolves.
 let _roomsWithChars = ROOMS_WITH_CHARACTERS_FALLBACK
+
+// Character layer source overrides: rooms that use sprite files instead of the standard
+// ${id}-room/character-layer.png format (e.g. Patrik has sprites but no room folder).
+const CHARACTER_LAYER_OVERRIDES = {
+  'patrik': '/corner/sprites/patrik-idle.png',
+}
 
 // Preload room images. For project/custom rooms, we draw a colored hex placeholder on canvas.
 const roomImages = {}
@@ -216,7 +223,8 @@ function ensureRoomImages(id) {
     if (_roomsWithChars.has(id)) {
       charImg = new Image()
       charImg.crossOrigin = 'anonymous'
-      charImg.src = `/corner/${id}-room/character-layer.png`
+      // Use override path (e.g. sprite file) if defined, else fall back to standard room folder path
+      charImg.src = CHARACTER_LAYER_OVERRIDES[id] || `/corner/${id}-room/character-layer.png`
     }
     roomImages[id] = { working: workImg, idle: idleImg, character: charImg, isPlaceholder: false }
   } else {
@@ -1282,10 +1290,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const S = ROOM_SIZE
       const gridSlots = getHexSlots(slotOrder.length)
       for (let i = 0; i < gridSlots.length; i++) {
-        const slot = gridSlots[i]
-        const pos = hexPosition(slot.row, slot.col, ORIGIN_X, ORIGIN_Y)
-        const ox = pos.x
-        const oy = pos.y
+        // Draw grid cell at the room's ACTUAL position -- either its free-drag override or
+        // the canonical slot position. This prevents the visual mismatch where a manually-placed
+        // room sits at (freePos) but the grid outline stays behind at the original slot.
+        const roomId = slotOrder[i]
+        const freePos = freePositionsRef.current[roomId]
+        let ox, oy
+        if (freePos) {
+          ox = freePos.x
+          oy = freePos.y
+        } else {
+          const slot = gridSlots[i]
+          const pos = hexPosition(slot.row, slot.col, ORIGIN_X, ORIGIN_Y)
+          ox = pos.x
+          oy = pos.y
+        }
         // Viewport cull: skip if bounding box entirely off-screen
         if (ox + S < viewL || ox > viewR || oy + S < viewT || oy > viewB) continue
         ctx.beginPath()
