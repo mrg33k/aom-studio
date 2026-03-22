@@ -8074,7 +8074,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   // Long-press timer for message context menu (mobile)
   const msgLongPressRef = useRef(null)
 
-  // Shared task action handler -- used by BOTH the inline chat confirm card and the pinned confirm box.
+  // Task action handler -- used by the pinned TASK COMPLETE confirmation box.
   // Optimistic removal + animation + API call + error recovery.
   const callTaskAction = (taskId, taskText, action) => {
     const key = taskId || taskText
