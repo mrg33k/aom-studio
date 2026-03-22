@@ -293,6 +293,13 @@ export default function GameHUD({
       return next
     })
   }, [])
+  // Countdown tick: re-render every 1s while tasks are in the 30s undo window
+  const [pendingTick, setPendingTick] = useState(0)
+  useEffect(() => {
+    if (Object.keys(pendingCompletion).length === 0) return
+    const id = setInterval(() => setPendingTick(t => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [pendingCompletion])
   useEffect(() => {
     if (!doneTaskCtx) return
     const timer = setTimeout(() => {
@@ -955,7 +962,11 @@ export default function GameHUD({
                 opacity: hasTickerTasks ? 1 : 0.5,
               }}>RIGHT NOW</span>
               <div style={{ width: 1, height: 20, background: hudDivider, flexShrink: 0 }} />
-              {hasTickerTasks ? tickerTasks.map((task, idx) => (
+              {hasTickerTasks ? tickerTasks.map((task, idx) => {
+                const pcKey = task.taskId ? String(task.taskId) : task.text
+                const isTickerPending = !!pendingCompletion[pcKey]
+                const effectiveDone = task.done || isTickerPending
+                return (
                 <motion.button
                   key={task.manualId || task.text || idx}
                   initial={{ opacity: 0, x: 60, scale: 0.9 }}
@@ -980,26 +991,30 @@ export default function GameHUD({
                   onTouchMove={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
                   whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
                   whileTap={{ scale: 0.94 }}
-                  className={task.done ? '' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-done'}
+                  className={effectiveDone ? '' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-done'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: isMobile ? '10px 14px' : '4px 12px',
                     minHeight: isMobile ? 44 : 'auto',
-                    background: task.done
-                      ? 'rgba(34,197,94,0.12)'
-                      : task.isLive && !task.isQueued
-                        ? 'rgba(255,107,61,0.12)'
-                        : task.isQueued
-                          ? 'rgba(233,30,144,0.12)'
-                          : 'rgba(245,158,11,0.12)',
-                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isLive && !task.isQueued ? 'rgba(255,107,61,0.25)' : task.isQueued ? 'rgba(233,30,144,0.25)' : 'rgba(245,158,11,0.35)'}`,
+                    background: isTickerPending
+                      ? 'rgba(59,130,246,0.10)'
+                      : task.done
+                        ? 'rgba(34,197,94,0.12)'
+                        : task.isLive && !task.isQueued
+                          ? 'rgba(255,107,61,0.12)'
+                          : task.isQueued
+                            ? 'rgba(233,30,144,0.12)'
+                            : 'rgba(245,158,11,0.12)',
+                    border: `1.5px solid ${isTickerPending ? 'rgba(59,130,246,0.30)' : task.done ? 'rgba(34,197,94,0.3)' : task.isLive && !task.isQueued ? 'rgba(255,107,61,0.25)' : task.isQueued ? 'rgba(233,30,144,0.25)' : 'rgba(245,158,11,0.35)'}`,
                     borderRadius: 10,
                     cursor: 'pointer',
                     flexShrink: 0,
                     transition: 'background 150ms ease, border-color 150ms ease',
                   }}
                 >
-                  {task.done ? (
+                  {isTickerPending ? (
+                    <CheckCircle2 size={13} color="#60A5FA" style={{ flexShrink: 0, opacity: 0.7 }} />
+                  ) : task.done ? (
                     <CheckCircle2 size={13} color="#22C55E" style={{ flexShrink: 0 }} />
                   ) : task.isDoneAwaitingApproval ? (
                     <span style={{
@@ -1033,18 +1048,19 @@ export default function GameHUD({
                   <span style={{
                     fontFamily: "'Inter', system-ui, sans-serif",
                     fontSize: 13, fontWeight: 600,
-                    color: task.done ? '#4ADE80' : (isDaytime ? '#F1F5F9' : HUD.textPrimary),
+                    color: isTickerPending ? '#60A5FA' : task.done ? '#4ADE80' : (isDaytime ? '#F1F5F9' : HUD.textPrimary),
                     whiteSpace: 'nowrap',
                     maxWidth: 200,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    textDecoration: task.done ? 'line-through' : 'none',
-                    opacity: task.done ? 0.7 : 1,
+                    textDecoration: effectiveDone ? 'line-through' : 'none',
+                    opacity: effectiveDone ? 0.7 : 1,
                   }}>
                     {task.text}
                   </span>
                 </motion.button>
-              )) : (
+                )
+              }) : (
                 <span style={{
                   fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 700,
                   color: hudTextMuted, letterSpacing: '0.1em', textTransform: 'uppercase',
@@ -1445,7 +1461,7 @@ export default function GameHUD({
                 handleTaskContextAction('markDone', capturedTask, null, null)
                 setPendingCompletion(prev => { const next = { ...prev }; delete next[pcKey]; return next })
               }, 30000)
-              setPendingCompletion(prev => ({ ...prev, [pcKey]: { task: capturedTask, timerId } }))
+              setPendingCompletion(prev => ({ ...prev, [pcKey]: { task: capturedTask, timerId, checkedAt: Date.now() } }))
             }
             setHudTaskCtx(null)
           }} style={hudCtxBtn(isNightMode)}>
@@ -1679,6 +1695,12 @@ export default function GameHUD({
           if (y < 8) y = 8
         }
         const { task } = tickerCtxMenu
+        const tcmPcKey = task.taskId ? String(task.taskId) : task.text
+        const isTcmPending = !!pendingCompletion[tcmPcKey]
+        const tcmSecondsLeft = isTcmPending && pendingCompletion[tcmPcKey].checkedAt
+          ? Math.max(0, Math.ceil((30000 - (Date.now() - pendingCompletion[tcmPcKey].checkedAt)) / 1000))
+          : null
+        void pendingTick // drives countdown re-render
         const borderColor = task.isDoneAwaitingApproval
           ? 'rgba(245,158,11,0.35)'
           : task.isQueued
@@ -1790,19 +1812,41 @@ export default function GameHUD({
               </>
             ) : (
               <>
-                {/* Mark Done */}
-                <button
-                  onClick={() => {
-                    taskLifecycleAction('markDone', task)
-                    setTickerCtxMenu(null)
-                  }}
-                  style={{ ...hudCtxBtn(true), color: '#22C55E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />
-                  Mark Done
-                </button>
+                {isTcmPending ? (
+                  /* Undo: task is in 30s window, let user cancel */
+                  <button
+                    onClick={() => {
+                      handleUndoMarkDone(tcmPcKey)
+                      setTickerCtxMenu(null)
+                    }}
+                    style={{ ...hudCtxBtn(true), color: '#60A5FA', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#60A5FA', flexShrink: 0 }} />
+                    Undo{tcmSecondsLeft !== null ? ` (${tcmSecondsLeft}s)` : ''}
+                  </button>
+                ) : (
+                  /* Mark Done: start the 30s undo window */
+                  <button
+                    onClick={() => {
+                      if (pendingCompletion[tcmPcKey]) clearTimeout(pendingCompletion[tcmPcKey].timerId)
+                      const capturedTask = task
+                      const timerId = setTimeout(() => {
+                        taskLifecycleAction('markDone', capturedTask)
+                        setPendingCompletion(prev => { const next = { ...prev }; delete next[tcmPcKey]; return next })
+                      }, 30000)
+                      setPendingCompletion(prev => ({ ...prev, [tcmPcKey]: { task: capturedTask, timerId, checkedAt: Date.now() } }))
+                      setTickerCtxMenu(null)
+                    }}
+                    style={{ ...hudCtxBtn(true), color: '#22C55E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />
+                    Mark Done
+                  </button>
+                )}
 
                 {/* Remove */}
                 <button
