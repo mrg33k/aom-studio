@@ -321,10 +321,10 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
                   display: 'flex', alignItems: 'center', gap: 6,
                   height: 40, padding: '0 12px',
                   background: isGroupSelected
-                    ? (isDaytime ? 'rgba(100,116,139,0.12)' : 'rgba(203,213,225,0.12)')
+                    ? (isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.15)')
                     : (isDaytime ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'),
                   border: `1.5px solid ${isGroupSelected
-                    ? (isDaytime ? 'rgba(100,116,139,0.35)' : 'rgba(203,213,225,0.4)')
+                    ? (isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(59,130,246,0.40)')
                     : (isDaytime ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)')}`,
                   borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
                   cursor: 'pointer', scrollSnapAlign: 'start',
@@ -342,9 +342,9 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
                     fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
                     fontSize: 12,
                     color: isDaytime ? '#475569' : '#CBD5E1',
-                    background: isDaytime ? 'rgba(100,116,139,0.12)' : 'rgba(203,213,225,0.15)',
+                    background: isDaytime ? 'rgba(59,130,246,0.10)' : 'rgba(59,130,246,0.18)',
                     padding: '2px 6px', borderRadius: 6, lineHeight: 1,
-                    border: `1px solid ${isDaytime ? 'rgba(100,116,139,0.2)' : 'rgba(203,213,225,0.2)'}`,
+                    border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.25)'}`,
                   }}>
                     {groupRemaining}
                   </span>
