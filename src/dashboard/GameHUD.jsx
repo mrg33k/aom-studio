@@ -1010,7 +1010,7 @@ export default function GameHUD({
                   onTouchMove={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
                   whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
                   whileTap={{ scale: 0.94 }}
-                  className={effectiveDone ? '' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-done'}
+                  className={effectiveDone ? '' : task.isLive && !task.isQueued ? (task.agent === 'elon' ? 'ticker-task-elon' : 'ticker-task-live') : task.isQueued ? 'ticker-task-queued' : 'ticker-task-done'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: isMobile ? '10px 14px' : '4px 12px',
@@ -1020,11 +1020,11 @@ export default function GameHUD({
                       : task.done
                         ? 'rgba(34,197,94,0.12)'
                         : task.isLive && !task.isQueued
-                          ? 'rgba(255,107,61,0.12)'
+                          ? (task.agent === 'elon' ? 'rgba(34,197,94,0.12)' : 'rgba(255,107,61,0.12)')
                           : task.isQueued
                             ? 'rgba(233,30,144,0.12)'
                             : 'rgba(245,158,11,0.12)',
-                    border: `1.5px solid ${isTickerPending ? 'rgba(59,130,246,0.30)' : task.done ? 'rgba(34,197,94,0.3)' : task.isLive && !task.isQueued ? 'rgba(255,107,61,0.25)' : task.isQueued ? 'rgba(233,30,144,0.25)' : 'rgba(245,158,11,0.35)'}`,
+                    border: `1.5px solid ${isTickerPending ? 'rgba(59,130,246,0.30)' : task.done ? 'rgba(34,197,94,0.3)' : task.isLive && !task.isQueued ? (task.agent === 'elon' ? 'rgba(34,197,94,0.35)' : 'rgba(255,107,61,0.25)') : task.isQueued ? 'rgba(233,30,144,0.25)' : 'rgba(245,158,11,0.35)'}`,
                     borderRadius: 10,
                     cursor: 'pointer',
                     flexShrink: 0,
@@ -1051,8 +1051,9 @@ export default function GameHUD({
                     }} />
                   ) : task.isLive ? (
                     <span style={{
-                      width: 7, height: 7, borderRadius: '50%', background: '#FF6B3D',
-                      boxShadow: '0 0 6px rgba(255,107,61,0.6)',
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: task.agent === 'elon' ? '#22C55E' : '#FF6B3D',
+                      boxShadow: task.agent === 'elon' ? '0 0 6px rgba(34,197,94,0.7)' : '0 0 6px rgba(255,107,61,0.6)',
                       animation: 'statusPulse 1.5s ease-in-out infinite',
                       flexShrink: 0,
                     }} />
@@ -1409,6 +1410,13 @@ export default function GameHUD({
         }
         .ticker-task-live {
           animation: tickerFlash 2s ease-in-out infinite;
+        }
+        @keyframes tickerFlashGreen {
+          0%, 100% { box-shadow: 0 0 0 rgba(34,197,94,0); }
+          30% { box-shadow: 0 0 12px rgba(34,197,94,0.45); }
+        }
+        .ticker-task-elon {
+          animation: tickerFlashGreen 2s ease-in-out infinite;
         }
         @keyframes spin {
           from { transform: rotate(0deg); }
