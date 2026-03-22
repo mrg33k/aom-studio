@@ -916,20 +916,38 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   // On mount: fetch rooms ORDER BY grid_order from Supabase and replace the
   // module-level default layout order. Falls back to gridSpec ALL_ROOMS if
   // Supabase returns empty or grid_order has never been seeded.
+  // Realtime subscription: re-fetches on any rooms INSERT/UPDATE/DELETE so new
+  // rooms and layout changes appear instantly without a page refresh.
   useEffect(() => {
     if (!supabase) return
-    supabase
-      .from('rooms')
-      .select('id, hidden, grid_order')
-      .not('grid_order', 'is', null)
-      .order('grid_order', { ascending: true })
-      .then(({ data }) => {
-        if (!data || data.length === 0) return
-        const visible = data.filter(r => !r.hidden).map(r => r.id)
-        if (visible.length === 0) return
-        _defaultLayoutOrder = visible
-        setSlotOrder(visible)
-      })
+
+    const applyRoomsData = (data) => {
+      if (!data || data.length === 0) return
+      const visible = data.filter(r => !r.hidden).map(r => r.id)
+      if (visible.length === 0) return
+      _defaultLayoutOrder = visible
+      setSlotOrder(visible)
+    }
+
+    const fetchLayout = () =>
+      supabase
+        .from('rooms')
+        .select('id, hidden, grid_order')
+        .not('grid_order', 'is', null)
+        .order('grid_order', { ascending: true })
+        .then(({ data }) => applyRoomsData(data))
+
+    // Initial fetch
+    fetchLayout()
+
+    // Realtime: re-fetch full sorted layout on any rooms table change.
+    // Re-fetch (not incremental) because ordering requires the full sorted list.
+    const channel = supabase
+      .channel('rooms-layout')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, fetchLayout)
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shuffle animation: tracks rooms transitioning between slots
