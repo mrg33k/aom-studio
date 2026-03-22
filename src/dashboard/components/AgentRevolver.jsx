@@ -3,13 +3,13 @@
 // Contains: PlumbobClipDef, AgentPortrait, AgentRoster, SPRITE_AGENTS
 //
 // DO NOT modify GameHUD.jsx -- this is a pure extraction.
-// Wire up: import { PALETTE, HUD, STATUS_DOT } from './HUDConstants.jsx' once that file is created.
+// Wire up: import { PALETTE, HUD, useStatusDot } from './HUDConstants.jsx' once that file is created.
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Pause, Clock, X, Users } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
-import { PALETTE, HUD, STATUS_DOT, useStatusDot } from './HUDConstants.jsx'
+import { PALETTE, HUD, useStatusDot } from './HUDConstants.jsx'
 import { supabase } from '../lib/supabase.js'
 
 // ---- SIMS PLUMBOB SVG CLIP PATH (the iconic diamond shape) ------------------

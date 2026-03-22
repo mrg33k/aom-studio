@@ -1,5 +1,5 @@
 // HUDConstants.jsx -- extracted from GameHUD.jsx (god file split 1/6)
-// Contains: PALETTE, IS_LOCAL, HUD, STATUS_DOT, parsePunchList, DEFAULT_RECENCY_WEIGHTS,
+// Contains: PALETTE, IS_LOCAL, HUD, useStatusDot, parsePunchList, DEFAULT_RECENCY_WEIGHTS,
 //           useConversationRecency, DEFAULT_MAIN_AGENT
 // Pure extraction -- zero functionality changes.
 
@@ -75,9 +75,6 @@ export function useStatusDot() {
   }, [])
   return statusDot
 }
-
-// Backward-compat static export -- consumers that don't need live updates keep working
-export const STATUS_DOT = STATUS_DOT_FALLBACK
 
 // ---- SECTION MAPS (fallbacks used until Supabase fetch resolves) -------------
 const SECTION_MAP_FALLBACK = {

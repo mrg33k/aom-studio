@@ -8,7 +8,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X, Check } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
-import { PALETTE, HUD, STATUS_DOT, IS_LOCAL } from './HUDConstants.jsx'
+import { PALETTE, HUD, IS_LOCAL } from './HUDConstants.jsx'
 import { supabase } from '../lib/supabase.js'
 import { useLongPress } from '../hooks/useLongPress.js'
 
