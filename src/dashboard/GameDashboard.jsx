@@ -5803,13 +5803,15 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   // Auto-expand task when focusTaskId is set (e.g., from HUD "View Task" or Trello "View Detail")
   useEffect(() => {
     if (!focusTaskId) return
+    // Uncollapse all sections so the task card renders (it may be in a collapsed section)
+    setCollapsedSections({})
     setExpandedTaskId(focusTaskId)
     onFocusTaskHandled?.()
-    // Scroll the expanded task into view after a short render delay
+    // Scroll the expanded task into view -- longer delay to allow uncollapse animation
     setTimeout(() => {
       const el = document.querySelector(`[data-task-key="${CSS.escape(String(focusTaskId))}"]`)
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 150)
+    }, 300)
   }, [focusTaskId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Per-task context notes (in-memory only, persisted to Supabase)

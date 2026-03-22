@@ -713,21 +713,25 @@ export default function GameHUD({
     )
   }, [projects, searchQuery, pinnedPills])
 
-  // All pills: meta first, then one AOM parent pill (all non-meta projects collapse inside it).
-  // Any project not in META_SECTIONS auto-nests under AOM -- no hardcoded slug list to maintain.
-  // New projects from Supabase just work.
+  // All pills: meta first, then pinned child pills (escaped from AOM drawer), then AOM parent.
+  // Any project not in META_SECTIONS auto-nests under AOM -- unless it's pinned, in which case
+  // it escapes the drawer and appears directly in the HUD strip.
   const { visiblePills, overflowPills } = useMemo(() => {
     const meta = []
-    const aomKids = []
+    const pinnedKids = [] // pinned non-meta pills: escape the AOM drawer, appear directly
+    const aomKids = []   // unpinned non-meta pills: collapse into AOM parent
+    const pinned = pinnedPills || new Set()
     for (const p of filteredProjects) {
       if (META_SECTIONS.has(p.section)) {
         meta.push(p)
+      } else if (pinned.has(p.section)) {
+        pinnedKids.push({ ...p, isPinnedChild: true })
       } else {
         aomKids.push(p)
       }
     }
-    const all = [...meta]
-    // Collapse all non-meta projects into one AOM parent pill
+    const all = [...meta, ...pinnedKids]
+    // Collapse remaining non-meta, non-pinned projects into one AOM parent pill
     if (aomKids.length > 0) {
       const allAomTasks = aomKids.flatMap(p => p.tasks)
       all.push({
@@ -745,7 +749,7 @@ export default function GameHUD({
       visiblePills: all,
       overflowPills: [],
     }
-  }, [filteredProjects])
+  }, [filteredProjects, pinnedPills])
 
   // Focus search input when opened
   useEffect(() => {
@@ -841,6 +845,8 @@ export default function GameHUD({
             expandedProject={null}
             isMobile={isMobile}
             isTablet={isTablet}
+            onContextMenu={onProjectContextMenu}
+            pinnedPills={pinnedPills}
           />
         ) : expandedProject && expandedProject.section === 'inbox' ? (
           <InboxPanel

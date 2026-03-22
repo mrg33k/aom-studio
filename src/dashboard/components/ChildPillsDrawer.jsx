@@ -18,6 +18,8 @@ export function ChildPillsDrawer({
   expandedProject,
   isMobile,
   isTablet,
+  onContextMenu,
+  pinnedPills,
 }) {
   const isDaytime = isNightMode === false
   const allTasks = project.tasks.filter(t => !t.isAddPrompt)
@@ -58,16 +60,27 @@ export function ChildPillsDrawer({
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {kids.map(child => (
-            <ProjectCard
-              key={child.section}
-              project={child}
-              isExpanded={expandedProject?.section === child.section}
-              onClick={() => onSelectChild(child)}
-              isNightMode={isNightMode}
-              wiggle={false}
-              isMobile={isMobile}
-              isTablet={isTablet}
-            />
+            <div key={child.section} style={{ position: 'relative', flexShrink: 0 }}>
+              <ProjectCard
+                project={child}
+                isExpanded={expandedProject?.section === child.section}
+                onClick={() => onSelectChild(child)}
+                onContextMenu={onContextMenu}
+                isNightMode={isNightMode}
+                wiggle={false}
+                isMobile={isMobile}
+                isTablet={isTablet}
+              />
+              {pinnedPills?.has(child.section) && (
+                <div style={{
+                  position: 'absolute', top: -3, right: -3,
+                  width: 9, height: 9, borderRadius: '50%',
+                  background: '#3B9EFF',
+                  border: '1.5px solid rgba(10,15,26,0.9)',
+                  pointerEvents: 'none',
+                }} />
+              )}
+            </div>
           ))}
         </div>
       </div>

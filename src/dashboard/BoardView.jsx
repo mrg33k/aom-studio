@@ -1476,17 +1476,20 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       </div>
 
       {/* Board card context menu -- shared Supabase-driven component */}
-      {boardCtxMenu && (
-        <TaskContextMenu
-          position={boardCtxMenu.position}
-          task={boardCtxMenu.task}
-          onClose={() => setBoardCtxMenu(null)}
-          onAction={handleContextAction}
-          isNightMode={isNightMode}
-          projects={[]}
-          showViewDetail={true}
-        />
-      )}
+      <AnimatePresence>
+        {boardCtxMenu && (
+          <TaskContextMenu
+            key="board-ctx"
+            position={boardCtxMenu.position}
+            task={boardCtxMenu.task}
+            onClose={() => setBoardCtxMenu(null)}
+            onAction={handleContextAction}
+            isNightMode={isNightMode}
+            projects={[]}
+            showViewDetail={true}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
