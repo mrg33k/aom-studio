@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { AGENTS, GRID_SPEC } from '../gridSpec.js'
+import { supabase } from '../lib/supabase.js'
 
 // ---- PALETTE ----------------------------------------------------------------
 export const PALETTE = GRID_SPEC.colorPalette
@@ -40,6 +41,74 @@ export const STATUS_DOT = {
   PAUSED:   { color: '#F97316', glow: 'rgba(249,115,22,0.4)', label: 'Paused',   ring: '#F97316' },
 }
 
+// ---- SECTION MAPS (fallbacks used until Supabase fetch resolves) -------------
+const SECTION_MAP_FALLBACK = {
+  'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },
+  'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },
+  'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },
+  'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },
+  'SCHEDULE':          { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },
+  'TODAY':             { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },
+  'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
+  'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
+  'DASHBOARD':         { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
+  'AMBITION':          { name: 'Ambition',  section: 'ambition',   color: '#F59E0B', icon: 'project' },
+  'AOM SITE PHASE 2':  { name: 'Phase 2',   section: 'aom-phase2', color: '#3B9EFF', icon: 'project' },
+  'AOM SITE':          { name: 'AOM Site',  section: 'aom-site',   color: '#5BB8FF', icon: 'project' },
+  'GO-TO-MARKET':      { name: 'Advisory',  section: 'gtm',        color: '#7C9A72', icon: 'project' },
+  'OUTREACH':          { name: 'Outreach',  section: 'outreach',   color: '#EF4444', icon: 'project' },
+  'CLIENT DEADLINE':   { name: 'Deadlines', section: 'deadlines',  color: '#F97316', icon: 'project' },
+  'INFRASTRUCTURE':    { name: 'Infra',     section: 'infra',      color: '#4CAF50', icon: 'project' },
+  'THIS WEEK':         { name: 'This Week', section: 'week',       color: '#9C27B0', icon: 'project' },
+  'CLEO':              { name: 'Cleo',      section: 'cleo',       color: '#FF7043', icon: 'project' },
+  'CONTENT':           { name: 'Content',   section: 'content',    color: '#FF7043', icon: 'project' },
+  'ISA':               { name: 'ISA',       section: 'isa',        color: '#F97316', icon: 'project' },
+  'SKYLAR':            { name: 'Skylar',    section: 'skylar',     color: '#EC4899', icon: 'project' },
+  'KOHRS':             { name: 'KOHRS',     section: 'kohrs',      color: '#EF4444', icon: 'project' },
+}
+
+const CLIENT_SUBSECTION_MAP_FALLBACK = {
+  'INCLUDED HEALTH':    { name: 'IH',        section: 'ih',              color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
+  'AMBITION':           { name: 'Ambition',  section: 'ambition-client', color: '#22C55E', icon: 'client', statusColor: '#22C55E' },
+  'KOHRS':              { name: 'KOHRS',     section: 'kohrs-client',    color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
+  'ISA ENERGY':         { name: 'ISA',       section: 'isa-client',      color: '#F97316', icon: 'client', statusColor: '#EF4444' },
+  'SKYLAR':             { name: 'Skylar',    section: 'skylar-client',   color: '#EC4899', icon: 'client', statusColor: '#F59E0B' },
+  'BRANDON':            { name: 'Brandon',   section: 'brandon-client',  color: '#F59E0B', icon: 'client', statusColor: '#F59E0B' },
+  'NABI':               { name: 'NABI',      section: 'nabi-client',     color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
+  'LBX':                { name: 'LBX',       section: 'lbx-client',      color: '#6B7280', icon: 'client', statusColor: '#6B7280' },
+}
+
+// Module-level cache. null = not yet fetched; fallback used until populated.
+let _sectionMap = null
+let _clientSubsectionMap = null
+
+// Hook: fetch section_mappings from Supabase once on mount.
+// Updates module-level cache so all subsequent parsePunchList calls use live data.
+// Call this in any component that renders HUD pills or a checklist (GameHUD, ChecklistMode).
+export function useSectionMappings() {
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('section_mappings')
+      .select('markdown_header,ui_name,section_slug,color,icon,is_client_section')
+      .then(({ data, error }) => {
+        if (error || !data?.length) return
+        const sm = {}
+        const csm = {}
+        for (const row of data) {
+          const entry = { name: row.ui_name, section: row.section_slug, color: row.color, icon: row.icon }
+          if (row.is_client_section) {
+            csm[row.markdown_header] = { ...entry, statusColor: row.color }
+          } else {
+            sm[row.markdown_header] = entry
+          }
+        }
+        if (Object.keys(sm).length > 0) _sectionMap = sm
+        if (Object.keys(csm).length > 0) _clientSubsectionMap = csm
+      })
+  }, [])
+}
+
 // ---- PUNCH LIST PARSER ------------------------------------------------------
 export function parsePunchList(markdown) {
   if (!markdown) return { projects: [], todayTasks: [] }
@@ -50,44 +119,9 @@ export function parsePunchList(markdown) {
   let currentSection = ''
   let currentProject = null
 
-  // Section name -> project config mapping
-  const SECTION_MAP = {
-    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // Reverted to Right Now per Patrik (was briefly Inbox in Round 2).
-    'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },  // Patrik's personal blocked items
-    'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Stale tasks needing attention (was "Checking In")
-    'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Legacy alias
-    'SCHEDULE':          { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },
-    'TODAY':             { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },  // Legacy alias
-    'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
-    'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
-    'DASHBOARD':         { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
-    'AMBITION':          { name: 'Ambition',  section: 'ambition',   color: '#F59E0B', icon: 'project' },
-    'AOM SITE PHASE 2':  { name: 'Phase 2',   section: 'aom-phase2', color: '#3B9EFF', icon: 'project' },
-    'AOM SITE':          { name: 'AOM Site',  section: 'aom-site',   color: '#5BB8FF', icon: 'project' },
-    'GO-TO-MARKET':      { name: 'Advisory',  section: 'gtm',        color: '#7C9A72', icon: 'project' },
-    'OUTREACH':          { name: 'Outreach',  section: 'outreach',   color: '#EF4444', icon: 'project' },
-    'CLIENT DEADLINE':   { name: 'Deadlines', section: 'deadlines',  color: '#F97316', icon: 'project' },
-    'INFRASTRUCTURE':    { name: 'Infra',     section: 'infra',      color: '#4CAF50', icon: 'project' },
-    'THIS WEEK':         { name: 'This Week', section: 'week',       color: '#9C27B0', icon: 'project' },
-    'CLEO':              { name: 'Cleo',      section: 'cleo',       color: '#FF7043', icon: 'project' },
-    'CONTENT':           { name: 'Content',   section: 'content',    color: '#FF7043', icon: 'project' },
-    'ISA':               { name: 'ISA',       section: 'isa',        color: '#F97316', icon: 'project' },
-    'SKYLAR':            { name: 'Skylar',    section: 'skylar',     color: '#EC4899', icon: 'project' },
-    'KOHRS':             { name: 'KOHRS',     section: 'kohrs',      color: '#EF4444', icon: 'project' },
-  }
-
-  // CLIENT PROJECTS subsection -> pill config mapping
-  // These are real paying clients. They MUST show in the HUD.
-  const CLIENT_SUBSECTION_MAP = {
-    'INCLUDED HEALTH':    { name: 'IH',        section: 'ih',         color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
-    'AMBITION':           { name: 'Ambition',  section: 'ambition-client', color: '#22C55E', icon: 'client', statusColor: '#22C55E' },
-    'KOHRS':              { name: 'KOHRS',     section: 'kohrs-client',    color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
-    'ISA ENERGY':         { name: 'ISA',       section: 'isa-client',      color: '#F97316', icon: 'client', statusColor: '#EF4444' },
-    'SKYLAR':             { name: 'Skylar',    section: 'skylar-client',   color: '#EC4899', icon: 'client', statusColor: '#F59E0B' },
-    'BRANDON':            { name: 'Brandon',   section: 'brandon-client',  color: '#F59E0B', icon: 'client', statusColor: '#F59E0B' },
-    'NABI':               { name: 'NABI',      section: 'nabi-client',     color: '#EF4444', icon: 'client', statusColor: '#EF4444' },
-    'LBX':                { name: 'LBX',       section: 'lbx-client',      color: '#6B7280', icon: 'client', statusColor: '#6B7280' },
-  }
+  // Use live Supabase data when available, fall back to hardcoded maps
+  const SECTION_MAP = _sectionMap || SECTION_MAP_FALLBACK
+  const CLIENT_SUBSECTION_MAP = _clientSubsectionMap || CLIENT_SUBSECTION_MAP_FALLBACK
 
   let inClientProjects = false // track when we're inside ## CLIENT PROJECTS
 
@@ -328,6 +362,36 @@ export function useConversationRecency() {
   }, [])
 
   return scores
+}
+
+// Hook to fetch recency weights from Supabase projects table.
+// Merges DEFAULT_RECENCY_WEIGHTS (base) with projects.recency_weight (override).
+// Starts initialized so first render is usable with no null check downstream.
+export function useRecencyWeights() {
+  const [weights, setWeights] = useState(DEFAULT_RECENCY_WEIGHTS)
+
+  useEffect(() => {
+    if (!supabase) return
+    const fetchWeights = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('slug, recency_weight')
+          .eq('is_active', true)
+        if (error || !data || data.length === 0) return
+        const supabaseWeights = {}
+        for (const row of data) {
+          if (row.slug && row.recency_weight != null) {
+            supabaseWeights[row.slug] = row.recency_weight
+          }
+        }
+        setWeights({ ...DEFAULT_RECENCY_WEIGHTS, ...supabaseWeights })
+      } catch {}
+    }
+    fetchWeights()
+  }, [])
+
+  return weights
 }
 
 // ---- AGENT ROSTER (Main agent prominent + expand + right-click revolver) ----

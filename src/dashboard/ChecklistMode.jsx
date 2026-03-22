@@ -47,6 +47,7 @@ import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import { supabase } from './lib/supabase.js'
+import { parsePunchList, useSectionMappings } from './components/HUDConstants.jsx'
 
 // Sprite avatar -- fallback used before Supabase resolves (or if unavailable)
 const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel'])
@@ -93,129 +94,7 @@ function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, sp
   )
 }
 
-// ---- PUNCH LIST PARSER (same as GameHUD, reused for project grouping) --------
-function parsePunchList(markdown) {
-  if (!markdown) return { projects: [], todayTasks: [] }
-
-  const lines = markdown.split('\n')
-  const projects = []
-  const todayTasks = []
-  let currentSection = ''
-  let currentProject = null
-
-  const SECTION_MAP = {
-    'RIGHT NOW':         { name: 'Right Now', section: 'rightnow',   color: '#FF6B3D', icon: 'zap' },  // Reverted to Right Now per Patrik (was briefly Inbox in Round 2)
-    'YOUR TODOS':        { name: 'Your TODOs', section: 'your-todos', color: '#EF4444', icon: 'user-check' },
-    'FINISH THESE':      { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Was "Checking In"
-    'CHECKING IN':       { name: 'Finish These', section: 'finish-these', color: '#6B8AB0', icon: 'history' },  // Legacy alias
-    'SCHEDULE':          { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },
-    'TODAY':             { name: 'Schedule',  section: 'schedule',   color: '#FF6B3D', icon: 'flame' },  // Legacy alias
-    'CORNER':            { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
-    'PRODUCT':           { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
-    'DASHBOARD':         { name: 'Corner',    section: 'corner',     color: '#3B9EFF', icon: 'project' },
-    'AMBITION':          { name: 'Ambition',  section: 'ambition',   color: '#F59E0B', icon: 'project' },
-    'AOM SITE PHASE 2':  { name: 'Phase 2',   section: 'aom-phase2', color: '#3B9EFF', icon: 'project' },
-    'AOM SITE':          { name: 'AOM Site',  section: 'aom-site',   color: '#5BB8FF', icon: 'project' },
-    'GO-TO-MARKET':      { name: 'Advisory',  section: 'gtm',        color: '#7C9A72', icon: 'project' },
-    'OUTREACH':          { name: 'Outreach',  section: 'outreach',   color: '#EF4444', icon: 'project' },
-    'CLIENT DEADLINE':   { name: 'Deadlines', section: 'deadlines',  color: '#F97316', icon: 'project' },
-    'INFRASTRUCTURE':    { name: 'Infra',     section: 'infra',      color: '#4CAF50', icon: 'project' },
-    'THIS WEEK':         { name: 'This Week', section: 'week',       color: '#9C27B0', icon: 'project' },
-    'CLEO':              { name: 'Cleo',      section: 'cleo',       color: '#FF7043', icon: 'project' },
-    'CONTENT':           { name: 'Content',   section: 'content',    color: '#FF7043', icon: 'project' },
-    'ISA':               { name: 'ISA',       section: 'isa',        color: '#F97316', icon: 'project' },
-    'SKYLAR':            { name: 'Skylar',    section: 'skylar',     color: '#EC4899', icon: 'project' },
-    'KOHRS':             { name: 'KOHRS',     section: 'kohrs',      color: '#EF4444', icon: 'project' },
-  }
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-
-    if (trimmed.startsWith('## ')) {
-      currentSection = trimmed.replace('## ', '').trim()
-      const sectionUpper = currentSection.toUpperCase()
-
-      if (sectionUpper.startsWith('AGENTS')) {
-        currentProject = null
-        continue
-      }
-
-      let matched = null
-      if (sectionUpper.includes('AOM SITE') && sectionUpper.includes('PHASE 2')) {
-        matched = SECTION_MAP['AOM SITE PHASE 2']
-      } else {
-        for (const [key, config] of Object.entries(SECTION_MAP)) {
-          if (key !== 'AOM SITE PHASE 2' && sectionUpper.startsWith(key)) {
-            matched = config
-            break
-          }
-        }
-      }
-
-      if (matched) {
-        const existing = projects.find(p => p.section === matched.section)
-        if (existing) {
-          currentProject = existing
-        } else {
-          currentProject = { ...matched, tasks: [] }
-          projects.push(currentProject)
-        }
-      } else {
-        currentProject = null
-      }
-      continue
-    }
-
-    if (currentProject && (trimmed.startsWith('- [') || trimmed.startsWith('| '))) {
-      const isDone = trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]')
-      const isCheckbox = trimmed.startsWith('- [')
-
-      if (isCheckbox) {
-        const lastBracket = trimmed.match(/\[([A-Za-z]+)\][\s]*$/)
-        let agent = null
-        if (lastBracket) {
-          const name = lastBracket[1]
-          const found = AGENTS.find(a => a.name.toLowerCase() === name.toLowerCase() || a.slug === name.toLowerCase())
-          if (found) agent = found.slug
-          if (!agent) {
-            if (name.toLowerCase() === 'patrik') agent = 'patrik'
-            else if (name.toLowerCase() === 'ash') agent = 'ash'
-          }
-        }
-
-        let text = trimmed
-          .replace(/^- \[[ xX]\]\s*/, '')
-          .replace(/~~([^~]+)~~/, '$1')
-          .replace(/\*\*([^*]+)\*\*/g, '$1')
-          .replace(/\[([A-Za-z]+(?:\s*(?:--|[+])\s*[^\]]*)?)\]\s*$/, '')
-          .replace(/\[([A-Za-z]+)\s*--\s*[^\]]*\]/, '')
-          .trim()
-
-        if (text.length > 100) text = text.slice(0, 97) + '...'
-
-        currentProject.tasks.push({ text, done: isDone, agent, raw: trimmed })
-
-        if (currentProject.section === 'schedule' && !isDone) {
-          todayTasks.push({ text, done: isDone, agent, project: 'Schedule' })
-        }
-      }
-
-      if (trimmed.startsWith('| ') && !trimmed.includes('---') && currentProject?.section === 'deadlines') {
-        const cols = trimmed.split('|').map(s => s.trim()).filter(Boolean)
-        if (cols.length >= 3 && cols[0] !== 'Client') {
-          const text = `${cols[0]}: ${cols[1]} (${cols[2]})`
-          const done = cols[3]?.toLowerCase().includes('done') || cols[3]?.toLowerCase().includes('wrapped')
-          currentProject.tasks.push({ text: text.slice(0, 100), done, agent: null, raw: trimmed })
-        }
-      }
-    }
-  }
-
-  return {
-    projects: projects.filter(p => p.tasks.length > 0),
-    todayTasks,
-  }
-}
+// parsePunchList and useSectionMappings imported from HUDConstants.jsx above
 
 // Default recency weights (fallback when conversation data unavailable)
 const DEFAULT_RECENCY_WEIGHTS = {
@@ -1758,6 +1637,9 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const handleContextAction = useCallback((action, task, payload) => {
     handleTaskContextAction(action, task, payload, setCheckedTasks)
   }, [])
+
+  // Populate section_mappings cache from Supabase (once on mount)
+  useSectionMappings()
 
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
   const {

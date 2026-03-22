@@ -64,6 +64,7 @@ import { getClientId } from './lib/clientConfig.js'
 import {
   HUD,
   parsePunchList,
+  useSectionMappings,
   useConversationRecency,
   DEFAULT_RECENCY_WEIGHTS,
 } from './components/HUDConstants.jsx'
@@ -528,6 +529,9 @@ export default function GameHUD({
   const [rightNowWiggle, setRightNowWiggle] = useState(false)
   // navigateToProject uses a ref so it doesn't depend on projects useMemo (avoids ordering issue)
   const projectsRef = useRef([]);
+  // Populate section_mappings cache from Supabase (once on mount)
+  useSectionMappings()
+
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
   const {
     rightNow: liveRightNowTasks,
