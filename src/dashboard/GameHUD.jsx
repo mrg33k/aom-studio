@@ -1235,10 +1235,10 @@ export default function GameHUD({
             position: 'fixed',
             left: x, top: y,
             zIndex: 9999,
-            background: 'linear-gradient(180deg, rgba(15,30,60,0.98) 0%, rgba(10,20,45,0.98) 100%)',
-            border: '2px solid rgba(59,130,246,0.45)',
+            background: 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)',
+            border: '2px solid rgba(59,130,246,0.50)',
             borderRadius: 10, padding: '6px 0', minWidth: menuW,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.15)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.20), 0 0 28px rgba(59,130,246,0.10)',
             backdropFilter: 'blur(20px)',
           }}>
             {/* Header */}
