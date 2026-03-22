@@ -1034,7 +1034,7 @@ function PasswordGate({ onAuth }) {
         <div key={`star-${i}`} style={{
           position: 'absolute', left: s.left, top: s.top,
           width: s.size, height: s.size, borderRadius: '50%',
-          background: s.bright ? 'rgba(100,180,255,0.9)' : 'rgba(200,210,230,0.5)',
+          background: s.bright ? 'rgba(100,180,255,0.9)' : 'rgba(80,120,200,0.45)',
           boxShadow: s.bright ? '0 0 6px rgba(100,180,255,0.4)' : 'none',
           animation: `gateStarTwinkle ${s.duration} ease-in-out ${s.delay} infinite`,
           pointerEvents: 'none',
