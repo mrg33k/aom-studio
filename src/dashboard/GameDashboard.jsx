@@ -2093,8 +2093,10 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
 
         {/* Interactive room overlays - click targets, nameplates, status */}
         {/* C4: Wave animation on load, Crossy Road bounce on hover, isometric clip-path */}
-        {rooms.map((room, roomIndex) => {
-          const target = IMAGE_ROOM_TARGETS[room.id]
+        {/* Room shuffle: outer motion.div is the room's bounding box, springs to new slot on swap */}
+        {rooms.map((room) => {
+          const slotId = roomPositions[room.id] || room.id
+          const target = IMAGE_ROOM_TARGETS[slotId]
           if (!target) return null
 
           const hasAgent = room.agent !== null
@@ -2107,25 +2109,39 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
           const isAway = agentAnimations?.[room.id]?.state === 'away'
           const showNameplate = detailLevel !== 'detail'
           const waveDelay = getRoomWaveDelay(room.id)
+          const isDropTarget = dropRoomId === room.id && dragRoomId && dragRoomId !== room.id
+          const isDragging = dragRoomId === room.id
 
           return (
             <motion.div
               key={room.id}
               initial={{ opacity: 0, scale: 0.7, y: 20 }}
-              animate={hasLoaded ? {
-                opacity: 1, scale: 1, y: 0,
-              } : {}}
-              transition={{
-                delay: waveDelay,
-                type: 'spring',
-                stiffness: 380,
-                damping: 16,
-                mass: 0.6,
+              animate={{
+                opacity: hasLoaded ? (isDragging ? 0.45 : 1) : 0,
+                scale: hasLoaded ? 1 : 0.7,
+                y: hasLoaded ? 0 : 20,
+                left: `${target.x}%`,
+                top: `${target.y}%`,
               }}
-              style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+              transition={{
+                opacity: { delay: hasLoaded ? 0 : waveDelay, duration: 0.3 },
+                scale: { delay: waveDelay, type: 'spring', stiffness: 380, damping: 16, mass: 0.6 },
+                y: { delay: waveDelay, type: 'spring', stiffness: 380, damping: 16, mass: 0.6 },
+                left: { type: 'spring', stiffness: 280, damping: 24, mass: 0.8 },
+                top: { type: 'spring', stiffness: 280, damping: 24, mass: 0.8 },
+              }}
+              style={{
+                position: 'absolute',
+                left: `${target.x}%`,
+                top: `${target.y}%`,
+                width: `${target.w}%`,
+                height: `${target.h}%`,
+                overflow: 'visible',
+                pointerEvents: 'none',
+              }}
             >
               {/* NAMEPLATE PNG: Steffen's catalog asset, wall-mounted inside room */}
-              {/* 128x64 transparent PNG at 2x, centered on back wall ~60% up */}
+              {/* Position relative to room box: 20% from left, 8% from top */}
               {showNameplate && hasAgent && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.7, y: -8 }}
@@ -2133,8 +2149,8 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   transition={{ delay: waveDelay + 0.15, type: 'spring', stiffness: 400, damping: 18, mass: 0.6 }}
                   style={{
                     position: 'absolute',
-                    left: `${target.x + target.w * 0.2}%`,
-                    top: `${target.y + target.h * 0.08}%`,
+                    left: '20%',
+                    top: '8%',
                     display: 'flex', flexDirection: 'column', alignItems: 'center',
                     pointerEvents: 'none', zIndex: 10,
                   }}
@@ -2180,7 +2196,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
               )}
 
               {/* DOOR SIGN PNG: Steffen's catalog asset, outside room entrance */}
-              {/* 96x128 vertical sign with room number + agent name + status dot */}
+              {/* Position relative to room box: right edge, slightly above top */}
               {showNameplate && hasAgent && AGENT_ROOM_NUMBERS[room.id] && (
                 <motion.div
                   initial={{ opacity: 0, y: -12 }}
@@ -2188,8 +2204,8 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                   transition={{ delay: waveDelay + 0.25, type: 'spring', stiffness: 350, damping: 20, mass: 0.5 }}
                   style={{
                     position: 'absolute',
-                    left: `${target.x + target.w - 1.5}%`,
-                    top: `${target.y - 1}%`,
+                    left: `${(target.w - 1.5) / target.w * 100}%`,
+                    top: `${-100 / target.h}%`,
                     pointerEvents: 'none', zIndex: 9,
                   }}
                 >
@@ -2215,13 +2231,13 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
               {/* INVISIBLE HITBOX: No drawn diamond outlines. Office image walls define rooms.
                   Hover effect = subtle inner glow only (OVO approach). */}
 
-              {/* Always-visible agent name label -- anchored below room at overview zoom, hidden at detail zoom */}
+              {/* Always-visible agent name label -- relative to box bottom edge */}
               {hasAgent && detailLevel !== 'detail' && (
                 <div style={{
                   position: 'absolute',
-                  left: `${target.x}%`,
-                  top: `${target.y + target.h - 1}%`,
-                  width: `${target.w}%`,
+                  left: 0,
+                  top: `${(target.h - 1) / target.h * 100}%`,
+                  width: '100%',
                   display: 'flex', justifyContent: 'center',
                   pointerEvents: 'none',
                   zIndex: 11,
@@ -2252,12 +2268,13 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 </div>
               )}
 
-              {/* Click target overlay - INVISIBLE HITBOX with diamond clip-path for isometric hit detection */}
+              {/* Click target overlay - INVISIBLE HITBOX filling the room box (inset: 0) */}
               {/* OVO approach: invisible hotspots matching existing art boundaries */}
               {/* Diamond clip-path prevents overlapping rectangular hitboxes from stealing clicks */}
               <motion.div
                 data-room-id={room.id}
-                onClick={() => hasAgent && onRoomClick?.(room.id)}
+                draggable={hasAgent}
+                onClick={() => hasAgent && !isDragging && onRoomClick?.(room.id)}
                 onContextMenu={(e) => hasAgent && onRoomContextMenu?.(e, room.id)}
                 onMouseEnter={() => setHoveredRoom(room.id)}
                 onMouseLeave={() => setHoveredRoom(null)}
@@ -2272,6 +2289,36 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 }}
                 onTouchEnd={() => clearTimeout(roomLongPressRef.current)}
                 onTouchMove={() => clearTimeout(roomLongPressRef.current)}
+                onDragStart={(e) => {
+                  if (!hasAgent) return
+                  isRoomDragging.current = true
+                  setDragRoomId(room.id)
+                  e.dataTransfer.effectAllowed = 'move'
+                  e.dataTransfer.setData('text/plain', room.id)
+                }}
+                onDragEnd={() => {
+                  isRoomDragging.current = false
+                  setDragRoomId(null)
+                  setDropRoomId(null)
+                }}
+                onDragOver={(e) => {
+                  if (!dragRoomId || !hasAgent || room.id === dragRoomId) return
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                  setDropRoomId(room.id)
+                }}
+                onDragLeave={() => {
+                  setDropRoomId(prev => prev === room.id ? null : prev)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  const dragged = e.dataTransfer.getData('text/plain') || dragRoomId
+                  if (dragged && room.id !== dragged && hasAgent) {
+                    performSwap(dragged, room.id)
+                  }
+                  setDragRoomId(null)
+                  setDropRoomId(null)
+                }}
                 whileHover={hasAgent ? {
                   scale: 1.02,
                   transition: { type: 'spring', stiffness: 500, damping: 12, mass: 0.5 }
@@ -2282,22 +2329,25 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 } : {}}
                 style={{
                   position: 'absolute',
-                  left: `${target.x}%`,
-                  top: `${target.y}%`,
-                  width: `${target.w}%`,
-                  height: `${target.h}%`,
-                  cursor: hasAgent ? 'pointer' : 'default',
+                  inset: 0,
+                  cursor: hasAgent ? (dragRoomId ? 'copy' : 'grab') : 'default',
                   pointerEvents: 'auto',
                   clipPath: target.clipPath,
-                  zIndex: (isHovered || isSelected) ? 5 : 2,
+                  zIndex: (isHovered || isSelected || isDropTarget) ? 5 : 2,
                   borderRadius: 6,
-                  background: (isHovered || isSelected) && hasAgent
-                    ? `radial-gradient(ellipse, ${agentColor}30 0%, ${agentColor}08 50%, transparent 80%)`
-                    : 'transparent',
-                  boxShadow: (isHovered || isSelected) && hasAgent
-                    ? `inset 0 0 40px ${agentColor}18`
-                    : 'none',
-                  transition: 'background 250ms ease, box-shadow 250ms ease',
+                  background: isDropTarget
+                    ? `radial-gradient(ellipse, ${agentColor}55 0%, ${agentColor}20 50%, transparent 80%)`
+                    : (isHovered || isSelected) && hasAgent
+                      ? `radial-gradient(ellipse, ${agentColor}30 0%, ${agentColor}08 50%, transparent 80%)`
+                      : 'transparent',
+                  boxShadow: isDropTarget
+                    ? `inset 0 0 40px ${agentColor}40`
+                    : (isHovered || isSelected) && hasAgent
+                      ? `inset 0 0 40px ${agentColor}18`
+                      : 'none',
+                  outline: isDropTarget ? `2px dashed ${agentColor}90` : 'none',
+                  outlineOffset: '-6px',
+                  transition: 'background 250ms ease, box-shadow 250ms ease, outline 150ms ease',
                 }}
               >
                 {isAway && (
