@@ -699,32 +699,22 @@ export default function GameHUD({
       })
     }
 
-    // TO DO pill = queued/planned tasks (todo status from any agent) + Patrik's personal tasks
-    const allTodos = [
-      ...personalTodos.map(t => ({
-        text: t.text,
-        done: false,
-        agent: 'patrik',
-        raw: '',
-        taskId: t.taskId,
-        projectSource: t.project,
-      })),
-      ...(todoItems || []).map(t => ({
-        text: t.text,
-        done: false,
-        agent: t.agent,
-        raw: '',
-        taskId: t.taskId,
-        projectSource: t.project,
-      })),
-    ]
-    if (allTodos.length > 0) {
+    // TO DO pill = Patrik's personal tasks ONLY (business tasks, client follow-ups)
+    // Agent todo tasks (status='todo') are NOT personal todos -- visible in their project pills
+    if (personalTodos.length > 0) {
       merged.push({
         name: 'To Do',
         section: 'to-do',
         color: '#8B5CF6',
         icon: 'list-todo',
-        tasks: allTodos,
+        tasks: personalTodos.map(t => ({
+          text: t.text,
+          done: false,
+          agent: 'patrik',
+          raw: '',
+          taskId: t.taskId,
+          projectSource: t.project,
+        })),
         isPersonalTodo: true,
       })
     }
@@ -805,7 +795,7 @@ export default function GameHUD({
       }
     }
 
-    // Sort order (Patrik directive): Right Now > Inbox > Your TODOs > Schedule > Finish These > rest
+    // Sort order (Patrik directive): Right Now > Inbox > To Do (personal) > Your TODOs > Schedule > Finish These > rest
     return [...merged].sort((a, b) => {
       // Right Now is always first (running agents)
       if (a.section === 'rightnow') return -1
@@ -838,7 +828,7 @@ export default function GameHUD({
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, weights, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, personalTodos, todoItems, checkingInTasks, manualTasks, inboxItems])
+  }, [punchData, weights, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, personalTodos, checkingInTasks, manualTasks, inboxItems])
 
   // Keep ref in sync for navigateToProject callback
   projectsRef.current = projects
