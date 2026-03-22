@@ -1100,6 +1100,21 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       // Reload slot order from defaults (triggers re-render so rooms visually snap)
       setSlotOrder(loadSlotOrder())
     },
+    // Immediately add a new room to the canvas (called after FAB creation).
+    // Also fires from Realtime when rooms table changes, but this gives instant feedback.
+    addRoom: ({ slug, name, color, type = 'agent' }) => {
+      if (!slug) return
+      // Register in ROOM_META so the canvas knows name/color/type
+      ROOM_META[slug] = {
+        name: (name || slug).toUpperCase(),
+        color: color || '#60A5FA',
+        type,
+      }
+      // Preload placeholder (no PNGs for custom rooms -- renders colored hex)
+      ensureRoomImages(slug)
+      // Append to slot order only if not already present
+      setSlotOrder(prev => prev.includes(slug) ? prev : [...prev, slug])
+    },
   }), [triggerCelebration, slotOrder])
 
   // ---- AUTO-TEST: trigger celebration wave every 60 seconds ----

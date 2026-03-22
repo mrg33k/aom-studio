@@ -12403,7 +12403,12 @@ export default function GameDashboard() {
           isNightMode={isNightMode}
           isMobile={isMobile}
           sidebarWidthPct={(!isMobile && selectedRoom && (selectedRoom === 'aom' || selectedRoom === 'aom-team' || ROOM_LOOKUP[selectedRoom])) ? (panelExtended ? 65 : 30) : 0}
-          onRoomCreated={() => pipeData?.refetch?.()}
+          onRoomCreated={(room) => {
+            // Immediate canvas update (no Realtime debounce)
+            canvasOfficeRef.current?.addRoom?.(room)
+            // Refetch pipeline data (HUD, agent roster, tasks)
+            pipeData?.refetch?.()
+          }}
         />
       )}
 

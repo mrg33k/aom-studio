@@ -200,6 +200,7 @@ export default function CreateRoomModal({ isOpen, onClose, isNightMode, onRoomCr
       } else {
         const { supabase } = await import('../lib/supabase.js')
         if (supabase) {
+          // 1. Write agent to agent_status
           const { error: sbErr } = await supabase
             .from('agent_status')
             .upsert({
@@ -213,6 +214,25 @@ export default function CreateRoomModal({ isOpen, onClose, isNightMode, onRoomCr
               client_id: 'aom',
             }, { onConflict: 'slug' })
           if (sbErr) throw new Error(sbErr.message)
+
+          // 2. Write to rooms table so CanvasOffice Realtime shows the hex room
+          const { data: maxData } = await supabase
+            .from('rooms')
+            .select('grid_order')
+            .order('grid_order', { ascending: false })
+            .limit(1)
+          const nextOrder = (maxData?.[0]?.grid_order ?? 16) + 1
+          const { error: roomErr } = await supabase
+            .from('rooms')
+            .upsert({
+              id: slug,
+              name,
+              color: selectedRole.color,
+              type: 'agent',
+              hidden: false,
+              grid_order: nextOrder,
+            }, { onConflict: 'id' })
+          if (roomErr) console.warn('[CreateRoomModal] rooms upsert:', roomErr.message)
         } else {
           await new Promise(r => setTimeout(r, 300))
         }
