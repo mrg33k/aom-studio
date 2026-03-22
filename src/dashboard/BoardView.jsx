@@ -4,7 +4,7 @@
 // Data source: pipeData from useDataPipe hook (rightNow, completedFeed, punchData)
 // DONE(bobby): touch drag-and-drop for iPad/mobile using Pointer Events API
 
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect, Fragment } from 'react'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 
 const BOARD_IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -96,7 +96,7 @@ function removeTouchGhost() {
 
 // ── BOARD CARD ──────────────────────────────────────────────────────────────
 
-function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop }) {
+function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop, onDragOverCard }) {
   const agentSlug = entry.agent?.toLowerCase()
   const agentColor = getAgentColor(agentSlug)
   const taskText = entry.text || entry.description || entry.currentTask || 'No task'
@@ -112,6 +112,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
     startY: 0,
     pointerId: null,
     longPressTimer: null,
+    inColInsertIdx: null,
   })
 
   // Only show agent badge if it differs from the column we're in
@@ -172,9 +173,28 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
         const colEl = el?.closest('[data-board-col]')
         const allCols = document.querySelectorAll('[data-board-col]')
         allCols.forEach(c => c.setAttribute('data-drop-hover', c === colEl ? '1' : '0'))
+
+        // Compute within-column insert position for reorder feedback
+        const toCol = colEl?.getAttribute('data-board-col')
+        if (toCol === columnKey) {
+          const cardEls = [...(colEl?.querySelectorAll('[data-board-card-idx]') || [])]
+          let insertIdx = cardEls.length
+          for (const cardEl of cardEls) {
+            const r = cardEl.getBoundingClientRect()
+            if (e.clientY < r.top + r.height / 2) {
+              insertIdx = parseInt(cardEl.getAttribute('data-board-card-idx'))
+              break
+            }
+          }
+          state.inColInsertIdx = insertIdx
+          onDragOverCard?.(insertIdx)
+        } else {
+          state.inColInsertIdx = null
+          onDragOverCard?.(null)
+        }
       }
     }
-  }, [onDragStart])
+  }, [onDragStart, onDragOverCard, columnKey])
 
   const handlePointerUp = useCallback((e) => {
     const state = pointerDragRef.current
@@ -187,34 +207,47 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
       const colEl = el?.closest('[data-board-col]')
       if (colEl) {
         const toCol = colEl.getAttribute('data-board-col')
-        if (toCol && toCol !== columnKey) {
-          onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex })
+        if (toCol) {
+          if (toCol !== columnKey) {
+            // Cross-column drop
+            onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex })
+          } else {
+            // Same-column: within-column reorder
+            onTouchDrop?.(toCol, { entry, fromCol: columnKey, taskIndex, insertIdx: state.inColInsertIdx })
+          }
         }
       }
       // Clear hover state
       document.querySelectorAll('[data-board-col]').forEach(c => c.removeAttribute('data-drop-hover'))
+      onDragOverCard?.(null)
       onDragEnd?.()
     }
 
     state.active = false
     state.moved = false
     state.pointerId = null
-  }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd])
+    state.inColInsertIdx = null
+  }, [entry, columnKey, taskIndex, onTouchDrop, onDragEnd, onDragOverCard])
 
   const handlePointerCancel = useCallback(() => {
     const state = pointerDragRef.current
     clearTimeout(state.longPressTimer)
     removeTouchGhost()
     document.querySelectorAll('[data-board-col]').forEach(c => c.removeAttribute('data-drop-hover'))
-    if (state.active) onDragEnd?.()
+    if (state.active) {
+      onDragOverCard?.(null)
+      onDragEnd?.()
+    }
     state.active = false
     state.moved = false
     state.pointerId = null
-  }, [onDragEnd])
+    state.inColInsertIdx = null
+  }, [onDragEnd, onDragOverCard])
 
   return (
     <div
       ref={cardRef}
+      data-board-card-idx={taskIndex}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'move'
@@ -350,6 +383,7 @@ function BoardColumn({
   const config = ALL_COLS[colKey] || { label: colKey, color: '#6B7280', type: 'other' }
   const dragInsertRef = useRef(null)
   const [touchHover, setTouchHover] = useState(false)
+  const [cardInsertIdx, setCardInsertIdx] = useState(null)
 
   // Keep touchHover in sync with data-drop-hover attribute changes
   useEffect(() => {
@@ -384,20 +418,43 @@ function BoardColumn({
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     onDragOver(colKey)
+    // Compute card insert position for within-column reorder indicator
+    const cardEls = [...(dragInsertRef.current?.querySelectorAll('[data-board-card-idx]') || [])]
+    let insertIdx = cardEls.length
+    for (const cardEl of cardEls) {
+      const r = cardEl.getBoundingClientRect()
+      if (e.clientY < r.top + r.height / 2) {
+        insertIdx = parseInt(cardEl.getAttribute('data-board-card-idx'))
+        break
+      }
+    }
+    setCardInsertIdx(insertIdx)
   }, [colKey, onDragOver, onColDragOver])
 
   const handleDrop = useCallback((e) => {
     e.preventDefault()
     if (e.dataTransfer.types.includes('application/x-board-col')) {
       onColDrop?.(colKey)
+      setCardInsertIdx(null)
       return
     }
     const raw = e.dataTransfer.getData('text/plain')
     try {
       const payload = JSON.parse(raw)
-      onDrop(colKey, payload)
+      if (payload.fromCol === colKey) {
+        // Within-column reorder (HTML5 drag)
+        const texts = sortedCards.map(c => c.text)
+        const fromIdx = texts.indexOf(payload.entry.text)
+        if (fromIdx !== -1) texts.splice(fromIdx, 1)
+        const insertAt = Math.min(cardInsertIdx ?? texts.length, texts.length)
+        texts.splice(insertAt, 0, payload.entry.text)
+        onTaskReorder?.(texts)
+      } else {
+        onDrop(colKey, payload)
+      }
     } catch {}
-  }, [colKey, onDrop, onColDrop])
+    setCardInsertIdx(null)
+  }, [colKey, onDrop, onColDrop, sortedCards, cardInsertIdx, onTaskReorder])
 
   if (!isVisible) return null
 
@@ -422,6 +479,7 @@ function BoardColumn({
         if (!e.currentTarget.contains(e.relatedTarget)) {
           onDragLeave()
           onColDragOver?.(null, null)
+          setCardInsertIdx(null)
         }
       }}
     >
@@ -532,19 +590,42 @@ function BoardColumn({
             {isHighlighted ? 'Drop here' : 'Nothing here'}
           </div>
         ) : (
-          sortedCards.map((card, i) => (
-            <BoardCard
-              key={`${colKey}-${card.text?.slice(0, 20)}-${i}`}
-              entry={card}
-              columnKey={colKey}
-              taskIndex={i}
-              isDragging={draggingKey === `${colKey}-${i}`}
-              onDragStart={() => onCardDragStart(`${colKey}-${i}`)}
-              onDragEnd={() => onCardDragEnd()}
-              onContextMenu={(ctx) => onContextMenu?.(ctx)}
-              onTouchDrop={onTouchDrop}
-            />
-          ))
+          <>
+            {sortedCards.map((card, i) => (
+              <Fragment key={`${colKey}-${card.text?.slice(0, 20)}-${i}`}>
+                {cardInsertIdx === i && (
+                  <div style={{ height: 2, background: '#3B82F6', borderRadius: 2, marginBottom: 6, pointerEvents: 'none' }} />
+                )}
+                <BoardCard
+                  entry={card}
+                  columnKey={colKey}
+                  taskIndex={i}
+                  isDragging={draggingKey === `${colKey}-${i}`}
+                  onDragStart={() => onCardDragStart(`${colKey}-${i}`)}
+                  onDragEnd={() => { setCardInsertIdx(null); onCardDragEnd() }}
+                  onContextMenu={(ctx) => onContextMenu?.(ctx)}
+                  onDragOverCard={(idx) => setCardInsertIdx(idx)}
+                  onTouchDrop={(toCol, payload) => {
+                    if (toCol === colKey && payload.insertIdx !== undefined) {
+                      // Same-column pointer drag reorder
+                      const texts = sortedCards.map(c => c.text)
+                      const fromIdx = texts.indexOf(payload.entry.text)
+                      if (fromIdx !== -1) texts.splice(fromIdx, 1)
+                      const insertAt = Math.min(payload.insertIdx ?? texts.length, texts.length)
+                      texts.splice(insertAt, 0, payload.entry.text)
+                      onTaskReorder?.(texts)
+                      setCardInsertIdx(null)
+                    } else {
+                      onTouchDrop(toCol, payload)
+                    }
+                  }}
+                />
+              </Fragment>
+            ))}
+            {cardInsertIdx === sortedCards.length && (
+              <div style={{ height: 2, background: '#3B82F6', borderRadius: 2, marginTop: 4, pointerEvents: 'none' }} />
+            )}
+          </>
         )}
       </div>
     </div>
@@ -667,11 +748,14 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     try { localStorage.setItem('corner-board-col-order', JSON.stringify(colOrder)) } catch {}
   }, [colOrder])
 
-  // Per-column task order (for within-column reordering)
-  const [taskOrders, setTaskOrders] = useState({})
+  // Per-column task order (for within-column reordering) -- persisted to localStorage
+  const [taskOrders, setTaskOrders] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('corner-board-task-orders') || '{}') } catch { return {} }
+  })
 
   const saveTaskOrders = useCallback((orders) => {
     setTaskOrders(orders)
+    try { localStorage.setItem('corner-board-task-orders', JSON.stringify(orders)) } catch {}
   }, [])
 
   // ── Build cards per column ─────────────────────────────────────────────

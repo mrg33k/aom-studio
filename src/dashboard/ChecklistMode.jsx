@@ -776,14 +776,18 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents 
         borderRadius: 12,
         padding: '12px 16px 10px',
         marginBottom: 6,
-        cursor: 'default',
+        cursor: 'grab',
         transition: 'background 120ms ease, border-color 120ms ease',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Row: avatar + text + live badge */}
+      {/* Row: grip + avatar + text + live badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Drag grip -- always visible at low opacity so touch users know it's draggable */}
+        <div style={{ opacity: 0.35, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+          <GripVertical size={14} color={isDaytime ? '#94A3B8' : '#64748B'} />
+        </div>
         {/* Agent avatar */}
         {agentInfo && hasSpr ? (
           <div style={{
@@ -884,10 +888,12 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents 
   )
 }
 
-// ---- RIGHT NOW SECTION (ONLY running agents, dead simple) -------------------
+// ---- RIGHT NOW SECTION (ONLY running agents, drag-to-reorder) ---------------
 // PATRIK CORRECTION: "it should just link to what agents are running and what the task is"
-function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMenu, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
+// DONE(bobby): drag-to-reorder via framer-motion Reorder -- works on iPad/mobile touch
+function RightNowSection({ tasks, orderedTasks, onReorder, isCollapsed, onToggle, isDaytime, onContextMenu, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
   const color = '#FF6B3D'
+  const displayTasks = orderedTasks || tasks
 
   // If no running agents, show "All clear"
   if (!tasks || tasks.length === 0) {
@@ -967,20 +973,31 @@ function RightNowSection({ tasks, isCollapsed, onToggle, isDaytime, onContextMen
         </span>
       </button>
 
-      {/* Running agent cards */}
+      {/* Running agent cards -- drag-to-reorder via framer-motion Reorder */}
       {!isCollapsed && (
-        <AnimatePresence>
-          {tasks.map((task, i) => (
-            <RightNowTaskCard
-              key={`rightnow-${i}-${task.text?.slice(0,15)}`}
-              task={task}
-              index={i}
-              isDaytime={isDaytime}
-              onContextMenu={onContextMenu}
-              spriteAgents={spriteAgents}
-            />
+        <Reorder.Group
+          as="div"
+          axis="y"
+          values={displayTasks}
+          onReorder={onReorder}
+          style={{ listStyle: 'none', padding: 0, margin: 0 }}
+        >
+          {displayTasks.map((task, i) => (
+            <Reorder.Item
+              key={task.text || `rightnow-${task.agent}-${i}`}
+              value={task}
+              as="div"
+            >
+              <RightNowTaskCard
+                task={task}
+                index={i}
+                isDaytime={isDaytime}
+                onContextMenu={onContextMenu}
+                spriteAgents={spriteAgents}
+              />
+            </Reorder.Item>
           ))}
-        </AnimatePresence>
+        </Reorder.Group>
       )}
     </div>
   )
@@ -1609,6 +1626,11 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const [taskOrders, setTaskOrders] = useState(() => {
     try { return JSON.parse(localStorage.getItem('checklist-task-orders') || '{}') } catch { return {} }
   })
+
+  // Right Now task order -- persists user's manual sort across sessions
+  const [rightNowOrder, setRightNowOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('corner-rightnow-order') || '[]') } catch { return [] }
+  })
   const getOrderedTasks = useCallback((section, tasks) => {
     const order = taskOrders[section]
     if (!order || order.length === 0) return tasks
@@ -1627,6 +1649,12 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
       try { localStorage.setItem('checklist-task-orders', JSON.stringify(next)) } catch {}
       return next
     })
+  }, [])
+
+  const handleRightNowReorder = useCallback((newItems) => {
+    const order = newItems.map(t => t.text)
+    setRightNowOrder(order)
+    try { localStorage.setItem('corner-rightnow-order', JSON.stringify(order)) } catch {}
   }, [])
 
   const handleTaskContextMenu = useCallback((e, task) => {
@@ -1657,6 +1685,20 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
 
   // Right Now: ONLY running agents (local: from active-missions.md, prod: demo data)
   const rightNowTasks = IS_LOCAL ? liveRightNowTasks : generateDemoRightNow()
+
+  // Apply user's stored drag order to Right Now tasks
+  const orderedRightNowTasks = useMemo(() => {
+    if (!rightNowOrder || rightNowOrder.length === 0) return rightNowTasks
+    return [...rightNowTasks].sort((a, b) => {
+      const ai = rightNowOrder.indexOf(a.text)
+      const bi = rightNowOrder.indexOf(b.text)
+      if (ai === -1 && bi === -1) return 0
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+  }, [rightNowTasks, rightNowOrder])
+
   const showRightNow = rightNowTasks.length > 0 && (!selectedProject || selectedProject === 'rightnow')
 
   // Completed feed: recent task completions (simplified activity feed)
@@ -1795,10 +1837,12 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
 
             {/* Section order (Patrik directive): Right Now > Your TODOs > Schedule > Finish These */}
 
-            {/* 1. RIGHT NOW section: ONLY running agents */}
+            {/* 1. RIGHT NOW section: ONLY running agents (drag-to-reorder) */}
             {showRightNow && (
               <RightNowSection
                 tasks={rightNowTasks}
+                orderedTasks={orderedRightNowTasks}
+                onReorder={handleRightNowReorder}
                 isCollapsed={collapsedProjects['rightnow-live']}
                 onToggle={() => toggleCollapse('rightnow-live')}
                 isDaytime={isDaytime}
