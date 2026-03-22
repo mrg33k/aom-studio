@@ -60,7 +60,8 @@ const PROJECT_PARENT_GROUPS = {
     id: 'aom',
     name: 'AOM',
     color: '#CBD5E1',
-    children: ['corner', 'ambition-mechanical', 'kohrs'],
+    // Section slugs must match parsePunchList output: 'ambition' (not 'ambition-mechanical'), 'kohrs'
+    children: ['corner', 'ambition', 'kohrs'],
   },
 }
 // Reverse map: child section -> parent id (computed once, never changes)
@@ -205,7 +206,7 @@ function generateDemoChecklist() {
 }
 
 // ---- PROJECT SIDEBAR (replaces agent sidebar) --------------------------------
-function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, rightNowCount = 0, completedCount = 0, todosCount = 0, checkingInCount = 0 }) {
+function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, isDaytime, rightNowCount = 0, completedCount = 0, todosCount = 0, checkingInCount = 0 }) {
   const [expandedParents, setExpandedParents] = useState({ aom: true })
   const toggleParent = (id) => setExpandedParents(p => ({ ...p, [id]: !p[id] }))
 
@@ -213,8 +214,8 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
   return (
     <div style={{
       height: 56, width: '100%', overflowX: 'auto', overflowY: 'hidden',
-        background: 'rgba(10, 15, 30, 0.5)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        background: isDaytime ? 'rgba(248,250,252,0.95)' : 'rgba(10, 15, 30, 0.5)',
+        borderBottom: `1px solid ${isDaytime ? 'rgba(0,0,0,0.07)' : 'rgba(255, 255, 255, 0.06)'}`,
         padding: '8px 12px',
         display: 'flex', gap: 8,
         WebkitOverflowScrolling: 'touch',
@@ -226,11 +227,15 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             height: 40, padding: '0 14px',
-            background: !selectedProject ? 'rgba(59,158,255,0.15)' : 'rgba(255,255,255,0.03)',
-            border: `1.5px solid ${!selectedProject ? 'rgba(59,158,255,0.4)' : 'rgba(255,255,255,0.06)'}`,
+            background: !selectedProject
+              ? (isDaytime ? 'rgba(59,130,246,0.1)' : 'rgba(59,158,255,0.15)')
+              : (isDaytime ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'),
+            border: `1.5px solid ${!selectedProject
+              ? (isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(59,158,255,0.4)')
+              : (isDaytime ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)')}`,
             borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
             cursor: 'pointer', scrollSnapAlign: 'start',
-            color: !selectedProject ? '#3B9EFF' : '#F0ECE6',
+            color: !selectedProject ? '#3B82F6' : (isDaytime ? '#374151' : '#F0ECE6'),
             fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
             textTransform: 'uppercase',
           }}
@@ -246,7 +251,9 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               height: 40, padding: '0 14px',
-              background: selectedProject === 'rightnow' ? 'rgba(255,107,61,0.15)' : 'rgba(255,107,61,0.04)',
+              background: selectedProject === 'rightnow'
+                ? (isDaytime ? 'rgba(255,107,61,0.12)' : 'rgba(255,107,61,0.15)')
+                : (isDaytime ? 'rgba(255,107,61,0.06)' : 'rgba(255,107,61,0.04)'),
               border: `1.5px solid ${selectedProject === 'rightnow' ? 'rgba(255,107,61,0.4)' : 'rgba(255,107,61,0.12)'}`,
               borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
               cursor: 'pointer', scrollSnapAlign: 'start',
@@ -275,7 +282,9 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               height: 40, padding: '0 14px',
-              background: selectedProject === 'your-todos' ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.04)',
+              background: selectedProject === 'your-todos'
+                ? (isDaytime ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.15)')
+                : (isDaytime ? 'rgba(239,68,68,0.05)' : 'rgba(239,68,68,0.04)'),
               border: `1.5px solid ${selectedProject === 'your-todos' ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.12)'}`,
               borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
               cursor: 'pointer', scrollSnapAlign: 'start',
@@ -296,7 +305,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           </button>
         )}
 
-        {/* Parent group chips (mobile) -- AOM expands inline */}
+        {/* Parent group chips -- AOM expands inline to show Corner/KOHRS children */}
         {Object.values(PROJECT_PARENT_GROUPS).map(group => {
           const groupProjects = projects.filter(p => group.children.includes(p.section))
           if (groupProjects.length === 0) return null
@@ -311,11 +320,17 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   height: 40, padding: '0 12px',
-                  background: isGroupSelected ? 'rgba(203,213,225,0.12)' : 'rgba(255,255,255,0.03)',
-                  border: `1.5px solid ${isGroupSelected ? 'rgba(203,213,225,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                  background: isGroupSelected
+                    ? (isDaytime ? 'rgba(100,116,139,0.12)' : 'rgba(203,213,225,0.12)')
+                    : (isDaytime ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'),
+                  border: `1.5px solid ${isGroupSelected
+                    ? (isDaytime ? 'rgba(100,116,139,0.35)' : 'rgba(203,213,225,0.4)')
+                    : (isDaytime ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)')}`,
                   borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
                   cursor: 'pointer', scrollSnapAlign: 'start',
-                  color: isGroupSelected ? '#CBD5E1' : '#9CA3AF',
+                  color: isGroupSelected
+                    ? (isDaytime ? '#475569' : '#CBD5E1')
+                    : (isDaytime ? '#6B7280' : '#9CA3AF'),
                   fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 13, fontWeight: 700,
                   textTransform: 'uppercase', letterSpacing: '0.05em',
                 }}
@@ -325,48 +340,60 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
                 {groupRemaining > 0 && (
                   <span style={{
                     fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-                    fontSize: 12, color: '#CBD5E1', background: 'rgba(203,213,225,0.15)',
+                    fontSize: 12,
+                    color: isDaytime ? '#475569' : '#CBD5E1',
+                    background: isDaytime ? 'rgba(100,116,139,0.12)' : 'rgba(203,213,225,0.15)',
                     padding: '2px 6px', borderRadius: 6, lineHeight: 1,
-                    border: '1px solid rgba(203,213,225,0.2)',
+                    border: `1px solid ${isDaytime ? 'rgba(100,116,139,0.2)' : 'rgba(203,213,225,0.2)'}`,
                   }}>
                     {groupRemaining}
                   </span>
                 )}
               </button>
-              {/* Children chips (shown inline when expanded) */}
-              {isExpanded && groupProjects.map(p => {
-                const selected = selectedProject === p.section
-                const remaining = p.tasks.filter(t => !t.done).length
-                return (
-                  <button
-                    key={p.section}
-                    onClick={() => onSelectProject(p.section)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      height: 36, padding: '0 12px',
-                      background: selected ? `${p.color}1F` : 'rgba(255,255,255,0.02)',
-                      border: `1.5px solid ${selected ? `${p.color}4D` : `${p.color}22`}`,
-                      borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
-                      cursor: 'pointer', scrollSnapAlign: 'start',
-                      color: selected ? p.color : '#9CA3AF',
-                      fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 13, fontWeight: 700,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    <div style={{ width: 7, height: 7, borderRadius: 2, background: p.color, flexShrink: 0, opacity: selected ? 1 : 0.6 }} />
-                    {p.name}
-                    {remaining > 0 && (
-                      <span style={{
-                        fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
-                        fontSize: 12, color: '#FFF', background: p.color,
-                        padding: '2px 6px', borderRadius: 6, lineHeight: 1,
-                      }}>
-                        {remaining}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
+              {/* Children chips -- AnimatePresence for smooth slide-in when expanded */}
+              <AnimatePresence>
+                {isExpanded && groupProjects.map((p, i) => {
+                  const selected = selectedProject === p.section
+                  const remaining = p.tasks.filter(t => !t.done).length
+                  return (
+                    <motion.button
+                      key={p.section}
+                      initial={{ opacity: 0, x: -10, scale: 0.9 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: -6, scale: 0.92 }}
+                      transition={{ duration: 0.14, delay: i * 0.045, ease: 'easeOut' }}
+                      onClick={() => onSelectProject(p.section)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        height: 36, padding: '0 12px',
+                        background: selected
+                          ? (isDaytime ? `${p.color}18` : `${p.color}1F`)
+                          : (isDaytime ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.02)'),
+                        border: `1.5px solid ${selected ? `${p.color}4D` : `${p.color}28`}`,
+                        borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+                        cursor: 'pointer', scrollSnapAlign: 'start',
+                        color: selected ? p.color : (isDaytime ? '#6B7280' : '#9CA3AF'),
+                        fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 13, fontWeight: 700,
+                        textTransform: 'uppercase',
+                        // No default button styles
+                        outline: 'none',
+                      }}
+                    >
+                      <div style={{ width: 7, height: 7, borderRadius: 2, background: p.color, flexShrink: 0, opacity: selected ? 1 : 0.55 }} />
+                      {p.name}
+                      {remaining > 0 && (
+                        <span style={{
+                          fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+                          fontSize: 12, color: '#FFF', background: p.color,
+                          padding: '2px 6px', borderRadius: 6, lineHeight: 1,
+                        }}>
+                          {remaining}
+                        </span>
+                      )}
+                    </motion.button>
+                  )
+                })}
+              </AnimatePresence>
             </React.Fragment>
           )
         })}
@@ -382,11 +409,15 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 height: 40, padding: '0 14px',
-                background: selected ? `${p.color}1F` : 'rgba(255,255,255,0.03)',
-                border: `1.5px solid ${selected ? `${p.color}4D` : 'rgba(255,255,255,0.06)'}`,
+                background: selected
+                  ? (isDaytime ? `${p.color}15` : `${p.color}1F`)
+                  : (isDaytime ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.03)'),
+                border: `1.5px solid ${selected
+                  ? `${p.color}4D`
+                  : (isDaytime ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.06)')}`,
                 borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
                 cursor: 'pointer', scrollSnapAlign: 'start',
-                color: selected ? p.color : '#F0ECE6',
+                color: selected ? p.color : (isDaytime ? '#374151' : '#F0ECE6'),
                 fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
                 textTransform: 'uppercase',
               }}
@@ -408,14 +439,16 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           )
         })}
 
-        {/* Finish These chip (mobile) -- last */}
+        {/* Finish These chip -- last */}
         {checkingInCount > 0 && (
           <button
             onClick={() => onSelectProject('finish-these')}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               height: 40, padding: '0 14px',
-              background: selectedProject === 'finish-these' ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.04)',
+              background: selectedProject === 'finish-these'
+                ? (isDaytime ? 'rgba(107,138,176,0.1)' : 'rgba(148,163,184,0.12)')
+                : (isDaytime ? 'rgba(107,138,176,0.05)' : 'rgba(148,163,184,0.04)'),
               border: `1.5px solid ${selectedProject === 'finish-these' ? 'rgba(148,163,184,0.3)' : 'rgba(148,163,184,0.1)'}`,
               borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
               cursor: 'pointer', scrollSnapAlign: 'start',
@@ -1689,6 +1722,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         selectedProject={selectedProject}
         onSelectProject={setSelectedProject}
         isMobile={isMobile}
+        isDaytime={isDaytime}
         rightNowCount={rightNowTasks.length}
         completedCount={completedFeedTasks.length}
         todosCount={patrikTodos.length}
