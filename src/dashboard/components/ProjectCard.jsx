@@ -43,10 +43,16 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
   const tagStyle = isClient && project.statusTag ? STATUS_TAG_COLORS[project.statusTag] : null
 
   // Long-press for mobile context menu
+  // lpFiredRef: tracks whether long-press fired so onClick can be suppressed.
+  // Without this, touchend fires onClick AFTER the context menu opens, expanding
+  // the pill panel on top of the still-visible context menu.
   const longPressRef = useRef(null)
+  const lpFiredRef = useRef(false)
   const handlePillTouchStart = useCallback((e) => {
     const touch = e.touches[0]
+    lpFiredRef.current = false
     longPressRef.current = setTimeout(() => {
+      lpFiredRef.current = true
       onContextMenu?.({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {}, stopPropagation: () => {} }, project)
     }, 500)
   }, [onContextMenu, project])
@@ -55,12 +61,19 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
   }, [])
   const handlePillTouchMove = useCallback(() => {
     clearTimeout(longPressRef.current)
+    lpFiredRef.current = false
   }, [])
 
   return (
     <motion.button
       className={wiggle ? 'pill-wiggle-glow' : undefined}
-      onClick={onClick}
+      onClick={(e) => {
+        // Suppress click when long-press already fired the context menu.
+        // Without this, onClick fires after touchend and opens the task panel
+        // simultaneously with the context menu.
+        if (lpFiredRef.current) { lpFiredRef.current = false; return }
+        onClick?.(e)
+      }}
       onContextMenu={(e) => onContextMenu?.(e, project)}
       onTouchStart={handlePillTouchStart}
       onTouchEnd={handlePillTouchEnd}

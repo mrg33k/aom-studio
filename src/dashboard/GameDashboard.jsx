@@ -10123,9 +10123,12 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         </div>
       )}
       {/* Spacer: only shown on mobile when input is rendered outside (MobileFixedInput).
-          Prevents the last chat message from being hidden behind the fixed input bar. */}
+          Prevents the last chat message from being hidden behind the fixed input bar.
+          Height = base 80px + env(safe-area-inset-bottom) so the spacer clears the
+          MobileFixedInput on iPhone X/11/12/13/14/15 (34px home indicator).
+          Without the SAI addition the last message is clipped ~12px on modern iPhones. */}
       {activeTab === 'chat' && hideInputBar && (
-        <div style={{ height: 80, flexShrink: 0 }} aria-hidden="true" />
+        <div style={{ height: 'calc(80px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }} aria-hidden="true" />
       )}
     </div>
   )
@@ -12237,14 +12240,19 @@ export default function GameDashboard() {
             setIsOverview(false)
             setPanelActiveTab('chat')
             setDrawerSnap('half')
+            // Reset mobile drawer tab to 'chat' so MobileFixedInput is visible.
+            // Without this, navigating from a Right Now ticker tap keeps whatever tab
+            // was last active (tasks/info) and the input bar stays hidden.
+            setMobileDrawerActiveTab('chat')
           }}
         />
       )}
 
-      {/* MobileFixedInput: React portal to document.body (attempt #4 -- THE permanent fix).
-          Attempt #3 was a direct sibling in this return -- still inside GameDashboard's root div
-          which has overflow:hidden. iOS Safari still blocked focus. The portal puts the node
-          OUTSIDE the root div entirely: zero overflow/transform/will-change ancestors above it.
+      {/* MobileFixedInput: React portal to document.body (attempt #5 -- THE permanent fix).
+          Attempt #4 used transform:translateZ(0) on the portal wrapper for GPU compositing --
+          that made the input a descendant of a transform container and iOS Safari blocked focus.
+          Attempt #5 removes ALL transform/will-change from both the portal wrapper AND
+          MobileDrawer's sheet, so the input has zero overflow/transform/will-change ancestors.
           Hide when drawer is closed OR when active tab is not 'chat'.
           IMPORTANT: onInputFocus must NOT call setDrawerSnap('full'). MobileDrawer's own
           visualViewport.resize handler saves the pre-keyboard snap ('half') and snaps to full

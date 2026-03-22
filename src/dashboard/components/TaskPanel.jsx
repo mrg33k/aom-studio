@@ -550,6 +550,10 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 opacity: project.isCompletedFeed ? 0.85 : isDone && !isDoneAwaiting ? 0.45 : isDraggingThis ? 0.5 : 1,
                 transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
                 touchAction: 'pan-y',
+                // iOS: suppress white tap-highlight and native long-press callout so the
+                // custom context menu is the only visual feedback on long-press.
+                WebkitTapHighlightColor: 'transparent',
+                WebkitTouchCallout: 'none',
                 // Yellow background for done-awaiting-approval tasks
                 background: isDoneAwaiting
                   ? doneBg
