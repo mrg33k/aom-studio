@@ -1273,11 +1273,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const elapsed = (performance.now() - startTimeRef.current) / 1000
     const now = performance.now()
 
-    // ---- HEX GRID LINES: draw outline at each actual room slot position ----
-    // Uses IDENTICAL origin, cell size, and row height as room placement (hexPosition +
-    // ORIGIN_X/Y). Iterates over the same slot list that slotWorldPos uses -- no extra
-    // empty cells above, below, or beside the real room cluster. Viewport culling skips
-    // cells whose bounding box is entirely off-screen.
+    // ---- HEX GRID LINES: seamless background honeycomb extending to viewport bounds ----
+    // Draws hex outlines using the EXACT same hexPosition() formula and vertex ratios as
+    // drawRoom()'s clip path. This guarantees rooms sit perfectly inside their grid cells.
+    //
+    // Vertex ratios (match drawRoom clip path exactly):
+    //   top=(0.50,0.00), upper-right=(0.99,0.31), lower-right=(0.99,0.72),
+    //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.31)
+    //
+    // Grid extends beyond room cluster to fill the full visible viewport.
+    // Uses viewport bounds (in world space) to determine row/col iteration range.
     {
       const viewL = -cam.x / cam.zoom
       const viewT = -cam.y / cam.zoom
@@ -1288,40 +1293,47 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       ctx.strokeStyle = 'rgba(59, 130, 246, 0.06)'  // #3B82F6 very subtle -- slot hints not maps
       ctx.lineWidth = 1 / cam.zoom  // keep lines 1px on screen regardless of zoom
 
-      // Hex vertex ratios match drawRoom()'s ctx.clip() path exactly:
-      //   top=(0.50,0.00), upper-right=(0.99,0.31), lower-right=(0.99,0.72),
-      //   bottom=(0.50,0.99), lower-left=(0.01,0.72), upper-left=(0.01,0.31)
-      // hexPosition(slot.row, slot.col, ORIGIN_X, ORIGIN_Y) is the SAME call used in
-      // slotWorldPos() -- both return identical (x, y) top-left coordinates.
       const S = ROOM_SIZE
-      const gridSlots = getHexSlots(slotOrder.length)
-      for (let i = 0; i < gridSlots.length; i++) {
-        // Draw grid cell at the room's ACTUAL position -- either its free-drag override or
-        // the canonical slot position. This prevents the visual mismatch where a manually-placed
-        // room sits at (freePos) but the grid outline stays behind at the original slot.
-        const roomId = slotOrder[i]
-        const freePos = freePositionsRef.current[roomId]
-        let ox, oy
-        if (freePos) {
-          ox = freePos.x
-          oy = freePos.y
-        } else {
-          const slot = gridSlots[i]
-          const pos = hexPosition(slot.row, slot.col, ORIGIN_X, ORIGIN_Y)
-          ox = pos.x
-          oy = pos.y
+
+      // Determine row range from viewport bounds.
+      // hexPosition y = ORIGIN_Y + row * HEX_ROW_STEP
+      // A cell's bounding box spans [oy, oy + S] => visible when oy < viewB and oy + S > viewL
+      const rowMin = Math.floor((viewT - ORIGIN_Y - S) / HEX_ROW_STEP) - 1
+      const rowMax = Math.ceil((viewB - ORIGIN_Y) / HEX_ROW_STEP) + 1
+
+      for (let row = rowMin; row <= rowMax; row++) {
+        const oy = ORIGIN_Y + row * HEX_ROW_STEP
+
+        // Each row uses cols with the correct parity (even rows: even cols, odd rows: odd cols)
+        // matching generateHexSlots. Column step = HEX_COL_STEP * 2 (columns skip by 2).
+        // hexPosition x = ORIGIN_X + col * HEX_COL_STEP
+        // Determine parity for this row
+        const parity = ((row % 2) + 2) % 2  // 0 for even rows, 1 for odd rows
+
+        // Find col range: cell visible when ox < viewR and ox + S > viewL
+        const colMinRaw = Math.floor((viewL - ORIGIN_X - S) / HEX_COL_STEP) - 2
+        const colMaxRaw = Math.ceil((viewR - ORIGIN_X) / HEX_COL_STEP) + 2
+
+        // Align colMin to correct parity
+        let colMin = colMinRaw
+        if (((colMin % 2) + 2) % 2 !== parity) colMin += 1
+
+        for (let col = colMin; col <= colMaxRaw; col += 2) {
+          const ox = ORIGIN_X + col * HEX_COL_STEP
+
+          // Viewport cull: skip if bounding box entirely off-screen
+          if (ox + S < viewL || ox > viewR || oy + S < viewT || oy > viewB) continue
+
+          ctx.beginPath()
+          ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
+          ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right
+          ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
+          ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
+          ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
+          ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left
+          ctx.closePath()
+          ctx.stroke()
         }
-        // Viewport cull: skip if bounding box entirely off-screen
-        if (ox + S < viewL || ox > viewR || oy + S < viewT || oy > viewB) continue
-        ctx.beginPath()
-        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.31)  // upper-right
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
-        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.31)  // upper-left
-        ctx.closePath()
-        ctx.stroke()
       }
       ctx.restore()
     }
