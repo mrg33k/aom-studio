@@ -10402,6 +10402,9 @@ export default function GameDashboard() {
       if (user) {
         setCurrentUser(user)
         setClientIdFromUser(user)
+        // Supabase-authenticated users bypass the legacy PasswordGate.
+        sessionStorage.setItem('dash-auth', '1')
+        setAuthed(true)
       }
       window.__cornerClientId = getClientId()
     })
@@ -10410,6 +10413,10 @@ export default function GameDashboard() {
       setCurrentUser(user)
       setClientIdFromUser(user)
       window.__cornerClientId = getClientId()
+      if (user) {
+        sessionStorage.setItem('dash-auth', '1')
+        setAuthed(true)
+      }
     })
     return unsubscribe
   }, [])

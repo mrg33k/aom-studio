@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import Login from './pages/Login.jsx'
 import { onAuthStateChange } from './dashboard/lib/auth.js'
+import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
 import BrandGuidelines from './pages/BrandGuidelines.jsx'
 import BrandsHub from './pages/BrandsHub.jsx'
@@ -96,10 +97,15 @@ function AuthGuard({ children }) {
           setChecked(true)
         }
       } else {
-        // No session -- allow dashboard anyway (auth is optional for now).
-        // Multi-tenant data isolation still works via getClientId() fallback.
-        setAuthed(true)
-        setChecked(true)
+        if (!supabase) {
+          // Supabase not configured (local dev without env vars) -- allow through.
+          setAuthed(true)
+          setChecked(true)
+        } else {
+          // Supabase configured, no session -- redirect to login.
+          setChecked(true)
+          navigate('/login', { replace: true })
+        }
       }
     })
     return unsubscribe
