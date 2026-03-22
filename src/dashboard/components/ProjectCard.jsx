@@ -178,7 +178,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        maxWidth: 140,
+        maxWidth: isCompact ? 90 : 140,
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',
         textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.3)' : (isSchedule ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
@@ -254,10 +254,10 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {isClient && project.revenue && (
         <span style={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 14, fontWeight: 700,
+          fontSize: isCompact ? 11 : 14, fontWeight: 700,
           color: project.color,
           background: `${project.color}15`,
-          padding: '3px 10px', borderRadius: 6,
+          padding: isCompact ? '2px 6px' : '3px 10px', borderRadius: 6,
           letterSpacing: '0.02em',
           whiteSpace: 'nowrap',
           border: `1.5px solid ${project.color}30`,
@@ -292,14 +292,14 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {remaining > 0 && !isClient && (
         <span style={{
           fontFamily: "'Inter Tight', JetBrains Mono, monospace",
-          fontSize: 18, fontWeight: 900,
+          fontSize: isCompact ? 13 : 18, fontWeight: 900,
           color: '#FFF',
           background: `linear-gradient(135deg, ${project.color}, ${project.color}DD)`,
-          padding: '5px 14px', borderRadius: 12,
+          padding: isCompact ? '2px 8px' : '5px 14px', borderRadius: isCompact ? 8 : 12,
           letterSpacing: '-0.01em',
           lineHeight: 1,
           boxShadow: `0 3px 12px ${project.color}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
-          minWidth: 32, textAlign: 'center',
+          minWidth: isCompact ? 24 : 32, textAlign: 'center',
           whiteSpace: 'nowrap',
         }}>
           {remaining}

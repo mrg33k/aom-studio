@@ -869,7 +869,7 @@ export default function GameHUD({
   }, [projects, searchQuery])
 
   // All pills flat: meta first, project pills after. Cap visible to 8 (6 on mobile).
-  const MAX_VISIBLE_PILLS = isMobile ? 6 : 8
+  const MAX_VISIBLE_PILLS = isMobile ? 6 : isTablet ? 7 : 8
   const { visiblePills, overflowPills } = useMemo(() => {
     const meta = []
     const children = []
@@ -1332,8 +1332,8 @@ export default function GameHUD({
                       whileTap={{ scale: 0.92, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 5,
-                        height: isMobile ? 34 : 44,
-                        padding: isMobile ? '0 10px' : '0 14px',
+                        height: (isMobile || isTablet) ? 34 : 44,
+                        padding: (isMobile || isTablet) ? '0 10px' : '0 14px',
                         background: pillOverflowOpen
                           ? 'linear-gradient(135deg, rgba(100,180,255,0.18), rgba(100,180,255,0.08))'
                           : 'linear-gradient(135deg, rgba(100,180,255,0.09), rgba(100,180,255,0.03))',
@@ -1344,12 +1344,12 @@ export default function GameHUD({
                     >
                       <span style={{
                         fontFamily: "'Inter Tight', monospace",
-                        fontSize: isMobile ? 13 : 15, fontWeight: 800,
+                        fontSize: (isMobile || isTablet) ? 13 : 15, fontWeight: 800,
                         color: pillOverflowOpen ? '#93C5FD' : '#6B8AB4',
                         letterSpacing: '-0.01em',
                       }}>+{overflowPills.length}</span>
                       <ChevronDown
-                        size={isMobile ? 12 : 13}
+                        size={(isMobile || isTablet) ? 12 : 13}
                         color={pillOverflowOpen ? '#93C5FD' : '#6B8AB4'}
                         style={{ transform: pillOverflowOpen ? 'rotate(180deg)' : 'none', transition: 'transform 180ms ease' }}
                       />
