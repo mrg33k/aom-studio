@@ -340,6 +340,12 @@ function BoardColumn({
   onTaskReorder,
   onContextMenu,
   onTouchDrop,
+  isColDragging,
+  colDragInsertSide,
+  onColDragStart,
+  onColDragOver,
+  onColDrop,
+  onColDragEnd,
 }) {
   const config = ALL_COLS[colKey] || { label: colKey, color: '#6B7280', type: 'other' }
   const dragInsertRef = useRef(null)
@@ -368,19 +374,30 @@ function BoardColumn({
   }, [cards, taskOrder])
 
   const handleDragOver = useCallback((e) => {
+    if (e.dataTransfer.types.includes('application/x-board-col')) {
+      e.preventDefault()
+      const rect = e.currentTarget.getBoundingClientRect()
+      const side = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+      onColDragOver?.(colKey, side)
+      return
+    }
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     onDragOver(colKey)
-  }, [colKey, onDragOver])
+  }, [colKey, onDragOver, onColDragOver])
 
   const handleDrop = useCallback((e) => {
     e.preventDefault()
+    if (e.dataTransfer.types.includes('application/x-board-col')) {
+      onColDrop?.(colKey)
+      return
+    }
     const raw = e.dataTransfer.getData('text/plain')
     try {
       const payload = JSON.parse(raw)
       onDrop(colKey, payload)
     } catch {}
-  }, [colKey, onDrop])
+  }, [colKey, onDrop, onColDrop])
 
   if (!isVisible) return null
 
@@ -395,15 +412,33 @@ function BoardColumn({
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
+        position: 'relative',
+        opacity: isColDragging ? 0.3 : 1,
+        transition: 'opacity 150ms ease',
       }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) {
           onDragLeave()
+          onColDragOver?.(null, null)
         }
       }}
     >
+      {colDragInsertSide === 'before' && (
+        <div style={{
+          position: 'absolute', left: -7, top: 0, bottom: 0, width: 3,
+          background: '#3B82F6', borderRadius: 2, zIndex: 100,
+          pointerEvents: 'none',
+        }} />
+      )}
+      {colDragInsertSide === 'after' && (
+        <div style={{
+          position: 'absolute', right: -7, top: 0, bottom: 0, width: 3,
+          background: '#3B82F6', borderRadius: 2, zIndex: 100,
+          pointerEvents: 'none',
+        }} />
+      )}
       {/* Column header */}
       <div style={{
         display: 'flex',
@@ -415,6 +450,24 @@ function BoardColumn({
         padding: '9px 14px',
         transition: 'border-color 150ms ease',
       }}>
+        {/* Grip handle */}
+        <div
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData('application/x-board-col', colKey)
+            e.dataTransfer.effectAllowed = 'move'
+            e.stopPropagation()
+            onColDragStart?.(colKey)
+          }}
+          onDragEnd={() => onColDragEnd?.()}
+          style={{ cursor: 'grab', color: '#334155', display: 'flex', alignItems: 'center', padding: '0 2px 0 0', flexShrink: 0 }}
+        >
+          <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+            <circle cx="2" cy="2" r="1.3"/><circle cx="6" cy="2" r="1.3"/>
+            <circle cx="2" cy="6" r="1.3"/><circle cx="6" cy="6" r="1.3"/>
+            <circle cx="2" cy="10" r="1.3"/><circle cx="6" cy="10" r="1.3"/>
+          </svg>
+        </div>
         <div style={{
           width: 8, height: 8, borderRadius: '50%',
           background: config.color,
@@ -559,8 +612,22 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
   // Search
   const [search, setSearch] = useState('')
 
-  // Column order (drag to reorder columns later)
-  const [colOrder, setColOrder] = useState(() => [...DEFAULT_ORDER])
+  // Column order (drag to reorder columns)
+  const [colOrder, setColOrder] = useState(() => {
+    try {
+      const saved = localStorage.getItem('corner-board-col-order')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        const valid = parsed.filter(k => DEFAULT_ORDER.includes(k))
+        const missing = DEFAULT_ORDER.filter(k => !valid.includes(k))
+        return [...valid, ...missing]
+      }
+    } catch {}
+    return [...DEFAULT_ORDER]
+  })
+
+  const [colDragging, setColDragging] = useState(null) // colKey being dragged
+  const [colDragInsert, setColDragInsert] = useState(null) // { targetKey, side: 'before'|'after' }
 
   // Drag state
   const [draggingCard, setDraggingCard] = useState(null) // key like "rightnow-0"
@@ -594,6 +661,11 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
       boardCtxMenu._cleanup?.()
     }
   }, [boardCtxMenu])
+
+  // Persist column order to localStorage
+  useEffect(() => {
+    try { localStorage.setItem('corner-board-col-order', JSON.stringify(colOrder)) } catch {}
+  }, [colOrder])
 
   // Per-column task order (for within-column reordering)
   const [taskOrders, setTaskOrders] = useState({})
@@ -802,6 +874,40 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
     setDropTargetCol(null)
   }, [])
 
+  const handleColDragStart = useCallback((key) => {
+    setColDragging(key)
+    setColDragInsert(null)
+  }, [])
+
+  const handleColDragEnd = useCallback(() => {
+    setColDragging(null)
+    setColDragInsert(null)
+  }, [])
+
+  const handleColDragOver = useCallback((targetKey, side) => {
+    if (!targetKey || targetKey === colDragging) {
+      setColDragInsert(null)
+      return
+    }
+    setColDragInsert({ targetKey, side })
+  }, [colDragging])
+
+  const handleColDrop = useCallback((targetKey) => {
+    if (!colDragging || colDragging === targetKey) {
+      setColDragging(null)
+      setColDragInsert(null)
+      return
+    }
+    const side = colDragInsert?.side || 'after'
+    const newOrder = [...colOrder].filter(k => k !== colDragging)
+    const targetIdx = newOrder.indexOf(targetKey)
+    if (targetIdx === -1) { setColDragging(null); setColDragInsert(null); return }
+    newOrder.splice(side === 'before' ? targetIdx : targetIdx + 1, 0, colDragging)
+    setColOrder(newOrder)
+    setColDragging(null)
+    setColDragInsert(null)
+  }, [colDragging, colDragInsert, colOrder])
+
   // ── Layout ─────────────────────────────────────────────────────────────
 
   const topPadding = isMobile
@@ -955,6 +1061,12 @@ export default function BoardView({ pipeData, isMobile, isNightMode }) {
             }}
             onContextMenu={(ctx) => setBoardCtxMenu(ctx)}
             onTouchDrop={handleCardTouchDrop}
+            isColDragging={colDragging === key}
+            colDragInsertSide={colDragInsert?.targetKey === key ? colDragInsert.side : null}
+            onColDragStart={handleColDragStart}
+            onColDragOver={handleColDragOver}
+            onColDrop={handleColDrop}
+            onColDragEnd={handleColDragEnd}
           />
         ))}
 
