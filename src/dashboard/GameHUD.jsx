@@ -244,6 +244,9 @@ export default function GameHUD({
   isNightMode: isNightModeProp,
   // Height reporting: called with HUD pixel height so canvas can adjust camera offset
   onHeightChange,
+  // Unified data source: when provided, Right Now reads from GameDashboard's pipeData
+  // so the ticker and Trello board always show the same tasks.
+  rightNow: rightNowProp,
 }) {
   // Override: Day=brighter blue, Night=darker blue. No WHITE backgrounds anywhere.
   const [nightOverride, setNightOverride] = useState(() => new Date().getHours() >= 20)
@@ -388,7 +391,7 @@ export default function GameHUD({
 
   // useDataPipe: ONE hook, ONE poll (3s), ALL data. Replaces 6 separate polling hooks.
   const {
-    rightNow: liveRightNowTasks,
+    rightNow: internalRightNow,
     completedFeed,
     inboxItems,
     yourTodos: patrikTodos,
@@ -399,6 +402,11 @@ export default function GameHUD({
     punchData,
     punchLoading: loading,
   } = useDataPipe(parseFn)
+
+  // Unified Right Now source: prefer the prop (from GameDashboard's pipeData -- same source as
+  // BoardView/Trello) so both views always show the same tasks. Fall back to internal poll only
+  // when the prop isn't wired (e.g., standalone usage).
+  const liveRightNowTasks = rightNowProp != null ? rightNowProp : internalRightNow
 
   // Inbox: unread messages only. Done-task approval handled by pinned TASK COMPLETE box.
   const inboxCount = (inboxItems || []).length

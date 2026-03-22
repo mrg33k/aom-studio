@@ -12245,6 +12245,7 @@ export default function GameDashboard() {
             expandPillSection={expandPillSection}
             onExpandPillHandled={() => setExpandPillSection(null)}
             hiddenPills={hiddenPills}
+            rightNow={pipeData?.rightNow}
           />
         </Suspense>
         </div>
