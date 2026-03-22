@@ -10,7 +10,7 @@
 // Keyboard nav: ArrowDown/Up = move focus, ArrowLeft = open submenu, ArrowRight = close submenu,
 // Enter = activate, Escape = close.
 
-import React, { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckSquare, Square,
@@ -42,6 +42,19 @@ const PRIORITY_OPTIONS_FALLBACK = [
   { key: 'high', label: 'High priority', icon: ArrowUpCircle, color: '#EF4444' },
   { key: 'med', label: 'Medium priority', icon: ArrowRightCircle, color: '#F59E0B' },
   { key: 'low', label: 'Low priority', icon: ArrowDownCircle, color: '#6B7280' },
+]
+
+// ---- Menu item definitions: controls which actions appear, in what order, and with what label ----
+// Fetched from Supabase context_menu_items table. Falls back to this static list if table not ready.
+// To disable an action or reorder without a deploy, update the table in Supabase.
+const MENU_ITEMS_FALLBACK = [
+  { id: 'toggle_done',      action_key: 'toggle_done',      label: 'Mark Done',        position: 1, is_submenu: false, is_danger: false, divider_before: false },
+  { id: 'assign_agent',     action_key: 'assign_agent',     label: 'Assign Agent',     position: 2, is_submenu: true,  is_danger: false, divider_before: true  },
+  { id: 'add_to_right_now', action_key: 'add_to_right_now', label: 'Add to Right Now', position: 3, is_submenu: false, is_danger: false, divider_before: false },
+  { id: 'move_to_project',  action_key: 'move_to_project',  label: 'Move to Project',  position: 4, is_submenu: true,  is_danger: false, divider_before: false },
+  { id: 'set_priority',     action_key: 'set_priority',     label: 'Set Priority',     position: 5, is_submenu: true,  is_danger: false, divider_before: true  },
+  { id: 'add_context',      action_key: 'add_context',      label: 'Add Context',      position: 6, is_submenu: false, is_danger: false, divider_before: false },
+  { id: 'delete',           action_key: 'delete',           label: 'Delete',           position: 7, is_submenu: false, is_danger: true,  divider_before: true  },
 ]
 
 // ---- Day/Night palettes ----
@@ -166,6 +179,49 @@ export default function TaskContextMenu({
         }
       })
   }, [])
+
+  // Menu item definitions from Supabase context_menu_items table
+  // Controls which actions appear, in what order, and with what label -- without a deploy
+  const [menuItems, setMenuItems] = useState(MENU_ITEMS_FALLBACK)
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('context_menu_items')
+      .select('id,action_key,label,position,is_submenu,is_danger,divider_before')
+      .eq('enabled', true)
+      .order('position', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) setMenuItems(data)
+      })
+  }, [])
+
+  // Project list from Supabase projects table (for Move to Project submenu)
+  // Canonical source: Supabase projects table; task counts merged from parent prop
+  const [projectsFromSupabase, setProjectsFromSupabase] = useState(null)
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('projects')
+      .select('slug,name,color')
+      .eq('is_active', true)
+      .order('recency_weight', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          setProjectsFromSupabase(data.map(row => ({ section: row.slug, name: row.name, color: row.color, tasks: [] })))
+        }
+      })
+  }, [])
+
+  // Merge Supabase canonical project list with task counts from parent prop
+  const projectOptions = useMemo(() => {
+    const base = projectsFromSupabase || (projects || [])
+    const propMap = {}
+    ;(projects || []).forEach(p => { propMap[p.section] = p })
+    return base.map(p => ({
+      ...p,
+      tasks: propMap[p.section]?.tasks || p.tasks || [],
+    }))
+  }, [projectsFromSupabase, projects])
 
   // Submenus
   const [showAgents, setShowAgents] = useState(false)
@@ -432,292 +488,309 @@ export default function TaskContextMenu({
         {taskLabel}
       </div>
 
-      {/* ---- 1. MARK DONE / MARK UNDONE ---- */}
-      <button
-        style={{
-          ...menuItemStyle,
-          color: task?.done ? '#8BA4C4' : pal.accentColor,
-        }}
-        onClick={handleToggleDone}
-        onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg; closeSubmenus() }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-      >
-        {task?.done
-          ? <><Square size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>Mark undone</span></>
-          : <><CheckSquare size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>Mark done</span></>
-        }
-      </button>
+      {/* ---- DYNAMIC MENU ITEMS (data-driven from Supabase context_menu_items) ---- */}
+      {menuItems.map((item) => {
+        const { action_key, label, divider_before } = item
+        const divider = divider_before ? <div style={dividerStyle} /> : null
 
-      <div style={dividerStyle} />
-
-      {/* ---- 2. ASSIGN AGENT (submenu) ---- */}
-      <div
-        style={{ position: 'relative' }}
-        onMouseEnter={handleAgentEnter}
-        onMouseLeave={handleAgentLeave}
-        ref={agentItemRef}
-      >
-        <button
-          style={menuItemStyle}
-          onClick={() => { closeSubmenus(); setShowAgents(s => !s) }}
-          onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-        >
-          <UserCircle2 size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
-          <span style={{ flex: 1 }}>Assign Agent</span>
-          <ChevronRight size={13} color={pal.headerText} />
-        </button>
-
-        <AnimatePresence>
-          {showAgents && (
-            <Submenu parentRef={agentItemRef} isNightMode={isNightMode}>
-              {assignableAgents.map(a => (
+        switch (action_key) {
+          case 'toggle_done':
+            return (
+              <React.Fragment key={action_key}>
+                {divider}
                 <button
-                  key={a.slug}
-                  style={{
-                    ...menuItemStyle,
-                    color: task?.agent === a.slug ? a.color : pal.itemText,
-                    fontWeight: task?.agent === a.slug ? 700 : 500,
-                  }}
-                  onClick={() => handleAssignAgent(a.slug)}
-                  onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+                  style={{ ...menuItemStyle, color: task?.done ? '#8BA4C4' : pal.accentColor }}
+                  onClick={handleToggleDone}
+                  onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg; closeSubmenus() }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
                 >
-                  <div style={{
-                    width: 18, height: 18, borderRadius: '50%',
-                    background: `${a.color}25`,
-                    border: `1.5px solid ${a.color}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700, color: a.color,
-                    flexShrink: 0,
-                  }}>
-                    {a.name.charAt(0)}
-                  </div>
-                  <span style={{ fontSize: 14 }}>{a.name}</span>
-                  {task?.agent === a.slug && <Check size={13} color={a.color} style={{ marginLeft: 'auto' }} />}
+                  {task?.done
+                    ? <><Square size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>Mark undone</span></>
+                    : <><CheckSquare size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>{label}</span></>
+                  }
                 </button>
-              ))}
-            </Submenu>
-          )}
-        </AnimatePresence>
-      </div>
+              </React.Fragment>
+            )
 
-      {/* ---- 3. ADD TO RIGHT NOW ---- */}
-      <button
-        style={{
-          ...menuItemStyle,
-          opacity: isInRightNow ? 0.4 : 1,
-          cursor: isInRightNow ? 'default' : 'pointer',
-        }}
-        onClick={handleAddToRightNow}
-        onMouseEnter={e => {
-          if (!isInRightNow) e.currentTarget.style.background = pal.hoverBg
-          closeSubmenus()
-        }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-        disabled={isInRightNow}
-      >
-        {isInRightNow
-          ? <><Check size={15} style={{ flexShrink: 0, opacity: 0.7, color: '#6B7280' }} /> <span style={{ color: '#6B7280' }}>Already in Right Now</span></>
-          : <><Zap size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>Add to Right Now</span></>
-        }
-      </button>
-
-      {/* ---- 4. MOVE TO PROJECT (submenu) ---- */}
-      <div
-        style={{ position: 'relative' }}
-        onMouseEnter={handleProjectEnter}
-        onMouseLeave={handleProjectLeave}
-        ref={projectItemRef}
-      >
-        <button
-          style={menuItemStyle}
-          onClick={() => { closeSubmenus(); setShowProjects(s => !s) }}
-          onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-        >
-          <FolderKanban size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
-          <span style={{ flex: 1 }}>Move to Project</span>
-          <ChevronRight size={13} color={pal.headerText} />
-        </button>
-
-        <AnimatePresence>
-          {showProjects && (
-            <Submenu parentRef={projectItemRef} isNightMode={isNightMode}>
-              {(projects || []).map(p => {
-                const isCurrent = task?.projectSection === p.section
-                const remaining = p.tasks ? p.tasks.filter(t => !t.done).length : 0
-                return (
+          case 'assign_agent':
+            return (
+              <React.Fragment key={action_key}>
+                {divider}
+                <div
+                  style={{ position: 'relative' }}
+                  onMouseEnter={handleAgentEnter}
+                  onMouseLeave={handleAgentLeave}
+                  ref={agentItemRef}
+                >
                   <button
-                    key={p.section}
-                    style={{
-                      ...menuItemStyle,
-                      color: isCurrent ? pal.accentColor : pal.itemText,
-                      fontWeight: isCurrent ? 700 : 500,
-                      cursor: isCurrent ? 'default' : 'pointer',
-                      opacity: isCurrent ? 0.6 : 1,
-                    }}
-                    onClick={() => !isCurrent && handleMoveToProject(p.section)}
-                    onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = pal.hoverBg }}
+                    style={menuItemStyle}
+                    onClick={() => { closeSubmenus(); setShowAgents(s => !s) }}
+                    onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-                    disabled={isCurrent}
                   >
-                    <div style={{
-                      width: 8, height: 8, borderRadius: '50%',
-                      background: p.color || '#6B7280', flexShrink: 0,
-                    }} />
-                    <span style={{ flex: 1, fontSize: 14 }}>{p.name}</span>
-                    <span style={{
-                      fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
-                      color: pal.headerText,
-                    }}>
-                      {remaining}
-                    </span>
-                    {isCurrent && <Check size={13} color={pal.accentColor} style={{ marginLeft: 4 }} />}
+                    <UserCircle2 size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+                    <span style={{ flex: 1 }}>{label}</span>
+                    <ChevronRight size={13} color={pal.headerText} />
                   </button>
-                )
-              })}
-              {(!projects || projects.length === 0) && (
-                <div style={{ padding: '8px 14px', color: pal.headerText, fontSize: 13, fontStyle: 'italic' }}>
-                  No projects available
+                  <AnimatePresence>
+                    {showAgents && (
+                      <Submenu parentRef={agentItemRef} isNightMode={isNightMode}>
+                        {assignableAgents.map(a => (
+                          <button
+                            key={a.slug}
+                            style={{
+                              ...menuItemStyle,
+                              color: task?.agent === a.slug ? a.color : pal.itemText,
+                              fontWeight: task?.agent === a.slug ? 700 : 500,
+                            }}
+                            onClick={() => handleAssignAgent(a.slug)}
+                            onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                          >
+                            <div style={{
+                              width: 18, height: 18, borderRadius: '50%',
+                              background: `${a.color}25`,
+                              border: `1.5px solid ${a.color}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 10, fontWeight: 700, color: a.color,
+                              flexShrink: 0,
+                            }}>
+                              {a.name.charAt(0)}
+                            </div>
+                            <span style={{ fontSize: 14 }}>{a.name}</span>
+                            {task?.agent === a.slug && <Check size={13} color={a.color} style={{ marginLeft: 'auto' }} />}
+                          </button>
+                        ))}
+                      </Submenu>
+                    )}
+                  </AnimatePresence>
                 </div>
-              )}
-            </Submenu>
-          )}
-        </AnimatePresence>
-      </div>
+              </React.Fragment>
+            )
 
-      <div style={dividerStyle} />
-
-      {/* ---- 5. SET PRIORITY (submenu) ---- */}
-      <div
-        style={{ position: 'relative' }}
-        onMouseEnter={handlePriorityEnter}
-        onMouseLeave={handlePriorityLeave}
-        ref={priorityItemRef}
-      >
-        <button
-          style={menuItemStyle}
-          onClick={() => { closeSubmenus(); setShowPriority(s => !s) }}
-          onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-        >
-          <Flag size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
-          <span style={{ flex: 1 }}>Set Priority</span>
-          <ChevronRight size={13} color={pal.headerText} />
-        </button>
-
-        <AnimatePresence>
-          {showPriority && (
-            <Submenu parentRef={priorityItemRef} isNightMode={isNightMode}>
-              {priorityOptions.map(opt => (
+          case 'add_to_right_now':
+            return (
+              <React.Fragment key={action_key}>
+                {divider}
                 <button
-                  key={opt.key}
-                  style={{
-                    ...menuItemStyle,
-                    color: currentPriority === opt.key ? opt.color : pal.itemText,
-                    fontWeight: currentPriority === opt.key ? 700 : 500,
-                  }}
-                  onClick={() => handleSetPriority(opt.key)}
-                  onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+                  style={{ ...menuItemStyle, opacity: isInRightNow ? 0.4 : 1, cursor: isInRightNow ? 'default' : 'pointer' }}
+                  onClick={handleAddToRightNow}
+                  onMouseEnter={e => { if (!isInRightNow) e.currentTarget.style.background = pal.hoverBg; closeSubmenus() }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                  disabled={isInRightNow}
+                >
+                  {isInRightNow
+                    ? <><Check size={15} style={{ flexShrink: 0, opacity: 0.7, color: '#6B7280' }} /> <span style={{ color: '#6B7280' }}>Already in Right Now</span></>
+                    : <><Zap size={15} style={{ flexShrink: 0, opacity: 0.7 }} /> <span>{label}</span></>
+                  }
+                </button>
+              </React.Fragment>
+            )
+
+          case 'move_to_project':
+            return (
+              <React.Fragment key={action_key}>
+                {divider}
+                <div
+                  style={{ position: 'relative' }}
+                  onMouseEnter={handleProjectEnter}
+                  onMouseLeave={handleProjectLeave}
+                  ref={projectItemRef}
+                >
+                  <button
+                    style={menuItemStyle}
+                    onClick={() => { closeSubmenus(); setShowProjects(s => !s) }}
+                    onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                  >
+                    <FolderKanban size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+                    <span style={{ flex: 1 }}>{label}</span>
+                    <ChevronRight size={13} color={pal.headerText} />
+                  </button>
+                  <AnimatePresence>
+                    {showProjects && (
+                      <Submenu parentRef={projectItemRef} isNightMode={isNightMode}>
+                        {projectOptions.map(p => {
+                          const isCurrent = task?.projectSection === p.section
+                          const remaining = p.tasks ? p.tasks.filter(t => !t.done).length : 0
+                          return (
+                            <button
+                              key={p.section}
+                              style={{
+                                ...menuItemStyle,
+                                color: isCurrent ? pal.accentColor : pal.itemText,
+                                fontWeight: isCurrent ? 700 : 500,
+                                cursor: isCurrent ? 'default' : 'pointer',
+                                opacity: isCurrent ? 0.6 : 1,
+                              }}
+                              onClick={() => !isCurrent && handleMoveToProject(p.section)}
+                              onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.background = pal.hoverBg }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                              disabled={isCurrent}
+                            >
+                              <div style={{
+                                width: 8, height: 8, borderRadius: '50%',
+                                background: p.color || '#6B7280', flexShrink: 0,
+                              }} />
+                              <span style={{ flex: 1, fontSize: 14 }}>{p.name}</span>
+                              <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: pal.headerText }}>
+                                {remaining}
+                              </span>
+                              {isCurrent && <Check size={13} color={pal.accentColor} style={{ marginLeft: 4 }} />}
+                            </button>
+                          )
+                        })}
+                        {projectOptions.length === 0 && (
+                          <div style={{ padding: '8px 14px', color: pal.headerText, fontSize: 13, fontStyle: 'italic' }}>
+                            No projects available
+                          </div>
+                        )}
+                      </Submenu>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </React.Fragment>
+            )
+
+          case 'set_priority':
+            return (
+              <React.Fragment key={action_key}>
+                {divider}
+                <div
+                  style={{ position: 'relative' }}
+                  onMouseEnter={handlePriorityEnter}
+                  onMouseLeave={handlePriorityLeave}
+                  ref={priorityItemRef}
+                >
+                  <button
+                    style={menuItemStyle}
+                    onClick={() => { closeSubmenus(); setShowPriority(s => !s) }}
+                    onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                  >
+                    <Flag size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+                    <span style={{ flex: 1 }}>{label}</span>
+                    <ChevronRight size={13} color={pal.headerText} />
+                  </button>
+                  <AnimatePresence>
+                    {showPriority && (
+                      <Submenu parentRef={priorityItemRef} isNightMode={isNightMode}>
+                        {priorityOptions.map(opt => (
+                          <button
+                            key={opt.key}
+                            style={{
+                              ...menuItemStyle,
+                              color: currentPriority === opt.key ? opt.color : pal.itemText,
+                              fontWeight: currentPriority === opt.key ? 700 : 500,
+                            }}
+                            onClick={() => handleSetPriority(opt.key)}
+                            onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                          >
+                            <opt.icon size={15} color={opt.color} style={{ flexShrink: 0 }} />
+                            <span style={{ flex: 1 }}>{opt.label}</span>
+                            {currentPriority === opt.key && <Check size={13} color={opt.color} style={{ marginLeft: 'auto' }} />}
+                          </button>
+                        ))}
+                      </Submenu>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </React.Fragment>
+            )
+
+          case 'add_context':
+            return (
+              <React.Fragment key={action_key}>
+                {divider}
+                <div>
+                  {!showContextInput ? (
+                    <button
+                      style={menuItemStyle}
+                      onClick={() => { closeSubmenus(); setShowContextInput(true); setContextText(existingNote) }}
+                      onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg; closeSubmenus() }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                    >
+                      <MessageSquare size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+                      <span>{existingNote ? 'Edit Note' : label}</span>
+                      {existingNote && <StickyNote size={12} color={pal.headerText} style={{ marginLeft: 'auto' }} />}
+                    </button>
+                  ) : (
+                    <motion.div
+                      initial={{ height: 37, opacity: 0.8 }}
+                      animate={{ height: 70, opacity: 1 }}
+                      transition={{ duration: 0.12, ease: 'easeOut' }}
+                      style={{ padding: '4px 10px', overflow: 'hidden' }}
+                    >
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.08, duration: 0.08 }}
+                      >
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          marginBottom: 6, color: pal.headerText,
+                          fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
+                          fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
+                        }}>
+                          <MessageSquare size={12} /> NOTE
+                        </div>
+                        <input
+                          ref={contextInputRef}
+                          type="text"
+                          value={contextText}
+                          onChange={e => setContextText(e.target.value)}
+                          placeholder="Add a note..."
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleAddContext()
+                            if (e.key === 'Escape') { setShowContextInput(false); setContextText('') }
+                            e.stopPropagation()
+                          }}
+                          style={{
+                            width: '100%', minHeight: 32,
+                            background: pal.inputBg,
+                            border: `1px solid ${pal.inputBorder}`,
+                            borderRadius: 6, padding: '6px 10px',
+                            color: pal.inputText,
+                            fontSize: 13,
+                            fontFamily: "'Inter', system-ui, sans-serif",
+                            outline: 'none',
+                          }}
+                        />
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </div>
+              </React.Fragment>
+            )
+
+          case 'delete':
+            return (
+              <React.Fragment key={action_key}>
+                {divider}
+                <button
+                  style={{ ...menuItemStyle, color: pal.dangerColor }}
+                  onClick={handleDelete}
+                  onMouseEnter={e => { e.currentTarget.style.background = `${pal.dangerColor}14`; closeSubmenus() }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
                 >
-                  <opt.icon size={15} color={opt.color} style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1 }}>{opt.label}</span>
-                  {currentPriority === opt.key && <Check size={13} color={opt.color} style={{ marginLeft: 'auto' }} />}
+                  <Trash2 size={15} color={pal.dangerColor} style={{ flexShrink: 0 }} />
+                  <motion.span
+                    key={deleteConfirm ? 'confirm' : 'delete'}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    {deleteConfirm ? 'Confirm delete?' : label}
+                  </motion.span>
                 </button>
-              ))}
-            </Submenu>
-          )}
-        </AnimatePresence>
-      </div>
+              </React.Fragment>
+            )
 
-      {/* ---- 6. ADD CONTEXT ---- */}
-      <div>
-        {!showContextInput ? (
-          <button
-            style={menuItemStyle}
-            onClick={() => {
-              closeSubmenus()
-              setShowContextInput(true)
-              setContextText(existingNote)
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg; closeSubmenus() }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-          >
-            <MessageSquare size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
-            <span>{existingNote ? 'Edit Note' : 'Add Context'}</span>
-            {existingNote && <StickyNote size={12} color={pal.headerText} style={{ marginLeft: 'auto' }} />}
-          </button>
-        ) : (
-          <motion.div
-            initial={{ height: 37, opacity: 0.8 }}
-            animate={{ height: 70, opacity: 1 }}
-            transition={{ duration: 0.12, ease: 'easeOut' }}
-            style={{ padding: '4px 10px', overflow: 'hidden' }}
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.08, duration: 0.08 }}
-            >
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                marginBottom: 6, color: pal.headerText,
-                fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
-                fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
-              }}>
-                <MessageSquare size={12} /> NOTE
-              </div>
-              <input
-                ref={contextInputRef}
-                type="text"
-                value={contextText}
-                onChange={e => setContextText(e.target.value)}
-                placeholder="Add a note..."
-                onKeyDown={e => {
-                  if (e.key === 'Enter') handleAddContext()
-                  if (e.key === 'Escape') { setShowContextInput(false); setContextText('') }
-                  e.stopPropagation()
-                }}
-                style={{
-                  width: '100%', minHeight: 32,
-                  background: pal.inputBg,
-                  border: `1px solid ${pal.inputBorder}`,
-                  borderRadius: 6, padding: '6px 10px',
-                  color: pal.inputText,
-                  fontSize: 13,
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  outline: 'none',
-                }}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </div>
-
-      <div style={dividerStyle} />
-
-      {/* ---- 7. DELETE (two-click confirm) ---- */}
-      <button
-        style={{
-          ...menuItemStyle,
-          color: pal.dangerColor,
-        }}
-        onClick={handleDelete}
-        onMouseEnter={e => { e.currentTarget.style.background = `${pal.dangerColor}14`; closeSubmenus() }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
-      >
-        <Trash2 size={15} color={pal.dangerColor} style={{ flexShrink: 0 }} />
-        <motion.span
-          key={deleteConfirm ? 'confirm' : 'delete'}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.15 }}
-        >
-          {deleteConfirm ? 'Confirm delete?' : 'Delete'}
-        </motion.span>
-      </button>
+          default:
+            return null
+        }
+      })}
     </motion.div>
   )
 }
