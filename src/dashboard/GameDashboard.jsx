@@ -11,6 +11,7 @@ import {
   BookmarkPlus, History, ScanEye, Film, CalendarCheck, Radar,
   CalendarDays, Sparkles, Users, Search, Folder,
   CornerDownLeft, Copy, RotateCcw, Reply, Building2, Building, FileText, BarChart3, User,
+  Pin, PinOff,
 } from 'lucide-react'
 import { GRID_SPEC, ROOM_MAP, AGENTS, ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import {
@@ -2575,6 +2576,10 @@ function ContextMenu({ type, data, position, onClose, onAction }) {
         return [
           { id: 'add', label: 'Add Task', icon: Plus, accent: true },
           { id: 'expand', label: 'View Tasks', icon: ListTodo },
+          { divider: true },
+          data?.isPinned
+            ? { id: 'unpin', label: 'Unpin from HUD', icon: PinOff }
+            : { id: 'pin', label: 'Pin to HUD', icon: Pin },
           { divider: true },
           { id: 'archive', label: 'Archive Pill', icon: ArrowRight },
         ]
@@ -5766,7 +5771,7 @@ const ctxBtnStyle = (isDaytime) => ({
   transition: 'background 100ms',
 })
 
-function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode, onAddToRightNow, rightNowTasks, punchProjects }) {
+function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNightMode, onAddToRightNow, rightNowTasks, punchProjects, focusTaskId, onFocusTaskHandled }) {
   const isDaytime = isNightMode === false
 
   // Per-agent task list (in-memory only, data comes from Supabase)
@@ -5794,6 +5799,18 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
   const [selectedTask, setSelectedTask] = useState(null) // Task detail view
   const [expandedTaskId, setExpandedTaskId] = useState(null) // Accordion expand state
   const [collapsedParents, setCollapsedParents] = useState({}) // Track collapsed sub-task groups
+
+  // Auto-expand task when focusTaskId is set (e.g., from HUD "View Task" or Trello "View Detail")
+  useEffect(() => {
+    if (!focusTaskId) return
+    setExpandedTaskId(focusTaskId)
+    onFocusTaskHandled?.()
+    // Scroll the expanded task into view after a short render delay
+    setTimeout(() => {
+      const el = document.querySelector(`[data-task-key="${CSS.escape(String(focusTaskId))}"]`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 150)
+  }, [focusTaskId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Per-task context notes (in-memory only, persisted to Supabase)
   const getTaskContext = (_id) => ''
@@ -6193,6 +6210,7 @@ function TasksTabContent({ task, agentColor, agentSlug, agentStatus, agent, isNi
     return (
       <div
         key={cardKey}
+        data-task-key={cardKey}
         data-task-drag-idx={isDraggable && !isExpanded ? idx : undefined}
         data-task-id={isDraggable && !isExpanded ? (t.id || '') : undefined}
         draggable={isDraggable && !isExpanded}
@@ -8019,7 +8037,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar, focusTaskId, onFocusTaskHandled }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -9380,6 +9398,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             onAddToRightNow={onAddToRightNow}
             rightNowTasks={rightNowTasks}
             punchProjects={pipeData?.punchData?.projects || []}
+            focusTaskId={focusTaskId}
+            onFocusTaskHandled={onFocusTaskHandled}
           />
         )}
 
@@ -11044,6 +11064,17 @@ export default function GameDashboard() {
   const [expandPillSection, setExpandPillSection] = useState(null)
   // Hidden pills: in-memory only (no persistence)
   const [hiddenPills, setHiddenPills] = useState([])
+  // Pinned pills: persisted to localStorage. Set of section keys that always show regardless of search.
+  const [pinnedPills, setPinnedPills] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('corner-pinned-pills') || '[]')) } catch { return new Set() }
+  })
+  // Sidebar focus task: when set, sidebar navigates to tasks tab and expands this task
+  const [sidebarFocusTaskId, setSidebarFocusTaskId] = useState(null)
+
+  // Persist pinned pills to localStorage whenever the set changes
+  useEffect(() => {
+    try { localStorage.setItem('corner-pinned-pills', JSON.stringify([...pinnedPills])) } catch {}
+  }, [pinnedPills])
 
   // Handle message right-click / long-press
   const handleMessageContextMenu = useCallback((e, msg) => {
@@ -11773,6 +11804,20 @@ export default function GameDashboard() {
           setHiddenPills(prev => [...prev.filter(s => s !== data.section), data.section])
         }
         break
+      case 'pin':
+        // Pin pill to HUD -- always visible even when searching
+        if (data?.section) {
+          setPinnedPills(prev => { const next = new Set(prev); next.add(data.section); return next })
+        }
+        setContextMenu(null)
+        break
+      case 'unpin':
+        // Unpin pill from HUD
+        if (data?.section) {
+          setPinnedPills(prev => { const next = new Set(prev); next.delete(data.section); return next })
+        }
+        setContextMenu(null)
+        break
       case 'expand':
         handleModeSwitch('checklist')
         break
@@ -12024,6 +12069,16 @@ export default function GameDashboard() {
           isNightMode={isNightMode}
           hudHeight={hudBarHeight}
           onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
+          onViewDetail={(task) => {
+            setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
+            if (task.agent) {
+              setSelectedRoom(task.agent)
+              setCameraTarget(task.agent)
+              setIsOverview(false)
+            }
+            setPanelActiveTab('tasks')
+            setPanelVisible(true)
+          }}
         />
       )}
 
@@ -12148,6 +12203,8 @@ export default function GameDashboard() {
               onDismissMessage={handleDismissMessage}
               onTaskNotDone={handleTaskNotDone}
               onInputFocus={() => clearUnreadForRoom(selectedRoom)}
+              focusTaskId={sidebarFocusTaskId}
+              onFocusTaskHandled={() => setSidebarFocusTaskId(null)}
             />
           )}
       </div>
@@ -12198,7 +12255,7 @@ export default function GameDashboard() {
                 : []
               setContextMenu({
                 type: pendingTasks.length > 0 ? 'rightnow-review' : 'project',
-                data: { ...project, label: project.name, pendingTasks },
+                data: { ...project, label: project.name, pendingTasks, isPinned: pinnedPills.has(project.section) },
                 position: { x: e.clientX, y: e.clientY },
               })
             }}
@@ -12247,6 +12304,17 @@ export default function GameDashboard() {
             onExpandPillHandled={() => setExpandPillSection(null)}
             hiddenPills={hiddenPills}
             rightNow={pipeData?.rightNow}
+            pinnedPills={pinnedPills}
+            onViewTask={(task) => {
+              setSidebarFocusTaskId(task.taskId || task.id || task.text || null)
+              if (task.agent) {
+                setSelectedRoom(task.agent)
+                setCameraTarget(task.agent)
+                setIsOverview(false)
+              }
+              setPanelActiveTab('tasks')
+              setPanelVisible(true)
+            }}
           />
         </Suspense>
         </div>

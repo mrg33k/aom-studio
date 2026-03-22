@@ -861,7 +861,7 @@ function FilterPill({ label, active, color, onClick, isNightMode = true }) {
 
 // ── MAIN BOARD VIEW ─────────────────────────────────────────────────────────
 
-export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, onTaskTap }) {
+export default function BoardView({ pipeData, isMobile, isNightMode = true, hudHeight = 60, onTaskTap, onViewDetail }) {
   const rightNow = pipeData?.rightNow || []
   const completedFeed = pipeData?.completedFeed || []
   const punchData = pipeData?.punchData
@@ -920,8 +920,13 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   }), [])
 
   const handleContextAction = useCallback((action, task, payload) => {
+    if (action === 'viewDetail') {
+      onViewDetail?.(task)
+      setBoardCtxMenu(null)
+      return
+    }
     handleTaskContextAction(action, task, payload, null)
-  }, [])
+  }, [onViewDetail])
 
   // Persist column order to localStorage
   useEffect(() => {
@@ -1479,6 +1484,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           onAction={handleContextAction}
           isNightMode={isNightMode}
           projects={[]}
+          showViewDetail={true}
         />
       )}
     </div>

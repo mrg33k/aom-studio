@@ -23,6 +23,7 @@ import {
   Trash2,
   Check,
   StickyNote,
+  Eye,
 } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { supabase } from '../lib/supabase.js'
@@ -144,6 +145,7 @@ export default function TaskContextMenu({
   onAction,
   isNightMode,
   projects, // Array of { name, section, color, tasks } for Move to Project submenu
+  showViewDetail, // When true, renders a "View Detail" button at the bottom (used by BoardView)
 }) {
   const menuRef = useRef(null)
   const pal = getPalette(isNightMode)
@@ -797,6 +799,22 @@ export default function TaskContextMenu({
             return null
         }
       })}
+
+      {/* View Detail -- rendered only when showViewDetail=true (BoardView Trello cards) */}
+      {showViewDetail && (
+        <>
+          <div style={{ height: 1, background: pal.divider, margin: '4px 0' }} />
+          <button
+            style={{ ...menuItemStyle }}
+            onClick={() => { onAction('viewDetail', task); onClose() }}
+            onMouseEnter={e => { e.currentTarget.style.background = pal.hoverBg }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+          >
+            <Eye size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+            <span>View Detail</span>
+          </button>
+        </>
+      )}
     </motion.div>
   )
 }

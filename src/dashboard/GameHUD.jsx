@@ -247,6 +247,10 @@ export default function GameHUD({
   // Unified data source: when provided, Right Now reads from GameDashboard's pipeData
   // so the ticker and Trello board always show the same tasks.
   rightNow: rightNowProp,
+  // Pinned pills: Set of section keys that always show regardless of search filter
+  pinnedPills,
+  // View Task: called when user clicks "View Task" in ticker right-click menu
+  onViewTask,
 }) {
   // Override: Day=brighter blue, Night=darker blue. No WHITE backgrounds anywhere.
   const [nightOverride, setNightOverride] = useState(() => new Date().getHours() >= 20)
@@ -700,12 +704,14 @@ export default function GameHUD({
   const filteredProjects = useMemo(() => {
     if (!searchQuery.trim()) return projects
     const q = searchQuery.toLowerCase()
+    const pinned = pinnedPills || new Set()
     return projects.filter(p =>
+      pinned.has(p.section) ||
       p.name.toLowerCase().includes(q) ||
       p.section.toLowerCase().includes(q) ||
       p.tasks.some(t => t.text.toLowerCase().includes(q))
     )
-  }, [projects, searchQuery])
+  }, [projects, searchQuery, pinnedPills])
 
   // All pills: meta first, then one AOM parent pill (all non-meta projects collapse inside it).
   // Any project not in META_SECTIONS auto-nests under AOM -- no hardcoded slug list to maintain.
@@ -1212,21 +1218,31 @@ export default function GameHUD({
 
                   // Normal project pill
                   return (
-                    <ProjectCard
-                      key={project.section}
-                      project={project}
-                      isExpanded={expandedProject?.section === project.section}
-                      onClick={() => {
-                        setExpandedProject(
-                          expandedProject?.section === project.section ? null : project
-                        )
-                      }}
-                      onContextMenu={onProjectContextMenu}
-                      isNightMode={isNightMode}
-                      wiggle={project.section === 'rightnow' && rightNowWiggle}
-                      isMobile={isMobile}
-                      isTablet={isTablet}
-                    />
+                    <div key={project.section} style={{ position: 'relative', flexShrink: 0 }}>
+                      <ProjectCard
+                        project={project}
+                        isExpanded={expandedProject?.section === project.section}
+                        onClick={() => {
+                          setExpandedProject(
+                            expandedProject?.section === project.section ? null : project
+                          )
+                        }}
+                        onContextMenu={onProjectContextMenu}
+                        isNightMode={isNightMode}
+                        wiggle={project.section === 'rightnow' && rightNowWiggle}
+                        isMobile={isMobile}
+                        isTablet={isTablet}
+                      />
+                      {pinnedPills?.has(project.section) && (
+                        <div style={{
+                          position: 'absolute', top: -3, right: -3,
+                          width: 9, height: 9, borderRadius: '50%',
+                          background: '#3B9EFF',
+                          border: '1.5px solid rgba(10,15,26,0.9)',
+                          pointerEvents: 'none',
+                        }} />
+                      )}
+                    </div>
                   )
                 })}
 
@@ -1867,6 +1883,21 @@ export default function GameHUD({
                 >
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#94A3B8', flexShrink: 0 }} />
                   Remove
+                </button>
+
+                {/* View Task -- opens sidebar List tab with task expanded */}
+                <div style={{ height: 1, background: 'rgba(100,180,255,0.12)', margin: '4px 0' }} />
+                <button
+                  onClick={() => {
+                    onViewTask?.(task)
+                    setTickerCtxMenu(null)
+                  }}
+                  style={{ ...hudCtxBtn(true), color: '#60A5FA', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#60A5FA', flexShrink: 0 }} />
+                  View Task
                 </button>
               </>
             )}
