@@ -4,14 +4,15 @@
 // DONE(bobby): touch drag-to-reorder task list on iPad/mobile using Pointer Events API
 // DONE(bobby): consistent checkbox list item spacing across all platforms (8-10px gap, 44px tap target)
 
-import React, { useState, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X, Check } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { PALETTE, HUD, STATUS_DOT, IS_LOCAL } from './HUDConstants.jsx'
+import { supabase } from '../lib/supabase.js'
 
-// Agents that have sprite image files
-const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
+// Fallback list used on localhost or if Supabase is unavailable
+const SPRITE_AGENTS_FALLBACK = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
 export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask, onDoneTaskAction }) {
@@ -33,6 +34,21 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
   const tpCloseBg = isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.06)'
   const tpCloseHoverBg = isDaytime ? 'rgba(59,130,246,0.25)' : 'rgba(100,180,255,0.12)'
   const tpProgressBg = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.06)'
+  // Sprite agents: fetched from Supabase agent_status(has_sprite=true), falls back to static list
+  const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('agent_status')
+      .select('slug')
+      .eq('has_sprite', true)
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          setSpriteAgents(data.map(r => r.slug))
+        }
+      })
+  }, [])
+
   // Local state for optimistic checkbox toggling
   const [localToggles, setLocalToggles] = useState({}) // task index -> toggled done state
   const [saving, setSaving] = useState(null) // which task index is saving
@@ -601,7 +617,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
               {/* Agent badge */}
               {task.agent && (() => {
                 const a = AGENTS.find(x => x.slug === task.agent)
-                const hasSpr = task.agent && SPRITE_AGENTS.includes(task.agent)
+                const hasSpr = task.agent && spriteAgents.includes(task.agent)
                 return (
                   <div style={{
                     width: 26, height: 26, borderRadius: '50%',
