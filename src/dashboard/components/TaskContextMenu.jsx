@@ -891,14 +891,15 @@ function supabaseTaskAction(action, task, payload) {
 // ---- Direct Supabase PATCH for task status changes ----
 // Uses the imported supabase client directly when available (more reliable than API hop).
 // Falls back gracefully if supabase is null (no env vars).
-function supabasePatchTaskStatus(task, status) {
+// Exported so ChecklistMode.jsx can call it directly from the checkbox handler.
+export function supabasePatchTaskStatus(task, status) {
   if (!supabase) return
   const taskId = task.taskId || task.id
   const isUuid = taskId && typeof taskId === 'string' && /^[0-9a-f-]{36}$/i.test(taskId)
   const clientId = typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom'
   const patchBody = { status }
   if (status === 'completed') patchBody.completed_at = new Date().toISOString()
-  if (status === 'active') patchBody.completed_at = null
+  if (status === 'active' || status === 'todo') patchBody.completed_at = null
 
   const q = isUuid
     ? supabase.from('tasks').update(patchBody).eq('id', taskId)

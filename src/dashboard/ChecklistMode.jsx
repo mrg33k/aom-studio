@@ -1793,6 +1793,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
         next[key] = false
         return next
       })
+      supabasePatchTaskStatus(task, 'todo')
       return
     }
     // Not done → start 30s pending window
@@ -1820,6 +1821,8 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
           expired.forEach(([key]) => { next[key] = true })
           return next
         })
+        // Persist to Supabase: undo window expired → task is committed as done
+        expired.forEach(([, v]) => supabasePatchTaskStatus(v.task, 'completed'))
         setPendingCompletion(prev => {
           const next = { ...prev }
           expired.forEach(([key]) => { delete next[key] })
