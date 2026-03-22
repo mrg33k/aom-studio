@@ -3068,6 +3068,9 @@ function MobileFixedInput({
   atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown,
   powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup,
   onInputFocus,
+  // bottomOffset: pixels to raise input above the bottom edge (e.g. HUD height at full-snap).
+  // Only applied when keyboard is NOT open (kbOffset=0). When keyboard is open, kbOffset alone.
+  bottomOffset = 0,
 }) {
   const [kbOffset, setKbOffset] = useState(0)
   const isUserTypingRef = useRef(false)
@@ -3113,7 +3116,9 @@ function MobileFixedInput({
         position: 'fixed',
         left: 0,
         right: 0,
-        bottom: kbOffset,
+        // When keyboard is open kbOffset compensates for keyboard height -- no HUD offset needed.
+        // When keyboard is closed kbOffset=0, so raise by bottomOffset (HUD height at full-snap).
+        bottom: kbOffset > 0 ? kbOffset : bottomOffset,
         zIndex: 999,
         // NO transform here -- transform creates a new containing block and iOS Safari
         // blocks keyboard focus routing to inputs inside transform containers.
@@ -3501,6 +3506,9 @@ function MobileDrawer({
   activeTab: activeTabProp, onActiveTabChange: onActiveTabChangeProp,
   // Navigation: tap a Right Now task card -> navigate to that agent's chat
   onNavigateToAgent,
+  // Height of the GameHUD bar in px. At full-snap, the drawer leaves this space at the
+  // bottom so the HUD ticker is always visible. Default 60 matches hudBarHeight estimate.
+  hudHeight = 60,
 }) {
   const sheetRef = useRef(null)
   const dragStartY = useRef(0)
@@ -3526,14 +3534,18 @@ function MobileDrawer({
 
   // Compute snap heights (sheet height from bottom)
   // MobileModeBar KILLED (Round 2). Sheet sits at bottom directly.
+  // At full-snap with keyboard CLOSED: subtract hudHeight so drawer leaves room for the
+  // bottom HUD ticker. When keyboard is open (mobileViewportHeight is set to vvh), no
+  // subtraction -- the keyboard already occupies that space and the drawer fills vvh.
   const getSnapHeights = useCallback(() => {
     const vh = mobileViewportHeight || window.innerHeight
+    const keyboardIsOpen = mobileViewportHeight !== null
     return {
       hidden: 0,
       half: Math.round(vh * 0.52), // ~52% of viewport
-      full: vh, // full viewport height (shrinks to visualViewport when keyboard is open)
+      full: vh - (keyboardIsOpen ? 0 : hudHeight), // leave HUD space when keyboard is closed
     }
-  }, [mobileViewportHeight])
+  }, [mobileViewportHeight, hudHeight])
 
   // Motion value for sheet height (start at 0 so it animates UP on first render)
   const sheetHeight = useMotionValue(0)
@@ -3694,7 +3706,10 @@ function MobileDrawer({
         position: 'fixed',
         left: 0,
         right: 0,
-        bottom: keyboardOpen ? kbBottomOffset : 0,
+        // At full-snap with keyboard closed: bottom=hudHeight so GameHUD ticker is visible below.
+        // When keyboard is open: bottom=kbBottomOffset (keyboard handling, HUD covered by keyboard).
+        // At half-snap: bottom=0 (HUD is visible because drawer height is only 52%).
+        bottom: keyboardOpen ? kbBottomOffset : (isFullSnap ? hudHeight : 0),
         // Half snap: extend drawer to screen bottom, protect content from home indicator via paddingBottom.
         // This ensures CanvasOffice's visibleH = viewH - drawerH is accurate (no sab offset skew).
         // Full snap handles its own sab via inner content paddingBottom (line ~3701).
@@ -12310,6 +12325,7 @@ export default function GameDashboard() {
             // was last active (tasks/info) and the input bar stays hidden.
             setMobileDrawerActiveTab('chat')
           }}
+          hudHeight={hudBarHeight}
         />
       )}
 
@@ -12353,6 +12369,9 @@ export default function GameDashboard() {
             // keyboard actually opens. Snapping here first causes it to save 'full'
             // as the restore point, so the drawer never returns to half on keyboard close.
           }}
+          // At full-snap with keyboard closed, raise input above the GameHUD ticker.
+          // When keyboard is open, kbOffset handles the offset (bottomOffset is ignored).
+          bottomOffset={drawerSnap === 'full' ? hudBarHeight : 0}
         />
       )}
 
