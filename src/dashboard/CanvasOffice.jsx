@@ -7,8 +7,8 @@ import { supabase } from './lib/supabase.js'
 // FILE OWNER: Bobby (Canvas team). Bobby2 (HUD team) does NOT touch this file.
 //
 // MEGA BUILD features:
-// 1. HEX GRID SHUFFLE: Rooms live in indexed hex SLOTS. Drag = pick up, hover = shuffle (iOS style).
-//    Drop snaps to nearest slot, others animate 200ms. Slot order resets to defaults on refresh.
+// 1. HEX GRID SHUFFLE: Rooms live in indexed hex SLOTS. Drag = pick up, snap-to-grid during drag.
+//    Room locks to nearest hex cell while dragging (no cursor latch). Drop swaps or snaps home.
 // 2. CELEBRATION WAVE BOUNCE: Domino wave jump, 150ms stagger, glow pulse.
 //    Auto-triggers every 15s for testing. Exposes triggerCelebration(roomId).
 // 3. DIM INACTIVE ROOMS: Rooms with inactive agentStatus get globalAlpha 0.4, locked idle, no crossfade.
@@ -998,7 +998,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     // Snap target: the nearest hex grid cell world position (updated every frame during drag)
     snapX: 0,
     snapY: 0,
-    // Spring-animated render position: lerps toward snapX/snapY each frame
+    // Render position: set to snapX/snapY each frame (snap-to-grid during drag)
     renderX: 0,
     renderY: 0,
     // Swap target: roomId that occupies the snap target slot (null if empty)
@@ -1322,7 +1322,41 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const elapsed = (performance.now() - startTimeRef.current) / 1000
     const now = performance.now()
 
-    // ---- DRAW SNAP INDICATOR (ghost diamond at snap target during room drag) ----
+    // ---- HEX GRID LINES: outlines drawn only at actual room slot positions ----
+    // Vertices copied VERBATIM from drawRoom()'s clip path (the source of truth).
+    // drawRoom uses ctx.translate(posX, posY) first, so its local (0,0) == world (ox,oy) here.
+    // DO NOT change these independently -- always sync with drawRoom clip path or rooms will ghost.
+    //
+    // Slot-based approach: iterate over the same (row, col) pairs as the room layout.
+    // This guarantees every outline perfectly aligns with its room -- no phantom cells from
+    // adjacent rows bleeding into the room cluster.
+    {
+      ctx.save()
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.18)'  // #3B82F6 visible honeycomb grid
+      ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
+
+      const S = ROOM_SIZE
+      const slots = getHexSlots(_currentTotalSlots)
+
+      ctx.beginPath()
+      for (const { row, col } of slots) {
+        const ox = ORIGIN_X + col * HEX_COL_STEP
+        const oy = ORIGIN_Y + row * HEX_ROW_STEP
+        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.28)  // upper-right
+        ctx.lineTo(ox + S * 0.99, oy + S * 0.72)  // lower-right
+        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.72)  // lower-left
+        ctx.lineTo(ox + S * 0.01, oy + S * 0.28)  // upper-left
+        ctx.closePath()
+      }
+      ctx.stroke()
+      ctx.restore()
+    }
+
+    // ---- SNAP-TO-GRID: room locks to nearest hex cell during drag ----
+    // No latch -- room instantly moves to nearest cell as cursor crosses midpoints.
+    // swapTargetRoomId is kept for the pulsing highlight on the target room.
     {
       const drag = dragStateRef.current
       if (drag.active && drag.roomId) {
@@ -1341,30 +1375,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const occupant = slotOrder[snapSlotIdx]
         drag.swapTargetRoomId = (occupant && occupant !== drag.roomId) ? occupant : null
 
-        // Follow cursor freely -- snap happens on drop, not during drag
-        drag.renderX = rawX
-        drag.renderY = rawY
-
-        const S = ROOM_SIZE
-        const meta = ROOM_META[drag.roomId]
-        const color = meta?.color || '#3B82F6'
-        ctx.save()
-        ctx.strokeStyle = color
-        ctx.globalAlpha = drag.swapTargetRoomId ? 0.6 : 0.35
-        ctx.lineWidth = (drag.swapTargetRoomId ? 3.5 : 2.5) / (cameraRef.current?.zoom || 1)
-        ctx.setLineDash([8, 6])
-        const px = snap.x + S / 2
-        const py = snap.y + S / 2
-        const hw = S / 2
-        const hh = S / 4
-        ctx.beginPath()
-        ctx.moveTo(px, py - hh)
-        ctx.lineTo(px + hw, py)
-        ctx.lineTo(px, py + hh)
-        ctx.lineTo(px - hw, py)
-        ctx.closePath()
-        ctx.stroke()
-        ctx.restore()
+        // Snap-to-grid: room sits at the nearest hex cell, not at cursor
+        drag.renderX = snap.x
+        drag.renderY = snap.y
       } else {
         drag.swapTargetRoomId = null
       }
@@ -1654,7 +1667,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const meta = ROOM_META[draggedRoomId]
       const imgs = roomImages[draggedRoomId]
       if (meta && imgs) {
-        // Use spring-animated position (snaps to hex grid smoothly)
+        // Snap-to-grid position (nearest hex cell, updated every frame)
         const posX = drag.renderX
         const posY = drag.renderY
 
