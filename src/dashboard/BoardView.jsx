@@ -736,6 +736,7 @@ function BoardColumn({
       {/* Card stack / drop zone */}
       <div
         ref={dragInsertRef}
+        data-col-cards="1"
         style={{
           flex: 1,
           background: isHighlighted ? colBodyHoverBg : colBodyBg,
@@ -880,6 +881,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
   // Board scroll container ref (for auto-scroll during drag)
   const boardScrollRef = useRef(null)
+  const toolbarRef = useRef(null)
 
   // Column order (drag to reorder columns)
   const [colOrder, setColOrder] = useState(() => {
@@ -987,6 +989,34 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // ── Wheel → horizontal scroll on toolbar + board ─────────────────────────
+  // Exception: when the cursor is over a column card list that has overflow, let it scroll vertically.
+  useEffect(() => {
+    const attachWheel = (el, checkColumn = false) => {
+      if (!el) return () => {}
+      const handler = (e) => {
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+        if (e.deltaY === 0) return
+        if (checkColumn) {
+          const path = e.composedPath ? e.composedPath() : []
+          const inScrollCol = path.some(node =>
+            node instanceof HTMLElement &&
+            node.dataset.colCards === '1' &&
+            node.scrollHeight > node.clientHeight
+          )
+          if (inScrollCol) return
+        }
+        e.preventDefault()
+        el.scrollLeft += e.deltaY
+      }
+      el.addEventListener('wheel', handler, { passive: false })
+      return () => el.removeEventListener('wheel', handler)
+    }
+    const cleanToolbar = attachWheel(toolbarRef.current)
+    const cleanBoard = attachWheel(boardScrollRef.current, true)
+    return () => { cleanToolbar(); cleanBoard() }
   }, [])
 
   // ── Auto-scroll during drag ─────────────────────────────────────────────
@@ -1306,7 +1336,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     }}>
 
       {/* ── TOOLBAR: filter toggles + search ─────────────────────────── */}
-      <div style={{
+      <div ref={toolbarRef} style={{
         display: 'flex',
         alignItems: 'center',
         gap: 8,

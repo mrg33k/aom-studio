@@ -416,6 +416,7 @@ export default function GameHUD({
   const inboxCount = (inboxItems || []).length
   const hudRef = useRef(null)
   const tickerScrollRef = useRef(null)
+  const pillBarRef = useRef(null)
   const tickerDragStartX = useRef(0)
   const tickerScrollStartLeft = useRef(0)
   const tickerIsDragging = useRef(false)
@@ -437,6 +438,25 @@ export default function GameHUD({
 
   const handleTickerPointerUp = useCallback(() => {
     tickerIsDragging.current = false
+  }, [])
+
+  // ── Wheel → horizontal scroll on ticker + pill bar ──────────────────────
+  useEffect(() => {
+    const attachWheel = (el) => {
+      if (!el) return () => {}
+      const handler = (e) => {
+        // Let trackpad horizontal gestures pass through
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+        if (e.deltaY === 0) return
+        e.preventDefault()
+        el.scrollLeft += e.deltaY
+      }
+      el.addEventListener('wheel', handler, { passive: false })
+      return () => el.removeEventListener('wheel', handler)
+    }
+    const cleanTicker = attachWheel(tickerScrollRef.current)
+    const cleanPills = attachWheel(pillBarRef.current)
+    return () => { cleanTicker(); cleanPills() }
   }, [])
 
   // Report HUD height to GameDashboard so CanvasOffice can adjust camera offset
@@ -1182,6 +1202,7 @@ export default function GameHUD({
           {/* Pill bar: horizontally scrollable. minWidth:0 is critical -- without it, flex:1
               child expands to content width and overflowX:auto never triggers. */}
           <div
+            ref={pillBarRef}
             className="hud-pills-scroll"
             style={{
               flex: 1,
