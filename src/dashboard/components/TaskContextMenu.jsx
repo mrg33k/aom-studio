@@ -882,6 +882,27 @@ function supabaseTaskAction(action, task, payload) {
   } catch {}
 }
 
+// ---- Direct Supabase PATCH for task status changes ----
+// Uses the imported supabase client directly when available (more reliable than API hop).
+// Falls back gracefully if supabase is null (no env vars).
+function supabasePatchTaskStatus(task, status) {
+  if (!supabase) return
+  const taskId = task.taskId || task.id
+  const isUuid = taskId && typeof taskId === 'string' && /^[0-9a-f-]{36}$/i.test(taskId)
+  const clientId = typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom'
+  const patchBody = { status }
+  if (status === 'completed') patchBody.completed_at = new Date().toISOString()
+  if (status === 'active') patchBody.completed_at = null
+
+  const q = isUuid
+    ? supabase.from('tasks').update(patchBody).eq('id', taskId)
+    : supabase.from('tasks').update(patchBody).eq('text', task.text).eq('client_id', clientId)
+  q.then(({ error }) => {
+    if (error) console.warn(`[Corner] supabasePatchTaskStatus(${status}) failed:`, error.message)
+    else console.log(`[Corner] Task "${task.text}" → status:${status}`)
+  })
+}
+
 // ---- Context menu action handler (shared logic, call from parent) ----
 // All state changes go to Supabase via fire-and-forget. No localStorage.
 export function handleTaskContextAction(action, task, payload, setCheckedTasks) {
@@ -907,7 +928,9 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
   } else if (action === 'delete') {
     supabaseTaskAction('delete', task)
   } else if (action === 'addToRightNow') {
-    // Local: route to agent via task-assign endpoint (auto-assigns and notifies)
+    // Direct Supabase PATCH to status='active'. API fallback handles text-only tasks.
+    supabasePatchTaskStatus(task, 'active')
+    // Local: also route to agent via task-assign endpoint (auto-assigns and notifies)
     if (IS_LOCAL) {
       try {
         fetch('/api/local/task-assign', {
@@ -922,8 +945,9 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
         }).catch(() => {})
       } catch {}
     }
+    // API fallback: handles tasks not yet in Supabase (text-only, creates them)
     supabaseTaskAction('addToRightNow', task)
-    console.log(`[Corner] Task "${task.text}" added to Right Now`)
+    console.log(`[Corner] Task "${task.text}" → Right Now (status:active)`)
   } else if (action === 'moveToProject') {
     console.log(`[Corner] Task "${task.text}" moved to project: ${payload}`)
     supabaseTaskAction('moveToProject', task, payload)
