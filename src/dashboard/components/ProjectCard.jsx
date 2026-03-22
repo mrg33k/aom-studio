@@ -66,11 +66,11 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         y: [0, -2, 0, -1, 0],
         transition: { duration: 0.6, ease: 'easeInOut' },
       } : { scale: 1, y: 0 }}
-      whileHover={{ scale: 1.08, y: -6, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-      whileTap={{ scale: 0.88, y: 4, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
+      whileHover={{ scale: 1.05, y: -3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+      whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
       style={{
-        display: 'flex', alignItems: 'center', gap: isCompact ? 8 : 14,
-        height: isCompact ? 36 : 56, padding: isCompact ? '0 12px' : '0 24px', minWidth: isCompact ? (isRightNow ? 80 : 60) : (isRightNow ? 120 : 80),
+        display: 'flex', alignItems: 'center', gap: 7,
+        height: 30, padding: '0 10px', minWidth: isRightNow ? 72 : 56,
         background: isDaytime
           ? (isExpanded
               ? `linear-gradient(135deg, ${project.color}18, ${project.color}08)`
@@ -119,7 +119,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {!isCompletedFeed && (
         <div style={{
           position: 'absolute', bottom: 0, left: 0,
-          width: `${progress}%`, height: 6,
+          width: `${progress}%`, height: 3,
           background: `linear-gradient(90deg, ${project.color}70, ${project.color})`,
           transition: 'width 500ms cubic-bezier(0.34, 1.56, 0.64, 1)',
           borderRadius: '0 0 16px 16px',
@@ -131,7 +131,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {(isRightNow || isSchedule || isTodoList || (isClient && project.statusTag === 'RED')) && (
         <div style={{
           position: 'absolute', left: 0, top: 6, bottom: 6,
-          width: 4, borderRadius: 2,
+          width: 3, borderRadius: 2,
           background: isTodoList ? '#EF4444' : isRightNow ? project.color : isSchedule ? project.color : '#EF4444',
           boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isSchedule) ? project.color : 'rgba(239,68,68,0.6)'}88`,
           animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
@@ -140,15 +140,15 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
 
       {/* Project indicator - BIGGER on desktop, compact on mobile/tablet. */}
       {isRightNow ? (
-        <Zap size={isCompact ? 12 : 18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+        <Zap size={12} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
       ) : isCompletedFeed ? (
-        <CheckCircle2 size={isCompact ? 12 : 18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
+        <CheckCircle2 size={12} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isTodoList ? (
-        <AlertCircle size={isCompact ? 12 : 18} color="#EF4444" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.6))' }} />
+        <AlertCircle size={12} color="#EF4444" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.6))' }} />
       ) : isFinishThese ? (
-        <History size={isCompact ? 12 : 18} color="#94A3B8" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.4))' }} />
+        <History size={12} color="#94A3B8" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(148,163,184,0.4))' }} />
       ) : isSchedule ? (
-        <Flame size={isCompact ? 12 : 18} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
+        <Flame size={12} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isClient ? (
         <div style={{
           width: 14, height: 14, borderRadius: '50%',
@@ -171,14 +171,14 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {/* Name - VEGAS SIZE on desktop, compact on mobile. */}
       <span style={{
         fontFamily: "'Inter', system-ui, sans-serif",
-        fontSize: isCompact ? 12 : 20, fontWeight: 900,
+        fontSize: 12, fontWeight: 800,
         color: isExpanded
           ? '#FFFFFF'
           : isDaytime ? '#F1F5F9' : (isSchedule ? '#EDF2FA' : HUD.textPrimary),
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        maxWidth: isCompact ? 90 : 140,
+        maxWidth: 90,
         letterSpacing: '-0.02em',
         textTransform: 'uppercase',
         textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.3)' : (isSchedule ? '0 1px 4px rgba(255,107,61,0.3)' : '0 1px 2px rgba(0,0,0,0.3)'),
@@ -194,7 +194,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
           fontSize: 11, fontWeight: 800,
           color: '#FF6B3D',
           background: 'rgba(255,107,61,0.12)',
-          padding: '3px 8px', borderRadius: 6,
+          padding: '2px 6px', borderRadius: 5,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
           border: '1.5px solid rgba(255,107,61,0.3)',
@@ -254,10 +254,10 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {isClient && project.revenue && (
         <span style={{
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: isCompact ? 11 : 14, fontWeight: 700,
+          fontSize: 11, fontWeight: 700,
           color: project.color,
           background: `${project.color}15`,
-          padding: isCompact ? '2px 6px' : '3px 10px', borderRadius: 6,
+          padding: '2px 6px', borderRadius: 6,
           letterSpacing: '0.02em',
           whiteSpace: 'nowrap',
           border: `1.5px solid ${project.color}30`,
@@ -292,14 +292,14 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       {remaining > 0 && !isClient && (
         <span style={{
           fontFamily: "'Inter Tight', JetBrains Mono, monospace",
-          fontSize: isCompact ? 13 : 18, fontWeight: 900,
+          fontSize: 11, fontWeight: 800,
           color: '#FFF',
           background: `linear-gradient(135deg, ${project.color}, ${project.color}DD)`,
-          padding: isCompact ? '2px 8px' : '5px 14px', borderRadius: isCompact ? 8 : 12,
+          padding: '2px 7px', borderRadius: 8,
           letterSpacing: '-0.01em',
           lineHeight: 1,
           boxShadow: `0 3px 12px ${project.color}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
-          minWidth: isCompact ? 24 : 32, textAlign: 'center',
+          minWidth: 20, textAlign: 'center',
           whiteSpace: 'nowrap',
         }}>
           {remaining}
@@ -307,7 +307,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       )}
 
       {allDone && !isCompletedFeed && (
-        <CheckCircle2 size={18} color={project.color} strokeWidth={2.5} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}44)` }} />
+        <CheckCircle2 size={13} color={project.color} strokeWidth={2.5} style={{ flexShrink: 0, filter: `drop-shadow(0 0 4px ${project.color}44)` }} />
       )}
     </motion.button>
   )

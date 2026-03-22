@@ -335,7 +335,9 @@ export const PROJECTS = [
 //   Row 2 (5): Top projects   -- Corner, Ambition, KOHRS, ISA, Skylar
 //   Row 3 (4): More projects  -- Brandon Wiley, NABI, Outreach, AI Advisory
 // Hidden rooms appended last (not rendered):
-//   mom, pixel, paige, alex, steve, colton, tony, included-health
+//   included-health
+// Removed from grid (still in AGENTS/GRID_SPEC for board view + chat):
+//   mom, pixel, paige, alex, steve, colton, tony
 
 const _AGENT_MAP = Object.fromEntries(AGENTS.map(a => [a.slug, { ...a, type: 'agent', hidden: false }]))
 const _PROJECT_MAP = Object.fromEntries(PROJECTS.map(p => [p.slug, p]))
@@ -362,12 +364,5 @@ export const ALL_ROOMS = [
   _PROJECT_MAP['outreach'],
   _PROJECT_MAP['ai-advisory'],
   // Hidden -- not rendered on hex grid (still accessible in Board view, chat dropdowns, @mentions)
-  { ..._AGENT_MAP['mom'],    hidden: true },
-  { ..._AGENT_MAP['pixel'],  hidden: true },
-  { ..._AGENT_MAP['paige'],  hidden: true },
-  { ..._AGENT_MAP['alex'],   hidden: true },
-  { ..._AGENT_MAP['steve'],  hidden: true },
-  { ..._AGENT_MAP['colton'], hidden: true },
-  { ..._AGENT_MAP['tony'],   hidden: true },
   _PROJECT_MAP['included-health'],
 ].filter(Boolean)

@@ -489,29 +489,6 @@ export default function GameHUD({
     }
   }, [doneTaskCtx])
 
-  // RTN ticker right-click / long-press context menu
-  const [tickerCtxMenu, setTickerCtxMenu] = useState(null) // { task, x, y }
-  const tickerLPRef = useRef(null)
-  // Tracks whether the long-press fired -- used to suppress onClick after long-press
-  // (without this, onClick fires after touchend and opens the Right Now panel while
-  //  the context menu is showing)
-  const tickerLPFiredRef = useRef(false)
-  useEffect(() => {
-    if (!tickerCtxMenu) return
-    const timer = setTimeout(() => {
-      const handler = (e) => {
-        const menu = document.querySelector('[data-ticker-ctx-menu]')
-        if (menu && menu.contains(e.target)) return
-        setTickerCtxMenu(null)
-      }
-      document.addEventListener('mousedown', handler)
-      tickerCtxMenu._cleanup = () => document.removeEventListener('mousedown', handler)
-    }, 50)
-    return () => {
-      clearTimeout(timer)
-      tickerCtxMenu._cleanup?.()
-    }
-  }, [tickerCtxMenu])
 
   // Fire-and-forget: update task status via Supabase task-action API
   const taskLifecycleAction = useCallback((action, task) => {
@@ -1069,141 +1046,7 @@ export default function GameHUD({
           <rect width="100%" height="100%" filter="url(#hudNoise4)" opacity="0.015" style={{ mixBlendMode: 'overlay' }} />
         </svg>
 
-        {/* DINER DASH TICKER -- Right Now tasks scroll left like orders coming in */}
-        {(() => {
-          const rightNowProject = filteredProjects.find(p => p.section === 'rightnow')
-          const tickerTasks = rightNowProject?.tasks?.filter(t => !t.isAddPrompt) || []
-          const hasTickerTasks = tickerTasks.length > 0
-          return hasTickerTasks ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: 6,
-              padding: isMobile ? '4px 0 2px' : '6px 0 2px',
-              minHeight: isMobile ? 36 : 42,
-              position: 'relative',
-              zIndex: 2,
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              touchAction: 'pan-x',
-            }} className="hud-ticker-scroll">
-              <Zap size={14} color="#FF6B3D" style={{ flexShrink: 0, marginLeft: 4, filter: 'drop-shadow(0 0 6px rgba(255,107,61,0.6))' }} />
-              <span style={{
-                fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 800,
-                color: '#FF6B3D', letterSpacing: '0.1em', textTransform: 'uppercase',
-                flexShrink: 0, whiteSpace: 'nowrap',
-              }}>RIGHT NOW</span>
-              <div style={{ width: 1, height: 20, background: hudDivider, flexShrink: 0 }} />
-              {tickerTasks.map((task, idx) => (
-                <motion.button
-                  key={task.manualId || task.text || idx}
-                  initial={{ opacity: 0, x: 60, scale: 0.9 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -80, scale: 0.85 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20, delay: idx * 0.04 }}
-                  onClick={() => {
-                    // Suppress click when long-press already fired the context menu.
-                    // Without this, onClick fires after touchend and opens the Right Now
-                    // panel on top of the context menu.
-                    if (tickerLPFiredRef.current) { tickerLPFiredRef.current = false; return }
-                    setExpandedProject(rightNowProject)
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault()
-                    setTickerCtxMenu({ task, x: e.clientX, y: e.clientY })
-                  }}
-                  onTouchStart={(e) => {
-                    tickerLPFiredRef.current = false
-                    const touch = e.touches[0]
-                    tickerLPRef.current = setTimeout(() => {
-                      tickerLPRef.current = null
-                      tickerLPFiredRef.current = true
-                      setTickerCtxMenu({ task, x: touch.clientX, y: Math.max(8, touch.clientY - 120) })
-                    }, 500)
-                  }}
-                  onTouchEnd={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
-                  onTouchMove={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
-                  whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-                  whileTap={{ scale: 0.94 }}
-                  className={task.done ? '' : task.isDoneAwaitingApproval ? 'ticker-task-new' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-new'}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: isMobile ? '10px 14px' : '4px 12px',
-                    minHeight: isMobile ? 44 : 'auto',
-                    background: task.done
-                      ? 'rgba(34,197,94,0.12)'
-                      : task.isDoneAwaitingApproval
-                        ? 'rgba(245,158,11,0.12)'
-                        : task.isQueued
-                          ? 'rgba(233,30,144,0.12)'
-                          : task.isLive
-                            ? 'rgba(255,107,61,0.12)'
-                            : 'rgba(100,180,255,0.08)',
-                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isDoneAwaitingApproval ? 'rgba(245,158,11,0.35)' : task.isQueued ? 'rgba(233,30,144,0.25)' : task.isLive ? 'rgba(255,107,61,0.25)' : 'rgba(100,180,255,0.15)'}`,
-                    borderRadius: 10,
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                    transition: 'background 150ms ease, border-color 150ms ease',
-                    // iOS: remove white tap-highlight flash on press/long-press
-                    WebkitTapHighlightColor: 'transparent',
-                    // iOS: prevent native long-press callout (Select/Copy menu) from
-                    // appearing behind our custom context menu
-                    WebkitTouchCallout: 'none',
-                  }}
-                >
-                  {task.done ? (
-                    <CheckCircle2 size={13} color="#22C55E" style={{ flexShrink: 0 }} />
-                  ) : task.isDoneAwaitingApproval ? (
-                    <span style={{
-                      width: 7, height: 7, borderRadius: '50%', background: '#F59E0B',
-                      boxShadow: '0 0 6px rgba(245,158,11,0.7)',
-                      animation: 'statusPulse 2s ease-in-out infinite',
-                      flexShrink: 0,
-                    }} />
-                  ) : task.isQueued ? (
-                    <span style={{
-                      width: 7, height: 7, borderRadius: '50%', background: '#E91E90',
-                      boxShadow: '0 0 6px rgba(233,30,144,0.6)',
-                      animation: 'statusPulse 2s ease-in-out infinite',
-                      flexShrink: 0,
-                    }} />
-                  ) : task.isLive ? (
-                    <span style={{
-                      width: 7, height: 7, borderRadius: '50%', background: '#FF6B3D',
-                      boxShadow: '0 0 6px rgba(255,107,61,0.6)',
-                      animation: 'statusPulse 1.5s ease-in-out infinite',
-                      flexShrink: 0,
-                    }} />
-                  ) : (
-                    <span style={{
-                      width: 7, height: 7, borderRadius: '50%', background: '#F59E0B',
-                      boxShadow: '0 0 6px rgba(245,158,11,0.7)',
-                      animation: 'statusPulse 2s ease-in-out infinite',
-                      flexShrink: 0,
-                    }} />
-                  )}
-                  <span style={{
-                    fontFamily: "'Inter', system-ui, sans-serif",
-                    fontSize: 13, fontWeight: 600,
-                    color: task.done ? '#4ADE80' : (isDaytime ? '#F1F5F9' : HUD.textPrimary),
-                    whiteSpace: 'nowrap',
-                    maxWidth: 200,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    textDecoration: task.done ? 'line-through' : 'none',
-                    opacity: task.done ? 0.7 : 1,
-                  }}>
-                    {task.text}
-                  </span>
-                </motion.button>
-              ))}
-            </div>
-          ) : null
-        })()}
+
 
         {/* Search bar ABOVE pills (Patrik: search above pills so you see pills filter as you type) */}
         <AnimatePresence>
@@ -1266,15 +1109,15 @@ export default function GameHUD({
           )}
         </AnimatePresence>
 
-        {/* Main row: Pills ONLY. No agent roster. No counters. No percentage. */}
+        {/* Main row: Pills ONLY. Compact. */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? 6 : 10,
-          minHeight: isMobile ? 52 : 68,
+          gap: isMobile ? 5 : 7,
+          minHeight: isMobile ? 44 : 48,
           position: 'relative',
           zIndex: 1,
-          padding: isMobile ? 0 : '4px 0 6px',
+          padding: isMobile ? '2px 0' : '3px 0 4px',
         }}>
           {/* Search toggle button -- LEFT of arrow nav */}
           <motion.button
@@ -1344,8 +1187,8 @@ export default function GameHUD({
                       whileTap={{ scale: 0.92, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 5,
-                        height: (isMobile || isTablet) ? 34 : 44,
-                        padding: (isMobile || isTablet) ? '0 10px' : '0 14px',
+                        height: 30,
+                        padding: '0 9px',
                         background: pillOverflowOpen
                           ? 'linear-gradient(135deg, rgba(100,180,255,0.18), rgba(100,180,255,0.08))'
                           : 'linear-gradient(135deg, rgba(100,180,255,0.09), rgba(100,180,255,0.03))',
@@ -1356,12 +1199,12 @@ export default function GameHUD({
                     >
                       <span style={{
                         fontFamily: "'Inter Tight', monospace",
-                        fontSize: (isMobile || isTablet) ? 13 : 15, fontWeight: 800,
+                        fontSize: 12, fontWeight: 800,
                         color: pillOverflowOpen ? '#93C5FD' : '#6B8AB4',
                         letterSpacing: '-0.01em',
                       }}>+{overflowPills.length}</span>
                       <ChevronDown
-                        size={(isMobile || isTablet) ? 12 : 13}
+                        size={11}
                         color={pillOverflowOpen ? '#93C5FD' : '#6B8AB4'}
                         style={{ transform: pillOverflowOpen ? 'rotate(180deg)' : 'none', transition: 'transform 180ms ease' }}
                       />
@@ -1467,30 +1310,6 @@ export default function GameHUD({
         }
         .pill-wiggle-glow {
           animation: pillWiggleGlow 0.6s ease-in-out 1;
-        }
-        @keyframes tickerFlash {
-          0%, 100% { box-shadow: 0 0 0 rgba(255,107,61,0); }
-          30% { box-shadow: 0 0 12px rgba(255,107,61,0.4); }
-        }
-        @keyframes tickerWiggle {
-          0%, 100% { transform: rotate(0deg); }
-          20% { transform: rotate(-1.5deg); }
-          40% { transform: rotate(1.5deg); }
-          60% { transform: rotate(-1deg); }
-          80% { transform: rotate(1deg); }
-        }
-        @keyframes tickerFlashAmber {
-          0%, 100% { box-shadow: 0 0 0 rgba(245,158,11,0); }
-          30% { box-shadow: 0 0 12px rgba(245,158,11,0.5); }
-        }
-        .ticker-task-done {
-          animation: tickerFlashAmber 1.2s ease-out 1, tickerWiggle 0.5s ease-in-out 1 0.15s;
-        }
-        .ticker-task-new {
-          animation: tickerFlash 1.2s ease-out 1, tickerWiggle 0.5s ease-in-out 1 0.15s;
-        }
-        .ticker-task-live {
-          animation: tickerFlash 2s ease-in-out infinite;
         }
         @keyframes spin {
           from { transform: rotate(0deg); }
@@ -1755,162 +1574,7 @@ export default function GameHUD({
         )
       })()}
 
-      {/* RTN ticker right-click / long-press context menu */}
-      {tickerCtxMenu && (() => {
-        const menuW = 240
-        const menuH = tickerCtxMenu.task.isDoneAwaitingApproval ? 185 : 130
-        let x = tickerCtxMenu.x
-        let y = tickerCtxMenu.y
-        if (typeof window !== 'undefined') {
-          if (x + menuW > window.innerWidth - 8) x = window.innerWidth - menuW - 8
-          if (x < 8) x = 8
-          if (y + menuH > window.innerHeight - 8) y = window.innerHeight - menuH - 8
-          if (y < 8) y = 8
-        }
-        const { task } = tickerCtxMenu
-        const borderColor = task.isDoneAwaitingApproval
-          ? 'rgba(245,158,11,0.35)'
-          : task.isQueued
-            ? 'rgba(233,30,144,0.35)'
-            : task.isLive
-              ? 'rgba(255,107,61,0.35)'
-              : 'rgba(100,180,255,0.25)'
-        const headerColor = task.isDoneAwaitingApproval
-          ? '#F59E0B'
-          : task.isQueued
-            ? '#E91E90'
-            : task.isLive
-              ? '#FF6B3D'
-              : '#60A5FA'
-        const clientId = typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom'
-        return (
-          <div data-ticker-ctx-menu style={{
-            position: 'fixed',
-            left: x, top: y,
-            zIndex: 9999,
-            background: 'linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(10,18,35,0.98) 100%)',
-            border: `2px solid ${borderColor}`,
-            borderRadius: 10, padding: '6px 0', minWidth: menuW,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(20px)',
-          }}>
-            {/* Header */}
-            <div style={{
-              padding: '8px 14px 6px',
-              fontSize: 12, fontWeight: 700,
-              color: headerColor,
-              fontFamily: "'JetBrains Mono', monospace",
-              borderBottom: `1px solid ${borderColor.replace('0.35', '0.15').replace('0.25', '0.12')}`,
-              marginBottom: 4,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              textTransform: 'uppercase', letterSpacing: '0.08em',
-            }}>
-              {(task.text || '').slice(0, 36)}{(task.text || '').length > 36 ? '...' : ''}
-            </div>
 
-            {task.isDoneAwaitingApproval ? (
-              <>
-                {/* Approve */}
-                <button
-                  onClick={() => {
-                    try {
-                      fetch('/api/dashboard/task-action', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'toggle', taskText: task.text, taskId: task.taskId || null, agent: task.agent || null, payload: true, clientId }),
-                      }).catch(() => {})
-                      if (task.taskId) {
-                        fetch('/api/dashboard/task-action', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ action: 'markDone', taskText: task.text, taskId: task.taskId || null, agent: task.agent || null, clientId }),
-                        }).catch(() => {})
-                      }
-                    } catch {}
-                    setTickerCtxMenu(null)
-                  }}
-                  style={{ ...hudCtxBtn(true), color: '#22C55E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />
-                  Approve
-                </button>
-
-                {/* Deny */}
-                <button
-                  onClick={() => {
-                    try {
-                      fetch('/api/dashboard/task-action', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'markUndone', taskText: task.text, taskId: task.taskId || null, agent: task.agent || null, clientId }),
-                      }).catch(() => {})
-                    } catch {}
-                    setTickerCtxMenu(null)
-                  }}
-                  style={{ ...hudCtxBtn(true), color: '#EF4444', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.10)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
-                  Deny
-                </button>
-
-                <div style={{ height: 1, background: 'rgba(245,158,11,0.12)', margin: '4px 0' }} />
-
-                {/* Clarify */}
-                <button
-                  onClick={() => {
-                    if (onClarify && task.agent) {
-                      onClarify(task.agent, task.text)
-                    } else if (task.agent) {
-                      onAgentClick?.(task.agent)
-                    }
-                    setTickerCtxMenu(null)
-                  }}
-                  style={{ ...hudCtxBtn(true), color: '#60A5FA', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(96,165,250,0.10)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#60A5FA', flexShrink: 0 }} />
-                  Clarify
-                </button>
-              </>
-            ) : (
-              <>
-                {/* Mark Done */}
-                <button
-                  onClick={() => {
-                    taskLifecycleAction('markDone', task)
-                    setTickerCtxMenu(null)
-                  }}
-                  style={{ ...hudCtxBtn(true), color: '#22C55E', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(34,197,94,0.10)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />
-                  Mark Done
-                </button>
-
-                {/* Remove */}
-                <button
-                  onClick={() => {
-                    taskLifecycleAction('remove', task)
-                    setTickerCtxMenu(null)
-                  }}
-                  style={{ ...hudCtxBtn(true), color: '#94A3B8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(148,163,184,0.10)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#94A3B8', flexShrink: 0 }} />
-                  Remove
-                </button>
-              </>
-            )}
-          </div>
-        )
-      })()}
     </div>
   )
 }
