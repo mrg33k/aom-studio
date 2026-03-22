@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense, useContext, createContext } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate as fmAnimate } from 'framer-motion'
 import {
   MessageSquare, Send, X, ChevronUp, ChevronDown,
@@ -1205,7 +1205,9 @@ function getSpriteState(status, isSpeaking) {
 // The images are 1024x1024 with frames in a 2x2 or 3x3 grid.
 // For the agent character in SVG, we use foreignObject to embed an <img> with
 // object-fit + object-position to crop to the first frame.
-const SPRITE_AGENTS = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
+// Static fallback used before Supabase resolves (or if unavailable)
+const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel'])
+const SpriteAgentsContext = createContext(SPRITE_AGENTS_FALLBACK)
 
 // Room numbers for door signs (from Steffen's cr-doorsign catalog)
 const AGENT_ROOM_NUMBERS = {
@@ -1214,41 +1216,43 @@ const AGENT_ROOM_NUMBERS = {
   elmo: '11', elon: '12', pixel: '13',
 }
 
-// Preload idle sprites on mount
+// Preload idle sprites on mount (re-runs if Supabase updates the list)
 function usePreloadSprites() {
+  const spriteAgents = useContext(SpriteAgentsContext)
   useEffect(() => {
     const states = ['idle', 'working', 'thinking', 'done', 'speaking']
-    SPRITE_AGENTS.forEach(a => {
+    spriteAgents.forEach(a => {
       states.forEach(s => {
         const img = new Image()
         img.src = `/corner/sprites/${a}-${s}.png`
       })
     })
     // Preload hop frames
-    SPRITE_AGENTS.forEach(a => {
+    spriteAgents.forEach(a => {
       ['ground', 'peak', 'landing'].forEach(frame => {
         const img = new Image()
         img.src = `/corner/sprites/hop/${a}-hop-${frame}.png`
       })
     })
     // Preload nameplate + doorsign PNGs
-    SPRITE_AGENTS.forEach(a => {
+    spriteAgents.forEach(a => {
       const np = new Image()
       np.src = `/corner/furniture/nameplates/nameplate-${a}.png`
       const ds = new Image()
       ds.src = `/corner/furniture/doorsigns/cr-doorsign-${a}.png`
     })
-  }, [])
+  }, [spriteAgents])
 }
 
 // ---- AGENT CHARACTER (Pixel Art Sprite) - HTML version for div-based rooms --
 function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH }) {
+  const spriteAgents = useContext(SpriteAgentsContext)
   const spriteState = getSpriteState(status, isSpeaking)
   const isWorking = status === 'WORKING'
   const isThinking = status === 'WAITING'
   const isDone = status === 'DONE'
 
-  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+  const hasSpriteFile = agentSlug && spriteAgents.has(agentSlug)
 
   // Character at 22% of room - visible life indicator, room is the star
   const spriteSize = Math.min(roomW, roomH) * 0.22
@@ -1350,13 +1354,14 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
 
 // Legacy SVG version kept for compatibility
 function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
+  const spriteAgents = useContext(SpriteAgentsContext)
   const spriteState = getSpriteState(status, isSpeaking)
   const isWorking = status === 'WORKING'
   const isThinking = status === 'WAITING'
   const isDone = status === 'DONE'
   const spriteW = 28
   const spriteH = 28
-  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+  const hasSpriteFile = agentSlug && spriteAgents.has(agentSlug)
   if (!hasSpriteFile) {
     return (
       <g>
@@ -1396,7 +1401,8 @@ function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
 
 // ---- SPRITE AVATAR (HTML, for chat + sidebar) ------------------------------
 function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, status }) {
-  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+  const spriteAgents = useContext(SpriteAgentsContext)
+  const hasSpriteFile = agentSlug && spriteAgents.has(agentSlug)
   const agent = AGENTS.find(a => a.slug === agentSlug)
   const color = borderColor || agent?.color || '#6B7280'
   const spriteState = status ? getSpriteState(status, false) : 'idle'
@@ -1643,6 +1649,7 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
 
 // ---- NAMEPLATE (HTML version for div-based layout) -------------------------
 function RoomNameplateHTML({ room, agentStatus, isHovered }) {
+  const spriteAgents = useContext(SpriteAgentsContext)
   if (!room || room.agent === null) return null
   const status = agentStatus?.status || 'IDLE'
   const dotColor = status === 'WORKING' ? (room.statusColors?.active || '#22C55E')
@@ -1650,7 +1657,7 @@ function RoomNameplateHTML({ room, agentStatus, isHovered }) {
     : (room.statusColors?.idle || '#6B7280')
   const pulse = status === 'WORKING' || status === 'WAITING'
   const task = agentStatus?.currentTask || ''
-  const hasSprite = SPRITE_AGENTS.includes(room.id)
+  const hasSprite = spriteAgents.has(room.id)
 
   return (
     <div style={{
@@ -9918,6 +9925,7 @@ export default function GameDashboard() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
+  const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
 
   // Load Supabase user on mount + watch for auth state changes.
   // Derives client_id from user metadata (world field) for multi-tenant data isolation.
@@ -9938,6 +9946,16 @@ export default function GameDashboard() {
       window.__cornerClientId = getClientId()
     })
     return unsubscribe
+  }, [])
+
+  // Fetch sprite-enabled agents from Supabase on mount.
+  // Falls back to SPRITE_AGENTS_FALLBACK if supabase is unavailable or returns empty.
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('agent_status').select('slug').eq('has_sprite', true)
+      .then(({ data }) => {
+        if (data?.length > 0) setSpriteAgents(new Set(data.map(r => r.slug)))
+      })
   }, [])
 
   const handleSignOut = useCallback(async () => {
@@ -11377,6 +11395,7 @@ export default function GameDashboard() {
   // DONE: Viewport overflow -- 100vw lock on outer + inner containers (commit 637b79c). 70/30 flex split verified.
   // DONE: Elon commit 637b79c verified clean, no conflicts with Bobby's 9ec8b81 chain.
   return (
+    <SpriteAgentsContext.Provider value={spriteAgents}>
     <div style={{
       position: 'fixed', inset: 0,
       width: '100vw', maxWidth: '100vw',
@@ -12350,5 +12369,6 @@ export default function GameDashboard() {
         }
       `}</style>
     </div>
+    </SpriteAgentsContext.Provider>
   )
 }
