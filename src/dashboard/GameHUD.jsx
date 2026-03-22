@@ -57,8 +57,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, X, Loader2, CheckCircle2, Search, ChevronDown, ChevronRight } from 'lucide-react'
-import { HUDBellButton, HUDToasts, HUD_NOTIFICATION_STYLES } from './HUDNotifications.jsx'
+import { Zap, X, Loader2, CheckCircle2, Search, ChevronDown } from 'lucide-react'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import { getClientId } from './lib/clientConfig.js'
 import {
@@ -518,7 +517,9 @@ export default function GameHUD({
   const hudTextMuted = isDaytime ? '#94B8D8' : HUD.textMuted
   const hudAccent = isDaytime ? '#60A5FA' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
-  const [aomExpanded, setAomExpanded] = useState(false)
+  const [pillOverflowOpen, setPillOverflowOpen] = useState(false)
+  const overflowBtnRef = useRef(null)
+  const overflowPanelRef = useRef(null)
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -823,8 +824,9 @@ export default function GameHUD({
     )
   }, [projects, searchQuery])
 
-  // Group filtered project pills: meta-pills stay flat, all project/client pills nest under AOM parent
-  const { metaPills, aomChildren } = useMemo(() => {
+  // All pills flat: meta first, project pills after. Cap visible to 8 (6 on mobile).
+  const MAX_VISIBLE_PILLS = isMobile ? 6 : 8
+  const { visiblePills, overflowPills } = useMemo(() => {
     const meta = []
     const children = []
     for (const p of filteredProjects) {
@@ -834,8 +836,12 @@ export default function GameHUD({
         children.push(p)
       }
     }
-    return { metaPills: meta, aomChildren: children }
-  }, [filteredProjects])
+    const all = [...meta, ...children]
+    return {
+      visiblePills: all.slice(0, MAX_VISIBLE_PILLS),
+      overflowPills: all.slice(MAX_VISIBLE_PILLS),
+    }
+  }, [filteredProjects, MAX_VISIBLE_PILLS])
 
   // Focus search input when opened
   useEffect(() => {
@@ -856,11 +862,30 @@ export default function GameHUD({
   // Close on Escape
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === 'Escape') setExpandedProject(null)
+      if (e.key === 'Escape') { setExpandedProject(null); setPillOverflowOpen(false) }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
+
+  // Close pill overflow panel on click outside
+  useEffect(() => {
+    if (!pillOverflowOpen) return
+    const handler = (e) => {
+      if (
+        overflowBtnRef.current && !overflowBtnRef.current.contains(e.target) &&
+        overflowPanelRef.current && !overflowPanelRef.current.contains(e.target)
+      ) {
+        setPillOverflowOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
+    }
+  }, [pillOverflowOpen])
 
   const totalTasks = filteredProjects.reduce((sum, p) => sum + p.tasks.length, 0)
   const totalDone = filteredProjects.reduce((sum, p) => sum + p.tasks.filter(t => t.done).length, 0)
@@ -1181,44 +1206,16 @@ export default function GameHUD({
             <Search size={isMobile ? 18 : 15} />
           </motion.button>
 
-          {/* Left scroll arrow (44px touch target) */}
-          <button
-            onClick={() => {
-              const el = document.querySelector('.hud-pills-scroll')
-              if (el) el.scrollBy({ left: -200, behavior: 'smooth' })
-            }}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: isDaytime ? '#6B8AB0' : '#8BA4C4',
-              padding: isMobile ? '12px 6px' : '4px 2px',
-              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              minWidth: 44, minHeight: 44,
-              transition: 'color 100ms',
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#60A5FA' : '#60A5FA'}
-            onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#6B8AB0' : '#8BA4C4'}
-          >
-            <svg width={isMobile ? 20 : 16} height={isMobile ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-
-          {/* Scrollable project pills -- THE WHOLE BAR. Left-aligned so Right Now pill is always visible first. */}
+          {/* Pill bar: fixed count (6-8 visible), overflow behind +N button. No scroll arrows. */}
           <div style={{
             flex: 1,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-start',
-            gap: 8,
+            gap: isMobile ? 6 : 8,
             padding: '2px 4px',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            WebkitOverflowScrolling: 'touch',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            touchAction: 'pan-x',
-          }} className="hud-pills-scroll">
-
+            overflow: 'hidden',
+          }}>
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
                 <Loader2 size={16} style={{ color: hudTextMuted, animation: 'spin 1s linear infinite' }} />
@@ -1226,14 +1223,13 @@ export default function GameHUD({
                   Loading...
                 </span>
               </div>
-            ) : (metaPills.length === 0 && aomChildren.length === 0) ? (
+            ) : visiblePills.length === 0 ? (
               <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: hudTextMuted, padding: '0 8px' }}>
                 {searchQuery ? 'No matches' : 'No task data'}
               </span>
             ) : (
               <>
-                {/* Meta-pills: Right Now, Inbox, Completed, Your TODOs, etc. -- always flat */}
-                {metaPills.map(project => (
+                {visiblePills.map(project => (
                   <ProjectCard
                     key={project.section}
                     project={project}
@@ -1251,76 +1247,72 @@ export default function GameHUD({
                   />
                 ))}
 
-                {/* AOM parent pill + collapsible children */}
-                {aomChildren.length > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    {/* AOM parent pill */}
+                {/* +N overflow button */}
+                {overflowPills.length > 0 && (
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
                     <motion.button
-                      onClick={() => setAomExpanded(v => !v)}
-                      whileHover={{ scale: 1.06, y: -4, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
-                      whileTap={{ scale: 0.90, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
+                      ref={overflowBtnRef}
+                      onClick={() => setPillOverflowOpen(v => !v)}
+                      whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+                      whileTap={{ scale: 0.92, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10,
-                        height: isMobile ? 36 : 56, padding: isMobile ? '0 12px' : '0 20px',
-                        background: aomExpanded
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        height: isMobile ? 34 : 44,
+                        padding: isMobile ? '0 10px' : '0 14px',
+                        background: pillOverflowOpen
                           ? 'linear-gradient(135deg, rgba(100,180,255,0.18), rgba(100,180,255,0.08))'
-                          : 'linear-gradient(135deg, rgba(100,180,255,0.10), rgba(100,180,255,0.04))',
-                        border: `2px solid ${aomExpanded ? 'rgba(100,180,255,0.45)' : 'rgba(100,180,255,0.22)'}`,
-                        borderRadius: 16, cursor: 'pointer', flexShrink: 0,
-                        boxShadow: aomExpanded
-                          ? '0 6px 24px rgba(100,180,255,0.25), 0 2px 8px rgba(0,0,0,0.4)'
-                          : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25)',
-                        transition: 'all 200ms ease',
+                          : 'linear-gradient(135deg, rgba(100,180,255,0.09), rgba(100,180,255,0.03))',
+                        border: `1.5px solid ${pillOverflowOpen ? 'rgba(100,180,255,0.5)' : 'rgba(100,180,255,0.2)'}`,
+                        borderRadius: 12, cursor: 'pointer', flexShrink: 0,
+                        transition: 'all 180ms ease',
                       }}
                     >
-                      {/* AOM color square */}
-                      <div style={{
-                        width: 10, height: 10, borderRadius: 3,
-                        background: '#60A5FA',
-                        boxShadow: '0 0 10px rgba(96,165,250,0.6)',
-                        flexShrink: 0,
-                      }} />
-                      <span style={{
-                        fontFamily: "'Inter', system-ui, sans-serif",
-                        fontSize: isMobile ? 12 : 20, fontWeight: 900,
-                        color: '#F1F5F9',
-                        whiteSpace: 'nowrap',
-                        letterSpacing: '-0.02em',
-                        textTransform: 'uppercase',
-                        textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                      }}>AOM</span>
-                      {/* Child count badge */}
                       <span style={{
                         fontFamily: "'Inter Tight', monospace",
-                        fontSize: isMobile ? 11 : 14, fontWeight: 800,
-                        color: '#60A5FA',
-                        background: 'rgba(96,165,250,0.15)',
-                        padding: isMobile ? '2px 6px' : '3px 10px',
-                        borderRadius: 8,
-                        border: '1.5px solid rgba(96,165,250,0.3)',
-                        whiteSpace: 'nowrap',
-                        minWidth: 24, textAlign: 'center',
-                      }}>
-                        {aomChildren.length}
-                      </span>
-                      {/* Chevron */}
-                      {aomExpanded
-                        ? <ChevronDown size={isMobile ? 13 : 16} color="rgba(100,180,255,0.7)" />
-                        : <ChevronRight size={isMobile ? 13 : 16} color="rgba(100,180,255,0.7)" />
-                      }
+                        fontSize: isMobile ? 13 : 15, fontWeight: 800,
+                        color: pillOverflowOpen ? '#93C5FD' : '#6B8AB4',
+                        letterSpacing: '-0.01em',
+                      }}>+{overflowPills.length}</span>
+                      <ChevronDown
+                        size={isMobile ? 12 : 13}
+                        color={pillOverflowOpen ? '#93C5FD' : '#6B8AB4'}
+                        style={{ transform: pillOverflowOpen ? 'rotate(180deg)' : 'none', transition: 'transform 180ms ease' }}
+                      />
                     </motion.button>
 
-                    {/* Children: shown inline when expanded */}
+                    {/* Overflow popover -- fixed above HUD bar */}
                     <AnimatePresence>
-                      {aomExpanded && (
+                      {pillOverflowOpen && (
                         <motion.div
-                          initial={{ opacity: 0, width: 0 }}
-                          animate={{ opacity: 1, width: 'auto' }}
-                          exit={{ opacity: 0, width: 0 }}
-                          transition={{ duration: 0.2, ease: 'easeOut' }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}
+                          ref={overflowPanelRef}
+                          initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                          transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+                          style={{
+                            position: 'fixed',
+                            bottom: isMobile ? 68 : 80,
+                            left: (() => {
+                              if (!overflowBtnRef.current) return 'auto'
+                              const rect = overflowBtnRef.current.getBoundingClientRect()
+                              const panelW = Math.min(overflowPills.length * 110, 360)
+                              const right = window.innerWidth - rect.right
+                              return right + rect.width > panelW ? `${rect.left}px` : `${Math.max(8, rect.right - panelW)}px`
+                            })(),
+                            maxWidth: 'calc(100vw - 16px)',
+                            background: 'rgba(8,14,28,0.97)',
+                            backdropFilter: 'blur(20px)',
+                            border: '1.5px solid rgba(100,180,255,0.2)',
+                            borderRadius: 14,
+                            boxShadow: '0 -8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(100,180,255,0.06)',
+                            padding: '10px 10px 8px',
+                            zIndex: 200,
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 6,
+                          }}
                         >
-                          {aomChildren.map(project => (
+                          {overflowPills.map(project => (
                             <ProjectCard
                               key={project.section}
                               project={project}
@@ -1329,6 +1321,7 @@ export default function GameHUD({
                                 setExpandedProject(
                                   expandedProject?.section === project.section ? null : project
                                 )
+                                setPillOverflowOpen(false)
                               }}
                               onContextMenu={onProjectContextMenu}
                               isNightMode={isNightMode}
@@ -1345,31 +1338,6 @@ export default function GameHUD({
               </>
             )}
           </div>
-
-          {/* Right scroll arrow (44px touch target) */}
-          <button
-            onClick={() => {
-              const el = document.querySelector('.hud-pills-scroll')
-              if (el) el.scrollBy({ left: 200, behavior: 'smooth' })
-            }}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: isDaytime ? '#6B8AB0' : '#8BA4C4',
-              padding: isMobile ? '12px 6px' : '4px 2px',
-              flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              minWidth: 44, minHeight: 44,
-              transition: 'color 100ms',
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = isDaytime ? '#60A5FA' : '#60A5FA'}
-            onMouseLeave={e => e.currentTarget.style.color = isDaytime ? '#6B8AB0' : '#8BA4C4'}
-          >
-            <svg width={isMobile ? 20 : 16} height={isMobile ? 20 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-
-          {/* Lightning bolt notification button (was bell) -- desktop only */}
-          {!isMobile && <HUDBellButton onClick={onExpandChat} />}
         </div>
       </div>
 
@@ -1464,11 +1432,7 @@ export default function GameHUD({
           0%, 100% { opacity: 1; border-color: #EF4444; }
           50% { opacity: 0.7; border-color: #FF6B6B; }
         }
-        ${HUD_NOTIFICATION_STYLES}
       `}</style>
-
-      {/* HUD toast notifications (slide in from right, above HUD strip) */}
-      <HUDToasts />
 
       {/* Task right-click context menu (rendered outside all overflow containers) */}
       {hudTaskCtx && (
