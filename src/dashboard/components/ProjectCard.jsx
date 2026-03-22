@@ -5,7 +5,7 @@
 
 import React, { useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Zap, AlertCircle, History, Flame, CheckCircle2 } from 'lucide-react'
+import { Zap, AlertCircle, History, Flame, CheckCircle2, Layers, ChevronDown } from 'lucide-react'
 import { PALETTE, HUD } from './HUDConstants.jsx'
 
 // ---- PROJECT CARD (VEGAS ENERGY: Trello thickness, physical objects) ---------
@@ -376,3 +376,137 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
 }
 
 export default ProjectCard
+
+// ---- PARENT PILL (AOM / company-level pill that expands to show child project pills) ------
+// Looks like a ProjectCard but signals "I contain multiple children."
+// Layers icon + child count badge + chevron. Click toggles the child popover.
+// Colors stay in the blue HUD family (not orange -- orange is Right Now only).
+export function ParentPill({ project, isExpanded, onClick, isNightMode }) {
+  const isDaytime = isNightMode === false
+  const allTasks = project.tasks.filter(t => !t.isAddPrompt)
+  const remaining = allTasks.filter(t => !t.done).length
+  const childCount = project.children?.length || 0
+  const color = project.color || '#3B9EFF'
+
+  return (
+    <motion.button
+      onClick={onClick}
+      whileHover={{ scale: 1.05, y: -3, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+      whileTap={{ scale: 0.92, y: 2, transition: { type: 'spring', stiffness: 600, damping: 18 } }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        height: 30, padding: '0 10px',
+        background: isDaytime
+          ? (isExpanded
+              ? `linear-gradient(135deg, ${color}18, ${color}08)`
+              : `linear-gradient(135deg, ${color}0C, ${color}04)`)
+          : (isExpanded
+              ? `linear-gradient(135deg, ${color}28, ${color}10)`
+              : `linear-gradient(135deg, ${color}16, ${color}08)`),
+        border: isDaytime
+          ? `2px solid ${isExpanded ? `${color}50` : `${color}28`}`
+          : `2px solid ${isExpanded ? `${color}66` : `${color}38`}`,
+        borderRadius: 16,
+        cursor: 'pointer',
+        flexShrink: 0,
+        overflow: 'hidden',
+        position: 'relative',
+        boxShadow: isDaytime
+          ? (isExpanded
+              ? `0 4px 16px ${color}22, 0 1px 4px rgba(0,0,0,0.08)`
+              : '0 2px 8px rgba(0,0,0,0.20), 0 1px 2px rgba(0,0,0,0.10)')
+          : (isExpanded
+              ? `0 6px 24px ${color}35, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
+              : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
+        transition: 'all 200ms ease',
+        WebkitTapHighlightColor: 'transparent',
+        WebkitTouchCallout: 'none',
+      }}
+    >
+      {/* Bottom progress fill -- aggregate across all children */}
+      {allTasks.length > 0 && (
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0,
+          width: `${Math.round(((allTasks.length - remaining) / allTasks.length) * 100)}%`, height: 3,
+          background: `linear-gradient(90deg, ${color}70, ${color})`,
+          transition: 'width 500ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+          borderRadius: '0 0 16px 16px',
+          boxShadow: `0 0 8px ${color}44`,
+        }} />
+      )}
+
+      {/* Layers icon -- signals "parent container" */}
+      <Layers
+        size={12}
+        color={isExpanded ? color : (isDaytime ? '#94A3B8' : '#6B8AB0')}
+        style={{
+          flexShrink: 0,
+          filter: isExpanded ? `drop-shadow(0 0 6px ${color}88)` : 'none',
+          transition: 'all 200ms ease',
+        }}
+      />
+
+      {/* Name */}
+      <span style={{
+        fontFamily: "'Inter', system-ui, sans-serif",
+        fontSize: 12, fontWeight: 800,
+        color: isExpanded ? '#FFFFFF' : (isDaytime ? '#F1F5F9' : HUD.textPrimary),
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        maxWidth: 80,
+        letterSpacing: '-0.02em',
+        textTransform: 'uppercase',
+        textShadow: isDaytime ? '0 1px 2px rgba(0,0,0,0.3)' : '0 1px 2px rgba(0,0,0,0.3)',
+      }}>
+        {project.name}
+      </span>
+
+      {/* Child count -- e.g. "4" shows how many project pills are inside */}
+      {childCount > 1 && (
+        <span style={{
+          fontFamily: "'Inter Tight', monospace",
+          fontSize: 10, fontWeight: 800,
+          color: isDaytime ? '#64748B' : '#6B8AB0',
+          background: isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,180,255,0.08)',
+          padding: '1px 5px', borderRadius: 5,
+          letterSpacing: '-0.01em',
+          border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.12)'}`,
+          whiteSpace: 'nowrap',
+          lineHeight: 1.4,
+        }}>
+          {childCount}
+        </span>
+      )}
+
+      {/* Remaining tasks across all children */}
+      {remaining > 0 && (
+        <span style={{
+          fontFamily: "'Inter Tight', JetBrains Mono, monospace",
+          fontSize: 11, fontWeight: 800,
+          color: '#FFF',
+          background: `linear-gradient(135deg, ${color}, ${color}DD)`,
+          padding: '2px 7px', borderRadius: 8,
+          letterSpacing: '-0.01em',
+          lineHeight: 1,
+          boxShadow: `0 3px 12px ${color}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
+          minWidth: 20, textAlign: 'center',
+          whiteSpace: 'nowrap',
+        }}>
+          {remaining}
+        </span>
+      )}
+
+      {/* Expand/collapse chevron */}
+      <ChevronDown
+        size={11}
+        color={isExpanded ? color : (isDaytime ? '#64748B' : '#4A6080')}
+        style={{
+          transform: isExpanded ? 'rotate(180deg)' : 'none',
+          transition: 'transform 200ms ease, color 200ms ease',
+          flexShrink: 0,
+        }}
+      />
+    </motion.button>
+  )
+}

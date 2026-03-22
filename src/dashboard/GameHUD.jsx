@@ -67,7 +67,7 @@ import {
   useRecencyWeights,
 } from './components/HUDConstants.jsx'
 import { TaskPanel } from './components/TaskPanel.jsx'
-import { ProjectCard } from './components/ProjectCard.jsx'
+import { ProjectCard, ParentPill } from './components/ProjectCard.jsx'
 import { hudCtxBtn } from './components/CompactStats.jsx'
 import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 
@@ -209,6 +209,21 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
 // Meta-sections that always stay flat (never nest under AOM parent pill)
 const META_SECTIONS = new Set(['rightnow', 'inbox', 'to-do', 'completed-feed', 'your-todos', 'finish-these', 'checking-in', 'schedule', 'today'])
 
+// Project sections that group under the AOM parent pill.
+// Clicking AOM expands a popover showing these as individual child pills.
+// Any section not in META_SECTIONS and not in AOM_CHILDREN stays flat as-is.
+const AOM_CHILDREN = new Set([
+  'corner', 'kohrs', 'kohrs-client',
+  'ambition', 'ambition-client',
+  'aom-site', 'aom-phase2',
+  'gtm', 'outreach',
+  'cleo', 'content',
+  'isa', 'isa-client',
+  'skylar', 'skylar-client',
+  'brandon-client', 'nabi-client', 'lbx-client',
+  'infra', 'deadlines', 'week',
+])
+
 // ---- MAIN HUD ---------------------------------------------------------------
 // DONE(bobby2): Chat input REMOVED from bottom bar per Patrik directive. Chat lives ONLY in sidebar.
 // Bottom bar = agent roster | scrollable project pills | compact stats | notification bell
@@ -325,6 +340,10 @@ export default function GameHUD({
   const [pillOverflowOpen, setPillOverflowOpen] = useState(false)
   const overflowBtnRef = useRef(null)
   const overflowPanelRef = useRef(null)
+  // AOM parent pill: toggles a popover showing all AOM child project pills
+  const [expandedParentKey, setExpandedParentKey] = useState(null)
+  const parentPillBtnRef = useRef(null)
+  const parentPillPanelRef = useRef(null)
   const [highlightedTask, setHighlightedTask] = useState(null) // { text: string } - flash-highlight after navigating from another pill
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
@@ -636,19 +655,38 @@ export default function GameHUD({
     )
   }, [projects, searchQuery])
 
-  // All pills flat: meta first, project pills after. Cap visible to 8 (6 on mobile).
+  // All pills flat: meta first, then AOM parent pill (collapsing all AOM children), then other project pills.
+  // Cap visible to 8 (6 on mobile). AOM parent counts as ONE pill slot.
   const MAX_VISIBLE_PILLS = isMobile ? 6 : isTablet ? 7 : 8
   const { visiblePills, overflowPills } = useMemo(() => {
     const meta = []
-    const children = []
+    const aomKids = []
+    const other = []
     for (const p of filteredProjects) {
       if (META_SECTIONS.has(p.section)) {
         meta.push(p)
+      } else if (AOM_CHILDREN.has(p.section)) {
+        aomKids.push(p)
       } else {
-        children.push(p)
+        other.push(p)
       }
     }
-    const all = [...meta, ...children]
+    const all = [...meta]
+    // Collapse AOM children into one parent pill
+    if (aomKids.length > 0) {
+      const allAomTasks = aomKids.flatMap(p => p.tasks)
+      all.push({
+        name: 'AOM',
+        section: '__aom-parent__',
+        color: '#3B9EFF',
+        icon: 'parent',
+        isParent: true,
+        parentKey: 'aom',
+        children: aomKids,
+        tasks: allAomTasks,
+      })
+    }
+    all.push(...other)
     return {
       visiblePills: all.slice(0, MAX_VISIBLE_PILLS),
       overflowPills: all.slice(MAX_VISIBLE_PILLS),
@@ -698,6 +736,25 @@ export default function GameHUD({
       document.removeEventListener('touchstart', handler)
     }
   }, [pillOverflowOpen])
+
+  // Close AOM parent popover on click outside
+  useEffect(() => {
+    if (!expandedParentKey) return
+    const handler = (e) => {
+      if (
+        parentPillBtnRef.current && !parentPillBtnRef.current.contains(e.target) &&
+        parentPillPanelRef.current && !parentPillPanelRef.current.contains(e.target)
+      ) {
+        setExpandedParentKey(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
+    }
+  }, [expandedParentKey])
 
   const totalTasks = filteredProjects.reduce((sum, p) => sum + p.tasks.length, 0)
   const totalDone = filteredProjects.reduce((sum, p) => sum + p.tasks.filter(t => t.done).length, 0)
@@ -939,23 +996,114 @@ export default function GameHUD({
               </span>
             ) : (
               <>
-                {visiblePills.map(project => (
-                  <ProjectCard
-                    key={project.section}
-                    project={project}
-                    isExpanded={expandedProject?.section === project.section}
-                    onClick={() => {
-                      setExpandedProject(
-                        expandedProject?.section === project.section ? null : project
-                      )
-                    }}
-                    onContextMenu={onProjectContextMenu}
-                    isNightMode={isNightMode}
-                    wiggle={project.section === 'rightnow' && rightNowWiggle}
-                    isMobile={isMobile}
-                    isTablet={isTablet}
-                  />
-                ))}
+                {visiblePills.map(project => {
+                  // Parent pill (AOM): click toggles child popover, never opens TaskPanel directly
+                  if (project.isParent) {
+                    return (
+                      <div key={project.section} ref={parentPillBtnRef} style={{ position: 'relative', flexShrink: 0 }}>
+                        <ParentPill
+                          project={project}
+                          isExpanded={expandedParentKey === project.parentKey}
+                          onClick={() => setExpandedParentKey(
+                            expandedParentKey === project.parentKey ? null : project.parentKey
+                          )}
+                          isNightMode={isNightMode}
+                        />
+                        {/* AOM children popover -- fixed above HUD bar, aligned to parent pill */}
+                        <AnimatePresence>
+                          {expandedParentKey === project.parentKey && (
+                            <motion.div
+                              ref={parentPillPanelRef}
+                              data-aom-parent-panel=""
+                              initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                              transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+                              style={{
+                                position: 'fixed',
+                                bottom: isMobile ? 68 : 80,
+                                left: (() => {
+                                  if (!parentPillBtnRef.current) return 'auto'
+                                  const rect = parentPillBtnRef.current.getBoundingClientRect()
+                                  const panelW = Math.min(project.children.length * 120, 400)
+                                  return rect.left + panelW > window.innerWidth - 8
+                                    ? `${Math.max(8, window.innerWidth - panelW - 8)}px`
+                                    : `${rect.left}px`
+                                })(),
+                                maxWidth: 'calc(100vw - 16px)',
+                                background: 'rgba(8,14,28,0.97)',
+                                backdropFilter: 'blur(20px)',
+                                border: '1.5px solid rgba(59,130,246,0.25)',
+                                borderRadius: 14,
+                                boxShadow: '0 -8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(59,130,246,0.06), inset 0 1px 0 rgba(59,130,246,0.08)',
+                                padding: '10px 10px 8px',
+                                zIndex: 200,
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: 6,
+                              }}
+                            >
+                              {/* Panel header label */}
+                              <div style={{
+                                width: '100%',
+                                paddingBottom: 6,
+                                borderBottom: '1px solid rgba(59,130,246,0.12)',
+                                marginBottom: 2,
+                                display: 'flex', alignItems: 'center', gap: 6,
+                              }}>
+                                <span style={{
+                                  fontFamily: "'JetBrains Mono', monospace",
+                                  fontSize: 10, fontWeight: 700,
+                                  color: 'rgba(59,130,246,0.7)',
+                                  letterSpacing: '0.10em',
+                                  textTransform: 'uppercase',
+                                }}>AOM Projects</span>
+                              </div>
+                              {/* Child project pills */}
+                              {project.children.map(child => (
+                                <ProjectCard
+                                  key={child.section}
+                                  project={child}
+                                  isExpanded={expandedProject?.section === child.section}
+                                  onClick={() => {
+                                    setExpandedProject(
+                                      expandedProject?.section === child.section ? null : child
+                                    )
+                                    setExpandedParentKey(null)
+                                  }}
+                                  onContextMenu={onProjectContextMenu}
+                                  isNightMode={isNightMode}
+                                  wiggle={false}
+                                  isMobile={isMobile}
+                                  isTablet={isTablet}
+                                />
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )
+                  }
+
+                  // Normal project pill
+                  return (
+                    <ProjectCard
+                      key={project.section}
+                      project={project}
+                      isExpanded={expandedProject?.section === project.section}
+                      onClick={() => {
+                        setExpandedProject(
+                          expandedProject?.section === project.section ? null : project
+                        )
+                      }}
+                      onContextMenu={onProjectContextMenu}
+                      isNightMode={isNightMode}
+                      wiggle={project.section === 'rightnow' && rightNowWiggle}
+                      isMobile={isMobile}
+                      isTablet={isTablet}
+                    />
+                  )
+                })}
 
                 {/* +N overflow button */}
                 {overflowPills.length > 0 && (
