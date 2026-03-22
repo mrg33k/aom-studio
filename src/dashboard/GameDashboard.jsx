@@ -8572,7 +8572,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 const isNotif = !isUser && isSystemNotification(msg)
 
                 // ---- AOM TEAM ROOM: per-message agent identity ----
-                const isAomRoom = room?.id === 'aom'
+                // room.id is 'aom-team' (from ROOM_LOOKUP); agentSlug covers the 'aom' fallback
+                const isAomRoom = room?.id === 'aom' || room?.id === 'aom-team' || agentSlug === 'aom' || agentSlug === 'aom-team'
                 // In AOM room, each message carries an agentTag (the agent slug who sent it)
                 const AOM_AGENT_COLORS = {
                   bobby: '#3B9EFF', elon: '#22C55E', steffen: '#F59E0B',

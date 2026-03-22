@@ -401,11 +401,11 @@ function localDashboardPlugin() {
           const AGENT_PROJECT_PATH = {
             bobby: 'AOM -> Corner', colton: 'AOM -> Corner',
             elon: 'AOM -> Corner', steffen: 'AOM -> Corner',
-            steve: 'AOM -> Advisory', alex: 'AOM -> Strategy',
-            cleo: 'AOM -> Content', tony: 'AOM -> Content',
+            steve: 'AOM -> AI Advisory', alex: 'AOM -> AI Advisory',
+            cleo: 'AOM -> KOHRS', tony: 'AOM -> KOHRS',
             jacob: 'AOM -> Outreach',
-            mom: 'AOM -> Internal', elmo: 'AOM -> Internal', pixel: 'AOM -> Internal',
-            paige: 'AOM -> Clients',
+            mom: 'AOM -> Corner', elmo: 'AOM -> Corner', pixel: 'AOM -> Corner',
+            paige: 'AOM -> Ambition',
           }
           const agentsDir = resolve(AOM_EA_ROOT, 'conversations', 'agents')
           const allMessages = []
