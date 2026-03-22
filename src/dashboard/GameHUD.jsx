@@ -418,7 +418,7 @@ function InboxPanel({ doneTasks, unreadMsgs, onClose, isNightMode, onNavigateToA
 }
 
 // Meta-sections that always stay flat (never nest under AOM parent pill)
-const META_SECTIONS = new Set(['rightnow', 'inbox', 'completed-feed', 'your-todos', 'finish-these', 'checking-in', 'schedule', 'today'])
+const META_SECTIONS = new Set(['rightnow', 'inbox', 'to-do', 'completed-feed', 'your-todos', 'finish-these', 'checking-in', 'schedule', 'today'])
 
 // ---- MAIN HUD ---------------------------------------------------------------
 // DONE(bobby2): Chat input REMOVED from bottom bar per Patrik directive. Chat lives ONLY in sidebar.
@@ -537,6 +537,7 @@ export default function GameHUD({
     completedFeed,
     inboxItems,
     yourTodos: patrikTodos,
+    personalTodos,
     finishThese: checkingInTasks,
     isAutoChecked,
     punchData,
@@ -664,6 +665,25 @@ export default function GameHUD({
       })
     }
 
+    // TO DO pill = Patrik's personal tasks (agent='patrik', not agent completions)
+    if (personalTodos.length > 0) {
+      merged.push({
+        name: 'To Do',
+        section: 'to-do',
+        color: '#8B5CF6',
+        icon: 'list-todo',
+        tasks: personalTodos.map(t => ({
+          text: t.text,
+          done: false,
+          agent: 'patrik',
+          raw: '',
+          taskId: t.taskId,
+          projectSource: t.project,
+        })),
+        isPersonalTodo: true,
+      })
+    }
+
     // COMPLETED FEED = simplified activity feed of recent task completions
     if (completedFeed.length > 0) {
       merged.push({
@@ -748,7 +768,10 @@ export default function GameHUD({
       // Inbox second -- done tasks + unread messages need immediate attention
       if (a.section === 'inbox') return -1
       if (b.section === 'inbox') return 1
-      // Your TODOs third
+      // To Do third -- Patrik's personal tasks (next to Inbox)
+      if (a.section === 'to-do') return -1
+      if (b.section === 'to-do') return 1
+      // Your TODOs fourth
       if (a.section === 'your-todos') return -1
       if (b.section === 'your-todos') return 1
       // Schedule third (was Today)
@@ -770,7 +793,7 @@ export default function GameHUD({
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, weights, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, checkingInTasks, manualTasks, inboxItems])
+  }, [punchData, weights, liveRightNowTasks, completedFeed, isAutoChecked, patrikTodos, personalTodos, checkingInTasks, manualTasks, inboxItems])
 
   // Keep ref in sync for navigateToProject callback
   projectsRef.current = projects
