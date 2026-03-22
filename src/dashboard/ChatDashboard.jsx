@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
+import { getTypingPhrases } from './agentTypingPhrases'
 
 // Configure marked for safe, minimal rendering
 marked.setOptions({
@@ -391,17 +392,8 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   const [motivationalPhrase, setMotivationalPhrase] = useState(0)
   const [isSending, setIsSending] = useState(false)
 
-  // Fun rotating thinking phrases
-  const thinkingPhrases = useMemo(() => [
-    `${agent.name}ing...`,
-    'Crushing it...',
-    'Flexing...',
-    'Making moves...',
-    'Cooking...',
-    'Building...',
-    'In the zone...',
-    'Running it...',
-  ], [agent.name])
+  // Fun rotating thinking phrases -- per-agent personality
+  const thinkingPhrases = useMemo(() => getTypingPhrases(agent.slug), [agent.slug])
 
   // Motivational phrases for the work wait
   const motivationalPhrases = useMemo(() => [
@@ -1254,7 +1246,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                   </div>
                   <div className="bg-[#1C1C1A] border border-[#2A2A28] rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-[#78716C] text-xs font-mono">{thinkingPhrases[thinkingPhrase]}</span>
+                      <span
+                        key={thinkingPhrase}
+                        className="text-[#78716C] text-xs font-mono"
+                        style={{ animation: 'typingPhraseIn 0.4s ease-out' }}
+                      >{thinkingPhrases[thinkingPhrase]}</span>
                       {elapsedSeconds > 0 && (
                         <span className="text-[#78716C]/50 text-xs font-mono">{elapsedSeconds}s</span>
                       )}
@@ -2527,6 +2523,10 @@ export default function ChatDashboard() {
         @keyframes chatBounce {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
           30% { transform: translateY(-6px); opacity: 1; }
+        }
+        @keyframes typingPhraseIn {
+          0% { opacity: 0; transform: translateY(4px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
         .chat-messages-area::-webkit-scrollbar { width: 4px; }
         .chat-messages-area::-webkit-scrollbar-track { background: transparent; }

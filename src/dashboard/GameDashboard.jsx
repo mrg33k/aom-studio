@@ -41,6 +41,7 @@ import { getClientId, setClientIdFromUser } from './lib/clientConfig.js'
 import { marked } from 'marked'
 import OnboardingGuide from './OnboardingGuide.jsx'
 import AgentInfoTab from './components/AgentInfoTab.jsx'
+import { getTypingPhrases } from './agentTypingPhrases.js'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -5834,19 +5835,41 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
     })
   }
 
-  // Typing indicator: 3 dots pulsing in agent's color
-  const thinkingTexts = ['eloning...', 'crushing it...', 'flexing...', 'plotting...', 'cooking...', 'brewing...', 'scheming...']
-  const [thinkingText] = useState(() => thinkingTexts[Math.floor(Math.random() * thinkingTexts.length)])
+  // Typing indicator: rotating funny phrases + 3 dots pulsing in agent's color
+  const currentTypingPhrases = useMemo(() => getTypingPhrases(agentSlug), [agentSlug])
+  const [thinkingPhraseIdx, setThinkingPhraseIdx] = useState(0)
+
+  useEffect(() => {
+    if (!streaming) {
+      setThinkingPhraseIdx(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setThinkingPhraseIdx(prev => (prev + 1) % currentTypingPhrases.length)
+    }, 3500)
+    return () => clearInterval(interval)
+  }, [streaming, currentTypingPhrases.length])
 
   const TypingIndicator = () => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 2px' }}>
-      {[0, 1, 2].map(i => (
-        <div key={i} style={{
-          width: 7, height: 7, borderRadius: '50%',
-          background: agentColor, opacity: 0.9,
-          animation: `chatTypingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
-        }} />
-      ))}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 2px' }}>
+      <span
+        key={thinkingPhraseIdx}
+        style={{
+          color: agentColor, fontSize: 11, fontFamily: "'JetBrains Mono', monospace",
+          opacity: 0.85, animation: 'typingPhraseIn 0.4s ease-out',
+        }}
+      >
+        {currentTypingPhrases[thinkingPhraseIdx]}
+      </span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: 5, height: 5, borderRadius: '50%',
+            background: agentColor, opacity: 0.9,
+            animation: `chatTypingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
+          }} />
+        ))}
+      </span>
     </div>
   )
 
@@ -13165,6 +13188,10 @@ export default function GameDashboard() {
         .animate-spin { animation: spin 1s linear infinite; }
         .animate-shake { animation: shake 0.5s ease-in-out; }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+        @keyframes typingPhraseIn {
+          0% { opacity: 0; transform: translateY(4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
         @keyframes chatTypingDot {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
           30% { transform: translateY(-4px); opacity: 1; }
