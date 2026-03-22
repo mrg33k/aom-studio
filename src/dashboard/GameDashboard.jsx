@@ -1486,16 +1486,19 @@ const ROOM_LIGHT_OVERLAYS = {
 }
 
 // Rooms that have pixel art room render PNGs
-const ROOMS_WITH_RENDERS = [
+// Static fallback used before Supabase resolves (or if unavailable)
+const ROOMS_WITH_RENDERS_FALLBACK = new Set([
   'patrik', 'mom', 'alex', 'steve', 'steffen', 'main-hall',
   'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon',
-]
+])
+const RoomsWithRendersContext = createContext(ROOMS_WITH_RENDERS_FALLBACK)
 
 // ---- ROOM TILE (HTML/CSS - uses Gemini renders as backgrounds) -------------
 // The renders ARE isometric. No CSS 3D transforms needed. Let the art do the work.
 function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, onMouseEnter, onMouseLeave, tileW, tileH, detailLevel, agentAnimation }) {
   if (!room) return null
 
+  const roomsWithRenders = useContext(RoomsWithRendersContext)
   const status = agentStatus?.status || 'IDLE'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const isActive = status === 'WORKING'
@@ -1503,7 +1506,7 @@ function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, on
   const agentColor = room.agentColor || '#FFD87A'
   const isAway = agentAnimation?.state === 'away'
   const baseBrightness = isAway ? 0.3 : (isActive ? 1.0 : (status === 'DONE' ? 0.95 : (status === 'IDLE' ? 0.75 : 0.85)))
-  const hasRoomRender = ROOMS_WITH_RENDERS.includes(room.id)
+  const hasRoomRender = roomsWithRenders.has(room.id)
   const roomImgSrc = `/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`
   const showAmbient = detailLevel !== 'overview'
 
@@ -1644,6 +1647,7 @@ function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, on
 // Legacy SVG IsometricRoom kept for fallback
 function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClick, cellSize, detailLevel, agentAnimation }) {
   if (!room) return null
+  const roomsWithRenders = useContext(RoomsWithRendersContext)
   const status = agentStatus?.status || 'IDLE'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
   const isActive = status === 'WORKING'
@@ -1653,7 +1657,7 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
   const agentColor = room.agentColor || '#FFD87A'
   const isAway = agentAnimation?.state === 'away'
   const baseBrightness = isAway ? 0.25 : (isActive ? 1.0 : (status === 'DONE' ? 1.0 : (status === 'IDLE' ? 0.4 : 0.6)))
-  const hasRoomRender = ROOMS_WITH_RENDERS.includes(room.id)
+  const hasRoomRender = roomsWithRenders.has(room.id)
   const roomLightOverlay = ROOM_LIGHT_OVERLAYS[room.id]
   return (
     <g onClick={() => hasAgent && onClick?.(room.id)} style={{ cursor: hasAgent ? 'pointer' : 'default', filter: `brightness(${baseBrightness})`, transition: 'filter 400ms ease' }}>
@@ -9951,6 +9955,7 @@ export default function GameDashboard() {
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
   const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
+  const [roomsWithRenders, setRoomsWithRenders] = useState(ROOMS_WITH_RENDERS_FALLBACK)
 
   // Load Supabase user on mount + watch for auth state changes.
   // Derives client_id from user metadata (world field) for multi-tenant data isolation.
@@ -9980,6 +9985,16 @@ export default function GameDashboard() {
     supabase.from('agent_status').select('slug').eq('has_sprite', true)
       .then(({ data }) => {
         if (data?.length > 0) setSpriteAgents(new Set(data.map(r => r.slug)))
+      })
+  }, [])
+
+  // Fetch rooms with pixel art renders from Supabase on mount.
+  // Falls back to ROOMS_WITH_RENDERS_FALLBACK if table doesn't exist or returns empty.
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('rooms').select('id').eq('has_render', true)
+      .then(({ data }) => {
+        if (data?.length > 0) setRoomsWithRenders(new Set(data.map(r => r.id)))
       })
   }, [])
 
@@ -11421,6 +11436,7 @@ export default function GameDashboard() {
   // DONE: Elon commit 637b79c verified clean, no conflicts with Bobby's 9ec8b81 chain.
   return (
     <SpriteAgentsContext.Provider value={spriteAgents}>
+    <RoomsWithRendersContext.Provider value={roomsWithRenders}>
     <div style={{
       position: 'fixed', inset: 0,
       width: '100vw', maxWidth: '100vw',
@@ -12394,6 +12410,7 @@ export default function GameDashboard() {
         }
       `}</style>
     </div>
+    </RoomsWithRendersContext.Provider>
     </SpriteAgentsContext.Provider>
   )
 }
