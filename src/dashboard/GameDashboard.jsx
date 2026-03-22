@@ -8453,11 +8453,20 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 const isSameAomAgent = isAomRoom && !isUser && prevMsgAgentSlug && prevMsgAgentSlug === msgAgentSlug
                 // Show avatar+name only on the first message of each agent run in AOM room
                 const showAomHeader = isAomRoom && !isUser && !isSameAomAgent
-                // Project path chip: last 2 segments of "AOM->Corner->Dashboard UI"
+                // Project path chip: match segments against PROJECTS for colored pill
                 const msgProjectPath = isAomRoom ? (msg.projectPath || null) : null
-                const msgProjectLabel = msgProjectPath
-                  ? msgProjectPath.split('->').map(s => s.trim()).filter(Boolean).slice(-2).join(' > ')
+                const msgProjectMatch = msgProjectPath
+                  ? (() => {
+                      const segs = msgProjectPath.split('->').map(s => s.trim().toLowerCase())
+                      return PROJECTS.find(p => segs.includes(p.slug) || segs.includes(p.name.toLowerCase())) || null
+                    })()
                   : null
+                const msgProjectLabel = msgProjectMatch
+                  ? msgProjectMatch.name
+                  : msgProjectPath
+                    ? msgProjectPath.split('->').map(s => s.trim()).filter(Boolean).slice(-2).join(' > ')
+                    : null
+                const msgProjectColor = msgProjectMatch ? msgProjectMatch.color : null
 
                 // ---- TASK CONFIRM CARD (Vegas vibes) ----
                 // Agent marked a task done -> special card with CHECK / MINUS buttons
@@ -8705,15 +8714,16 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           )}
                           {msgProjectLabel && (
                             <span style={{
-                              fontSize: 10, fontWeight: 600,
-                              color: '#8BA4C4',
-                              background: 'rgba(15,27,45,0.75)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: 4,
-                              padding: '1px 6px',
+                              fontSize: 10, fontWeight: 700,
+                              color: msgProjectColor || '#8BA4C4',
+                              background: msgProjectColor ? `${msgProjectColor}22` : 'rgba(15,27,45,0.75)',
+                              border: `1px solid ${msgProjectColor ? `${msgProjectColor}55` : 'rgba(255,255,255,0.08)'}`,
+                              borderRadius: 10,
+                              padding: '1px 7px',
                               fontFamily: "'JetBrains Mono', monospace",
-                              letterSpacing: '0.03em',
-                              maxWidth: 140,
+                              letterSpacing: '0.04em',
+                              textTransform: 'uppercase',
+                              maxWidth: 120,
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
