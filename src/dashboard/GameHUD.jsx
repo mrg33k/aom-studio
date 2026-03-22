@@ -402,7 +402,29 @@ export default function GameHUD({
   // Inbox: unread messages only. Done-task approval handled by pinned TASK COMPLETE box.
   const inboxCount = (inboxItems || []).length
   const hudRef = useRef(null)
+  const tickerScrollRef = useRef(null)
+  const tickerDragStartX = useRef(0)
+  const tickerScrollStartLeft = useRef(0)
+  const tickerIsDragging = useRef(false)
   const weights = useRecencyWeights()
+
+  const handleTickerPointerDown = useCallback((e) => {
+    if (e.pointerType === 'touch') return
+    tickerIsDragging.current = true
+    tickerDragStartX.current = e.clientX
+    tickerScrollStartLeft.current = tickerScrollRef.current?.scrollLeft || 0
+    e.currentTarget.setPointerCapture(e.pointerId)
+    e.preventDefault()
+  }, [])
+
+  const handleTickerPointerMove = useCallback((e) => {
+    if (!tickerIsDragging.current || !tickerScrollRef.current) return
+    tickerScrollRef.current.scrollLeft = tickerScrollStartLeft.current - (e.clientX - tickerDragStartX.current)
+  }, [])
+
+  const handleTickerPointerUp = useCallback(() => {
+    tickerIsDragging.current = false
+  }, [])
 
   // Report HUD height to GameDashboard so CanvasOffice can adjust camera offset
   useEffect(() => {
@@ -900,36 +922,49 @@ export default function GameHUD({
           <rect width="100%" height="100%" filter="url(#hudNoise4)" opacity="0.015" style={{ mixBlendMode: 'overlay' }} />
         </svg>
 
-        {/* DINER DASH TICKER -- Right Now tasks scroll left like orders coming in */}
+        {/* RIGHT NOW TICKER -- always visible, static (no auto-scroll), drag to scroll on desktop */}
         {(() => {
           const rightNowProject = filteredProjects.find(p => p.section === 'rightnow')
           const tickerTasks = rightNowProject?.tasks?.filter(t => !t.isAddPrompt) || []
           const hasTickerTasks = tickerTasks.length > 0
-          return hasTickerTasks ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              gap: 6,
-              padding: isMobile ? '4px 0 2px' : '6px 0 2px',
-              minHeight: isMobile ? 36 : 42,
-              position: 'relative',
-              zIndex: 2,
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              touchAction: 'pan-x',
-            }} className="hud-ticker-scroll">
-              <Zap size={14} color="#FF6B3D" style={{ flexShrink: 0, marginLeft: 4, filter: 'drop-shadow(0 0 6px rgba(255,107,61,0.6))' }} />
+          return (
+            <div
+              ref={tickerScrollRef}
+              onPointerDown={handleTickerPointerDown}
+              onPointerMove={handleTickerPointerMove}
+              onPointerUp={handleTickerPointerUp}
+              onPointerLeave={handleTickerPointerUp}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: 6,
+                padding: isMobile ? '4px 0 2px' : '6px 0 2px',
+                minHeight: isMobile ? 36 : 42,
+                position: 'relative',
+                zIndex: 2,
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                touchAction: 'pan-x',
+                cursor: hasTickerTasks ? 'grab' : 'default',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+              }} className="hud-ticker-scroll">
+              <Zap size={14} color={hasTickerTasks ? '#FF6B3D' : hudTextMuted}
+                style={{ flexShrink: 0, marginLeft: 4, opacity: hasTickerTasks ? 1 : 0.5,
+                  filter: hasTickerTasks ? 'drop-shadow(0 0 6px rgba(255,107,61,0.6))' : 'none' }} />
               <span style={{
                 fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 800,
-                color: '#FF6B3D', letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: hasTickerTasks ? '#FF6B3D' : hudTextMuted,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
                 flexShrink: 0, whiteSpace: 'nowrap',
+                opacity: hasTickerTasks ? 1 : 0.5,
               }}>RIGHT NOW</span>
               <div style={{ width: 1, height: 20, background: hudDivider, flexShrink: 0 }} />
-              {tickerTasks.map((task, idx) => (
+              {hasTickerTasks ? tickerTasks.map((task, idx) => (
                 <motion.button
                   key={task.manualId || task.text || idx}
                   initial={{ opacity: 0, x: 60, scale: 0.9 }}
@@ -1018,24 +1053,13 @@ export default function GameHUD({
                     {task.text}
                   </span>
                 </motion.button>
-              ))}
-            </div>
-          ) : (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: isMobile ? '4px 0 2px' : '6px 0 2px',
-              minHeight: isMobile ? 36 : 42,
-              position: 'relative',
-              zIndex: 2,
-            }}>
-              <Zap size={14} color={hudTextMuted} style={{ flexShrink: 0, marginLeft: 4, opacity: 0.5 }} />
-              <span style={{
-                fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 700,
-                color: hudTextMuted, letterSpacing: '0.1em', textTransform: 'uppercase',
-                opacity: 0.5,
-              }}>No active tasks</span>
+              )) : (
+                <span style={{
+                  fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 700,
+                  color: hudTextMuted, letterSpacing: '0.1em', textTransform: 'uppercase',
+                  opacity: 0.5, whiteSpace: 'nowrap',
+                }}>All clear</span>
+              )}
             </div>
           )
         })()}

@@ -3349,46 +3349,31 @@ function MobileFixedInput({
 }
 
 // ---- MINI NOW BAR (full-snap drawer top strip) --------------------------------
-// Static draggable list of Right Now tasks shown above chat when drawer is full-height.
-// No auto-scroll. User can long-press and drag to reorder.
+// Horizontal draggable Right Now strip shown above chat when drawer is full-height.
+// Static (no auto-scroll). Pointer-drag to scroll on desktop; touch pan-x on mobile.
 function MiniNowBar({ tasks, onNavigateToAgent }) {
-  const [orderedTasks, setOrderedTasks] = useState(() => tasks)
-  const [draggingIdx, setDraggingIdx] = useState(null)
-  const dragOverIdx = useRef(null)
+  const scrollRef = useRef(null)
+  const dragStartX = useRef(0)
+  const scrollStartLeft = useRef(0)
+  const isDraggingScroll = useRef(false)
 
-  // Keep ordered in sync when external tasks change (new tasks arrive, etc.)
-  useEffect(() => {
-    setOrderedTasks(tasks)
-  }, [tasks])
-
-  const handleDragStartItem = useCallback((e, idx) => {
-    setDraggingIdx(idx)
-    e.dataTransfer.effectAllowed = 'move'
+  const handlePointerDown = useCallback((e) => {
+    // Let touch events fall through to native overflow scroll (pan-x)
+    if (e.pointerType === 'touch') return
+    isDraggingScroll.current = true
+    dragStartX.current = e.clientX
+    scrollStartLeft.current = scrollRef.current?.scrollLeft || 0
+    e.currentTarget.setPointerCapture(e.pointerId)
+    e.preventDefault()
   }, [])
 
-  const handleDragOverItem = useCallback((e, idx) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    dragOverIdx.current = idx
+  const handlePointerMove = useCallback((e) => {
+    if (!isDraggingScroll.current || !scrollRef.current) return
+    scrollRef.current.scrollLeft = scrollStartLeft.current - (e.clientX - dragStartX.current)
   }, [])
 
-  const handleDropItem = useCallback((e, idx) => {
-    e.preventDefault()
-    if (draggingIdx === null || draggingIdx === idx) {
-      setDraggingIdx(null)
-      return
-    }
-    setOrderedTasks(prev => {
-      const next = [...prev]
-      const [moved] = next.splice(draggingIdx, 1)
-      next.splice(idx, 0, moved)
-      return next
-    })
-    setDraggingIdx(null)
-  }, [draggingIdx])
-
-  const handleDragEndItem = useCallback(() => {
-    setDraggingIdx(null)
+  const handlePointerUp = useCallback(() => {
+    isDraggingScroll.current = false
   }, [])
 
   return (
@@ -3396,90 +3381,94 @@ function MiniNowBar({ tasks, onNavigateToAgent }) {
       flexShrink: 0,
       borderBottom: '1px solid rgba(255, 107, 61, 0.15)',
       background: 'rgba(255, 107, 61, 0.04)',
-      padding: '4px 12px',
+      padding: '4px 8px',
     }}>
-      {/* Section label */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 5,
-        marginBottom: 4,
-      }}>
+      {/* Horizontal scrollable task strip */}
+      <div
+        ref={scrollRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          touchAction: 'pan-x',
+          WebkitOverflowScrolling: 'touch',
+          cursor: 'grab',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          minHeight: 32,
+        }}
+      >
         <Zap size={10} color="#FF6B3D" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 3px rgba(255,107,61,0.6))' }} />
         <span style={{
           fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 800,
           color: '#FF6B3D', letterSpacing: '0.12em', textTransform: 'uppercase',
+          flexShrink: 0,
         }}>NOW</span>
-      </div>
-      {/* Draggable task rows */}
-      {orderedTasks.map((t, idx) => {
-        const dotColor = t.isDoneAwaitingApproval
-          ? '#F59E0B'
-          : t.isQueued
-            ? '#E91E90'
-            : '#FF6B3D'
-        const taskAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
-        const taskText = t.text || t.task || t.description || 'Running...'
-        const isDragging = draggingIdx === idx
-        return (
-          <div
-            key={t.taskId || t.text || idx}
-            draggable
-            onDragStart={(e) => handleDragStartItem(e, idx)}
-            onDragOver={(e) => handleDragOverItem(e, idx)}
-            onDrop={(e) => handleDropItem(e, idx)}
-            onDragEnd={handleDragEndItem}
-            onClick={() => taskAgent && onNavigateToAgent?.(taskAgent.slug)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '5px 8px',
-              marginBottom: 3,
-              background: isDragging
-                ? 'rgba(255,107,61,0.15)'
-                : 'rgba(255,107,61,0.06)',
-              border: `1px solid ${isDragging ? dotColor + '55' : dotColor + '22'}`,
-              borderRadius: 8,
-              cursor: 'grab',
-              opacity: isDragging ? 0.5 : 1,
-              transition: 'background 0.15s, opacity 0.15s',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-            }}
-          >
-            {/* Drag handle dots */}
-            <span style={{
-              display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0, opacity: 0.4,
-            }}>
-              <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#94A3B8', display: 'block' }} />
-              <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#94A3B8', display: 'block' }} />
-            </span>
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: dotColor,
-              boxShadow: `0 0 4px ${dotColor}80`,
-              animation: 'statusPulse 1.8s ease-in-out infinite',
-              flexShrink: 0,
-            }} />
-            {taskAgent && (
+        <div style={{ width: 1, height: 16, background: 'rgba(255,107,61,0.2)', flexShrink: 0 }} />
+        {tasks.map((t, idx) => {
+          const dotColor = t.isDoneAwaitingApproval
+            ? '#F59E0B'
+            : t.isQueued
+              ? '#E91E90'
+              : '#FF6B3D'
+          const taskAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
+          const taskText = t.text || t.task || t.description || 'Running...'
+          return (
+            <button
+              key={t.taskId || t.text || idx}
+              onClick={() => taskAgent && onNavigateToAgent?.(taskAgent.slug)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '3px 10px',
+                background: 'rgba(255,107,61,0.08)',
+                border: `1px solid ${dotColor}33`,
+                borderRadius: 8,
+                cursor: 'pointer',
+                flexShrink: 0,
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+              }}
+            >
               <span style={{
-                fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
-                color: taskAgent.agentColor || taskAgent.color || '#6B7280',
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-                whiteSpace: 'nowrap', flexShrink: 0,
+                width: 5, height: 5, borderRadius: '50%',
+                background: dotColor,
+                boxShadow: `0 0 3px ${dotColor}80`,
+                animation: 'statusPulse 1.8s ease-in-out infinite',
+                flexShrink: 0,
+              }} />
+              {taskAgent && (
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 8, fontWeight: 700,
+                  color: taskAgent.agentColor || taskAgent.color || '#6B7280',
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {taskAgent.name?.split(' ')[0] || t.agent}
+                </span>
+              )}
+              <span style={{
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: 11, fontWeight: 500,
+                color: '#CBD5E1',
+                whiteSpace: 'nowrap',
+                maxWidth: 160,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}>
-                {taskAgent.name?.split(' ')[0] || t.agent}
+                {taskText}
               </span>
-            )}
-            <span style={{
-              fontFamily: "'Inter', system-ui, sans-serif",
-              fontSize: 11, fontWeight: 500,
-              color: '#CBD5E1',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              flex: 1,
-            }}>
-              {taskText}
-            </span>
-          </div>
-        )
-      })}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
