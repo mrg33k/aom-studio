@@ -26,7 +26,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // GHOST KILL: AnimatedAgentCharacter, CharacterAnimationStyles, CanvasRoom all REMOVED
 // Only CanvasOffice (3-layer system) renders characters now
 import CanvasOffice from './CanvasOffice.jsx'
-// CrossyBackground: replaced with CSS hex grid (Three.js city scene removed)
+import CrossyBackground from './CrossyBackground.jsx'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import FloatingActionButton from './components/FloatingActionButton.jsx'
@@ -11600,8 +11600,11 @@ export default function GameDashboard() {
       <div style={{ flex: 1, display: viewMode === 'board' ? 'none' : 'flex', overflow: 'hidden', width: '100%', maxWidth: '100%', paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52, paddingBottom: 0, transition: 'padding-top 200ms ease' }}>
           {/* GAME VIEWPORT: flex fills remaining space, sidebar is fixed width */}
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
-              {/* Dark background for game viewport. Hex grid lines are drawn on canvas (moves with camera). */}
-              {currentMode === 'game' && (
+              {/* Game background: CrossyBackground (Three.js city park) on desktop, dark on mobile */}
+              {currentMode === 'game' && !disableThreeJs && (
+                <CrossyBackground isNightMode={isNightMode} />
+              )}
+              {currentMode === 'game' && disableThreeJs && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: '#0A0F1A' }} />
               )}
               <CanvasOffice
