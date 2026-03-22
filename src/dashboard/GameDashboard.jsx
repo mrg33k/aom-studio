@@ -3478,89 +3478,119 @@ function MobileDrawer({
         }} />
       </div>
 
-      {/* Mini Right Now bar -- only shown when drawer is at full-height snap */}
-      {isFullSnap && rightNowTasks && rightNowTasks.length > 0 && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          height: 36, flexShrink: 0,
-          padding: '0 12px',
-          borderBottom: '1px solid rgba(255, 107, 61, 0.15)',
-          background: 'rgba(255, 107, 61, 0.05)',
-          overflowX: 'auto', overflowY: 'hidden',
-          WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-          touchAction: 'pan-x',
-        }}>
-          <Zap size={11} color="#FF6B3D" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(255,107,61,0.6))' }} />
-          <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 800,
-            color: '#FF6B3D', letterSpacing: '0.12em', textTransform: 'uppercase',
-            flexShrink: 0, whiteSpace: 'nowrap',
-          }}>RIGHT NOW</span>
-          <div style={{ width: 1, height: 16, background: 'rgba(255,107,61,0.2)', flexShrink: 0 }} />
-          {rightNowTasks.map((t, idx) => {
-            const dotColor = t.isDoneAwaitingApproval
-              ? '#F59E0B'
-              : t.isQueued
-                ? '#E91E90'
-                : '#FF6B3D'
-            const taskAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
-            const taskText = t.text || t.task || t.description || 'Running...'
-            return (
-              <button
-                key={t.id || `mini-rn-${idx}`}
-                onClick={() => {
-                  if (t.agent && onNavigateToAgent) onNavigateToAgent(t.agent)
-                }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '3px 9px',
-                  background: t.isDoneAwaitingApproval
-                    ? 'rgba(245,158,11,0.1)'
-                    : t.isQueued
-                      ? 'rgba(233,30,144,0.1)'
-                      : 'rgba(255,107,61,0.1)',
-                  border: `1px solid ${dotColor}25`,
-                  borderRadius: 8,
-                  cursor: t.agent ? 'pointer' : 'default',
-                  flexShrink: 0,
-                  transition: 'background 120ms ease',
-                }}
-              >
-                <span style={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: dotColor,
-                  boxShadow: `0 0 4px ${dotColor}80`,
-                  animation: 'statusPulse 1.8s ease-in-out infinite',
-                  flexShrink: 0,
-                }} />
-                {taskAgent && (
-                  <span style={{
-                    fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
-                    color: taskAgent.agentColor || taskAgent.color || '#6B7280',
-                    textTransform: 'uppercase', letterSpacing: '0.08em',
-                    whiteSpace: 'nowrap', flexShrink: 0,
-                  }}>
-                    {taskAgent.name?.split(' ')[0] || t.agent}
-                  </span>
-                )}
-                <span style={{
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  fontSize: 11, fontWeight: 600,
-                  color: '#CBD5E1',
-                  whiteSpace: 'nowrap',
-                  maxWidth: 140,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}>
-                  {taskText}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      )}
+      {/* Mini Right Now ticker -- only shown when drawer is at full-height snap.
+          Auto-scrolling marquee (doubled content for seamless loop).
+          Swipe down anywhere on the bar collapses drawer back to half. */}
+      {isFullSnap && rightNowTasks && rightNowTasks.length > 0 && (() => {
+        // Duplicate tasks for seamless CSS marquee: translateX(-50%) = one full loop
+        const tickerTasks = [...rightNowTasks, ...rightNowTasks]
+        // Duration: 4s per task, min 8s
+        const duration = Math.max(8, rightNowTasks.length * 4)
+        return (
+          <div
+            onTouchStart={handleDragStart}
+            onTouchMove={handleDragMove}
+            onTouchEnd={handleDragEnd}
+            style={{
+              position: 'relative',
+              height: 36, flexShrink: 0,
+              borderBottom: '1px solid rgba(255, 107, 61, 0.15)',
+              background: 'rgba(255, 107, 61, 0.05)',
+              overflow: 'hidden',
+              touchAction: 'none',
+              cursor: 'grab',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+            }}
+          >
+            {/* Scrolling ticker strip -- doubled content for seamless -50% loop */}
+            <div style={{
+              position: 'absolute', left: 0, top: 0, bottom: 0,
+              display: 'flex', alignItems: 'center',
+              animation: `tickerScroll ${duration}s linear infinite`,
+              willChange: 'transform',
+            }}>
+              {tickerTasks.map((t, idx) => {
+                const dotColor = t.isDoneAwaitingApproval
+                  ? '#F59E0B'
+                  : t.isQueued
+                    ? '#E91E90'
+                    : '#FF6B3D'
+                const taskAgent = t.agent ? AGENTS.find(a => a.slug === t.agent || a.id === t.agent) : null
+                const taskText = t.text || t.task || t.description || 'Running...'
+                return (
+                  <div
+                    key={`ticker-${idx}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '3px 9px',
+                      background: t.isDoneAwaitingApproval
+                        ? 'rgba(245,158,11,0.08)'
+                        : t.isQueued
+                          ? 'rgba(233,30,144,0.08)'
+                          : 'rgba(255,107,61,0.08)',
+                      border: `1px solid ${dotColor}22`,
+                      borderRadius: 8,
+                      flexShrink: 0,
+                      marginRight: 14,
+                    }}
+                  >
+                    <span style={{
+                      width: 6, height: 6, borderRadius: '50%',
+                      background: dotColor,
+                      boxShadow: `0 0 4px ${dotColor}80`,
+                      animation: 'statusPulse 1.8s ease-in-out infinite',
+                      flexShrink: 0,
+                    }} />
+                    {taskAgent && (
+                      <span style={{
+                        fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700,
+                        color: taskAgent.agentColor || taskAgent.color || '#6B7280',
+                        textTransform: 'uppercase', letterSpacing: '0.08em',
+                        whiteSpace: 'nowrap', flexShrink: 0,
+                      }}>
+                        {taskAgent.name?.split(' ')[0] || t.agent}
+                      </span>
+                    )}
+                    <span style={{
+                      fontFamily: "'Inter', system-ui, sans-serif",
+                      fontSize: 11, fontWeight: 600,
+                      color: '#CBD5E1',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {taskText}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            {/* "⚡ NOW |" label pinned left with gradient mask -- acts as the exit veil */}
+            <div style={{
+              position: 'absolute', left: 0, top: 0, bottom: 0,
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '0 8px 0 12px',
+              zIndex: 2,
+              pointerEvents: 'none',
+              background: 'linear-gradient(to right, rgba(10,15,30,0.99) 68%, rgba(10,15,30,0.6) 88%, transparent 100%)',
+              width: 92,
+            }}>
+              <Zap size={11} color="#FF6B3D" style={{ flexShrink: 0, filter: 'drop-shadow(0 0 4px rgba(255,107,61,0.6))' }} />
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 800,
+                color: '#FF6B3D', letterSpacing: '0.12em', textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+              }}>NOW</span>
+              <div style={{ width: 1, height: 14, background: 'rgba(255,107,61,0.3)' }} />
+            </div>
+            {/* Right-edge fade */}
+            <div style={{
+              position: 'absolute', right: 0, top: 0, bottom: 0, width: 28,
+              background: 'linear-gradient(to left, rgba(10,15,30,0.92) 0%, transparent 100%)',
+              zIndex: 2, pointerEvents: 'none',
+            }} />
+          </div>
+        )
+      })()}
 
       {/* Agent info header (compact) */}
       <div style={{
@@ -12275,6 +12305,7 @@ export default function GameDashboard() {
           60% { transform: translateY(-1px) scale(0.99); }
         }
         @keyframes handlePulse { 0%,100%{box-shadow:0 0 6px rgba(255,255,255,0.2)} 50%{box-shadow:0 0 14px rgba(255,255,255,0.6)} }
+        @keyframes tickerScroll { 0%{transform:translateX(0%)} 100%{transform:translateX(-50%)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes dotPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
