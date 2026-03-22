@@ -473,6 +473,16 @@ export default function GameHUD({
   const [doneTaskCtx, setDoneTaskCtx] = useState(null) // { task, x, y }
   // Track approved task IDs for green glow animation (clears after 4s, then poll moves to Completed feed)
   const [approvedTaskIds, setApprovedTaskIds] = useState(new Set())
+  // Pending completion: tasks marked done but waiting 30s before committing to Supabase (undo window)
+  const [pendingCompletion, setPendingCompletion] = useState({}) // pcKey -> { task, timerId }
+  const handleUndoMarkDone = useCallback((pcKey) => {
+    setPendingCompletion(prev => {
+      if (prev[pcKey]) clearTimeout(prev[pcKey].timerId)
+      const next = { ...prev }
+      delete next[pcKey]
+      return next
+    })
+  }, [])
   useEffect(() => {
     if (!doneTaskCtx) return
     const timer = setTimeout(() => {
@@ -990,6 +1000,8 @@ export default function GameHUD({
             onNavigateToProject={navigateToProject}
             highlightedTask={highlightedTask}
             approvedTaskIds={approvedTaskIds}
+            pendingCompletion={pendingCompletion}
+            onUndoMarkDone={handleUndoMarkDone}
           />
         ) : null}
       </AnimatePresence>
@@ -1381,8 +1393,18 @@ export default function GameHUD({
           <button onClick={() => {
             if (hudTaskCtx.task.isManual) {
               toggleManualTask?.(hudTaskCtx.task.manualId)
+            } else if (hudTaskCtx.task.done) {
+              handleTaskContextAction('toggle', hudTaskCtx.task, null, null)
             } else {
-              handleTaskContextAction('markDone', hudTaskCtx.task, null, null)
+              // 30s undo window: defer actual Supabase commit
+              const pcKey = hudTaskCtx.task.taskId ? String(hudTaskCtx.task.taskId) : hudTaskCtx.task.text
+              if (pendingCompletion[pcKey]) clearTimeout(pendingCompletion[pcKey].timerId)
+              const capturedTask = hudTaskCtx.task
+              const timerId = setTimeout(() => {
+                handleTaskContextAction('markDone', capturedTask, null, null)
+                setPendingCompletion(prev => { const next = { ...prev }; delete next[pcKey]; return next })
+              }, 30000)
+              setPendingCompletion(prev => ({ ...prev, [pcKey]: { task: capturedTask, timerId } }))
             }
             setHudTaskCtx(null)
           }} style={hudCtxBtn(isNightMode)}>

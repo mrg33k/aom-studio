@@ -17,7 +17,7 @@ import { useLongPress } from '../hooks/useLongPress.js'
 const SPRITE_AGENTS_FALLBACK = ['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel']
 
 // DONE(bobby2): RIGHT NOW INLINE ADD TASK -- isAddPrompt tasks render as an inline text input. Enter adds to localStorage manual tasks. Manual tasks are right-clickable + checkable.
-export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask, onDoneTaskAction, approvedTaskIds }) {
+export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onToggleManualTask, onDeleteManualTask, allProjects, onTaskContextMenu, hudTaskCtxId, onNavigateToProject, highlightedTask, onDoneTaskAction, approvedTaskIds, pendingCompletion, onUndoMarkDone }) {
   const isDaytime = isNightMode === false
   // Daytime palette for the expanded task panel (brighter blue glass, vibrant accents)
   const tpBg = isDaytime ? 'rgba(18, 42, 75, 0.97)' : HUD.panelBg
@@ -414,7 +414,6 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
         onPointerCancel={() => handleRowPointerUp(null)}
       >
         {orderedTasks.map((task, i) => {
-          const isDone = getTaskDone(task, task.origIdx)
           const isSaving = saving === task.origIdx
 
           // DONE(bobby2): isAddPrompt renders as inline input for adding manual tasks to Right Now
@@ -513,6 +512,10 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
           }
 
           const taskKey = task.isManual ? `manual-${task.manualId}` : String(task.origIdx)
+          const pcKey = task.taskId ? String(task.taskId) : task.text
+          const isPending = !task.isManual && !!pendingCompletion?.[pcKey]
+          // eslint-disable-next-line no-shadow
+          const isDone = isPending ? true : getTaskDone(task, task.origIdx)
           const isDraggingThis = activeDragKey === taskKey
           const isDoneAwaiting = !!task.isDoneAwaitingApproval
           const isApproved = !!(task.taskId && approvedTaskIds?.has(String(task.taskId)))
@@ -705,6 +708,27 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                 }}>
                   QUEUED
                 </span>
+              )}
+
+              {/* UNDO button -- 30s window after user marks a task done */}
+              {isPending && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onUndoMarkDone?.(pcKey) }}
+                  style={{
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 9, fontWeight: 800,
+                    color: '#60A5FA',
+                    background: 'rgba(96,165,250,0.12)',
+                    padding: '2px 7px', borderRadius: 4,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    border: '1px solid rgba(96,165,250,0.35)',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                  }}
+                >
+                  UNDO
+                </button>
               )}
 
               {/* DONE badge for tasks awaiting approval (yellow) */}
