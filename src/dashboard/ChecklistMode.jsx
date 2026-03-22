@@ -49,6 +49,7 @@ import { useLongPress } from './hooks/useLongPress.js'
 import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction, supabasePatchTaskStatus } from './components/TaskContextMenu.jsx'
 import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
 import { supabase } from './lib/supabase.js'
+import { getClientId } from './lib/clientConfig.js'
 import { parsePunchList, useSectionMappings, useRecencyWeights } from './components/HUDConstants.jsx'
 
 // Sprite avatar -- fallback used before Supabase resolves (or if unavailable)
@@ -1628,6 +1629,42 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   const [rightNowOrder, setRightNowOrder] = useState(() => {
     try { return JSON.parse(localStorage.getItem('corner-rightnow-order') || '[]') } catch { return [] }
   })
+
+  // On mount: hydrate task orders from Supabase (overrides localStorage, cross-device)
+  useEffect(() => {
+    if (!supabase) return
+    const clientId = getClientId()
+    supabase
+      .from('task_orders')
+      .select('section, ordered_keys')
+      .eq('client_id', clientId)
+      .then(({ data, error }) => {
+        if (error || !data) return
+        const newOrders = {}
+        let newRightNow = null
+        data.forEach(row => {
+          if (!row.ordered_keys || !Array.isArray(row.ordered_keys) || row.ordered_keys.length === 0) return
+          if (row.section === '__rightnow__') {
+            newRightNow = row.ordered_keys
+          } else {
+            newOrders[row.section] = row.ordered_keys
+          }
+        })
+        if (Object.keys(newOrders).length > 0) {
+          setTaskOrders(prev => ({ ...prev, ...newOrders }))
+          try {
+            const merged = { ...(JSON.parse(localStorage.getItem('checklist-task-orders') || '{}')), ...newOrders }
+            localStorage.setItem('checklist-task-orders', JSON.stringify(merged))
+          } catch {}
+        }
+        if (newRightNow) {
+          setRightNowOrder(newRightNow)
+          try { localStorage.setItem('corner-rightnow-order', JSON.stringify(newRightNow)) } catch {}
+        }
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const getOrderedTasks = useCallback((section, tasks) => {
     const order = taskOrders[section]
     if (!order || order.length === 0) return tasks
@@ -1641,17 +1678,44 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     })
   }, [taskOrders])
   const handleReorder = useCallback((section, newItems) => {
+    const orderedKeys = newItems.map(t => t.text)
     setTaskOrders(prev => {
-      const next = { ...prev, [section]: newItems.map(t => t.text) }
+      const next = { ...prev, [section]: orderedKeys }
       try { localStorage.setItem('checklist-task-orders', JSON.stringify(next)) } catch {}
       return next
     })
+    // Persist to Supabase (survives refresh, cross-device) -- fire-and-forget
+    if (supabase) {
+      const clientId = getClientId()
+      supabase
+        .from('task_orders')
+        .upsert(
+          { client_id: clientId, section, ordered_keys: orderedKeys, updated_at: new Date().toISOString() },
+          { onConflict: 'client_id,section' }
+        )
+        .then(({ error }) => {
+          if (error) console.warn('[Corner] task_orders upsert failed:', error.message)
+        })
+    }
   }, [])
 
   const handleRightNowReorder = useCallback((newItems) => {
     const order = newItems.map(t => t.text)
     setRightNowOrder(order)
     try { localStorage.setItem('corner-rightnow-order', JSON.stringify(order)) } catch {}
+    // Persist to Supabase (fire-and-forget)
+    if (supabase) {
+      const clientId = getClientId()
+      supabase
+        .from('task_orders')
+        .upsert(
+          { client_id: clientId, section: '__rightnow__', ordered_keys: order, updated_at: new Date().toISOString() },
+          { onConflict: 'client_id,section' }
+        )
+        .then(({ error }) => {
+          if (error) console.warn('[Corner] task_orders upsert failed:', error.message)
+        })
+    }
   }, [])
 
   const handleTaskContextMenu = useCallback((e, task) => {
