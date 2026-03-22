@@ -3161,6 +3161,13 @@ function MobileFixedInput({
             if (e.key === 'Enter') isUserTypingRef.current = false
           }}
           placeholder={`Talk to ${agentName}... (type @ to switch)`}
+          disabled={false}
+          inputMode="text"
+          enterKeyHint="send"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck={false}
           style={{
             width: '100%',
             background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
@@ -3192,6 +3199,7 @@ function MobileFixedInput({
 
         <button
           type="submit"
+          disabled={false}
           style={{
             position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
             width: 44, height: 44, borderRadius: 12,
