@@ -3556,7 +3556,17 @@ function MobileDrawer({
         // This cannot regress because the root cause (scroll-container blocking iOS
         // focus) is fully removed, not patched over with disabled/attribute hacks.
         overflow: 'clip',
-        willChange: 'transform',
+        // DO NOT add willChange:'transform' here. Explanation:
+        // willChange:'transform' (or any transform/will-change) promotes this element to
+        // a GPU compositing layer. On iOS Safari, composited elements participate in
+        // composite-layer-based touch routing: taps within a compositing layer's bounds
+        // are claimed by that layer even if a higher-z non-composited element (like the
+        // MobileFixedInput portal at z-index:999) overlaps it. The portal gets no taps
+        // -> input never receives focus -> keyboard never opens.
+        // The animation here drives 'height' (sheetHeight MotionValue), NOT a transform.
+        // willChange:'transform' is semantically wrong AND causes the compositing bug.
+        // framer-motion promotes the element during active animation internally --
+        // no hint needed. Leave this property absent permanently.
       }}
     >
       {/* Drag handle area */}
@@ -11335,10 +11345,14 @@ export default function GameDashboard() {
       // Already selected: zoom to Level 3 (detail)
       setCameraZoom(ZOOM_MAX)
       // On mobile, promote drawer: null -> half, half -> full
+      // Reset to 'chat' tab in both cases -- promoting to full without resetting tab
+      // leaves the portal input hidden if user was on 'tasks' or 'info' tab.
       if (isMobile && drawerSnap === 'half') {
         setDrawerSnap('full')
+        setMobileDrawerActiveTab('chat')
       } else if (!drawerSnap) {
         setDrawerSnap('half')
+        setMobileDrawerActiveTab('chat')
       }
     } else {
       // First click: zoom to Level 2 (neighborhood)
