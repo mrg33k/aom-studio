@@ -2254,6 +2254,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           return next
         })
 
+        // Persist swap to Supabase so order survives refresh
+        if (supabase) {
+          const occupantNewOrder = dragFromSlot >= 0 ? dragFromSlot : targetSlotIdx
+          supabase.from('rooms').upsert([
+            { id: draggedRoomId, grid_order: targetSlotIdx },
+            { id: occupant, grid_order: occupantNewOrder },
+          ], { onConflict: 'id' }).then(() => {})
+        }
+
         swapCooldownRef.current = now
       } else {
         // Snap to own slot with animation (cursor -> slot position)
@@ -2695,6 +2704,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
             }
             return next
           })
+
+          // Persist swap to Supabase so order survives refresh
+          if (supabase) {
+            const occupantNewOrder = dragFromSlot >= 0 ? dragFromSlot : targetSlotIdx
+            supabase.from('rooms').upsert([
+              { id: draggedRoomId, grid_order: targetSlotIdx },
+              { id: occupant, grid_order: occupantNewOrder },
+            ], { onConflict: 'id' }).then(() => {})
+          }
+
           swapCooldownRef.current = now
         } else {
           // Snap to own slot with animation (cursor -> slot position)
