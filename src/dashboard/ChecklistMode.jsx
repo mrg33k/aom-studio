@@ -53,6 +53,22 @@ import { parsePunchList, useSectionMappings, useRecencyWeights } from './compone
 // Sprite avatar -- fallback used before Supabase resolves (or if unavailable)
 const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel'])
 
+// Parent group definitions -- maps parent slug to child section slugs
+// Add entries here to create new expandable parent groups in the sidebar
+const PROJECT_PARENT_GROUPS = {
+  aom: {
+    id: 'aom',
+    name: 'AOM',
+    color: '#CBD5E1',
+    children: ['corner', 'ambition-mechanical', 'kohrs'],
+  },
+}
+// Reverse map: child section -> parent id (computed once, never changes)
+const CHILD_PARENT_MAP = Object.entries(PROJECT_PARENT_GROUPS).reduce((acc, [pid, g]) => {
+  g.children.forEach(c => { acc[c] = pid })
+  return acc
+}, {})
+
 const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
 function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
@@ -190,6 +206,9 @@ function generateDemoChecklist() {
 
 // ---- PROJECT SIDEBAR (replaces agent sidebar) --------------------------------
 function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, rightNowCount = 0, completedCount = 0, todosCount = 0, checkingInCount = 0 }) {
+  const [expandedParents, setExpandedParents] = useState({ aom: true })
+  const toggleParent = (id) => setExpandedParents(p => ({ ...p, [id]: !p[id] }))
+
   if (isMobile) {
     // Horizontal scroll chips on mobile
     return (
@@ -278,7 +297,83 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
           </button>
         )}
 
-        {projects.map(p => {
+        {/* Parent group chips (mobile) -- AOM expands inline */}
+        {Object.values(PROJECT_PARENT_GROUPS).map(group => {
+          const groupProjects = projects.filter(p => group.children.includes(p.section))
+          if (groupProjects.length === 0) return null
+          const isExpanded = expandedParents[group.id]
+          const isGroupSelected = selectedProject === group.id
+          const groupRemaining = groupProjects.reduce((sum, p) => sum + p.tasks.filter(t => !t.done).length, 0)
+          return (
+            <React.Fragment key={group.id}>
+              {/* Parent chip */}
+              <button
+                onClick={() => { toggleParent(group.id); onSelectProject(group.id) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  height: 40, padding: '0 12px',
+                  background: isGroupSelected ? 'rgba(203,213,225,0.12)' : 'rgba(255,255,255,0.03)',
+                  border: `1.5px solid ${isGroupSelected ? 'rgba(203,213,225,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                  borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+                  cursor: 'pointer', scrollSnapAlign: 'start',
+                  color: isGroupSelected ? '#CBD5E1' : '#9CA3AF',
+                  fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 13, fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '0.05em',
+                }}
+              >
+                {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                {group.name}
+                {groupRemaining > 0 && (
+                  <span style={{
+                    fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+                    fontSize: 12, color: '#CBD5E1', background: 'rgba(203,213,225,0.15)',
+                    padding: '2px 6px', borderRadius: 6, lineHeight: 1,
+                    border: '1px solid rgba(203,213,225,0.2)',
+                  }}>
+                    {groupRemaining}
+                  </span>
+                )}
+              </button>
+              {/* Children chips (shown inline when expanded) */}
+              {isExpanded && groupProjects.map(p => {
+                const selected = selectedProject === p.section
+                const remaining = p.tasks.filter(t => !t.done).length
+                return (
+                  <button
+                    key={p.section}
+                    onClick={() => onSelectProject(p.section)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      height: 36, padding: '0 12px',
+                      background: selected ? `${p.color}1F` : 'rgba(255,255,255,0.02)',
+                      border: `1.5px solid ${selected ? `${p.color}4D` : `${p.color}22`}`,
+                      borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0,
+                      cursor: 'pointer', scrollSnapAlign: 'start',
+                      color: selected ? p.color : '#9CA3AF',
+                      fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 13, fontWeight: 700,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    <div style={{ width: 7, height: 7, borderRadius: 2, background: p.color, flexShrink: 0, opacity: selected ? 1 : 0.6 }} />
+                    {p.name}
+                    {remaining > 0 && (
+                      <span style={{
+                        fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+                        fontSize: 12, color: '#FFF', background: p.color,
+                        padding: '2px 6px', borderRadius: 6, lineHeight: 1,
+                      }}>
+                        {remaining}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </React.Fragment>
+          )
+        })}
+
+        {/* Standalone project chips (not in any parent group) */}
+        {projects.filter(p => !CHILD_PARENT_MAP[p.section]).map(p => {
           const selected = selectedProject === p.section
           const remaining = p.tasks.filter(t => !t.done).length
           return (
@@ -462,8 +557,120 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
         </button>
       )}
 
-      {/* Individual projects */}
-      {projects.map(p => {
+      {/* Parent groups (desktop sidebar) */}
+      {Object.values(PROJECT_PARENT_GROUPS).map(group => {
+        const groupProjects = projects.filter(p => group.children.includes(p.section))
+        if (groupProjects.length === 0) return null
+        const isExpanded = expandedParents[group.id]
+        const isGroupSelected = selectedProject === group.id
+        const groupRemaining = groupProjects.reduce((sum, p) => sum + p.tasks.filter(t => !t.done).length, 0)
+        const groupTotal = groupProjects.reduce((sum, p) => sum + p.tasks.length, 0)
+        const groupProgress = groupTotal > 0 ? Math.round(((groupTotal - groupRemaining) / groupTotal) * 100) : 0
+
+        return (
+          <React.Fragment key={group.id}>
+            {/* Parent row */}
+            <button
+              onClick={() => { toggleParent(group.id); onSelectProject(isExpanded && isGroupSelected ? null : group.id) }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                height: 40, padding: isGroupSelected ? '0 13px' : '0 16px',
+                background: isGroupSelected ? 'rgba(203,213,225,0.06)' : 'transparent',
+                border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
+                borderLeftWidth: 3, borderLeftStyle: 'solid',
+                borderLeftColor: isGroupSelected ? '#CBD5E1' : 'transparent',
+                cursor: 'pointer', transition: 'background 100ms ease',
+                color: '#9CA3AF', fontFamily: "'Inter Tight', system-ui, sans-serif",
+                fontSize: 12, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
+                letterSpacing: '0.1em', position: 'relative',
+              }}
+            >
+              {isExpanded
+                ? <ChevronDown size={13} style={{ flexShrink: 0, opacity: 0.7 }} />
+                : <ChevronRight size={13} style={{ flexShrink: 0, opacity: 0.7 }} />
+              }
+              <span style={{ flex: 1 }}>{group.name}</span>
+              {groupRemaining > 0 && (
+                <span style={{
+                  fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 800,
+                  fontSize: 11, color: '#9CA3AF',
+                  background: 'rgba(203,213,225,0.08)',
+                  padding: '2px 7px', borderRadius: 6, lineHeight: 1,
+                  border: '1px solid rgba(203,213,225,0.12)',
+                }}>
+                  {groupRemaining}
+                </span>
+              )}
+              {/* Progress bar */}
+              {groupTotal > 0 && (
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0, height: 2,
+                  background: 'rgba(255,255,255,0.04)',
+                }}>
+                  <div style={{
+                    width: `${groupProgress}%`, height: '100%',
+                    background: 'rgba(203,213,225,0.25)',
+                    transition: 'width 400ms ease',
+                  }} />
+                </div>
+              )}
+            </button>
+
+            {/* Children (indented when expanded) */}
+            {isExpanded && groupProjects.map(p => {
+              const selected = selectedProject === p.section
+              const remaining = p.tasks.filter(t => !t.done).length
+              const totalTasks = p.tasks.length
+              const doneTasks = totalTasks - remaining
+              const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
+
+              return (
+                <button
+                  key={p.section}
+                  onClick={() => onSelectProject(p.section)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                    height: 44, padding: selected ? '0 13px 0 28px' : '0 16px 0 28px',
+                    background: selected ? `${p.color}0C` : 'transparent',
+                    border: 'none', borderBottom: 'none', borderTop: 'none', borderRight: 'none',
+                    borderLeftWidth: 3, borderLeftStyle: 'solid',
+                    borderLeftColor: selected ? p.color : 'transparent',
+                    cursor: 'pointer', transition: 'background 100ms ease',
+                    color: '#F0ECE6', fontFamily: "'Inter Tight', system-ui, sans-serif",
+                    fontSize: 14, fontWeight: 700, textAlign: 'left', textTransform: 'uppercase',
+                    position: 'relative',
+                  }}
+                >
+                  <div style={{ width: 10, height: 10, borderRadius: 3, background: p.color, flexShrink: 0, opacity: selected ? 1 : 0.7, boxShadow: selected ? `0 0 6px ${p.color}44` : 'none' }} />
+                  <span style={{ flex: 1, letterSpacing: '-0.01em' }}>{p.name}</span>
+                  {remaining > 0 ? (
+                    <span style={{
+                      fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+                      fontSize: 12, color: '#FFF', background: p.color,
+                      padding: '2px 8px', borderRadius: 7, lineHeight: 1,
+                      boxShadow: `0 2px 5px ${p.color}44`,
+                      minWidth: 24, textAlign: 'center',
+                    }}>
+                      {remaining} left
+                    </span>
+                  ) : totalTasks > 0 ? (
+                    <CheckCircle2 size={14} color={p.color} strokeWidth={2} style={{ opacity: 0.4 }} />
+                  ) : null}
+                  {/* Progress bar */}
+                  {totalTasks > 0 && (
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: 'rgba(255,255,255,0.04)' }}>
+                      <div style={{ width: `${progress}%`, height: '100%', background: p.color, transition: 'width 400ms ease' }} />
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </React.Fragment>
+        )
+      })}
+
+      {/* Standalone projects (not in any parent group) */}
+      {projects.filter(p => !CHILD_PARENT_MAP[p.section]).map(p => {
         const selected = selectedProject === p.section
         const remaining = p.tasks.filter(t => !t.done).length
         const totalTasks = p.tasks.length
@@ -498,7 +705,6 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               <div style={{ width: 12, height: 12, borderRadius: 4, background: p.color, flexShrink: 0, boxShadow: `0 0 8px ${p.color}33` }} />
             )}
             <span style={{ flex: 1, letterSpacing: '-0.01em' }}>{p.name}</span>
-            {/* Remaining count or all-done badge */}
             {remaining > 0 ? (
               <span style={{
                 fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
@@ -513,7 +719,6 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               <CheckCircle2 size={16} color={p.color} strokeWidth={2} style={{ opacity: 0.5 }} />
             ) : null}
 
-            {/* Progress bar at bottom -- edge-to-edge, no inset. Hidden for completed-feed (always 100%). */}
             {p.section !== 'completed-feed' && (
               <div style={{
                 position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
@@ -1748,8 +1953,11 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
   }, [punchData, weights, isAutoChecked])
 
   // Filter projects based on sidebar selection
+  // 'aom' is a virtual parent -- shows all its children combined
   const visibleProjects = selectedProject
-    ? projects.filter(p => p.section === selectedProject)
+    ? (PROJECT_PARENT_GROUPS[selectedProject]
+        ? projects.filter(p => PROJECT_PARENT_GROUPS[selectedProject].children.includes(p.section))
+        : projects.filter(p => p.section === selectedProject))
     : projects
 
   // Toggle collapse
@@ -1787,7 +1995,11 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     setNewTaskText('')
   }
 
-  const selectedProjectData = selectedProject ? projects.find(p => p.section === selectedProject) : null
+  const selectedProjectData = selectedProject
+    ? (PROJECT_PARENT_GROUPS[selectedProject]
+        ? { name: PROJECT_PARENT_GROUPS[selectedProject].name, color: PROJECT_PARENT_GROUPS[selectedProject].color, section: selectedProject }
+        : projects.find(p => p.section === selectedProject))
+    : null
 
   return (
     <div style={{
