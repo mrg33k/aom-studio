@@ -647,6 +647,9 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents 
         transition: 'background 120ms ease, border-color 120ms ease',
         position: 'relative',
         overflow: 'hidden',
+        touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
       }}
     >
       {/* Row: grip + avatar + text + live badge */}
@@ -854,6 +857,7 @@ function RightNowSection({ tasks, orderedTasks, onReorder, isCollapsed, onToggle
               key={task.text || `rightnow-${task.agent}-${i}`}
               value={task}
               as="div"
+              style={{ touchAction: 'none' }}
             >
               <RightNowTaskCard
                 task={task}

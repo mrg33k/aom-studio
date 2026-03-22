@@ -95,6 +95,50 @@ function removeTouchGhost() {
   if (existing) existing.remove()
 }
 
+// ── COLUMN TOUCH GHOST ──────────────────────────────────────────────────────
+// Floating pill badge that follows the finger during touch column drag.
+function createColGhost(colKey) {
+  removeColGhost()
+  const cfg = ALL_COLS[colKey] || { label: colKey, color: '#6B7280' }
+  const ghost = document.createElement('div')
+  ghost.id = 'board-col-ghost'
+  ghost.textContent = cfg.label
+  ghost.style.cssText = [
+    'position:fixed',
+    'left:-200px',
+    'top:-200px',
+    'pointer-events:none',
+    'z-index:99999',
+    `background:${cfg.color}22`,
+    `border:2px solid ${cfg.color}`,
+    'border-radius:20px',
+    'padding:6px 14px',
+    `color:${cfg.color}`,
+    'font-family:Inter,system-ui,sans-serif',
+    'font-size:12px',
+    'font-weight:800',
+    'text-transform:uppercase',
+    'letter-spacing:0.08em',
+    'white-space:nowrap',
+    'box-shadow:0 4px 24px rgba(0,0,0,0.5)',
+    'transform:scale(1.06)',
+  ].join(';')
+  document.body.appendChild(ghost)
+}
+
+function moveColGhost(x, y) {
+  const ghost = document.getElementById('board-col-ghost')
+  if (!ghost) return
+  const w = ghost.getBoundingClientRect().width || 80
+  ghost.style.left = `${x - w / 2}px`
+  ghost.style.top = `${y - 32}px`
+}
+
+function removeColGhost() {
+  const el = document.getElementById('board-col-ghost')
+  if (el) el.remove()
+}
+
 // ── BOARD CARD ──────────────────────────────────────────────────────────────
 
 function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskIndex, onContextMenu, onTouchDrop, onDragOverCard, isNightMode = true }) {
@@ -128,6 +172,10 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
   const handlePointerDown = useCallback((e) => {
     // Only primary button for mouse, any for touch
     if (e.pointerType === 'mouse' && e.button !== 0) return
+    // Capture pointer so move/up events fire even when finger leaves the card bounds
+    if (e.pointerType !== 'mouse') {
+      try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
+    }
     const state = pointerDragRef.current
     state.startX = e.clientX
     state.startY = e.clientY
@@ -393,6 +441,70 @@ function BoardColumn({
   const [touchHover, setTouchHover] = useState(false)
   const [cardInsertIdx, setCardInsertIdx] = useState(null)
 
+  // Touch column drag (pointer events -- handles iPad/mobile where HTML5 drag API doesn't work)
+  const colGripPointerRef = useRef({ active: false, moved: false, startX: 0, startY: 0, pointerId: null })
+
+  const handleColGripDown = useCallback((e) => {
+    if (e.pointerType === 'mouse') return // mouse uses HTML5 drag
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
+    const s = colGripPointerRef.current
+    s.startX = e.clientX; s.startY = e.clientY
+    s.pointerId = e.pointerId; s.active = false; s.moved = false
+  }, [])
+
+  const handleColGripMove = useCallback((e) => {
+    const s = colGripPointerRef.current
+    if (s.pointerId === null || e.pointerId !== s.pointerId) return
+    const dx = e.clientX - s.startX
+    const dy = e.clientY - s.startY
+    if (Math.sqrt(dx * dx + dy * dy) > 8 && !s.active) {
+      s.active = true; s.moved = true
+      onColDragStart?.(colKey)
+      createColGhost(colKey)
+    }
+    if (s.active) {
+      moveColGhost(e.clientX, e.clientY)
+      const el = document.elementFromPoint(e.clientX, e.clientY)
+      const targetColEl = el?.closest('[data-board-col]')
+      const toKey = targetColEl?.getAttribute('data-board-col')
+      if (toKey && toKey !== colKey) {
+        const rect = targetColEl.getBoundingClientRect()
+        const side = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+        onColDragOver?.(toKey, side)
+      } else {
+        onColDragOver?.(null, null)
+      }
+    }
+  }, [colKey, onColDragStart, onColDragOver])
+
+  const handleColGripUp = useCallback((e) => {
+    const s = colGripPointerRef.current
+    if (s.pointerId === null || e.pointerId !== s.pointerId) return
+    if (s.active) {
+      removeColGhost()
+      const el = document.elementFromPoint(e.clientX, e.clientY)
+      const targetColEl = el?.closest('[data-board-col]')
+      const toKey = targetColEl?.getAttribute('data-board-col')
+      if (toKey) {
+        onColDrop?.(toKey)
+      } else {
+        onColDragEnd?.()
+      }
+      document.querySelectorAll('[data-board-col]').forEach(c => c.removeAttribute('data-drop-hover'))
+    }
+    s.active = false; s.moved = false; s.pointerId = null
+  }, [onColDrop, onColDragEnd])
+
+  const handleColGripCancel = useCallback(() => {
+    const s = colGripPointerRef.current
+    if (s.active) {
+      removeColGhost()
+      onColDragEnd?.()
+      document.querySelectorAll('[data-board-col]').forEach(c => c.removeAttribute('data-drop-hover'))
+    }
+    s.active = false; s.moved = false; s.pointerId = null
+  }, [onColDragEnd])
+
   // Night/day column colors
   const colBodyBg = isNightMode
     ? 'rgba(255,255,255,0.015)'
@@ -526,7 +638,7 @@ function BoardColumn({
         padding: '9px 14px',
         transition: 'border-color 150ms ease',
       }}>
-        {/* Grip handle */}
+        {/* Grip handle -- HTML5 drag for mouse, pointer events for touch/iPad */}
         <div
           draggable
           onDragStart={(e) => {
@@ -536,7 +648,11 @@ function BoardColumn({
             onColDragStart?.(colKey)
           }}
           onDragEnd={() => onColDragEnd?.()}
-          style={{ cursor: 'grab', color: '#334155', display: 'flex', alignItems: 'center', padding: '0 2px 0 0', flexShrink: 0 }}
+          onPointerDown={handleColGripDown}
+          onPointerMove={handleColGripMove}
+          onPointerUp={handleColGripUp}
+          onPointerCancel={handleColGripCancel}
+          style={{ cursor: 'grab', touchAction: 'none', color: '#334155', display: 'flex', alignItems: 'center', padding: '0 2px 0 0', flexShrink: 0 }}
         >
           <svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
             <circle cx="2" cy="2" r="1.3"/><circle cx="6" cy="2" r="1.3"/>
