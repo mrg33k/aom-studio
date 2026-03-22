@@ -531,6 +531,8 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 200ms ease',
           marginTop: 1,
+          padding: 0,
+          WebkitAppearance: 'none', appearance: 'none',
         }}
       >
         {isDone && <Check size={14} color="#FDF6EC" strokeWidth={3} />}
@@ -926,6 +928,8 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck, onContextMenu }) {
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 200ms ease',
             marginTop: 1,
+            padding: 0,
+            WebkitAppearance: 'none', appearance: 'none',
           }}
         >
           {task.done && <Check size={14} color="#FFF" strokeWidth={3} />}
@@ -1714,6 +1718,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
             padding: isMobile ? '16px' : '24px 40px',
             maxWidth: isMobile ? '100%' : 800,
             margin: '0 auto', width: '100%',
+            WebkitOverflowScrolling: 'touch',
           }}>
             {/* Empty state */}
             {visibleProjects.length === 0 && !showRightNow && !showCompleted && !showTodos && !showCheckingIn && <EmptyState />}
