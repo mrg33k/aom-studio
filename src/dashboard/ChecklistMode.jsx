@@ -1669,11 +1669,6 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     }
   }, [selectedProject])
 
-  // Context menu action handler: delegates to shared handler from TaskContextMenu.jsx
-  // Supports all 7 actions: toggle, priority, reassign, delete, addToRightNow, moveToProject, addContext
-  const handleContextAction = useCallback((action, task, payload) => {
-    handleTaskContextAction(action, task, payload, setCheckedTasks)
-  }, [])
 
   // Live section_mappings from Supabase -- pub/sub, one fetch per page load
   const { sectionMap, clientSubsectionMap } = useSectionMappings()
@@ -1802,6 +1797,16 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
       [key]: { task, checkedAt: Date.now() },
     }))
   }, [])
+
+  // Context menu action handler: routes markDone through undo window, delegates rest to shared handler
+  const handleContextAction = useCallback((action, task, payload) => {
+    if (action === 'markDone') {
+      // Route "Mark Done" through the 30s undo window (same path as checkbox click)
+      handleCheck(task)
+      return
+    }
+    handleTaskContextAction(action, task, payload, setCheckedTasks)
+  }, [handleCheck])
 
   // Keep pendingRef in sync so the stable interval can read current state
   useEffect(() => {
