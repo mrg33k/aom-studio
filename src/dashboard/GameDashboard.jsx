@@ -8892,15 +8892,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           {msgProjectLabel && (
                             <span style={{
                               fontSize: 10, fontWeight: 700,
-                              color: msgProjectColor || '#8BA4C4',
-                              background: msgProjectColor ? `${msgProjectColor}22` : 'rgba(15,27,45,0.75)',
-                              border: `1px solid ${msgProjectColor ? `${msgProjectColor}55` : 'rgba(255,255,255,0.08)'}`,
+                              color: msgProjectColor || (isDaytime ? '#4A6080' : '#8BA4C4'),
+                              background: msgProjectColor ? `${msgProjectColor}22` : (isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(15,27,45,0.75)'),
+                              border: `1px solid ${msgProjectColor ? `${msgProjectColor}55` : (isDaytime ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.08)')}`,
                               borderRadius: 10,
-                              padding: '1px 7px',
+                              padding: '2px 8px',
                               fontFamily: "'JetBrains Mono', monospace",
                               letterSpacing: '0.04em',
                               textTransform: 'uppercase',
-                              maxWidth: 120,
+                              maxWidth: 140,
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -9021,7 +9021,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     </div>
                   </div>
                 )
-              })}
+                }) // end chatMessages.map
+              })()} {/* end AOM Team Room IIFE */}
               {/* Timeout ring + typing indicator with label */}
               {streaming && (
                 <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '4px 0' }}>
