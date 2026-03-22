@@ -25,9 +25,10 @@ import {
   StickyNote,
 } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
+import { supabase } from '../lib/supabase.js'
 
 // ---- Constants ----
-const ASSIGNABLE_AGENTS = AGENTS.filter(a =>
+const ASSIGNABLE_AGENTS_FALLBACK = AGENTS.filter(a =>
   !['paige', 'pixel'].includes(a.slug)
 )
 
@@ -127,6 +128,20 @@ export default function TaskContextMenu({
 }) {
   const menuRef = useRef(null)
   const pal = getPalette(isNightMode)
+
+  // Assignable agents from Supabase (falls back to filtered AGENTS if table not ready)
+  const [assignableAgents, setAssignableAgents] = useState(ASSIGNABLE_AGENTS_FALLBACK)
+  useEffect(() => {
+    if (!supabase) return
+    supabase
+      .from('agents')
+      .select('slug,name,color')
+      .eq('is_assignable', true)
+      .order('name')
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) setAssignableAgents(data)
+      })
+  }, [])
 
   // Submenus
   const [showAgents, setShowAgents] = useState(false)
@@ -432,7 +447,7 @@ export default function TaskContextMenu({
         <AnimatePresence>
           {showAgents && (
             <Submenu parentRef={agentItemRef} isNightMode={isNightMode}>
-              {ASSIGNABLE_AGENTS.map(a => (
+              {assignableAgents.map(a => (
                 <button
                   key={a.slug}
                   style={{
