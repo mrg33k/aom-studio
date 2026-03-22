@@ -7,7 +7,7 @@ import {
   MessageSquare, Send, X, ArrowLeft, ChevronRight, ChevronDown,
   Activity, AlertTriangle, CheckCircle2, Clock, Loader2,
   Pause, Eye, Zap, BarChart3, GitCommit, Terminal, Radio,
-  Search as SearchIcon, ChevronUp, Folder,
+  Search as SearchIcon, ChevronUp, Folder, Users,
 } from 'lucide-react'
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
@@ -149,6 +149,9 @@ const AGENTS = [
 
 // Fallback slug list derived from static AGENTS -- used before Supabase resolves
 const KNOWN_SLUGS_FALLBACK = AGENTS.map(a => a.slug)
+
+// Agents that participate in @all council deliberations (core team, skipping Colton/Pixel/Elmo)
+const COUNCIL_AGENTS = ['Bobby', 'Jacob', 'Alex', 'Cleo', 'Mom', 'Steffen', 'Elon', 'Steve', 'Tony', 'Paige']
 
 // ─── AGENT COLORS ─────────────────────────────────────────────────────────────
 // Each agent has a distinct accent color used in team room avatars + message labels.
@@ -1388,6 +1391,113 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
   )
 }
 
+// ─── COUNCIL CARD ─────────────────────────────────────────────────────────────
+// Rendered in TeamRoomPanel when a council (@all) message completes.
+// Shows synthesis up front, individual agent responses collapsed.
+function CouncilCard({ msg, timeStr }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="rounded-xl border border-[#9333EA]/40 bg-[#160F1E] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-[#9333EA]/20"
+        style={{ background: 'linear-gradient(90deg, #9333EA10, transparent)' }}
+      >
+        <Users className="w-4 h-4 text-[#9333EA] shrink-0" />
+        <span className="text-[#9333EA] text-[10px] font-mono font-bold uppercase tracking-widest">Council</span>
+        <span className="flex-1 text-[#F0ECE6] text-xs font-medium truncate">{msg.topic}</span>
+        {timeStr && <span className="text-[#78716C]/50 text-[10px] font-mono shrink-0">{timeStr}</span>}
+      </div>
+
+      {/* Agent avatar strip */}
+      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#9333EA]/10">
+        {(msg.responses || []).map(r => {
+          const slug = r.agent.toLowerCase()
+          const color = AGENT_COLORS[slug] || '#78716C'
+          return (
+            <div
+              key={r.agent}
+              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold border"
+              style={{ background: `${color}20`, borderColor: `${color}50`, color }}
+              title={r.agent}
+            >
+              {r.agent.charAt(0)}
+            </div>
+          )
+        })}
+        <span className="ml-1 text-[#78716C] text-[10px] font-mono">{(msg.responses || []).length} agents</span>
+      </div>
+
+      {/* Synthesis */}
+      {msg.synthesis && (
+        <div className="px-4 py-3">
+          <div
+            className="text-[#F0ECE6] text-sm leading-relaxed chat-md"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.synthesis) }}
+          />
+        </div>
+      )}
+
+      {/* Toggle individual responses */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center gap-2 px-4 py-2 border-t border-[#9333EA]/10 hover:bg-[#9333EA]/5 transition-colors text-left"
+      >
+        <span className="text-[#9333EA]/60 text-[10px] font-mono uppercase tracking-wider flex-1">
+          {expanded ? 'Hide' : 'View'} all responses
+        </span>
+        <ChevronDown
+          className="w-3 h-3 text-[#9333EA]/50 transition-transform"
+          style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}
+        />
+      </button>
+
+      {/* Individual agent responses */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-[#9333EA]/10 divide-y divide-[#292524]/50">
+              {(msg.responses || []).map(r => {
+                const slug = r.agent.toLowerCase()
+                const color = AGENT_COLORS[slug] || '#78716C'
+                const agentObj = AGENTS.find(a => a.slug === slug)
+                return (
+                  <div key={r.agent} className="px-4 py-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold shrink-0"
+                        style={{ background: `${color}20`, color }}
+                      >
+                        {r.agent.charAt(0)}
+                      </div>
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider" style={{ color }}>
+                        {r.agent}
+                      </span>
+                      {agentObj?.role && (
+                        <span className="text-[10px] font-mono text-[#78716C]">{agentObj.role}</span>
+                      )}
+                    </div>
+                    <div
+                      className="text-[#A8A29E] text-xs leading-relaxed chat-md pl-7"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(r.text) }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 // ─── TEAM ROOM CARD ───────────────────────────────────────────────────────────
 // Featured card at the top of the roster. Shows overlapping agent avatars.
 function TeamRoomCard({ onOpen, isActive, agentStatus }) {
@@ -1472,6 +1582,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
   const [streamStartTime, setStreamStartTime] = useState(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [showNewMsgIndicator, setShowNewMsgIndicator] = useState(false)
+  const [councilDoneCount, setCouncilDoneCount] = useState(0)
 
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -1630,6 +1741,90 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
     isNearBottomRef.current = true
   }, [])
 
+  // ── COUNCIL: @all multi-agent deliberation ─────────────────────────────────
+  const runCouncil = useCallback(async (topic, sentTime) => {
+    const CHAT_API = '/api/chat'
+    const placeholderId = crypto.randomUUID()
+
+    // Replace any existing streaming placeholder with council-progress card
+    setMessages(prev => {
+      const withoutStreaming = prev.filter(m => !m.streaming)
+      return [
+        ...withoutStreaming,
+        {
+          role: 'assistant',
+          content: '',
+          streaming: true,
+          type: 'council-progress',
+          topic,
+          id: placeholderId,
+          time: sentTime,
+        },
+      ]
+    })
+    setCouncilDoneCount(0)
+
+    // Fire all agent calls in parallel
+    let done = 0
+    const responses = await Promise.all(
+      COUNCIL_AGENTS.map(agentName =>
+        fetch(CHAT_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'chat', message: topic, agent: agentName, mode: 'council' }),
+        })
+        .then(r => r.json())
+        .then(d => {
+          done++
+          setCouncilDoneCount(done)
+          return { agent: agentName, text: d.reply || 'No response.' }
+        })
+        .catch(() => {
+          done++
+          setCouncilDoneCount(done)
+          return { agent: agentName, text: '(Unavailable)' }
+        })
+      )
+    )
+
+    // Synthesis pass
+    let synthesis = ''
+    try {
+      const synthRes = await fetch(CHAT_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'council_synthesis', topic, responses }),
+      })
+      const synthData = await synthRes.json()
+      synthesis = synthData.synthesis || ''
+    } catch { synthesis = '' }
+
+    // Replace progress card with final council card
+    const councilTime = new Date().toISOString()
+    setMessages(prev => {
+      const withoutPlaceholder = prev.filter(m => m.id !== placeholderId && !m.streaming)
+      return [
+        ...withoutPlaceholder,
+        {
+          role: 'assistant',
+          content: '',
+          type: 'council',
+          topic,
+          responses,
+          synthesis,
+          id: crypto.randomUUID(),
+          time: councilTime,
+        },
+      ]
+    })
+
+    setStreaming(false)
+    setStreamStartTime(null)
+    setCouncilDoneCount(0)
+    if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
+    setIsSending(false)
+  }, [])
+
   const sendMessage = async (e) => {
     e?.preventDefault()
     const text = input.trim()
@@ -1637,6 +1832,21 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
     setIsSending(true)
     const sentTime = new Date().toISOString()
     setInput('')
+
+    // @all triggers council mode -- deliberate multi-agent deliberation
+    if (/^@all\b/i.test(text)) {
+      const topic = text.replace(/^@all\s*/i, '').trim() || 'What should we focus on?'
+      setMessages(prev => {
+        const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard', agent: null, id: crypto.randomUUID() }]
+        sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
+        return sorted
+      })
+      setStreaming(true)
+      setStreamStartTime(Date.now())
+      await runCouncil(topic, sentTime)
+      return
+    }
+
     setMessages(prev => {
       const sorted = [...prev, { role: 'user', content: text, time: sentTime, source: 'dashboard', agent: null, id: crypto.randomUUID() }]
       sorted.sort((a, b) => new Date(a.time) - new Date(b.time))
@@ -1803,7 +2013,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
             </div>
             <p className="text-[#A8A29E] text-sm mb-1">AOM Team Room</p>
             <p className="text-[#78716C] text-xs font-mono mb-3">All agents · Group chat</p>
-            <p className="text-[#78716C]/40 text-[11px] font-mono">Any agent can reply when relevant</p>
+            <p className="text-[#78716C]/40 text-[11px] font-mono">Any agent can reply · type <span className="text-[#9333EA]/60">@all</span> to call a council</p>
           </div>
         )}
 
@@ -1833,6 +2043,61 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
             const agentObj = agentSlug ? AGENTS.find(a => a.slug === agentSlug) : null
             const agentName = agentObj?.name || (agentSlug ? agentSlug.charAt(0).toUpperCase() + agentSlug.slice(1) : 'Agent')
             const timeStr = msg.time && !msg.streaming ? formatTime(msg.time) : null
+
+            // Council progress card
+            if (msg.streaming && msg.type === 'council-progress') {
+              return (
+                <div key={msg.id || `council-prog-${i}`} className="rounded-xl border border-[#9333EA]/30 bg-[#1A1017] overflow-hidden">
+                  <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#9333EA]/20">
+                    <Users className="w-4 h-4 text-[#9333EA]" />
+                    <span className="text-[#9333EA] text-xs font-mono font-bold uppercase tracking-widest">Council</span>
+                    <span className="flex-1 text-[#A8A29E] text-xs truncate">{msg.topic}</span>
+                  </div>
+                  <div className="px-4 py-3 flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 flex-1">
+                      {COUNCIL_AGENTS.map((name, j) => {
+                        const slug = name.toLowerCase()
+                        const color = AGENT_COLORS[slug] || '#78716C'
+                        const responded = j < councilDoneCount
+                        return (
+                          <div
+                            key={name}
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border"
+                            style={{
+                              background: responded ? `${color}25` : '#1C1C1A',
+                              borderColor: responded ? `${color}60` : '#2A2A28',
+                              color: responded ? color : '#444',
+                              transition: 'all 0.3s ease',
+                            }}
+                          >
+                            {name.charAt(0)}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <span className="text-[#78716C] text-xs font-mono shrink-0">
+                      {councilDoneCount < COUNCIL_AGENTS.length
+                        ? `${councilDoneCount}/${COUNCIL_AGENTS.length} agents`
+                        : 'Synthesizing...'}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      {[0, 1, 2].map(j => (
+                        <span
+                          key={j}
+                          className="inline-block w-1.5 h-1.5 rounded-full bg-[#9333EA]/60"
+                          style={{ animation: `chatBounce 1.4s ease-in-out ${j * 0.2}s infinite` }}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                </div>
+              )
+            }
+
+            // Council result card
+            if (msg.type === 'council') {
+              return <CouncilCard key={msg.id || `council-${i}`} msg={msg} timeStr={formatTime(msg.time)} />
+            }
 
             // Typing indicator
             if (msg.streaming && !msg.content) {
@@ -1957,7 +2222,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={streaming ? 'Team is working...' : 'Message the team...'}
+            placeholder={streaming ? (councilDoneCount > 0 ? `Council: ${councilDoneCount}/${COUNCIL_AGENTS.length} agents responding...` : 'Team is working...') : 'Message the team... (type @all for council)'}
             className="flex-1 bg-transparent text-[#F0ECE6] py-2.5 text-sm focus:outline-none placeholder:text-[#78716C]/60"
             style={{ touchAction: 'manipulation', WebkitUserSelect: 'text' }}
           />
