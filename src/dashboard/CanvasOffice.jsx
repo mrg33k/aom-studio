@@ -1358,14 +1358,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       for (const { row, col } of slots) {
         const ox = ORIGIN_X + col * HEX_COL_STEP
         const oy = ORIGIN_Y + row * HEX_ROW_STEP
-        // Vertices copied VERBATIM from drawRoom() clip path -- rooms define the shape, grid follows.
-        // DO NOT change these independently. See drawRoom() SOURCE OF TRUTH comment.
-        ctx.moveTo(ox + S * 0.50, oy + S * 0.00)  // top
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.40)  // upper-right
-        ctx.lineTo(ox + S * 0.99, oy + S * 0.75)  // lower-right
-        ctx.lineTo(ox + S * 0.50, oy + S * 0.99)  // bottom
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.75)  // lower-left
-        ctx.lineTo(ox + S * 0.01, oy + S * 0.40)  // upper-left
+        // !! DO NOT CHANGE !! Vertices copied VERBATIM from drawRoom() clip path.
+        // Rooms define the shape -- grid follows. See drawRoom() SOURCE OF TRUTH comment.
+        ctx.moveTo(ox + S * 0.50, oy + S * 0.05)  // top center (roof peak)
+        ctx.lineTo(ox + S * 0.95, oy + S * 0.28)  // upper-right
+        ctx.lineTo(ox + S * 0.95, oy + S * 0.75)  // lower-right
+        ctx.lineTo(ox + S * 0.50, oy + S * 0.95)  // bottom center
+        ctx.lineTo(ox + S * 0.05, oy + S * 0.75)  // lower-left
+        ctx.lineTo(ox + S * 0.05, oy + S * 0.28)  // upper-left
         ctx.closePath()
       }
       ctx.stroke()
@@ -1602,12 +1602,13 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         ctx.save()
         ctx.translate(posX, posY + celebOffsetY)
         ctx.beginPath()
-        ctx.moveTo(S * 0.50, S * 0.00 - pad)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.40 - pad * 0.5)
-        ctx.lineTo(S * 0.99 + pad * 0.87, S * 0.75 + pad * 0.5)
-        ctx.lineTo(S * 0.50, S * 0.99 + pad)
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.75 + pad * 0.5)
-        ctx.lineTo(S * 0.01 - pad * 0.87, S * 0.40 - pad * 0.5)
+        // !! DO NOT CHANGE !! Padded version derived from drawRoom() SOURCE OF TRUTH shape.
+        ctx.moveTo(S * 0.50, S * 0.05 - pad)
+        ctx.lineTo(S * 0.95 + pad * 0.87, S * 0.28 - pad * 0.5)
+        ctx.lineTo(S * 0.95 + pad * 0.87, S * 0.75 + pad * 0.5)
+        ctx.lineTo(S * 0.50, S * 0.95 + pad)
+        ctx.lineTo(S * 0.05 - pad * 0.87, S * 0.75 + pad * 0.5)
+        ctx.lineTo(S * 0.05 - pad * 0.87, S * 0.28 - pad * 0.5)
         ctx.closePath()
         // Animated dashed stroke
         const dashLen = 14
@@ -1661,15 +1662,14 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           }
           ctx.save()
           ctx.translate(nPosX, nPosY + nCelebOffsetY)
-          // Clip to neighbor's hex -- matches room PNG geometry (SOURCE OF TRUTH)
+          // !! DO NOT CHANGE !! Clip to neighbor's hex -- must match drawRoom() SOURCE OF TRUTH.
           ctx.beginPath()
-          // Vertices match drawRoom() clip path -- DO NOT change independently.
-          ctx.moveTo(S * 0.50, S * 0.00)
-          ctx.lineTo(S * 0.99, S * 0.40)
-          ctx.lineTo(S * 0.99, S * 0.75)
-          ctx.lineTo(S * 0.50, S * 0.99)
-          ctx.lineTo(S * 0.01, S * 0.75)
-          ctx.lineTo(S * 0.01, S * 0.40)
+          ctx.moveTo(S * 0.50, S * 0.05)  // top center (roof peak)
+          ctx.lineTo(S * 0.95, S * 0.28)  // upper-right
+          ctx.lineTo(S * 0.95, S * 0.75)  // lower-right
+          ctx.lineTo(S * 0.50, S * 0.95)  // bottom center
+          ctx.lineTo(S * 0.05, S * 0.75)  // lower-left
+          ctx.lineTo(S * 0.05, S * 0.28)  // upper-left
           ctx.closePath()
           ctx.clip()
           ctx.globalAlpha = 0.85 // slightly translucent so visitors look like guests
@@ -1836,20 +1836,18 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.translate(offsetX, offsetY)
 
     // !! DO NOT CHANGE !! SOURCE OF TRUTH for all hex geometry in this file.
-    // Values derived from SRC_CROP (X=80, Y=0, W=864, H=864) + pixel analysis of room PNGs:
-    //   hex content spans source x=[88,936] y=[0,862] → dest x=[1%,99%] y=[0%,99.8%]
-    //   upper corners: source y=350 → dest y=350/864=0.405≈0.40
-    //   lower corners: source y=650 → dest y=650/864=0.752≈0.75
-    // Grid lines (line ~1360) copy these EXACT values verbatim. Do NOT adjust grid lines
-    // independently -- rooms define the shape, grid follows.
+    // These are the ORIGINAL values from commit 362f5fe ("Elon: 3 ROOMS on the grass") --
+    // designed to match the actual room PNG artwork. DO NOT "recalculate" or "align" these
+    // to grid lines. Rooms define the shape. Grid lines copy these values verbatim.
+    // Any change here WILL cut off room artwork. Lock this shape forever.
     ctx.beginPath()
     const S = ROOM_SIZE
-    ctx.moveTo(S * 0.50, S * 0.00)  // top
-    ctx.lineTo(S * 0.99, S * 0.40)  // upper-right
-    ctx.lineTo(S * 0.99, S * 0.75)  // lower-right
-    ctx.lineTo(S * 0.50, S * 0.99)  // bottom
-    ctx.lineTo(S * 0.01, S * 0.75)  // lower-left
-    ctx.lineTo(S * 0.01, S * 0.40)  // upper-left
+    ctx.moveTo(S * 0.50, S * 0.05)  // top center (roof peak)
+    ctx.lineTo(S * 0.95, S * 0.28)  // upper-right
+    ctx.lineTo(S * 0.95, S * 0.75)  // lower-right
+    ctx.lineTo(S * 0.50, S * 0.95)  // bottom center
+    ctx.lineTo(S * 0.05, S * 0.75)  // lower-left
+    ctx.lineTo(S * 0.05, S * 0.28)  // upper-left
     ctx.closePath()
     ctx.clip()
 
