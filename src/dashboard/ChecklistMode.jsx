@@ -47,7 +47,7 @@ import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import { supabase } from './lib/supabase.js'
-import { parsePunchList, useSectionMappings } from './components/HUDConstants.jsx'
+import { parsePunchList, useSectionMappings, useRecencyWeights } from './components/HUDConstants.jsx'
 
 // Sprite avatar -- fallback used before Supabase resolves (or if unavailable)
 const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel'])
@@ -95,53 +95,6 @@ function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, sp
 }
 
 // parsePunchList and useSectionMappings imported from HUDConstants.jsx above
-
-// Default recency weights (fallback when conversation data unavailable)
-const DEFAULT_RECENCY_WEIGHTS = {
-  'rightnow':       110,
-  'your-todos':     108,
-  'schedule':       105,
-  'today':          105,   // Legacy alias for schedule
-  'completed-feed': 100,
-  'finish-these':   50,   // Last -- stale tasks (was checking-in)
-  'checking-in':    50,   // Legacy alias for finish-these
-  'corner':     95,
-  'aom-site':   85,
-  'aom-phase2': 80,
-  'ambition':   70,
-  'outreach':   65,
-  'gtm':        60,
-  'cleo':       55,
-  'content':    55,
-  'kohrs':      50,
-  'isa':        45,
-  'skylar':     40,
-  'deadlines':  35,
-  'infra':      30,
-  'week':       25,
-}
-
-// Hook to fetch live conversation-driven recency scores
-function useConversationRecency() {
-  const [scores, setScores] = useState(null)
-
-  useEffect(() => {
-    if (!IS_LOCAL) return
-    const fetchScores = async () => {
-      try {
-        const res = await fetch('/api/local/project-recency')
-        if (!res.ok) return
-        const json = await res.json()
-        if (json.scores) setScores(json.scores)
-      } catch {}
-    }
-    fetchScores()
-    const timer = setInterval(fetchScores, 30000)
-    return () => clearInterval(timer)
-  }, [])
-
-  return scores
-}
 
 // ---- DATA HOOKS REPLACED BY useDataPipe (hooks/useDataPipe.js) ---------------
 // Bobby2: All polling consolidated into ONE hook. See useDataPipe.js.
@@ -1651,7 +1604,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
     punchData,
     punchLoading: loading,
   } = useDataPipe(parsePunchList)
-  const conversationScores = useConversationRecency()
+  const weights = useRecencyWeights()
 
   // Right Now: ONLY running agents (local: from active-missions.md, prod: demo data)
   const rightNowTasks = IS_LOCAL ? liveRightNowTasks : generateDemoRightNow()
@@ -1682,7 +1635,6 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
       }
     }
 
-    const weights = conversationScores || DEFAULT_RECENCY_WEIGHTS
     return [...raw].sort((a, b) => {
       // Right Now always first (running agents)
       if (a.section === 'rightnow') return -1
@@ -1704,7 +1656,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
       if (bRemaining !== aRemaining) return bRemaining - aRemaining
       return b.tasks.length - a.tasks.length
     })
-  }, [punchData, conversationScores, isAutoChecked])
+  }, [punchData, weights, isAutoChecked])
 
   // Filter projects based on sidebar selection
   const visibleProjects = selectedProject
