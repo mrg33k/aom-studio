@@ -1290,8 +1290,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const viewB = viewT + size.h / cam.zoom
 
       ctx.save()
-      ctx.strokeStyle = 'rgba(59, 130, 246, 0.06)'  // #3B82F6 very subtle -- slot hints not maps
-      ctx.lineWidth = 1 / cam.zoom  // keep lines 1px on screen regardless of zoom
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.18)'  // #3B82F6 visible honeycomb grid
+      ctx.lineWidth = 1.5 / cam.zoom  // keep lines 1.5px on screen regardless of zoom
 
       const S = ROOM_SIZE
 
