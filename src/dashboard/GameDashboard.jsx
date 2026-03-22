@@ -1234,6 +1234,16 @@ function getSpriteState(status, isSpeaking) {
 const SPRITE_AGENTS_FALLBACK = new Set(['patrik','mom','alex','steve','steffen','bobby','colton','cleo','tony','jacob','elmo','elon','pixel'])
 const SpriteAgentsContext = createContext(SPRITE_AGENTS_FALLBACK)
 
+// Agent asset URL helpers — fetched from Supabase, fallback to formula patterns.
+// Enables CDN URL changes and per-agent overrides without redeploy.
+const AGENT_ASSETS_DEFAULT = {
+  getSpriteSrc:    (slug, state) => `/corner/sprites/${slug}-${state}.png`,
+  getHopSrc:       (slug, frame) => `/corner/sprites/hop/${slug}-hop-${frame}.png`,
+  getNameplateSrc: (slug)        => `/corner/furniture/nameplates/nameplate-${slug}.png`,
+  getDoorsignSrc:  (slug)        => `/corner/furniture/doorsigns/cr-doorsign-${slug}.png`,
+}
+const AgentAssetsContext = createContext(AGENT_ASSETS_DEFAULT)
+
 // Room numbers for door signs (from Steffen's cr-doorsign catalog)
 const AGENT_ROOM_NUMBERS = {
   patrik: '01', mom: '02', alex: '03', steve: '04', steffen: '05',
@@ -1244,34 +1254,36 @@ const AGENT_ROOM_NUMBERS = {
 // Preload idle sprites on mount (re-runs if Supabase updates the list)
 function usePreloadSprites() {
   const spriteAgents = useContext(SpriteAgentsContext)
+  const assets = useContext(AgentAssetsContext)
   useEffect(() => {
     const states = ['idle', 'working', 'thinking', 'done', 'speaking']
     spriteAgents.forEach(a => {
       states.forEach(s => {
         const img = new Image()
-        img.src = `/corner/sprites/${a}-${s}.png`
+        img.src = assets.getSpriteSrc(a, s)
       })
     })
     // Preload hop frames
     spriteAgents.forEach(a => {
       ['ground', 'peak', 'landing'].forEach(frame => {
         const img = new Image()
-        img.src = `/corner/sprites/hop/${a}-hop-${frame}.png`
+        img.src = assets.getHopSrc(a, frame)
       })
     })
     // Preload nameplate + doorsign PNGs
     spriteAgents.forEach(a => {
       const np = new Image()
-      np.src = `/corner/furniture/nameplates/nameplate-${a}.png`
+      np.src = assets.getNameplateSrc(a)
       const ds = new Image()
-      ds.src = `/corner/furniture/doorsigns/cr-doorsign-${a}.png`
+      ds.src = assets.getDoorsignSrc(a)
     })
-  }, [spriteAgents])
+  }, [spriteAgents, assets])
 }
 
 // ---- AGENT CHARACTER (Pixel Art Sprite) - HTML version for div-based rooms --
 function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH }) {
   const spriteAgents = useContext(SpriteAgentsContext)
+  const assets = useContext(AgentAssetsContext)
   const spriteState = getSpriteState(status, isSpeaking)
   const isWorking = status === 'WORKING'
   const isThinking = status === 'WAITING'
@@ -1292,7 +1304,7 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
     )
   }
 
-  const spriteSrc = `/corner/sprites/${agentSlug}-${spriteState}.png`
+  const spriteSrc = assets.getSpriteSrc(agentSlug, spriteState)
 
   return (
     <div style={{
@@ -1380,6 +1392,7 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
 // Legacy SVG version kept for compatibility
 function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
   const spriteAgents = useContext(SpriteAgentsContext)
+  const assets = useContext(AgentAssetsContext)
   const spriteState = getSpriteState(status, isSpeaking)
   const isWorking = status === 'WORKING'
   const isThinking = status === 'WAITING'
@@ -1395,7 +1408,7 @@ function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
       </g>
     )
   }
-  const spriteSrc = `/corner/sprites/${agentSlug}-${spriteState}.png`
+  const spriteSrc = assets.getSpriteSrc(agentSlug, spriteState)
   return (
     <g>
       <ellipse cx={x} cy={y + 8} rx={10} ry={3} fill="#000" opacity={0.15} />
@@ -1427,6 +1440,7 @@ function AgentCharacter({ x, y, color, status, agentSlug, isSpeaking }) {
 // ---- SPRITE AVATAR (HTML, for chat + sidebar) ------------------------------
 function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, status }) {
   const spriteAgents = useContext(SpriteAgentsContext)
+  const assets = useContext(AgentAssetsContext)
   const hasSpriteFile = agentSlug && spriteAgents.has(agentSlug)
   const agent = AGENTS.find(a => a.slug === agentSlug)
   const color = borderColor || agent?.color || '#6B7280'
@@ -1440,7 +1454,7 @@ function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, st
         ...extraStyle,
       }}>
         <img
-          src={`/corner/sprites/${agentSlug}-${spriteState}.png`}
+          src={assets.getSpriteSrc(agentSlug, spriteState)}
           alt=""
           style={{
             width: size * 2,
@@ -1679,6 +1693,7 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
 // ---- NAMEPLATE (HTML version for div-based layout) -------------------------
 function RoomNameplateHTML({ room, agentStatus, isHovered }) {
   const spriteAgents = useContext(SpriteAgentsContext)
+  const assets = useContext(AgentAssetsContext)
   if (!room || room.agent === null) return null
   const status = agentStatus?.status || 'IDLE'
   const dotColor = status === 'WORKING' ? (room.statusColors?.active || '#22C55E')
@@ -1702,7 +1717,7 @@ function RoomNameplateHTML({ room, agentStatus, isHovered }) {
       {/* Mini sprite avatar */}
       {hasSprite && (
         <div style={{ width: 16, height: 16, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
-          <img src={`/corner/sprites/${room.id}-idle.png`} alt=""
+          <img src={assets.getSpriteSrc(room.id, 'idle')} alt=""
             style={{ width: 32, height: 32, objectFit: 'cover', objectPosition: '0 0', imageRendering: 'pixelated' }} />
         </div>
       )}
@@ -1804,6 +1819,8 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
   }, [])
+
+  const assets = useContext(AgentAssetsContext)
 
   // Daytime: bright Crossy Road office (blue sky, green grass). Night: warm night version.
   const officeImage = isNightMode ? OFFICE_IMAGES.night : OFFICE_IMAGES.day
@@ -2108,7 +2125,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                       : 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
                   }}>
                     <img
-                      src={`/corner/furniture/nameplates/nameplate-${room.id}.png`}
+                      src={assets.getNameplateSrc(room.id)}
                       alt={`${room.agent} nameplate`}
                       draggable={false}
                       style={{
@@ -2160,7 +2177,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                       : 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
                   }}>
                     <img
-                      src={`/corner/furniture/doorsigns/cr-doorsign-${room.id}.png`}
+                      src={assets.getDoorsignSrc(room.id)}
                       alt={`Room ${AGENT_ROOM_NUMBERS[room.id]}`}
                       draggable={false}
                       style={{
@@ -9955,6 +9972,7 @@ export default function GameDashboard() {
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
   const [spriteAgents, setSpriteAgents] = useState(SPRITE_AGENTS_FALLBACK)
+  const [agentAssets, setAgentAssets] = useState(AGENT_ASSETS_DEFAULT)
   const [roomsWithRenders, setRoomsWithRenders] = useState(ROOMS_WITH_RENDERS_FALLBACK)
 
   // Load Supabase user on mount + watch for auth state changes.
@@ -9978,13 +9996,39 @@ export default function GameDashboard() {
     return unsubscribe
   }, [])
 
-  // Fetch sprite-enabled agents from Supabase on mount.
-  // Falls back to SPRITE_AGENTS_FALLBACK if supabase is unavailable or returns empty.
+  // Fetch sprite-enabled agents + asset paths from Supabase on mount.
+  // Falls back to SPRITE_AGENTS_FALLBACK / AGENT_ASSETS_DEFAULT if unavailable or empty.
   useEffect(() => {
     if (!supabase) return
-    supabase.from('agent_status').select('slug').eq('has_sprite', true)
+    supabase.from('agent_status')
+      .select('slug,has_sprite,sprite_path,nameplate_path,doorsign_path')
+      .eq('type', 'agent')
       .then(({ data }) => {
-        if (data?.length > 0) setSpriteAgents(new Set(data.map(r => r.slug)))
+        if (!data?.length) return
+        // Update sprite-enabled set
+        const spriteSet = new Set(data.filter(r => r.has_sprite).map(r => r.slug))
+        if (spriteSet.size > 0) setSpriteAgents(spriteSet)
+        // Build per-slug asset lookup and expose as helper functions
+        const bySlug = {}
+        data.forEach(r => { bySlug[r.slug] = r })
+        setAgentAssets({
+          getSpriteSrc: (slug, state) => {
+            const base = bySlug[slug]?.sprite_path
+            return base ? `${base}-${state}.png` : `/corner/sprites/${slug}-${state}.png`
+          },
+          getHopSrc: (slug, frame) => {
+            const base = bySlug[slug]?.sprite_path
+            if (base) {
+              const dir = base.substring(0, base.lastIndexOf('/'))
+              return `${dir}/hop/${slug}-hop-${frame}.png`
+            }
+            return `/corner/sprites/hop/${slug}-hop-${frame}.png`
+          },
+          getNameplateSrc: (slug) =>
+            bySlug[slug]?.nameplate_path || `/corner/furniture/nameplates/nameplate-${slug}.png`,
+          getDoorsignSrc: (slug) =>
+            bySlug[slug]?.doorsign_path || `/corner/furniture/doorsigns/cr-doorsign-${slug}.png`,
+        })
       })
   }, [])
 
@@ -11435,6 +11479,7 @@ export default function GameDashboard() {
   // DONE: Viewport overflow -- 100vw lock on outer + inner containers (commit 637b79c). 70/30 flex split verified.
   // DONE: Elon commit 637b79c verified clean, no conflicts with Bobby's 9ec8b81 chain.
   return (
+    <AgentAssetsContext.Provider value={agentAssets}>
     <SpriteAgentsContext.Provider value={spriteAgents}>
     <RoomsWithRendersContext.Provider value={roomsWithRenders}>
     <div style={{
@@ -12412,5 +12457,6 @@ export default function GameDashboard() {
     </div>
     </RoomsWithRendersContext.Provider>
     </SpriteAgentsContext.Provider>
+    </AgentAssetsContext.Provider>
   )
 }
