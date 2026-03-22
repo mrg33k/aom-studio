@@ -437,16 +437,17 @@ export default function GameHUD({
     // RIGHT NOW = ALWAYS visible. Shows live agent tasks + manual tasks + add prompt.
     // Live agent tasks get LIVE badge. Manual tasks don't. Add prompt always at end.
     const rightNowTasks = []
-    // Live agent tasks first
+    // Live agent tasks first -- ONLY active + queued. isDoneAwaitingApproval tasks
+    // are handled by the pinned TASK COMPLETE confirmation box, not Right Now.
     liveRightNowTasks.forEach(t => {
+      if (t.isDoneAwaitingApproval) return // goes to TASK COMPLETE box, not Right Now
       rightNowTasks.push({
         text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: ${t.text}`,
         done: false,
         agent: t.agent,
         raw: '',
-        isLive: !t.isDoneAwaitingApproval,
+        isLive: true,
         isQueued: !!t.isQueued,
-        isDoneAwaitingApproval: !!t.isDoneAwaitingApproval,
         taskId: t.taskId,
       })
     })

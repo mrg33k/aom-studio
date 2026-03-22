@@ -153,13 +153,13 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
           width: 3, borderRadius: 2,
           background: isTodoList ? '#EF4444' : isRightNow ? pillColor : isSchedule ? project.color : '#EF4444',
           boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isSchedule) ? pillColor : 'rgba(239,68,68,0.6)'}88`,
-          animation: (isRightNow && (hasLiveTasks || hasPendingApproval)) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
+          animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
         }} />
       )}
 
       {/* Project indicator - BIGGER on desktop, compact on mobile/tablet. */}
       {isRightNow ? (
-        <Zap size={12} color={pillColor} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${pillColor}AA)`, animation: (hasLiveTasks || hasPendingApproval) ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+        <Zap size={12} color={pillColor} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${pillColor}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
       ) : isCompletedFeed ? (
         <CheckCircle2 size={12} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isTodoList ? (
@@ -206,7 +206,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
       </span>
 
       {/* LIVE badge for Right Now pill */}
-      {isRightNow && hasLiveTasks && !hasPendingApproval && (
+      {isRightNow && hasLiveTasks && (
         <span style={{
           display: 'flex', alignItems: 'center', gap: 4,
           fontFamily: 'JetBrains Mono, monospace',
@@ -230,30 +230,8 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         </span>
       )}
 
-      {/* REVIEW badge -- yellow, shown when agent completed task awaiting approval */}
-      {isRightNow && hasPendingApproval && (
-        <span style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, fontWeight: 800,
-          color: '#EAB308',
-          background: 'rgba(234,179,8,0.12)',
-          padding: '2px 6px', borderRadius: 5,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          border: '1.5px solid rgba(234,179,8,0.35)',
-          whiteSpace: 'nowrap',
-          animation: 'statusPulse 2s ease-in-out infinite',
-        }}>
-          <span style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: '#EAB308',
-            boxShadow: '0 0 6px rgba(234,179,8,0.7)',
-            animation: 'statusPulse 1.5s ease-in-out infinite',
-          }} />
-          REVIEW
-        </span>
-      )}
+      {/* REVIEW badge removed: isDoneAwaitingApproval tasks are no longer in Right Now.
+          They go to the pinned TASK COMPLETE confirmation box. Right Now = active + queued only. */}
 
       {/* NEEDS YOU badge for Your TODOs pill */}
       {isTodoList && remaining > 0 && (
