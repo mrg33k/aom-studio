@@ -368,6 +368,38 @@ export function useDataPipe(parsePunchList) {
           }
         }
 
+        // Hybrid: also read Supabase for done/todo tasks (not tracked in local files)
+        // done tasks -> Right Now with isDoneAwaitingApproval (yellow)
+        // todo tasks -> To Do pill via setTodoItems
+        try {
+          const clientId = getClientId()
+          const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
+          if (sbRes.ok) {
+            const sbData = await sbRes.json()
+            if (sbData.tasks) {
+              // Done tasks awaiting approval
+              const doneEntries = sbData.tasks
+                .filter(t => t.status === 'done' && t.agent !== 'patrik')
+                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
+              mergedTasks.push(...doneEntries)
+
+              // Todo tasks for To Do pill
+              const todoEntries = sbData.tasks
+                .filter(t => t.status === 'todo' && t.agent !== 'patrik')
+                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
+              setTodoItems(todoEntries)
+
+              // Patrik's personal tasks
+              const patrikEntries = sbData.tasks
+                .filter(t => t.agent === 'patrik' && t.status !== 'completed' && t.status !== 'done')
+                .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
+              setPersonalTodos(patrikEntries)
+            }
+          }
+        } catch {
+          // Supabase unavailable in local dev -- skip done/todo tasks
+        }
+
         setRightNow(mergedTasks)
         setCompletedFeed(parseCompletedFeed(notifContent))
         keywordsRef.current = buildAutoCheckKeywords(notifContent)
