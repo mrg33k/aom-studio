@@ -209,8 +209,22 @@ const CHARACTER_LAYER_OVERRIDES = {
 // Preload room images. For project/custom rooms, we draw a colored hex placeholder on canvas.
 const roomImages = {}
 
+// Client-generated room image overrides (Steffen/Gemini). Persisted to localStorage.
+const roomImageOverrideMap = (() => {
+  try { return JSON.parse(localStorage.getItem('corner_room_overrides') || '{}') } catch { return {} }
+})()
+
 function ensureRoomImages(id) {
   if (roomImages[id]) return
+
+  // Check for Steffen/Gemini-generated override first
+  if (roomImageOverrideMap[id]) {
+    const img = new Image()
+    img.src = roomImageOverrideMap[id]
+    roomImages[id] = { working: img, idle: img, character: null, isPlaceholder: false }
+    return
+  }
+
   const sources = getRoomImageSources(id)
   if (sources.hasImages) {
     const workImg = new Image()
@@ -1035,6 +1049,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState(null)
+
+  // Redesign Room modal state
+  const [redesignModal, setRedesignModal] = useState(null) // { roomId, roomName }
+  const [redesignVibe, setRedesignVibe] = useState('')
+  const [redesignLoading, setRedesignLoading] = useState(false)
 
   // Toast notification state
   const [toast, setToast] = useState(null)
@@ -2492,6 +2511,57 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     setContextMenu(null)
   }, [hiddenRooms, showToast])
 
+  // ---- REDESIGN ROOM (Gemini image generation) ----
+  const handleRedesignRoom = useCallback(async () => {
+    if (!redesignModal || !redesignVibe.trim() || redesignLoading) return
+    const { roomId, roomName } = redesignModal
+
+    let geminiKey = ''
+    try { geminiKey = JSON.parse(localStorage.getItem('corner_api_keys') || '{}').gemini || '' } catch {}
+    if (!geminiKey) {
+      showToast('Add a Gemini API key in Settings first')
+      return
+    }
+
+    setRedesignLoading(true)
+    const prompt = `Isometric pixel-art game room for an AI agent named ${roomName}. Vibe: ${redesignVibe.trim()}. Style: Crossy Road / The Sims isometric top-down 3/4 view. Clean pixel art, vibrant colors, cozy office or workspace interior. Square format.`
+
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseModalities: ['IMAGE'] },
+          }),
+        }
+      )
+      if (!resp.ok) throw new Error(`Gemini ${resp.status}`)
+      const data = await resp.json()
+      const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData)
+      if (!part) throw new Error('No image in response')
+      const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+
+      // Persist override to localStorage
+      roomImageOverrideMap[roomId] = dataUrl
+      localStorage.setItem('corner_room_overrides', JSON.stringify(roomImageOverrideMap))
+
+      // Invalidate cached room image so ensureRoomImages reloads with override
+      delete roomImages[roomId]
+      ensureRoomImages(roomId)
+
+      setRedesignModal(null)
+      setRedesignVibe('')
+      showToast(`${roomName}'s room redesigned!`)
+    } catch (err) {
+      showToast(`Generation failed: ${err.message}`)
+    } finally {
+      setRedesignLoading(false)
+    }
+  }, [redesignModal, redesignVibe, redesignLoading, showToast])
+
   // ---- TOUCH EVENTS ----
   const onTouchStart = useCallback((e) => {
     setContextMenu(null)
@@ -2924,6 +2994,18 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           />
           {/* Separator */}
           <div style={{ height: 1, background: 'rgba(96, 165, 250, 0.12)', margin: '4px 0' }} />
+          {/* Steffen room redesign */}
+          <ContextMenuItem
+            label="Redesign Room"
+            icon="✦"
+            accent
+            onClick={() => {
+              setRedesignModal({ roomId: contextMenu.roomId, roomName: contextMenu.roomName })
+              setContextMenu(null)
+            }}
+          />
+          {/* Separator */}
+          <div style={{ height: 1, background: 'rgba(96, 165, 250, 0.12)', margin: '4px 0' }} />
           {/* Room management */}
           <ContextMenuItem
             label="Hide Room"
@@ -2942,6 +3024,60 @@ const CanvasOffice = forwardRef(function CanvasOffice({
             icon="&#x2316;"
             onClick={() => handleResetOrder()}
           />
+        </div>
+      )}
+
+      {/* ---- REDESIGN ROOM MODAL ---- */}
+      {redesignModal && (
+        <div
+          style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget && !redesignLoading) { setRedesignModal(null); setRedesignVibe('') } }}
+        >
+          <div style={{ background: '#0C101E', border: '1px solid rgba(96,165,250,0.3)', borderRadius: 14, padding: 24, minWidth: 320, maxWidth: 400, width: '90%', boxShadow: '0 24px 64px rgba(0,0,0,0.7)', fontFamily: "'Inter', system-ui, sans-serif" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(96,165,250,0.6)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Redesign Room</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#EDF2FA', marginBottom: 4 }}>{redesignModal.roomName}</div>
+            <div style={{ fontSize: 13, color: 'rgba(200,214,229,0.55)', marginBottom: 16 }}>Describe the vibe. Steffen generates the room.</div>
+            <textarea
+              autoFocus
+              placeholder="Dark academia with warm lighting and vintage furniture..."
+              value={redesignVibe}
+              onChange={e => setRedesignVibe(e.target.value)}
+              onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleRedesignRoom() }}
+              disabled={redesignLoading}
+              style={{
+                width: '100%', minHeight: 80, background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.2)',
+                borderRadius: 8, padding: '10px 12px', color: '#EDF2FA', fontSize: 14, resize: 'vertical',
+                outline: 'none', fontFamily: "'Inter', system-ui, sans-serif", boxSizing: 'border-box',
+                opacity: redesignLoading ? 0.5 : 1,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button
+                onClick={() => { if (!redesignLoading) { setRedesignModal(null); setRedesignVibe('') } }}
+                style={{ flex: 1, padding: '9px 0', background: 'transparent', border: '1px solid rgba(96,165,250,0.2)', borderRadius: 8, color: 'rgba(200,214,229,0.7)', fontSize: 13, cursor: redesignLoading ? 'not-allowed' : 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRedesignRoom}
+                disabled={!redesignVibe.trim() || redesignLoading}
+                style={{
+                  flex: 2, padding: '9px 0',
+                  background: redesignLoading || !redesignVibe.trim() ? 'rgba(96,165,250,0.25)' : 'rgba(96,165,250,0.9)',
+                  border: 'none', borderRadius: 8, color: redesignLoading || !redesignVibe.trim() ? 'rgba(255,255,255,0.4)' : '#fff',
+                  fontSize: 13, fontWeight: 600, cursor: redesignLoading || !redesignVibe.trim() ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {redesignLoading ? 'Generating...' : '✦ Generate Room'}
+              </button>
+            </div>
+            {redesignLoading && (
+              <div style={{ marginTop: 10, fontSize: 12, color: 'rgba(96,165,250,0.55)', textAlign: 'center' }}>
+                Steffen is on it... this takes ~10 seconds
+              </div>
+            )}
+          </div>
         </div>
       )}
 
