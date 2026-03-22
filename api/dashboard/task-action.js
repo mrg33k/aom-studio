@@ -176,6 +176,15 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, action: 'reject', result });
       }
 
+      case 'editText': {
+        // payload = new task text string
+        if (!payload || typeof payload !== 'string' || !payload.trim()) {
+          return res.status(400).json({ error: 'payload (new text) required for editText' });
+        }
+        const result = await supabasePatch(filter, { text: payload.trim() });
+        return res.status(200).json({ ok: true, action: 'editText', result });
+      }
+
       default:
         return res.status(400).json({ error: `Unknown action: ${action}` });
     }

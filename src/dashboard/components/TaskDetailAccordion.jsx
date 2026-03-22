@@ -3,9 +3,9 @@
 // Shows: status chip, agent, project, context note, action buttons (Launch, Assign Agent).
 // Used by: ChecklistMode.jsx (TaskCard), BoardView.jsx (BoardCard)
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, UserPlus, ChevronDown } from 'lucide-react'
+import { Zap, UserPlus, ChevronDown, Pencil, Check, X } from 'lucide-react'
 import { AGENTS } from '../gridSpec.js'
 import { handleTaskContextAction } from './TaskContextMenu.jsx'
 
@@ -13,7 +13,36 @@ const AGENT_SLUGS = ['elon','bobby','steffen','cleo','alex','jacob','elmo','tony
 
 export default function TaskDetailAccordion({ task, project, isNightMode = true }) {
   const [isAssigning, setIsAssigning] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState(task?.text || '')
+  const [localText, setLocalText] = useState(null) // optimistic update after save
+  const editRef = useRef(null)
   const isDaytime = isNightMode === false
+
+  // Focus textarea when edit mode opens
+  useEffect(() => {
+    if (isEditing && editRef.current) {
+      editRef.current.focus()
+      editRef.current.setSelectionRange(editRef.current.value.length, editRef.current.value.length)
+    }
+  }, [isEditing])
+
+  const handleEditSave = (e) => {
+    e.stopPropagation()
+    const newText = editText.trim()
+    if (!newText || newText === task?.text) { setIsEditing(false); return }
+    // Optimistic update -- show new text immediately
+    setLocalText(newText)
+    setIsEditing(false)
+    // Fire to API (fire-and-forget)
+    handleTaskContextAction('editText', task, newText, null)
+  }
+
+  const handleEditCancel = (e) => {
+    e.stopPropagation()
+    setEditText(task?.text || '')
+    setIsEditing(false)
+  }
 
   const agentInfo = task?.agent ? AGENTS.find(a => a.slug === task.agent) : null
   const taskStatus = task?.done ? 'Done' : task?.isLive ? 'Live' : 'To Do'
@@ -33,6 +62,8 @@ export default function TaskDetailAccordion({ task, project, isNightMode = true 
     handleTaskContextAction('reassign', task, slug, null)
     setIsAssigning(false)
   }
+
+  const displayText = localText ?? task?.text ?? ''
 
   return (
     <div
@@ -85,8 +116,64 @@ export default function TaskDetailAccordion({ task, project, isNightMode = true 
         )}
       </div>
 
+      {/* Inline edit mode */}
+      {isEditing && (
+        <div style={{ marginBottom: 10 }}>
+          <textarea
+            ref={editRef}
+            value={editText}
+            onChange={e => setEditText(e.target.value)}
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEditSave(e) }
+              if (e.key === 'Escape') handleEditCancel(e)
+            }}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: isDaytime ? 'rgba(15,25,50,0.8)' : 'rgba(5,10,25,0.8)',
+              border: `1px solid rgba(59,130,246,0.45)`,
+              borderRadius: 7, padding: '8px 10px',
+              fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 400,
+              color: '#E8F0FF', lineHeight: 1.5,
+              resize: 'none', minHeight: 64,
+              outline: 'none',
+            }}
+          />
+          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+            <button
+              onClick={handleEditSave}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '5px 10px',
+                background: 'rgba(34,197,94,0.14)', border: '1px solid rgba(34,197,94,0.40)',
+                borderRadius: 6, cursor: 'pointer',
+                fontFamily: "'Inter Tight', system-ui, sans-serif",
+                fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em',
+                color: '#22C55E',
+              }}
+            >
+              <Check size={11} /> Save
+            </button>
+            <button
+              onClick={handleEditCancel}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '5px 10px',
+                background: 'rgba(107,114,128,0.10)', border: '1px solid rgba(107,114,128,0.25)',
+                borderRadius: 6, cursor: 'pointer',
+                fontFamily: "'Inter Tight', system-ui, sans-serif",
+                fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em',
+                color: '#6B7280',
+              }}
+            >
+              <X size={11} /> Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Context note */}
-      {(task?.note || task?.context) && (
+      {(task?.note || task?.context) && !isEditing && (
         <div style={{
           fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 400,
           color: isDaytime ? '#94B8D8' : '#7A92B0',
@@ -119,6 +206,28 @@ export default function TaskDetailAccordion({ task, project, isNightMode = true 
           >
             <Zap size={11} />
             Launch
+          </button>
+        )}
+
+        {/* Edit */}
+        {!isEditing && (
+          <button
+            onClick={e => { e.stopPropagation(); setEditText(displayText); setIsAssigning(false); setIsEditing(true) }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '6px 11px',
+              background: isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,150,255,0.06)',
+              border: `1px solid ${border}`,
+              borderRadius: 7, cursor: 'pointer',
+              fontFamily: "'Inter Tight', system-ui, sans-serif",
+              fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em',
+              color: chipText, transition: 'background 120ms ease', whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.16)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.08)' : 'rgba(100,150,255,0.06)' }}
+          >
+            <Pencil size={11} />
+            Edit
           </button>
         )}
 

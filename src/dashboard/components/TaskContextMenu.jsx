@@ -965,5 +965,8 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
   } else if (action === 'addContext') {
     console.log(`[Corner] Context note added to "${task.text}": ${payload}`)
     supabaseTaskAction('addContext', task, payload)
+  } else if (action === 'editText') {
+    console.log(`[Corner] Task text edited: "${task.text}" → "${payload}"`)
+    supabaseTaskAction('editText', task, payload)
   }
 }
