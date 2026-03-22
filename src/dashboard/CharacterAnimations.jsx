@@ -13,13 +13,50 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { supabase } from './lib/supabase'
 
 // ---- CONSTANTS ---------------------------------------------------------------
 
-const SPRITE_AGENTS = [
+// Fallback list used when Supabase is unavailable or the fetch hasn't resolved yet.
+// Source of truth is agent_status.has_sprite in Supabase.
+const SPRITE_AGENTS_FALLBACK = [
   'patrik','mom','alex','steve','steffen','bobby','colton',
   'cleo','tony','jacob','elmo','elon','pixel'
 ]
+
+// ---- SPRITE AGENTS -- Supabase-backed, module-level singleton ----------------
+
+let _spriteAgentsCache = null // string[] once resolved
+let _spriteAgentsPromise = null // in-flight promise
+
+async function loadSpriteAgents() {
+  if (_spriteAgentsCache) return _spriteAgentsCache
+  if (_spriteAgentsPromise) return _spriteAgentsPromise
+  _spriteAgentsPromise = (async () => {
+    try {
+      if (!supabase) return SPRITE_AGENTS_FALLBACK
+      const { data, error } = await supabase
+        .from('agent_status')
+        .select('slug')
+        .eq('has_sprite', true)
+      if (error || !data?.length) return SPRITE_AGENTS_FALLBACK
+      _spriteAgentsCache = data.map(r => r.slug)
+      return _spriteAgentsCache
+    } catch {
+      return SPRITE_AGENTS_FALLBACK
+    }
+  })()
+  return _spriteAgentsPromise
+}
+
+function useSpriteAgents() {
+  const [spriteAgents, setSpriteAgents] = useState(_spriteAgentsCache || SPRITE_AGENTS_FALLBACK)
+  useEffect(() => {
+    if (_spriteAgentsCache) return
+    loadSpriteAgents().then(slugs => setSpriteAgents(slugs))
+  }, [])
+  return spriteAgents
+}
 
 const HOP_FRAME_DURATION = 66 // ms per frame
 const HOP_TOTAL_DURATION = 200 // ms total (3 frames)
@@ -466,7 +503,8 @@ export function AnimatedAgentCharacter({
   roomH,
   onCelebrate, // callback when celebration should trigger (from parent)
 }) {
-  const hasSpriteFile = agentSlug && SPRITE_AGENTS.includes(agentSlug)
+  const spriteAgents = useSpriteAgents()
+  const hasSpriteFile = agentSlug && spriteAgents.includes(agentSlug)
   const agentColor = AGENT_COLORS[agentSlug] || color || '#FFD87A'
 
   // Character at 22% of room
