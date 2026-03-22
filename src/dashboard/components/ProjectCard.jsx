@@ -29,8 +29,10 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
   const isClient = project.isClient
   const allDone = remaining === 0 && totalTasks > 0
 
-  // Yellow override for Right Now pill when agent completed but awaiting review
-  const pillColor = hasPendingApproval ? '#EAB308' : project.color
+  // Pill color: Right Now is ALWAYS orange (#FF6B3D). Never yellow.
+  // The yellow REVIEW badge communicates pending approval -- the pill itself stays orange.
+  // Task CARDS inside Right Now can be orange (active), fuchsia (queued), yellow (done) -- separate concern.
+  const pillColor = isRightNow ? '#FF6B3D' : project.color
 
   // Client status tag colors
   const STATUS_TAG_COLORS = {
@@ -93,23 +95,19 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
               ? `linear-gradient(135deg, ${pillColor}18, ${pillColor}08)`
               : isClient
                 ? `linear-gradient(135deg, ${pillColor}0C, ${pillColor}06)`
-                : isSchedule
-                  ? 'linear-gradient(135deg, rgba(255,107,61,0.08), rgba(255,107,61,0.03))'
-                  : hasPendingApproval
-                    ? 'linear-gradient(135deg, rgba(234,179,8,0.10), rgba(234,179,8,0.04))'
-                    : 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02))')
+                : isSchedule || isRightNow
+                  ? `linear-gradient(135deg, ${pillColor}0D, ${pillColor}05)`
+                  : 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02))')
           : (isExpanded
               ? `linear-gradient(135deg, ${pillColor}22, ${pillColor}0C)`
               : isClient
                 ? `linear-gradient(135deg, ${pillColor}14, ${pillColor}06)`
-                : isSchedule
-                  ? 'linear-gradient(135deg, rgba(255, 107, 61, 0.14), rgba(255, 107, 61, 0.06))'
-                  : hasPendingApproval
-                    ? 'linear-gradient(135deg, rgba(234,179,8,0.15), rgba(234,179,8,0.06))'
-                    : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))'),
+                : isSchedule || isRightNow
+                  ? `linear-gradient(135deg, ${pillColor}24, ${pillColor}0A)`
+                  : 'linear-gradient(135deg, rgba(100,180,255,0.07), rgba(100,180,255,0.02))'),
         border: isDaytime
-          ? `2px solid ${isExpanded ? `${pillColor}40` : isClient ? `${pillColor}25` : isSchedule ? 'rgba(255,107,61,0.2)' : hasPendingApproval ? 'rgba(234,179,8,0.45)' : 'rgba(59,130,246,0.15)'}`
-          : `2px solid ${isExpanded ? `${pillColor}55` : isClient ? `${pillColor}30` : isSchedule ? 'rgba(255, 107, 61, 0.28)' : hasPendingApproval ? 'rgba(234,179,8,0.50)' : 'rgba(100,180,255,0.14)'}`,
+          ? `2px solid ${isExpanded ? `${pillColor}40` : isClient ? `${pillColor}25` : (isSchedule || isRightNow) ? `${pillColor}33` : 'rgba(59,130,246,0.15)'}`
+          : `2px solid ${isExpanded ? `${pillColor}55` : isClient ? `${pillColor}30` : (isSchedule || isRightNow) ? `${pillColor}47` : 'rgba(100,180,255,0.14)'}`,
         borderRadius: 16,
         cursor: 'pointer',
         flexShrink: 0,
@@ -126,18 +124,14 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
               ? `0 4px 16px ${pillColor}20, 0 1px 4px rgba(0,0,0,0.08)`
               : isClient && project.statusTag === 'RED'
                 ? '0 2px 12px rgba(239,68,68,0.2), 0 1px 3px rgba(0,0,0,0.2)'
-                : hasPendingApproval
-                  ? '0 2px 12px rgba(234,179,8,0.25), 0 1px 3px rgba(0,0,0,0.15)'
-                  : '0 2px 8px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.15)')
+                : '0 2px 8px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.15)')
           : (isExpanded
               ? `0 6px 24px ${pillColor}30, 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)`
               : isClient && project.statusTag === 'RED'
                 ? `0 4px 20px rgba(239,68,68,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)`
-                : isSchedule
-                  ? '0 4px 20px rgba(255,107,61,0.2), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
-                  : hasPendingApproval
-                    ? '0 4px 20px rgba(234,179,8,0.30), 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)'
-                    : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
+                : (isSchedule || isRightNow)
+                  ? `0 4px 20px ${pillColor}33, 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)`
+                  : '0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)'),
       }}
     >
       {/* Bottom progress fill - THICKER. Hidden for completed feed (100% is always true, redundant). */}
