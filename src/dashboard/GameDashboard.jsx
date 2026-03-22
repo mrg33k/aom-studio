@@ -8012,6 +8012,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const [confirmIndex, setConfirmIndex] = useState(0)
   const confirmDoneCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug).length
   useEffect(() => { setConfirmIndex(0) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Confirmation box minimize toggle -- collapses to slim bar, resets on agent switch or task count drops
+  const [confirmMinimized, setConfirmMinimized] = useState(false)
+  useEffect(() => { setConfirmMinimized(false) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
   // Track which task is currently animating the approve glow+fade (keyed by taskId or text)
   const [approvingTaskId, setApprovingTaskId] = useState(null)
   // Track which task is currently animating the deny/reject red glow+fade
@@ -9689,7 +9692,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       {/* Sits between the tab content and the chat input. Always visible when the agent has
           done tasks awaiting approval -- not sorted chronologically with messages.
           Multiple done tasks stack here with arrow nav (1/N). Zero done tasks = nothing rendered.
-          Single style: bright TASK COMPLETE card. No slim bar. No AWAITING REVIEW. */}
+          Single style: bright TASK COMPLETE card. Minimize toggle collapses to slim bar.
+          No AWAITING REVIEW. No dark amber. */}
       {(() => {
         const doneTasks = (rightNowTasks || []).filter(t =>
           t.isDoneAwaitingApproval && t.agent === agentSlug &&
@@ -9705,6 +9709,40 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             borderTop: isDaytime ? '1px solid rgba(59,130,246,0.35)' : '1px solid rgba(100,180,255,0.40)',
           }}>
             <AnimatePresence mode="wait">
+            {confirmMinimized ? (
+              /* SLIM BAR -- minimized state */
+              <motion.div
+                key="confirm-slim"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.12, ease: 'easeOut' }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '0 16px',
+                  height: 36,
+                  background: isDaytime ? 'linear-gradient(90deg, rgba(235,242,255,0.7) 0%, transparent 100%)' : 'linear-gradient(90deg, rgba(6,16,40,0.7) 0%, transparent 100%)',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setConfirmMinimized(false)}
+              >
+                <div style={{
+                  width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                  background: '#3B82F6',
+                  boxShadow: '0 0 6px #3B82F6, 0 0 12px rgba(59,130,246,0.4)',
+                  animation: 'vegasTypingBounce 2s ease-in-out infinite',
+                }} />
+                <span style={{
+                  fontSize: 10, fontWeight: 700, color: isDaytime ? '#3B82F6' : '#60A5FA',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.08em', textTransform: 'uppercase', flex: 1,
+                }}>TASK COMPLETE{total > 1 ? ` (${total})` : ''}</span>
+                {/* Expand chevron */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDaytime ? '#3B82F6' : '#60A5FA'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="18 15 12 9 6 15" />
+                </svg>
+              </motion.div>
+            ) : (
             <motion.div
               key="confirm-expanded"
               initial={{ opacity: 0, y: 6 }}
@@ -9809,6 +9847,25 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     >&#8250;</button>
                   </div>
                 )}
+                {/* Minimize button -- collapses to slim bar */}
+                <button
+                  onClick={() => setConfirmMinimized(true)}
+                  style={{
+                    width: 22, height: 22, borderRadius: 6, border: isDaytime ? '1px solid rgba(59,130,246,0.30)' : '1px solid rgba(100,180,255,0.30)',
+                    cursor: 'pointer', background: 'transparent',
+                    color: isDaytime ? '#3B82F6' : '#60A5FA',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0, flexShrink: 0,
+                    transition: 'background 80ms ease, border-color 80ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.10)' : 'rgba(100,180,255,0.12)'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.50)' : 'rgba(100,180,255,0.50)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = isDaytime ? 'rgba(59,130,246,0.30)' : 'rgba(100,180,255,0.30)' }}
+                  aria-label="Minimize confirmation box"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
               </div>
               {/* Task text -- data readout panel */}
               <div style={{
@@ -9932,6 +9989,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               )
             })()}
           </motion.div>
+            )}
             </AnimatePresence>
           </div>
         )
