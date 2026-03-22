@@ -55,7 +55,7 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
   const optionBorder = isNightMode ? 'rgba(120,80,255,0.35)' : 'rgba(59,130,246,0.35)'
 
   const rightVal = sidebarWidthPct > 0
-    ? `calc(${sidebarWidthPct}% + ${FAB_RIGHT}px)`
+    ? `calc(max(${sidebarWidthPct}%, 300px) + ${FAB_RIGHT}px)`
     : `${FAB_RIGHT}px`
 
   return (
