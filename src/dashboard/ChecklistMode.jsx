@@ -41,7 +41,7 @@ import {
   ChevronRight, ChevronDown, Check, Plus, GripVertical,
   LayoutGrid, FolderKanban, Flame, CheckCircle2,
   CheckSquare, Square, Trash2, UserCircle2,
-  Zap, AlertCircle, History, Clock, Eye,
+  Zap, AlertCircle, History,
 } from 'lucide-react'
 import { AGENTS } from './gridSpec.js'
 import { useDataPipe } from './hooks/useDataPipe.js'
@@ -118,16 +118,11 @@ function SpriteAvatar({ agentSlug, size = 32, borderColor, style: extraStyle, sp
 // Bobby2: All polling consolidated into ONE hook. See useDataPipe.js.
 // DONE(steve TODO): Duplicated hooks eliminated. One shared hook now.
 
-// Generate demo Right Now tasks for production (Active + Queued + Review)
+// Generate demo Right Now tasks for production
 function generateDemoRightNow() {
   return [
-    // Active -- running agents
-    { text: 'Building permit tracker dashboard page', agent: 'bobby', done: false, isLive: true, isQueued: false },
-    { text: 'QA pass on Garcia homepage redesign', agent: 'elmo', done: false, isLive: true, isQueued: false },
-    // Queued -- waiting to run
-    { text: 'Content calendar for Ridgeline Homes (30-day)', agent: 'tony', done: false, isLive: true, isQueued: true },
-    // Review -- done, awaiting Patrik approval
-    { text: 'Brand guide v2 with updated color palette', agent: 'steffen', done: false, isLive: false, isQueued: false, isDoneAwaitingApproval: true },
+    { text: 'Building permit tracker dashboard page', agent: 'bobby', progress: 50, done: false, isLive: true },
+    { text: 'QA pass on Garcia homepage redesign', agent: 'elmo', progress: 50, done: false, isLive: true },
   ]
 }
 
@@ -798,194 +793,14 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents 
   )
 }
 
-// ---- RIGHT NOW SUB-CARD (Queued + Review variants -- no drag) ----------------
-function RightNowSubCard({ task, index, variant, isDaytime, onContextMenu, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
-  const [isHovered, setIsHovered] = useState(false)
-  const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
-  const hasSpr = task.agent && spriteAgents.has(task.agent)
-
-  const VARIANT_COLOR = { queued: '#3B9EFF', review: '#F59E0B' }
-  const VARIANT_BADGE = { queued: 'QUEUED', review: 'REVIEW' }
-  const color = VARIANT_COLOR[variant] || '#6B7280'
-  const badge = VARIANT_BADGE[variant]
-  const agentColor = agentInfo?.color || color
-
-  const handleContextMenu = useCallback((e) => {
-    e.preventDefault()
-    onContextMenu?.(e, task)
-  }, [task, onContextMenu])
-  const handleLongPress = useCallback(({ clientX, clientY }) => {
-    onContextMenu?.({ clientX, clientY, preventDefault: () => {} }, task)
-  }, [task, onContextMenu])
-  const longPress = useLongPress(handleLongPress)
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 20, scale: 0.95 }}
-      transition={{ duration: 0.16, delay: index * 0.04 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onContextMenu={handleContextMenu}
-      {...longPress}
-      style={{
-        background: isHovered
-          ? (isDaytime ? `rgba(${variant === 'queued' ? '59,158,255' : '245,158,11'},0.10)` : `rgba(${variant === 'queued' ? '59,158,255' : '245,158,11'},0.06)`)
-          : (isDaytime ? `rgba(${variant === 'queued' ? '59,158,255' : '245,158,11'},0.05)` : `rgba(${variant === 'queued' ? '59,158,255' : '245,158,11'},0.02)`),
-        border: `1px solid ${isHovered
-          ? (isDaytime ? `${color}40` : `${color}25`)
-          : (isDaytime ? `${color}20` : `${color}10`)}`,
-        borderRadius: 10,
-        padding: '10px 14px 9px',
-        marginBottom: 5,
-        cursor: 'default',
-        transition: 'background 120ms ease, border-color 120ms ease',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {/* Agent avatar */}
-        {agentInfo && hasSpr ? (
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%',
-            border: `1.5px solid ${agentColor}`,
-            overflow: 'hidden', flexShrink: 0, background: isDaytime ? '#1A2332' : '#0A0F1E',
-            boxShadow: `0 0 6px ${agentColor}33`,
-          }}>
-            <img
-              src={`/corner/sprites/${task.agent}-idle.png`}
-              alt=""
-              style={{
-                width: 47, height: 47, objectFit: 'cover', objectPosition: '20% 8%',
-                imageRendering: 'pixelated', display: 'block', marginLeft: -7, marginTop: -4,
-              }}
-            />
-          </div>
-        ) : agentInfo ? (
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%',
-            border: `1.5px solid ${agentColor}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 700, color: agentColor,
-            background: `${agentColor}22`, flexShrink: 0,
-          }}>
-            {agentInfo.name.charAt(0)}
-          </div>
-        ) : null}
-
-        {/* Task text + agent name */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: "'Inter', system-ui, sans-serif", fontWeight: 500, fontSize: 14,
-            color: isDaytime ? '#E2E8F0' : '#F0ECE6', lineHeight: 1.35,
-          }}>
-            {task.text}
-          </div>
-          {agentInfo && (
-            <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 10,
-              textTransform: 'uppercase', letterSpacing: '0.1em',
-              color: agentColor, marginTop: 2, display: 'inline-block', opacity: 0.8,
-            }}>
-              {agentInfo.name}
-            </span>
-          )}
-        </div>
-
-        {/* Badge */}
-        <span style={{
-          fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 9,
-          textTransform: 'uppercase', letterSpacing: '0.15em',
-          color: color,
-          background: `${color}15`,
-          border: `1px solid ${color}30`,
-          borderRadius: 4, padding: '2px 7px',
-          display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
-        }}>
-          <div style={{ width: 4, height: 4, borderRadius: '50%', background: color }} />
-          {badge}
-        </span>
-      </div>
-    </motion.div>
-  )
-}
-
-// ---- RIGHT NOW SUB-SECTION HEADER -------------------------------------------
-function RightNowSubHeader({ label, count, color, icon: Icon, isOpen, onToggle, isDaytime }) {
-  return (
-    <button
-      onClick={onToggle}
-      style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-        padding: '7px 10px', marginBottom: isOpen ? 6 : 2,
-        background: isOpen
-          ? (isDaytime ? `${color}10` : `${color}08`)
-          : 'transparent',
-        border: `1px solid ${isOpen ? `${color}20` : 'transparent'}`,
-        borderRadius: 8, cursor: 'pointer', textAlign: 'left',
-        transition: 'all 150ms ease',
-      }}
-    >
-      {isOpen
-        ? <ChevronDown size={12} color={isDaytime ? color : `${color}CC`} />
-        : <ChevronRight size={12} color={isDaytime ? '#8A9AB0' : '#6B7280'} />
-      }
-      <Icon size={13} color={isOpen ? color : (isDaytime ? '#8A9AB0' : '#6B7280')}
-        style={label === 'Active' ? { animation: isOpen ? 'rightNowPulse 2s ease-in-out infinite' : 'none' } : {}}
-      />
-      <span style={{
-        fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 11,
-        textTransform: 'uppercase', letterSpacing: '0.12em',
-        color: isOpen ? color : (isDaytime ? '#8A9AB0' : '#6B7280'),
-        transition: 'color 150ms ease',
-      }}>
-        {label}
-      </span>
-      <div style={{ flex: 1 }} />
-      <span style={{
-        fontFamily: 'JetBrains Mono, monospace', fontWeight: 800,
-        fontSize: 11, color: isOpen ? '#FFF' : (isDaytime ? '#8A9AB0' : '#6B7280'),
-        background: isOpen ? color : (isDaytime ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'),
-        padding: '2px 8px', borderRadius: 6, lineHeight: 1.4,
-        transition: 'all 150ms ease',
-      }}>
-        {count}
-      </span>
-    </button>
-  )
-}
-
-// ---- RIGHT NOW SECTION (accordion: Active / Queued / Review sub-sections) ----
+// ---- RIGHT NOW SECTION (ONLY running agents, drag-to-reorder) ---------------
 // PATRIK CORRECTION: "it should just link to what agents are running and what the task is"
 // DONE(bobby): drag-to-reorder via framer-motion Reorder -- works on iPad/mobile touch
-// DREAM: accordion sub-sections (Active/Queued/Review), all collapsed by default
 function RightNowSection({ tasks, orderedTasks, onReorder, isCollapsed, onToggle, isDaytime, onContextMenu, spriteAgents = SPRITE_AGENTS_FALLBACK }) {
   const color = '#FF6B3D'
+  const displayTasks = orderedTasks || tasks
 
-  // Split tasks by category
-  const activeTasks = (tasks || []).filter(t => t.isLive && !t.isQueued && !t.isDoneAwaitingApproval)
-  const queuedTasks = (tasks || []).filter(t => t.isQueued)
-  const reviewTasks = (tasks || []).filter(t => t.isDoneAwaitingApproval)
-
-  // Preserve user drag order for active tasks only
-  const orderedActiveTasks = useMemo(() => {
-    if (!orderedTasks || orderedTasks.length === 0) return activeTasks
-    return [...activeTasks].sort((a, b) => {
-      const ai = orderedTasks.findIndex(t => t.text === a.text && t.agent === a.agent)
-      const bi = orderedTasks.findIndex(t => t.text === b.text && t.agent === b.agent)
-      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
-    })
-  }, [activeTasks, orderedTasks])
-
-  // Sub-section collapse state -- all collapsed by default (DREAM spec)
-  const [activeOpen, setActiveOpen] = useState(false)
-  const [queuedOpen, setQueuedOpen] = useState(false)
-  const [reviewOpen, setReviewOpen] = useState(false)
-
-  // If no tasks at all, show "All clear"
+  // If no running agents, show "All clear"
   if (!tasks || tasks.length === 0) {
     return (
       <div style={{ marginBottom: 12 }}>
@@ -1020,20 +835,17 @@ function RightNowSection({ tasks, orderedTasks, onReorder, isCollapsed, onToggle
 
   return (
     <div style={{ marginBottom: 12 }}>
-      {/* Main header -- collapses all sub-sections */}
+      {/* Header */}
       <button
         onClick={onToggle}
         style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
           padding: '16px 0 10px', marginBottom: 4,
           background: 'none', border: 'none', cursor: 'pointer',
           textAlign: 'left',
         }}
       >
-        {isCollapsed
-          ? <ChevronRight size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} />
-          : <ChevronDown size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} />
-        }
+        {isCollapsed ? <ChevronRight size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} /> : <ChevronDown size={16} color={isDaytime ? '#6B8AB0' : '#6B7280'} />}
 
         <Zap size={20} color={color} style={{
           filter: `drop-shadow(0 0 8px ${color}AA)`,
@@ -1046,188 +858,52 @@ function RightNowSection({ tasks, orderedTasks, onReorder, isCollapsed, onToggle
           color: isDaytime ? '#E8ECF0' : '#EDF2FA',
           textTransform: 'uppercase',
           letterSpacing: '-0.02em',
+          flex: 1,
           textShadow: isDaytime ? '0 1px 4px rgba(0,0,0,0.2)' : `0 0 20px ${color}33`,
         }}>
           Right Now
         </span>
 
-        {/* Category count chips */}
-        <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginLeft: 'auto' }}>
-          {activeTasks.length > 0 && (
-            <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 800,
-              fontSize: 11, color: '#FFF',
-              background: `linear-gradient(135deg, #FF6B3D, #FF6B3DCC)`,
-              padding: '3px 9px', borderRadius: 8, lineHeight: 1,
-              boxShadow: '0 2px 6px #FF6B3D44, 0 0 16px #FF6B3D18',
-              animation: 'rightNowPulse 3s ease-in-out infinite',
-            }}>
-              {activeTasks.length} active
-            </span>
-          )}
-          {queuedTasks.length > 0 && (
-            <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 800,
-              fontSize: 11, color: '#FFF',
-              background: 'linear-gradient(135deg, #3B9EFF, #3B9EFFCC)',
-              padding: '3px 9px', borderRadius: 8, lineHeight: 1,
-              boxShadow: '0 2px 6px #3B9EFF33',
-            }}>
-              {queuedTasks.length} queued
-            </span>
-          )}
-          {reviewTasks.length > 0 && (
-            <span style={{
-              fontFamily: 'JetBrains Mono, monospace', fontWeight: 800,
-              fontSize: 11, color: '#FFF',
-              background: 'linear-gradient(135deg, #F59E0B, #F59E0BCC)',
-              padding: '3px 9px', borderRadius: 8, lineHeight: 1,
-              boxShadow: '0 2px 6px #F59E0B33',
-            }}>
-              {reviewTasks.length} review
-            </span>
-          )}
-        </div>
+        {/* Running count */}
+        <span style={{
+          fontFamily: "'Inter Tight', JetBrains Mono, monospace", fontWeight: 900,
+          fontSize: 14, color: '#FFF',
+          background: `linear-gradient(135deg, ${color}, ${color}CC)`,
+          padding: '4px 12px', borderRadius: 10, lineHeight: 1,
+          boxShadow: `0 2px 8px ${color}55, 0 0 20px ${color}22`,
+          minWidth: 28, textAlign: 'center',
+          animation: 'rightNowPulse 3s ease-in-out infinite',
+        }}>
+          {tasks.length} running
+        </span>
       </button>
 
-      {/* Sub-sections -- visible when outer is open */}
+      {/* Running agent cards -- drag-to-reorder via framer-motion Reorder */}
       {!isCollapsed && (
-        <div style={{ paddingLeft: 8 }}>
-
-          {/* ACTIVE sub-section */}
-          {activeTasks.length > 0 && (
-            <div style={{ marginBottom: 6 }}>
-              <RightNowSubHeader
-                label="Active"
-                count={activeTasks.length}
-                color="#FF6B3D"
-                icon={Zap}
-                isOpen={activeOpen}
-                onToggle={() => setActiveOpen(v => !v)}
+        <Reorder.Group
+          as="div"
+          axis="y"
+          values={displayTasks}
+          onReorder={onReorder}
+          style={{ listStyle: 'none', padding: 0, margin: 0 }}
+        >
+          {displayTasks.map((task, i) => (
+            <Reorder.Item
+              key={task.text || `rightnow-${task.agent}-${i}`}
+              value={task}
+              as="div"
+              style={{ touchAction: 'none' }}
+            >
+              <RightNowTaskCard
+                task={task}
+                index={i}
                 isDaytime={isDaytime}
+                onContextMenu={onContextMenu}
+                spriteAgents={spriteAgents}
               />
-              <AnimatePresence initial={false}>
-                {activeOpen && (
-                  <motion.div
-                    key="active-content"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeInOut' }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <Reorder.Group
-                      as="div"
-                      axis="y"
-                      values={orderedActiveTasks}
-                      onReorder={onReorder}
-                      style={{ listStyle: 'none', padding: 0, margin: '0 0 4px' }}
-                    >
-                      {orderedActiveTasks.map((task, i) => (
-                        <Reorder.Item
-                          key={task.text || `active-${task.agent}-${i}`}
-                          value={task}
-                          as="div"
-                          style={{ touchAction: 'none' }}
-                        >
-                          <RightNowTaskCard
-                            task={task}
-                            index={i}
-                            isDaytime={isDaytime}
-                            onContextMenu={onContextMenu}
-                            spriteAgents={spriteAgents}
-                          />
-                        </Reorder.Item>
-                      ))}
-                    </Reorder.Group>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-
-          {/* QUEUED sub-section */}
-          {queuedTasks.length > 0 && (
-            <div style={{ marginBottom: 6 }}>
-              <RightNowSubHeader
-                label="Queued"
-                count={queuedTasks.length}
-                color="#3B9EFF"
-                icon={Clock}
-                isOpen={queuedOpen}
-                onToggle={() => setQueuedOpen(v => !v)}
-                isDaytime={isDaytime}
-              />
-              <AnimatePresence initial={false}>
-                {queuedOpen && (
-                  <motion.div
-                    key="queued-content"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeInOut' }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div style={{ marginBottom: 4 }}>
-                      {queuedTasks.map((task, i) => (
-                        <RightNowSubCard
-                          key={task.taskId || task.text || `queued-${i}`}
-                          task={task}
-                          index={i}
-                          variant="queued"
-                          isDaytime={isDaytime}
-                          onContextMenu={onContextMenu}
-                          spriteAgents={spriteAgents}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-
-          {/* REVIEW sub-section */}
-          {reviewTasks.length > 0 && (
-            <div style={{ marginBottom: 6 }}>
-              <RightNowSubHeader
-                label="Review"
-                count={reviewTasks.length}
-                color="#F59E0B"
-                icon={Eye}
-                isOpen={reviewOpen}
-                onToggle={() => setReviewOpen(v => !v)}
-                isDaytime={isDaytime}
-              />
-              <AnimatePresence initial={false}>
-                {reviewOpen && (
-                  <motion.div
-                    key="review-content"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeInOut' }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div style={{ marginBottom: 4 }}>
-                      {reviewTasks.map((task, i) => (
-                        <RightNowSubCard
-                          key={task.taskId || task.text || `review-${i}`}
-                          task={task}
-                          index={i}
-                          variant="review"
-                          isDaytime={isDaytime}
-                          onContextMenu={onContextMenu}
-                          spriteAgents={spriteAgents}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
+            </Reorder.Item>
+          ))}
+        </Reorder.Group>
       )}
     </div>
   )
