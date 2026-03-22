@@ -490,6 +490,10 @@ export default function GameHUD({
   // RTN ticker right-click / long-press context menu
   const [tickerCtxMenu, setTickerCtxMenu] = useState(null) // { task, x, y }
   const tickerLPRef = useRef(null)
+  // Tracks whether the long-press fired -- used to suppress onClick after long-press
+  // (without this, onClick fires after touchend and opens the Right Now panel while
+  //  the context menu is showing)
+  const tickerLPFiredRef = useRef(false)
   useEffect(() => {
     if (!tickerCtxMenu) return
     const timer = setTimeout(() => {
@@ -1082,7 +1086,10 @@ export default function GameHUD({
                   exit={{ opacity: 0, x: -80, scale: 0.85 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 20, delay: idx * 0.04 }}
                   onClick={() => {
-                    // Expand the Right Now pill to show task detail
+                    // Suppress click when long-press already fired the context menu.
+                    // Without this, onClick fires after touchend and opens the Right Now
+                    // panel on top of the context menu.
+                    if (tickerLPFiredRef.current) { tickerLPFiredRef.current = false; return }
                     setExpandedProject(rightNowProject)
                   }}
                   onContextMenu={(e) => {
@@ -1090,9 +1097,11 @@ export default function GameHUD({
                     setTickerCtxMenu({ task, x: e.clientX, y: e.clientY })
                   }}
                   onTouchStart={(e) => {
+                    tickerLPFiredRef.current = false
                     const touch = e.touches[0]
                     tickerLPRef.current = setTimeout(() => {
                       tickerLPRef.current = null
+                      tickerLPFiredRef.current = true
                       setTickerCtxMenu({ task, x: touch.clientX, y: Math.max(8, touch.clientY - 120) })
                     }, 500)
                   }}
@@ -1100,23 +1109,30 @@ export default function GameHUD({
                   onTouchMove={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
                   whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
                   whileTap={{ scale: 0.94 }}
-                  className={task.done ? '' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-done'}
+                  className={task.done ? '' : task.isDoneAwaitingApproval ? 'ticker-task-new' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-new'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: isMobile ? '10px 14px' : '4px 12px',
                     minHeight: isMobile ? 44 : 'auto',
                     background: task.done
                       ? 'rgba(34,197,94,0.12)'
-                      : task.isLive && !task.isQueued
-                        ? 'rgba(255,107,61,0.12)'
+                      : task.isDoneAwaitingApproval
+                        ? 'rgba(245,158,11,0.12)'
                         : task.isQueued
                           ? 'rgba(233,30,144,0.12)'
-                          : 'rgba(245,158,11,0.12)',
-                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isLive && !task.isQueued ? 'rgba(255,107,61,0.25)' : task.isQueued ? 'rgba(233,30,144,0.25)' : 'rgba(245,158,11,0.35)'}`,
+                          : task.isLive
+                            ? 'rgba(255,107,61,0.12)'
+                            : 'rgba(100,180,255,0.08)',
+                    border: `1.5px solid ${task.done ? 'rgba(34,197,94,0.3)' : task.isDoneAwaitingApproval ? 'rgba(245,158,11,0.35)' : task.isQueued ? 'rgba(233,30,144,0.25)' : task.isLive ? 'rgba(255,107,61,0.25)' : 'rgba(100,180,255,0.15)'}`,
                     borderRadius: 10,
                     cursor: 'pointer',
                     flexShrink: 0,
                     transition: 'background 150ms ease, border-color 150ms ease',
+                    // iOS: remove white tap-highlight flash on press/long-press
+                    WebkitTapHighlightColor: 'transparent',
+                    // iOS: prevent native long-press callout (Select/Copy menu) from
+                    // appearing behind our custom context menu
+                    WebkitTouchCallout: 'none',
                   }}
                 >
                   {task.done ? (

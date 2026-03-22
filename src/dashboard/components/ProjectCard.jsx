@@ -95,6 +95,10 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
         position: 'relative',
         overflow: 'hidden',
         transition: 'all 200ms ease',
+        // iOS: remove white tap-highlight and native long-press callout so framer-motion
+        // animations are the only visual feedback on mobile (no grey flash under the pill)
+        WebkitTapHighlightColor: 'transparent',
+        WebkitTouchCallout: 'none',
         // VEGAS + CROSSY ROAD: Physical drop shadow. Chunky grabbable pills.
         boxShadow: isDaytime
           ? (isExpanded

@@ -11161,9 +11161,13 @@ export default function GameDashboard() {
       // First click: zoom to Level 2 (neighborhood)
       setCameraZoom(1.6)
       setSelectedRoom(roomId)
-      // On mobile, open the bottom sheet drawer to half position
+      // On mobile, open the bottom sheet drawer to half position.
+      // Reset to 'chat' tab so MobileFixedInput is always visible on room open --
+      // without this, switching from a room where the user left on the 'tasks' or
+      // 'info' tab would hide the chat input for the new room.
       if (isMobile) {
         setDrawerSnap('half')
+        setMobileDrawerActiveTab('chat')
       }
     }
   }
@@ -11174,9 +11178,10 @@ export default function GameDashboard() {
     setCameraTarget(roomId)
     setIsOverview(false)
     setPanelVisible(true)
-    // On mobile, open drawer to half position
+    // On mobile, open drawer to half position and reset to chat tab
     if (isMobile) {
       setDrawerSnap('half')
+      setMobileDrawerActiveTab('chat')
     }
   }
 
