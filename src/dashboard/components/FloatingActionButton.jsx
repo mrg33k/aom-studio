@@ -1,199 +1,96 @@
 // FloatingActionButton.jsx
 // Single persistent FAB anchored top-right of game viewport.
-// Expands downward to reveal action options with staggered fade-in.
-// Matches day/night theme. Always above game content (z:55).
+// Tap opens role picker modal directly (no intermediate dropdown).
+// Always above game content (z:55).
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import CreateRoomModal from './CreateRoomModal.jsx'
 
-const OPTIONS = [
-  { id: 'new-project', label: 'New Project', icon: '▣' },
-  { id: 'new-agent',   label: 'New Agent',   icon: '◎' },
-]
-
 // Position: top-right corner of game map area
-const FAB_TOP    = 80  // px -- below top nav bar (~60px) + margin
-const FAB_RIGHT  = 16  // px
-const FAB_SIZE   = 48  // px -- main button diameter (slightly smaller for top corner)
-const OPTION_H   = 44 // px -- each option row height (44px = proper mobile touch target)
-const OPTION_GAP = 8  // px -- gap between options
+const FAB_TOP  = 80  // px -- below top nav bar (~60px) + margin
+const FAB_RIGHT = 16  // px
+const FAB_SIZE  = 48  // px -- main button diameter
 
 export default function FloatingActionButton({ isNightMode, isMobile, sidebarWidthPct = 0, onRoomCreated }) {
-  const [open, setOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalMode, setModalMode] = useState('agent') // 'agent' | 'project'
-  const fabRef = useRef(null)
-
-  // Dismiss on outside click / touch
-  useEffect(() => {
-    if (!open) return
-    const dismiss = (e) => {
-      if (fabRef.current && !fabRef.current.contains(e.target)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', dismiss, true)
-    document.addEventListener('touchstart', dismiss, true)
-    return () => {
-      document.removeEventListener('mousedown', dismiss, true)
-      document.removeEventListener('touchstart', dismiss, true)
-    }
-  }, [open])
-
-  const handleAction = (id) => {
-    setOpen(false)
-    if (id === 'new-project') { setModalMode('project'); setModalOpen(true) }
-    if (id === 'new-agent')   { setModalMode('agent');   setModalOpen(true) }
-  }
 
   // Theme tokens
-  const glowColor  = isNightMode ? '120,80,255'  : '59,130,246'
-  const bgMain     = isNightMode
+  const glowColor = isNightMode ? '120,80,255' : '59,130,246'
+  const bgMain = isNightMode
     ? 'radial-gradient(circle at 40% 35%, rgba(100,60,220,0.95), rgba(30,20,80,0.98))'
     : 'radial-gradient(circle at 40% 35%, rgba(59,130,246,0.95), rgba(15,27,60,0.98))'
-  const optionBg   = isNightMode ? 'rgba(20,12,50,0.96)' : 'rgba(10,20,50,0.96)'
-  const optionBorder = isNightMode ? 'rgba(120,80,255,0.35)' : 'rgba(59,130,246,0.35)'
 
   const rightVal = sidebarWidthPct > 0
     ? `calc(max(${sidebarWidthPct}%, 300px) + ${FAB_RIGHT}px)`
     : `${FAB_RIGHT}px`
 
   return (
-    <div
-      ref={fabRef}
-      style={{
-        position: 'fixed',
-        top: FAB_TOP,
-        right: rightVal,
-        transition: 'right 250ms ease',
-        zIndex: 55,
-        display: 'flex',
-        flexDirection: 'column', // button on top, options expand downward
-        alignItems: 'flex-end',
-        gap: OPTION_GAP,
-        pointerEvents: 'auto',
-      }}
-    >
-      {/* Main FAB button (top, always visible) */}
-      <button
-        aria-label={open ? 'Close actions' : 'Open actions'}
-        onClick={() => setOpen(v => !v)}
+    <>
+      {/* Main FAB button */}
+      <div
         style={{
-          width: FAB_SIZE,
-          height: FAB_SIZE,
-          borderRadius: '50%',
-          border: 'none',
-          cursor: 'pointer',
-          background: bgMain,
-          boxShadow: open
-            ? `0 0 0 3px rgba(${glowColor},0.5), 0 6px 28px rgba(${glowColor},0.55), 0 0 50px rgba(${glowColor},0.25)`
-            : `0 0 0 1.5px rgba(${glowColor},0.4), 0 4px 20px rgba(${glowColor},0.4), 0 0 30px rgba(${glowColor},0.15)`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          transition: 'box-shadow 250ms ease, transform 200ms cubic-bezier(0.34,1.56,0.64,1)',
-          transform: open ? 'rotate(45deg) scale(1.05)' : 'rotate(0deg) scale(1)',
-          outline: 'none',
-          position: 'relative',
-          overflow: 'visible',
-        }}
-        onMouseEnter={e => {
-          if (!open) {
-            e.currentTarget.style.boxShadow = `0 0 0 2px rgba(${glowColor},0.55), 0 6px 28px rgba(${glowColor},0.55), 0 0 40px rgba(${glowColor},0.22)`
-          }
-        }}
-        onMouseLeave={e => {
-          if (!open) {
-            e.currentTarget.style.boxShadow = `0 0 0 1.5px rgba(${glowColor},0.4), 0 4px 20px rgba(${glowColor},0.4), 0 0 30px rgba(${glowColor},0.15)`
-          }
+          position: 'fixed',
+          top: FAB_TOP,
+          right: rightVal,
+          transition: 'right 250ms ease',
+          zIndex: 55,
+          pointerEvents: 'auto',
         }}
       >
-        {/* Glow ring animation */}
-        <span style={{
-          position: 'absolute',
-          inset: -3,
-          borderRadius: '50%',
-          border: `2px solid rgba(${glowColor},0.3)`,
-          animation: 'fabRingPulse 2.4s ease-in-out infinite',
-          pointerEvents: 'none',
-        }} />
-        {/* + icon */}
-        <svg
-          width={22} height={22}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="rgba(255,255,255,0.95)"
-          strokeWidth={2.5}
-          strokeLinecap="round"
-          style={{ filter: `drop-shadow(0 0 6px rgba(${glowColor},0.8))` }}
-        >
-          <line x1="12" y1="4" x2="12" y2="20" />
-          <line x1="4" y1="12" x2="20" y2="12" />
-        </svg>
-      </button>
-
-      {/* Option buttons -- expand downward below FAB */}
-      {OPTIONS.map((opt, i) => (
-        <div
-          key={opt.id}
-          onClick={() => handleAction(opt.id)}
+        <button
+          aria-label="Add a room"
+          onClick={() => setModalOpen(true)}
           style={{
+            width: FAB_SIZE,
+            height: FAB_SIZE,
+            borderRadius: '50%',
+            border: 'none',
+            cursor: 'pointer',
+            background: bgMain,
+            boxShadow: `0 0 0 1.5px rgba(${glowColor},0.4), 0 4px 20px rgba(${glowColor},0.4), 0 0 30px rgba(${glowColor},0.15)`,
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
-            height: OPTION_H,
-            padding: '0 16px 0 12px',
-            background: optionBg,
-            border: `1.5px solid ${optionBorder}`,
-            borderRadius: OPTION_H / 2,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            backdropFilter: 'blur(20px)',
-            boxShadow: `0 4px 16px rgba(${glowColor},0.25), 0 0 0 1px rgba(${glowColor},0.1)`,
-            opacity: open ? 1 : 0,
-            transform: open
-              ? 'translateY(0) scale(1)'
-              : 'translateY(-8px) scale(0.92)',
-            transition: open
-              ? `opacity 180ms ease ${i * 55}ms, transform 220ms cubic-bezier(0.34,1.56,0.64,1) ${i * 55}ms`
-              : `opacity 120ms ease ${(OPTIONS.length - 1 - i) * 40}ms, transform 150ms ease ${(OPTIONS.length - 1 - i) * 40}ms`,
-            pointerEvents: open ? 'auto' : 'none',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transition: 'box-shadow 250ms ease, transform 200ms cubic-bezier(0.34,1.56,0.64,1)',
+            outline: 'none',
+            position: 'relative',
+            overflow: 'visible',
           }}
           onMouseEnter={e => {
-            e.currentTarget.style.background = isNightMode
-              ? 'rgba(120,80,255,0.18)'
-              : 'rgba(59,130,246,0.18)'
-            e.currentTarget.style.borderColor = isNightMode
-              ? 'rgba(120,80,255,0.6)'
-              : 'rgba(59,130,246,0.6)'
+            e.currentTarget.style.boxShadow = `0 0 0 2px rgba(${glowColor},0.55), 0 6px 28px rgba(${glowColor},0.55), 0 0 40px rgba(${glowColor},0.22)`
+            e.currentTarget.style.transform = 'scale(1.08)'
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.background = optionBg
-            e.currentTarget.style.borderColor = optionBorder
+            e.currentTarget.style.boxShadow = `0 0 0 1.5px rgba(${glowColor},0.4), 0 4px 20px rgba(${glowColor},0.4), 0 0 30px rgba(${glowColor},0.15)`
+            e.currentTarget.style.transform = 'scale(1)'
           }}
         >
+          {/* Glow ring animation */}
           <span style={{
-            fontSize: 14,
-            lineHeight: 1,
-            filter: `drop-shadow(0 0 4px rgba(${glowColor},0.6))`,
-          }}>
-            {opt.icon}
-          </span>
-          <span style={{
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: "'Inter Tight', 'Inter', sans-serif",
-            letterSpacing: '0.06em',
-            color: isNightMode ? 'rgba(200,180,255,0.9)' : 'rgba(180,210,255,0.9)',
-            userSelect: 'none',
-          }}>
-            {opt.label}
-          </span>
-        </div>
-      ))}
+            position: 'absolute',
+            inset: -3,
+            borderRadius: '50%',
+            border: `2px solid rgba(${glowColor},0.3)`,
+            animation: 'fabRingPulse 2.4s ease-in-out infinite',
+            pointerEvents: 'none',
+          }} />
+          {/* + icon */}
+          <svg
+            width={22} height={22}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgba(255,255,255,0.95)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            style={{ filter: `drop-shadow(0 0 6px rgba(${glowColor},0.8))` }}
+          >
+            <line x1="12" y1="4" x2="12" y2="20" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+          </svg>
+        </button>
+      </div>
 
-      {/* Keyframes injected once */}
       <style>{`
         @keyframes fabRingPulse {
           0%, 100% { opacity: 0.6; transform: scale(1); }
@@ -201,14 +98,16 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
         }
       `}</style>
 
-      {/* Create Room Modal -- rendered outside FAB container so it covers full viewport */}
+      {/* Role picker + name modal */}
       <CreateRoomModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        initialMode={modalMode}
         isNightMode={isNightMode}
-        onRoomCreated={onRoomCreated}
+        onRoomCreated={(room) => {
+          setModalOpen(false)
+          onRoomCreated?.(room)
+        }}
       />
-    </div>
+    </>
   )
 }
