@@ -3810,16 +3810,6 @@ function MobileDrawer({
         </div>
       </div>
 
-      {/* Right Now Bar -- always visible above tabs, at ALL drawer snap states.
-          Layout priority: drag handle > agent header > RNB > tabs > content.
-          Only renders when there are active tasks -- zero tasks = no strip. */}
-      {rightNowTasks && rightNowTasks.filter(t => !t.isDoneAwaitingApproval).length > 0 && (
-        <MiniNowBar
-          tasks={rightNowTasks.filter(t => !t.isDoneAwaitingApproval)}
-          onNavigateToAgent={onNavigateToAgent}
-        />
-      )}
-
       {/* Tab bar (Chat / List / Info / Files) */}
       <div style={{
         display: 'flex',
