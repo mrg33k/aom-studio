@@ -358,20 +358,19 @@ export default function GameHUD({
     } catch {}
   }, [])
 
-  // Daytime palette: WHITE glass with vibrant blue accents (matches bright isometric office)
-  // Night mode: dark blue glass (stays as-is)
+  // Daytime palette: vibrant blue glass (NOT white). Night: dark blue glass.
   const isDaytime = isNightMode === false
-  const hudPanelBg = isDaytime ? 'rgba(255,255,255,0.94)' : HUD.panelBg
-  const hudPanelBorder = isDaytime ? 'rgba(59,130,246,0.28)' : HUD.panelBorder
+  const hudPanelBg = isDaytime ? 'rgba(30,80,180,0.88)' : HUD.panelBg
+  const hudPanelBorder = isDaytime ? 'rgba(59,130,246,0.45)' : HUD.panelBorder
   const hudPanelShadow = isDaytime
-    ? '0 -8px 40px rgba(59,130,246,0.12), 0 -2px 0 rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.9)'
+    ? '0 -8px 40px rgba(30,80,180,0.25), 0 -2px 0 rgba(59,130,246,0.35), inset 0 1px 0 rgba(120,180,255,0.3)'
     : HUD.panelShadow
   const hudBlueOverlay = isDaytime
-    ? 'linear-gradient(180deg, rgba(59,130,246,0.04) 0%, rgba(59,130,246,0.02) 50%, transparent 100%)'
+    ? 'linear-gradient(180deg, rgba(59,130,246,0.08) 0%, rgba(30,80,180,0.04) 50%, transparent 100%)'
     : HUD.blueOverlay
-  const hudDivider = isDaytime ? 'rgba(59,130,246,0.12)' : HUD.divider
-  const hudTextPrimary = isDaytime ? '#0F172A' : HUD.textPrimary
-  const hudTextMuted = isDaytime ? '#4A6585' : HUD.textMuted
+  const hudDivider = isDaytime ? 'rgba(120,180,255,0.25)' : HUD.divider
+  const hudTextPrimary = isDaytime ? '#F1F5F9' : HUD.textPrimary
+  const hudTextMuted = isDaytime ? 'rgba(200,220,255,0.7)' : HUD.textMuted
   const hudAccent = isDaytime ? '#2563EB' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
   const [pillOverflowOpen, setPillOverflowOpen] = useState(false)
