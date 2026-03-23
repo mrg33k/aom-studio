@@ -3858,7 +3858,9 @@ function MobileDrawer({
         flex: 1, overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
         touchAction: 'auto',
-        paddingBottom: isFullSnap ? 'env(safe-area-inset-bottom, 0px)' : 0,
+        // MobileFixedInput portal handles its own SAB at the input bar level.
+        // paddingBottom here creates a 34px gap between TASK COMPLETE and the input at full-snap.
+        paddingBottom: 0,
       }}>
         {activeTab === 'chat' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
