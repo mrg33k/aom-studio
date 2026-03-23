@@ -843,7 +843,7 @@ export default function GameHUD({
       onTouchEnd={handleHudSwipeEnd}
       style={{
         position: 'fixed',
-        bottom: 0,
+        bottom: isMobile ? 75 : 0,
         left: 0, right: 0,
         zIndex: 40,
         pointerEvents: 'auto',
