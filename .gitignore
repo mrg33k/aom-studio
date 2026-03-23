@@ -7,3 +7,4 @@ dist
 .env.vercel.local
 .env.prod
 .env.seed
+.env*.local

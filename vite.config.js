@@ -6,6 +6,8 @@ import os from 'os'
 import { execFile, spawn } from 'child_process'
 import { WebSocketServer } from 'ws'
 import { watch } from 'chokidar'
+import https from 'https'
+import http from 'http'
 
 // AOM-EA local filesystem root for localhost dashboard mode
 const AOM_EA_ROOT = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA'
@@ -1445,7 +1447,7 @@ function localDashboardPlugin() {
         // Helper: check HTTP status of a URL
         function httpCheck(url) {
           return new Promise((resolve) => {
-            const mod = url.startsWith('https') ? require('https') : require('http')
+            const mod = url.startsWith('https') ? https : http
             const req = mod.get(url, { timeout: 8000 }, (resp) => {
               resolve({ ok: resp.statusCode >= 200 && resp.statusCode < 400, status: resp.statusCode })
             })
@@ -1514,20 +1516,41 @@ function localDashboardPlugin() {
               exitCode: promoteResult.code,
             }
 
-            // 5. READ TASK STATUS SNAPSHOT
+            // 5. CLEAN + READ TASK STATUS SNAPSHOT
+            // Remove ghost WORKING/QUEUED entries older than 2 hours.
+            // These accumulate when sessions die without marking tasks done.
+            const GHOST_THRESHOLD_MS = 2 * 60 * 60 * 1000 // 2 hours
             try {
               const tsPath = resolve(AOM_EA_ROOT, 'context', 'task-status.jsonl')
               if (fs.existsSync(tsPath)) {
-                const lines = fs.readFileSync(tsPath, 'utf-8')
-                  .split('\n')
-                  .filter(l => l.trim() && !l.startsWith('#'))
+                const raw = fs.readFileSync(tsPath, 'utf-8')
+                const commentLines = raw.split('\n').filter(l => l.startsWith('#'))
+                const lines = raw.split('\n').filter(l => l.trim() && !l.startsWith('#'))
                 const entries = lines.map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
-                report.taskStatus = { count: entries.length, entries }
+                const now = Date.now()
+                const ghosts = entries.filter(e => {
+                  if (!e.timestamp) return false
+                  const age = now - new Date(e.timestamp).getTime()
+                  return (e.status === 'WORKING' || e.status === 'QUEUED') && age > GHOST_THRESHOLD_MS
+                })
+                const kept = entries.filter(e => !ghosts.includes(e))
+                if (ghosts.length > 0) {
+                  const cleaned = [
+                    ...commentLines,
+                    ...kept.map(e => JSON.stringify(e)),
+                  ].join('\n') + (kept.length > 0 || commentLines.length > 0 ? '\n' : '')
+                  fs.writeFileSync(tsPath, cleaned, 'utf-8')
+                }
+                report.taskStatus = {
+                  count: kept.length,
+                  ghostsCleared: ghosts.length,
+                  entries: kept,
+                }
               } else {
-                report.taskStatus = { count: 0, entries: [] }
+                report.taskStatus = { count: 0, ghostsCleared: 0, entries: [] }
               }
             } catch (e) {
-              report.taskStatus = { count: 0, entries: [], error: e.message }
+              report.taskStatus = { count: 0, ghostsCleared: 0, entries: [], error: e.message }
             }
 
             res.setHeader('Content-Type', 'application/json')
