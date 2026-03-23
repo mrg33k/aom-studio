@@ -7,6 +7,85 @@ import React, { useState } from 'react'
 import { ChevronDown, ChevronRight, Zap, ListTodo, Activity, BookmarkPlus, ArrowRight } from 'lucide-react'
 import { getAgentKnowledge } from '../agentKnowledge.js'
 
+// ---- Stats bar (computed from knowledge data + live agentStatus) ------------------
+
+function StatsBar({ knowledge, agentStatus, accentColor, isDaytime }) {
+  const status = agentStatus?.status || 'IDLE'
+  const statusColor = status === 'ACTIVE' ? '#22C55E' : status === 'STUCK' ? '#EF4444' : '#6B7280'
+  const stats = [
+    { label: 'Skills', value: knowledge.skills?.length ?? 0 },
+    { label: 'Recipes', value: knowledge.executionRecipes?.length ?? 0 },
+    { label: 'Work', value: knowledge.bestWork?.length ?? 0 },
+    { label: 'Gaps', value: knowledge.gaps?.length ?? 0, warn: true },
+  ]
+  return (
+    <div style={{ marginBottom: 14 }}>
+      {/* Status badge */}
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '3px 10px',
+        borderRadius: 20,
+        background: `${statusColor}12`,
+        border: `1px solid ${statusColor}30`,
+        marginBottom: 10,
+      }}>
+        <span style={{
+          width: 6, height: 6, borderRadius: '50%',
+          background: statusColor,
+          flexShrink: 0,
+          boxShadow: status === 'ACTIVE' ? `0 0 6px ${statusColor}` : 'none',
+        }} />
+        <span style={{
+          color: statusColor,
+          fontSize: 10,
+          fontFamily: "'JetBrains Mono', monospace",
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+        }}>
+          {status}
+        </span>
+      </div>
+      {/* Stat chips */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        {stats.map(({ label, value, warn }) => (
+          <div key={label} style={{
+            flex: 1,
+            padding: '8px 4px',
+            borderRadius: 8,
+            background: warn && value > 0 ? 'rgba(239,68,68,0.07)' : `${accentColor}0A`,
+            border: `1px solid ${warn && value > 0 ? 'rgba(239,68,68,0.2)' : `${accentColor}1A`}`,
+            textAlign: 'center',
+          }}>
+            <div style={{
+              color: warn && value > 0 ? '#EF4444' : accentColor,
+              fontSize: 18,
+              fontWeight: 800,
+              fontFamily: "'JetBrains Mono', monospace",
+              lineHeight: 1,
+            }}>
+              {value}
+            </div>
+            <div style={{
+              color: '#6B7280',
+              fontSize: 9,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              marginTop: 3,
+            }}>
+              {label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ---- Section header with collapse toggle ----------------------------------------
 
 function SectionHeader({ label, isOpen, onToggle, accentColor, isDaytime }) {
@@ -232,6 +311,11 @@ export default function AgentInfoTab({
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+
+      {/* ---- STATS BAR ---- */}
+      <StatsBar knowledge={knowledge} agentStatus={agentStatus} accentColor={accent} isDaytime={isDaytime} />
+
+      {sectionDivider}
 
       {/* ---- IDENTITY ---- */}
       <div style={{ marginBottom: 12 }}>
