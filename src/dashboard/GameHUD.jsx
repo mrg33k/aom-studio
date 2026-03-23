@@ -77,12 +77,12 @@ import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 // Done-task approval is handled by the pinned TASK COMPLETE box in the sidebar.
 function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify }) {
   const isDaytime = isNightMode === false
-  // Match TaskPanel dark glass theme -- same bg/text as other expanded panels
-  const bg = isDaytime ? 'rgba(15,25,50,0.85)' : 'rgba(8,14,28,0.95)'
-  const border = isDaytime ? 'rgba(59,130,246,0.30)' : 'rgba(100,180,255,0.22)'
-  const textPrimary = isDaytime ? '#F1F5F9' : '#EDF2FA'
-  const textMuted = isDaytime ? '#94B8D8' : '#8BA4C4'
-  const divider = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.10)'
+  // Daytime = white glass panel. Night = dark glass.
+  const bg = isDaytime ? 'rgba(255,255,255,0.96)' : 'rgba(8,14,28,0.95)'
+  const border = isDaytime ? 'rgba(59,130,246,0.28)' : 'rgba(100,180,255,0.22)'
+  const textPrimary = isDaytime ? '#0F172A' : '#EDF2FA'
+  const textMuted = isDaytime ? '#4A6585' : '#8BA4C4'
+  const divider = isDaytime ? 'rgba(59,130,246,0.10)' : 'rgba(100,180,255,0.10)'
 
 
 
@@ -99,7 +99,7 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
         border: `2px solid ${border}`,
         borderBottom: 'none',
         boxShadow: isDaytime
-          ? '0 -12px 48px rgba(0,0,0,0.3), inset 0 1px 0 rgba(100,180,255,0.12)'
+          ? '0 -12px 40px rgba(59,130,246,0.10), 0 -2px 0 rgba(59,130,246,0.15), inset 0 1px 0 rgba(255,255,255,0.9)'
           : '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(100,180,255,0.08)',
         maxHeight: 360,
         overflowY: 'auto',
@@ -358,20 +358,21 @@ export default function GameHUD({
     } catch {}
   }, [])
 
-  // Daytime palette: brighter blue glass with vibrant accents (distinct from night)
+  // Daytime palette: WHITE glass with vibrant blue accents (matches bright isometric office)
+  // Night mode: dark blue glass (stays as-is)
   const isDaytime = isNightMode === false
-  const hudPanelBg = isDaytime ? 'rgba(15,25,50,0.85)' : HUD.panelBg
-  const hudPanelBorder = isDaytime ? 'rgba(59, 130, 246, 0.3)' : HUD.panelBorder
+  const hudPanelBg = isDaytime ? 'rgba(255,255,255,0.94)' : HUD.panelBg
+  const hudPanelBorder = isDaytime ? 'rgba(59,130,246,0.28)' : HUD.panelBorder
   const hudPanelShadow = isDaytime
-    ? '0 -8px 48px rgba(0,0,0,0.3), 0 -2px 0 rgba(59,130,246,0.2), inset 0 1px 0 rgba(100,180,255,0.12)'
+    ? '0 -8px 40px rgba(59,130,246,0.12), 0 -2px 0 rgba(59,130,246,0.18), inset 0 1px 0 rgba(255,255,255,0.9)'
     : HUD.panelShadow
   const hudBlueOverlay = isDaytime
-    ? 'linear-gradient(180deg, rgba(59,130,246,0.10) 0%, rgba(59,130,246,0.04) 50%, transparent 100%)'
+    ? 'linear-gradient(180deg, rgba(59,130,246,0.04) 0%, rgba(59,130,246,0.02) 50%, transparent 100%)'
     : HUD.blueOverlay
-  const hudDivider = isDaytime ? 'rgba(100, 180, 255, 0.18)' : HUD.divider
-  const hudTextPrimary = isDaytime ? '#F1F5F9' : HUD.textPrimary
-  const hudTextMuted = isDaytime ? '#94B8D8' : HUD.textMuted
-  const hudAccent = isDaytime ? '#60A5FA' : HUD.accent
+  const hudDivider = isDaytime ? 'rgba(59,130,246,0.12)' : HUD.divider
+  const hudTextPrimary = isDaytime ? '#0F172A' : HUD.textPrimary
+  const hudTextMuted = isDaytime ? '#4A6585' : HUD.textMuted
+  const hudAccent = isDaytime ? '#2563EB' : HUD.accent
   const [expandedProject, setExpandedProject] = useState(null)
   const [pillOverflowOpen, setPillOverflowOpen] = useState(false)
   const overflowBtnRef = useRef(null)
@@ -1088,7 +1089,7 @@ export default function GameHUD({
                   <span style={{
                     fontFamily: "'Inter', system-ui, sans-serif",
                     fontSize: 13, fontWeight: 600,
-                    color: isTickerPending ? '#60A5FA' : task.done ? '#4ADE80' : (isDaytime ? '#F1F5F9' : HUD.textPrimary),
+                    color: isTickerPending ? (isDaytime ? '#2563EB' : '#60A5FA') : task.done ? '#4ADE80' : hudTextPrimary,
                     whiteSpace: 'nowrap',
                     maxWidth: 200,
                     overflow: 'hidden',
@@ -1492,19 +1493,19 @@ export default function GameHUD({
           zIndex: 9999,
           background: isNightMode
             ? 'rgba(8,14,28,0.95)'
-            : 'rgba(15,25,50,0.85)',
-          border: isNightMode ? '2px solid rgba(59,130,246,0.35)' : '2px solid rgba(59,130,246,0.30)',
+            : 'rgba(255,255,255,0.97)',
+          border: isNightMode ? '2px solid rgba(59,130,246,0.35)' : '2px solid rgba(59,130,246,0.25)',
           borderRadius: 10, padding: '6px 0', minWidth: 240, maxWidth: 320,
           boxShadow: isNightMode
             ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
-            : '0 8px 32px rgba(59,130,246,0.15), 0 0 0 1px rgba(59,130,246,0.10)',
+            : '0 8px 32px rgba(59,130,246,0.12), 0 0 0 1px rgba(59,130,246,0.08)',
           backdropFilter: 'blur(20px)',
         }}>
           {/* Task name header */}
           <div style={{
             padding: '8px 14px 6px',
             fontSize: 12, fontWeight: 700,
-            color: '#94A3B8',
+            color: isNightMode ? '#94A3B8' : '#4A6585',
             fontFamily: "'Inter', sans-serif",
             borderBottom: '1px solid rgba(59,130,246,0.15)',
             marginBottom: 4,
@@ -1544,7 +1545,7 @@ export default function GameHUD({
 
           <div style={{
             padding: '5px 14px', fontSize: 10, fontWeight: 700,
-            color: isNightMode ? '#475569' : '#6B8AB0',
+            color: isNightMode ? '#475569' : '#6B7C9A',
             fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.08em',
           }}>Move to pill</div>
           {(projects || []).filter(p => p.name !== hudTaskCtx.project?.name).slice(0, 5).map(p => (
