@@ -529,7 +529,9 @@ export function useDataPipe(parsePunchList) {
 
         // Build punchData from Supabase tasks so pills render on production.
         // Group tasks by project into the { projects: [], todayTasks: [] } format.
-        if (data.tasks && data.tasks.length > 0) {
+        // S3 FIX: DEFAULT_PROJECTS is AOM-only. Every other client sees only their
+        // own Supabase tasks as project pills -- no AOM client data leaks.
+        {
           const projectMap = new Map()
           const todayTasks = []
 
@@ -548,9 +550,10 @@ export function useDataPipe(parsePunchList) {
           }
           const getColor = (slug) => PROD_COLORS[slug] || hashColor(slug)
 
-          for (const task of data.tasks) {
-            const projectKey = task.project || task.section || 'general'
-            const slug = projectKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          if (data.tasks && data.tasks.length > 0) {
+            for (const task of data.tasks) {
+              const projectKey = task.project || task.section || 'general'
+              const slug = projectKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
             if (!projectMap.has(slug)) {
               projectMap.set(slug, {
@@ -576,37 +579,40 @@ export function useDataPipe(parsePunchList) {
             }
             proj.tasks.push(taskObj)
 
-            if (slug === 'schedule' && !isDone) {
-              todayTasks.push({ ...taskObj, project: 'Schedule' })
+              if (slug === 'schedule' && !isDone) {
+                todayTasks.push({ ...taskObj, project: 'Schedule' })
+              }
             }
           }
 
-          // Ensure default project pills always exist even without tasks.
+          // S3 FIX: Default project pills are AOM-only.
           // Primary source: Supabase projects table (live, editable without a deploy).
-          // Fallback: hardcoded list (used if projectDefs is empty/missing due to API error or missing migration).
-          const DEFAULT_PROJECTS_FALLBACK = [
-            { name: 'Corner', section: 'corner', color: '#3B9EFF', icon: 'project' },
-            { name: 'Ambition', section: 'ambition-mechanical', color: '#F59E0B', icon: 'project' },
-            { name: 'KOHRS', section: 'kohrs', color: '#EF4444', icon: 'project' },
-            { name: 'ISA Energy', section: 'isa-energy', color: '#F97316', icon: 'project' },
-            { name: 'Skylar', section: 'skylar', color: '#EC4899', icon: 'project' },
-            { name: 'Outreach', section: 'outreach', color: '#EF4444', icon: 'project' },
-            { name: 'Included Health', section: 'included-health', color: '#EF4444', icon: 'project' },
-            { name: 'Brandon Wiley', section: 'brandon-wiley', color: '#9C27B0', icon: 'project' },
-            { name: 'NABI', section: 'nabi', color: '#F97316', icon: 'project' },
-            { name: 'LBX', section: 'lbx', color: '#9C27B0', icon: 'project' },
-          ]
-          const liveProjectDefs = (data.projectDefs || [])
-            .map(p => ({ name: p.name, section: p.slug, color: p.color || '#888', icon: p.icon || 'project' }))
-          const defaultsToApply = liveProjectDefs.length > 0 ? liveProjectDefs : DEFAULT_PROJECTS_FALLBACK
-          for (const dp of defaultsToApply) {
-            if (!projectMap.has(dp.section)) {
-              projectMap.set(dp.section, { ...dp, tasks: [] })
+          // Fallback: hardcoded list, but ONLY for AOM account.
+          // Prospects and new accounts see only their own data.
+          if (clientId === 'aom') {
+            const AOM_DEFAULT_PROJECTS_FALLBACK = [
+              { name: 'Corner', section: 'corner', color: '#3B9EFF', icon: 'project' },
+              { name: 'Ambition', section: 'ambition-mechanical', color: '#F59E0B', icon: 'project' },
+              { name: 'KOHRS', section: 'kohrs', color: '#EF4444', icon: 'project' },
+              { name: 'ISA Energy', section: 'isa-energy', color: '#F97316', icon: 'project' },
+              { name: 'Skylar', section: 'skylar', color: '#EC4899', icon: 'project' },
+              { name: 'Outreach', section: 'outreach', color: '#EF4444', icon: 'project' },
+              { name: 'Included Health', section: 'included-health', color: '#EF4444', icon: 'project' },
+              { name: 'Brandon Wiley', section: 'brandon-wiley', color: '#9C27B0', icon: 'project' },
+              { name: 'NABI', section: 'nabi', color: '#F97316', icon: 'project' },
+              { name: 'LBX', section: 'lbx', color: '#9C27B0', icon: 'project' },
+            ]
+            const liveProjectDefs = (data.projectDefs || [])
+              .map(p => ({ name: p.name, section: p.slug, color: p.color || '#888', icon: p.icon || 'project' }))
+            const defaultsToApply = liveProjectDefs.length > 0 ? liveProjectDefs : AOM_DEFAULT_PROJECTS_FALLBACK
+            for (const dp of defaultsToApply) {
+              if (!projectMap.has(dp.section)) {
+                projectMap.set(dp.section, { ...dp, tasks: [] })
+              }
             }
           }
+
           setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
-        } else {
-          setPunchData({ projects: [], todayTasks: [] })
         }
 
         setPunchLoading(false)
