@@ -8803,11 +8803,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
     <div
       style={{
         ...(isMobile
-          ? { flex: 1, width: '100%', minWidth: 0, maxWidth: '100%' }
-          : { flex: isExtended ? '0 0 65%' : '0 0 30%', width: isExtended ? '65%' : '30%', minWidth: 300, maxWidth: isExtended ? '65%' : '40%' }
+          ? { flex: 1, width: '100%', minWidth: 0, maxWidth: '100%', minHeight: 0 }
+          : { flex: isExtended ? '0 0 65%' : '0 0 30%', width: isExtended ? '65%' : '30%', minWidth: 300, maxWidth: isExtended ? '65%' : '40%', height: '100%' }
         ),
         flexShrink: 0,
-        height: '100%',
         background: isNightMode
           ? 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)'
           : 'linear-gradient(180deg, rgba(20,40,70,0.97) 0%, rgba(24,48,82,0.96) 50%, rgba(20,40,70,0.97) 100%)',
@@ -10688,7 +10687,12 @@ function CameraControls({ cameraZoom, setCameraZoom, isOverview, setIsOverview, 
 
 // ---- MAIN GAME DASHBOARD ---------------------------------------------------
 export default function GameDashboard() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem('dash-auth') === '1')
+  // S1 FIX: Auth gate is Supabase, not sessionStorage.
+  // sessionStorage.dash-auth is a UI cache only -- it suppresses the loading flash on page refresh
+  // but the GATE is supabase.auth.getUser(). On production, we verify Supabase on mount and strip
+  // the cache if there's no real session. Setting sessionStorage in DevTools bypasses nothing.
+  const [authed, setAuthed] = useState(() => IS_LOCAL ? sessionStorage.getItem('dash-auth') === '1' : false)
+  const [authChecking, setAuthChecking] = useState(!IS_LOCAL) // true while Supabase auth check is in flight
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('corner_onboarded'))
   const [currentUser, setCurrentUser] = useState(null)
   const [hudOpen, setHudOpen] = useState(false)
@@ -10706,17 +10710,24 @@ export default function GameDashboard() {
   const isTablet = useIsTablet() // iPad/tablet (768-1024px): compress sidebar profile header
 
   // Load Supabase user on mount + watch for auth state changes.
+  // On production: Supabase confirmation is the GATE. sessionStorage is just a cache.
   // Derives client_id from user metadata (world field) for multi-tenant data isolation.
   // Also sets window.__cornerClientId for child components (e.g. TaskContextMenu) that
   // can't import getClientId directly without circular deps.
   useEffect(() => {
+    if (IS_LOCAL) {
+      // Localhost: skip Supabase check, use existing password gate
+      window.__cornerClientId = getClientId()
+      return
+    }
+    // Production: Supabase is the gate
     getCurrentUser().then(user => {
+      setAuthChecking(false)
       if (user) {
         setCurrentUser(user)
         setClientIdFromUser(user)
-        // Supabase-authenticated users bypass the legacy PasswordGate.
-        sessionStorage.setItem('dash-auth', '1')
         setAuthed(true)
+        sessionStorage.setItem('dash-auth', '1') // cache for refresh UX
         // Existing accounts: skip onboarding. Only show it for accounts
         // created in the last 10 minutes (brand new signups).
         if (user.created_at) {
@@ -10726,8 +10737,15 @@ export default function GameDashboard() {
             setShowOnboarding(false)
           }
         }
+      } else {
+        setAuthed(false)
+        sessionStorage.removeItem('dash-auth') // clear stale cache
       }
       window.__cornerClientId = getClientId()
+    }).catch(() => {
+      setAuthChecking(false)
+      setAuthed(false)
+      sessionStorage.removeItem('dash-auth')
     })
     const unsubscribe = onAuthStateChange((session) => {
       const user = session?.user || null
@@ -10735,8 +10753,11 @@ export default function GameDashboard() {
       setClientIdFromUser(user)
       window.__cornerClientId = getClientId()
       if (user) {
-        sessionStorage.setItem('dash-auth', '1')
         setAuthed(true)
+        sessionStorage.setItem('dash-auth', '1')
+      } else {
+        setAuthed(false)
+        sessionStorage.removeItem('dash-auth')
       }
     })
     return unsubscribe
@@ -12377,8 +12398,23 @@ export default function GameDashboard() {
     return () => clearInterval(interval)
   }, [showRelayDebug])
 
+  // S1: While Supabase auth check is in flight, show a minimal loading screen.
+  // This prevents the PasswordGate from flashing for already-authenticated users.
+  if (authChecking) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, background: '#0A0D1A',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontFamily: "'Inter', sans-serif" }}>
+          Loading...
+        </div>
+      </div>
+    )
+  }
+
   if (!authed) {
-    return <PasswordGate onAuth={() => setAuthed(true)} />
+    return <PasswordGate onAuth={() => { setAuthed(true); sessionStorage.setItem('dash-auth', '1') }} />
   }
 
   // TODO(bobby): DREAM HUD TARGET -- Steffen designing ONE definitive HUD visual target from ALL Patrik feedback. When delivered, pixel-match it exactly. Key specs: (1) NO bottom bar (top bar + sidebar ONLY), (2) sidebar full height, seamless column, chat input at bottom, (3) 70/30 layout (game/sidebar), (4) project pills scrollable in top bar, category labels (CLIENT/PROJECT/OUTREACH), (5) stat pills compact, (6) Vegas energy sidebar (blue glass, glow tabs), (7) chat matching chat-view-full.png (chronological, avatars, source labels), (8) top bar: Corner. logo + stat pills + search + notifications, NO mode switcher, (9) SimCity + Trello DNA, (10) daytime bright palette, (11) nothing hiding, everything visible. This is THE north star. No interpretation. Build the picture. Ref: Patrik directive lines 170-182. [SURVIVES: HUD layout spec. The 70/30 split becomes engine-canvas/React-sidebar. Layout logic stays, game viewport becomes engine canvas.]
