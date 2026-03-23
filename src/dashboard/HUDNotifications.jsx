@@ -239,34 +239,38 @@ function useAgentNotifications() {
   return { notifications, dismiss, dismissAll }
 }
 
-// Badge component (sits on the chat icon or bell)
+// Badge component (sits on the chat icon or bell) -- pill with "N updates" label
 export function NotificationBadge({ count, style }) {
   if (!count || count <= 0) return null
 
+  const label = count > 9 ? '9+ updates' : `${count} ${count === 1 ? 'update' : 'updates'}`
+
   return (
     <motion.div
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+      key={count} // re-animate on count change
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 600, damping: 14 }}
       style={{
-        position: 'absolute', top: -4, right: -4,
-        minWidth: 18, height: 18, borderRadius: 9,
+        position: 'absolute', top: -10, right: -6,
+        height: 18, borderRadius: 10,
         background: '#EF4444',
         border: `2px solid ${HUD_COLORS.panelBgSolid}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '0 4px',
-        boxShadow: '0 0 8px rgba(239,68,68,0.5)',
-        animation: 'hudBadgePulse 2s ease-in-out infinite',
+        padding: '0 7px',
+        boxShadow: '0 0 10px rgba(239,68,68,0.6), 0 0 20px rgba(239,68,68,0.25)',
+        animation: 'hudBadgePulse 2.5s ease-in-out infinite',
         zIndex: 5,
+        whiteSpace: 'nowrap',
         ...style,
       }}
     >
       <span style={{
-        fontSize: 12, fontWeight: 800, color: '#FFF',
+        fontSize: 10, fontWeight: 800, color: '#FFF',
         fontFamily: "'Inter Tight', sans-serif",
-        lineHeight: 1, letterSpacing: '-0.02em',
+        lineHeight: 1, letterSpacing: '0.01em',
       }}>
-        {count > 9 ? '9+' : count}
+        {label}
       </span>
     </motion.div>
   )
@@ -517,7 +521,20 @@ export function HUDBellButton({ onClick }) {
   const { unreadCount, clearBadge } = useRelayBadge()
   const { notifications } = useAgentNotifications()
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [glowing, setGlowing] = useState(false)
+  const prevCountRef = useRef(0)
   const totalCount = unreadCount + notifications.length
+
+  // Trigger glow animation when new notifications arrive
+  useEffect(() => {
+    if (totalCount > prevCountRef.current) {
+      setGlowing(true)
+      const t = setTimeout(() => setGlowing(false), 2000)
+      prevCountRef.current = totalCount
+      return () => clearTimeout(t)
+    }
+    prevCountRef.current = totalCount
+  }, [totalCount])
 
   const handleClick = useCallback(() => {
     setHistoryOpen(prev => {
@@ -530,6 +547,10 @@ export function HUDBellButton({ onClick }) {
     <div style={{ position: 'relative' }}>
       <motion.button
         onClick={handleClick}
+        animate={glowing ? {
+          scale: [1, 1.15, 1.05, 1],
+          transition: { duration: 0.4, ease: 'easeOut' }
+        } : {}}
         whileHover={{ scale: 1.1, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
         whileTap={{ scale: 0.9 }}
         style={{
@@ -540,10 +561,13 @@ export function HUDBellButton({ onClick }) {
           color: historyOpen ? HUD_COLORS.accent : totalCount > 0 ? HUD_COLORS.accent : HUD_COLORS.textMuted,
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0, transition: 'all 150ms ease',
+          boxShadow: glowing
+            ? '0 0 16px rgba(59,158,255,0.7), 0 0 32px rgba(59,158,255,0.3)'
+            : totalCount > 0 ? '0 0 8px rgba(59,158,255,0.2)' : 'none',
         }}
         title={totalCount > 0 ? `${totalCount} notification${totalCount > 1 ? 's' : ''}` : 'Notification history'}
       >
-        <Zap size={15} />
+        <Bell size={16} />
         <NotificationBadge count={historyOpen ? 0 : totalCount} />
       </motion.button>
 
@@ -681,10 +705,10 @@ export function HUDToasts() {
   )
 }
 
-// CSS for badge pulse animation
+// CSS for badge pulse animation + bell glow
 export const HUD_NOTIFICATION_STYLES = `
   @keyframes hudBadgePulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(239,68,68,0.6), 0 0 20px rgba(239,68,68,0.25); }
+    50% { transform: scale(1.08); box-shadow: 0 0 16px rgba(239,68,68,0.8), 0 0 30px rgba(239,68,68,0.4); }
   }
 `
