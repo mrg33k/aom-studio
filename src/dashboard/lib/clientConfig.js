@@ -13,6 +13,10 @@
 
 const DEFAULT_CLIENT_ID = 'aom'
 
+// sessionStorage key for admin world override.
+// Takes priority over auth so admins can context-switch without re-login.
+const WORLD_OVERRIDE_KEY = 'corner-world-override'
+
 // In-memory cache: populated by setClientIdFromUser() after auth loads.
 // Synchronous reads from getClientId() see this immediately.
 let _authClientId = null
@@ -37,10 +41,19 @@ export function setClientIdFromUser(user) {
 export function getClientId() {
   if (typeof window === 'undefined') return DEFAULT_CLIENT_ID
 
-  // 1. Auth-derived client_id (set by setClientIdFromUser after login)
+  // 1. Admin world override (sessionStorage): persists across reload without re-login.
+  //    Admins set this via the world switcher to context-switch into any client.
+  try {
+    const override = sessionStorage.getItem(WORLD_OVERRIDE_KEY)
+    if (override && override.trim()) return override.trim().toLowerCase()
+  } catch {
+    // ignore
+  }
+
+  // 2. Auth-derived client_id (set by setClientIdFromUser after login)
   if (_authClientId) return _authClientId
 
-  // 2. URL param takes priority for preview / admin overrides
+  // 3. URL param for preview / unauthenticated overrides
   try {
     const params = new URLSearchParams(window.location.search)
     const urlClient = params.get('client')
@@ -49,8 +62,28 @@ export function getClientId() {
     // ignore
   }
 
-  // 3. Default: AOM (our own instance)
+  // 4. Default: AOM (our own instance)
   return DEFAULT_CLIENT_ID
+}
+
+/**
+ * setWorldOverride(worldId) -- store or clear the admin world override.
+ * Call with null/undefined to clear (return to own world).
+ */
+export function setWorldOverride(worldId) {
+  if (!worldId) {
+    try { sessionStorage.removeItem(WORLD_OVERRIDE_KEY) } catch { /* ignore */ }
+  } else {
+    try { sessionStorage.setItem(WORLD_OVERRIDE_KEY, worldId.trim().toLowerCase()) } catch { /* ignore */ }
+  }
+}
+
+/**
+ * getUserWorld() -- the user's own world (auth-derived), ignoring any override.
+ * Use this to show "Return to My World" when an override is active.
+ */
+export function getUserWorld() {
+  return _authClientId || DEFAULT_CLIENT_ID
 }
 
 /**

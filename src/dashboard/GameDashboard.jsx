@@ -37,7 +37,7 @@ import briefsIndex from '../data/briefs-index.json'
 import { supabase, mapSupabaseMsg } from './lib/supabase.js'
 import { getCurrentUser, signOut as authSignOut, onAuthStateChange } from './lib/auth.js'
 import FilesTab from './FilesTab.jsx'
-import { getClientId, setClientIdFromUser } from './lib/clientConfig.js'
+import { getClientId, setClientIdFromUser, setWorldOverride, getUserWorld } from './lib/clientConfig.js'
 import { marked } from 'marked'
 import OnboardingGuide from './OnboardingGuide.jsx'
 import AgentInfoTab from './components/AgentInfoTab.jsx'
@@ -4352,7 +4352,7 @@ function WorldsModal({ isOpen, onClose, worlds, worldsLoading, onEnterWorld, cur
 }
 
 // ---- TASK HUD (top drawer) - aligned to Steffen c2-hud-spec ----------------
-function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks, onPrefs, onCreateWorld, worlds, worldsLoading, onEnterWorld, onOpenWorldsModal, onFetchWorlds, currentWorldId }) {
+function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks, onPrefs, onCreateWorld, worlds, worldsLoading, onEnterWorld, onOpenWorldsModal, onFetchWorlds, currentWorldId, onReturnToMyWorld }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
   const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done'
@@ -4536,16 +4536,44 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 }}
               >
                 {/* Menu header: current world */}
-                <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
-                    {(currentWorldId || 'aom').toUpperCase()}
-                  </div>
-                  {currentUser?.email && (
-                    <div style={{ fontSize: 11, color: '#475569', fontFamily: "'Inter', sans-serif", marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}>
-                      {currentUser.email}
+                {(() => {
+                  const myWorld = currentUser?.user_metadata?.world || 'aom'
+                  const isOverriding = currentWorldId && currentWorldId !== myWorld
+                  return (
+                    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ padding: '10px 14px 8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ fontSize: 11, fontWeight: 800, color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
+                            {(currentWorldId || 'aom').toUpperCase()}
+                          </div>
+                          {isOverriding && (
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#F59E0B', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 4, padding: '1px 5px', fontFamily: "'Inter', sans-serif", letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                              VIEWING
+                            </div>
+                          )}
+                        </div>
+                        {currentUser?.email && (
+                          <div style={{ fontSize: 11, color: '#475569', fontFamily: "'Inter', sans-serif", marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}>
+                            {currentUser.email}
+                          </div>
+                        )}
+                      </div>
+                      {isOverriding && (
+                        <button
+                          onClick={() => { onReturnToMyWorld?.(); setAomOpen(false) }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '7px 14px 10px', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', textAlign: 'left' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.07)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                        >
+                          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#F59E0B', fontFamily: "'Inter', sans-serif" }}>
+                            Return to {myWorld.toUpperCase()}
+                          </span>
+                        </button>
+                      )}
                     </div>
-                  )}
-                </div>
+                  )
+                })()}
 
                 {/* Preferences */}
                 {[
@@ -10770,11 +10798,23 @@ export default function GameDashboard() {
     setWorldsLoading(false)
   }, [worldsLoading])
 
-  // Enter a world by switching client_id via URL param
+  // Enter a world by setting a sessionStorage override -- no URL change, no re-login.
+  // The override takes priority over auth in getClientId(), so the switch is instant on reload.
   const handleEnterWorld = useCallback((world) => {
-    const url = new URL(window.location.href)
-    url.searchParams.set('client', world.world)
-    window.location.href = url.toString()
+    const myWorld = getUserWorld()
+    if (world.world === myWorld) {
+      // Clicking own world clears any active override (return to home)
+      setWorldOverride(null)
+    } else {
+      setWorldOverride(world.world)
+    }
+    window.location.reload()
+  }, [])
+
+  // Clear the world override and reload (return to own world)
+  const handleReturnToMyWorld = useCallback(() => {
+    setWorldOverride(null)
+    window.location.reload()
   }, [])
 
   // Right Now tasks: wire to useDataPipe (real-time from task-status.jsonl + agent-notifications.md)
@@ -12327,7 +12367,7 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 
