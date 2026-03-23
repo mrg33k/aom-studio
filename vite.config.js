@@ -1420,7 +1420,7 @@ function localDashboardPlugin() {
           return
         }
 
-        const STUDIO_ROOT = resolve(AOM_EA_ROOT, '..', 'aom-studio')
+        const STUDIO_ROOT = process.cwd() // vite always runs from the studio directory
         const AOM_EA_SCRIPTS = resolve(AOM_EA_ROOT, 'scripts')
         const report = {
           timestamp: new Date().toISOString(),
@@ -1539,15 +1539,24 @@ function localDashboardPlugin() {
                   if (!e.timestamp) return false
                   return (nowMs - new Date(e.timestamp).getTime()) > LAUNCH_STALE_MS
                 })
+                // Deduplicate by task_id -- keep last occurrence (most recent timestamp wins)
                 const live = lqEntries.filter(e => !stale.includes(e))
-                if (stale.length > 0) {
+                const seenIds = new Set()
+                const deduped = live.slice().reverse().filter(e => {
+                  if (!e.task_id) return true // no ID, keep as-is
+                  if (seenIds.has(e.task_id)) return false
+                  seenIds.add(e.task_id)
+                  return true
+                }).reverse()
+                const dupeCount = live.length - deduped.length
+                if (stale.length > 0 || dupeCount > 0) {
                   const cleaned = [
                     ...lqComments,
-                    ...live.map(e => JSON.stringify(e)),
+                    ...deduped.map(e => JSON.stringify(e)),
                   ].join('\n') + '\n'
                   fs.writeFileSync(lqPath, cleaned, 'utf-8')
                 }
-                report.launchQueue = { depth: live.length, staleCleared: stale.length }
+                report.launchQueue = { depth: deduped.length, staleCleared: stale.length, dupeCleared: dupeCount }
               } else {
                 report.launchQueue = { depth: 0, staleCleared: 0 }
               }

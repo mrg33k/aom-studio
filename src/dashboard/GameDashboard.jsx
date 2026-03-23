@@ -5266,6 +5266,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   else if (r.queueRefill?.status === 'empty') lines.push('queue empty')
                   else if (r.queueRefill?.ran) lines.push('queue checked')
                   if (r.launchQueue?.staleCleared > 0) lines.push(`${r.launchQueue.staleCleared} stale launch${r.launchQueue.staleCleared !== 1 ? 'es' : ''} cleared`)
+                  if (r.launchQueue?.dupeCleared > 0) lines.push(`${r.launchQueue.dupeCleared} dupe${r.launchQueue.dupeCleared !== 1 ? 's' : ''} removed`)
                   if (r.launchQueue?.depth > 0) lines.push(`${r.launchQueue.depth} launch${r.launchQueue.depth !== 1 ? 'es' : ''} queued`)
                   if (r.taskStatus?.ghostsCleared > 0) lines.push(`${r.taskStatus.ghostsCleared} ghost${r.taskStatus.ghostsCleared !== 1 ? 's' : ''} cleared`)
                   if (r.relayReset?.listenerRestarted) lines.push('listener restarted')
