@@ -9913,9 +9913,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           fontFamily: "'Inter', system-ui, sans-serif",
                           ...(isUser
                             ? {
-                                background: isDaytime ? 'rgba(59,130,246,0.14)' : 'rgba(59,130,246,0.12)',
+                                background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)',
                                 border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(59,130,246,0.25)'}`,
-                                color: isDaytime ? '#1E293B' : '#fff',
+                                color: '#F1F5F9',
                                 borderTopRightRadius: 4,
                               }
                             : {
