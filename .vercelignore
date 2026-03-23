@@ -1,0 +1,4 @@
+# Local-only dev API routes -- never needed in production
+# These are guarded by IS_LOCAL checks in the frontend and never called in production.
+# Excluding them reduces serverless function count.
+api/local/

@@ -202,7 +202,7 @@ function useDashboardData(interval = 30000) {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const lastRaw = useRef(null)
-  const endpoint = IS_LOCAL ? '/api/local/status' : '/api/dashboard/status'
+  const endpoint = IS_LOCAL ? '/api/local/status' : '/api/dashboard/supabase-status'
   const pollInterval = IS_LOCAL ? 5000 : interval
 
   const fetchData = useCallback(async () => {
