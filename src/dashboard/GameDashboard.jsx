@@ -3142,8 +3142,8 @@ function MobileFixedInput({
         borderTop: isNightMode
           ? '2px solid rgba(59,130,246,0.12)'
           : '2px solid rgba(59,130,246,0.18)',
-        padding: '12px 16px',
-        paddingBottom: kbOffset > 0 ? 12 : 'max(12px, env(safe-area-inset-bottom, 12px))',
+        padding: '8px 14px',
+        paddingBottom: kbOffset > 0 ? 8 : 'max(8px, env(safe-area-inset-bottom, 8px))',
       }}
     >
       {/* @ autocomplete dropdown */}
@@ -3305,9 +3305,9 @@ function MobileFixedInput({
             width: '100%',
             background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
             border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
-            borderRadius: 12,
-            padding: '14px 56px 14px 48px',
-            fontSize: 18, fontWeight: 400,
+            borderRadius: 10,
+            padding: '10px 52px 10px 44px',
+            fontSize: 15, fontWeight: 400,
             fontFamily: "'Inter', system-ui, sans-serif",
             color: isNightMode ? '#F1F5F9' : '#E2E8F0',
             outline: 'none',
@@ -3334,8 +3334,8 @@ function MobileFixedInput({
           type="submit"
           disabled={false}
           style={{
-            position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-            width: 44, height: 44, borderRadius: 12,
+            position: 'absolute', right: 5, top: '50%', transform: 'translateY(-50%)',
+            width: 36, height: 36, borderRadius: 9,
             background: chatInput?.trim()
               ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)'
               : 'rgba(59,130,246,0.12)',
@@ -3512,6 +3512,8 @@ function MobileDrawer({
   onFocusTaskHandled,
   // Poke: send a follow-up message when agent is slow to respond
   onPoke,
+  // Files tab: send a file from the files tab into the chat
+  onSendFileToChat,
 }) {
   const sheetRef = useRef(null)
   const dragStartY = useRef(0)
@@ -3691,6 +3693,7 @@ function MobileDrawer({
     { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'tasks', label: 'List', icon: ListTodo },
     { id: 'info', label: 'Info', icon: Activity },
+    { id: 'files', label: 'Files', icon: Folder },
   ]
 
   // At FULL snap, the sheet covers the mode bar so we need safe-area at bottom
@@ -3807,7 +3810,17 @@ function MobileDrawer({
         </div>
       </div>
 
-      {/* Tab bar (Chat / List / Info) */}
+      {/* Right Now Bar -- always visible above tabs, at ALL drawer snap states.
+          Layout priority: drag handle > agent header > RNB > tabs > content.
+          Only renders when there are active tasks -- zero tasks = no strip. */}
+      {rightNowTasks && rightNowTasks.filter(t => !t.isDoneAwaitingApproval).length > 0 && (
+        <MiniNowBar
+          tasks={rightNowTasks.filter(t => !t.isDoneAwaitingApproval)}
+          onNavigateToAgent={onNavigateToAgent}
+        />
+      )}
+
+      {/* Tab bar (Chat / List / Info / Files) */}
       <div style={{
         display: 'flex',
         borderBottom: '2px solid rgba(59, 130, 246, 0.15)',
@@ -3976,6 +3989,17 @@ function MobileDrawer({
                   onSnapChange('full')
                 }
               }}
+            />
+          </div>
+        )}
+
+        {activeTab === 'files' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+            <FilesTab
+              agentSlug={agentSlug}
+              clientId={null}
+              isNightMode={isNightMode}
+              onSendFileToChat={onSendFileToChat}
             />
           </div>
         )}
@@ -4362,7 +4386,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
   const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done' | 'error'
   const [unstuckReport, setUnstuckReport] = useState(null)
   const unstuckLockRef = useRef(false) // synchronous mutex -- prevents concurrent runs on rapid tap
-  const [teamName, setTeamName] = useState('aom')
+  const [teamName, setTeamName] = useState('Team')
   const [editingName, setEditingName] = useState(false)
   const teamRef = useRef(null)
   const [cornerConfig, setCornerConfig] = useState(null)
@@ -4428,7 +4452,10 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           ? '0 2px 12px rgba(0, 0, 0, 0.4)'
           : '0 2px 12px rgba(0,0,0,0.3), 0 1px 0 rgba(59,130,246,0.15)',
         display: 'flex', alignItems: 'center',
-        padding: isMobile ? '0 12px' : '0 20px',
+        // Right padding reserves space for the fixed Game/Board toggle (overlaid at top-right)
+        // Mobile: ~88px for toggle (2 icon-only buttons) + 10px gap = ~98px
+        // Desktop: ~120px for toggle (2 labeled buttons) + 16px gap = ~136px
+        padding: isMobile ? '0 98px 0 12px' : '0 140px 0 20px',
         gap: isMobile ? 8 : 12,
         overflowX: isMobile ? 'auto' : 'hidden',
         overflowY: 'hidden',
@@ -5435,73 +5462,83 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           </div>
         )}
 
-        {/* View mode toggle: Game | Board */}
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          background: isNightMode ? 'rgba(8,16,38,0.85)' : 'rgba(12,24,52,0.65)',
-          border: isNightMode ? '1.5px solid rgba(59,130,246,0.35)' : '1.5px solid rgba(59,130,246,0.40)',
-          borderRadius: 10,
-          padding: 3,
-          gap: 2,
-          flexShrink: 0,
-          boxShadow: isNightMode ? '0 2px 8px rgba(59,130,246,0.1)' : '0 2px 8px rgba(59,130,246,0.12)',
-        }}>
-          {[
-            { id: 'game', label: isMobile ? null : 'Game', icon: '⬡' },
-            { id: 'board', label: isMobile ? null : 'Board', icon: '⊟' },
-          ].map(({ id, label, icon }) => {
-            const active = (viewMode || 'game') === id
-            return (
-              <button
-                key={id}
-                onClick={() => onViewModeSwitch?.(id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: isMobile ? 0 : 5,
-                  padding: isMobile ? '4px 8px' : '4px 12px',
-                  borderRadius: 7,
-                  background: active
-                    ? (isNightMode ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.18)')
-                    : 'transparent',
-                  border: active
-                    ? (isNightMode ? '1px solid rgba(59,130,246,0.45)' : '1px solid rgba(59,130,246,0.4)')
-                    : '1px solid transparent',
-                  cursor: 'pointer',
-                  transition: 'all 150ms ease',
-                }}
-                onMouseEnter={e => {
-                  if (!active) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.08)'
-                }}
-                onMouseLeave={e => {
-                  if (!active) e.currentTarget.style.background = 'transparent'
-                }}
-              >
-                {id === 'game' ? (
-                  <Gamepad2
-                    size={14}
-                    color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
-                  />
-                ) : (
-                  <FolderKanban
-                    size={14}
-                    color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
-                  />
-                )}
-                {!isMobile && (
-                  <span style={{
-                    fontFamily: "'Inter', system-ui, sans-serif",
-                    fontSize: 12,
-                    fontWeight: active ? 700 : 500,
-                    color: active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0'),
-                    letterSpacing: '0.02em',
-                  }}>
-                    {label}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
 
+      </div>
+
+      {/* View mode toggle: Game | Board -- fixed top-right, always visible (not in scrollable nav) */}
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        right: isMobile ? 10 : 16,
+        transform: 'translateY(-50%)',
+        display: 'flex', alignItems: 'center',
+        background: isNightMode ? 'rgba(8,16,38,0.92)' : 'rgba(12,24,52,0.82)',
+        border: (viewMode === 'board')
+          ? '2px solid rgba(59,130,246,0.65)'
+          : (isNightMode ? '2px solid rgba(59,130,246,0.45)' : '2px solid rgba(59,130,246,0.55)'),
+        borderRadius: 10,
+        padding: 3,
+        gap: 2,
+        zIndex: 10,
+        boxShadow: (viewMode === 'board')
+          ? '0 2px 12px rgba(59,130,246,0.3), 0 0 20px rgba(59,130,246,0.12)'
+          : (isNightMode ? '0 2px 8px rgba(59,130,246,0.1)' : '0 2px 8px rgba(59,130,246,0.15)'),
+        transition: 'border-color 200ms ease, box-shadow 200ms ease',
+      }}>
+        {[
+          { id: 'game', label: 'Game' },
+          { id: 'board', label: 'Board' },
+        ].map(({ id, label }) => {
+          const active = (viewMode || 'game') === id
+          return (
+            <button
+              key={id}
+              onClick={() => onViewModeSwitch?.(id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: isMobile ? '5px 9px' : '4px 12px',
+                borderRadius: 7,
+                background: active
+                  ? (isNightMode ? 'rgba(59,130,246,0.28)' : 'rgba(59,130,246,0.22)')
+                  : 'transparent',
+                border: active
+                  ? (isNightMode ? '1px solid rgba(59,130,246,0.55)' : '1px solid rgba(59,130,246,0.50)')
+                  : '1px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+              }}
+              onMouseEnter={e => {
+                if (!active) e.currentTarget.style.background = isNightMode ? 'rgba(255,255,255,0.06)' : 'rgba(59,130,246,0.1)'
+              }}
+              onMouseLeave={e => {
+                if (!active) e.currentTarget.style.background = 'transparent'
+              }}
+            >
+              {id === 'game' ? (
+                <Gamepad2
+                  size={isMobile ? 13 : 14}
+                  color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
+                />
+              ) : (
+                <FolderKanban
+                  size={isMobile ? 13 : 14}
+                  color={active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0')}
+                />
+              )}
+              {!isMobile && (
+                <span style={{
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  fontSize: 12,
+                  fontWeight: active ? 700 : 500,
+                  color: active ? '#60A5FA' : (isNightMode ? '#64748B' : '#6B8AB0'),
+                  letterSpacing: '0.02em',
+                }}>
+                  {label}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -12907,6 +12944,7 @@ export default function GameDashboard() {
           hudHeight={hudBarHeight}
           focusTaskId={sidebarFocusTaskId}
           onFocusTaskHandled={() => setSidebarFocusTaskId(null)}
+          onSendFileToChat={handleSendFileToChat}
         />
       )}
 

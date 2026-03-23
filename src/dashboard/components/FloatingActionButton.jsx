@@ -7,7 +7,9 @@ import { useState } from 'react'
 import CreateRoomModal from './CreateRoomModal.jsx'
 
 // Position: top-right corner of game map area
-const FAB_TOP  = 80  // px -- below top nav bar (~60px) + margin
+// FAB_TOP uses CSS calc to clear the nav bar (48px mobile / 52px desktop) + safe-area-inset-top + margin.
+// Written as a string so it can be used directly in the style prop.
+const FAB_TOP_CSS = 'calc(52px + env(safe-area-inset-top, 0px) + 16px)'
 const FAB_RIGHT = 16  // px
 const FAB_SIZE  = 48  // px -- main button diameter
 
@@ -30,7 +32,7 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
       <div
         style={{
           position: 'fixed',
-          top: FAB_TOP,
+          top: FAB_TOP_CSS,
           right: rightVal,
           transition: 'right 250ms ease',
           zIndex: 55,
