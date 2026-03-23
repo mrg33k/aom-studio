@@ -217,6 +217,20 @@ export const GRID_SPEC = {
       ],
       personality: 'Engine room. No windows, no natural light. Server racks with green/blue blink dots, green terminal, exposed cables. Coldest room. Functional, not decorative.',
     },
+    {
+      id: 'gary', name: "Gary's Ops Center", agent: 'Gary', role: 'AOM Operations',
+      position: { col: 6, row: 3 }, size: { cols: 2, rows: 1 },
+      walls: { north: 'interior', west: 'interior', south: 'exterior', east: 'exterior-window' },
+      floor: 'wood-dark', floorColor: '#6B5240',
+      lighting: 'warm-desk-lamp', lightColor: '#FFB74D',
+      agentColor: '#FF6B35',
+      statusColors: { active: '#FF6B35', idle: '#A03A10', offline: '#501C08' },
+      furniture: ['operations-desk', 'monitor-dual', 'ops-board-wall', 'filing-cabinet', 'coffee-mug', 'task-chair'],
+      ambientAnimations: [
+        { id: 'monitor-flicker', target: 'monitor-dual', frameCount: 4, frameDuration: 800, loop: true },
+      ],
+      personality: 'Ops hub. Warm and organized. Two monitors, ops board, filing cabinet. Gets things done.',
+    },
   ],
   colorPalette: {
     background: '#0A0F1E',
@@ -325,13 +339,13 @@ export const PROJECTS = [
   { slug: 'ai-advisory', name: 'AI Advisory', type: 'project', color: '#29B6F6', statusColors: { active: '#29B6F6', idle: '#0288D1', offline: '#01579B' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81D4FA', monitorColor: '#81D4FA', hidden: false, team: ['steve', 'elon', 'alex'] },
   { slug: 'included-health', name: 'Included Health', type: 'project', color: '#78909C', statusColors: { active: '#78909C', idle: '#546E7A', offline: '#37474F' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#B0BEC5', monitorColor: '#B0BEC5', hidden: true, team: ['paige'] },
   // ── Special rooms ──────────────────────────────────────────────────────────
-  { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'pixel'] },
+  { slug: 'aom-team', name: 'AOM Team', type: 'special', color: '#F59E0B', statusColors: { active: '#F59E0B', idle: '#A07830', offline: '#4A3818' }, floor: 'wood-oak', floorColor: '#A07850', lightColor: '#FFD87A', monitorColor: '#FFD87A', hidden: false, team: ['patrik', 'mom', 'alex', 'steve', 'steffen', 'bobby', 'colton', 'cleo', 'tony', 'jacob', 'elmo', 'elon', 'gary', 'pixel'] },
 ]
 
 // ---- GROUPED HEX GRID LAYOUT ORDER ----
 // ALL_ROOMS order controls default room positions on the hex grid.
 // Matches the ROW_SIZES config in CanvasOffice.jsx:
-//   Row 0 (3): Core team      -- Elon, Bobby, Steffen
+//   Row 0 (4): Core team      -- Elon, Gary, Bobby, Steffen
 //   Row 1 (4): Creative+      -- Cleo, Jacob, AOM Team, Patrik
 //   Row 2 (5): Top projects   -- Corner, Ambition, KOHRS, ISA, Skylar
 //   Row 3 (4): More projects  -- Brandon Wiley, NABI, Outreach, AI Advisory
@@ -346,6 +360,7 @@ const _PROJECT_MAP = Object.fromEntries(PROJECTS.map(p => [p.slug, p]))
 export const ALL_ROOMS = [
   // Row 0 -- Core team
   _AGENT_MAP['elon'],
+  _AGENT_MAP['gary'],
   _AGENT_MAP['bobby'],
   _AGENT_MAP['steffen'],
   // Row 1 -- Creative + special

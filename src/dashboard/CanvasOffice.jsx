@@ -106,13 +106,13 @@ function buildVisibleRoomIDs(hiddenSet) {
 // ---- ROW-GROUPED HEX SLOT GENERATION ----
 // Generates hex slot positions using explicit row widths so rooms cluster by group.
 // Row widths match the ALL_ROOMS order in gridSpec.js:
-//   Row 0 (3): Core team      -- Elon, Bobby, Steffen
+//   Row 0 (4): Core team      -- Elon, Gary, Bobby, Steffen
 //   Row 1 (4): Creative+     -- Cleo, Jacob, AOM Team, Patrik
 //   Row 2 (5): Top projects  -- Corner, Ambition, KOHRS, ISA, Skylar
 //   Row 3 (4): More projects -- Brandon Wiley, NABI, Outreach, AI Advisory
 //   Row 4+: overflow rows    -- 6 per row (custom rooms, future agents)
 // Hex stagger: each row col is centered at 0, step 2, giving offset-column hex packing.
-const ROW_SIZES = [3, 4, 5, 4]
+const ROW_SIZES = [4, 4, 5, 4]
 const OVERFLOW_ROW_SIZE = 6
 
 function generateHexSlots(n) {

@@ -11104,10 +11104,11 @@ export default function GameDashboard() {
   useEffect(() => {
     if (!IS_LOCAL) {
       setCornerConfig({
-        active_agents: ['elon', 'bobby', 'steve', 'steffen', 'alex', 'jacob', 'cleo'],
+        active_agents: ['elon', 'gary', 'bobby', 'steve', 'steffen', 'alex', 'jacob', 'cleo'],
         agents: {
-          elon: { role: 'Systems Lead' }, bobby: { role: 'Web Dev' }, steve: { role: 'AI Advisory Lead' },
-          steffen: { role: 'Creative Director' }, alex: { role: 'Strategy' }, jacob: { role: 'Outreach' },
+          elon: { role: 'Systems Lead' }, gary: { role: 'AOM Operations' }, bobby: { role: 'Web Dev' },
+          steve: { role: 'AI Advisory Lead' }, steffen: { role: 'Creative Director' },
+          alex: { role: 'Strategy' }, jacob: { role: 'Outreach' },
           cleo: { role: 'Content' }, tony: { role: 'Social Media' }, paige: { role: 'Client Tracking' },
         },
         projects: {},
