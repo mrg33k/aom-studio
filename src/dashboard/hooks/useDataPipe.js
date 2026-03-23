@@ -216,6 +216,89 @@ function buildAutoCheckKeywords(notifContent) {
   return keywords
 }
 
+// ---- DERIVE RIGHT NOW + AGENT STATUS from events table -----------------------
+// Events are newest-first from the API. We find the latest event per task_id
+// and per agent to determine what's active and what each agent's status is.
+//
+// Active task = latest event for a task_id is task_started (no subsequent
+//   task_completed or task_failed).
+//
+// Agent status:
+//   WORKING  = latest event for this agent is task_started
+//   IDLE     = latest event is task_completed
+//   STUCK    = latest event is task_failed
+//   STALLED  = task_started was the latest event but it arrived 20+ min ago
+export function deriveStateFromEvents(events) {
+  if (!events || events.length === 0) {
+    return { rightNowTasks: [], agentStatuses: {} }
+  }
+
+  const STALL_MS = 20 * 60 * 1000 // 20 minutes
+  const now = Date.now()
+
+  // Walk events newest-first.
+  // For each task_id: track the latest event_type.
+  // For each agent: track the latest event_type + timestamp.
+  const taskLatest = new Map()  // task_id -> { event_type, agent, payload, timestamp }
+  const agentLatest = new Map() // agent -> { event_type, payload, timestamp }
+
+  for (const ev of events) {
+    const taskId = ev.payload?.task_id || ev.id
+    const agent = ev.agent
+    const ts = ev.timestamp
+
+    // Per-task tracking (first seen = newest)
+    if (taskId && !taskLatest.has(taskId)) {
+      taskLatest.set(taskId, {
+        event_type: ev.event_type,
+        agent,
+        payload: ev.payload || {},
+        timestamp: ts,
+      })
+    }
+
+    // Per-agent tracking (first seen = newest)
+    if (agent && !agentLatest.has(agent)) {
+      agentLatest.set(agent, {
+        event_type: ev.event_type,
+        payload: ev.payload || {},
+        timestamp: ts,
+      })
+    }
+  }
+
+  // Right Now: tasks whose latest event is task_started
+  const rightNowTasks = []
+  for (const [, info] of taskLatest) {
+    if (info.event_type !== 'task_started') continue
+    const description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
+    rightNowTasks.push({
+      agent:     info.agent,
+      text:      description.length > 55 ? description.slice(0, 52) + '...' : description,
+      isLive:    true,
+      isQueued:  false,
+      fromEvents: true,
+    })
+  }
+
+  // Agent statuses derived from latest event
+  const agentStatuses = {}
+  for (const [agent, info] of agentLatest) {
+    const ageMs = info.timestamp ? now - new Date(info.timestamp).getTime() : 0
+    let status = 'IDLE'
+    if (info.event_type === 'task_started') {
+      status = ageMs >= STALL_MS ? 'STALLED' : 'WORKING'
+    } else if (info.event_type === 'task_completed' || info.event_type === 'qa_passed' || info.event_type === 'build_pushed') {
+      status = 'IDLE'
+    } else if (info.event_type === 'task_failed' || info.event_type === 'qa_failed') {
+      status = 'STUCK'
+    }
+    agentStatuses[agent] = status
+  }
+
+  return { rightNowTasks, agentStatuses }
+}
+
 // ---- DERIVE YOUR TODOS from parsed punch data --------------------------------
 // Your TODOs = BLOCKERS that only Patrik can unblock.
 // Source: ONLY the "## YOUR TODOS [Patrik]" section (section key 'your-todos').
@@ -303,6 +386,8 @@ export function useDataPipe(parsePunchList) {
   const [punchData, setPunchData] = useState(null)
   const [punchLoading, setPunchLoading] = useState(IS_LOCAL)
   const [lastUpdated, setLastUpdated] = useState(null)
+  // Events-derived agent statuses: agent slug -> 'WORKING'|'IDLE'|'STUCK'|'STALLED'
+  const eventsAgentStatusRef = useRef({})
 
   // Auto-check keywords stored in ref for stable callback
   const keywordsRef = useRef(new Set())
@@ -368,9 +453,10 @@ export function useDataPipe(parsePunchList) {
           }
         }
 
-        // Hybrid: also read Supabase for done/todo tasks (not tracked in local files)
+        // Hybrid: also read Supabase for done/todo tasks + events (not tracked in local files)
         // done tasks -> Right Now with isDoneAwaitingApproval (yellow)
         // todo tasks -> To Do pill via setTodoItems
+        // events -> Right Now active tasks + agent status overrides
         try {
           const clientId = getClientId()
           const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
@@ -394,6 +480,16 @@ export function useDataPipe(parsePunchList) {
                 .filter(t => t.agent === 'patrik' && t.status !== 'completed' && t.status !== 'done')
                 .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
               setPersonalTodos(patrikEntries)
+            }
+            // Events table: derive Right Now tasks and agent statuses
+            if (sbData.events && sbData.events.length > 0) {
+              const { rightNowTasks, agentStatuses } = deriveStateFromEvents(sbData.events)
+              eventsAgentStatusRef.current = agentStatuses
+              // Merge events-derived tasks: events take priority for agents that have event data
+              const eventsAgentSet = new Set(rightNowTasks.map(t => t.agent))
+              const filteredMerged = mergedTasks.filter(t => !eventsAgentSet.has(t.agent) || t.isDoneAwaitingApproval)
+              mergedTasks.length = 0
+              mergedTasks.push(...rightNowTasks, ...filteredMerged)
             }
           }
         } catch {
@@ -485,6 +581,22 @@ export function useDataPipe(parsePunchList) {
               .filter(t => t.agent === 'patrik' && t.status !== 'completed' && t.status !== 'done')
               .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
             setPersonalTodos(patrikEntries)
+          }
+
+          // Events table: merge events-derived Right Now tasks + store agent statuses.
+          // Events are the new source of truth for Right Now. They take priority over
+          // active_processes and tasks table for agents that have event data.
+          if (data.events && data.events.length > 0) {
+            const { rightNowTasks, agentStatuses } = deriveStateFromEvents(data.events)
+            eventsAgentStatusRef.current = agentStatuses
+            if (rightNowTasks.length > 0) {
+              // For agents that have events data: replace their active entry with the events version.
+              // Agents only in active_processes (no events) are kept as-is.
+              const eventsAgentSet = new Set(rightNowTasks.map(t => t.agent))
+              const nonEventsActive = active.filter(t => !eventsAgentSet.has(t.agent) || t.isDoneAwaitingApproval)
+              active.length = 0
+              active.push(...rightNowTasks, ...nonEventsActive)
+            }
           }
 
           setRightNow(active)
@@ -629,14 +741,25 @@ export function useDataPipe(parsePunchList) {
     const interval = IS_LOCAL ? 3000 : 10000
     const timer = setInterval(fetchAll, interval)
 
-    // FIX 3: Supabase Realtime subscription -- updates Right Now instantly on agent_status changes
-    // without waiting for the 10s poll. Only active in production where supabase is configured.
-    let channel = null
-    if (!IS_LOCAL && supabase) {
-      channel = supabase
+    // Supabase Realtime subscriptions -- instant updates without waiting for poll.
+    // Only active where supabase client is configured (production + local with env vars).
+    let agentStatusChannel = null
+    let eventsChannel = null
+    if (supabase) {
+      // agent_status table: existing subscription
+      agentStatusChannel = supabase
         .channel('agent-status-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
-          // Re-fetch all data on any agent_status change
+          fetchAll()
+        })
+        .subscribe()
+
+      // events table: new INSERT subscription -- fires fetchAll immediately when an agent
+      // writes a new event (task_started, task_completed, task_failed, etc.).
+      // This is the primary real-time trigger for Right Now task pills and agent status.
+      eventsChannel = supabase
+        .channel('events-inserts')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, () => {
           fetchAll()
         })
         .subscribe()
@@ -644,7 +767,8 @@ export function useDataPipe(parsePunchList) {
 
     return () => {
       clearInterval(timer)
-      if (channel) supabase.removeChannel(channel)
+      if (agentStatusChannel) supabase.removeChannel(agentStatusChannel)
+      if (eventsChannel) supabase.removeChannel(eventsChannel)
     }
   }, [fetchAll])
 
@@ -685,14 +809,23 @@ export function useDataPipe(parsePunchList) {
     inbox: inboxItems.length,
   }
 
-  // Build agents status map for CanvasOffice room states
+  // Build agents status map for CanvasOffice room states.
+  // Priority order: events table (richest -- WORKING/IDLE/STUCK/STALLED) >
+  //   rightNow isLive flag (WORKING) > fallback IDLE.
+  // STALLED is amber: task_started but 20+ min with no follow-up event.
   const ALL_AGENT_SLUGS = ['elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
   const activeAgentSlugs = new Set(rightNow.filter(t => t.isLive).map(t => t.agent))
-  const agents = ALL_AGENT_SLUGS.map(slug => ({
-    slug,
-    name: slug.charAt(0).toUpperCase() + slug.slice(1),
-    status: activeAgentSlugs.has(slug) ? 'WORKING' : 'IDLE',
-  }))
+  const eventsStatuses = eventsAgentStatusRef.current
+  const agents = ALL_AGENT_SLUGS.map(slug => {
+    let status = 'IDLE'
+    if (eventsStatuses[slug]) {
+      // Events table is richest source: WORKING, IDLE, STUCK, or STALLED
+      status = eventsStatuses[slug]
+    } else if (activeAgentSlugs.has(slug)) {
+      status = 'WORKING'
+    }
+    return { slug, name: slug.charAt(0).toUpperCase() + slug.slice(1), status }
+  })
 
   return {
     rightNow,

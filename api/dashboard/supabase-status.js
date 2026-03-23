@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
 
   try {
-    const [agents, messages, activeTasks, recentDone, projectDefs] = await Promise.all([
+    const [agents, messages, activeTasks, recentDone, projectDefs, recentEvents] = await Promise.all([
       supabaseGet('agent_status', `order=slug${clientFilter}`),
       supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
       // Non-completed, non-blocked tasks (queued, active, todo, working, done, rejected, failed)
@@ -50,6 +50,8 @@ export default async function handler(req, res) {
       supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
       // Projects table: active projects ordered by recency weight (not client-scoped, global per AOM config)
       supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc`),
+      // Events table: last 200 events ordered newest-first for Right Now + agent status derivation
+      supabaseGet('events', `order=timestamp.desc&limit=200`),
     ]);
     const tasks = [...activeTasks, ...recentDone];
 
@@ -87,6 +89,7 @@ export default async function handler(req, res) {
       projectDefs,
       messages: messages.reverse(), // oldest first
       tasks,
+      events: recentEvents, // newest-first; useDataPipe derives Right Now + agent status from these
       blockers,
       throughput: {
         messagesLastHour: recentMessages.length,
