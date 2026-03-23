@@ -5274,7 +5274,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 const cloud = results?.cloud
                 if (cloud?.cleared > 0) lines.push(`${cloud.cleared} task${cloud.cleared !== 1 ? 's' : ''} cleared`)
                 if (cloud?.reset > 0) lines.push(`${cloud.reset} agent${cloud.reset !== 1 ? 's' : ''} reset`)
-                const summary = lines.length > 0 ? lines.join(' · ') : 'Done'
+                if (cloud?.queueDepth > 0) lines.push(`${cloud.queueDepth} queued`)
+                const summary = lines.length > 0 ? lines.join(' · ') : 'System clean'
                 setUnstuckReport(summary)
                 setUnstuckToast('done')
                 setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null) }, 3500)
