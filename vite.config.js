@@ -1405,6 +1405,139 @@ function localDashboardPlugin() {
           source: 'local',
         }))
       })
+
+      // ---- LOCAL UNSTUCK ENDPOINT ----
+      // POST /api/local/unstuck
+      // Full system recovery: push unpushed commits, verify deploy,
+      // reconcile PIDs (stale-detector-pid), refill queue (auto-promote).
+      // Returns a structured report of what was done.
+      server.middlewares.use('/api/local/unstuck', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'POST only' }))
+          return
+        }
+
+        const STUDIO_ROOT = resolve(AOM_EA_ROOT, '..', 'aom-studio')
+        const AOM_EA_SCRIPTS = resolve(AOM_EA_ROOT, 'scripts')
+        const report = {
+          timestamp: new Date().toISOString(),
+          push: null,          // { pushed: bool, commit: str, error?: str }
+          deploy: null,        // { ok: bool, status: int, error?: str }
+          pidReconcile: null,  // { ran: bool, output: str, error?: str }
+          queueRefill: null,   // { ran: bool, output: str, error?: str }
+          taskStatus: null,    // { count: int, entries: [] }
+        }
+
+        // Helper: run a child process and collect stdout/stderr
+        function runScript(cmd, args, opts) {
+          return new Promise((resolve) => {
+            let stdout = ''
+            let stderr = ''
+            const child = spawn(cmd, args, { ...opts, stdio: 'pipe' })
+            child.stdout.on('data', d => { stdout += d.toString() })
+            child.stderr.on('data', d => { stderr += d.toString() })
+            child.on('close', code => resolve({ code, stdout, stderr }))
+            child.on('error', err => resolve({ code: -1, stdout, stderr, error: err.message }))
+          })
+        }
+
+        // Helper: check HTTP status of a URL
+        function httpCheck(url) {
+          return new Promise((resolve) => {
+            const mod = url.startsWith('https') ? require('https') : require('http')
+            const req = mod.get(url, { timeout: 8000 }, (resp) => {
+              resolve({ ok: resp.statusCode >= 200 && resp.statusCode < 400, status: resp.statusCode })
+            })
+            req.on('error', err => resolve({ ok: false, error: err.message }))
+            req.on('timeout', () => { req.destroy(); resolve({ ok: false, error: 'timeout' }) })
+          })
+        }
+
+        ;(async () => {
+          try {
+            // 1. CHECK + PUSH UNPUSHED COMMITS
+            // First: which branch does aom-studio use? (main or master)
+            const branchResult = await runScript('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: STUDIO_ROOT })
+            const branch = branchResult.stdout.trim() || 'master'
+
+            const logResult = await runScript('git', ['log', `origin/${branch}..HEAD`, '--oneline'], { cwd: STUDIO_ROOT })
+            const unpushedLines = logResult.stdout.trim().split('\n').filter(Boolean)
+
+            if (unpushedLines.length > 0) {
+              const pushResult = await runScript('git', ['push', 'origin', branch], { cwd: STUDIO_ROOT })
+              if (pushResult.code === 0) {
+                report.push = {
+                  pushed: true,
+                  count: unpushedLines.length,
+                  commits: unpushedLines.slice(0, 5),
+                }
+              } else {
+                report.push = {
+                  pushed: false,
+                  error: (pushResult.stderr || pushResult.stdout).trim().slice(0, 300),
+                }
+              }
+            } else {
+              report.push = { pushed: false, count: 0, message: 'Nothing to push' }
+            }
+
+            // 2. VERIFY DEPLOY (smoke test aheadofmarket.com/dashboard)
+            try {
+              const deployCheck = await httpCheck('https://aheadofmarket.com/dashboard')
+              report.deploy = deployCheck
+            } catch (e) {
+              report.deploy = { ok: false, error: e.message }
+            }
+
+            // 3. RECONCILE PIDs (run stale-detector-pid.py)
+            const pidResult = await runScript(
+              'python3',
+              [resolve(AOM_EA_SCRIPTS, 'stale-detector-pid.py')],
+              { cwd: AOM_EA_ROOT }
+            )
+            report.pidReconcile = {
+              ran: true,
+              output: (pidResult.stdout + pidResult.stderr).trim().slice(0, 500),
+              exitCode: pidResult.code,
+            }
+
+            // 4. REFILL QUEUE (run auto-promote.py)
+            const promoteResult = await runScript(
+              'python3',
+              [resolve(AOM_EA_SCRIPTS, 'auto-promote.py')],
+              { cwd: AOM_EA_ROOT }
+            )
+            report.queueRefill = {
+              ran: true,
+              output: (promoteResult.stdout + promoteResult.stderr).trim().slice(0, 500),
+              exitCode: promoteResult.code,
+            }
+
+            // 5. READ TASK STATUS SNAPSHOT
+            try {
+              const tsPath = resolve(AOM_EA_ROOT, 'context', 'task-status.jsonl')
+              if (fs.existsSync(tsPath)) {
+                const lines = fs.readFileSync(tsPath, 'utf-8')
+                  .split('\n')
+                  .filter(l => l.trim() && !l.startsWith('#'))
+                const entries = lines.map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
+                report.taskStatus = { count: entries.length, entries }
+              } else {
+                report.taskStatus = { count: 0, entries: [] }
+              }
+            } catch (e) {
+              report.taskStatus = { count: 0, entries: [], error: e.message }
+            }
+
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ ok: true, report }))
+          } catch (err) {
+            res.statusCode = 500
+            res.end(JSON.stringify({ ok: false, error: err.message, report }))
+          }
+        })()
+      })
     },
   }
 }

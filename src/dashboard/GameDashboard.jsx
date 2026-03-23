@@ -4359,7 +4359,8 @@ function WorldsModal({ isOpen, onClose, worlds, worldsLoading, onEnterWorld, cur
 function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks, onPrefs, onCreateWorld, worlds, worldsLoading, onEnterWorld, onOpenWorldsModal, onFetchWorlds, currentWorldId, onReturnToMyWorld }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
-  const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done'
+  const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | { summary: str }
+  const [unstuckReport, setUnstuckReport] = useState(null)
   const [teamName, setTeamName] = useState('aom')
   const [editingName, setEditingName] = useState(false)
   const teamRef = useRef(null)
@@ -5248,13 +5249,30 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             onClick={async () => {
               if (unstuckToast === 'loading') return
               setUnstuckToast('loading')
+              setUnstuckReport(null)
               try {
-                // Call API
-                await onUnstuck?.()
+                const results = await onUnstuck?.()
+                // Build human-readable summary from results
+                const lines = []
+                const r = results?.local?.report
+                if (r) {
+                  if (r.push?.pushed) lines.push(`${r.push.count} commit${r.push.count !== 1 ? 's' : ''} pushed`)
+                  else if (r.push?.count === 0) lines.push('nothing to push')
+                  if (r.deploy?.ok) lines.push('deploy live')
+                  else if (r.deploy) lines.push('deploy unreachable')
+                  if (r.pidReconcile?.ran) lines.push('PIDs reconciled')
+                  if (r.queueRefill?.ran) lines.push('queue refilled')
+                }
+                const cloud = results?.cloud
+                if (cloud?.cleared > 0) lines.push(`${cloud.cleared} task${cloud.cleared !== 1 ? 's' : ''} cleared`)
+                if (cloud?.reset > 0) lines.push(`${cloud.reset} agent${cloud.reset !== 1 ? 's' : ''} reset`)
+                const summary = lines.length > 0 ? lines.join(' · ') : 'Done'
+                setUnstuckReport(summary)
                 setUnstuckToast('done')
-                setTimeout(() => setUnstuckToast(null), 1800)
+                setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null) }, 3500)
               } catch {
                 setUnstuckToast(null)
+                setUnstuckReport(null)
               }
             }}
             style={{
@@ -5265,14 +5283,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(202,138,4,0.10) 100%)',
               border: isNightMode ? '1.5px solid rgba(234,179,8,0.58)' : '1.5px solid rgba(234,179,8,0.52)',
               borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
-              cursor: unstuckToast === 'loading' ? 'default' : 'pointer',
+              cursor: (unstuckToast === 'loading' || unstuckToast === 'done') ? 'default' : 'pointer',
               transition: 'all 150ms ease',
               position: 'relative',
-              opacity: unstuckToast === 'loading' ? 0.6 : 1,
+              opacity: (unstuckToast === 'loading' || unstuckToast === 'done') ? 0.7 : 1,
               boxShadow: '0 2px 8px rgba(234,179,8,0.2), inset 0 1px 0 rgba(255,255,255,0.08)',
             }}
             onMouseEnter={e => {
-              if (unstuckToast === 'loading') return
+              if (unstuckToast === 'loading' || unstuckToast === 'done') return
               e.currentTarget.style.background = isNightMode
                 ? 'linear-gradient(135deg, rgba(234,179,8,0.28) 0%, rgba(202,138,4,0.20) 100%)'
                 : 'linear-gradient(135deg, rgba(234,179,8,0.24) 0%, rgba(202,138,4,0.16) 100%)'
@@ -5294,7 +5312,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 color: isNightMode ? '#EAB308' : '#CA8A04',
                 fontFamily: "'Inter', sans-serif",
               }}>
-                {unstuckToast === 'loading' ? '...' : 'Unstuck'}
+                {unstuckToast === 'loading' ? '...' : unstuckToast === 'done' ? 'Done' : 'Unstuck'}
               </span>
             )}
             {/* Toast confirmation */}
@@ -5312,18 +5330,21 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       ? 'linear-gradient(135deg, rgba(32,20,4,0.98) 0%, rgba(20,14,4,0.98) 100%)'
                       : 'linear-gradient(135deg, rgba(255,248,220,0.99) 0%, rgba(255,240,180,0.98) 100%)',
                     border: isNightMode ? '1.5px solid rgba(234,179,8,0.55)' : '1.5px solid rgba(202,138,4,0.50)',
-                    borderRadius: 6, padding: '5px 10px',
+                    borderRadius: 6, padding: '6px 12px',
                     whiteSpace: 'nowrap', zIndex: 200,
-                    fontSize: 12, fontWeight: 700,
+                    fontSize: 11, fontWeight: 600,
                     color: isNightMode ? '#EAB308' : '#92400E',
                     fontFamily: "'Inter', sans-serif",
                     boxShadow: isNightMode
                       ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(234,179,8,0.15)'
                       : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(234,179,8,0.12)',
                     pointerEvents: 'none',
+                    maxWidth: 320,
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
                   }}
                 >
-                  Unstuck!
+                  {unstuckReport || 'System unstuck'}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -12334,7 +12355,27 @@ export default function GameDashboard() {
       userSelect: 'none',
     }}>
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
-      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => { await fetch('/api/dashboard/unstuck', { method: 'POST' }); pipeData?.refetch?.() }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
+      <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => {
+  const results = {}
+  // Local operations (push, PID reconcile, queue refill) -- only available on localhost
+  if (IS_LOCAL) {
+    try {
+      const localRes = await fetch('/api/local/unstuck', { method: 'POST' })
+      results.local = await localRes.json()
+    } catch (e) {
+      results.local = { ok: false, error: e.message }
+    }
+  }
+  // Supabase cleanup (clear active tasks, reset stuck agents) -- runs in production too
+  try {
+    const cloudRes = await fetch('/api/dashboard/unstuck', { method: 'POST' })
+    results.cloud = await cloudRes.json()
+  } catch (e) {
+    results.cloud = { ok: false, error: e.message }
+  }
+  pipeData?.refetch?.()
+  return results
+}} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
 
       {/* Mobile floating notification badges -- KILLED per Patrik Round 2. Noise that distracts from real work. */}
 

@@ -1,6 +1,10 @@
 // POST /api/dashboard/unstuck
-// Clears all stale active tasks and resets stuck/working agents to idle.
-// Returns { cleared: taskCount, reset: agentCount }
+// Full system recovery (Supabase layer):
+//   1. Clear stale active tasks (status=active -> done)
+//   2. Reset stuck/working agents to idle
+//   3. Return detailed report: cleared count, reset agents, current queue depth
+//
+// Returns { ok, cleared, reset, queueDepth, clearedTasks[], resetAgents[] }
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -27,6 +31,9 @@ export default async function handler(req, res) {
   const now = new Date().toISOString();
   let cleared = 0;
   let reset = 0;
+  let queueDepth = 0;
+  let clearedTasks = [];
+  let resetAgents = [];
 
   try {
     // 1. PATCH tasks: status=active -> status=done, completed_at=now
@@ -39,12 +46,14 @@ export default async function handler(req, res) {
       }
     );
     if (taskResp.ok) {
-      const cleared_tasks = await taskResp.json();
-      cleared = Array.isArray(cleared_tasks) ? cleared_tasks.length : 0;
+      const data = await taskResp.json();
+      if (Array.isArray(data)) {
+        cleared = data.length;
+        clearedTasks = data.map(t => ({ agent: t.agent, task: t.task || t.description }));
+      }
     }
 
     // 2. PATCH agent_status: status in (working, stuck) -> status=idle
-    // Supabase PostgREST: use `in` filter for multiple values
     const agentResp = await fetch(
       `${SUPABASE_URL}/rest/v1/agent_status?status=in.(working,stuck)`,
       {
@@ -54,11 +63,27 @@ export default async function handler(req, res) {
       }
     );
     if (agentResp.ok) {
-      const reset_agents = await agentResp.json();
-      reset = Array.isArray(reset_agents) ? reset_agents.length : 0;
+      const data = await agentResp.json();
+      if (Array.isArray(data)) {
+        reset = data.length;
+        resetAgents = data.map(a => a.agent || a.slug || '?');
+      }
     }
 
-    return res.status(200).json({ ok: true, cleared, reset });
+    // 3. COUNT queued tasks (for status report)
+    const queueResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/tasks?status=eq.queued&select=id`,
+      { headers: { ...headers, Prefer: 'count=exact' } }
+    );
+    if (queueResp.ok) {
+      const countHeader = queueResp.headers.get('content-range');
+      if (countHeader) {
+        const match = countHeader.match(/\/(\d+)$/);
+        if (match) queueDepth = parseInt(match[1], 10);
+      }
+    }
+
+    return res.status(200).json({ ok: true, cleared, reset, queueDepth, clearedTasks, resetAgents });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
