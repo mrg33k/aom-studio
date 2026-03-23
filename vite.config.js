@@ -1592,6 +1592,53 @@ function localDashboardPlugin() {
               report.taskStatus = { count: 0, ghostsCleared: 0, entries: [], error: e.message }
             }
 
+            // 6. RELAY RESET: kill supabase-listener (launchd auto-restarts) + check tmux session
+            const TMUX_RELAY_SESSION = 'relay'
+            const LOCK_FILE_PATH = resolve(AOM_EA_ROOT, 'context', '.relay-session-lock')
+            try {
+              // 6a. Kill supabase-listener.py (launchd com.aom-ea.supabase-listener restarts it)
+              const killResult = await runScript('pkill', ['-f', 'supabase-listener.py'], {})
+              // pkill exits 0 if it killed something, 1 if nothing matched
+              const listenerWasRunning = killResult.code === 0
+
+              // 6b. Check tmux relay session
+              const tmuxCheck = await runScript('tmux', ['has-session', '-t', TMUX_RELAY_SESSION], {})
+              let tmuxStatus = 'alive'
+              if (tmuxCheck.code !== 0) {
+                // Session dead -- start a fresh one
+                const newSess = await runScript(
+                  'tmux',
+                  ['new-session', '-d', '-s', TMUX_RELAY_SESSION, '-c', AOM_EA_ROOT, '/opt/homebrew/bin/claude'],
+                  {}
+                )
+                tmuxStatus = newSess.code === 0 ? 'restarted' : `failed: ${(newSess.stderr || '').slice(0, 120)}`
+              }
+
+              // 6c. Refresh .relay-session-lock (update timestamp so hooks know session is fresh)
+              let lockRefreshed = false
+              try {
+                const existingLock = fs.existsSync(LOCK_FILE_PATH)
+                  ? JSON.parse(fs.readFileSync(LOCK_FILE_PATH, 'utf-8'))
+                  : {}
+                const refreshed = {
+                  ...existingLock,
+                  refreshed: new Date().toISOString(),
+                  source: 'unstuck-button',
+                }
+                fs.writeFileSync(LOCK_FILE_PATH, JSON.stringify(refreshed), 'utf-8')
+                lockRefreshed = true
+              } catch (_) {}
+
+              report.relayReset = {
+                listenerRestarted: listenerWasRunning,
+                listenerNote: listenerWasRunning ? 'launchd restarting' : 'was already stopped',
+                tmux: tmuxStatus,
+                lockRefreshed,
+              }
+            } catch (e) {
+              report.relayReset = { error: e.message }
+            }
+
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ ok: true, report }))
           } catch (err) {

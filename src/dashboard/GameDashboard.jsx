@@ -5268,6 +5268,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   if (r.launchQueue?.staleCleared > 0) lines.push(`${r.launchQueue.staleCleared} stale launch${r.launchQueue.staleCleared !== 1 ? 'es' : ''} cleared`)
                   if (r.launchQueue?.depth > 0) lines.push(`${r.launchQueue.depth} launch${r.launchQueue.depth !== 1 ? 'es' : ''} queued`)
                   if (r.taskStatus?.ghostsCleared > 0) lines.push(`${r.taskStatus.ghostsCleared} ghost${r.taskStatus.ghostsCleared !== 1 ? 's' : ''} cleared`)
+                  if (r.relayReset?.listenerRestarted) lines.push('listener restarted')
+                  if (r.relayReset?.tmux === 'restarted') lines.push('relay restarted')
                 }
                 const cloud = results?.cloud
                 if (cloud?.cleared > 0) lines.push(`${cloud.cleared} task${cloud.cleared !== 1 ? 's' : ''} cleared`)
