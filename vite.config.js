@@ -1422,6 +1422,18 @@ function localDashboardPlugin() {
 
         const STUDIO_ROOT = process.cwd() // vite always runs from the studio directory
         const AOM_EA_SCRIPTS = resolve(AOM_EA_ROOT, 'scripts')
+        // Load Supabase credentials from ~/.config/supabase/corner.env (same source as Python scripts)
+        function loadSupabaseCreds() {
+          const envPath = resolve(os.homedir(), '.config', 'supabase', 'corner.env')
+          if (!fs.existsSync(envPath)) return {}
+          const creds = {}
+          for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+            const m = line.match(/^([A-Z_]+)=(.+)$/)
+            if (m) creds[m[1]] = m[2].trim()
+          }
+          return creds
+        }
+
         const report = {
           timestamp: new Date().toISOString(),
           push: null,          // { pushed: bool, commit: str, error?: str }
@@ -1623,7 +1635,14 @@ function localDashboardPlugin() {
                   ['new-session', '-d', '-s', TMUX_RELAY_SESSION, '-c', AOM_EA_ROOT, '/opt/homebrew/bin/claude'],
                   {}
                 )
-                tmuxStatus = newSess.code === 0 ? 'restarted' : `failed: ${(newSess.stderr || '').slice(0, 120)}`
+                if (newSess.code === 0) {
+                  tmuxStatus = 'restarted'
+                } else if ((newSess.stderr || '').includes('duplicate session')) {
+                  // Concurrent unstuck request already created the session -- treat as alive
+                  tmuxStatus = 'alive'
+                } else {
+                  tmuxStatus = `failed: ${(newSess.stderr || '').slice(0, 120)}`
+                }
               }
 
               // 6c. Refresh .relay-session-lock (update timestamp so hooks know session is fresh)
@@ -1649,6 +1668,59 @@ function localDashboardPlugin() {
               }
             } catch (e) {
               report.relayReset = { error: e.message }
+            }
+
+            // 7. SUPABASE CLEANUP: clear active tasks + reset stuck agents
+            // Runs on localhost using creds from ~/.config/supabase/corner.env
+            // (Production uses /api/dashboard/unstuck Vercel function instead)
+            const sbCreds = loadSupabaseCreds()
+            const SB_URL = sbCreds.SUPABASE_URL
+            const SB_KEY = sbCreds.SUPABASE_SERVICE_ROLE_KEY
+            if (SB_URL && SB_KEY) {
+              try {
+                const sbHeaders = {
+                  'apikey': SB_KEY,
+                  'Authorization': `Bearer ${SB_KEY}`,
+                  'Content-Type': 'application/json',
+                  'Prefer': 'return=representation',
+                }
+                // Helper: HTTPS request to Supabase REST API
+                function sbRequest(path, method, body) {
+                  return new Promise((resolveP) => {
+                    const url = new URL(`${SB_URL}/rest/v1/${path}`)
+                    const postData = JSON.stringify(body)
+                    const reqOpts = {
+                      hostname: url.hostname,
+                      path: url.pathname + url.search,
+                      method,
+                      headers: { ...sbHeaders, 'Content-Length': Buffer.byteLength(postData) },
+                    }
+                    const req = https.request(reqOpts, (res) => {
+                      let data = ''
+                      res.on('data', d => { data += d })
+                      res.on('end', () => {
+                        try { resolveP({ ok: res.statusCode < 400, data: JSON.parse(data) }) }
+                        catch { resolveP({ ok: res.statusCode < 400, data: [] }) }
+                      })
+                    })
+                    req.on('error', err => resolveP({ ok: false, error: err.message }))
+                    req.write(postData)
+                    req.end()
+                  })
+                }
+                const [taskResp, agentResp] = await Promise.all([
+                  sbRequest(`tasks?status=eq.active`, 'PATCH', { status: 'done', completed_at: new Date().toISOString() }),
+                  sbRequest(`agent_status?status=in.(working,stuck)`, 'PATCH', { status: 'idle', current_task: null }),
+                ])
+                report.supabaseCleanup = {
+                  cleared: Array.isArray(taskResp.data) ? taskResp.data.length : 0,
+                  reset: Array.isArray(agentResp.data) ? agentResp.data.length : 0,
+                }
+              } catch (e) {
+                report.supabaseCleanup = { error: e.message }
+              }
+            } else {
+              report.supabaseCleanup = { skipped: 'no credentials' }
             }
 
             res.setHeader('Content-Type', 'application/json')

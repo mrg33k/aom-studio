@@ -4359,8 +4359,9 @@ function WorldsModal({ isOpen, onClose, worlds, worldsLoading, onEnterWorld, cur
 function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenSettings, isMobile, currentMode, onModeSwitch, detailLevel, isNightMode, viewMode, onViewModeSwitch, onResetLayout, onUnstuck, currentUser, onSignOut, rightNowTasks, onPrefs, onCreateWorld, worlds, worldsLoading, onEnterWorld, onOpenWorldsModal, onFetchWorlds, currentWorldId, onReturnToMyWorld }) {
   const [teamOpen, setTeamOpen] = useState(false)
   const [layoutResetToast, setLayoutResetToast] = useState(false)
-  const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | { summary: str }
+  const [unstuckToast, setUnstuckToast] = useState(null) // null | 'loading' | 'done' | 'error'
   const [unstuckReport, setUnstuckReport] = useState(null)
+  const unstuckLockRef = useRef(false) // synchronous mutex -- prevents concurrent runs on rapid tap
   const [teamName, setTeamName] = useState('aom')
   const [editingName, setEditingName] = useState(false)
   const teamRef = useRef(null)
@@ -5247,7 +5248,9 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           <button
             title="Unstuck: push commits · verify deploy · reconcile PIDs · clean ghosts · refill queue"
             onClick={async () => {
-              if (unstuckToast === 'loading') return
+              // Mutex: ref check is synchronous (no render-cycle gap like state check)
+              if (unstuckLockRef.current || unstuckToast !== null) return
+              unstuckLockRef.current = true
               setUnstuckToast('loading')
               setUnstuckReport(null)
               try {
@@ -5271,7 +5274,13 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   if (r.taskStatus?.ghostsCleared > 0) lines.push(`${r.taskStatus.ghostsCleared} ghost${r.taskStatus.ghostsCleared !== 1 ? 's' : ''} cleared`)
                   if (r.relayReset?.listenerRestarted) lines.push('listener restarted')
                   if (r.relayReset?.tmux === 'restarted') lines.push('relay restarted')
+                  else if (typeof r.relayReset?.tmux === 'string' && r.relayReset.tmux.startsWith('failed')) lines.push('relay restart failed')
+                  // Local Supabase cleanup (localhost only -- cloud endpoint handles this on production)
+                  const sc = r.supabaseCleanup
+                  if (sc?.cleared > 0) lines.push(`${sc.cleared} task${sc.cleared !== 1 ? 's' : ''} cleared`)
+                  if (sc?.reset > 0) lines.push(`${sc.reset} agent${sc.reset !== 1 ? 's' : ''} reset`)
                 }
+                // Production cloud Supabase cleanup results
                 const cloud = results?.cloud
                 if (cloud?.cleared > 0) lines.push(`${cloud.cleared} task${cloud.cleared !== 1 ? 's' : ''} cleared`)
                 if (cloud?.reset > 0) lines.push(`${cloud.reset} agent${cloud.reset !== 1 ? 's' : ''} reset`)
@@ -5279,11 +5288,11 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 const summary = lines.length > 0 ? lines.join(' · ') : 'System clean'
                 setUnstuckReport(summary)
                 setUnstuckToast('done')
-                setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null) }, 3500)
+                setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null); unstuckLockRef.current = false }, 3500)
               } catch {
                 setUnstuckReport('Failed to reach unstuck endpoint')
                 setUnstuckToast('error')
-                setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null) }, 2500)
+                setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null); unstuckLockRef.current = false }, 2500)
               }
             }}
             style={{
@@ -12401,22 +12410,21 @@ export default function GameDashboard() {
       {/* Task HUD (top) - compact at detail zoom level per Steffen spec */}
       <TaskHUD data={data} isOpen={hudOpen} onToggle={() => setHudOpen(!hudOpen)} selectedAgent={selectedRoom} onSelectAgent={(slug) => { setSelectedRoom(slug); setCameraTarget(slug); setIsOverview(false) }} onOpenSettings={() => setPanelActiveTab('notes')} isMobile={isMobile} currentMode={currentMode} onModeSwitch={handleModeSwitch} detailLevel={getDetailLevel(cameraZoom)} isNightMode={isNightMode} viewMode={viewMode} onViewModeSwitch={handleViewModeSwitch} onResetLayout={() => canvasOfficeRef.current?.resetLayout()} onUnstuck={async () => {
   const results = {}
-  // Local operations (push, PID reconcile, queue refill) -- only available on localhost
-  if (IS_LOCAL) {
-    try {
-      const localRes = await fetch('/api/local/unstuck', { method: 'POST' })
-      results.local = await localRes.json()
-    } catch (e) {
-      results.local = { ok: false, error: e.message }
-    }
-  }
-  // Supabase cleanup (clear active tasks, reset stuck agents) -- runs in production too
-  try {
-    const cloudRes = await fetch('/api/dashboard/unstuck', { method: 'POST' })
-    results.cloud = await cloudRes.json()
-  } catch (e) {
-    results.cloud = { ok: false, error: e.message }
-  }
+  // Run local + cloud in parallel for speed
+  // Local: push commits, PID reconcile, queue refill, Supabase cleanup via creds -- only on localhost
+  // Cloud: Supabase cleanup via Vercel env -- only works in production
+  const [localResult, cloudResult] = await Promise.all([
+    IS_LOCAL
+      ? fetch('/api/local/unstuck', { method: 'POST' })
+          .then(r => r.json())
+          .catch(e => ({ ok: false, error: e.message }))
+      : Promise.resolve(null),
+    fetch('/api/dashboard/unstuck', { method: 'POST' })
+      .then(r => r.json())
+      .catch(e => ({ ok: false, error: e.message })),
+  ])
+  if (localResult !== null) results.local = localResult
+  results.cloud = cloudResult
   pipeData?.refetch?.()
   return results
 }} currentUser={currentUser} onSignOut={handleSignOut} rightNowTasks={rightNowTasks} onPrefs={() => setShowPrefsModal(true)} onCreateWorld={() => setShowCreateWorldModal(true)} worlds={worlds} worldsLoading={worldsLoading} onEnterWorld={handleEnterWorld} onOpenWorldsModal={() => setShowWorldsModal(true)} onFetchWorlds={fetchWorlds} currentWorldId={getClientId()} onReturnToMyWorld={handleReturnToMyWorld} />
