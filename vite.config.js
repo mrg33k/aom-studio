@@ -1603,6 +1603,7 @@ function localDashboardPlugin() {
 
             // 6. RELAY RESET: kill supabase-listener (launchd auto-restarts) + check tmux session
             const TMUX_RELAY_SESSION = 'relay'
+            const TMUX_RELAY_ALT = 'claude-relay' // Legacy session name (pre-Mar 2026)
             const LOCK_FILE_PATH = resolve(AOM_EA_ROOT, 'context', '.relay-session-lock')
             try {
               // 6a. Kill supabase-listener.py (launchd com.aom-ea.supabase-listener restarts it)
@@ -1610,11 +1611,13 @@ function localDashboardPlugin() {
               // pkill exits 0 if it killed something, 1 if nothing matched
               const listenerWasRunning = killResult.code === 0
 
-              // 6b. Check tmux relay session
+              // 6b. Check tmux relay session (check both known names: 'relay' and legacy 'claude-relay')
+              // If either exists the relay is alive -- only restart if BOTH are dead.
               const tmuxCheck = await runScript('tmux', ['has-session', '-t', TMUX_RELAY_SESSION], {})
+              const tmuxAltCheck = await runScript('tmux', ['has-session', '-t', TMUX_RELAY_ALT], {})
               let tmuxStatus = 'alive'
-              if (tmuxCheck.code !== 0) {
-                // Session dead -- start a fresh one
+              if (tmuxCheck.code !== 0 && tmuxAltCheck.code !== 0) {
+                // Both sessions dead -- start a fresh one
                 const newSess = await runScript(
                   'tmux',
                   ['new-session', '-d', '-s', TMUX_RELAY_SESSION, '-c', AOM_EA_ROOT, '/opt/homebrew/bin/claude'],
