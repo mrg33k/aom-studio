@@ -9800,15 +9800,42 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                       {msg.reply_to && chatMessages && (() => {
                         const parent = chatMessages.find(m => m.id === msg.reply_to)
                         if (!parent) return null
+                        const parentIsUser = parent.role === 'user'
+                        const parentName = parentIsUser ? 'Patrik' : (agent?.name || agentSlug)
+                        const parentColor = parentIsUser ? '#F59E0B' : agentColor
+                        const replyAccent = isUser ? '#F59E0B' : agentColor
                         return (
-                          <div style={{
-                            borderLeft: `3px solid ${agentColor}80`,
-                            paddingLeft: 8, marginBottom: 6,
-                            color: '#8BA4C4', fontSize: 11,
-                            fontFamily: "'Inter', system-ui, sans-serif",
-                            opacity: 0.8,
-                          }}>
-                            {(parent.content || '').slice(0, 80)}{(parent.content || '').length > 80 ? '...' : ''}
+                          <div
+                            style={{
+                              borderLeft: `2px solid ${replyAccent}70`,
+                              paddingLeft: 8, marginBottom: 5,
+                              background: `${replyAccent}08`,
+                              borderRadius: '0 6px 6px 0',
+                              padding: '5px 8px 5px 10px',
+                              cursor: 'default',
+                            }}
+                          >
+                            <div style={{
+                              fontSize: 10, fontWeight: 700,
+                              color: parentColor,
+                              fontFamily: "'Inter', system-ui, sans-serif",
+                              marginBottom: 2,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                            }}>
+                              {parentName}
+                            </div>
+                            <div style={{
+                              fontSize: 12, color: isDaytime ? '#6B8AB0' : '#8BA4C4',
+                              fontFamily: "'Inter', system-ui, sans-serif",
+                              overflow: 'hidden',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              lineHeight: 1.4,
+                            }}>
+                              {(parent.content || '').slice(0, 120)}{(parent.content || '').length > 120 ? '…' : ''}
+                            </div>
                           </div>
                         )
                       })()}
@@ -9817,22 +9844,26 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                         style={{
                           padding: '8px 12px',
                           borderRadius: 12,
-                          fontSize: 13, fontWeight: 500, lineHeight: 1.4,
+                          fontSize: 14, fontWeight: 500, lineHeight: 1.5,
                           fontFamily: "'Inter', system-ui, sans-serif",
                           ...(isUser
                             ? {
-                                background: '#1a3a5c',
-                                border: '1px solid rgba(59,130,246,0.3)',
-                                color: '#fff',
-                                borderBottomRightRadius: 3,
+                                background: isDaytime ? 'rgba(59,130,246,0.14)' : 'rgba(59,130,246,0.12)',
+                                border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(59,130,246,0.25)'}`,
+                                color: isDaytime ? '#1E293B' : '#fff',
+                                borderTopRightRadius: 4,
                               }
                             : {
-                                background: '#0F1B2D',
-                                border: `1px solid ${msg.streaming ? (isAomRoom && msgAgentColor ? msgAgentColor + '40' : agentColor + '40') : 'rgba(59,130,246,0.12)'}`,
+                                background: isDaytime
+                                  ? `${isAomRoom && msgAgentColor ? msgAgentColor : agentColor}10`
+                                  : `${isAomRoom && msgAgentColor ? msgAgentColor : agentColor}12`,
+                                border: `1px solid ${msg.streaming
+                                  ? (isAomRoom && msgAgentColor ? msgAgentColor + '40' : agentColor + '40')
+                                  : (isAomRoom && msgAgentColor ? msgAgentColor + '2E' : agentColor + '2E')}`,
                                 // AOM room: left accent border per agent so you can scan at a glance who said what
                                 ...(isAomRoom && msgAgentColor ? { borderLeft: `3px solid ${msgAgentColor}60` } : {}),
-                                color: '#F1F5F9',
-                                borderBottomLeftRadius: 3,
+                                color: isDaytime ? '#1E293B' : '#F1F5F9',
+                                borderTopLeftRadius: 4,
                               }
                           ),
                           position: 'relative',
