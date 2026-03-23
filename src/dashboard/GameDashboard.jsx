@@ -3716,10 +3716,10 @@ function MobileDrawer({
         // When keyboard is open: bottom=kbBottomOffset (keyboard handling, HUD covered by keyboard).
         // At half-snap: bottom=0 (HUD is visible because drawer height is only 52%).
         bottom: keyboardOpen ? kbBottomOffset : (isFullSnap ? hudHeight : 0),
-        // Half snap: extend drawer to screen bottom, protect content from home indicator via paddingBottom.
-        // This ensures CanvasOffice's visibleH = viewH - drawerH is accurate (no sab offset skew).
+        // Half snap: no paddingBottom -- MobileFixedInput portal handles its own SAB independently.
+        // Adding SAB here creates extra blank space below TASK COMPLETE card at half-snap.
         // Full snap handles its own sab via inner content paddingBottom (line ~3701).
-        paddingBottom: keyboardOpen ? 0 : (isFullSnap ? 0 : 'env(safe-area-inset-bottom, 0px)'),
+        paddingBottom: keyboardOpen ? 0 : 0,
         height: sheetHeight,
         zIndex: isFullSnap || keyboardOpen ? 200 : 38,
         background: 'rgba(15,25,50,0.98)',
