@@ -5242,8 +5242,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           </button>
         )}
 
-        {/* Unstuck button (game view only) -- full system recovery: push commits, verify deploy, reconcile PIDs, clean ghosts, refill queue */}
-        {(viewMode === 'game' || !viewMode) && (
+        {/* Unstuck button -- full system recovery: push commits, verify deploy, reconcile PIDs, clean ghosts, refill queue. Shown in all views except checklist. */}
+        {viewMode !== 'checklist' && (
           <button
             title="Unstuck: push commits · verify deploy · reconcile PIDs · clean ghosts · refill queue"
             onClick={async () => {
@@ -5281,8 +5281,9 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 setUnstuckToast('done')
                 setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null) }, 3500)
               } catch {
-                setUnstuckToast(null)
-                setUnstuckReport(null)
+                setUnstuckReport('Failed to reach unstuck endpoint')
+                setUnstuckToast('error')
+                setTimeout(() => { setUnstuckToast(null); setUnstuckReport(null) }, 2500)
               }
             }}
             style={{
@@ -5293,14 +5294,14 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 : 'linear-gradient(135deg, rgba(234,179,8,0.16) 0%, rgba(202,138,4,0.10) 100%)',
               border: isNightMode ? '1.5px solid rgba(234,179,8,0.58)' : '1.5px solid rgba(234,179,8,0.52)',
               borderRadius: 8, padding: isMobile ? '5px 8px' : '5px 10px',
-              cursor: (unstuckToast === 'loading' || unstuckToast === 'done') ? 'default' : 'pointer',
+              cursor: (unstuckToast === 'loading' || unstuckToast === 'done' || unstuckToast === 'error') ? 'default' : 'pointer',
               transition: 'all 150ms ease',
               position: 'relative',
-              opacity: (unstuckToast === 'loading' || unstuckToast === 'done') ? 0.7 : 1,
+              opacity: (unstuckToast === 'loading' || unstuckToast === 'done' || unstuckToast === 'error') ? 0.7 : 1,
               boxShadow: '0 2px 8px rgba(234,179,8,0.2), inset 0 1px 0 rgba(255,255,255,0.08)',
             }}
             onMouseEnter={e => {
-              if (unstuckToast === 'loading' || unstuckToast === 'done') return
+              if (unstuckToast === 'loading' || unstuckToast === 'done' || unstuckToast === 'error') return
               e.currentTarget.style.background = isNightMode
                 ? 'linear-gradient(135deg, rgba(234,179,8,0.28) 0%, rgba(202,138,4,0.20) 100%)'
                 : 'linear-gradient(135deg, rgba(234,179,8,0.24) 0%, rgba(202,138,4,0.16) 100%)'
@@ -5322,12 +5323,12 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 color: isNightMode ? '#EAB308' : '#CA8A04',
                 fontFamily: "'Inter', sans-serif",
               }}>
-                {unstuckToast === 'loading' ? '...' : unstuckToast === 'done' ? 'Done' : 'Unstuck'}
+                {unstuckToast === 'loading' ? '...' : unstuckToast === 'done' ? 'Done' : unstuckToast === 'error' ? 'Err' : 'Unstuck'}
               </span>
             )}
             {/* Toast confirmation */}
             <AnimatePresence>
-              {unstuckToast === 'done' && (
+              {(unstuckToast === 'done' || unstuckToast === 'error') && (
                 <motion.div
                   initial={{ opacity: 0, y: 4, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -5336,25 +5337,31 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   style={{
                     position: 'absolute', top: 'calc(100% + 8px)', left: '50%',
                     transform: 'translateX(-50%)',
-                    background: isNightMode
-                      ? 'linear-gradient(135deg, rgba(32,20,4,0.98) 0%, rgba(20,14,4,0.98) 100%)'
-                      : 'linear-gradient(135deg, rgba(255,248,220,0.99) 0%, rgba(255,240,180,0.98) 100%)',
-                    border: isNightMode ? '1.5px solid rgba(234,179,8,0.55)' : '1.5px solid rgba(202,138,4,0.50)',
+                    background: unstuckToast === 'error'
+                      ? (isNightMode ? 'linear-gradient(135deg, rgba(32,4,4,0.98) 0%, rgba(20,4,4,0.98) 100%)' : 'linear-gradient(135deg, rgba(255,240,240,0.99) 0%, rgba(255,220,220,0.98) 100%)')
+                      : (isNightMode
+                        ? 'linear-gradient(135deg, rgba(32,20,4,0.98) 0%, rgba(20,14,4,0.98) 100%)'
+                        : 'linear-gradient(135deg, rgba(255,248,220,0.99) 0%, rgba(255,240,180,0.98) 100%)'),
+                    border: unstuckToast === 'error'
+                      ? (isNightMode ? '1.5px solid rgba(239,68,68,0.55)' : '1.5px solid rgba(185,28,28,0.50)')
+                      : (isNightMode ? '1.5px solid rgba(234,179,8,0.55)' : '1.5px solid rgba(202,138,4,0.50)'),
                     borderRadius: 6, padding: '6px 12px',
                     zIndex: 200,
                     fontSize: 11, fontWeight: 600,
-                    color: isNightMode ? '#EAB308' : '#92400E',
+                    color: unstuckToast === 'error'
+                      ? (isNightMode ? '#F87171' : '#B91C1C')
+                      : (isNightMode ? '#EAB308' : '#92400E'),
                     fontFamily: "'Inter', sans-serif",
-                    boxShadow: isNightMode
-                      ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(234,179,8,0.15)'
-                      : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(234,179,8,0.12)',
+                    boxShadow: unstuckToast === 'error'
+                      ? (isNightMode ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(239,68,68,0.15)' : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(239,68,68,0.12)')
+                      : (isNightMode ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(234,179,8,0.15)' : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(234,179,8,0.12)'),
                     pointerEvents: 'none',
                     maxWidth: 360,
                     whiteSpace: 'normal',
                     lineHeight: '1.5',
                   }}
                 >
-                  {unstuckReport || 'System unstuck'}
+                  {unstuckReport || (unstuckToast === 'error' ? 'Unstuck failed' : 'System unstuck')}
                 </motion.div>
               )}
             </AnimatePresence>
