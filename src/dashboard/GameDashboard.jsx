@@ -8680,8 +8680,10 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   const confirmDoneCount = (rightNowTasks || []).filter(t => t.isDoneAwaitingApproval && t.agent === agentSlug).length
   useEffect(() => { setConfirmIndex(0) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
   // Confirmation box minimize toggle -- collapses to slim bar, resets on agent switch or task count drops
-  const [confirmMinimized, setConfirmMinimized] = useState(true)
-  useEffect(() => { setConfirmMinimized(true) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Mobile default: start EXPANDED (false) so Approve/Deny buttons are immediately tappable.
+  // marginTop:auto previously pushed card behind MobileFixedInput -- now card sits naturally in flow.
+  const [confirmMinimized, setConfirmMinimized] = useState(false)
+  useEffect(() => { setConfirmMinimized(false) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
   // Track which task is currently animating the approve glow+fade (keyed by taskId or text)
   const [approvingTaskId, setApprovingTaskId] = useState(null)
   // Track which task is currently animating the deny/reject red glow+fade
@@ -10049,7 +10051,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         return (
           <div style={{
             flexShrink: 0,
-            marginTop: 'auto',
             borderTop: isDaytime ? '1px solid rgba(59,130,246,0.35)' : '1px solid rgba(100,180,255,0.40)',
           }}>
             <AnimatePresence mode="wait">
