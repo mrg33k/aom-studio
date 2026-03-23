@@ -416,74 +416,35 @@ export function useDataPipe(parsePunchList) {
     if (IS_LOCAL) {
       // LOCAL: read from filesystem APIs
       try {
-        const [notifRes, punchRes, missionsRes, taskStatusRes] = await Promise.all([
+        const [notifRes, punchRes] = await Promise.all([
           fetch('/api/local/file?path=context/agent-notifications.md').then(r => r.ok ? r.json() : null).catch(() => null),
           fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null),
-          fetch('/api/local/file?path=context/active-missions.md').then(r => r.ok ? r.json() : null).catch(() => null),
-          fetch('/api/local/file?path=context/task-status.jsonl').then(r => r.ok ? r.json() : null).catch(() => null),
         ])
 
         const notifContent = notifRes?.content || ''
         const punchContent = punchRes?.content || ''
-        const missionsContent = missionsRes?.content || ''
-        const taskStatusContent = taskStatusRes?.content || ''
 
-        // Parse task-status.jsonl: each line is JSON with status: STARTED, WORKING, QUEUED, FINISHED
-        let taskStatusTasks = []
-        if (taskStatusContent) {
-          const lines = taskStatusContent.trim().split('\n').filter(line => line && !line.startsWith('#'))
-          for (const line of lines) {
-            try {
-              const task = JSON.parse(line)
-              if (task.status === 'STARTED' || task.status === 'WORKING') {
-                taskStatusTasks.push({
-                  text: task.description || task.task || task.text || 'Running...',
-                  agent: task.agent || 'system',
-                  done: false,
-                  isLive: true,
-                  isQueued: false,
-                  taskId: task.id,
-                })
-              } else if (task.status === 'QUEUED') {
-                taskStatusTasks.push({
-                  text: task.description || task.task || task.text || 'Queued...',
-                  agent: task.agent || 'system',
-                  done: false,
-                  isLive: true,
-                  isQueued: true,
-                  taskId: task.id,
-                })
-              }
-            } catch {
-              // Skip malformed lines
-            }
-          }
-        }
-
-        // Merge task-status tasks with notifications-based tasks (task-status takes priority)
-        const notifTasks = parseRightNow(missionsContent, notifContent)
-        const mergedTasks = [...taskStatusTasks]
-        for (const task of notifTasks) {
-          if (!mergedTasks.some(t => t.agent === task.agent)) {
-            mergedTasks.push(task)
-          }
-        }
-
-        // Hybrid: also read Supabase for done/todo tasks + events (not tracked in local files)
-        // done tasks -> Right Now with isDoneAwaitingApproval (yellow)
-        // todo tasks -> To Do pill via setTodoItems
-        // events -> Right Now active tasks + agent status overrides
+        // Right Now: events table is the SOLE source (same as production).
+        // task_started with no subsequent task_completed = task is active.
+        // Per-agent dedup: only the newest task per agent.
+        const localActive = []
         try {
           const clientId = getClientId()
           const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
           if (sbRes.ok) {
             const sbData = await sbRes.json()
+            if (sbData.events && sbData.events.length > 0) {
+              const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(sbData.events)
+              eventsAgentStatusRef.current = agentStatuses
+              eventsAgentLastCompletedRef.current = agentLastCompleted
+              localActive.push(...rightNowTasks)
+            }
             if (sbData.tasks) {
               // Done tasks awaiting approval
               const doneEntries = sbData.tasks
                 .filter(t => t.status === 'done' && t.agent !== 'patrik')
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
-              mergedTasks.push(...doneEntries)
+              localActive.push(...doneEntries)
 
               // Todo tasks for To Do pill
               const todoEntries = sbData.tasks
@@ -497,23 +458,12 @@ export function useDataPipe(parsePunchList) {
                 .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
               setPersonalTodos(patrikEntries)
             }
-            // Events table: derive Right Now tasks and agent statuses
-            if (sbData.events && sbData.events.length > 0) {
-              const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(sbData.events)
-              eventsAgentStatusRef.current = agentStatuses
-              eventsAgentLastCompletedRef.current = agentLastCompleted
-              // Merge events-derived tasks: events take priority for agents that have event data
-              const eventsAgentSet = new Set(rightNowTasks.map(t => t.agent))
-              const filteredMerged = mergedTasks.filter(t => !eventsAgentSet.has(t.agent) || t.isDoneAwaitingApproval)
-              mergedTasks.length = 0
-              mergedTasks.push(...rightNowTasks, ...filteredMerged)
-            }
           }
         } catch {
-          // Supabase unavailable in local dev -- skip done/todo tasks
+          // Supabase unavailable in local dev -- Right Now stays empty
         }
 
-        setRightNow(mergedTasks)
+        setRightNow(localActive)
         setCompletedFeed(parseCompletedFeed(notifContent))
         keywordsRef.current = buildAutoCheckKeywords(notifContent)
 
@@ -532,62 +482,31 @@ export function useDataPipe(parsePunchList) {
       try {
         const clientId = getClientId()
 
-        // cage-match A: fetch active_processes (PID-verified truth) in parallel with main status
-        const [res, activeAgentsRes] = await Promise.all([
-          fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`),
-          fetch('/api/dashboard/active-agents').catch(() => null),
-        ])
+        const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
         if (!res.ok) return
         const data = await res.json()
-        const activeAgentsData = activeAgentsRes?.ok ? await activeAgentsRes.json() : null
 
-        // Map Supabase data to Right Now format
-        // cage-match A: Right Now = PID-verified processes from active_processes table.
-        // Tasks table status is NEVER used for Right Now (it drifts). Only used for
-        // queued/todo/done task pills.
+        // Right Now: events table is the SOLE source.
+        // task_started with no subsequent task_completed = task is active.
+        // Per-agent dedup: only the newest task per agent.
         {
           const active = []
 
-          // PRIMARY SOURCE (cage-match A): processes confirmed alive by PID check on the Mac.
-          // Each row = an agent that has a live OS process right now. Zero drift possible.
-          if (activeAgentsData?.active?.length > 0) {
-            const pidVerifiedAgents = new Set()
-            for (const proc of activeAgentsData.active) {
-              pidVerifiedAgents.add(proc.agent)
-              active.push({
-                agent:    proc.agent,
-                text:     proc.task_text || `${proc.agent} is working`,
-                isLive:   true,
-                isQueued: false,
-                taskId:   proc.task_id || null,
-                // Surface heartbeat age so the UI can show "last seen Xs ago"
-                heartbeatAge: proc.age_seconds,
-              })
-            }
-          } else if (!activeAgentsData || !activeAgentsData.tableExists) {
-            // active_processes table not yet migrated -- fall back to tasks table
-            // (old behavior, same as contender B). Remove once table is live.
-            if (data.tasks) {
-              const workingEntries = data.tasks
-                .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
-                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, isQueued: false, taskId: t.id }))
-              active.push(...workingEntries)
-
-              const queuedEntries = data.tasks
-                .filter(t => t.status === 'queued')
-                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
-              active.push(...queuedEntries)
-            }
+          if (data.events && data.events.length > 0) {
+            const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(data.events)
+            eventsAgentStatusRef.current = agentStatuses
+            eventsAgentLastCompletedRef.current = agentLastCompleted
+            active.push(...rightNowTasks)
           }
 
-          // ALWAYS: Done tasks awaiting approval -> Inbox pill (not Right Now)
+          // KEEP: Done tasks awaiting approval -> Inbox pill (not Right Now)
           if (data.tasks) {
             const doneEntries = data.tasks
               .filter(t => t.status === 'done' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
             active.push(...doneEntries)
 
-            // Todo tasks for To Do pill (never shown in Right Now)
+            // Todo tasks for To Do pill
             const todoEntries = data.tasks
               .filter(t => t.status === 'todo' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
@@ -598,23 +517,6 @@ export function useDataPipe(parsePunchList) {
               .filter(t => t.agent === 'patrik' && t.status !== 'completed' && t.status !== 'done')
               .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
             setPersonalTodos(patrikEntries)
-          }
-
-          // Events table: merge events-derived Right Now tasks + store agent statuses.
-          // Events are the new source of truth for Right Now. They take priority over
-          // active_processes and tasks table for agents that have event data.
-          if (data.events && data.events.length > 0) {
-            const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(data.events)
-            eventsAgentStatusRef.current = agentStatuses
-            eventsAgentLastCompletedRef.current = agentLastCompleted
-            if (rightNowTasks.length > 0) {
-              // For agents that have events data: replace their active entry with the events version.
-              // Agents only in active_processes (no events) are kept as-is.
-              const eventsAgentSet = new Set(rightNowTasks.map(t => t.agent))
-              const nonEventsActive = active.filter(t => !eventsAgentSet.has(t.agent) || t.isDoneAwaitingApproval)
-              active.length = 0
-              active.push(...rightNowTasks, ...nonEventsActive)
-            }
           }
 
           setRightNow(active)
