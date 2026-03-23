@@ -251,6 +251,8 @@ export default function GameHUD({
   pinnedPills,
   // View Task: called when user clicks "View Task" in ticker right-click menu
   onViewTask,
+  // Drawer snap state: 'half' | 'full' | null -- adjusts HUD bottom offset on mobile
+  drawerSnap,
 }) {
   // Override: Day=brighter blue, Night=darker blue. No WHITE backgrounds anywhere.
   const [nightOverride, setNightOverride] = useState(() => new Date().getHours() >= 20)
@@ -843,7 +845,7 @@ export default function GameHUD({
       onTouchEnd={handleHudSwipeEnd}
       style={{
         position: 'fixed',
-        bottom: isMobile ? 50 : 0,
+        bottom: isMobile ? (drawerSnap === 'full' ? -50 : 50) : 0,
         left: 0, right: 0,
         zIndex: 40,
         pointerEvents: 'auto',

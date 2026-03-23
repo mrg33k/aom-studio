@@ -12785,6 +12785,7 @@ export default function GameDashboard() {
               })
             }}
             isNightMode={isNightMode}
+            drawerSnap={drawerSnap}
             expandPillSection={expandPillSection}
             onExpandPillHandled={() => setExpandPillSection(null)}
             hiddenPills={hiddenPills}
