@@ -10637,6 +10637,10 @@ export default function GameDashboard() {
   const [agentAssets, setAgentAssets] = useState(AGENT_ASSETS_DEFAULT)
   const [roomsWithRenders, setRoomsWithRenders] = useState(ROOMS_WITH_RENDERS_FALLBACK)
 
+  // Responsive breakpoints -- must be declared before any hooks that reference them
+  const isMobile = useIsMobile()
+  const isTablet = useIsTablet() // iPad/tablet (768-1024px): compress sidebar profile header
+
   // Load Supabase user on mount + watch for auth state changes.
   // Derives client_id from user metadata (world field) for multi-tenant data isolation.
   // Also sets window.__cornerClientId for child components (e.g. TaskContextMenu) that
@@ -11637,9 +11641,6 @@ export default function GameDashboard() {
   const chatBarRef = useRef(null)
 
   const { data, error, loading } = useDashboardData()
-  const isMobile = useIsMobile()
-  const isTablet = useIsTablet() // iPad/tablet (768-1024px): compress sidebar profile header
-
 
   // C3: WebSocket connection
   const wsHook = useWebSocket({
