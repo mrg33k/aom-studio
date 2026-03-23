@@ -146,3 +146,337 @@ export const AGENT_TYPING_PHRASES = {
 export function getTypingPhrases(agentSlug) {
   return AGENT_TYPING_PHRASES[agentSlug] || DEFAULT_TYPING_PHRASES
 }
+
+// Phase-based typing phrases: cocky (0-60s) -> steady (60-180s) -> honest (180s+)
+export const AGENT_TYPING_PHASES = {
+  default: {
+    cocky: [
+      'Hold on lemme cook...',
+      'Actually doing shit...',
+      'Im not ChatGPT...',
+      'Bro chill its loading...',
+      'Reading your mind...',
+    ],
+    steady: [
+      'Deep in it...',
+      'Still cooking...',
+      'Running the thing...',
+      'Bro I see you...',
+      'Working on it...',
+    ],
+    honest: [
+      'Ok this is taking a minute...',
+      'Still here I promise...',
+      'Not stalling, genuinely working...',
+      'Complex problem. Worth the wait.',
+      'Almost got it...',
+    ],
+  },
+  bobby: {
+    cocky: [
+      'Hold on lemme cook...',
+      'Actually building this...',
+      'Writing the code...',
+      'Im not ChatGPT...',
+      'Debugging rn...',
+    ],
+    steady: [
+      'Deep in the codebase...',
+      'Tracing the bug...',
+      'Running the build...',
+      'Building it out...',
+      'Compiling...',
+    ],
+    honest: [
+      'This one is gnarly...',
+      'Found something weird...',
+      'Untangling this...',
+      'Not giving up on this...',
+      'Close now...',
+    ],
+  },
+  elon: {
+    cocky: [
+      'Running the numbers...',
+      'Actually doing shit...',
+      'Plotting the next move...',
+      'Im not ChatGPT...',
+      'Scheming...',
+    ],
+    steady: [
+      'Deep in the data...',
+      'Orchestrating...',
+      'Thinking 3 steps ahead...',
+      'Connecting the dots...',
+      'Routing this...',
+    ],
+    honest: [
+      'This is a complex system...',
+      'Still mapping it out...',
+      'More layers than expected...',
+      'Worth the extra time...',
+      'Getting there...',
+    ],
+  },
+  cleo: {
+    cocky: [
+      'Watching the footage...',
+      'Actually doing shit...',
+      'Hold on lemme cook...',
+      'Im not ChatGPT...',
+      'Syncing the audio...',
+    ],
+    steady: [
+      'Cutting the reel...',
+      'Deep in the timeline...',
+      'Listening to the lav...',
+      'Matching the shots...',
+      'Grading the footage...',
+    ],
+    honest: [
+      'This cut needs more work...',
+      'The audio is tricky...',
+      'Still trimming...',
+      'Finding the best take...',
+      'Almost locked...',
+    ],
+  },
+  steffen: {
+    cocky: [
+      'Vibing with the colors...',
+      'Hold on lemme cook...',
+      'Actually doing shit...',
+      'Making it look fire...',
+      'Im not ChatGPT...',
+    ],
+    steady: [
+      'Getting the spacing right...',
+      'Typography is everything...',
+      'Iterating on the layout...',
+      'Checking the hierarchy...',
+      'The details matter...',
+    ],
+    honest: [
+      'Design takes time to breathe...',
+      'Almost there, one more pass...',
+      'Vision takes a moment...',
+      'This deserves the right look...',
+      'Making it clean...',
+    ],
+  },
+  steve: {
+    cocky: [
+      'Reading the brief...',
+      'Actually doing shit...',
+      'Im not ChatGPT...',
+      'Running the audit...',
+      'Hold on lemme cook...',
+    ],
+    steady: [
+      'Analyzing the data...',
+      'Cross-referencing...',
+      'Writing the framework...',
+      'Thinking strategically...',
+      'Connecting the dots...',
+    ],
+    honest: [
+      'This analysis is deep...',
+      'Still processing...',
+      'The full picture takes time...',
+      'Being thorough here...',
+      'Almost done...',
+    ],
+  },
+  alex: {
+    cocky: [
+      'Building the strategy...',
+      'Actually doing shit...',
+      'Hold on lemme cook...',
+      'Im not ChatGPT...',
+      'Running the play...',
+    ],
+    steady: [
+      'Writing the playbook...',
+      'Mapping the market...',
+      'Working the angles...',
+      'Deep in the strategy...',
+      'Connecting the dots...',
+    ],
+    honest: [
+      'This strategy needs more...',
+      'Still working the plan...',
+      'The full picture matters...',
+      'Good strategies take time...',
+      'Almost ready...',
+    ],
+  },
+  tony: {
+    cocky: [
+      'Creating content...',
+      'Actually doing shit...',
+      'Hold on lemme cook...',
+      'Im not ChatGPT...',
+      'Building the feed...',
+    ],
+    steady: [
+      'Writing the caption...',
+      'Scheduling the posts...',
+      'Researching the hashtags...',
+      'Deep in the content...',
+      'Crafting the hook...',
+    ],
+    honest: [
+      'Getting the voice right...',
+      'Still drafting...',
+      'Platform nuances matter...',
+      'Almost posted...',
+      'One more revision...',
+    ],
+  },
+  jacob: {
+    cocky: [
+      'Writing the email...',
+      'Actually doing shit...',
+      'Hold on lemme cook...',
+      'Im not ChatGPT...',
+      'Finding the lead...',
+    ],
+    steady: [
+      'Researching the prospect...',
+      'Crafting the subject line...',
+      'Personalizing the pitch...',
+      'Deep in the outreach...',
+      'Working the angle...',
+    ],
+    honest: [
+      'Getting the tone right...',
+      'This prospect needs care...',
+      'Still drafting...',
+      'Almost sent...',
+      'One more pass...',
+    ],
+  },
+  mom: {
+    cocky: [
+      'Coordinating the team...',
+      'Actually doing shit...',
+      'Hold on lemme cook...',
+      'Im not ChatGPT...',
+      'Running the show...',
+    ],
+    steady: [
+      'Routing the task...',
+      'Scanning the pipeline...',
+      'Tracking the agents...',
+      'Closing the loop...',
+      'Checking the queue...',
+    ],
+    honest: [
+      'This one needs coordination...',
+      'Still orchestrating...',
+      'Complex routing...',
+      'Getting everyone aligned...',
+      'Almost sorted...',
+    ],
+  },
+  paige: {
+    cocky: [
+      'Checking client health...',
+      'Actually doing shit...',
+      'Hold on lemme cook...',
+      'Im not ChatGPT...',
+      'Tracking deliverables...',
+    ],
+    steady: [
+      'Running the numbers...',
+      'Deep in the client data...',
+      'Checking the pipeline...',
+      'Reviewing the account...',
+      'Scanning for issues...',
+    ],
+    honest: [
+      'The health check needs depth...',
+      'Still reviewing...',
+      'Thorough analysis takes time...',
+      'Getting the full picture...',
+      'Almost done...',
+    ],
+  },
+  elmo: {
+    cocky: [
+      'Running QA...',
+      'Actually doing shit...',
+      'Hold on lemme cook...',
+      'Im not ChatGPT...',
+      'Screenshotting...',
+    ],
+    steady: [
+      'Finding the bugs...',
+      'Checking every pixel...',
+      'Deep in the DOM...',
+      'Running the tests...',
+      'Scanning for issues...',
+    ],
+    honest: [
+      'More issues than expected...',
+      'Still running checks...',
+      'Thorough QA takes time...',
+      'Getting the details right...',
+      'Almost done...',
+    ],
+  },
+  colton: {
+    cocky: [
+      'Hold on lemme cook...',
+      'Actually building this...',
+      'Im not ChatGPT...',
+      'Debugging rn...',
+      'Writing the code...',
+    ],
+    steady: [
+      'Deep in the code...',
+      'Tracing the logic...',
+      'Building it out...',
+      'Running the build...',
+      'Working through it...',
+    ],
+    honest: [
+      'This one is tricky...',
+      'Still debugging...',
+      'Untangling the logic...',
+      'Not giving up...',
+      'Close now...',
+    ],
+  },
+  pixel: {
+    cocky: [
+      'Actually doing shit...',
+      'Im not ChatGPT...',
+      'Bro chill its loading...',
+      'Hold on lemme cook...',
+      'Reading your mind...',
+    ],
+    steady: [
+      'Deep in it...',
+      'Working on it...',
+      'Running the thing...',
+      'Still cooking...',
+      'Processing...',
+    ],
+    honest: [
+      'This takes a minute...',
+      'Still here...',
+      'Almost there...',
+      'Worth the wait...',
+      'Getting there...',
+    ],
+  },
+}
+
+/**
+ * Get phase-based typing phrases for a given agent slug.
+ * Returns { cocky: [...], steady: [...], honest: [...] }
+ */
+export function getPhrasedTyping(agentSlug) {
+  return AGENT_TYPING_PHASES[agentSlug] || AGENT_TYPING_PHASES.default
+}

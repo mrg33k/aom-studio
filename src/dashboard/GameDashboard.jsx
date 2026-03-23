@@ -42,6 +42,7 @@ import { marked } from 'marked'
 import OnboardingGuide from './OnboardingGuide.jsx'
 import AgentInfoTab from './components/AgentInfoTab.jsx'
 import { getTypingPhrases } from './agentTypingPhrases.js'
+import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 
 const ChecklistMode = lazy(() => import('./ChecklistMode.jsx'))
 const MegaboardMode = lazy(() => import('./MegaboardMode.jsx'))
@@ -3509,6 +3510,8 @@ function MobileDrawer({
   // Focus task: when set, tasks tab auto-expands this task (from HUD "View Task")
   focusTaskId,
   onFocusTaskHandled,
+  // Poke: send a follow-up message when agent is slow to respond
+  onPoke,
 }) {
   const sheetRef = useRef(null)
   const dragStartY = useRef(0)
@@ -3882,6 +3885,7 @@ function MobileDrawer({
               onAddToRightNow={onAddToRightNow}
               rightNowTasks={rightNowTasks}
               onSendMessage={onSendMessage}
+              onPoke={onPoke}
               powerupOpen={powerupOpen}
               onPowerupToggle={onPowerupToggle}
               onPowerupActivate={onPowerupActivate}
@@ -5863,43 +5867,31 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
     })
   }
 
-  // Typing indicator: rotating funny phrases + 3 dots pulsing in agent's color
-  const currentTypingPhrases = useMemo(() => getTypingPhrases(agentSlug), [agentSlug])
-  const [thinkingPhraseIdx, setThinkingPhraseIdx] = useState(0)
-
-  useEffect(() => {
-    if (!streaming) {
-      setThinkingPhraseIdx(0)
-      return
+  // Direct send (used by poke button without input state)
+  const sendDirect = async (text) => {
+    if (!text?.trim() || streaming) return
+    const sentTime = new Date().toISOString()
+    setExpanded(true)
+    updateMessages(agentSlug, prev => [...prev, { role: 'user', content: text, time: sentTime }])
+    setSpeaking(true)
+    updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
+    startChatTimeout(agentSlug)
+    if (IS_LOCAL) {
+      fetch('/api/local/relay-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentSlug, message: text, source: 'corner-dashboard' }),
+      }).then(() => startRelayPoll(sentTime)).catch(err => {
+        updateMessages(agentSlug, prev => {
+          const updated = [...prev]
+          const last = updated[updated.length - 1]
+          if (last) updated[updated.length - 1] = { ...last, content: `Failed to send: ${err.message}`, streaming: false }
+          return updated
+        })
+        setSpeaking(false)
+      })
     }
-    const interval = setInterval(() => {
-      setThinkingPhraseIdx(prev => (prev + 1) % currentTypingPhrases.length)
-    }, 3500)
-    return () => clearInterval(interval)
-  }, [streaming, currentTypingPhrases.length])
-
-  const TypingIndicator = () => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 2px' }}>
-      <span
-        key={thinkingPhraseIdx}
-        style={{
-          color: agentColor, fontSize: 11, fontFamily: "'JetBrains Mono', monospace",
-          opacity: 0.85, animation: 'typingPhraseIn 0.4s ease-out',
-        }}
-      >
-        {currentTypingPhrases[thinkingPhraseIdx]}
-      </span>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{
-            width: 5, height: 5, borderRadius: '50%',
-            background: agentColor, opacity: 0.9,
-            animation: `chatTypingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
-          }} />
-        ))}
-      </span>
-    </div>
-  )
+  }
 
   // Streaming cursor
   const StreamingCursor = () => (
@@ -6027,7 +6019,6 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {streaming && <ChatTimeoutRing streaming={streaming} agentColor={agentColor} agentName={currentAgent?.name} />}
                 {!fullscreen && (
                   <button onClick={() => setFullscreen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4, borderRadius: 4, transition: 'color 150ms' }}
                     onMouseEnter={e => e.target.style.color = PALETTE.signText} onMouseLeave={e => e.target.style.color = '#6B7280'}>
@@ -6118,7 +6109,16 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                             {msg.streaming && msg.content && <StreamingCursor />}
                           </div>
                         )}
-                        {isLastStreaming && <TypingIndicator />}
+                        {isLastStreaming && (
+                          <TypingIndicatorV2
+                            compact
+                            streaming={streaming}
+                            agentSlug={agentSlug}
+                            agentColor={agentColor}
+                            agentName={currentAgent?.name}
+                            onPoke={sendDirect}
+                          />
+                        )}
                       </div>
                       <div style={{
                         fontSize: 12, color: '#6B728088', marginTop: 4,
@@ -8541,7 +8541,7 @@ function OwnerNotes({ isNightMode, onAddToRightNow }) {
 // DONE(bobby2): Chat visual polish -- compact stat pills, Trello depth bubbles, source labels deduped, TODAY separator. Pixel-matching chat-view-full.png.
 // DONE: Pan bounds -- constrain camera panning so the building stays in view (Pass 10, clampPan + MAX_PAN)
 // DONE: Demo data mode -- generateDemoData() for production, demo chat messages, demo checklist
-function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar, focusTaskId, onFocusTaskHandled }) {
+function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onChat, chatMessages, onSendMessage, chatInput, onChatInputChange, streaming, chatLoading, agentSlug, punchListData, isExtended, onToggleExtend, isMobile, isTablet, data, activeTab, onActiveTabChange, isNightMode, onAddToRightNow, rightNowTasks, atMenuOpen, filteredAtOptions, atMenuIndex, onAtSelect, onAtKeyDown, cornerConfig, powerupOpen, onPowerupToggle, onPowerupActivate, selectedPowerups, onRemovePowerup, onInputFocus, onSelectAgent, onSelectProject, selectedProject, onMessageContextMenu, onGoOverview, onCenterCamera, externalReplyTo, onClearExternalReply, onSendFileToChat, onDismissMessage, onTaskNotDone, hideInputBar, focusTaskId, onFocusTaskHandled, onPoke }) {
   const status = agentStatus?.status || 'IDLE'
   const task = agentStatus?.currentTask || 'Standing by'
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.IDLE
@@ -9740,16 +9740,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           )
                         )}
                         {msg.streaming && !msg.content && (
-                          <div style={{ display: 'flex', gap: 5, padding: '4px 0', alignItems: 'center' }}>
-                            {[0, 1, 2].map(j => (
-                              <div key={j} style={{
-                                width: 8, height: 8, borderRadius: '50%',
-                                background: agentColor,
-                                opacity: j === 0 ? 0.9 : j === 1 ? 0.55 : 0.25,
-                                animation: `vegasTypingBounce 1.4s ease-in-out ${j * 0.2}s infinite`,
-                              }} />
-                            ))}
-                          </div>
+                          <TypingIndicatorV2
+                            compact
+                            streaming={streaming}
+                            agentSlug={agentSlug}
+                            agentColor={agentColor}
+                            agentName={agent?.name}
+                            onPoke={onPoke}
+                            isDaytime={isDaytime}
+                          />
                         )}
                         {/* Hover Reply button */}
                         {!msg.streaming && msg.content && (
@@ -9799,43 +9798,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 }) // end chatMessages.map
               })()} {/* end AOM Team Room IIFE */}
               {/* Timeout ring + typing indicator with label */}
-              {streaming && (
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '4px 0' }}>
-                  <SpriteAvatar agentSlug={room?.id} size={30} borderColor={agentColor}
-                    status={status}
-                    style={{ flexShrink: 0, boxShadow: `0 0 8px ${agentColor}33`, marginTop: 4 }} />
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 24 }}>
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        {[0, 1, 2].map(j => (
-                          <div key={j} style={{
-                            width: 6, height: 6, borderRadius: '50%',
-                            background: agentColor,
-                            animation: `vegasTypingBounce 1.4s ease-in-out ${j * 0.2}s infinite`,
-                          }} />
-                        ))}
-                      </div>
-                      <span style={{
-                        fontSize: 13, color: isDaytime ? '#8BA4C4' : '#6B8AB0', fontStyle: 'italic', fontWeight: 500,
-                        fontFamily: "'Inter', system-ui, sans-serif",
-                      }}>
-                        {(() => {
-                          const streamMsg = chatMessages?.find?.(m => m.streaming)
-                          const phase = streamMsg?.streamPhase || 'typing'
-                          if (phase === 'busy') return `${agent?.name || 'Agent'} may be busy. Message delivered.`
-                          if (phase === 'processing') return `${agent?.name || 'Agent'} is processing...`
-                          return `${agent?.name || 'Agent'} is typing...`
-                        })()}
-                      </span>
-                    </div>
-                    <ChatTimeoutRing
-                      streaming={streaming}
-                      agentColor={agentColor}
-                      agentName={agent?.name}
-                    />
-                  </div>
-                </div>
-              )}
               <div ref={messagesEndRef} />
             </div>
             {/* Scroll to bottom button (subtle, always available) */}
@@ -11882,11 +11844,11 @@ export default function GameDashboard() {
   }
 
   // ---- SHARED SEND MESSAGE HANDLER (used by both desktop sidebar and mobile drawer) ----
-  const handlePanelSendMessage = useCallback(async (e, replyToId, replyToTaskId) => {
+  const handlePanelSendMessage = useCallback(async (e, replyToId, replyToTaskId, textOverride) => {
     e?.preventDefault()
     setAtMenuOpen(false)
     setAtMenuFilter('')
-    let text = panelChatInput?.trim()
+    let text = textOverride || panelChatInput?.trim()
     if (!text || panelStreaming) return
     // @ prefix routing: "@bobby fix the nav" switches to Bobby, sends "fix the nav"
     const atPrefixMatch = text.match(/^@(\S+)\s*(.*)$/)
@@ -12009,6 +11971,11 @@ export default function GameDashboard() {
       // Clearing immediately after POST would kill the thinking indicator within milliseconds.
     }
   }, [panelChatInput, panelStreaming, selectedRoom, atOptions, isMobile, drawerSnap, selectedPowerups])
+
+  // Poke handler: send a follow-up message directly (bypasses input state)
+  const handlePokePanelMessage = useCallback((text) => {
+    handlePanelSendMessage({ preventDefault: () => {} }, null, null, text)
+  }, [handlePanelSendMessage])
 
   // Powerup v2: toggle skill in selectedPowerups (multi-select, menu stays open)
   const handlePowerupActivate = useCallback((powerup) => {
@@ -12503,6 +12470,7 @@ export default function GameDashboard() {
               onAddToRightNow={addToRightNow}
               rightNowTasks={rightNowTasks}
               onSendMessage={handlePanelSendMessage}
+              onPoke={handlePokePanelMessage}
               powerupOpen={powerupOpen}
               onPowerupToggle={setPowerupOpen}
               onPowerupActivate={handlePowerupActivate}
@@ -12761,6 +12729,7 @@ export default function GameDashboard() {
           chatInput={panelChatInput}
           onChatInputChange={handleAtInputChange}
           onSendMessage={handlePanelSendMessage}
+          onPoke={handlePokePanelMessage}
           streaming={panelStreaming}
           chatLoading={panelChatLoading}
           allAgentStatus={agentStatus}

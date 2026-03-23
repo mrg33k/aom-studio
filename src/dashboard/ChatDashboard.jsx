@@ -12,6 +12,7 @@ import {
 import { marked } from 'marked'
 import { supabase, mapSupabaseMsg } from './lib/supabase'
 import { getTypingPhrases } from './agentTypingPhrases'
+import { TypingIndicatorV2 } from './components/TypingIndicatorV2.jsx'
 
 // Configure marked for safe, minimal rendering
 marked.setOptions({
@@ -1023,14 +1024,14 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     }
   }
 
-  const sendMessage = async (e) => {
+  const sendMessage = async (e, textOverride) => {
     e?.preventDefault()
-    const text = input.trim()
+    const text = (textOverride || input).trim()
     if (!text) return
 
     setIsSending(true)
     const sentTime = new Date().toISOString()
-    setInput('')
+    if (!textOverride) setInput('')
     // Clear typing state (no auto-scroll -- user controls scroll position)
     isUserTypingRef.current = false
     if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current)
@@ -1245,30 +1246,15 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
                     {agentInitial}
                   </div>
                   <div className="bg-[#1C1C1A] border border-[#2A2A28] rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <span
-                        key={thinkingPhrase}
-                        className="text-[#78716C] text-xs font-mono"
-                        style={{ animation: 'typingPhraseIn 0.4s ease-out' }}
-                      >{thinkingPhrases[thinkingPhrase]}</span>
-                      {elapsedSeconds > 0 && (
-                        <span className="text-[#78716C]/50 text-xs font-mono">{elapsedSeconds}s</span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        {[0, 1, 2].map(j => (
-                          <span
-                            key={j}
-                            className="inline-block w-1.5 h-1.5 rounded-full bg-[#C026D3]/60"
-                            style={{ animation: `chatBounce 1.4s ease-in-out ${j * 0.2}s infinite` }}
-                          />
-                        ))}
-                      </span>
-                    </div>
+                    <TypingIndicatorV2
+                      compact
+                      streaming={streaming}
+                      agentSlug={agent.slug}
+                      agentColor="#C026D3"
+                      agentName={agent.name}
+                      onPoke={(text) => sendMessage(null, text)}
+                    />
                   </div>
-                </div>
-                {/* Motivational text under the bubble */}
-                <div className="ml-11 text-[#78716C]/70 text-xs font-mono leading-relaxed">
-                  {motivationalPhrases[motivationalPhrase]}
                 </div>
               </div>
             )
