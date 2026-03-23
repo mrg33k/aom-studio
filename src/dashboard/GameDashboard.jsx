@@ -10049,6 +10049,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         return (
           <div style={{
             flexShrink: 0,
+            marginTop: 'auto',
             borderTop: isDaytime ? '1px solid rgba(59,130,246,0.35)' : '1px solid rgba(100,180,255,0.40)',
           }}>
             <AnimatePresence mode="wait">
