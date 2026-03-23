@@ -913,6 +913,11 @@ const CanvasOffice = forwardRef(function CanvasOffice({
   const [hover, setHover] = useState(null)
   const [loaded, setLoaded] = useState(false)
 
+  // ---- DIRTY FLAG: skip canvas draw when nothing has changed ----
+  // Starts true so the first frame always draws. Set back to false after each draw.
+  // Set to true whenever props/state change or an animation is actively running.
+  const dirtyRef = useRef(true)
+
   // Camera state
   const cameraRef = useRef({ x: 0, y: 0, zoom: 1.0 })
   const cameraAnimRef = useRef(null)
@@ -2027,17 +2032,46 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     ctx.restore() // undo hex clip so badge renders OUTSIDE/BELOW the hex
   }
 
+  // Mark canvas dirty whenever any prop or state that affects the visual output changes.
+  // This covers React-driven changes. Animation-driven changes are handled inside the loop.
+  useEffect(() => {
+    dirtyRef.current = true
+  }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, contextMenu, unreadAgents, loaded])
+
   // Render loop
   useEffect(() => {
     if (!loaded) return
     let raf
     const loop = () => {
-      draw()
+      // Check whether anything is visually animating this frame (independently of React state).
+      // These conditions run every frame so animations that modify refs directly (camera momentum,
+      // drag, celebration, shuffle) still get drawn even when React state hasn't changed.
+      const hasActiveAnimation = (
+        cameraAnimRef.current !== null ||
+        celebrationRef.current.active ||
+        dragStateRef.current.active ||
+        panRef.current.active ||
+        panRef.current.momentumFrame !== null ||
+        Object.keys(shuffleAnimRef.current).length > 0 ||
+        contextMenu !== null ||
+        roomsWithCharsRef.current.size > 0
+      )
+
+      // Check if any agent is WORKING (drives wave blend crossfade animation each frame)
+      const hasWorkingAgent = agentStatus
+        ? Object.values(agentStatus).some(s => s?.status === 'WORKING')
+        : false
+
+      if (dirtyRef.current || hasActiveAnimation || hasWorkingAgent) {
+        draw()
+        dirtyRef.current = false
+      }
+
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [draw, loaded])
+  }, [draw, loaded, contextMenu, agentStatus])
 
   // Block mousewheel zoom (killed)
   useEffect(() => {
