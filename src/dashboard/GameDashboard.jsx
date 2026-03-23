@@ -12415,9 +12415,16 @@ export default function GameDashboard() {
   // Cloud: Supabase cleanup via Vercel env -- only works in production
   const [localResult, cloudResult] = await Promise.all([
     IS_LOCAL
-      ? fetch('/api/local/unstuck', { method: 'POST' })
-          .then(r => r.json())
-          .catch(e => ({ ok: false, error: e.message }))
+      ? (() => {
+          // 20s hard timeout: if backend hangs (Python script, git, network), abort and return error.
+          // Without this the button stays stuck in '...' forever.
+          const ctrl = new AbortController()
+          const tid = setTimeout(() => ctrl.abort(), 20000)
+          return fetch('/api/local/unstuck', { method: 'POST', signal: ctrl.signal })
+            .then(r => r.json())
+            .catch(e => ({ ok: false, error: e.message }))
+            .finally(() => clearTimeout(tid))
+        })()
       : Promise.resolve(null),
     fetch('/api/dashboard/unstuck', { method: 'POST' })
       .then(r => r.json())

@@ -1444,15 +1444,36 @@ function localDashboardPlugin() {
         }
 
         // Helper: run a child process and collect stdout/stderr
-        function runScript(cmd, args, opts) {
+        // timeoutMs > 0: kill the process and resolve with error if it exceeds the limit.
+        function runScript(cmd, args, opts, timeoutMs = 0) {
           return new Promise((resolve) => {
             let stdout = ''
             let stderr = ''
+            let settled = false
             const child = spawn(cmd, args, { ...opts, stdio: 'pipe' })
+            let tid
+            if (timeoutMs > 0) {
+              tid = setTimeout(() => {
+                if (settled) return
+                settled = true
+                child.kill('SIGTERM')
+                resolve({ code: -1, stdout, stderr, error: `timeout after ${timeoutMs}ms` })
+              }, timeoutMs)
+            }
             child.stdout.on('data', d => { stdout += d.toString() })
             child.stderr.on('data', d => { stderr += d.toString() })
-            child.on('close', code => resolve({ code, stdout, stderr }))
-            child.on('error', err => resolve({ code: -1, stdout, stderr, error: err.message }))
+            child.on('close', code => {
+              if (settled) return
+              settled = true
+              if (tid) clearTimeout(tid)
+              resolve({ code, stdout, stderr })
+            })
+            child.on('error', err => {
+              if (settled) return
+              settled = true
+              if (tid) clearTimeout(tid)
+              resolve({ code: -1, stdout, stderr, error: err.message })
+            })
           })
         }
 
@@ -1508,7 +1529,8 @@ function localDashboardPlugin() {
             const pidResult = await runScript(
               'python3',
               [resolve(AOM_EA_SCRIPTS, 'stale-detector-pid.py')],
-              { cwd: AOM_EA_ROOT }
+              { cwd: AOM_EA_ROOT },
+              8000 // 8s -- kill if it hangs (requests timeout, bad network)
             )
             report.pidReconcile = {
               ran: true,
@@ -1520,7 +1542,8 @@ function localDashboardPlugin() {
             const promoteResult = await runScript(
               'python3',
               [resolve(AOM_EA_SCRIPTS, 'auto-promote.py')],
-              { cwd: AOM_EA_ROOT }
+              { cwd: AOM_EA_ROOT },
+              8000 // 8s -- kill if it hangs
             )
             const promoteOut = (promoteResult.stdout + promoteResult.stderr).trim()
             // Parse auto-promote output for a clean status
