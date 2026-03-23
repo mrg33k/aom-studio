@@ -845,7 +845,7 @@ export default function GameHUD({
       onTouchEnd={handleHudSwipeEnd}
       style={{
         position: 'fixed',
-        bottom: isMobile ? (drawerSnap === 'full' ? -50 : 50) : 0,
+        bottom: isMobile ? (drawerSnap === 'full' ? 0 : 50) : 0,
         left: 0, right: 0,
         zIndex: 40,
         pointerEvents: 'auto',
