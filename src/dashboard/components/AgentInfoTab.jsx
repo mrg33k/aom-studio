@@ -4,14 +4,25 @@
 // Populated from agentKnowledge.js (sourced from AGENT.md + latest-result.md + journal).
 
 import React, { useState } from 'react'
-import { ChevronDown, ChevronRight, Zap, ListTodo, Activity, BookmarkPlus, ArrowRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Activity } from 'lucide-react'
 import { getAgentKnowledge } from '../agentKnowledge.js'
 
 // ---- Stats bar (computed from knowledge data + live agentStatus) ------------------
 
+const STATUS_COLORS = {
+  WORKING:  '#22C55E',
+  IDLE:     '#6B7280',
+  BLOCKED:  '#EF4444',
+  STUCK:    '#EF4444',
+  DONE:     '#3B82F6',
+  WAITING:  '#F59E0B',
+  PAUSED:   '#F97316',
+  STALLED:  '#F59E0B',
+}
+
 function StatsBar({ knowledge, agentStatus, accentColor, isDaytime }) {
   const status = agentStatus?.status || 'IDLE'
-  const statusColor = status === 'ACTIVE' ? '#22C55E' : status === 'STUCK' ? '#EF4444' : '#6B7280'
+  const statusColor = STATUS_COLORS[status] || '#6B7280'
   const stats = [
     { label: 'Skills', value: knowledge.skills?.length ?? 0 },
     { label: 'Recipes', value: knowledge.executionRecipes?.length ?? 0 },
@@ -35,7 +46,7 @@ function StatsBar({ knowledge, agentStatus, accentColor, isDaytime }) {
           width: 6, height: 6, borderRadius: '50%',
           background: statusColor,
           flexShrink: 0,
-          boxShadow: status === 'ACTIVE' ? `0 0 6px ${statusColor}` : 'none',
+          boxShadow: status === 'WORKING' ? `0 0 6px ${statusColor}` : 'none',
         }} />
         <span style={{
           color: statusColor,

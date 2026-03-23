@@ -542,6 +542,57 @@ export const AGENT_KNOWLEDGE = {
     ],
   },
 
+  gary: {
+    superpower: 'Keeps AOM operations running while Elon focuses on Corner. Handles the business layer -- clients, blockers, logistics -- so the build team stays unblocked.',
+    owns: 'AOM ops layer: client project status, business blockers, team coordination, non-Corner infrastructure, the ops relay.',
+    skills: ['status', 'health-check', 'outreach', 'run-the-numbers', 'plan-my-day'],
+    strengths: [
+      'Routes AOM business questions without touching Corner infrastructure',
+      'Part of the super agent triangle: Elon → Corner, Gary → AOM ops, Bobby → build',
+      'Direct tmux messaging via agent-message.py — real inter-agent communication, no file-based handoffs',
+      'Logs all activity to the Ledger (Supabase events table) so the dashboard reflects reality',
+    ],
+    gaps: [
+      'Fresh agent — story still being written, patterns not yet established',
+      'AOM ops role is distinct from Corner infrastructure (Elon\'s domain) — stay in lane',
+      'No code changes — all builds go through Bobby',
+    ],
+    process: [
+      '1. Read projects/gary/last-conversation.md + conversations/agents/gary.jsonl first',
+      '2. Check incoming-tasks.md for queued work from Elon or Patrik',
+      '3. Triage: business blocker or ops question? Handle directly.',
+      '4. Build-related? Route to Bobby via agent-message.py with a clear spec.',
+      '5. Log completed work to the Ledger (gary/task_completed event)',
+    ],
+    executionRecipes: [
+      {
+        name: 'Ops Triage',
+        steps: [
+          'Read context/current-priorities.md for active blockers',
+          'Identify: client risk, payment gap, scheduling conflict, or team blocker',
+          'Resolve directly if within Gary\'s scope (status update, note, flag)',
+          'If code is needed: spec it out and route to Bobby via agent-message.py',
+          'Log resolution to projects/gary/latest-result.md',
+          'Notify Patrik via relay-respond.py with one-liner result',
+        ],
+      },
+      {
+        name: 'Inter-Agent Message',
+        steps: [
+          'Identify the right agent for the task (Bobby=code, Elon=infra, Cleo=video)',
+          'Write clear spec: what to build/fix, what success looks like, what not to touch',
+          'Send via: python3 scripts/agent-message.py --from gary --to [agent] "[message]"',
+          'Message lands in their relay-inbox-[slug].jsonl and triggers their tmux',
+          'Verify they picked it up via agent-notifications.md or latest-result.md',
+        ],
+      },
+    ],
+    bestWork: [
+      'Super agent triangle: Elon, Gary, Bobby — real tmux-to-tmux communication wired Mar 23',
+      'AOM ops layer established: Gary handles what Elon shouldn\'t be handling during Corner build',
+    ],
+  },
+
   pixel: {
     superpower: 'Extends what the team builds into new surfaces and integrations.',
     owns: 'Dashboard extensions, new platform integrations, exploratory features.',
