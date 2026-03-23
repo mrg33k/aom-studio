@@ -4390,6 +4390,9 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
   const projectPillRefs = useRef({})
   const [aomOpen, setAomOpen] = useState(false)
   const aomMenuRef = useRef(null)
+  const aomBtnRef = useRef(null)
+  const aomDropdownRef = useRef(null)
+  const [aomDropdownPos, setAomDropdownPos] = useState({ top: 0, left: 0 })
 
   // Fetch corner config for project teams
   useEffect(() => {
@@ -4408,7 +4411,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         const ref = projectPillRefs.current[activeProjectDropdown]
         if (ref && !ref.contains(e.target)) setActiveProjectDropdown(null)
       }
-      if (aomOpen && aomMenuRef.current && !aomMenuRef.current.contains(e.target)) setAomOpen(false)
+      if (aomOpen && aomMenuRef.current && !aomMenuRef.current.contains(e.target) && (!aomDropdownRef.current || !aomDropdownRef.current.contains(e.target))) setAomOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -4518,10 +4521,15 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         {/* AOM badge -- world switcher + admin menu */}
         <div ref={aomMenuRef} style={{ position: 'relative', flexShrink: 0 }}>
           <button
+            ref={aomBtnRef}
             onClick={() => {
               const next = !aomOpen
               setAomOpen(next)
-              if (next && worlds.length === 0 && !worldsLoading) onFetchWorlds?.()
+              if (next) {
+                const rect = aomBtnRef.current?.getBoundingClientRect()
+                if (rect) setAomDropdownPos({ top: rect.bottom + 8, left: rect.left })
+                if (worlds.length === 0 && !worldsLoading) onFetchWorlds?.()
+              }
             }}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -4544,16 +4552,18 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
             </svg>
           </button>
 
-          {/* AOM dropdown */}
-          <AnimatePresence>
+          {/* AOM dropdown -- rendered via portal to escape overflow:hidden on the top bar */}
+          {createPortal(
+            <AnimatePresence>
             {aomOpen && (
               <motion.div
+                ref={aomDropdownRef}
                 initial={{ opacity: 0, y: -8, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.96 }}
                 transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
                 style={{
-                  position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+                  position: 'fixed', top: aomDropdownPos.top, left: aomDropdownPos.left,
                   minWidth: 220, maxWidth: 300,
                   background: 'linear-gradient(135deg, rgba(8,18,44,0.99) 0%, rgba(6,14,36,0.99) 100%)',
                   backdropFilter: 'blur(20px)',
@@ -4561,7 +4571,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   borderRadius: 12,
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,93,38,0.1), 0 0 24px rgba(232,93,38,0.06)',
                   overflow: 'hidden',
-                  zIndex: 100,
+                  zIndex: 9999,
                 }}
               >
                 {/* Menu header: current world */}
@@ -4691,7 +4701,9 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 </div>
               </motion.div>
             )}
-          </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+          )}
         </div>
 
         {/* Team pill */}
