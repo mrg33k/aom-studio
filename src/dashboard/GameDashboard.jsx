@@ -9557,23 +9557,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 />
               )}
-              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: (isMobile || isTablet) ? 0 : 6 }}>
+              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {tab.label}
-                {tab.key && !isMobile && !isTablet && (
-                  <span style={{
-                    background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(255,255,255,0.06)',
-                    border: isDaytime ? '1px solid rgba(59,130,246,0.18)' : '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 3,
-                    padding: '1px 4px',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: isDaytime ? '#6B8AB0' : '#8BA4C4',
-                    lineHeight: 1.2,
-                  }}>
-                    {tab.key}
-                  </span>
-                )}
               </span>
             </motion.button>
           )
