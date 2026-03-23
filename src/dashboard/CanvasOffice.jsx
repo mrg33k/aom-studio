@@ -1464,8 +1464,17 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const snapCenterX = snap.x + ROOM_SIZE / 2
         const snapCenterY = snap.y + ROOM_SIZE / 2
         const snapSlotIdx = findNearestSlot(snapCenterX, snapCenterY, ORIGIN_X, ORIGIN_Y, liveOrder.length)
+
+        // ---- ISLAND ZONE CHECK: suppress live swap when dragged far from all slots ----
+        const ISLAND_THRESHOLD = ROOM_SIZE * 0.6
+        const nearestSlotPosForSwap = slotWorldPos(snapSlotIdx, ORIGIN_X, ORIGIN_Y)
+        const slotCXForSwap = nearestSlotPosForSwap.x + ROOM_SIZE / 2
+        const slotCYForSwap = nearestSlotPosForSwap.y + ROOM_SIZE / 2
+        const distToNearestSlotForSwap = Math.sqrt((snapCenterX - slotCXForSwap) ** 2 + (snapCenterY - slotCYForSwap) ** 2)
+        const inIslandZone = distToNearestSlotForSwap > ISLAND_THRESHOLD
+
         const occupant = liveOrder[snapSlotIdx]
-        drag.swapTargetRoomId = (occupant && occupant !== drag.roomId) ? occupant : null
+        drag.swapTargetRoomId = (!inIslandZone && occupant && occupant !== drag.roomId) ? occupant : null
 
         // ---- LIVE SWAP: fire when a NEW occupant is detected + cooldown elapsed ----
         const isNewTarget = drag.swapTargetRoomId !== null &&
@@ -2362,8 +2371,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     const pan = panRef.current
 
     if (drag.active && drag.roomId) {
-      // Live swaps have already happened during drag (draw loop). On release, just snap the
-      // dragged room to its current home slot (dragHomeSlot tracks it through each live swap).
+      // Live swaps have already happened during drag (draw loop). On release, decide:
+      // - If dropped near a slot: snap to home slot (existing behavior)
+      // - If dropped far from all slots (island zone): save freePos and keep room there
       const draggedRoomId = drag.roomId
       const now = performance.now()
 
@@ -2372,25 +2382,110 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const homeSlot = drag.dragHomeSlot >= 0 ? drag.dragHomeSlot : liveOrder.indexOf(draggedRoomId)
       const homeSlotPos = slotWorldPos(homeSlot >= 0 ? homeSlot : 0, ORIGIN_X, ORIGIN_Y)
 
-      // Animate the dragged room snapping from its current render position to its home slot
       const dragFromX = drag.renderX
       const dragFromY = drag.renderY
-      const alreadyHome = Math.abs(dragFromX - homeSlotPos.x) < 1 && Math.abs(dragFromY - homeSlotPos.y) < 1
-      if (!alreadyHome) {
-        shuffleAnimRef.current[draggedRoomId] = {
-          fromX: dragFromX,
-          fromY: dragFromY,
-          toX: homeSlotPos.x,
-          toY: homeSlotPos.y,
-          startTime: now,
-          isSwap: true,
-        }
-      }
 
-      // Clear free position so the room renders from slotOrder
-      const newFreePos = { ...freePositionsRef.current }
-      delete newFreePos[draggedRoomId]
-      freePositionsRef.current = newFreePos
+      // Compute snap position for the current drag render pos
+      const snap = snapToNearestHexCell(dragFromX, dragFromY, ORIGIN_X, ORIGIN_Y)
+      const snapCX = snap.x + ROOM_SIZE / 2
+      const snapCY = snap.y + ROOM_SIZE / 2
+
+      // Distance from snap to the nearest slot center
+      const nearestSlotIdxOnUp = findNearestSlot(snapCX, snapCY, ORIGIN_X, ORIGIN_Y, liveOrder.length)
+      const nearestSlotPosOnUp = slotWorldPos(nearestSlotIdxOnUp, ORIGIN_X, ORIGIN_Y)
+      const slotCXOnUp = nearestSlotPosOnUp.x + ROOM_SIZE / 2
+      const slotCYOnUp = nearestSlotPosOnUp.y + ROOM_SIZE / 2
+      const distToSlotOnUp = Math.sqrt((snapCX - slotCXOnUp) ** 2 + (snapCY - slotCYOnUp) ** 2)
+      const ISLAND_THRESHOLD = ROOM_SIZE * 0.6
+
+      if (distToSlotOnUp > ISLAND_THRESHOLD) {
+        // ---- ISLAND DROP: room stays at snap position, not a slot ----
+        // Auto-latch: if near another islanded room, ensure we don't overlap
+        const LATCH_THRESHOLD = ROOM_SIZE * 1.5
+        const freeRooms = Object.entries(freePositionsRef.current)
+        let finalSnap = snap
+        let latchTarget = null
+        let latchDist = Infinity
+
+        for (const [freeRoomId, freePos] of freeRooms) {
+          if (freeRoomId === draggedRoomId) continue
+          const freeCX = freePos.x + ROOM_SIZE / 2
+          const freeCY = freePos.y + ROOM_SIZE / 2
+          const d = Math.sqrt((snapCX - freeCX) ** 2 + (snapCY - freeCY) ** 2)
+          if (d < LATCH_THRESHOLD && d < latchDist) {
+            latchTarget = { roomId: freeRoomId, x: freePos.x, y: freePos.y }
+            latchDist = d
+          }
+        }
+
+        if (latchTarget) {
+          // If snapping to the exact same cell as the latch target, find an adjacent hex cell
+          if (Math.abs(snap.x - latchTarget.x) < 1 && Math.abs(snap.y - latchTarget.y) < 1) {
+            // Try neighbor offsets: ±1 row, ±1 col (stepped by 2 per hex parity)
+            const neighbors = [
+              { dr: 0, dc: 2 }, { dr: 0, dc: -2 },
+              { dr: 1, dc: 1 }, { dr: 1, dc: -1 },
+              { dr: -1, dc: 1 }, { dr: -1, dc: -1 },
+            ]
+            // Determine latch target row/col from its position
+            const latchRow = Math.round((latchTarget.y + ROOM_SIZE / 2 - ORIGIN_Y - ROOM_SIZE / 2) / HEX_ROW_STEP)
+            const latchCol = Math.round((latchTarget.x + ROOM_SIZE / 2 - ORIGIN_X - ROOM_SIZE / 2) / HEX_COL_STEP)
+            let bestNeighbor = null
+            let bestNeighborDist = Infinity
+            for (const { dr, dc } of neighbors) {
+              const nr = latchRow + dr
+              const nc = latchCol + dc
+              // Enforce hex parity (even row=even col, odd row=odd col)
+              const parity = ((nr % 2) + 2) % 2
+              if (((nc % 2) + 2) % 2 !== parity) continue
+              const nPos = hexPosition(nr, nc, ORIGIN_X, ORIGIN_Y)
+              const ndx = nPos.x - dragFromX
+              const ndy = nPos.y - dragFromY
+              const nd = Math.sqrt(ndx * ndx + ndy * ndy)
+              if (nd < bestNeighborDist) {
+                bestNeighborDist = nd
+                bestNeighbor = nPos
+              }
+            }
+            if (bestNeighbor) finalSnap = bestNeighbor
+          }
+        }
+
+        // Animate the room to the final island snap position
+        const alreadyThere = Math.abs(dragFromX - finalSnap.x) < 1 && Math.abs(dragFromY - finalSnap.y) < 1
+        if (!alreadyThere) {
+          shuffleAnimRef.current[draggedRoomId] = {
+            fromX: dragFromX,
+            fromY: dragFromY,
+            toX: finalSnap.x,
+            toY: finalSnap.y,
+            startTime: now,
+            isSwap: true,
+          }
+        }
+
+        // Save island position -- freePos overrides slot rendering
+        freePositionsRef.current = { ...freePositionsRef.current, [draggedRoomId]: { x: finalSnap.x, y: finalSnap.y } }
+
+      } else {
+        // ---- NORMAL SLOT SNAP: snap back to home slot ----
+        const alreadyHome = Math.abs(dragFromX - homeSlotPos.x) < 1 && Math.abs(dragFromY - homeSlotPos.y) < 1
+        if (!alreadyHome) {
+          shuffleAnimRef.current[draggedRoomId] = {
+            fromX: dragFromX,
+            fromY: dragFromY,
+            toX: homeSlotPos.x,
+            toY: homeSlotPos.y,
+            startTime: now,
+            isSwap: true,
+          }
+        }
+
+        // Clear free position so the room renders from slotOrder
+        const newFreePos = { ...freePositionsRef.current }
+        delete newFreePos[draggedRoomId]
+        freePositionsRef.current = newFreePos
+      }
 
       drag.active = false
       drag.swapTargetRoomId = null
@@ -2806,8 +2901,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       const pan = panRef.current
 
       if (drag.active && drag.roomId) {
-        // Live swaps already happened during drag (draw loop). Just snap the dragged room
-        // to its current home slot (dragHomeSlot tracks it through each live swap).
+        // Live swaps already happened during drag (draw loop). On release, decide:
+        // - If dropped near a slot: snap to home slot (existing behavior)
+        // - If dropped far from all slots (island zone): save freePos and keep room there
         const draggedRoomId = drag.roomId
         const now = performance.now()
 
@@ -2817,21 +2913,100 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
         const dragFromX = drag.renderX
         const dragFromY = drag.renderY
-        const alreadyHome = Math.abs(dragFromX - homeSlotPos.x) < 1 && Math.abs(dragFromY - homeSlotPos.y) < 1
-        if (!alreadyHome) {
-          shuffleAnimRef.current[draggedRoomId] = {
-            fromX: dragFromX,
-            fromY: dragFromY,
-            toX: homeSlotPos.x,
-            toY: homeSlotPos.y,
-            startTime: now,
-            isSwap: true,
-          }
-        }
 
-        const newFreePos = { ...freePositionsRef.current }
-        delete newFreePos[draggedRoomId]
-        freePositionsRef.current = newFreePos
+        // Compute snap position for the current drag render pos
+        const snapTE = snapToNearestHexCell(dragFromX, dragFromY, ORIGIN_X, ORIGIN_Y)
+        const snapCXTE = snapTE.x + ROOM_SIZE / 2
+        const snapCYTE = snapTE.y + ROOM_SIZE / 2
+
+        // Distance from snap to the nearest slot center
+        const nearestSlotIdxTE = findNearestSlot(snapCXTE, snapCYTE, ORIGIN_X, ORIGIN_Y, liveOrder.length)
+        const nearestSlotPosTE = slotWorldPos(nearestSlotIdxTE, ORIGIN_X, ORIGIN_Y)
+        const slotCXTE = nearestSlotPosTE.x + ROOM_SIZE / 2
+        const slotCYTE = nearestSlotPosTE.y + ROOM_SIZE / 2
+        const distToSlotTE = Math.sqrt((snapCXTE - slotCXTE) ** 2 + (snapCYTE - slotCYTE) ** 2)
+        const ISLAND_THRESHOLD_TE = ROOM_SIZE * 0.6
+
+        if (distToSlotTE > ISLAND_THRESHOLD_TE) {
+          // ---- ISLAND DROP: room stays at snap position, not a slot ----
+          const LATCH_THRESHOLD_TE = ROOM_SIZE * 1.5
+          const freeRoomsTE = Object.entries(freePositionsRef.current)
+          let finalSnapTE = snapTE
+          let latchTargetTE = null
+          let latchDistTE = Infinity
+
+          for (const [freeRoomId, freePos] of freeRoomsTE) {
+            if (freeRoomId === draggedRoomId) continue
+            const freeCX = freePos.x + ROOM_SIZE / 2
+            const freeCY = freePos.y + ROOM_SIZE / 2
+            const d = Math.sqrt((snapCXTE - freeCX) ** 2 + (snapCYTE - freeCY) ** 2)
+            if (d < LATCH_THRESHOLD_TE && d < latchDistTE) {
+              latchTargetTE = { roomId: freeRoomId, x: freePos.x, y: freePos.y }
+              latchDistTE = d
+            }
+          }
+
+          if (latchTargetTE) {
+            if (Math.abs(snapTE.x - latchTargetTE.x) < 1 && Math.abs(snapTE.y - latchTargetTE.y) < 1) {
+              const neighborsTE = [
+                { dr: 0, dc: 2 }, { dr: 0, dc: -2 },
+                { dr: 1, dc: 1 }, { dr: 1, dc: -1 },
+                { dr: -1, dc: 1 }, { dr: -1, dc: -1 },
+              ]
+              const latchRowTE = Math.round((latchTargetTE.y + ROOM_SIZE / 2 - ORIGIN_Y - ROOM_SIZE / 2) / HEX_ROW_STEP)
+              const latchColTE = Math.round((latchTargetTE.x + ROOM_SIZE / 2 - ORIGIN_X - ROOM_SIZE / 2) / HEX_COL_STEP)
+              let bestNeighborTE = null
+              let bestNeighborDistTE = Infinity
+              for (const { dr, dc } of neighborsTE) {
+                const nr = latchRowTE + dr
+                const nc = latchColTE + dc
+                const parity = ((nr % 2) + 2) % 2
+                if (((nc % 2) + 2) % 2 !== parity) continue
+                const nPos = hexPosition(nr, nc, ORIGIN_X, ORIGIN_Y)
+                const ndx = nPos.x - dragFromX
+                const ndy = nPos.y - dragFromY
+                const nd = Math.sqrt(ndx * ndx + ndy * ndy)
+                if (nd < bestNeighborDistTE) {
+                  bestNeighborDistTE = nd
+                  bestNeighborTE = nPos
+                }
+              }
+              if (bestNeighborTE) finalSnapTE = bestNeighborTE
+            }
+          }
+
+          const alreadyThereTE = Math.abs(dragFromX - finalSnapTE.x) < 1 && Math.abs(dragFromY - finalSnapTE.y) < 1
+          if (!alreadyThereTE) {
+            shuffleAnimRef.current[draggedRoomId] = {
+              fromX: dragFromX,
+              fromY: dragFromY,
+              toX: finalSnapTE.x,
+              toY: finalSnapTE.y,
+              startTime: now,
+              isSwap: true,
+            }
+          }
+
+          freePositionsRef.current = { ...freePositionsRef.current, [draggedRoomId]: { x: finalSnapTE.x, y: finalSnapTE.y } }
+
+        } else {
+          // ---- NORMAL SLOT SNAP: snap back to home slot ----
+          const alreadyHome = Math.abs(dragFromX - homeSlotPos.x) < 1 && Math.abs(dragFromY - homeSlotPos.y) < 1
+          if (!alreadyHome) {
+            shuffleAnimRef.current[draggedRoomId] = {
+              fromX: dragFromX,
+              fromY: dragFromY,
+              toX: homeSlotPos.x,
+              toY: homeSlotPos.y,
+              startTime: now,
+              isSwap: true,
+            }
+          }
+
+          const newFreePos = { ...freePositionsRef.current }
+          delete newFreePos[draggedRoomId]
+          freePositionsRef.current = newFreePos
+        }
 
         drag.active = false
         drag.swapTargetRoomId = null
