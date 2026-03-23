@@ -7,10 +7,40 @@
 // Upload flow: get signed URL from server, PUT file directly to Supabase (no Vercel body limit).
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft, Code } from 'lucide-react'
+import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft, Code, BookOpen, RefreshCw } from 'lucide-react'
 import { marked } from 'marked'
 
 const FILES_API = '/api/dashboard/files'
+
+// ---- Agent deliverable docs ----
+
+const AGENT_FOLDERS = {
+  bobby: 'bobby',
+  colton: 'colton',
+  steffen: 'steffen',
+  jacob: 'jacob',
+  elon: 'sys',
+  alex: 'aom-strategy',
+  steve: 'steve',
+  cleo: 'content-agent',
+  tony: 'tony',
+  paige: 'paige',
+  pixel: 'pixel',
+  mom: 'mom',
+}
+
+function getAgentDocs(agentSlug) {
+  const folder = AGENT_FOLDERS[agentSlug]
+  const docs = []
+  if (folder) {
+    docs.push({ label: 'Latest Work', path: `projects/${folder}/latest-result.md`, group: 'Agent' })
+    docs.push({ label: 'Agent Brief', path: `projects/${folder}/AGENT.md`, group: 'Agent' })
+    docs.push({ label: 'Last Conversation', path: `projects/${folder}/last-conversation.md`, group: 'Agent', truncate: 8000 })
+  }
+  docs.push({ label: 'Current Priorities', path: 'context/current-priorities.md', group: 'Context' })
+  docs.push({ label: 'Decision Log', path: 'decisions/log.md', group: 'Context' })
+  return docs
+}
 
 function formatDate(iso) {
   try {
@@ -53,7 +83,7 @@ function isMarkdown(file) {
 // ---- FilesTab Component ----
 
 export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileToChat }) {
-  const [subTab, setSubTab] = useState('text') // 'images' | 'text'
+  const [subTab, setSubTab] = useState('text') // 'text' | 'docs' | 'images'
   const [files, setFiles] = useState([])
   const [filesLoading, setFilesLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -72,6 +102,38 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
   const [rawMode, setRawMode] = useState(false) // show raw markdown vs rendered
   const [textError, setTextError] = useState(null)
   const textareaRef = useRef(null)
+
+  // Docs tab state
+  const [docsDoc, setDocsDoc] = useState(null) // { label, path, content, lastModified }
+  const [docsLoading, setDocsLoading] = useState(false)
+  const [docsError, setDocsError] = useState(null)
+  const [docsRawMode, setDocsRawMode] = useState(false)
+
+  const loadDoc = useCallback(async (doc) => {
+    setDocsLoading(true)
+    setDocsError(null)
+    setDocsDoc(null)
+    setDocsRawMode(false)
+    try {
+      const res = await fetch(`/api/local/file?path=${encodeURIComponent(doc.path)}`)
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || `HTTP ${res.status}`)
+      }
+      const data = await res.json()
+      let content = data.content || ''
+      // Truncate very long files (last-conversation.md can be huge)
+      if (doc.truncate && content.length > doc.truncate) {
+        content = content.slice(-doc.truncate)
+        content = `> *[Truncated to last ${(doc.truncate / 1000).toFixed(0)}k characters]*\n\n` + content
+      }
+      setDocsDoc({ ...doc, content, lastModified: data.lastModified })
+    } catch (err) {
+      setDocsError(err.message)
+    } finally {
+      setDocsLoading(false)
+    }
+  }, [])
 
   const isDaytime = isNightMode === false
 
@@ -279,6 +341,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
       }}>
         {[
           { id: 'text', label: 'Text', icon: FileText },
+          { id: 'docs', label: 'Docs', icon: BookOpen },
           { id: 'images', label: 'Images', icon: Image },
         ].map(tab => {
           const active = subTab === tab.id
@@ -286,7 +349,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
           return (
             <button
               key={tab.id}
-              onClick={() => { setSubTab(tab.id); setViewingFile(null) }}
+              onClick={() => { setSubTab(tab.id); setViewingFile(null); setDocsDoc(null) }}
               style={{
                 flex: 1,
                 display: 'flex',
@@ -570,6 +633,40 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
         </div>
       )}
 
+      {/* ============ DOCS SUB-TAB ============ */}
+      {subTab === 'docs' && !docsDoc && (
+        <DocsDocList
+          agentSlug={agentSlug}
+          isDaytime={isDaytime}
+          borderColor={borderColor}
+          mutedText={mutedText}
+          labelText={labelText}
+          accentColor={accentColor}
+          accentBg={accentBg}
+          accentBorder={accentBorder}
+          loading={docsLoading}
+          error={docsError}
+          onSelectDoc={loadDoc}
+        />
+      )}
+
+      {subTab === 'docs' && docsDoc && (
+        <DocsDocViewer
+          doc={docsDoc}
+          isDaytime={isDaytime}
+          borderColor={borderColor}
+          mutedText={mutedText}
+          accentColor={accentColor}
+          accentBg={accentBg}
+          accentBorder={accentBorder}
+          rawMode={docsRawMode}
+          onToggleRaw={() => setDocsRawMode(r => !r)}
+          onBack={() => { setDocsDoc(null); setDocsError(null) }}
+          onReload={() => loadDoc(docsDoc)}
+          onSendToChat={onSendFileToChat ? () => onSendFileToChat({ type: 'text', filename: docsDoc.label, content: docsDoc.content }) : null}
+        />
+      )}
+
       {/* ============ IMAGES SUB-TAB ============ */}
       {subTab === 'images' && (
         <>
@@ -829,6 +926,235 @@ function FileThumbnail({ file, isDaytime, onView, onDelete, onSendToChat }) {
       >
         <X size={10} style={{ color: '#F87171' }} />
       </button>
+    </div>
+  )
+}
+
+// ---- Docs: list component ----
+
+function DocsDocList({ agentSlug, isDaytime, borderColor, mutedText, labelText, accentColor, accentBg, accentBorder, loading, error, onSelectDoc }) {
+  const docs = getAgentDocs(agentSlug)
+  const groups = [...new Set(docs.map(d => d.group))]
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+      {error && (
+        <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#F87171', fontSize: 12, marginBottom: 10 }}>
+          {error}
+        </div>
+      )}
+      {loading && (
+        <div style={{ textAlign: 'center', color: mutedText, fontSize: 13, padding: '32px 0' }}>
+          Loading...
+        </div>
+      )}
+      {groups.map(group => (
+        <div key={group} style={{ marginBottom: 16 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, color: labelText, textTransform: 'uppercase',
+            letterSpacing: 0.8, marginBottom: 6, paddingLeft: 2,
+          }}>
+            {group}
+          </div>
+          {docs.filter(d => d.group === group).map(doc => (
+            <DocsDocRow
+              key={doc.path}
+              doc={doc}
+              isDaytime={isDaytime}
+              borderColor={borderColor}
+              mutedText={mutedText}
+              accentColor={accentColor}
+              accentBg={accentBg}
+              accentBorder={accentBorder}
+              onClick={() => onSelectDoc(doc)}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function DocsDocRow({ doc, isDaytime, borderColor, mutedText, accentColor, onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '9px 12px',
+        marginBottom: 4,
+        background: hovered ? (isDaytime ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)') : 'transparent',
+        border: `1px solid ${hovered ? 'rgba(59,130,246,0.25)' : borderColor}`,
+        borderRadius: 8,
+        cursor: 'pointer',
+        transition: 'all 150ms',
+      }}
+    >
+      <BookOpen size={13} style={{ color: accentColor, flexShrink: 0 }} />
+      <span style={{ fontSize: 13, fontWeight: 600, color: '#E8ECF0', flex: 1 }}>
+        {doc.label}
+      </span>
+      <span style={{ fontSize: 11, color: mutedText, fontFamily: "'JetBrains Mono', monospace" }}>
+        {doc.path.split('/').pop()}
+      </span>
+    </div>
+  )
+}
+
+// ---- Docs: viewer component ----
+
+function DocsDocViewer({ doc, isDaytime, borderColor, mutedText, accentColor, accentBg, accentBorder, rawMode, onToggleRaw, onBack, onReload, onSendToChat }) {
+  const wordCount = useMemo(() => (doc.content || '').trim().split(/\s+/).filter(Boolean).length, [doc.content])
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Viewer header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '10px 14px',
+        borderBottom: `1px solid ${borderColor}`,
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: accentBg, border: `1px solid ${accentBorder}`,
+            borderRadius: 6, width: 28, height: 28, cursor: 'pointer',
+            color: accentColor, flexShrink: 0,
+          }}
+        >
+          <ArrowLeft size={14} />
+        </button>
+        <span style={{
+          color: '#E8ECF0', fontSize: 12, fontWeight: 600,
+          flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {doc.label}
+        </span>
+        {doc.lastModified && (
+          <span style={{ color: mutedText, fontSize: 11, flexShrink: 0 }}>
+            {new Date(doc.lastModified).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          </span>
+        )}
+        <button
+          onClick={onReload}
+          title="Reload"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 28, height: 28,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 6, color: mutedText,
+            cursor: 'pointer', flexShrink: 0,
+          }}
+        >
+          <RefreshCw size={12} />
+        </button>
+        <button
+          onClick={onToggleRaw}
+          title={rawMode ? 'Show rendered' : 'Show raw'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '0 8px',
+            height: 28,
+            background: rawMode ? accentBg : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${rawMode ? accentBorder : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: 6, color: rawMode ? accentColor : mutedText,
+            fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+            transition: 'all 150ms',
+            fontFamily: "'Inter', system-ui, sans-serif",
+          }}
+        >
+          <Code size={11} />
+          {rawMode ? 'Rendered' : 'Raw'}
+        </button>
+        {onSendToChat && (
+          <button
+            onClick={onSendToChat}
+            title="Send to chat"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '0 8px',
+              height: 28,
+              background: 'rgba(59,130,246,0.12)',
+              border: '1px solid rgba(59,130,246,0.25)',
+              borderRadius: 6, color: accentColor,
+              fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}
+          >
+            <Send size={11} />
+            Chat
+          </button>
+        )}
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {rawMode ? (
+          <div style={{ padding: 14, height: '100%', boxSizing: 'border-box' }}>
+            <textarea
+              readOnly
+              value={doc.content}
+              style={{
+                width: '100%',
+                height: '100%',
+                minHeight: 300,
+                padding: 12,
+                background: isDaytime ? '#0B1423' : '#060B14',
+                border: `1px solid ${borderColor}`,
+                borderRadius: 8,
+                color: isDaytime ? '#D1D9E6' : '#A0B0C8',
+                fontSize: 13,
+                lineHeight: 1.6,
+                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                resize: 'none',
+                outline: 'none',
+                boxSizing: 'border-box',
+                WebkitAppearance: 'none',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            />
+          </div>
+        ) : (
+          <MarkdownDocViewer content={doc.content} isDaytime={isDaytime} />
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{
+        padding: '6px 14px',
+        borderTop: `1px solid ${borderColor}`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 10, color: accentColor, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
+          MD
+        </span>
+        <span style={{ fontSize: 11, color: mutedText }}>
+          {wordCount.toLocaleString()} words
+        </span>
+        <span style={{ fontSize: 11, color: mutedText }}>
+          {(doc.content || '').length.toLocaleString()} chars
+        </span>
+        <span style={{
+          fontSize: 11, color: mutedText, flex: 1, overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right',
+          fontFamily: "'JetBrains Mono', monospace",
+        }}>
+          {doc.path}
+        </span>
+      </div>
     </div>
   )
 }
