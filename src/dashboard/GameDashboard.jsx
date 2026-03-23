@@ -5261,7 +5261,11 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   if (r.deploy?.ok) lines.push('deploy live')
                   else if (r.deploy) lines.push('deploy unreachable')
                   if (r.pidReconcile?.ran) lines.push('PIDs reconciled')
-                  if (r.queueRefill?.ran) lines.push('queue refilled')
+                  if (r.queueRefill?.status === 'promoted') lines.push('task promoted')
+                  else if (r.queueRefill?.status === 'full') lines.push('queue full')
+                  else if (r.queueRefill?.status === 'empty') lines.push('queue empty')
+                  else if (r.queueRefill?.ran) lines.push('queue checked')
+                  if (r.launchQueue?.depth > 0) lines.push(`${r.launchQueue.depth} pending launch${r.launchQueue.depth !== 1 ? 'es' : ''}`)
                   if (r.taskStatus?.ghostsCleared > 0) lines.push(`${r.taskStatus.ghostsCleared} ghost${r.taskStatus.ghostsCleared !== 1 ? 's' : ''} cleared`)
                 }
                 const cloud = results?.cloud

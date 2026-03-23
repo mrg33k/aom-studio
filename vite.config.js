@@ -1510,10 +1510,33 @@ function localDashboardPlugin() {
               [resolve(AOM_EA_SCRIPTS, 'auto-promote.py')],
               { cwd: AOM_EA_ROOT }
             )
+            const promoteOut = (promoteResult.stdout + promoteResult.stderr).trim()
+            // Parse auto-promote output for a clean status
+            let promoteStatus = 'ran'
+            if (promoteOut.includes('Queue empty')) promoteStatus = 'empty'
+            else if (promoteOut.includes('slots full')) promoteStatus = 'full'
+            else if (promoteOut.includes('wrote launch-queue entry')) promoteStatus = 'promoted'
             report.queueRefill = {
               ran: true,
-              output: (promoteResult.stdout + promoteResult.stderr).trim().slice(0, 500),
+              status: promoteStatus, // 'empty' | 'full' | 'promoted' | 'ran'
+              output: promoteOut.slice(0, 500),
               exitCode: promoteResult.code,
+            }
+
+            // 4b. LAUNCH QUEUE DEPTH (count pending agent launches)
+            try {
+              const lqPath = resolve(AOM_EA_ROOT, 'context', 'launch-queue.jsonl')
+              if (fs.existsSync(lqPath)) {
+                const lqLines = fs.readFileSync(lqPath, 'utf-8')
+                  .split('\n')
+                  .filter(l => l.trim() && !l.startsWith('#'))
+                const lqEntries = lqLines.map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
+                report.launchQueue = { depth: lqEntries.length }
+              } else {
+                report.launchQueue = { depth: 0 }
+              }
+            } catch (e) {
+              report.launchQueue = { depth: 0, error: e.message }
             }
 
             // 5. CLEAN + READ TASK STATUS SNAPSHOT
