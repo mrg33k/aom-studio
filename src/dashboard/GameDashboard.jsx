@@ -5242,10 +5242,10 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           </button>
         )}
 
-        {/* Unstuck button (game view only) -- clears stale active tasks + resets stuck agents */}
+        {/* Unstuck button (game view only) -- full system recovery: push commits, verify deploy, reconcile PIDs, clean ghosts, refill queue */}
         {(viewMode === 'game' || !viewMode) && (
           <button
-            title="Unstuck: clear active tasks + reset stuck agents"
+            title="Unstuck: push commits · verify deploy · reconcile PIDs · clean ghosts · refill queue"
             onClick={async () => {
               if (unstuckToast === 'loading') return
               setUnstuckToast('loading')
@@ -5265,8 +5265,11 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   else if (r.queueRefill?.status === 'full') lines.push('queue full')
                   else if (r.queueRefill?.status === 'empty') lines.push('queue empty')
                   else if (r.queueRefill?.ran) lines.push('queue checked')
-                  if (r.launchQueue?.depth > 0) lines.push(`${r.launchQueue.depth} pending launch${r.launchQueue.depth !== 1 ? 'es' : ''}`)
+                  if (r.launchQueue?.staleCleared > 0) lines.push(`${r.launchQueue.staleCleared} stale launch${r.launchQueue.staleCleared !== 1 ? 'es' : ''} cleared`)
+                  if (r.launchQueue?.depth > 0) lines.push(`${r.launchQueue.depth} launch${r.launchQueue.depth !== 1 ? 'es' : ''} queued`)
                   if (r.taskStatus?.ghostsCleared > 0) lines.push(`${r.taskStatus.ghostsCleared} ghost${r.taskStatus.ghostsCleared !== 1 ? 's' : ''} cleared`)
+                  if (r.relayReset?.listenerRestarted) lines.push('listener restarted')
+                  if (r.relayReset?.tmux === 'restarted') lines.push('relay restarted')
                 }
                 const cloud = results?.cloud
                 if (cloud?.cleared > 0) lines.push(`${cloud.cleared} task${cloud.cleared !== 1 ? 's' : ''} cleared`)
@@ -5336,7 +5339,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       : 'linear-gradient(135deg, rgba(255,248,220,0.99) 0%, rgba(255,240,180,0.98) 100%)',
                     border: isNightMode ? '1.5px solid rgba(234,179,8,0.55)' : '1.5px solid rgba(202,138,4,0.50)',
                     borderRadius: 6, padding: '6px 12px',
-                    whiteSpace: 'nowrap', zIndex: 200,
+                    zIndex: 200,
                     fontSize: 11, fontWeight: 600,
                     color: isNightMode ? '#EAB308' : '#92400E',
                     fontFamily: "'Inter', sans-serif",
@@ -5344,9 +5347,9 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       ? '0 4px 12px rgba(0,0,0,0.4), 0 0 12px rgba(234,179,8,0.15)'
                       : '0 4px 12px rgba(0,0,0,0.12), 0 0 12px rgba(234,179,8,0.12)',
                     pointerEvents: 'none',
-                    maxWidth: 320,
-                    textOverflow: 'ellipsis',
-                    overflow: 'hidden',
+                    maxWidth: 360,
+                    whiteSpace: 'normal',
+                    lineHeight: '1.5',
                   }}
                 >
                   {unstuckReport || 'System unstuck'}
