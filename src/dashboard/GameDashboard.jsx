@@ -9900,7 +9900,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                             ? {
                                 background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)',
                                 border: `1px solid ${isDaytime ? 'rgba(59,130,246,0.35)' : 'rgba(59,130,246,0.25)'}`,
-                                color: '#F1F5F9',
+                                color: '#FFFFFF',
                                 borderTopRightRadius: 4,
                               }
                             : {
