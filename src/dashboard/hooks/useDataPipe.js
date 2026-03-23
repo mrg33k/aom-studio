@@ -273,12 +273,21 @@ export function deriveStateFromEvents(events) {
     if (info.event_type !== 'task_started') continue
     const description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
     rightNowTasks.push({
-      agent:     info.agent,
-      text:      description.length > 55 ? description.slice(0, 52) + '...' : description,
-      isLive:    true,
-      isQueued:  false,
+      agent:      info.agent,
+      text:       description.length > 55 ? description.slice(0, 52) + '...' : description,
+      isLive:     true,
+      isQueued:   false,
       fromEvents: true,
     })
+  }
+
+  // Dedup: one task per agent (newest wins -- taskLatest is built newest-first)
+  const seenAgents = new Set()
+  const dedupedTasks = []
+  for (const task of rightNowTasks) {
+    if (seenAgents.has(task.agent)) continue
+    seenAgents.add(task.agent)
+    dedupedTasks.push(task)
   }
 
   // Agent statuses derived from latest event
@@ -301,7 +310,7 @@ export function deriveStateFromEvents(events) {
     agentStatuses[agent] = status
   }
 
-  return { rightNowTasks, agentStatuses, agentLastCompleted }
+  return { rightNowTasks: dedupedTasks, agentStatuses, agentLastCompleted }
 }
 
 // ---- DERIVE YOUR TODOS from parsed punch data --------------------------------
