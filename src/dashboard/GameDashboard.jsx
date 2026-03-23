@@ -5262,6 +5262,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                   else if (r.deploy) lines.push('deploy unreachable')
                   if (r.pidReconcile?.ran) lines.push('PIDs reconciled')
                   if (r.queueRefill?.ran) lines.push('queue refilled')
+                  if (r.taskStatus?.ghostsCleared > 0) lines.push(`${r.taskStatus.ghostsCleared} ghost${r.taskStatus.ghostsCleared !== 1 ? 's' : ''} cleared`)
                 }
                 const cloud = results?.cloud
                 if (cloud?.cleared > 0) lines.push(`${cloud.cleared} task${cloud.cleared !== 1 ? 's' : ''} cleared`)
@@ -5729,54 +5730,72 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   }
 
-  // Start polling relay-outbox for EA responses (local mode only)
+  // Poll for EA responses after sending a message
   const startRelayPoll = (sentTimestamp) => {
     if (relayPollRef.current) clearInterval(relayPollRef.current)
     lastOutboxCheckRef.current = sentTimestamp
 
-    relayPollRef.current = setInterval(async () => {
-      try {
-        const since = encodeURIComponent(lastOutboxCheckRef.current)
-        const res = await fetch(`/api/local/relay-outbox?since=${since}`)
-        if (!res.ok) return
-        const data = await res.json()
-        if (data.messages && data.messages.length > 0) {
-          const responses = data.messages.filter(m =>
-            m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
-          )
-          if (responses.length > 0) {
-            const latest = responses[responses.length - 1]
+    if (IS_LOCAL) {
+      // Local: poll relay-outbox file
+      relayPollRef.current = setInterval(async () => {
+        try {
+          const since = encodeURIComponent(lastOutboxCheckRef.current)
+          const res = await fetch(`/api/local/relay-outbox?since=${since}`)
+          if (!res.ok) return
+          const data = await res.json()
+          if (data.messages && data.messages.length > 0) {
+            const responses = data.messages.filter(m =>
+              m.message && m.source !== 'corner-dashboard' && m.source !== 'corner-websocket'
+            )
+            if (responses.length > 0) {
+              const latest = responses[responses.length - 1]
+              updateMessages(agentSlug, prev => {
+                const updated = [...prev]
+                const lastMsg = updated[updated.length - 1]
+                if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
+                  updated[updated.length - 1] = { ...lastMsg, content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString() }
+                } else {
+                  updated.push({ role: 'assistant', content: latest.message, streaming: false, time: latest.timestamp || new Date().toISOString() })
+                }
+                return updated
+              })
+              setSpeaking(false)
+              clearChatTimeout()
+              lastOutboxCheckRef.current = latest.timestamp
+              if (relayPollRef.current) { clearInterval(relayPollRef.current); relayPollRef.current = null }
+            }
+          }
+        } catch {}
+      }, 500)
+    } else {
+      // Production: poll Supabase for new assistant messages after sentTimestamp
+      relayPollRef.current = setInterval(async () => {
+        try {
+          const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
+          const res = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=5&client=${encodeURIComponent(clientId)}`)
+          if (!res.ok) return
+          const data = await res.json()
+          const msgs = data.messages || []
+          const newResponses = msgs.filter(m => m.role === 'assistant' && m.timestamp > sentTimestamp)
+          if (newResponses.length > 0) {
+            const latest = newResponses[newResponses.length - 1]
             updateMessages(agentSlug, prev => {
               const updated = [...prev]
               const lastMsg = updated[updated.length - 1]
               if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
-                updated[updated.length - 1] = {
-                  ...lastMsg,
-                  content: latest.message,
-                  streaming: false,
-                  time: latest.timestamp || new Date().toISOString(),
-                }
+                updated[updated.length - 1] = { ...lastMsg, content: latest.text, streaming: false, time: latest.timestamp }
               } else {
-                updated.push({
-                  role: 'assistant',
-                  content: latest.message,
-                  streaming: false,
-                  time: latest.timestamp || new Date().toISOString(),
-                })
+                updated.push({ role: 'assistant', content: latest.text, streaming: false, time: latest.timestamp })
               }
               return updated
             })
             setSpeaking(false)
             clearChatTimeout()
-            lastOutboxCheckRef.current = latest.timestamp
-            if (relayPollRef.current) {
-              clearInterval(relayPollRef.current)
-              relayPollRef.current = null
-            }
+            if (relayPollRef.current) { clearInterval(relayPollRef.current); relayPollRef.current = null }
           }
-        }
-      } catch {}
-    }, 500) // Local + production: 500ms for real-time feel
+        } catch {}
+      }, 1500)
+    }
   }
 
   // Start 60-second chat timeout. If no response arrives, show offline message.
@@ -5846,46 +5865,53 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
       return
     }
 
-    // Production mode: use SSE/WebSocket chat connection
-    connectionRef.current?.disconnect()
-
-    const conn = createChatConnection(
-      (text) => {
-        updateMessages(agentSlug, prev => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last?.role === 'assistant') updated[updated.length - 1] = { ...last, content: last.content + text }
-          return updated
-        })
-      },
-      () => {
-        updateMessages(agentSlug, prev => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last) updated[updated.length - 1] = { ...last, streaming: false, time: new Date().toISOString() }
-          return updated
-        })
-        setSpeaking(false)
-        clearChatTimeout()
-      },
-      (error) => {
-        updateMessages(agentSlug, prev => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last) updated[updated.length - 1] = { ...last, content: `Error: ${error}`, streaming: false }
-          return updated
-        })
-        setSpeaking(false)
-        clearChatTimeout()
-      }
-    )
-
-    connectionRef.current = conn
-    await conn.send({
-      slug: agentSlug,
-      message: text,
-      history: currentMessages.map(m => ({ role: m.role, content: m.content })),
-    })
+    // Production mode: write to Supabase, poll for relay response
+    try {
+      const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
+      await fetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: agentSlug, text, source: 'corner-dashboard', client_id: clientId }),
+      })
+      // Poll Supabase for assistant response
+      if (relayPollRef.current) clearInterval(relayPollRef.current)
+      relayPollRef.current = setInterval(async () => {
+        try {
+          const clientId = typeof getClientId === 'function' ? getClientId() : 'aom'
+          const pollRes = await fetch(`/api/dashboard/supabase-messages?agent=${encodeURIComponent(agentSlug)}&limit=5&client=${encodeURIComponent(clientId)}`)
+          if (!pollRes.ok) return
+          const pollData = await pollRes.json()
+          const msgs = pollData.messages || []
+          // Find assistant messages after our sent time
+          const newResponses = msgs.filter(m => m.role === 'assistant' && m.timestamp > sentTime)
+          if (newResponses.length > 0) {
+            const latest = newResponses[newResponses.length - 1]
+            updateMessages(agentSlug, prev => {
+              const updated = [...prev]
+              const lastMsg = updated[updated.length - 1]
+              if (lastMsg?.role === 'assistant' && lastMsg.streaming) {
+                updated[updated.length - 1] = { ...lastMsg, content: latest.text, streaming: false, time: latest.timestamp }
+              } else {
+                updated.push({ role: 'assistant', content: latest.text, streaming: false, time: latest.timestamp })
+              }
+              return updated
+            })
+            setSpeaking(false)
+            clearChatTimeout()
+            if (relayPollRef.current) { clearInterval(relayPollRef.current); relayPollRef.current = null }
+          }
+        } catch {}
+      }, 1500)
+    } catch (err) {
+      updateMessages(agentSlug, prev => {
+        const updated = [...prev]
+        const last = updated[updated.length - 1]
+        if (last) updated[updated.length - 1] = { ...last, content: `Failed to send: ${err.message}`, streaming: false }
+        return updated
+      })
+      setSpeaking(false)
+      clearChatTimeout()
+    }
   }
 
   // Direct send (used by poke button without input state)
@@ -5897,21 +5923,23 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
     setSpeaking(true)
     updateMessages(agentSlug, prev => [...prev, { role: 'assistant', content: '', streaming: true, time: sentTime }])
     startChatTimeout(agentSlug)
-    if (IS_LOCAL) {
-      fetch('/api/local/relay-send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: agentSlug, message: text, source: 'corner-dashboard' }),
-      }).then(() => startRelayPoll(sentTime)).catch(err => {
-        updateMessages(agentSlug, prev => {
-          const updated = [...prev]
-          const last = updated[updated.length - 1]
-          if (last) updated[updated.length - 1] = { ...last, content: `Failed to send: ${err.message}`, streaming: false }
-          return updated
-        })
-        setSpeaking(false)
+    const sendUrl = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
+    const sendBody = IS_LOCAL
+      ? { agent: agentSlug, message: text, source: 'corner-dashboard' }
+      : { agent: agentSlug, text, source: 'corner-dashboard', client_id: typeof getClientId === 'function' ? getClientId() : 'aom' }
+    fetch(sendUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sendBody),
+    }).then(() => startRelayPoll(sentTime)).catch(err => {
+      updateMessages(agentSlug, prev => {
+        const updated = [...prev]
+        const last = updated[updated.length - 1]
+        if (last) updated[updated.length - 1] = { ...last, content: `Failed to send: ${err.message}`, streaming: false }
+        return updated
       })
-    }
+      setSpeaking(false)
+    })
   }
 
   // Streaming cursor
