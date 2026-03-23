@@ -6,12 +6,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { getPhrasedTyping } from '../agentTypingPhrases'
 
-// Phase thresholds (ms)
-const COCKY_END  = 60_000   // 0-60s
-const STEADY_END = 180_000  // 60s-3min
-const POKE_MS    = 300_000  // 5min
+// Phase thresholds (ms) -- Patrik spec: green 0-30s, yellow 30s-2min, red 2min+
+const COCKY_END  = 30_000   // 0-30s  (green: cocky/confident)
+const STEADY_END = 120_000  // 30s-2min (yellow: working phrases)
+const POKE_MS    = 300_000  // 5min  (poke button appears)
 const MS_PER_PHRASE = 15_000 // each phrase gets 15s
-const CHAR_DELAY = 55        // ms per character (typewriter speed)
+const CHAR_DELAY = 50        // ms per character (typewriter speed)
 
 // Inject animation keyframes once (works in any host component)
 let _stylesInjected = false
@@ -23,8 +23,9 @@ function ensureStyles() {
   s.textContent = `
     @keyframes twCursorBlink { 0%,100%{opacity:1} 50%{opacity:0} }
     @keyframes twDotBounce { 0%,60%,100%{transform:translateY(0);opacity:.4} 30%{transform:translateY(-4px);opacity:1} }
-    @keyframes twDotVegas { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} 60%{transform:translateY(0)} }
+    @keyframes twDotVegas { 0%,100%{transform:translateY(0);opacity:0.6} 30%{transform:translateY(-5px);opacity:1} 60%{transform:translateY(0);opacity:0.7} }
     @keyframes twPokeIn { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
+    @keyframes twDotPulse { 0%,100%{box-shadow:0 0 0 0 currentColor} 50%{box-shadow:0 0 6px 2px currentColor} }
   `
   document.head.appendChild(s)
 }

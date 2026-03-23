@@ -10342,6 +10342,27 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         )
       })()}
 
+      {/* Typing indicator -- shows above chat input when agent is processing.
+          Standalone (non-compact) mode: typewriter phrase + timer pill + poke button.
+          Only visible when streaming=true and on the chat tab. */}
+      {activeTab === 'chat' && streaming && (
+        <div style={{
+          flexShrink: 0,
+          padding: '6px 20px 2px',
+          borderTop: isDaytime ? '1px solid rgba(59,130,246,0.12)' : '1px solid rgba(100,180,255,0.08)',
+        }}>
+          <TypingIndicatorV2
+            streaming={streaming}
+            agentSlug={agentSlug}
+            agentColor={agentColor}
+            agentName={agent?.name}
+            onPoke={onPoke}
+            isDaytime={isDaytime}
+            compact={false}
+          />
+        </div>
+      )}
+
       {/* Chat input -- rendered as SIBLING of the tab content div, OUTSIDE overflow:hidden.
           This fixes the iPhone half-drawer clipping bug: at 52% snap the overflow:hidden
           content area clips the input. Moving it here makes it a bottom-anchored flex item
