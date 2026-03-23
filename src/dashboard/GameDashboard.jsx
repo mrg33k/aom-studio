@@ -3142,8 +3142,12 @@ function MobileFixedInput({
         borderTop: isNightMode
           ? '2px solid rgba(59,130,246,0.12)'
           : '2px solid rgba(59,130,246,0.18)',
-        padding: '8px 14px',
-        paddingBottom: kbOffset > 0 ? 8 : 'max(8px, env(safe-area-inset-bottom, 8px))',
+        padding: '6px 14px',
+        // When keyboard open: minimal padding (keyboard provides clearance).
+        // When raised above HUD (bottomOffset > 0, full-snap): no SAB needed -- bar is
+        // already above the HUD which sits above the home indicator.
+        // When at screen bottom (half-snap, bottomOffset = 0): use SAB to clear home indicator.
+        paddingBottom: kbOffset > 0 ? 4 : (bottomOffset > 0 ? 4 : 'max(4px, env(safe-area-inset-bottom, 4px))'),
       }}
     >
       {/* @ autocomplete dropdown */}
