@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AGENTS, PROJECTS } from './gridSpec.js'
 import TaskContextMenu, { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
+import TaskLabelPill from './components/TaskLabelPill.jsx'
 
 const BOARD_IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
@@ -418,6 +419,7 @@ function BoardCard({ entry, columnKey, onDragStart, onDragEnd, isDragging, taskI
                 LIVE
               </span>
             )}
+            <TaskLabelPill taskId={entry.taskId || entry.id || null} taskText={entry.text || entry.description || entry.currentTask} isNightMode={isNightMode} compact />
           </div>
         )}
       </div>

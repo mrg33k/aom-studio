@@ -185,6 +185,20 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, action: 'editText', result });
       }
 
+      case 'setLabel': {
+        // payload = label id string ('bug'|'feature'|'polish'|'urgent'|'blocked') or null to clear
+        const validLabels = ['bug', 'feature', 'polish', 'urgent', 'blocked'];
+        const labelValue = payload && validLabels.includes(payload) ? payload : null;
+        try {
+          const result = await supabasePatch(filter, { label: labelValue });
+          return res.status(200).json({ ok: true, action: 'setLabel', result });
+        } catch {
+          // label column may not exist yet in Supabase -- silently succeed
+          // localStorage is the source of truth until column is added
+          return res.status(200).json({ ok: true, action: 'setLabel', note: 'label column not in schema yet' });
+        }
+      }
+
       default:
         return res.status(400).json({ error: `Unknown action: ${action}` });
     }

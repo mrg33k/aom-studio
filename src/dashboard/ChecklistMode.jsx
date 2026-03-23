@@ -48,6 +48,7 @@ import { useDataPipe } from './hooks/useDataPipe.js'
 import { useLongPress } from './hooks/useLongPress.js'
 import SharedTaskContextMenu, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction, supabasePatchTaskStatus } from './components/TaskContextMenu.jsx'
 import TaskDetailAccordion from './components/TaskDetailAccordion.jsx'
+import TaskLabelPill from './components/TaskLabelPill.jsx'
 import { supabase } from './lib/supabase.js'
 import { getClientId } from './lib/clientConfig.js'
 import { parsePunchList, useSectionMappings, useRecencyWeights } from './components/HUDConstants.jsx'
@@ -619,7 +620,7 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
             </div>
           )}
 
-          {/* Agent badge + LIVE badge row */}
+          {/* Agent badge + LIVE badge + label row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: agentInfo || isLive ? 6 : 0 }}>
             {agentInfo && hasSpr && (
               <div style={{
@@ -668,6 +669,8 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
                 LIVE
               </span>
             )}
+            {/* Category label pill */}
+            <TaskLabelPill taskId={task.id || null} taskText={task.text} isNightMode={isNightMode} compact />
           </div>
         </div>
 
