@@ -128,8 +128,13 @@ function generateHexSlots(n) {
     // Center the row at col 0 with step-2 columns
     // e.g. width 3 -> cols [-2, 0, 2], width 4 -> cols [-3, -1, 1, 3]
     const startCol = -(rowWidth - 1)
+    // Parity alignment: even rows use even cols, odd rows use odd cols.
+    // If startCol parity doesn't match row parity, shift by 1.
+    const rowParity = row % 2  // 0 for even rows, 1 for odd
+    const colParity = ((startCol % 2) + 2) % 2  // handle negatives
+    const adjustedStartCol = rowParity === colParity ? startCol : startCol - 1
     for (let c = 0; c < rowWidth; c++) {
-      slots.push({ row, col: startCol + c * 2 })
+      slots.push({ row, col: adjustedStartCol + c * 2 })
     }
     remaining -= rowWidth
   }
