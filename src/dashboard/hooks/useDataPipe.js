@@ -282,7 +282,9 @@ export function deriveStateFromEvents(events) {
   }
 
   // Agent statuses derived from latest event
+  // Also track the last completed task description per agent (for Info tab latestResult)
   const agentStatuses = {}
+  const agentLastCompleted = {} // agent slug -> last completed task description string
   for (const [agent, info] of agentLatest) {
     const ageMs = info.timestamp ? now - new Date(info.timestamp).getTime() : 0
     let status = 'IDLE'
@@ -290,13 +292,16 @@ export function deriveStateFromEvents(events) {
       status = ageMs >= STALL_MS ? 'STALLED' : 'WORKING'
     } else if (info.event_type === 'task_completed' || info.event_type === 'qa_passed' || info.event_type === 'build_pushed') {
       status = 'IDLE'
+      // Capture the last completed task description for the Info tab
+      const desc = info.payload?.description || info.payload?.task || info.payload?.text || null
+      if (desc) agentLastCompleted[agent] = desc
     } else if (info.event_type === 'task_failed' || info.event_type === 'qa_failed') {
       status = 'STUCK'
     }
     agentStatuses[agent] = status
   }
 
-  return { rightNowTasks, agentStatuses }
+  return { rightNowTasks, agentStatuses, agentLastCompleted }
 }
 
 // ---- DERIVE YOUR TODOS from parsed punch data --------------------------------
@@ -388,6 +393,8 @@ export function useDataPipe(parsePunchList) {
   const [lastUpdated, setLastUpdated] = useState(null)
   // Events-derived agent statuses: agent slug -> 'WORKING'|'IDLE'|'STUCK'|'STALLED'
   const eventsAgentStatusRef = useRef({})
+  // Events-derived last completed task per agent: agent slug -> description string
+  const eventsAgentLastCompletedRef = useRef({})
 
   // Auto-check keywords stored in ref for stable callback
   const keywordsRef = useRef(new Set())
@@ -483,8 +490,9 @@ export function useDataPipe(parsePunchList) {
             }
             // Events table: derive Right Now tasks and agent statuses
             if (sbData.events && sbData.events.length > 0) {
-              const { rightNowTasks, agentStatuses } = deriveStateFromEvents(sbData.events)
+              const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(sbData.events)
               eventsAgentStatusRef.current = agentStatuses
+              eventsAgentLastCompletedRef.current = agentLastCompleted
               // Merge events-derived tasks: events take priority for agents that have event data
               const eventsAgentSet = new Set(rightNowTasks.map(t => t.agent))
               const filteredMerged = mergedTasks.filter(t => !eventsAgentSet.has(t.agent) || t.isDoneAwaitingApproval)
@@ -587,8 +595,9 @@ export function useDataPipe(parsePunchList) {
           // Events are the new source of truth for Right Now. They take priority over
           // active_processes and tasks table for agents that have event data.
           if (data.events && data.events.length > 0) {
-            const { rightNowTasks, agentStatuses } = deriveStateFromEvents(data.events)
+            const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(data.events)
             eventsAgentStatusRef.current = agentStatuses
+            eventsAgentLastCompletedRef.current = agentLastCompleted
             if (rightNowTasks.length > 0) {
               // For agents that have events data: replace their active entry with the events version.
               // Agents only in active_processes (no events) are kept as-is.
@@ -813,9 +822,10 @@ export function useDataPipe(parsePunchList) {
   // Priority order: events table (richest -- WORKING/IDLE/STUCK/STALLED) >
   //   rightNow isLive flag (WORKING) > fallback IDLE.
   // STALLED is amber: task_started but 20+ min with no follow-up event.
-  const ALL_AGENT_SLUGS = ['elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
+  const ALL_AGENT_SLUGS = ['elon', 'gary', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
   const activeAgentSlugs = new Set(rightNow.filter(t => t.isLive).map(t => t.agent))
   const eventsStatuses = eventsAgentStatusRef.current
+  const eventsLastCompleted = eventsAgentLastCompletedRef.current
   const agents = ALL_AGENT_SLUGS.map(slug => {
     let status = 'IDLE'
     if (eventsStatuses[slug]) {
@@ -824,7 +834,12 @@ export function useDataPipe(parsePunchList) {
     } else if (activeAgentSlugs.has(slug)) {
       status = 'WORKING'
     }
-    return { slug, name: slug.charAt(0).toUpperCase() + slug.slice(1), status }
+    return {
+      slug,
+      name: slug.charAt(0).toUpperCase() + slug.slice(1),
+      status,
+      latestResult: eventsLastCompleted[slug] || null,
+    }
   })
 
   return {

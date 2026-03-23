@@ -241,6 +241,7 @@ function PowerupMenu({ isOpen, onToggle, onActivate, selectedSkills, isMobile, i
           cursor: 'pointer',
           transition: 'box-shadow 200ms ease',
           animation: isOpen ? 'none' : 'powerupPulse 3s ease-in-out infinite',
+          willChange: 'transform, opacity',
           position: 'relative',
           zIndex: 2,
         }}
@@ -1042,6 +1043,7 @@ function PasswordGate({ onAuth }) {
           background: s.bright ? 'rgba(100,180,255,0.9)' : 'rgba(80,120,200,0.45)',
           boxShadow: s.bright ? '0 0 6px rgba(100,180,255,0.4)' : 'none',
           animation: `gateStarTwinkle ${s.duration} ease-in-out ${s.delay} infinite`,
+          willChange: 'transform, opacity',
           pointerEvents: 'none',
         }} />
       ))}
@@ -1076,6 +1078,7 @@ function PasswordGate({ onAuth }) {
               width: 6, height: 4, borderRadius: 1,
               background: 'rgba(255,183,77,0.25)',
               animation: `gateWindowFlicker ${4 + (col + row) % 3}s ease-in-out ${(col * 0.5 + row * 0.3)}s infinite`,
+              willChange: 'transform, opacity',
             }} />
           ))
         )}
@@ -1086,7 +1089,7 @@ function PasswordGate({ onAuth }) {
         position: 'absolute', left: '50%', top: '40%', transform: 'translate(-50%, -50%)',
         width: 500, height: 500,
         background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 60%)',
-        pointerEvents: 'none', animation: 'gateGlowPulse 6s ease-in-out infinite',
+        pointerEvents: 'none', animation: 'gateGlowPulse 6s ease-in-out infinite', willChange: 'transform, opacity',
       }} />
 
       {/* Login card */}
@@ -1175,7 +1178,7 @@ function PasswordGate({ onAuth }) {
         }}>
           {entering ? (
             <>
-              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite', willChange: 'transform, opacity' }} />
               Opening...
             </>
           ) : (
@@ -1318,6 +1321,7 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
       position: 'absolute', bottom: '8%', left: '50%', transform: 'translateX(-50%)',
       width: spriteSize, height: spriteSize, pointerEvents: 'none', zIndex: 2,
       animation: isWorking ? 'crossyBounce 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite' : 'none',
+      willChange: 'transform, opacity',
     }}>
       {/* Shadow beneath sprite - squashes on bounce */}
       <div style={{
@@ -1325,6 +1329,7 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
         width: spriteSize * 0.7, height: spriteSize * 0.15,
         background: 'rgba(0,0,0,0.25)', borderRadius: '50%', filter: 'blur(3px)',
         animation: isWorking ? 'crossyShadow 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite' : 'none',
+        willChange: 'transform, opacity',
       }} />
 
       {/* Sprite image - show first frame from 2x2 spritesheet (top-left quadrant)
@@ -1360,6 +1365,7 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
           borderRadius: '50%',
           background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`,
           animation: 'characterGlow 2s ease-in-out infinite',
+          willChange: 'transform, opacity',
         }} />
       )}
 
@@ -1374,6 +1380,7 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
               width: 5, height: 5, borderRadius: '50%',
               background: '#F59E0B',
               animation: `dotPulse 0.8s ease-in-out ${i * 0.2}s infinite`,
+              willChange: 'transform, opacity',
             }} />
           ))}
         </div>
@@ -1649,6 +1656,7 @@ function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, on
           opacity: isActive ? 1 : 0.6,
           boxShadow: isActive ? `0 0 6px ${cfg.color}` : 'none',
           animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
+          willChange: 'transform, opacity',
           zIndex: 3,
         }} />
       )}
@@ -1736,6 +1744,7 @@ function RoomNameplateHTML({ room, agentStatus, isHovered }) {
       <div style={{
         width: 6, height: 6, borderRadius: '50%', background: dotColor, flexShrink: 0,
         animation: pulse ? `statusPulse ${status === 'WAITING' ? '0.8s' : '1.5s'} ease-in-out infinite` : 'none',
+        willChange: 'transform, opacity',
       }} />
       {/* Name */}
       <span style={{
@@ -2082,6 +2091,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
         width: '100%',
         height: '100%',
         animation: 'buildingFloat 6s ease-in-out infinite',
+        willChange: 'transform, opacity',
       }}>
         {/* The full office image - ONE cohesive building. No double walls. */}
         <img
@@ -2190,6 +2200,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                       background: cfg.color,
                       boxShadow: isActive ? `0 0 8px ${cfg.color}, 0 0 3px ${cfg.color}` : `0 0 4px ${cfg.color}60`,
                       animation: isActive ? 'statusPulse 1.5s ease-in-out infinite' : 'none',
+                      willChange: 'transform, opacity',
                     }} />
                     {/* Active glow border */}
                     {isActive && (
@@ -2198,6 +2209,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                         border: `1px solid ${agentColor}30`,
                         borderRadius: 6,
                         animation: 'nameplateGlow 2s ease-in-out infinite',
+                        willChange: 'transform, opacity',
                         pointerEvents: 'none',
                       }} />
                     )}
@@ -3455,6 +3467,7 @@ function MiniNowBar({ tasks, onNavigateToAgent }) {
                 background: dotColor,
                 boxShadow: `0 0 3px ${dotColor}80`,
                 animation: 'statusPulse 1.8s ease-in-out infinite',
+                willChange: 'transform, opacity',
                 flexShrink: 0,
               }} />
               {taskAgent && (
@@ -3777,6 +3790,7 @@ function MobileDrawer({
           background: 'rgba(100, 180, 255, 0.45)',
           boxShadow: !handlePulsed ? '0 0 8px rgba(100, 180, 255, 0.45)' : 'none',
           animation: !handlePulsed ? 'handlePulse 1.5s ease-in-out infinite' : 'none',
+          willChange: 'transform, opacity',
         }} />
       </div>
 
@@ -3955,36 +3969,13 @@ function MobileDrawer({
 
         {activeTab === 'info' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <UnifiedPanel
+            <AgentInfoTab
               key={`drawer-info-${agentSlug}`}
-              room={room}
-              agent={agent}
-              agentStatus={agentStatus}
-              allAgentStatus={allAgentStatus}
-              onClose={onClose}
-              onChat={() => {}}
-              chatMessages={[]}
-              chatInput=""
-              onChatInputChange={() => {}}
-              streaming={false}
-              chatLoading={false}
               agentSlug={agentSlug}
-              isExtended={false}
-              onToggleExtend={() => {}}
-              isMobile={true}
-              data={data}
-              activeTab="info"
-              onActiveTabChange={() => {}}
+              agentColor={agentColor}
+              agentStatus={agentStatus}
               isNightMode={isNightMode}
-              onAddToRightNow={onAddToRightNow}
-              rightNowTasks={rightNowTasks}
-              cornerConfig={cornerConfig}
-              onInputFocus={() => {
-                if (snap !== 'full') {
-                  preKeyboardSnapRef.current = snap
-                  onSnapChange('full')
-                }
-              }}
+              latestResult={agentStatus?.latestResult}
             />
           </div>
         )}
@@ -6074,6 +6065,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
       background: agentColor, marginLeft: 2,
       verticalAlign: 'text-bottom',
       animation: 'chatCursorBlink 0.8s ease-in-out infinite',
+      willChange: 'transform, opacity',
     }} />
   )
 
@@ -6185,6 +6177,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                       width: 6, height: 6, borderRadius: '50%',
                       background: streaming ? agentColor : (status === 'WORKING' ? '#22C55E' : '#6B7280'),
                       animation: streaming ? 'chatTypingDot 1.2s ease-in-out infinite' : (status === 'WORKING' ? 'statusPulse 1.5s ease-in-out infinite' : 'none'),
+                      willChange: 'transform, opacity',
                     }} />
                     <span style={{ color: '#8A847C', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
                       {streaming ? thinkingText : (status === 'WORKING' ? 'Active' : status === 'WAITING' ? 'Thinking...' : 'Online')}
@@ -6377,6 +6370,7 @@ const ChatBar = React.forwardRef(function ChatBar({ activeAgent, onSelectAgent, 
                     <div key={i} style={{
                       width: 4, height: 4, borderRadius: '50%', background: agentColor,
                       animation: `chatTypingDot 1.2s ease-in-out ${i * 0.15}s infinite`,
+                      willChange: 'transform, opacity',
                     }} />
                   ))}
                 </div>
@@ -7668,6 +7662,7 @@ function SkeletonLine({ width = '100%', height = 14, style: extraStyle }) {
       width, height, borderRadius: 4,
       background: 'rgba(100, 180, 255, 0.06)',
       animation: 'skeletonPulse 1.5s ease-in-out infinite',
+      willChange: 'transform, opacity',
       ...extraStyle,
     }} />
   )
@@ -7757,6 +7752,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
       border: `1px solid ${ringColor}20`,
       borderRadius: 10,
       animation: 'chatTimeoutPulse 3s ease-in-out infinite',
+      willChange: 'transform, opacity',
     }}>
       {/* SVG ring */}
       <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
@@ -7813,6 +7809,7 @@ function ChatTimeoutRing({ streaming, agentColor, agentName }) {
             background: ringColor,
             opacity: j === 0 ? 0.9 : j === 1 ? 0.55 : 0.25,
             animation: `vegasTypingBounce 1.4s ease-in-out ${j * 0.2}s infinite`,
+            willChange: 'transform, opacity',
           }} />
         ))}
       </div>
@@ -8037,6 +8034,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                     ? 'drop-shadow(0 0 4px rgba(34, 197, 94, 0.4))'
                     : 'drop-shadow(0 0 3px rgba(34, 197, 94, 0.3))',
                   animation: 'progressBorderShimmer 2.5s ease-in-out infinite',
+                  willChange: 'transform, opacity',
                 }}
               />
             </svg>
@@ -8049,6 +8047,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
               background: accent('live'),
               boxShadow: `0 0 8px ${accent('live')}, 0 0 16px rgba(34, 197, 94, 0.3)`,
               animation: 'livePulse 1.5s ease-in-out infinite',
+              willChange: 'transform, opacity',
             }} />
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -8262,6 +8261,7 @@ function TopSquares({ allAgentStatus, workingCount, blockedCount, overallProgres
                       <div style={{
                         width: 8, height: 8, borderRadius: '50%', background: '#22C55E', flexShrink: 0,
                         animation: 'livePulse 1.5s ease-in-out infinite',
+                        willChange: 'transform, opacity',
                       }} />
                       <span style={{ fontSize: 14, fontWeight: 700, color: isNightMode ? '#E2E8F0' : '#E2E8F0', fontFamily: "'Inter', sans-serif" }}>
                         {a.name}
@@ -9926,7 +9926,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                           ) : (
                             <div style={{ wordBreak: 'break-word', position: 'relative' }}>
                               <MarkdownMessage text={msg.content} agentColor={isAomRoom && msgAgentColor ? msgAgentColor : agentColor} streaming={msg.streaming} />
-                              {msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: isAomRoom && msgAgentColor ? msgAgentColor : agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite' }} />}
+                              {msg.streaming && msg.content && <span style={{ display: 'inline-block', width: 2, height: '1em', background: isAomRoom && msgAgentColor ? msgAgentColor : agentColor, marginLeft: 2, verticalAlign: 'text-bottom', animation: 'chatCursorBlink 0.8s ease-in-out infinite', willChange: 'transform, opacity' }} />}
                             </div>
                           )
                         )}
@@ -10128,6 +10128,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   background: '#3B82F6',
                   boxShadow: '0 0 6px #3B82F6, 0 0 12px rgba(59,130,246,0.4)',
                   animation: 'vegasTypingBounce 2s ease-in-out infinite',
+                  willChange: 'transform, opacity',
                 }} />
                 <span style={{
                   fontSize: 10, fontWeight: 700, color: isDaytime ? '#3B82F6' : '#60A5FA',
@@ -10199,6 +10200,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     : '0 0 8px #3B82F6, 0 0 16px rgba(59,130,246,0.5)',
                   flexShrink: 0,
                   animation: 'vegasTypingBounce 2s ease-in-out infinite',
+                  willChange: 'transform, opacity',
                 }} />
                 <span style={{
                   fontSize: 11, fontWeight: 700, color: hasFailed ? '#F87171' : (isDaytime ? '#3B82F6' : '#60A5FA'),
@@ -12679,7 +12681,7 @@ export default function GameDashboard() {
                   position: 'absolute', top: '50%', left: '50%', width: 300, height: 300,
                   transform: 'translate(-50%, -50%)',
                   background: 'radial-gradient(circle, rgba(76,175,80,0.04) 0%, transparent 60%)',
-                  borderRadius: '50%', animation: 'windowLight 20s ease-in-out infinite',
+                  borderRadius: '50%', animation: 'windowLight 20s ease-in-out infinite', willChange: 'transform, opacity',
                 }} />
                 {/* Vignette for depth */}
                 <div style={{
@@ -13108,6 +13110,7 @@ export default function GameDashboard() {
             boxShadow: '0 4px 20px rgba(232,93,38,0.4), 0 0 0 2px rgba(232,93,38,0.2)',
             cursor: 'pointer',
             animation: 'chatBadgePulse 2s ease-in-out infinite',
+            willChange: 'transform, opacity',
           }}
           onClick={() => {
             // Open sidebar panel for the agent with most unread, switch to chat tab
@@ -13355,7 +13358,7 @@ export default function GameDashboard() {
       {loading && !data && (
         <div style={{ position: 'fixed', inset: 0, background: PALETTE.background, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            <Loader2 size={24} style={{ color: '#FFD87A', animation: 'spin 1s linear infinite' }} />
+            <Loader2 size={24} style={{ color: '#FFD87A', animation: 'spin 1s linear infinite', willChange: 'transform, opacity' }} />
             <span style={{ color: '#6B7280', fontSize: 12, fontFamily: "'Inter', system-ui, sans-serif" }}>
               {IS_LOCAL ? 'Loading from local files...' : 'Loading your office...'}
             </span>
