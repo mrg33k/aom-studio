@@ -127,6 +127,7 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
           background: '#3B82F6',
           boxShadow: '0 0 8px rgba(59,130,246,0.8), 0 0 14px rgba(59,130,246,0.4)',
           animation: 'vegasTypingBounce 2s ease-in-out infinite',
+          willChange: 'transform, opacity',
         }} />
         <span style={{
           fontSize: 10, fontWeight: 700,
@@ -1062,6 +1063,7 @@ export default function GameHUD({
                       width: 7, height: 7, borderRadius: '50%', background: '#F59E0B',
                       boxShadow: '0 0 6px rgba(245,158,11,0.7)',
                       animation: 'statusPulse 2s ease-in-out infinite',
+                      willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
                   ) : task.isQueued ? (
@@ -1069,6 +1071,7 @@ export default function GameHUD({
                       width: 7, height: 7, borderRadius: '50%', background: '#E91E90',
                       boxShadow: '0 0 6px rgba(233,30,144,0.6)',
                       animation: 'statusPulse 2s ease-in-out infinite',
+                      willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
                   ) : task.isLive ? (
@@ -1077,6 +1080,7 @@ export default function GameHUD({
                       background: task.agent === 'elon' ? '#22C55E' : '#FF6B3D',
                       boxShadow: task.agent === 'elon' ? '0 0 6px rgba(34,197,94,0.7)' : '0 0 6px rgba(255,107,61,0.6)',
                       animation: 'statusPulse 1.5s ease-in-out infinite',
+                      willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
                   ) : (
@@ -1084,6 +1088,7 @@ export default function GameHUD({
                       width: 7, height: 7, borderRadius: '50%', background: '#F59E0B',
                       boxShadow: '0 0 6px rgba(245,158,11,0.7)',
                       animation: 'statusPulse 2s ease-in-out infinite',
+                      willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
                   )}
@@ -1219,7 +1224,7 @@ export default function GameHUD({
             }}>
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
-                <Loader2 size={16} style={{ color: hudTextMuted, animation: 'spin 1s linear infinite' }} />
+                <Loader2 size={16} style={{ color: hudTextMuted, animation: 'spin 1s linear infinite', willChange: 'transform, opacity' }} />
                 <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16, color: hudTextMuted }}>
                   Loading...
                 </span>

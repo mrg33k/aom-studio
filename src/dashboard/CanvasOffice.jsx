@@ -3119,6 +3119,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
               borderTop: '3px solid #4CAF50',
               borderRadius: '50%',
               animation: 'canvasOfficeSpin 0.8s linear infinite',
+              willChange: 'transform, opacity',
             }} />
             <div style={{
               color: '#4CAF50', fontSize: 13, fontWeight: 600,
