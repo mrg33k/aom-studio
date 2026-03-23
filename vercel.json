@@ -38,6 +38,8 @@
     { "source": "/skills", "destination": "/index.html" },
     { "source": "/demo", "destination": "/index.html" },
     { "source": "/login", "destination": "/index.html" },
-    { "source": "/settings", "destination": "/index.html" }
+    { "source": "/settings", "destination": "/index.html" },
+    { "source": "/onboarding", "destination": "/index.html" },
+    { "source": "/onboarding/:path*", "destination": "/index.html" }
   ]
 }
