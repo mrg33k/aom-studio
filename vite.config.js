@@ -1523,20 +1523,36 @@ function localDashboardPlugin() {
               exitCode: promoteResult.code,
             }
 
-            // 4b. LAUNCH QUEUE DEPTH (count pending agent launches)
+            // 4b. LAUNCH QUEUE DEPTH + STALE CLEANUP
+            // Entries older than 4h are stale (the spawner never picked them up).
+            // Count live entries and clean stale ones in one pass.
+            const LAUNCH_STALE_MS = 4 * 60 * 60 * 1000 // 4 hours
             try {
               const lqPath = resolve(AOM_EA_ROOT, 'context', 'launch-queue.jsonl')
               if (fs.existsSync(lqPath)) {
-                const lqLines = fs.readFileSync(lqPath, 'utf-8')
-                  .split('\n')
-                  .filter(l => l.trim() && !l.startsWith('#'))
+                const lqRaw = fs.readFileSync(lqPath, 'utf-8')
+                const lqComments = lqRaw.split('\n').filter(l => l.startsWith('#'))
+                const lqLines = lqRaw.split('\n').filter(l => l.trim() && !l.startsWith('#'))
                 const lqEntries = lqLines.map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
-                report.launchQueue = { depth: lqEntries.length }
+                const nowMs = Date.now()
+                const stale = lqEntries.filter(e => {
+                  if (!e.timestamp) return false
+                  return (nowMs - new Date(e.timestamp).getTime()) > LAUNCH_STALE_MS
+                })
+                const live = lqEntries.filter(e => !stale.includes(e))
+                if (stale.length > 0) {
+                  const cleaned = [
+                    ...lqComments,
+                    ...live.map(e => JSON.stringify(e)),
+                  ].join('\n') + '\n'
+                  fs.writeFileSync(lqPath, cleaned, 'utf-8')
+                }
+                report.launchQueue = { depth: live.length, staleCleared: stale.length }
               } else {
-                report.launchQueue = { depth: 0 }
+                report.launchQueue = { depth: 0, staleCleared: 0 }
               }
             } catch (e) {
-              report.launchQueue = { depth: 0, error: e.message }
+              report.launchQueue = { depth: 0, staleCleared: 0, error: e.message }
             }
 
             // 5. CLEAN + READ TASK STATUS SNAPSHOT
