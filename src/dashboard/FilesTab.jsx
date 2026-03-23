@@ -195,10 +195,17 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
     if (!fileList || fileList.length === 0) return
     setError(null)
     setUploading(true)
-    const accepted = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
-    const validFiles = Array.from(fileList).filter(f => accepted.includes(f.type))
+    const accepted = [
+      'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+      'video/mp4', 'video/quicktime', 'video/mov', 'video/hevc',
+      'video/x-m4v', 'video/webm', 'video/ogg',
+    ]
+    // Also accept any image/* or video/* type not in the explicit list (iOS HEIC, etc.)
+    const validFiles = Array.from(fileList).filter(f =>
+      accepted.includes(f.type) || f.type.startsWith('image/') || f.type.startsWith('video/')
+    )
     if (validFiles.length === 0) {
-      setError('Only PNG, JPG, GIF, and WebP images are supported.')
+      setError('Only images and videos are supported.')
       setUploading(false)
       return
     }
@@ -702,7 +709,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/png,image/jpeg,image/gif,image/webp"
+              accept="image/*,video/*"
               multiple
               style={{ display: 'none' }}
               onChange={e => handleUpload(e.target.files)}
@@ -736,9 +743,9 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
             >
               <FolderOpen size={20} style={{ color: mutedText, marginBottom: 6, display: 'block', margin: '0 auto 6px' }} />
               <div style={{ color: labelText, fontSize: 12 }}>
-                {dragOver ? 'Drop to upload' : 'Drop files here'}
+                {dragOver ? 'Drop to upload' : 'Tap to upload from camera roll'}
               </div>
-              <div style={{ color: mutedText, fontSize: 11, marginTop: 2 }}>PNG, JPG, GIF, WebP</div>
+              <div style={{ color: mutedText, fontSize: 11, marginTop: 2 }}>Images and videos</div>
             </div>
 
             {/* Loading / Empty state */}
@@ -751,7 +758,7 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
               <div style={{
                 textAlign: 'center', color: mutedText, fontSize: 13, padding: '24px 0',
               }}>
-                No files yet. Upload or drag images above.
+                No files yet. Upload images or videos from your camera roll.
               </div>
             )}
 
@@ -850,11 +857,21 @@ function TextFileRow({ file, isDaytime, borderColor, mutedText, labelText, accen
   )
 }
 
+// ---- Helpers ----
+
+const VIDEO_EXTS = ['mp4', 'mov', 'hevc', 'heic', 'm4v', 'webm', 'ogv', 'avi', 'mkv', '3gp']
+function isVideoFile(file) {
+  const name = (file.name || file.filename || '').toLowerCase()
+  const ext = name.split('.').pop()
+  return VIDEO_EXTS.includes(ext)
+}
+
 // ---- Thumbnail Card ----
 
 function FileThumbnail({ file, isDaytime, onView, onDelete, onSendToChat }) {
   const [hovered, setHovered] = useState(false)
   const borderColor = isDaytime ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.12)'
+  const isVideo = isVideoFile(file)
 
   return (
     <div
@@ -872,17 +889,50 @@ function FileThumbnail({ file, isDaytime, onView, onDelete, onSendToChat }) {
       onMouseLeave={() => setHovered(false)}
       onClick={onView}
     >
-      <img
-        src={file.url}
-        alt={file.name}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block',
-        }}
-        loading="lazy"
-      />
+      {isVideo ? (
+        /* Video thumbnail: muted poster frame */
+        <video
+          src={file.url}
+          muted
+          playsInline
+          preload="metadata"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+        />
+      ) : (
+        <img
+          src={file.url}
+          alt={file.name}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          }}
+          loading="lazy"
+        />
+      )}
+      {/* Video badge */}
+      {isVideo && (
+        <div style={{
+          position: 'absolute', bottom: 4, left: 4,
+          background: 'rgba(0,0,0,0.7)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: 4,
+          padding: '1px 5px',
+          fontSize: 9, fontWeight: 700, color: '#93C5FD',
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          pointerEvents: 'none',
+        }}>
+          VIDEO
+        </div>
+      )}
       {/* Hover overlay */}
       {hovered && (
         <div style={{
@@ -1394,18 +1444,32 @@ function FileLightbox({ file, isDaytime, onClose, onDelete, onSendToChat }) {
             <X size={14} />
           </button>
         </div>
-        {/* Image */}
+        {/* Image or Video */}
         <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img
-            src={file.url}
-            alt={file.name}
-            style={{
-              maxWidth: '80vw',
-              maxHeight: 'calc(90vh - 60px)',
-              objectFit: 'contain',
-              display: 'block',
-            }}
-          />
+          {isVideoFile(file) ? (
+            <video
+              src={file.url}
+              controls
+              playsInline
+              style={{
+                maxWidth: '80vw',
+                maxHeight: 'calc(90vh - 60px)',
+                display: 'block',
+                borderRadius: 6,
+              }}
+            />
+          ) : (
+            <img
+              src={file.url}
+              alt={file.name}
+              style={{
+                maxWidth: '80vw',
+                maxHeight: 'calc(90vh - 60px)',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
