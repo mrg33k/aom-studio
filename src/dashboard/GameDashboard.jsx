@@ -11026,25 +11026,19 @@ export default function GameDashboard() {
         }).catch(() => {})
       } catch {}
     } else {
-      // 3. Production: Supabase API calls
-      const rawId = task.taskId || task.id
-      const isSupabaseUuid = rawId && typeof rawId === 'string' && /^[0-9a-f-]{36}$/i.test(rawId)
-      const taskParam = isSupabaseUuid
-        ? `id=${encodeURIComponent(rawId)}`
-        : `agent=${encodeURIComponent(task.agent || 'elon')}`
-      console.log('[addToRightNow] PATCH param:', taskParam, 'rawId:', rawId, 'isUuid:', isSupabaseUuid)
-      fetch(`/api/dashboard/agent-status?table=tasks&${taskParam}&status=active`, { method: 'PATCH' })
-        .then(r => {
-          console.log('[addToRightNow] task PATCH status:', r.status)
+      // Production: Log task_started to events table (THE source of truth for RNB)
+      const taskId = task.taskId || task.id || `manual-${Date.now()}`
+      const agentSlug = task.agent || 'elon'
+      if (supabase) {
+        supabase.from('events').insert({
+          agent: agentSlug,
+          event_type: 'task_started',
+          payload: { task_id: taskId, description: task.text || 'Task promoted to Right Now' },
+        }).then(({ error }) => {
+          if (error) console.warn('[addToRightNow] events insert failed:', error.message)
           pipeData?.refetch?.()
         })
-        .catch(err => console.warn('[addToRightNow] task PATCH failed:', err))
-      fetch(`/api/dashboard/agent-status?slug=${encodeURIComponent(task.agent || 'elon')}&status=active&current_task=${encodeURIComponent(task.text || '')}`, { method: 'PATCH' }).catch(() => {})
-      fetch('/api/dashboard/supabase-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent: task.agent || 'elon', text: `[PROMOTE] ${task.text}`, role: 'user', source: 'corner-dashboard-task', client_id: getClientId() }),
-      }).catch(() => {})
+      }
     }
   }, [pipeData])
   const removeFromRightNow = useCallback((id) => {

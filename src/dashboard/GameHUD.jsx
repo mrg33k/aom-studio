@@ -60,6 +60,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Zap, X, Loader2, CheckCircle2, Search, ChevronDown } from 'lucide-react'
 import { useDataPipe } from './hooks/useDataPipe.js'
 import { getClientId } from './lib/clientConfig.js'
+import { supabase } from './lib/supabase'
 import {
   HUD,
   parsePunchList,
@@ -1674,6 +1675,14 @@ export default function GameHUD({
                         agent: task.agent || null,
                         clientId: typeof window !== 'undefined' && window.__cornerClientId ? window.__cornerClientId : 'aom',
                       }),
+                    }).catch(() => {})
+                  }
+                  // Log task_completed to events table (RNB source of truth)
+                  if (supabase) {
+                    supabase.from('events').insert({
+                      agent: task.agent || 'system',
+                      event_type: 'task_completed',
+                      payload: { task_id: task.taskId || `manual-${Date.now()}`, description: task.text || 'Task completed' },
                     }).catch(() => {})
                   }
                 } catch {}
