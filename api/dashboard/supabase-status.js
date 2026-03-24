@@ -65,7 +65,9 @@ export default async function handler(req, res) {
       name: a.name,
       role: a.role,
       status: a.status || 'idle',
+      current_task: a.current_task || '',
       currentTask: a.current_task || '',
+      updated_at: a.updated_at || null,
       color: a.color,
     }));
 
