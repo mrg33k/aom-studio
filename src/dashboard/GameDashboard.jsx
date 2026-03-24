@@ -99,7 +99,7 @@ const IS_LOCAL = typeof window !== 'undefined' && (window.location.hostname === 
 // Conversation API: local Vite middleware on localhost, Vercel serverless on production
 const CONV_API_BASE = IS_LOCAL ? '/api/local/conversations' : '/api/conversations'
 // Relay send: local middleware on localhost, Vercel serverless on production
-const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/relay'
+const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
 
 // ---- POWERUP MENU CONFIG ----
