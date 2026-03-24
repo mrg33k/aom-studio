@@ -1041,17 +1041,15 @@ export default function GameHUD({
                   onTouchMove={() => { if (tickerLPRef.current) { clearTimeout(tickerLPRef.current); tickerLPRef.current = null } }}
                   whileHover={{ scale: 1.06, y: -2, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
                   whileTap={{ scale: 0.94 }}
-                  className={effectiveDone ? '' : task.isLive && !task.isQueued ? (task.agent === 'elon' ? 'ticker-task-elon' : 'ticker-task-live') : task.isQueued ? 'ticker-task-queued' : 'ticker-task-done'}
+                  className={effectiveDone ? '' : task.isLive && !task.isQueued ? 'ticker-task-live' : task.isQueued ? 'ticker-task-queued' : 'ticker-task-done'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: isMobile ? '10px 14px' : '4px 12px',
                     minHeight: isMobile ? 44 : 'auto',
                     background: isTickerPending
                       ? 'rgba(59,130,246,0.10)'
-                      : task.done
-                        ? 'rgba(34,197,94,0.12)'
-                        : task.isLive && !task.isQueued
-                          ? (task.agent === 'elon' ? 'rgba(34,197,94,0.12)' : 'rgba(255,107,61,0.12)')
+                      : task.isLive && !task.isQueued
+                        ? 'rgba(255,107,61,0.12)'
                           : task.isQueued
                             ? 'rgba(233,30,144,0.12)'
                             : 'rgba(245,158,11,0.12)',
@@ -1085,7 +1083,7 @@ export default function GameHUD({
                   ) : task.isLive ? (
                     <span style={{
                       width: 7, height: 7, borderRadius: '50%',
-                      background: task.agent === 'elon' ? '#22C55E' : '#FF6B3D',
+                      background: '#FF6B3D',
                       boxShadow: task.agent === 'elon' ? '0 0 6px rgba(34,197,94,0.7)' : '0 0 6px rgba(255,107,61,0.6)',
                       animation: 'statusPulse 1.5s ease-in-out infinite',
                       willChange: 'transform, opacity',
