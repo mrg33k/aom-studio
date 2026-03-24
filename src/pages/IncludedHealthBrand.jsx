@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ArrowLeft, Copy, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -6,9 +6,8 @@ import { motion } from 'framer-motion'
 /* ------------------------------------------------------------------ */
 /*  Included Health Brand Kit                                          */
 /*  Client brand reference for AOM video production team              */
-/*  Fonts: Syne (headlines) + Space Grotesk (body) + JetBrains Mono  */
-/*  Client accent: #0012e7 (electric cobalt)                          */
-/*  AOM system accent: #E85D26 (orange) for dividers + system UI     */
+/*  Font: Figtree (Google Fonts) -- 400/500/600/700/800              */
+/*  Brand DNA: white-dominant, electric blue accents, dark navy hero  */
 /* ------------------------------------------------------------------ */
 
 /* ================================================================== */
@@ -16,53 +15,44 @@ import { motion } from 'framer-motion'
 /* ================================================================== */
 
 const C = {
-  // System (AOM dark theme)
-  night: '#0C0C0C',
-  nightCard: '#151515',
-  nightBorder: 'rgba(255,255,255,0.10)',
-  nightBorderHover: 'rgba(255,255,255,0.20)',
-  textLight: '#F0ECE6',
-  textMuted: '#8A847C',
-  aomOrange: '#E85D26',
-
-  // Included Health brand
-  ihBlue: '#0012e7',
-  ihBlueDark: '#000db5',
-  ihBlueLight: '#3344ff',
-  ihBlueFaint: 'rgba(0,18,231,0.08)',
-  ihBlueFaintHover: 'rgba(0,18,231,0.14)',
-  ihBlueBorder: 'rgba(0,18,231,0.25)',
-  ihDark: '#1b1b1a',
-  ihGray: '#919ea6',
-  ihWhite: '#ffffff',
+  // Included Health brand palette
+  electricBlue:   '#0012E7',
+  navy:           '#001048',
+  lightBlueWash:  '#E6EFFE',
+  nearWhiteBlue:  '#F6FAFE',
+  white:          '#ffffff',
+  darkText:       '#101015',
+  secondaryText:  '#95999F',
+  coralAccent:    '#FF5E4D',
+  green:          '#008961',
+  sage:           '#B6CFD0',
+  // UI helpers
+  cardBlue:       '#CADCFF',
+  borderLight:    'rgba(0,18,231,0.12)',
 }
 
-const F = {
-  headline: '"Syne", sans-serif',
-  body: '"Space Grotesk", sans-serif',
-  mono: '"JetBrains Mono", monospace',
-}
+const FF = 'Figtree, sans-serif'
 
 /* ================================================================== */
 /*  NAV SECTIONS                                                       */
 /* ================================================================== */
 
 const NAV_SECTIONS = [
-  { id: 'section-overview', num: '01', label: 'Overview' },
-  { id: 'section-colors', num: '02', label: 'Colors' },
-  { id: 'section-type', num: '03', label: 'Type' },
-  { id: 'section-logo', num: '04', label: 'Logo' },
-  { id: 'section-voice', num: '05', label: 'Voice' },
-  { id: 'section-visual', num: '06', label: 'Visual' },
-  { id: 'section-messaging', num: '07', label: 'Messaging' },
-  { id: 'section-application', num: '08', label: 'Application' },
+  { id: 'section-overview',   num: '01', label: 'Overview' },
+  { id: 'section-colors',     num: '02', label: 'Colors' },
+  { id: 'section-type',       num: '03', label: 'Typography' },
+  { id: 'section-logo',       num: '04', label: 'Logo' },
+  { id: 'section-voice',      num: '05', label: 'Voice' },
+  { id: 'section-messaging',  num: '06', label: 'Messaging' },
+  { id: 'section-templates',  num: '07', label: 'Templates' },
+  { id: 'section-production', num: '08', label: 'Production' },
 ]
 
 /* ================================================================== */
 /*  UTILITIES                                                          */
 /* ================================================================== */
 
-function CopyHex({ hex, light = false }) {
+function CopyHex({ hex, dark = false }) {
   const [copied, setCopied] = useState(false)
   return (
     <button
@@ -74,350 +64,228 @@ function CopyHex({ hex, light = false }) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 4,
+        gap: 5,
         background: 'none',
         border: 'none',
         cursor: 'pointer',
         padding: 0,
-        color: light ? 'rgba(255,255,255,0.7)' : C.textMuted,
+        fontFamily: FF,
+        fontSize: 13,
+        fontWeight: 500,
+        color: dark ? 'rgba(255,255,255,0.65)' : C.secondaryText,
+        letterSpacing: '0.03em',
       }}
       title="Copy hex"
     >
-      <span style={{ fontFamily: F.mono, fontSize: 13, color: 'inherit' }}>{hex}</span>
+      {hex}
       {copied
-        ? <Check size={12} color={C.aomOrange} />
-        : <Copy size={12} style={{ opacity: 0.4 }} />}
+        ? <Check size={12} color={C.electricBlue} />
+        : <Copy size={12} style={{ opacity: 0.5 }} />}
     </button>
   )
 }
 
-function MonoLabel({ children }) {
+const fadeUp = {
+  hidden: { opacity: 0, y: 22 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+}
+
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+}
+
+/* ================================================================== */
+/*  STICKY NAV                                                         */
+/* ================================================================== */
+
+function StickyNav() {
+  const [active, setActive] = useState(null)
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) setActive(e.target.id)
+        })
+      },
+      { threshold: 0.4 }
+    )
+    NAV_SECTIONS.forEach(({ id }) => {
+      const el = document.getElementById(id)
+      if (el) obs.observe(el)
+    })
+    return () => obs.disconnect()
+  }, [])
+
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
-    <span style={{
-      fontFamily: F.mono,
-      fontSize: 10,
-      letterSpacing: '0.15em',
-      textTransform: 'uppercase',
-      color: C.textMuted,
-    }}>
-      {children}
-    </span>
+    <nav
+      style={{
+        position: 'fixed',
+        top: '50%',
+        right: 28,
+        transform: 'translateY(-50%)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        zIndex: 100,
+      }}
+    >
+      {NAV_SECTIONS.map(({ id, label }) => (
+        <button
+          key={id}
+          onClick={() => scrollTo(id)}
+          title={label}
+          style={{
+            width: active === id ? 28 : 8,
+            height: 8,
+            borderRadius: 4,
+            background: active === id ? C.electricBlue : 'rgba(0,18,231,0.25)',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            transition: 'all 0.25s ease',
+          }}
+        />
+      ))}
+    </nav>
   )
 }
 
-function OrangeDivider() {
+/* ================================================================== */
+/*  SECTION WRAPPER                                                    */
+/* ================================================================== */
+
+function Section({ id, bg = C.white, children, style = {} }) {
   return (
-    <div style={{
-      width: 48,
-      height: 2,
-      background: C.aomOrange,
-      margin: '12px 0 20px',
-      borderRadius: 1,
-    }} />
+    <section
+      id={id}
+      style={{
+        background: bg,
+        padding: '96px 0',
+        ...style,
+      }}
+    >
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 48px' }}>
+        {children}
+      </div>
+    </section>
   )
 }
 
-function SectionLabel({ children }) {
+function SectionLabel({ children, dark = false }) {
   return (
-    <div style={{ marginBottom: 6 }}>
-      <MonoLabel>{children}</MonoLabel>
-      <OrangeDivider />
+    <div style={{ marginBottom: 20 }}>
+      <span
+        style={{
+          fontFamily: FF,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color: dark ? 'rgba(202,220,255,0.7)' : C.electricBlue,
+        }}
+      >
+        {children}
+      </span>
+      <div
+        style={{
+          width: 40,
+          height: 2,
+          background: dark ? 'rgba(202,220,255,0.35)' : C.electricBlue,
+          borderRadius: 1,
+          marginTop: 8,
+          opacity: dark ? 1 : 0.5,
+        }}
+      />
     </div>
   )
 }
 
-function SectionTitle({ children, light = true }) {
+function SectionHeading({ children, dark = false }) {
   return (
-    <h2 style={{
-      fontFamily: F.headline,
-      fontSize: 'clamp(32px, 4vw, 52px)',
-      fontWeight: 800,
-      color: light ? C.textLight : C.ihDark,
-      lineHeight: 1.05,
-      margin: '0 0 20px',
-      letterSpacing: '-0.01em',
-    }}>
+    <h2
+      style={{
+        fontFamily: FF,
+        fontSize: 'clamp(32px, 4vw, 48px)',
+        fontWeight: 800,
+        color: dark ? '#ffffff' : C.darkText,
+        lineHeight: 1.1,
+        margin: '0 0 16px',
+        letterSpacing: '-0.02em',
+      }}
+    >
       {children}
     </h2>
   )
 }
 
-function BlueDivider() {
+function BodyText({ children, dark = false, style = {} }) {
   return (
-    <div style={{
-      width: 48,
-      height: 2,
-      background: C.ihBlue,
-      margin: '12px 0 20px',
-      borderRadius: 1,
-    }} />
-  )
-}
-
-function FadeUp({ children, delay = 0 }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay }}
+    <p
+      style={{
+        fontFamily: FF,
+        fontSize: 17,
+        fontWeight: 400,
+        color: dark ? 'rgba(255,255,255,0.75)' : C.secondaryText,
+        lineHeight: 1.7,
+        margin: 0,
+        ...style,
+      }}
     >
       {children}
-    </motion.div>
-  )
-}
-
-function Card({ children, style: s = {} }) {
-  return (
-    <div style={{
-      background: C.nightCard,
-      border: `1px solid ${C.nightBorder}`,
-      borderRadius: 16,
-      padding: 28,
-      ...s,
-    }}>
-      {children}
-    </div>
-  )
-}
-
-function BlueCard({ children, style: s = {} }) {
-  return (
-    <div style={{
-      background: C.ihBlueFaint,
-      border: `1px solid ${C.ihBlueBorder}`,
-      borderRadius: 16,
-      padding: 28,
-      ...s,
-    }}>
-      {children}
-    </div>
+    </p>
   )
 }
 
 /* ================================================================== */
-/*  QUICK NAV                                                          */
+/*  COLOR SWATCH                                                       */
 /* ================================================================== */
 
-function QuickNav({ activeSection, showNav }) {
-  const navRef = useRef(null)
-
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id)
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 54
-      window.scrollTo({ top: y, behavior: 'smooth' })
-    }
-  }
-
-  useEffect(() => {
-    if (!navRef.current || !activeSection) return
-    const activeBtn = navRef.current.querySelector(`[data-section="${activeSection}"]`)
-    if (activeBtn) {
-      const nav = navRef.current
-      nav.scrollTo({
-        left: activeBtn.offsetLeft - nav.offsetWidth / 2 + activeBtn.offsetWidth / 2,
-        behavior: 'smooth',
-      })
-    }
-  }, [activeSection])
-
+function ColorSwatch({ hex, name, role, dark = false, size = 'md' }) {
+  const h = size === 'lg' ? 100 : 72
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 50,
-      background: 'rgba(12,12,12,0.96)',
-      borderBottom: `1px solid ${C.nightBorder}`,
-      backdropFilter: 'blur(16px)',
-      transform: showNav ? 'translateY(0)' : 'translateY(-100%)',
-      transition: 'transform 280ms ease',
-    }}>
-      <div
-        ref={navRef}
-        style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          padding: '0 16px',
-        }}
-      >
-        {NAV_SECTIONS.map((sec) => {
-          const isActive = activeSection === sec.id
-          return (
-            <button
-              key={sec.id}
-              data-section={sec.id}
-              onClick={() => scrollToSection(sec.id)}
-              style={{
-                fontFamily: F.mono,
-                fontWeight: isActive ? 700 : 500,
-                fontSize: 11,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: isActive ? C.textLight : C.textMuted,
-                background: 'none',
-                border: 'none',
-                borderBottom: isActive ? `2px solid ${C.ihBlue}` : '2px solid transparent',
-                padding: '14px 14px 12px',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'color 200ms ease, border-color 200ms ease',
-                flexShrink: 0,
-              }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = C.textLight }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = C.textMuted }}
-            >
-              <span style={{ color: isActive ? C.ihBlue : 'rgba(138,132,124,0.5)', marginRight: 4, fontSize: 10 }}>
-                {sec.num}
-              </span>
-              {sec.label}
-            </button>
-          )
-        })}
+    <div
+      style={{
+        borderRadius: 12,
+        overflow: 'hidden',
+        background: C.white,
+        boxShadow: '0 2px 12px rgba(0,18,231,0.07)',
+        border: `1px solid ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,18,231,0.08)'}`,
+      }}
+    >
+      <div style={{ height: h, background: hex }} />
+      <div style={{ padding: '12px 14px', background: dark ? 'rgba(255,255,255,0.04)' : C.white }}>
+        <div
+          style={{
+            fontFamily: FF,
+            fontSize: 14,
+            fontWeight: 700,
+            color: dark ? '#ffffff' : C.darkText,
+            marginBottom: 2,
+          }}
+        >
+          {name}
+        </div>
+        <div
+          style={{
+            fontFamily: FF,
+            fontSize: 12,
+            color: dark ? 'rgba(255,255,255,0.45)' : C.secondaryText,
+            marginBottom: 6,
+          }}
+        >
+          {role}
+        </div>
+        <CopyHex hex={hex} dark={dark} />
       </div>
-      <style>{`[data-quicknav]::-webkit-scrollbar { display: none; }`}</style>
     </div>
   )
 }
-
-/* ================================================================== */
-/*  COLOR DATA                                                         */
-/* ================================================================== */
-
-const COLORS = [
-  {
-    name: 'Electric Cobalt',
-    hex: '#0012e7',
-    role: 'Primary Brand Blue',
-    usage: 'CTAs, headlines, primary UI elements',
-    light: true,
-  },
-  {
-    name: 'Dark Cobalt',
-    hex: '#000db5',
-    role: 'Blue — Hover / Pressed',
-    usage: 'Hover states, pressed buttons',
-    light: true,
-  },
-  {
-    name: 'White',
-    hex: '#ffffff',
-    role: 'Background / Reverse Text',
-    usage: 'Primary background, text on dark surfaces',
-    light: false,
-  },
-  {
-    name: 'Ink',
-    hex: '#1b1b1a',
-    role: 'Dark Text',
-    usage: 'Body copy, headlines on white',
-    light: true,
-  },
-  {
-    name: 'Slate',
-    hex: '#919ea6',
-    role: 'Secondary Text / Gray',
-    usage: 'Captions, metadata, secondary UI',
-    light: true,
-  },
-]
-
-const GRADIENT_EXAMPLES = [
-  {
-    name: 'Blue to White',
-    gradient: 'linear-gradient(135deg, #0012e7 0%, #3344ff 40%, #ffffff 100%)',
-    usage: 'Section transitions, hero overlays',
-  },
-  {
-    name: 'Soft Blue Wash',
-    gradient: 'linear-gradient(180deg, rgba(0,18,231,0.06) 0%, rgba(255,255,255,0) 100%)',
-    usage: 'Gentle section backgrounds',
-    dark: true,
-  },
-  {
-    name: 'Blue Depth',
-    gradient: 'linear-gradient(135deg, #000db5 0%, #0012e7 50%, #3344ff 100%)',
-    usage: 'Bold hero backgrounds',
-    light: true,
-  },
-]
-
-/* ================================================================== */
-/*  VOICE DATA                                                         */
-/* ================================================================== */
-
-const VOICE_DOS = [
-  'Warm and human — write like you care',
-  'Confident without being corporate',
-  'Data-backed — use the numbers (>4% trend reduction, etc.)',
-  'Inclusive language — "everyone" not "patients"',
-  'Action-oriented CTAs that move people forward',
-  '"We\'re raising the standard" energy',
-]
-
-const VOICE_DONTS = [
-  'No cold clinical language or medical jargon',
-  'No empty corporate speak ("synergize", "leverage")',
-  'No fear-based messaging about health',
-  'No small print that buries the benefit',
-  'No exclusionary or assumption-heavy language',
-  'No generic "Contact us today!" filler',
-]
-
-const MESSAGING_PILLARS = [
-  {
-    pillar: 'Access',
-    description: 'Healthcare when you need it, how you need it. Virtual + in-person. No waiting, no barriers.',
-    proof: 'Virtual care on-demand, 24/7',
-  },
-  {
-    pillar: 'Answers',
-    description: 'Cut through the complexity. AI + EQ — data intelligence plus human empathy.',
-    proof: 'AI-driven recommendations, human advocacy',
-  },
-  {
-    pillar: 'Advocacy',
-    description: 'Someone in your corner. Navigating the system so you don\'t have to.',
-    proof: '>4% reduction in healthcare trend in year one',
-  },
-]
-
-/* ================================================================== */
-/*  APPLICATION NOTES DATA                                             */
-/* ================================================================== */
-
-const VIDEO_SPECS = [
-  {
-    element: 'Title Cards',
-    guidance: 'Clean white background. Included Health blue (#0012e7) for the wordmark. Bold sans-serif headline. Tagline in slate gray (#919ea6). No clutter.',
-  },
-  {
-    element: 'Lower Thirds',
-    guidance: 'White background strip, blue left accent bar (4px). Name in dark ink (#1b1b1a), title in slate (#919ea6). Soft fade-in from left.',
-  },
-  {
-    element: 'End Screens',
-    guidance: 'IH blue (#0012e7) full-bleed or white with blue CTA block. "Designed to treat you better.™" tagline. Logo center. URL below.',
-  },
-  {
-    element: 'B-Roll Overlays',
-    guidance: 'Soft blue vignette on footage transitions. Text in white, minimum 18px. Keep overlays at 60-70% opacity max.',
-  },
-  {
-    element: 'Interview Setup',
-    guidance: 'Warm, natural environment. Avoid clinical/hospital look. Confident but relaxed framing. Eye level or slight upward angle.',
-  },
-  {
-    element: 'Motion Graphics',
-    guidance: 'Clean, purposeful animation. Blue color as accent only. Stats should animate in (count-up style). No flashy or distracting effects.',
-  },
-]
 
 /* ================================================================== */
 /*  MAIN COMPONENT                                                     */
@@ -425,66 +293,44 @@ const VIDEO_SPECS = [
 
 export default function IncludedHealthBrand() {
   const navigate = useNavigate()
-  const [activeSection, setActiveSection] = useState(null)
-  const [showNav, setShowNav] = useState(false)
 
-  // Inject Google Fonts
+  // Inject Figtree font
   useEffect(() => {
-    if (!document.querySelector('link[href*="Syne"]')) {
-      const link = document.createElement('link')
-      link.href = 'https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap'
-      link.rel = 'stylesheet'
-      document.head.appendChild(link)
-    }
-  }, [])
-
-  // IntersectionObserver for nav
-  useEffect(() => {
-    const heroEl = document.getElementById('hero-section')
-    const sectionIds = NAV_SECTIONS.map(s => s.id)
-
-    const heroObserver = new IntersectionObserver(
-      ([entry]) => setShowNav(!entry.isIntersecting),
-      { threshold: 0.1 }
-    )
-    if (heroEl) heroObserver.observe(heroEl)
-
-    const sectionObserver = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter(e => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-        if (visible.length > 0) setActiveSection(visible[0].target.id)
-      },
-      { rootMargin: '-60px 0px -60% 0px', threshold: 0.1 }
-    )
-    sectionIds.forEach(id => {
-      const el = document.getElementById(id)
-      if (el) sectionObserver.observe(el)
-    })
-
-    return () => {
-      heroObserver.disconnect()
-      sectionObserver.disconnect()
-    }
+    const id = 'figtree-font'
+    if (document.getElementById(id)) return
+    const link = document.createElement('link')
+    link.id = id
+    link.rel = 'stylesheet'
+    link.href = 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap'
+    document.head.appendChild(link)
   }, [])
 
   return (
-    <div style={{ background: C.night, minHeight: '100vh', fontFamily: F.body }}>
-      <QuickNav activeSection={activeSection} showNav={showNav} />
+    <div style={{ fontFamily: FF, background: C.white, minHeight: '100vh' }}>
+      <StickyNav />
 
       {/* ============================================================ */}
       {/* HERO                                                         */}
       {/* ============================================================ */}
       <section
-        id="hero-section"
         style={{
-          background: C.night,
-          padding: 'clamp(64px, 10vw, 112px) clamp(24px, 5vw, 80px) clamp(64px, 8vw, 96px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
+          background: C.navy,
+          padding: '120px 0 96px',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        {/* Subtle gradient overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(ellipse 80% 60% at 60% 40%, rgba(0,18,231,0.18) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 48px', position: 'relative' }}>
           {/* Back link */}
           <button
             onClick={() => navigate('/brands')}
@@ -495,1074 +341,973 @@ export default function IncludedHealthBrand() {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: C.textMuted,
-              fontFamily: F.mono,
-              fontSize: 12,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              marginBottom: 48,
               padding: 0,
-              transition: 'color 200ms ease',
+              marginBottom: 56,
+              fontFamily: FF,
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'rgba(202,220,255,0.7)',
+              letterSpacing: '0.03em',
             }}
-            onMouseEnter={e => e.currentTarget.style.color = C.textLight}
-            onMouseLeave={e => e.currentTarget.style.color = C.textMuted}
           >
-            <ArrowLeft size={14} />
-            Back to Brands
+            <ArrowLeft size={16} />
+            All Brand Kits
           </button>
 
-          <FadeUp>
-            <MonoLabel>Client Brand Kit</MonoLabel>
-            <OrangeDivider />
-            <h1 style={{
-              fontFamily: F.headline,
-              fontSize: 'clamp(48px, 7vw, 88px)',
-              fontWeight: 800,
-              color: C.textLight,
-              lineHeight: 1.0,
-              margin: '0 0 24px',
-              letterSpacing: '-0.02em',
-            }}>
+          <motion.div initial="hidden" animate="visible" variants={stagger}>
+            {/* Label */}
+            <motion.div variants={fadeUp}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  fontFamily: FF,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  color: C.cardBlue,
+                  background: 'rgba(0,18,231,0.25)',
+                  padding: '5px 14px',
+                  borderRadius: 100,
+                  marginBottom: 28,
+                  border: '1px solid rgba(202,220,255,0.2)',
+                }}
+              >
+                Client Brand Kit
+              </span>
+            </motion.div>
+
+            {/* Headline */}
+            <motion.h1
+              variants={fadeUp}
+              style={{
+                fontFamily: FF,
+                fontSize: 'clamp(48px, 7vw, 80px)',
+                fontWeight: 800,
+                color: '#ffffff',
+                lineHeight: 1.0,
+                margin: '0 0 16px',
+                letterSpacing: '-0.03em',
+              }}
+            >
               Included Health
-            </h1>
-            <p style={{
-              fontFamily: F.body,
-              fontSize: 'clamp(17px, 2vw, 20px)',
-              color: C.textMuted,
-              lineHeight: 1.65,
-              maxWidth: 600,
-              margin: '0 0 48px',
-            }}>
-              Personalized all-in-one healthcare — virtual care, navigation, and advocacy
-              for employers, health plans, unions, and the public sector.
-            </p>
+            </motion.h1>
+
+            {/* Tagline */}
+            <motion.p
+              variants={fadeUp}
+              style={{
+                fontFamily: FF,
+                fontSize: 22,
+                fontWeight: 400,
+                color: C.cardBlue,
+                margin: '0 0 56px',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Designed to treat you better.™
+            </motion.p>
 
             {/* Metadata row */}
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 32,
-            }}>
+            <motion.div
+              variants={fadeUp}
+              style={{
+                display: 'flex',
+                gap: 0,
+                flexWrap: 'wrap',
+                borderTop: '1px solid rgba(202,220,255,0.15)',
+                paddingTop: 32,
+              }}
+            >
               {[
-                { label: 'Client', value: 'Included Health, Inc.' },
-                { label: 'Industry', value: 'Healthcare Technology' },
-                { label: 'HQ', value: 'San Francisco, CA' },
-                { label: 'Employees', value: '1,700+' },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textMuted, marginBottom: 4 }}>
-                    {label}
-                  </div>
-                  <div style={{ fontFamily: F.body, fontSize: 16, fontWeight: 600, color: C.textLight }}>
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </FadeUp>
-
-          {/* IH Blue accent band */}
-          <FadeUp delay={0.15}>
-            <div style={{
-              marginTop: 56,
-              padding: '20px 24px',
-              background: C.ihBlueFaint,
-              border: `1px solid ${C.ihBlueBorder}`,
-              borderRadius: 12,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-            }}>
-              <div style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: C.ihBlue,
-                flexShrink: 0,
-              }} />
-              <p style={{
-                fontFamily: F.body,
-                fontSize: 16,
-                color: C.textMuted,
-                margin: 0,
-                lineHeight: 1.5,
-              }}>
-                <span style={{ color: C.ihBlue, fontWeight: 600 }}>Designed to treat you better.™</span>
-                {' '}Access. Answers. Advocacy. We're raising the standard of healthcare for everyone.
-              </p>
-            </div>
-          </FadeUp>
-        </div>
-      </section>
-
-      {/* ============================================================ */}
-      {/* 01 BRAND OVERVIEW                                            */}
-      {/* ============================================================ */}
-      <section
-        id="section-overview"
-        style={{
-          background: C.nightCard,
-          padding: 'clamp(56px, 8vw, 96px) clamp(24px, 5vw, 80px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <FadeUp>
-            <SectionLabel>01 — Brand Overview</SectionLabel>
-            <SectionTitle>Who They Are</SectionTitle>
-          </FadeUp>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 48 }}>
-            <FadeUp delay={0.05}>
-              <Card>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.ihBlue, marginBottom: 12 }}>
-                  The Company
-                </div>
-                <p style={{ fontFamily: F.body, fontSize: 16, color: C.textLight, lineHeight: 1.65, margin: 0 }}>
-                  Included Health formed in 2021 from the merger of Grand Rounds and Doctor On Demand — bringing together two category leaders in healthcare navigation and virtual care into one unified platform.
-                </p>
-              </Card>
-            </FadeUp>
-
-            <FadeUp delay={0.1}>
-              <Card>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.ihBlue, marginBottom: 12 }}>
-                  What They Do
-                </div>
-                <p style={{ fontFamily: F.body, fontSize: 16, color: C.textLight, lineHeight: 1.65, margin: 0 }}>
-                  A personalized all-in-one healthcare platform serving employers, health plans, unions, and the public sector. Virtual care, expert second opinions, navigation, and real human advocacy — all in one place.
-                </p>
-              </Card>
-            </FadeUp>
-
-            <FadeUp delay={0.15}>
-              <Card>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.ihBlue, marginBottom: 12 }}>
-                  The Approach
-                </div>
-                <p style={{ fontFamily: F.body, fontSize: 16, color: C.textLight, lineHeight: 1.65, margin: 0 }}>
-                  AI + EQ — artificial intelligence meets emotional intelligence. Data-driven decisions backed by genuine human care. Healthcare without the headaches, complexity stripped away.
-                </p>
-              </Card>
-            </FadeUp>
-          </div>
-
-          {/* Key stats */}
-          <FadeUp delay={0.2}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: 1,
-              background: C.nightBorder,
-              border: `1px solid ${C.nightBorder}`,
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}>
-              {[
-                { stat: '>4%', label: 'Reduction in healthcare trend\nin year one' },
-                { stat: '2021', label: 'Formed via Grand Rounds\n+ Doctor On Demand merger' },
-                { stat: '1,700+', label: 'Employees\nSan Francisco, CA' },
-                { stat: '2024', label: 'Fast Company Most\nInnovative Company' },
-              ].map(({ stat, label }) => (
-                <div key={stat} style={{ background: C.night, padding: '28px 24px' }}>
-                  <div style={{
-                    fontFamily: F.headline,
-                    fontSize: 'clamp(28px, 4vw, 40px)',
-                    fontWeight: 800,
-                    color: C.ihBlue,
-                    lineHeight: 1,
-                    marginBottom: 8,
-                  }}>
-                    {stat}
-                  </div>
-                  <div style={{
-                    fontFamily: F.body,
-                    fontSize: 14,
-                    color: C.textMuted,
-                    lineHeight: 1.5,
-                    whiteSpace: 'pre-line',
-                  }}>
-                    {label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </FadeUp>
-        </div>
-      </section>
-
-      {/* ============================================================ */}
-      {/* 02 COLOR PALETTE                                             */}
-      {/* ============================================================ */}
-      <section
-        id="section-colors"
-        style={{
-          background: C.night,
-          padding: 'clamp(56px, 8vw, 96px) clamp(24px, 5vw, 80px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <FadeUp>
-            <SectionLabel>02 — Color Palette</SectionLabel>
-            <SectionTitle>Brand Colors</SectionTitle>
-            <p style={{ fontFamily: F.body, fontSize: 17, color: C.textMuted, lineHeight: 1.65, maxWidth: 560, margin: '0 0 48px' }}>
-              Electric cobalt is the core. Clean, confident, and distinctly Included Health.
-              Click any hex to copy.
-            </p>
-          </FadeUp>
-
-          {/* Main swatches */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 48 }}>
-            {COLORS.map((color, i) => (
-              <FadeUp key={color.hex} delay={i * 0.05}>
+                ['Client', 'Included Health'],
+                ['Industry', 'Healthcare Technology'],
+                ['HQ', 'San Francisco, CA'],
+                ['Founded', '2021 (merger)'],
+              ].map(([label, val]) => (
                 <div
+                  key={label}
                   style={{
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    border: `1px solid ${C.nightBorder}`,
-                    cursor: 'pointer',
-                    transition: 'transform 200ms ease, box-shadow 200ms ease',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-4px)'
-                    e.currentTarget.style.boxShadow = `0 12px 40px rgba(0,18,231,0.2)`
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = 'none'
+                    paddingRight: 48,
+                    marginRight: 48,
+                    borderRight: '1px solid rgba(202,220,255,0.12)',
+                    lastChild: { borderRight: 'none' },
                   }}
                 >
-                  {/* Swatch */}
-                  <div style={{
-                    height: 120,
-                    background: color.hex,
-                    position: 'relative',
-                    border: color.hex === '#ffffff' ? `1px solid ${C.nightBorder}` : 'none',
-                  }} />
-                  {/* Info */}
-                  <div style={{ background: C.nightCard, padding: '16px 16px' }}>
-                    <div style={{ fontFamily: F.headline, fontSize: 16, fontWeight: 700, color: C.textLight, marginBottom: 4 }}>
-                      {color.name}
-                    </div>
-                    <div style={{ fontFamily: F.mono, fontSize: 11, color: C.textMuted, marginBottom: 8, letterSpacing: '0.05em' }}>
-                      {color.role}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <CopyHex hex={color.hex} />
-                    </div>
-                    <div style={{ fontFamily: F.body, fontSize: 13, color: C.textMuted, marginTop: 8, lineHeight: 1.5 }}>
-                      {color.usage}
-                    </div>
+                  <div
+                    style={{
+                      fontFamily: FF,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: '0.15em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(202,220,255,0.5)',
+                      marginBottom: 4,
+                    }}
+                  >
+                    {label}
                   </div>
-                </div>
-              </FadeUp>
-            ))}
-          </div>
-
-          {/* Gradient examples */}
-          <FadeUp delay={0.2}>
-            <div style={{ marginBottom: 16 }}>
-              <MonoLabel>Gradient Examples</MonoLabel>
-              <OrangeDivider />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-              {GRADIENT_EXAMPLES.map((g, i) => (
-                <div key={g.name} style={{
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  border: `1px solid ${C.nightBorder}`,
-                }}>
-                  <div style={{ height: 96, background: g.gradient }} />
-                  <div style={{ background: C.nightCard, padding: '14px 16px' }}>
-                    <div style={{ fontFamily: F.headline, fontSize: 15, fontWeight: 700, color: C.textLight, marginBottom: 4 }}>
-                      {g.name}
-                    </div>
-                    <div style={{ fontFamily: F.body, fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>
-                      {g.usage}
-                    </div>
+                  <div
+                    style={{
+                      fontFamily: FF,
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: 'rgba(255,255,255,0.9)',
+                    }}
+                  >
+                    {val}
                   </div>
                 </div>
               ))}
-            </div>
-          </FadeUp>
-
-          {/* AOM note */}
-          <FadeUp delay={0.25}>
-            <div style={{
-              marginTop: 40,
-              padding: '20px 24px',
-              background: 'rgba(232,93,38,0.06)',
-              border: `1px solid rgba(232,93,38,0.2)`,
-              borderRadius: 12,
-            }}>
-              <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.aomOrange, marginBottom: 8 }}>
-                AOM Production Note
-              </div>
-              <p style={{ fontFamily: F.body, fontSize: 16, color: C.textMuted, margin: 0, lineHeight: 1.6 }}>
-                In AOM video deliverables, IH Blue (#0012e7) is the CLIENT accent. AOM's orange (#E85D26) does NOT appear in Included Health content — it's an internal system color only. Keep brand colors pure.
-              </p>
-            </div>
-          </FadeUp>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
+
+      {/* ============================================================ */}
+      {/* 01 OVERVIEW                                                  */}
+      {/* ============================================================ */}
+      <Section id="section-overview" bg={C.white}>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+          <motion.div variants={fadeUp}>
+            <SectionLabel>01 — Overview</SectionLabel>
+            <SectionHeading>Who They Are</SectionHeading>
+            <BodyText style={{ maxWidth: 680, marginBottom: 48 }}>
+              Included Health is the result of a merger between Grand Rounds and Doctor On Demand — two of the most trusted names in virtual care. Together they form one integrated platform that gives members access to doctors, specialists, therapists, and health advocates, all in one place. Their mission: get people the right care, at the right time, every time.
+            </BodyText>
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: 20,
+            }}
+          >
+            {[
+              { stat: '6M+', desc: 'Members served' },
+              { stat: '>4%', desc: 'Cost reduction for health plans' },
+              { stat: '1,500+', desc: 'Specialist physicians' },
+              { stat: '#50', desc: 'Fast Company Best Workplaces 2024' },
+            ].map(({ stat, desc }) => (
+              <motion.div
+                key={stat}
+                variants={fadeUp}
+                style={{
+                  background: C.nearWhiteBlue,
+                  borderRadius: 12,
+                  padding: '28px 24px',
+                  border: `1px solid ${C.borderLight}`,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: FF,
+                    fontSize: 40,
+                    fontWeight: 800,
+                    color: C.electricBlue,
+                    lineHeight: 1,
+                    marginBottom: 8,
+                    letterSpacing: '-0.03em',
+                  }}
+                >
+                  {stat}
+                </div>
+                <div style={{ fontFamily: FF, fontSize: 15, fontWeight: 500, color: C.secondaryText }}>
+                  {desc}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+      </Section>
+
+      {/* ============================================================ */}
+      {/* 02 COLORS                                                    */}
+      {/* ============================================================ */}
+      <Section id="section-colors" bg={C.lightBlueWash}>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+          <motion.div variants={fadeUp}>
+            <SectionLabel>02 — Colors</SectionLabel>
+            <SectionHeading>Brand Palette</SectionHeading>
+            <BodyText style={{ marginBottom: 48 }}>
+              The three-tier blue system is the visual foundation. Electric blue for emphasis, navy for premium sections, light washes for breathing room. Accent colors add warmth and signal meaning.
+            </BodyText>
+          </motion.div>
+
+          {/* Primary blues */}
+          <motion.div variants={fadeUp}>
+            <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: C.secondaryText, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>
+              Core Blue System
+            </div>
+          </motion.div>
+          <motion.div
+            variants={stagger}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 16,
+              marginBottom: 40,
+            }}
+          >
+            {[
+              { hex: C.electricBlue, name: 'Electric Blue',   role: 'CTAs, links, accents',    size: 'lg' },
+              { hex: C.navy,         name: 'Dark Navy',       role: 'Hero sections, premium',  size: 'lg' },
+              { hex: C.lightBlueWash, name: 'Light Wash',     role: 'Section backgrounds',     size: 'lg' },
+              { hex: C.nearWhiteBlue, name: 'Near White',     role: 'Subtle tint sections',    size: 'lg' },
+            ].map((s) => (
+              <motion.div key={s.hex} variants={fadeUp}>
+                <ColorSwatch {...s} />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Accents */}
+          <motion.div variants={fadeUp}>
+            <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: C.secondaryText, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>
+              Accent Colors
+            </div>
+          </motion.div>
+          <motion.div
+            variants={stagger}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: 16,
+            }}
+          >
+            {[
+              { hex: C.darkText,      name: 'Dark Text',       role: 'Body copy, headings' },
+              { hex: C.secondaryText, name: 'Secondary',       role: 'Labels, captions' },
+              { hex: C.coralAccent,   name: 'Coral',           role: 'Emphasis, alerts' },
+              { hex: C.green,         name: 'Green',           role: 'Success, positive' },
+              { hex: C.sage,          name: 'Sage',            role: 'Calming secondary' },
+              { hex: C.white,         name: 'White',           role: 'Primary background' },
+            ].map((s) => (
+              <motion.div key={s.hex} variants={fadeUp}>
+                <ColorSwatch {...s} />
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+      </Section>
 
       {/* ============================================================ */}
       {/* 03 TYPOGRAPHY                                                */}
       {/* ============================================================ */}
-      <section
-        id="section-type"
-        style={{
-          background: C.nightCard,
-          padding: 'clamp(56px, 8vw, 96px) clamp(24px, 5vw, 80px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <FadeUp>
+      <Section id="section-type" bg={C.white}>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+          <motion.div variants={fadeUp}>
             <SectionLabel>03 — Typography</SectionLabel>
-            <SectionTitle>Type Recommendations</SectionTitle>
-            <p style={{ fontFamily: F.body, fontSize: 17, color: C.textMuted, lineHeight: 1.65, maxWidth: 560, margin: '0 0 48px' }}>
-              Included Health uses a clean modern sans-serif system. Bold, confident headers with standard body weights. No condensed or slab serifs — this brand lives in clarity.
-            </p>
-          </FadeUp>
+            <SectionHeading>Figtree — One Font. All Weights.</SectionHeading>
+            <BodyText style={{ marginBottom: 56 }}>
+              IH uses a single typeface: Figtree. It's geometric and friendly without being casual. All weights from 400 to 800 carry the brand.
+            </BodyText>
+          </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 48 }}>
+          <motion.div variants={stagger} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {[
-              {
-                label: 'Display / Hero',
-                weight: 'Bold 700–800',
-                size: '48–88px',
-                usage: 'Page titles, video title cards, hero moments',
-                sample: 'Healthcare Without the Headaches',
-                sampleSize: 28,
-                sampleWeight: 800,
-              },
-              {
-                label: 'Section Header',
-                weight: 'Semibold 600',
-                size: '32–48px',
-                usage: 'Section titles, video lower third names, chapter headers',
-                sample: 'Access. Answers. Advocacy.',
-                sampleSize: 22,
-                sampleWeight: 600,
-              },
-              {
-                label: 'Body / Subhead',
-                weight: 'Regular 400',
-                size: '16–20px',
-                usage: 'Body copy, video subtitles, slide descriptions',
-                sample: 'Raising the standard of healthcare for everyone.',
-                sampleSize: 17,
-                sampleWeight: 400,
-              },
-              {
-                label: 'Labels / Metadata',
-                weight: 'Medium 500',
-                size: '12–14px',
-                usage: 'Job titles, kickers, timestamps, captions',
-                sample: 'VP of Benefits • Included Health',
-                sampleSize: 14,
-                sampleWeight: 500,
-              },
-            ].map((t, i) => (
-              <FadeUp key={t.label} delay={i * 0.07}>
-                <Card>
-                  <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.ihBlue, marginBottom: 16 }}>
-                    {t.label}
+              { weight: 800, size: 56, label: 'Display / Hero', sample: 'Designed to treat you better.™' },
+              { weight: 700, size: 40, label: 'Heading H1', sample: 'Get the right care.' },
+              { weight: 700, size: 28, label: 'Heading H2', sample: 'Virtual care, real results.' },
+              { weight: 600, size: 20, label: 'Subheading', sample: 'Specialists available today.' },
+              { weight: 500, size: 17, label: 'Body Large', sample: 'Included Health connects members with the right doctor, the first time.' },
+              { weight: 400, size: 15, label: 'Body Regular', sample: 'Schedule an appointment, review your results, or message your care team — all in one place.' },
+              { weight: 600, size: 14, label: 'CTA / Button', sample: 'Get started today →' },
+              { weight: 400, size: 13, label: 'Caption', sample: 'Results vary. Based on 2023 member outcomes data.' },
+            ].map(({ weight, size, label, sample }) => (
+              <motion.div
+                key={label}
+                variants={fadeUp}
+                style={{
+                  padding: '24px 0',
+                  borderBottom: `1px solid ${C.borderLight}`,
+                  display: 'grid',
+                  gridTemplateColumns: '180px 1fr',
+                  alignItems: 'center',
+                  gap: 24,
+                }}
+              >
+                <div>
+                  <div style={{ fontFamily: FF, fontSize: 12, fontWeight: 700, color: C.electricBlue, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>
+                    {label}
                   </div>
-                  <div style={{
-                    fontFamily: '"Inter", "Helvetica Neue", sans-serif',
-                    fontSize: t.sampleSize,
-                    fontWeight: t.sampleWeight,
-                    color: C.textLight,
+                  <div style={{ fontFamily: FF, fontSize: 12, color: C.secondaryText }}>
+                    Figtree {weight} / {size}px
+                  </div>
+                </div>
+                <div
+                  style={{
+                    fontFamily: FF,
+                    fontSize: Math.min(size, 36),
+                    fontWeight: weight,
+                    color: C.darkText,
                     lineHeight: 1.2,
-                    marginBottom: 20,
-                    letterSpacing: '-0.01em',
-                  }}>
-                    {t.sample}
-                  </div>
-                  <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {[
-                      { k: 'Weight', v: t.weight },
-                      { k: 'Size', v: t.size },
-                      { k: 'Usage', v: t.usage },
-                    ].map(({ k, v }) => (
-                      <div key={k} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                        <span style={{ fontFamily: F.mono, fontSize: 10, color: C.textMuted, flexShrink: 0, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{k}</span>
-                        <span style={{ fontFamily: F.body, fontSize: 13, color: C.textLight, lineHeight: 1.4 }}>{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </FadeUp>
+                  }}
+                >
+                  {sample}
+                </div>
+              </motion.div>
             ))}
-          </div>
-
-          {/* Typography rule */}
-          <FadeUp delay={0.25}>
-            <div style={{
-              padding: '24px 28px',
-              background: C.ihBlueFaint,
-              border: `1px solid ${C.ihBlueBorder}`,
-              borderRadius: 12,
-            }}>
-              <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.ihBlue, marginBottom: 12 }}>
-                Type Rule for Video
-              </div>
-              <p style={{ fontFamily: F.body, fontSize: 16, color: C.textLight, margin: 0, lineHeight: 1.65 }}>
-                Minimum 18px for any on-screen text in video. Lower thirds: name in bold (700), title in regular (400), same clean sans-serif. No decorative or script fonts. This brand earns trust through clarity.
-              </p>
-            </div>
-          </FadeUp>
-        </div>
-      </section>
+          </motion.div>
+        </motion.div>
+      </Section>
 
       {/* ============================================================ */}
-      {/* 04 LOGO USAGE                                                */}
+      {/* 04 LOGO & IDENTITY                                           */}
       {/* ============================================================ */}
-      <section
-        id="section-logo"
-        style={{
-          background: C.night,
-          padding: 'clamp(56px, 8vw, 96px) clamp(24px, 5vw, 80px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <FadeUp>
-            <SectionLabel>04 — Logo Usage</SectionLabel>
-            <SectionTitle>The Wordmark</SectionTitle>
-            <p style={{ fontFamily: F.body, fontSize: 17, color: C.textMuted, lineHeight: 1.65, maxWidth: 560, margin: '0 0 48px' }}>
-              Included Health uses a clean modern sans-serif wordmark. No icon — the name carries the brand. Treat it with precision.
-            </p>
-          </FadeUp>
+      <Section id="section-logo" bg={C.nearWhiteBlue}>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+          <motion.div variants={fadeUp}>
+            <SectionLabel>04 — Logo & Identity</SectionLabel>
+            <SectionHeading>Wordmark & Clear Space</SectionHeading>
+            <BodyText style={{ marginBottom: 48 }}>
+              The Included Health wordmark is set in Figtree 700. It uses tight tracking and consistent capitalization. Always maintain clear space equal to the height of the "I" on all sides.
+            </BodyText>
+          </motion.div>
 
-          {/* Logo presentations */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 48 }}>
+          <motion.div
+            variants={stagger}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}
+          >
             {[
-              { bg: C.ihWhite, textColor: C.ihBlue, label: 'Primary — On White' },
-              { bg: C.ihBlue, textColor: C.ihWhite, label: 'Reversed — On Blue' },
-              { bg: C.ihDark, textColor: C.ihWhite, label: 'On Dark' },
-            ].map((variant, i) => (
-              <FadeUp key={variant.label} delay={i * 0.08}>
-                <div style={{
+              { bg: C.white, textColor: C.navy, label: 'On White' },
+              { bg: C.navy, textColor: '#ffffff', label: 'On Dark Navy' },
+              { bg: C.electricBlue, textColor: '#ffffff', label: 'On Electric Blue' },
+              { bg: C.lightBlueWash, textColor: C.navy, label: 'On Light Wash' },
+            ].map(({ bg, textColor, label }) => (
+              <motion.div
+                key={label}
+                variants={fadeUp}
+                style={{
+                  background: bg,
                   borderRadius: 12,
-                  overflow: 'hidden',
-                  border: `1px solid ${C.nightBorder}`,
-                }}>
-                  <div style={{
-                    background: variant.bg,
-                    padding: '48px 32px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <span style={{
-                      fontFamily: '"Inter", "Helvetica Neue", Arial, sans-serif',
-                      fontSize: 28,
-                      fontWeight: 700,
-                      color: variant.textColor,
-                      letterSpacing: '-0.01em',
-                    }}>
-                      Included Health
-                    </span>
-                  </div>
-                  <div style={{
-                    background: C.nightCard,
-                    padding: '12px 16px',
-                    fontFamily: F.mono,
-                    fontSize: 11,
-                    color: C.textMuted,
+                  padding: '40px 28px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 20,
+                  border: bg === C.white ? `1px solid ${C.borderLight}` : 'none',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: FF,
+                    fontSize: 22,
+                    fontWeight: 700,
+                    color: textColor,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Included Health
+                </div>
+                <div
+                  style={{
+                    fontFamily: FF,
+                    fontSize: 12,
+                    color: textColor,
+                    opacity: 0.5,
                     letterSpacing: '0.1em',
                     textTransform: 'uppercase',
-                  }}>
-                    {variant.label}
-                  </div>
+                  }}
+                >
+                  {label}
                 </div>
-              </FadeUp>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
-          {/* Do's and Don'ts */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-            <FadeUp delay={0.1}>
-              <Card>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#4ade80', marginBottom: 16 }}>
-                  Do
+          <motion.div
+            variants={fadeUp}
+            style={{
+              marginTop: 32,
+              padding: '24px 28px',
+              background: C.white,
+              borderRadius: 12,
+              border: `1px solid ${C.borderLight}`,
+            }}
+          >
+            <div style={{ fontFamily: FF, fontSize: 14, fontWeight: 700, color: C.darkText, marginBottom: 12 }}>
+              Usage Rules
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                'Never stretch or distort the wordmark.',
+                'Never use on a busy photographic background without a scrim.',
+                'Never recreate in a different typeface.',
+                'Minimum size: 120px wide for digital use.',
+              ].map((rule) => (
+                <div key={rule} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.electricBlue, marginTop: 6, flexShrink: 0 }} />
+                  <span style={{ fontFamily: FF, fontSize: 15, color: C.secondaryText }}>{rule}</span>
                 </div>
-                <ul style={{ margin: 0, padding: '0 0 0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {[
-                    'Use the full wordmark on clean backgrounds',
-                    'Maintain clear space equal to the height of the "I" on all sides',
-                    'Use approved color combinations only',
-                    'Scale proportionally — never stretch or squish',
-                    'Use white version on brand blue backgrounds',
-                  ].map(item => (
-                    <li key={item} style={{ fontFamily: F.body, fontSize: 16, color: C.textMuted, lineHeight: 1.5 }}>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </FadeUp>
-
-            <FadeUp delay={0.15}>
-              <Card>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#f87171', marginBottom: 16 }}>
-                  Don't
-                </div>
-                <ul style={{ margin: 0, padding: '0 0 0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {[
-                    'Don\'t outline or add drop shadows to the logo',
-                    'Don\'t place on busy or low-contrast backgrounds',
-                    'Don\'t use unofficial color variations',
-                    'Don\'t add tagline in the same text block as the logo',
-                    'Don\'t use the logo smaller than 80px wide on screen',
-                  ].map(item => (
-                    <li key={item} style={{ fontFamily: F.body, fontSize: 16, color: C.textMuted, lineHeight: 1.5 }}>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </FadeUp>
-          </div>
-        </div>
-      </section>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      </Section>
 
       {/* ============================================================ */}
       {/* 05 VOICE & TONE                                              */}
       {/* ============================================================ */}
-      <section
-        id="section-voice"
-        style={{
-          background: C.nightCard,
-          padding: 'clamp(56px, 8vw, 96px) clamp(24px, 5vw, 80px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <FadeUp>
+      <Section id="section-voice" bg={C.lightBlueWash}>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+          <motion.div variants={fadeUp}>
             <SectionLabel>05 — Voice & Tone</SectionLabel>
-            <SectionTitle>How to Write for IH</SectionTitle>
-            <p style={{ fontFamily: F.body, fontSize: 17, color: C.textMuted, lineHeight: 1.65, maxWidth: 560, margin: '0 0 48px' }}>
-              Warm, confident, empathetic. Anti-corporate-speak. Data-backed but human. People are tired of cold healthcare language — Included Health speaks like a trusted friend who happens to know medicine.
-            </p>
-          </FadeUp>
+            <SectionHeading>Warm. Confident. Empathetic.</SectionHeading>
+            <BodyText style={{ marginBottom: 48 }}>
+              IH talks to people like a trusted doctor, not a corporation. They make complex health concepts feel accessible and personal.
+            </BodyText>
+          </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 48 }}>
-            <FadeUp delay={0.05}>
-              <Card style={{ borderColor: 'rgba(74,222,128,0.15)' }}>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#4ade80', marginBottom: 20 }}>
-                  Say This
+          {/* Voice pillars */}
+          <motion.div
+            variants={stagger}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 48 }}
+          >
+            {[
+              { pillar: 'Access', desc: 'We make getting care easy. No runaround, no wait, no guessing who to call.' },
+              { pillar: 'Answers', desc: 'We give real information, not disclaimers. Members leave conversations knowing more.' },
+              { pillar: 'Advocacy', desc: 'We fight for the member. If the system is complicated, we navigate it for you.' },
+            ].map(({ pillar, desc }) => (
+              <motion.div
+                key={pillar}
+                variants={fadeUp}
+                style={{
+                  background: C.white,
+                  borderRadius: 12,
+                  padding: '28px 24px',
+                  borderTop: `3px solid ${C.electricBlue}`,
+                  boxShadow: '0 2px 16px rgba(0,18,231,0.06)',
+                }}
+              >
+                <div style={{ fontFamily: FF, fontSize: 20, fontWeight: 700, color: C.darkText, marginBottom: 10 }}>
+                  {pillar}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {VOICE_DOS.map(item => (
-                    <div key={item} style={{
-                      display: 'flex',
-                      gap: 12,
-                      alignItems: 'flex-start',
-                      padding: '10px 12px',
-                      background: 'rgba(74,222,128,0.05)',
-                      borderRadius: 8,
-                      border: '1px solid rgba(74,222,128,0.1)',
-                    }}>
-                      <span style={{ color: '#4ade80', fontSize: 16, flexShrink: 0, marginTop: 1 }}>+</span>
-                      <span style={{ fontFamily: F.body, fontSize: 16, color: C.textLight, lineHeight: 1.5 }}>{item}</span>
-                    </div>
-                  ))}
+                <div style={{ fontFamily: FF, fontSize: 15, color: C.secondaryText, lineHeight: 1.6 }}>
+                  {desc}
                 </div>
-              </Card>
-            </FadeUp>
+              </motion.div>
+            ))}
+          </motion.div>
 
-            <FadeUp delay={0.1}>
-              <Card style={{ borderColor: 'rgba(248,113,113,0.15)' }}>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#f87171', marginBottom: 20 }}>
-                  Not This
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {VOICE_DONTS.map(item => (
-                    <div key={item} style={{
-                      display: 'flex',
-                      gap: 12,
-                      alignItems: 'flex-start',
-                      padding: '10px 12px',
-                      background: 'rgba(248,113,113,0.05)',
-                      borderRadius: 8,
-                      border: '1px solid rgba(248,113,113,0.1)',
-                    }}>
-                      <span style={{ color: '#f87171', fontSize: 16, flexShrink: 0, marginTop: 1 }}>–</span>
-                      <span style={{ fontFamily: F.body, fontSize: 16, color: C.textMuted, lineHeight: 1.5 }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </FadeUp>
-          </div>
-
-          {/* Brand voice attributes */}
-          <FadeUp delay={0.15}>
-            <div style={{ marginBottom: 20 }}>
-              <MonoLabel>Voice Attributes</MonoLabel>
-              <OrangeDivider />
+          {/* Say this / Not this */}
+          <motion.div variants={fadeUp}>
+            <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: C.secondaryText, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>
+              Tone in Practice
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[
-                { attr: 'Warm', desc: 'Caring without being sappy. Real human empathy.' },
-                { attr: 'Confident', desc: 'Know-your-stuff energy. Not arrogant, just capable.' },
-                { attr: 'Clear', desc: 'Plain language always. Healthcare is complex — the words shouldn\'t be.' },
-                { attr: 'Empathetic', desc: 'People dealing with healthcare stress need to feel understood.' },
-                { attr: 'Data-backed', desc: 'Proof matters. Use the numbers when you have them.' },
-                { attr: 'Human', desc: 'Avoid "clinical" at all costs. Talk like a trusted friend.' },
-              ].map((item, i) => (
-                <div key={item.attr} style={{
-                  padding: '18px 20px',
-                  background: C.night,
-                  border: `1px solid ${C.nightBorder}`,
-                  borderRadius: 10,
-                }}>
-                  <div style={{ fontFamily: F.headline, fontSize: 18, fontWeight: 700, color: C.ihBlue, marginBottom: 6 }}>
-                    {item.attr}
+                { say: 'Get the right doctor, the first time.', not: 'Utilize our comprehensive provider matching algorithm.' },
+                { say: 'Your health, your team.', not: 'Leverage our integrated multi-specialty care delivery network.' },
+                { say: "We're here when you need us.", not: 'Our platform offers 24/7 on-demand telehealth accessibility.' },
+                { say: 'Care that actually fits your life.', not: 'Providing flexible, patient-centric care modalities.' },
+              ].map(({ say, not }) => (
+                <div
+                  key={say}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    border: `1px solid ${C.borderLight}`,
+                  }}
+                >
+                  <div style={{ background: C.white, padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <div style={{ color: C.green, fontWeight: 700, fontSize: 16, marginTop: 1 }}>✓</div>
+                    <span style={{ fontFamily: FF, fontSize: 15, fontWeight: 600, color: C.darkText }}>{say}</span>
                   </div>
-                  <div style={{ fontFamily: F.body, fontSize: 14, color: C.textMuted, lineHeight: 1.5 }}>
-                    {item.desc}
+                  <div style={{ background: '#FFF5F4', padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 10, borderLeft: `1px solid ${C.borderLight}` }}>
+                    <div style={{ color: C.coralAccent, fontWeight: 700, fontSize: 16, marginTop: 1 }}>✗</div>
+                    <span style={{ fontFamily: FF, fontSize: 15, color: C.secondaryText }}>{not}</span>
                   </div>
                 </div>
               ))}
             </div>
-          </FadeUp>
+          </motion.div>
+        </motion.div>
+      </Section>
+
+      {/* ============================================================ */}
+      {/* 06 KEY MESSAGING                                             */}
+      {/* ============================================================ */}
+      <section id="section-messaging" style={{ background: C.navy, padding: '96px 0' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 48px' }}>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+            <motion.div variants={fadeUp}>
+              <SectionLabel dark>06 — Key Messaging</SectionLabel>
+            </motion.div>
+
+            {/* Hero tagline */}
+            <motion.div
+              variants={fadeUp}
+              style={{
+                borderBottom: '1px solid rgba(202,220,255,0.12)',
+                paddingBottom: 56,
+                marginBottom: 56,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: FF,
+                  fontSize: 'clamp(36px, 5vw, 64px)',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.03em',
+                  marginBottom: 20,
+                }}
+              >
+                Designed to treat you better.™
+              </div>
+              <div
+                style={{
+                  fontFamily: FF,
+                  fontSize: 18,
+                  color: 'rgba(202,220,255,0.7)',
+                  lineHeight: 1.6,
+                  maxWidth: 600,
+                }}
+              >
+                One place for everything health. A doctor, a specialist, a mental health provider, and a health guide — all connected, all included.
+              </div>
+            </motion.div>
+
+            {/* Proof points */}
+            <motion.div
+              variants={stagger}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}
+            >
+              {[
+                { point: '>4% cost reduction', context: 'For health plans using Included Health vs. traditional care' },
+                { point: 'Fast Company 2024', context: 'Named one of the Best Workplaces for Innovators' },
+                { point: 'Grand Rounds + DOD', context: 'Merger creating the most complete virtual care platform' },
+                { point: 'Whole-person care', context: 'Physical health, mental health, and benefits navigation in one app' },
+              ].map(({ point, context }) => (
+                <motion.div
+                  key={point}
+                  variants={fadeUp}
+                  style={{
+                    background: 'rgba(0,18,231,0.15)',
+                    borderRadius: 12,
+                    padding: '24px 20px',
+                    border: '1px solid rgba(202,220,255,0.1)',
+                  }}
+                >
+                  <div style={{ fontFamily: FF, fontSize: 18, fontWeight: 700, color: '#ffffff', marginBottom: 8 }}>
+                    {point}
+                  </div>
+                  <div style={{ fontFamily: FF, fontSize: 14, color: 'rgba(202,220,255,0.6)', lineHeight: 1.5 }}>
+                    {context}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       {/* ============================================================ */}
-      {/* 06 VISUAL STYLE                                              */}
+      {/* 07 TITLE TEMPLATES                                           */}
       {/* ============================================================ */}
-      <section
-        id="section-visual"
-        style={{
-          background: C.night,
-          padding: 'clamp(56px, 8vw, 96px) clamp(24px, 5vw, 80px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <FadeUp>
-            <SectionLabel>06 — Visual Style</SectionLabel>
-            <SectionTitle>Photography Direction</SectionTitle>
-            <p style={{ fontFamily: F.body, fontSize: 17, color: C.textMuted, lineHeight: 1.65, maxWidth: 560, margin: '0 0 48px' }}>
-              Real people in real moments. Warm, natural light. Healthcare integrated into everyday life — not a sterile hospital. Diverse, authentic, optimistic.
-            </p>
-          </FadeUp>
+      <Section id="section-templates" bg={C.white}>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+          <motion.div variants={fadeUp}>
+            <SectionLabel>07 — Title Templates</SectionLabel>
+            <SectionHeading>Production Title Cards</SectionHeading>
+            <BodyText style={{ marginBottom: 56 }}>
+              Three production-ready templates for the Client Summit 2026 video deliverables. All set in Figtree. All using IH's brand palette.
+            </BodyText>
+          </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 48 }}>
+          {/* A: BIG TITLE CARD */}
+          <motion.div variants={fadeUp} style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: C.secondaryText, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>
+              A — Full-Screen Title Card
+            </div>
+            <div
+              style={{
+                background: C.navy,
+                borderRadius: 16,
+                padding: '80px 60px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 340,
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Background glow */}
+              <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 50% at 50% 50%, rgba(0,18,231,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+              <div
+                style={{
+                  fontFamily: FF,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: '0.3em',
+                  textTransform: 'uppercase',
+                  color: C.cardBlue,
+                  marginBottom: 24,
+                  textAlign: 'center',
+                  position: 'relative',
+                }}
+              >
+                INCLUDED HEALTH
+              </div>
+
+              {/* Divider */}
+              <div style={{ width: 80, height: 1, background: C.electricBlue, marginBottom: 24, position: 'relative' }} />
+
+              <div
+                style={{
+                  fontFamily: FF,
+                  fontSize: 'clamp(32px, 4vw, 52px)',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  textAlign: 'center',
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.02em',
+                  marginBottom: 16,
+                  position: 'relative',
+                }}
+              >
+                Designed to Treat
+                <br />
+                You Better.™
+              </div>
+
+              <div
+                style={{
+                  fontFamily: FF,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(202,220,255,0.55)',
+                  marginTop: 28,
+                  textAlign: 'center',
+                  position: 'relative',
+                }}
+              >
+                Client Summit 2026
+              </div>
+            </div>
+            <div style={{ marginTop: 12, fontFamily: FF, fontSize: 13, color: C.secondaryText }}>
+              Use for: opening title, section transitions, closing card. Export at 1920x1080.
+            </div>
+          </motion.div>
+
+          {/* B: LOWER THIRD */}
+          <motion.div variants={fadeUp} style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: C.secondaryText, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>
+              B — Lower Third (Name / Title)
+            </div>
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #dde8f0 0%, #c8d8e8 100%)',
+                borderRadius: 16,
+                padding: '60px 40px',
+                display: 'flex',
+                alignItems: 'flex-end',
+                minHeight: 280,
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Simulated background image placeholder */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(180deg, transparent 40%, rgba(0,16,72,0.3) 100%)',
+                  pointerEvents: 'none',
+                }}
+              />
+              {/* Lower third bar */}
+              <div
+                style={{
+                  background: 'rgba(0,16,72,0.88)',
+                  borderRadius: 10,
+                  padding: '16px 22px',
+                  borderLeft: `4px solid ${C.electricBlue}`,
+                  backdropFilter: 'blur(8px)',
+                  position: 'relative',
+                  minWidth: 320,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: FF,
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    letterSpacing: '-0.01em',
+                    marginBottom: 4,
+                  }}
+                >
+                  Dr. Sarah Chen
+                </div>
+                <div
+                  style={{
+                    fontFamily: FF,
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: C.cardBlue,
+                    letterSpacing: '0.01em',
+                  }}
+                >
+                  VP of Clinical Operations
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, fontFamily: FF, fontSize: 13, color: C.secondaryText }}>
+              Use for: all interview subjects, speaker IDs. Always include name + title. Min 4s hold.
+            </div>
+          </motion.div>
+
+          {/* C: ON-SCREEN TITLE */}
+          <motion.div variants={fadeUp}>
+            <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: C.secondaryText, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>
+              C — On-Screen Section Title
+            </div>
+            <div
+              style={{
+                background: C.nearWhiteBlue,
+                borderRadius: 16,
+                padding: '60px 40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 260,
+              }}
+            >
+              <div
+                style={{
+                  background: C.white,
+                  borderRadius: 12,
+                  padding: '28px 32px',
+                  boxShadow: '0 4px 32px rgba(0,18,231,0.10)',
+                  borderLeft: `5px solid ${C.electricBlue}`,
+                  maxWidth: 520,
+                  width: '100%',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: FF,
+                    fontSize: 24,
+                    fontWeight: 700,
+                    color: C.darkText,
+                    letterSpacing: '-0.02em',
+                    marginBottom: 8,
+                  }}
+                >
+                  The Future of Virtual Care
+                </div>
+                <div
+                  style={{
+                    fontFamily: FF,
+                    fontSize: 15,
+                    fontWeight: 400,
+                    color: C.secondaryText,
+                  }}
+                >
+                  Panel Discussion
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, fontFamily: FF, fontSize: 13, color: C.secondaryText }}>
+              Use for: section headers, topic introductions. Works on any background.
+            </div>
+          </motion.div>
+        </motion.div>
+      </Section>
+
+      {/* ============================================================ */}
+      {/* 08 PRODUCTION NOTES                                          */}
+      {/* ============================================================ */}
+      <Section id="section-production" bg={C.lightBlueWash}>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
+          <motion.div variants={fadeUp}>
+            <SectionLabel>08 — Production Notes</SectionLabel>
+            <SectionHeading>AOM Video Deliverables</SectionHeading>
+            <BodyText style={{ marginBottom: 40 }}>
+              Reference for AOM's team during the Included Health Client Summit 2026 production. Three-day shoot: all formats, all templates, delivered via Frame.io.
+            </BodyText>
+          </motion.div>
+
+          <motion.div
+            variants={stagger}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, marginBottom: 40 }}
+          >
             {[
               {
-                title: 'Subject',
-                icon: '👤',
-                points: [
-                  'Diverse representation across age, race, body type',
-                  'Real expressions — genuine smiles, thoughtful looks',
-                  'People in their environment, not posed studio shots',
-                  'Both individuals and families/community',
-                ],
+                title: 'Hype Reel',
+                detail: '60–90s. Opens with full-screen title card. Navy background with electric blue accents throughout.',
               },
               {
-                title: 'Lighting',
-                icon: '☀️',
-                points: [
-                  'Warm, natural light whenever possible',
-                  'Golden hour or soft window light preferred',
-                  'No harsh clinical fluorescent lighting',
-                  'Soft shadows, no blown-out whites',
-                ],
+                title: 'Interviews (10–15)',
+                detail: 'Lower third template on every subject. Figtree 700 name, Figtree 400 title. Electric blue left border.',
               },
               {
-                title: 'Composition',
-                icon: '📐',
-                points: [
-                  'Relaxed, candid framing over posed',
-                  'Eye level or slight upward angle for interviews',
-                  'Leave breathing room — don\'t crowd the frame',
-                  'Integrate environment: home, workplace, outdoors',
-                ],
+                title: 'Session Recordings',
+                detail: 'On-screen title at session start. White card, electric blue left accent. Topic + panel type.',
               },
               {
-                title: 'What to Avoid',
-                icon: '🚫',
-                points: [
-                  'No stock-photo sterile white backgrounds',
-                  'No stethoscopes or hospital props unless essential',
-                  'No overly dramatic lighting or heavy color grading',
-                  'No inauthenticity — viewers can smell it',
-                ],
+                title: 'B-Roll Package',
+                detail: 'No overlay needed. Clean footage. Client color grade: cool tones, slight blue cast.',
               },
-            ].map((section, i) => (
-              <FadeUp key={section.title} delay={i * 0.07}>
-                <Card>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: 20 }}>{section.icon}</span>
-                    <div style={{ fontFamily: F.headline, fontSize: 18, fontWeight: 700, color: C.textLight }}>
-                      {section.title}
-                    </div>
-                  </div>
-                  <ul style={{ margin: 0, padding: '0 0 0 0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {section.points.map(pt => (
-                      <li key={pt} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <div style={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: '50%',
-                          background: C.ihBlue,
-                          flexShrink: 0,
-                          marginTop: 8,
-                        }} />
-                        <span style={{ fontFamily: F.body, fontSize: 15, color: C.textMuted, lineHeight: 1.55 }}>{pt}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              </FadeUp>
+            ].map(({ title, detail }) => (
+              <motion.div
+                key={title}
+                variants={fadeUp}
+                style={{
+                  background: C.white,
+                  borderRadius: 12,
+                  padding: '24px 22px',
+                  boxShadow: '0 2px 12px rgba(0,18,231,0.06)',
+                  borderTop: `3px solid ${C.electricBlue}`,
+                }}
+              >
+                <div style={{ fontFamily: FF, fontSize: 16, fontWeight: 700, color: C.darkText, marginBottom: 8 }}>
+                  {title}
+                </div>
+                <div style={{ fontFamily: FF, fontSize: 14, color: C.secondaryText, lineHeight: 1.6 }}>
+                  {detail}
+                </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
-          {/* Color grading note */}
-          <FadeUp delay={0.2}>
-            <div style={{
-              padding: '24px 28px',
-              background: C.ihBlueFaint,
-              border: `1px solid ${C.ihBlueBorder}`,
-              borderRadius: 12,
-            }}>
-              <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.ihBlue, marginBottom: 12 }}>
-                Color Grading for Video
-              </div>
-              <p style={{ fontFamily: F.body, fontSize: 16, color: C.textLight, margin: 0, lineHeight: 1.65 }}>
-                Warm tones, slightly lifted shadows. Skin tones should be accurate and flattering. Avoid cold/teal looks — this brand lives in warmth. Slight contrast boost is fine. No heavy stylized grades that pull from realism.
-              </p>
+          {/* Color reference bar */}
+          <motion.div variants={fadeUp}>
+            <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: C.secondaryText, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>
+              Quick Color Reference
             </div>
-          </FadeUp>
-        </div>
-      </section>
-
-      {/* ============================================================ */}
-      {/* 07 KEY MESSAGING                                             */}
-      {/* ============================================================ */}
-      <section
-        id="section-messaging"
-        style={{
-          background: C.nightCard,
-          padding: 'clamp(56px, 8vw, 96px) clamp(24px, 5vw, 80px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <FadeUp>
-            <SectionLabel>07 — Key Messaging</SectionLabel>
-            <SectionTitle>What to Feature</SectionTitle>
-            <p style={{ fontFamily: F.body, fontSize: 17, color: C.textMuted, lineHeight: 1.65, maxWidth: 560, margin: '0 0 48px' }}>
-              The tagline, mission, and proof points. Use these in video titles, graphics, and presentation materials.
-            </p>
-          </FadeUp>
-
-          {/* Tagline + Mission */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 48 }}>
-            <FadeUp delay={0.05}>
-              <div style={{
-                background: C.ihBlue,
-                borderRadius: 16,
-                padding: '36px 32px',
-              }}>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: 16 }}>
-                  Tagline
-                </div>
-                <div style={{
-                  fontFamily: '"Inter", "Helvetica Neue", sans-serif',
-                  fontSize: 'clamp(22px, 3vw, 32px)',
-                  fontWeight: 700,
-                  color: C.ihWhite,
-                  lineHeight: 1.2,
-                  letterSpacing: '-0.01em',
-                }}>
-                  Designed to treat you better.™
-                </div>
-              </div>
-            </FadeUp>
-
-            <FadeUp delay={0.1}>
-              <div style={{
-                background: C.night,
-                border: `1px solid ${C.nightBorder}`,
-                borderRadius: 16,
-                padding: '36px 32px',
-              }}>
-                <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.textMuted, marginBottom: 16 }}>
-                  Mission
-                </div>
-                <div style={{
-                  fontFamily: F.body,
-                  fontSize: 18,
-                  fontWeight: 500,
-                  color: C.textLight,
-                  lineHeight: 1.55,
-                }}>
-                  "Access. Answers. Advocacy. We're raising the standard of healthcare for everyone."
-                </div>
-              </div>
-            </FadeUp>
-          </div>
-
-          {/* Three pillars */}
-          <FadeUp delay={0.1}>
-            <div style={{ marginBottom: 20 }}>
-              <MonoLabel>The Three Pillars</MonoLabel>
-              <OrangeDivider />
-            </div>
-          </FadeUp>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 48 }}>
-            {MESSAGING_PILLARS.map((p, i) => (
-              <FadeUp key={p.pillar} delay={i * 0.07}>
-                <Card>
-                  <div style={{
-                    fontFamily: F.headline,
-                    fontSize: 36,
-                    fontWeight: 800,
-                    color: C.ihBlue,
-                    lineHeight: 1,
-                    marginBottom: 12,
-                  }}>
-                    {p.pillar}
-                  </div>
-                  <p style={{ fontFamily: F.body, fontSize: 16, color: C.textLight, lineHeight: 1.65, margin: '0 0 16px' }}>
-                    {p.description}
-                  </p>
-                  <div style={{
-                    padding: '8px 12px',
-                    background: C.ihBlueFaint,
-                    border: `1px solid ${C.ihBlueBorder}`,
-                    borderRadius: 8,
-                    fontFamily: F.mono,
-                    fontSize: 12,
-                    color: C.ihBlue,
-                  }}>
-                    {p.proof}
-                  </div>
-                </Card>
-              </FadeUp>
-            ))}
-          </div>
-
-          {/* Proof points */}
-          <FadeUp delay={0.2}>
-            <div style={{ marginBottom: 20 }}>
-              <MonoLabel>Proof Points for Video Graphics</MonoLabel>
-              <OrangeDivider />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-              {[
-                { stat: '>4%', label: 'Reduction in healthcare trend in year one' },
-                { stat: 'AI + EQ', label: 'Artificial intelligence meets emotional intelligence' },
-                { stat: '2024', label: 'Fast Company Most Innovative Company' },
-                { stat: '2026', label: 'BIG Innovation Award — Dot AI' },
-                { stat: '1,700+', label: 'Employees serving millions of members' },
-                { stat: 'All-in-One', label: 'Virtual care, navigation, advocacy unified' },
-              ].map(({ stat, label }) => (
-                <div key={stat} style={{
-                  padding: '20px 20px',
-                  background: C.night,
-                  border: `1px solid ${C.nightBorder}`,
-                  borderRadius: 10,
-                }}>
-                  <div style={{ fontFamily: F.headline, fontSize: 24, fontWeight: 800, color: C.ihBlue, marginBottom: 6 }}>
-                    {stat}
-                  </div>
-                  <div style={{ fontFamily: F.body, fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>
-                    {label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </FadeUp>
-        </div>
-      </section>
-
-      {/* ============================================================ */}
-      {/* 08 APPLICATION NOTES                                         */}
-      {/* ============================================================ */}
-      <section
-        id="section-application"
-        style={{
-          background: C.night,
-          padding: 'clamp(56px, 8vw, 96px) clamp(24px, 5vw, 80px)',
-          borderBottom: `1px solid ${C.nightBorder}`,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <FadeUp>
-            <SectionLabel>08 — Application Notes</SectionLabel>
-            <SectionTitle>AOM Video Production</SectionTitle>
-            <p style={{ fontFamily: F.body, fontSize: 17, color: C.textMuted, lineHeight: 1.65, maxWidth: 560, margin: '0 0 48px' }}>
-              Specific guidance for applying the Included Health brand to AOM's video deliverables. Title cards, lower thirds, end screens, and event coverage.
-            </p>
-          </FadeUp>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 48 }}>
-            {VIDEO_SPECS.map((spec, i) => (
-              <FadeUp key={spec.element} delay={i * 0.06}>
-                <Card>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 12 }}>
-                    <div style={{
-                      width: 4,
-                      minHeight: 36,
-                      background: C.ihBlue,
-                      borderRadius: 2,
-                      flexShrink: 0,
-                      alignSelf: 'stretch',
-                    }} />
-                    <div>
-                      <div style={{ fontFamily: F.headline, fontSize: 18, fontWeight: 700, color: C.textLight, marginBottom: 8 }}>
-                        {spec.element}
-                      </div>
-                      <p style={{ fontFamily: F.body, fontSize: 16, color: C.textMuted, margin: 0, lineHeight: 1.65 }}>
-                        {spec.guidance}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </FadeUp>
-            ))}
-          </div>
-
-          {/* Quick reference color bar */}
-          <FadeUp delay={0.2}>
-            <div style={{ marginBottom: 20 }}>
-              <MonoLabel>Quick Reference — Video Color Bar</MonoLabel>
-              <OrangeDivider />
-            </div>
-            <div style={{
-              display: 'flex',
-              borderRadius: 12,
-              overflow: 'hidden',
-              border: `1px solid ${C.nightBorder}`,
-              height: 64,
-            }}>
-              {COLORS.map(c => (
-                <div
-                  key={c.hex}
-                  style={{ flex: 1, background: c.hex, position: 'relative', cursor: 'pointer' }}
-                  title={`${c.name} — ${c.hex}`}
-                  onClick={() => navigator.clipboard.writeText(c.hex)}
-                >
-                  {c.hex === '#ffffff' && (
-                    <div style={{ position: 'absolute', inset: 0, border: `1px solid ${C.nightBorder}` }} />
-                  )}
-                </div>
-              ))}
-            </div>
-            <div style={{
-              display: 'flex',
-              marginTop: 8,
-            }}>
-              {COLORS.map(c => (
-                <div key={c.hex} style={{ flex: 1, textAlign: 'center', paddingTop: 4 }}>
-                  <span style={{ fontFamily: F.mono, fontSize: 10, color: C.textMuted, letterSpacing: '0.05em' }}>
-                    {c.hex}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </FadeUp>
-
-          {/* Event context note */}
-          <FadeUp delay={0.25}>
-            <div style={{
-              marginTop: 40,
-              padding: '24px 28px',
-              background: C.ihBlueFaint,
-              border: `1px solid ${C.ihBlueBorder}`,
-              borderRadius: 12,
-            }}>
-              <div style={{ fontFamily: F.mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: C.ihBlue, marginBottom: 12 }}>
-                Event Context — Client Summit
-              </div>
-              <p style={{ fontFamily: F.body, fontSize: 16, color: C.textLight, margin: '0 0 16px', lineHeight: 1.65 }}>
-                AOM delivered a 3-day production at Included Health's Client Summit. Deliverables include a 60-90s hype reel, 10-15 executive interviews, full session recordings, and b-roll. All brand guidance in this kit applies to those deliverables.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+            <div
+              style={{
+                background: C.white,
+                borderRadius: 12,
+                padding: '20px 24px',
+                boxShadow: '0 2px 12px rgba(0,18,231,0.06)',
+              }}
+            >
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                 {[
-                  'Hype reel: 60-90s, IH blue titles, upbeat pacing',
-                  'Interviews: warm setup, eye level, no hospital props',
-                  'Session recordings: clean lower thirds, IH wordmark',
-                  'B-roll: diverse attendees, real moments, warm light',
-                  'Raw delivery: Frame.io with camera LUTs included',
-                ].map(note => (
-                  <div key={note} style={{
-                    padding: '10px 12px',
-                    background: 'rgba(255,255,255,0.04)',
-                    borderRadius: 8,
-                    fontFamily: F.body,
-                    fontSize: 13,
-                    color: C.textMuted,
-                    lineHeight: 1.5,
-                  }}>
-                    {note}
+                  { hex: C.electricBlue, name: 'Electric Blue' },
+                  { hex: C.navy, name: 'Dark Navy' },
+                  { hex: C.lightBlueWash, name: 'Light Wash' },
+                  { hex: C.cardBlue, name: 'Card Blue' },
+                  { hex: C.coralAccent, name: 'Coral' },
+                  { hex: C.green, name: 'Green' },
+                  { hex: C.white, name: 'White', border: true },
+                ].map(({ hex, name, border }) => (
+                  <div key={hex} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 6,
+                        background: hex,
+                        border: border ? `1px solid ${C.borderLight}` : 'none',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontFamily: FF, fontSize: 12, fontWeight: 600, color: C.darkText }}>
+                        {name}
+                      </div>
+                      <CopyHex hex={hex} />
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
-          </FadeUp>
-        </div>
-      </section>
+          </motion.div>
 
-      {/* ============================================================ */}
-      {/* FOOTER                                                       */}
-      {/* ============================================================ */}
-      <section style={{
-        background: C.nightCard,
-        padding: 'clamp(40px, 6vw, 64px) clamp(24px, 5vw, 80px)',
-        borderTop: `1px solid ${C.nightBorder}`,
-      }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
-          <div>
-            <div style={{ fontFamily: F.headline, fontSize: 18, fontWeight: 700, color: C.textLight, marginBottom: 4 }}>
-              Included Health Brand Kit
-            </div>
-            <div style={{ fontFamily: F.body, fontSize: 14, color: C.textMuted }}>
-              Produced by AOM (Ahead of Market) · aheadofmarket.com
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/brands')}
+          {/* Delivery */}
+          <motion.div
+            variants={fadeUp}
             style={{
-              display: 'inline-flex',
+              marginTop: 32,
+              padding: '24px 28px',
+              background: C.navy,
+              borderRadius: 12,
+              display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              background: 'none',
-              border: `1px solid ${C.nightBorder}`,
-              cursor: 'pointer',
-              color: C.textMuted,
-              fontFamily: F.mono,
-              fontSize: 12,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              padding: '10px 20px',
-              borderRadius: 8,
-              transition: 'color 200ms ease, border-color 200ms ease',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.color = C.textLight
-              e.currentTarget.style.borderColor = C.nightBorderHover
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.color = C.textMuted
-              e.currentTarget.style.borderColor = C.nightBorder
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 16,
             }}
           >
-            <ArrowLeft size={14} />
-            All Brand Kits
-          </button>
-        </div>
-      </section>
+            <div>
+              <div style={{ fontFamily: FF, fontSize: 15, fontWeight: 700, color: '#ffffff', marginBottom: 4 }}>
+                Delivery: Frame.io
+              </div>
+              <div style={{ fontFamily: FF, fontSize: 14, color: C.cardBlue, opacity: 0.7 }}>
+                Contact: Elario Young — elario.young@includedhealth.com
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 16 }}>
+              {['1920×1080', 'H.264', 'Camera LUTs included'].map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    fontFamily: FF,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: C.cardBlue,
+                    background: 'rgba(0,18,231,0.25)',
+                    padding: '4px 12px',
+                    borderRadius: 100,
+                    border: '1px solid rgba(202,220,255,0.15)',
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      </Section>
+
+      {/* Footer */}
+      <div
+        style={{
+          background: C.white,
+          borderTop: `1px solid ${C.borderLight}`,
+          padding: '32px 48px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span style={{ fontFamily: FF, fontSize: 13, color: C.secondaryText }}>
+          Included Health Brand Kit — AOM Internal Reference
+        </span>
+        <button
+          onClick={() => navigate('/brands')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: FF,
+            fontSize: 13,
+            fontWeight: 600,
+            color: C.electricBlue,
+          }}
+        >
+          <ArrowLeft size={14} />
+          All Brand Kits
+        </button>
+      </div>
     </div>
   )
 }
