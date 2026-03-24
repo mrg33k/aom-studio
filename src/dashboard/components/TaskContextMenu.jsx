@@ -949,6 +949,14 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
     // Mark task as fully completed (status='completed'). Direct Supabase PATCH + API fallback.
     supabasePatchTaskStatus(task, 'completed')
     supabaseTaskAction('markDone', task)
+    // Log task_completed to events table (RNB source of truth)
+    if (supabase) {
+      supabase.from('events').insert({
+        agent: task.agent || 'system',
+        event_type: 'task_completed',
+        payload: { task_id: task.id || task.taskId || `manual-${Date.now()}`, description: task.text || 'Task completed' },
+      }).then(({ error }) => { if (error) console.warn('[markDone] events insert failed:', error.message) })
+    }
     console.log(`[Corner] Task "${task.text}" marked done → completed`)
   } else if (action === 'priority') {
     supabaseTaskAction('priority', task, payload)
@@ -977,6 +985,14 @@ export function handleTaskContextAction(action, task, payload, setCheckedTasks) 
     }
     // API fallback: handles tasks not yet in Supabase (text-only, creates them)
     supabaseTaskAction('addToRightNow', task)
+    // Log task_started to events table (RNB source of truth)
+    if (supabase) {
+      supabase.from('events').insert({
+        agent: task.agent || 'system',
+        event_type: 'task_started',
+        payload: { task_id: task.id || task.taskId || `manual-${Date.now()}`, description: task.text || 'Task promoted to Right Now' },
+      }).then(({ error }) => { if (error) console.warn('[addToRightNow] events insert failed:', error.message) })
+    }
     console.log(`[Corner] Task "${task.text}" → Right Now (status:active)`)
   } else if (action === 'moveToProject') {
     console.log(`[Corner] Task "${task.text}" moved to project: ${payload}`)
