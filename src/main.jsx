@@ -43,6 +43,7 @@ import Skills from './pages/Skills.jsx'
 import Settings from './pages/Settings.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 const BookAudit = lazy(() => import('./pages/BookAudit.jsx'))
+const IncludedHealthBrand = lazy(() => import('./pages/IncludedHealthBrand.jsx'))
 const ElonRoomCanvas = lazy(() => import('./pages/ElonRoomCanvas.jsx'))
 const DemoPage = lazy(() => import('./demo/DemoPage.jsx'))
 import './index.css'
@@ -149,6 +150,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/brands/ambition/v1" element={<AmbitionBrandGuidelines />} />
           <Route path="/brands/ambition/performance" element={<AmbitionPerformance />} />
           <Route path="/brands/ambition/performance/v2" element={<AmbitionPerformanceV2 />} />
+          <Route path="/brands/included-health" element={<IncludedHealthBrand />} />
           <Route path="/social" element={<Social />} />
           <Route path="/research/hvac-ads-arizona" element={<ResearchHVAC />} />
           <Route path="/briefs" element={<BriefsHub />} />
