@@ -77,12 +77,12 @@ import { handleTaskContextAction } from './components/TaskContextMenu.jsx'
 // Done-task approval is handled by the pinned TASK COMPLETE box in the sidebar.
 function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onClarify }) {
   const isDaytime = isNightMode === false
-  // Daytime = white glass panel. Night = dark glass.
-  const bg = isDaytime ? 'rgba(255,255,255,0.96)' : 'rgba(8,14,28,0.95)'
-  const border = isDaytime ? 'rgba(59,130,246,0.28)' : 'rgba(100,180,255,0.22)'
-  const textPrimary = isDaytime ? '#0F172A' : '#EDF2FA'
-  const textMuted = isDaytime ? '#4A6585' : '#8BA4C4'
-  const divider = isDaytime ? 'rgba(59,130,246,0.10)' : 'rgba(100,180,255,0.10)'
+  // FIX #4: Daytime = blue glass (no white). Night = dark glass.
+  const bg = isDaytime ? 'rgba(15,25,50,0.97)' : 'rgba(8,14,28,0.95)'
+  const border = isDaytime ? 'rgba(59,130,246,0.40)' : 'rgba(100,180,255,0.22)'
+  const textPrimary = isDaytime ? '#E2E8F0' : '#EDF2FA'
+  const textMuted = isDaytime ? '#8BA4C4' : '#8BA4C4'
+  const divider = isDaytime ? 'rgba(59,130,246,0.14)' : 'rgba(100,180,255,0.10)'
 
 
 
@@ -99,7 +99,7 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
         border: `2px solid ${border}`,
         borderBottom: 'none',
         boxShadow: isDaytime
-          ? '0 -12px 40px rgba(59,130,246,0.10), 0 -2px 0 rgba(59,130,246,0.15), inset 0 1px 0 rgba(255,255,255,0.9)'
+          ? '0 -12px 40px rgba(59,130,246,0.15), 0 -2px 0 rgba(59,130,246,0.20), inset 0 1px 0 rgba(100,180,255,0.15)'
           : '0 -12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(100,180,255,0.08)',
         maxHeight: 360,
         overflowY: 'auto',
@@ -519,12 +519,15 @@ export default function GameHUD({
     // are handled by the pinned TASK COMPLETE confirmation box, not Right Now.
     liveRightNowTasks.forEach(t => {
       if (t.isDoneAwaitingApproval) return // goes to TASK COMPLETE box, not Right Now
+      // FIX #7: Preserve the actual live/queued flags from the event data.
+      // Previously isLive was hardcoded true, making queued tasks appear orange.
+      // Now: task_started -> isLive:true, orange. task_queued -> isQueued:true, fuchsia.
       rightNowTasks.push({
         text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: ${t.text}`,
         done: false,
         agent: t.agent,
         raw: '',
-        isLive: true,
+        isLive: !!t.isLive,
         isQueued: !!t.isQueued,
         taskId: t.taskId,
       })
@@ -1441,6 +1444,13 @@ export default function GameHUD({
         .ticker-task-live {
           animation: tickerFlash 2s ease-in-out infinite;
         }
+        @keyframes tickerFlashFuchsia {
+          0%, 100% { box-shadow: 0 0 0 rgba(233,30,144,0); }
+          30% { box-shadow: 0 0 12px rgba(233,30,144,0.55); }
+        }
+        .ticker-task-queued {
+          animation: tickerFlashFuchsia 2s ease-in-out infinite;
+        }
         @keyframes tickerFlashGreen {
           0%, 100% { box-shadow: 0 0 0 rgba(34,197,94,0); }
           30% { box-shadow: 0 0 12px rgba(34,197,94,0.45); }
@@ -1501,19 +1511,19 @@ export default function GameHUD({
           zIndex: 9999,
           background: isNightMode
             ? 'rgba(8,14,28,0.95)'
-            : 'rgba(255,255,255,0.97)',
-          border: isNightMode ? '2px solid rgba(59,130,246,0.35)' : '2px solid rgba(59,130,246,0.25)',
+            : 'rgba(15,25,50,0.97)',
+          border: isNightMode ? '2px solid rgba(59,130,246,0.35)' : '2px solid rgba(59,130,246,0.40)',
           borderRadius: 10, padding: '6px 0', minWidth: 240, maxWidth: 320,
           boxShadow: isNightMode
             ? '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)'
-            : '0 8px 32px rgba(59,130,246,0.12), 0 0 0 1px rgba(59,130,246,0.08)',
+            : '0 8px 32px rgba(59,130,246,0.20), 0 0 0 1px rgba(59,130,246,0.12)',
           backdropFilter: 'blur(20px)',
         }}>
           {/* Task name header */}
           <div style={{
             padding: '8px 14px 6px',
             fontSize: 12, fontWeight: 700,
-            color: isNightMode ? '#94A3B8' : '#4A6585',
+            color: isNightMode ? '#94A3B8' : '#94B8D8',
             fontFamily: "'Inter', sans-serif",
             borderBottom: '1px solid rgba(59,130,246,0.15)',
             marginBottom: 4,

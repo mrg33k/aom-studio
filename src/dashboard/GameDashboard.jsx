@@ -10702,8 +10702,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
           Prevents the last chat message from being hidden behind the fixed input bar.
           Height = base 80px + env(safe-area-inset-bottom) so the spacer clears the
           MobileFixedInput on iPhone X/11/12/13/14/15 (34px home indicator).
-          Without the SAI addition the last message is clipped ~12px on modern iPhones. */}
-      {activeTab === 'chat' && hideInputBar && (
+          Without the SAI addition the last message is clipped ~12px on modern iPhones.
+          FIX #3: Suppress entirely when TASK COMPLETE section is visible -- the card
+          already sits at the bottom, so no extra spacer needed. Without this suppression
+          the spacer creates a ~40-80px dead gap below the TASK COMPLETE card. */}
+      {activeTab === 'chat' && hideInputBar && confirmDoneCount === 0 && (
         <div style={{ height: 'calc(80px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }} aria-hidden="true" />
       )}
     </div>

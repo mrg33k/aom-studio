@@ -121,17 +121,23 @@ export function deriveStateFromEvents(events) {
     }
   }
 
-  // Right Now: tasks whose latest event is task_started
+  // Right Now: tasks whose latest event is task_started, task_queued, or build_pushed
+  // FIX #7: Color mapping:
+  //   task_queued  -> isQueued: true, isLive: false  -> fuchsia (#E91E90)
+  //   task_started -> isLive: true,  isQueued: false -> orange  (#FF6B3D)
+  //   build_pushed -> isDoneAwaitingApproval: true   -> yellow  (#F59E0B)
   const rightNowTasks = []
   for (const [, info] of taskLatest) {
-    if (info.event_type !== 'task_started') continue
+    const ev = info.event_type
+    if (ev !== 'task_started' && ev !== 'task_queued' && ev !== 'build_pushed') continue
     const description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
     rightNowTasks.push({
-      agent:      info.agent,
-      text:       description.length > 55 ? description.slice(0, 52) + '...' : description,
-      isLive:     true,
-      isQueued:   false,
-      fromEvents: true,
+      agent:                info.agent,
+      text:                 description.length > 55 ? description.slice(0, 52) + '...' : description,
+      isLive:               ev === 'task_started',
+      isQueued:             ev === 'task_queued',
+      isDoneAwaitingApproval: ev === 'build_pushed',
+      fromEvents:           true,
     })
   }
 

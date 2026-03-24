@@ -2,11 +2,12 @@ import React from 'react'
 import { HUD } from './HUDConstants.jsx'
 
 // Shared style for HUD context menu buttons
+// FIX #4: Both day and night use light text -- daytime menu background is now dark blue.
 export const hudCtxBtn = (isNight, display = 'block') => ({
   display, width: '100%', textAlign: 'left',
   padding: '8px 14px', background: 'none', border: 'none',
   fontSize: 13, fontWeight: 600, cursor: 'pointer',
-  color: isNight ? '#E2E8F0' : '#1E293B',
+  color: '#E2E8F0',
   fontFamily: "'Inter', sans-serif",
   transition: 'background 100ms',
 })
