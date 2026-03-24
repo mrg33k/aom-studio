@@ -7,8 +7,9 @@
 // Upload flow: get signed URL from server, PUT file directly to Supabase (no Vercel body limit).
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft, Code, BookOpen, RefreshCw } from 'lucide-react'
+import { Camera, X, Maximize2, Send, Trash2, FolderOpen, FileText, Image, Save, ArrowLeft, Code, BookOpen, RefreshCw, ExternalLink } from 'lucide-react'
 import { marked } from 'marked'
+import briefsIndex from '../data/briefs-index.json'
 
 const FILES_API = '/api/dashboard/files'
 
@@ -39,6 +40,38 @@ function getAgentDocs(agentSlug) {
   }
   docs.push({ label: 'Current Priorities', path: 'context/current-priorities.md', group: 'Context' })
   docs.push({ label: 'Decision Log', path: 'decisions/log.md', group: 'Context' })
+
+  // Agent's briefs from briefs-index.json
+  const agentNameMap = {
+    bobby: 'Bobby', colton: 'Colton', steffen: 'Steffen', jacob: 'Jacob',
+    elon: 'Elon', alex: 'Alex', steve: 'Steve', cleo: 'Cleo',
+    tony: 'Tony', paige: 'Paige', pixel: 'Pixel', mom: 'Mom',
+    elmo: 'Elmo', gary: 'Gary', mark: 'Mark',
+  }
+  const agentDisplayName = agentNameMap[agentSlug] || agentSlug
+
+  if (briefsIndex?.categories) {
+    const briefDocs = []
+    for (const cat of briefsIndex.categories) {
+      for (const item of (cat.items || [])) {
+        if (item.agent?.toLowerCase() === agentSlug || item.agent === agentDisplayName) {
+          briefDocs.push({
+            label: item.title,
+            group: 'Briefs',
+            briefSlug: item.slug,
+            briefDate: item.date,
+            briefSummary: item.summary,
+            briefPath: item.path,
+            isBrief: true,
+          })
+        }
+      }
+    }
+    // Sort by date descending (newest first)
+    briefDocs.sort((a, b) => (b.briefDate || '').localeCompare(a.briefDate || ''))
+    docs.push(...briefDocs)
+  }
+
   return docs
 }
 
@@ -1008,7 +1041,7 @@ function DocsDocList({ agentSlug, isDaytime, borderColor, mutedText, labelText, 
           </div>
           {docs.filter(d => d.group === group).map(doc => (
             <DocsDocRow
-              key={doc.path}
+              key={doc.isBrief ? `brief-${doc.briefSlug}` : doc.path}
               doc={doc}
               isDaytime={isDaytime}
               borderColor={borderColor}
@@ -1016,7 +1049,7 @@ function DocsDocList({ agentSlug, isDaytime, borderColor, mutedText, labelText, 
               accentColor={accentColor}
               accentBg={accentBg}
               accentBorder={accentBorder}
-              onClick={() => onSelectDoc(doc)}
+              onClick={doc.isBrief ? () => window.open(doc.briefPath, '_blank') : () => onSelectDoc(doc)}
             />
           ))}
         </div>
@@ -1045,13 +1078,22 @@ function DocsDocRow({ doc, isDaytime, borderColor, mutedText, accentColor, onCli
         transition: 'all 150ms',
       }}
     >
-      <BookOpen size={13} style={{ color: accentColor, flexShrink: 0 }} />
+      {doc.isBrief
+        ? <ExternalLink size={13} style={{ color: accentColor, flexShrink: 0 }} />
+        : <BookOpen size={13} style={{ color: accentColor, flexShrink: 0 }} />
+      }
       <span style={{ fontSize: 13, fontWeight: 600, color: '#E8ECF0', flex: 1 }}>
         {doc.label}
       </span>
-      <span style={{ fontSize: 11, color: mutedText, fontFamily: "'JetBrains Mono', monospace" }}>
-        {doc.path.split('/').pop()}
-      </span>
+      {doc.isBrief ? (
+        <span style={{ fontSize: 11, color: mutedText, fontFamily: "'JetBrains Mono', monospace" }}>
+          {doc.briefDate || ''}
+        </span>
+      ) : (
+        <span style={{ fontSize: 11, color: mutedText, fontFamily: "'JetBrains Mono', monospace" }}>
+          {doc.path.split('/').pop()}
+        </span>
+      )}
     </div>
   )
 }
