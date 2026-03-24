@@ -21,6 +21,7 @@ const AGENT_FOLDERS = {
   steffen: 'steffen',
   jacob: 'jacob',
   elon: 'sys',
+  gary: 'gary',
   alex: 'aom-strategy',
   steve: 'steve',
   cleo: 'content-agent',

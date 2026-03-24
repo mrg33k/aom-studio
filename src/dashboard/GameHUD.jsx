@@ -522,14 +522,17 @@ export default function GameHUD({
       // FIX #7: Preserve the actual live/queued flags from the event data.
       // Previously isLive was hardcoded true, making queued tasks appear orange.
       // Now: task_started -> isLive:true, orange. task_queued -> isQueued:true, fuchsia.
+      // FIX #32: Subtasks get isSubtask:true, no agent prefix (parent already shows it)
+      const agentPrefix = t.isSubtask ? '' : `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: `
       rightNowTasks.push({
-        text: `${(t.agent || '').charAt(0).toUpperCase() + (t.agent || '').slice(1)}: ${t.text}`,
+        text: `${agentPrefix}${t.text}`,
         done: false,
         agent: t.agent,
         raw: '',
         isLive: !!t.isLive,
         isQueued: !!t.isQueued,
         taskId: t.taskId,
+        isSubtask: !!t.isSubtask,
       })
     })
     // Manual tasks (in-memory)
@@ -1099,16 +1102,17 @@ export default function GameHUD({
                   )}
                   <span style={{
                     fontFamily: "'Inter', system-ui, sans-serif",
-                    fontSize: 13, fontWeight: 600,
-                    color: isTickerPending ? (isDaytime ? '#2563EB' : '#60A5FA') : task.done ? '#4ADE80' : hudTextPrimary,
+                    fontSize: task.isSubtask ? 11 : 13,
+                    fontWeight: task.isSubtask ? 500 : 600,
+                    color: isTickerPending ? (isDaytime ? '#2563EB' : '#60A5FA') : task.done ? '#4ADE80' : task.isSubtask ? 'rgba(255,180,140,0.85)' : hudTextPrimary,
                     whiteSpace: 'nowrap',
                     maxWidth: 200,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     textDecoration: effectiveDone ? 'line-through' : 'none',
-                    opacity: effectiveDone ? 0.7 : 1,
+                    opacity: effectiveDone ? 0.7 : task.isSubtask ? 0.85 : 1,
                   }}>
-                    {task.text}
+                    {task.isSubtask ? '↳ ' : ''}{task.text}
                   </span>
                 </motion.button>
                 )

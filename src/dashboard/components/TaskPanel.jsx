@@ -583,9 +583,10 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: project.isCompletedFeed ? '2px 8px' : '4px 8px',
-                minHeight: project.isCompletedFeed ? 36 : 44,
+                paddingLeft: task.isSubtask ? 24 : 8,
+                minHeight: project.isCompletedFeed ? 36 : task.isSubtask ? 36 : 44,
                 borderBottom: i < orderedTasks.length - 1 ? `1px solid ${tpDivider}` : 'none',
-                opacity: project.isCompletedFeed ? 0.85 : isDone && !isDoneAwaiting ? 0.45 : isDraggingThis ? 0.5 : 1,
+                opacity: project.isCompletedFeed ? 0.85 : isDone && !isDoneAwaiting ? 0.45 : isDraggingThis ? 0.5 : task.isSubtask ? 0.85 : 1,
                 transition: 'opacity 200ms ease, background 300ms ease, border-left 300ms ease',
                 touchAction: 'pan-y',
                 // iOS: suppress white tap-highlight and native long-press callout so the
@@ -663,8 +664,10 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                   }
                 }}
                 style={{
-                  fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, fontWeight: 400,
-                  color: project.isCompletedFeed ? tpTextPrimary : isDone ? tpTextMuted : tpTextPrimary,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  fontSize: task.isSubtask ? 12 : 14,
+                  fontWeight: task.isSubtask ? 400 : 400,
+                  color: project.isCompletedFeed ? tpTextPrimary : isDone ? tpTextMuted : task.isSubtask ? 'rgba(255,180,140,0.8)' : tpTextPrimary,
                   lineHeight: 1.4,
                   textDecoration: project.isCompletedFeed ? 'none' : isDone ? 'line-through' : 'none',
                   flex: 1,
@@ -674,7 +677,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                   cursor: (task.projectSource || task.projectSection) ? 'pointer' : 'default',
                 }}
               >
-                {task.text}
+                {task.isSubtask ? '↳ ' : ''}{task.text}
                 {/* Project source badge - shows which project this task lives in */}
                 {(task.projectSource || task.projectSection) && !isDone && (
                   <span style={{

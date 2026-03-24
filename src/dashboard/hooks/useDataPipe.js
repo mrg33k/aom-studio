@@ -127,24 +127,50 @@ export function deriveStateFromEvents(events) {
   //   task_started -> isLive: true,  isQueued: false -> orange  (#FF6B3D)
   //   build_pushed -> isDoneAwaitingApproval: true   -> yellow  (#F59E0B)
   const rightNowTasks = []
-  for (const [, info] of taskLatest) {
+  for (const [taskId, info] of taskLatest) {
     const ev = info.event_type
     if (ev !== 'task_started' && ev !== 'task_queued' && ev !== 'build_pushed') continue
     const description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
-    rightNowTasks.push({
+    const parentEntry = {
       agent:                info.agent,
       text:                 description.length > 55 ? description.slice(0, 52) + '...' : description,
       isLive:               ev === 'task_started',
       isQueued:             ev === 'task_queued',
       isDoneAwaitingApproval: ev === 'build_pushed',
       fromEvents:           true,
-    })
+    }
+    rightNowTasks.push(parentEntry)
+
+    // FIX #32: If task_started has a subtasks array, expand each as its own pill.
+    // Each subtask inherits the parent agent and live status, gets isSubtask: true
+    // so the HUD can render it slightly indented under the parent.
+    if (ev === 'task_started' && Array.isArray(info.payload.subtasks) && info.payload.subtasks.length > 0) {
+      info.payload.subtasks.forEach((sub, idx) => {
+        const subText = typeof sub === 'string' ? sub : (sub.text || sub.description || sub.task || `Subtask ${idx + 1}`)
+        rightNowTasks.push({
+          agent:      info.agent,
+          text:       subText.length > 55 ? subText.slice(0, 52) + '...' : subText,
+          isLive:     true,
+          isQueued:   false,
+          isSubtask:  true,
+          parentText: parentEntry.text,
+          fromEvents: true,
+          taskId:     `${taskId}-sub-${idx}`,
+        })
+      })
+    }
   }
 
-  // Dedup: one task per agent (newest wins -- taskLatest is built newest-first)
+  // Dedup: one parent task per agent (newest wins -- taskLatest is built newest-first).
+  // Subtasks (isSubtask: true) are always kept -- they are children of the parent that passed dedup.
   const seenAgents = new Set()
   const dedupedTasks = []
   for (const task of rightNowTasks) {
+    if (task.isSubtask) {
+      // Only include subtasks whose parent agent made it through dedup
+      if (seenAgents.has(task.agent)) dedupedTasks.push(task)
+      continue
+    }
     if (seenAgents.has(task.agent)) continue
     seenAgents.add(task.agent)
     dedupedTasks.push(task)
