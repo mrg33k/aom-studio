@@ -5,13 +5,13 @@
 // TODO(steffen-design): Checklist project sidebar -- icons/avatars for each project category. Currently text-only pills. Consider small project logos or color-coded dots matching the agent room colors. [SURVIVES: UI panel. Room colors may reference engine palette but sidebar logic stays.]
 // DONE(bobby2): Task right-click context menu -- right-click any task for: mark done/undone, set priority (high/med/low), reassign agent, delete. Linear/Notion style.
 // DONE(bobby): Task drag-and-drop -- drag grip handle to reorder priority within a project. Top = highest priority. Order persists in localStorage. Uses framer-motion Reorder (already installed, zero new deps).
-// DONE(bobby2): RIGHT NOW PILL (CHECKLIST) -- Right Now section at TOP of checklist (before Today). Shows active agent tasks with avatars + progress bars + LIVE badges. Data from agent-notifications.md TASK entries + relay activity. Drag-to target for priority escalation (drag-and-drop TODO(patrik) still open). Ref: Patrik feedback Pass 21.
+// DONE(bobby2): RIGHT NOW PILL (CHECKLIST) -- Right Now section at TOP of checklist (before Today). Shows active agent tasks with avatars + progress bars + LIVE badges. Data from events table task_started entries. Drag-to target for priority escalation (drag-and-drop TODO(patrik) still open). Ref: Patrik feedback Pass 21.
 // DONE(bobby): LABEL SIDEBAR COUNTS (CHECKLIST) -- All count badges now show "N left" instead of bare numbers. Sidebar (mobile + desktop), project group headers all labeled. "Done" section already labeled. Ref: Patrik feedback Pass 22.
 //
 // FILE OWNER: Bobby2 (HUD team). Bobby (Canvas team) does NOT touch this file.
 //
 // ========== PATRIK DIRECTIVES (Pass 25, lines 258-263) ==========
-// DONE(bobby2): LIVE TASK UPDATES IN CHECKLIST -- useAutoCheckFromNotifications() polls agent-notifications.md every 3s, extracts TASK FINISHED/SHIPPED/DELIVERED descriptions, fuzzy-matches against task text (2+ keyword overlap), auto-checks matching items. Priority sort: Right Now > Today > by-importance. Ref: Patrik feedback line 258-259, 263.
+// DONE(bobby2): LIVE TASK UPDATES IN CHECKLIST -- isAutoChecked() reads task_completed events from events table, extracts descriptions, fuzzy-matches against task text (2+ keyword overlap), auto-checks matching items. Priority sort: Right Now > Today > by-importance. Ref: Patrik feedback line 258-259, 263.
 // DONE(bobby2): RIGHT NOW REDESIGNED -- Per Patrik correction: Right Now = ONLY running agents. Fake progress % removed. Live pulse bar (CSS animation) replaces static progress. Completed tasks separated into their own "Completed" feed section. Ref: Patrik correction overriding line 253.
 // ==========
 //

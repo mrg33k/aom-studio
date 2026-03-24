@@ -3,13 +3,12 @@
 // usePatrikTodos, useCheckingInTasks, and usePunchListData across GameHUD + ChecklistMode.
 //
 // BEFORE: 6+ hooks polling 3 files at different intervals (3s, 5s, 8s).
-//   - agent-notifications.md polled 3 separate times per cycle
+//   - events table is the SOLE source of truth for Right Now + agent status
 //   - punch-list.md polled at 5s, re-derived in PatrikTodos/CheckingIn
-//   - active-missions.md polled at 3s
-//   Total: ~7 fetch calls per cycle. Data arrives at different times. Pills lag behind activity feed.
+//   Total: 2 fetch calls per 3s window. Everything updates together. Pill counts match activity feed.
 //
-// AFTER: 1 poll every 3s. 3 parallel fetches (one per file). All data computed in the same tick.
-//   Total: 3 fetch calls per 3s window. Everything updates together. Pill counts match activity feed.
+// AFTER: 1 poll every 3s. events table drives Right Now + agent status. punch-list drives task pills.
+//   All data computed in the same tick.
 //
 // Rule: If the activity feed updates and the pill count doesn't, something is polling separately. Kill it.
 
@@ -42,161 +41,16 @@ export function formatRelativeTime(dateStr) {
   }
 }
 
-// ---- PARSE RIGHT NOW from notifications (agent-notifications.md is source of truth) ----
-// For EACH agent, find their MOST RECENT entry (TASK STARTED or TASK FINISHED).
-// If most recent = TASK STARTED, agent is ACTIVE (shows in Right Now).
-// If most recent = TASK FINISHED, agent is DONE (excluded from Right Now).
-// active-missions.md is a FALLBACK only for agents with zero notification entries.
-function parseRightNow(missionsContent, notifContent) {
-  // Step 1: Build per-agent most-recent-state from notifications (source of truth)
-  // Walk lines top-to-bottom so later entries overwrite earlier ones = most recent wins.
-  const agentState = new Map() // slug -> { state: 'started'|'finished', text }
-
-  if (notifContent) {
-    const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
-
-    for (const line of lines) {
-      const startMatch = line.match(/TASK STARTED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]\s*(.+?)$/i)
-      if (startMatch) {
-        let slug = startMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
-        if (/^bobby/.test(slug)) slug = 'bobby'
-        if (/^steffen/.test(slug)) slug = 'steffen'
-        let text = startMatch[2].replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
-        if (text.length > 55) text = text.slice(0, 52) + '...'
-        agentState.set(slug, { state: 'started', text, agent: slug })
-      }
-      // Match standard "TASK FINISHED: Agent -" and non-standard variants like
-      // "TASK FINISHED Agent:", "TASK FINISHED] Bobby:", "**TASK FINISHED** | Bobby"
-      const finishMatch = line.match(/TASK FINISHED[:\s|]*\s*(\w[\w\s]*?\d?)\s*[-\u2013:|]/i)
-      if (finishMatch) {
-        let slug = finishMatch[1].toLowerCase().replace(/\s+\d+$/, '').replace(/\s*\(.*$/, '').trim()
-        if (/^bobby/.test(slug)) slug = 'bobby'
-        if (/^steffen/.test(slug)) slug = 'steffen'
-        agentState.set(slug, { state: 'finished', text: '', agent: slug })
-      }
-    }
-  }
-
-  // Step 2: Collect agents whose most recent notification is TASK STARTED
-  const activeTasks = []
-  const agentsFromNotifs = new Set()
-
-  for (const [slug, info] of agentState) {
-    agentsFromNotifs.add(slug)
-    if (info.state === 'started') {
-      activeTasks.push({ text: info.text, agent: slug, done: false, isLive: true })
-    }
-  }
-
-  // Step 3: FALLBACK -- agents in active-missions.md "Running" table that have
-  // zero notification entries get included (they haven't reported in yet).
-  if (missionsContent) {
-    const runningSection = missionsContent.split(/^## Running/m)[1]
-    if (runningSection) {
-      const runningContent = runningSection.split(/^## /m)[0]
-      const rows = runningContent.trim().split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('Agent'))
-      for (const row of rows) {
-        const cells = row.split('|').map(c => c.trim()).filter(Boolean)
-        if (cells.length < 3) continue
-        let agentSlug = cells[0].toLowerCase().replace(/\s+\d+$/, '').trim()
-        if (/^bobby/.test(agentSlug)) agentSlug = 'bobby'
-        if (/^steffen/.test(agentSlug)) agentSlug = 'steffen'
-        // Only include if this agent has NO notification entries at all
-        if (agentsFromNotifs.has(agentSlug)) continue
-        let text = cells[1].replace(/^Relaunched:\s*/i, '').replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
-        if (text.length > 55) text = text.slice(0, 52) + '...'
-        if (text.length > 3 && agentSlug) {
-          activeTasks.push({ text, agent: agentSlug, done: false, isLive: true })
-        }
-      }
-    }
-  }
-
-  return activeTasks
-}
-
-// ---- PARSE COMPLETED FEED from notifications --------------------------------
-function parseCompletedFeed(notifContent) {
-  if (!notifContent) return []
-
-  const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
-  const completionLines = lines
-    .filter(l => {
-      if (/PATRIK\s*(DIRECTIVE|CLARIFICATION|FEEDBACK|BUG|REMINDER|DECISION)/i.test(l)) return false
-      if (/COUNCIL\s*(DIRECTIVE|DECISION)/i.test(l)) return false
-      if (/NEXT\s*WAVE/i.test(l)) return false
-      return /TASK\s*FINISHED|SHIPPED|DELIVERED|MILESTONE/i.test(l)
-    })
-    .slice(-8)
-    .reverse()
-
-  return completionLines.map((line) => {
-    const agentMatch = line.match(/(?:Bobby\s*\d?|Steffen\s*\d?|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
-    let agentSlug = agentMatch ? agentMatch[0].toLowerCase().replace(/\s+/g, '') : null
-    if (agentSlug && /^bobby\d?$/.test(agentSlug)) agentSlug = 'bobby'
-    if (agentSlug && /^steffen\d?$/.test(agentSlug)) agentSlug = 'steffen'
-
-    let text = ''
-    const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-    const shippedMatch = line.match(/SHIPPED:\s*(?:\(1\)\s*)?(.+?)(?:,\s*\(2\)|\.\s|$)/i)
-    const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-    if (taskMatch) text = taskMatch[1].trim()
-    else if (milestoneMatch) text = milestoneMatch[1].trim()
-    else if (shippedMatch) text = shippedMatch[1].trim()
-    else {
-      const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-\u2013:]\s*(.+?)(?:\.\s|$)/i)
-      text = afterAgent ? afterAgent[1].trim() : ''
-    }
-
-    text = text.replace(/@\w+:?/g, '')
-      .replace(/\b[0-9a-f]{7,8}\b/g, '')
-      .replace(/projects\/\S+/g, '')
-      .replace(/\d+\s*commits?\s*pushed\s*\([^)]*\)/gi, '')
-      .replace(/\(\s*\d+\s*commits?\s*to\s*[\w-]+[^)]*\)/gi, '')
-      .replace(/\([^)]*commits?[^)]*\)/gi, '')
-      .replace(/\([\s,]*\)/g, '')
-      .replace(/REMAINING\s*TODOs?:.*$/i, '')
-      .replace(/\s{2,}/g, ' ')
-      .replace(/^\s*[-\u2013:,.\s]+/, '')
-      .replace(/[-\u2013:,.\s]+$/, '')
-      .trim()
-    if (text.length > 55) text = text.slice(0, 52) + '...'
-
-    const isoMatch = line.match(/\[(\d{4}-\d{2}-\d{2}T[^\]]+)\]/)
-    const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\]/)
-    const rawTimestamp = isoMatch ? isoMatch[1] : (dateMatch ? dateMatch[1] : '')
-    const relativeTime = formatRelativeTime(rawTimestamp)
-
-    return {
-      text,
-      agent: agentSlug,
-      timestamp: relativeTime,
-      rawTimestamp,
-      done: true,
-      isLive: false,
-    }
-  }).filter(t => t.text.length > 3 && t.agent)
-}
-
-// ---- BUILD AUTO-CHECK KEYWORDS from notifications ---------------------------
-function buildAutoCheckKeywords(notifContent) {
-  if (!notifContent) return new Set()
-
-  const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
-  const completionLines = lines.filter(l =>
-    /TASK\s*FINISHED|COMPLETE|DELIVERED|SHIPPED/i.test(l)
-  )
+// ---- BUILD AUTO-CHECK KEYWORDS from events table ----------------------------
+// Extracts keywords from task_completed events to fuzzy-match against punch-list tasks.
+function buildAutoCheckKeywordsFromEvents(events) {
+  if (!events || events.length === 0) return new Set()
 
   const completedDescriptions = []
-  for (const line of completionLines) {
-    const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
-    const shippedMatch = line.match(/SHIPPED:\s*(?:\(\d+\)\s*)?(.+?)(?:,\s*\(\d+\)|\.\s|$)/i)
-    if (taskMatch) completedDescriptions.push(taskMatch[1].trim().toLowerCase())
-    if (shippedMatch) completedDescriptions.push(shippedMatch[1].trim().toLowerCase())
-    const numberedItems = line.matchAll(/\((\d+)\)\s*([^,(]+)/g)
-    for (const match of numberedItems) {
-      completedDescriptions.push(match[2].trim().toLowerCase())
-    }
+  for (const ev of events) {
+    if (ev.event_type !== 'task_completed' && ev.event_type !== 'qa_passed' && ev.event_type !== 'build_pushed') continue
+    const desc = ev.payload?.description || ev.payload?.task || ev.payload?.text
+    if (desc) completedDescriptions.push(desc.toLowerCase())
   }
 
   const keywords = new Set()
@@ -414,26 +268,23 @@ export function useDataPipe(parsePunchList) {
 
   const fetchAll = useCallback(async () => {
     if (IS_LOCAL) {
-      // LOCAL: read from filesystem APIs
+      // LOCAL: read from filesystem API (punch-list only) + Supabase events
       try {
-        const [notifRes, punchRes] = await Promise.all([
-          fetch('/api/local/file?path=context/agent-notifications.md').then(r => r.ok ? r.json() : null).catch(() => null),
-          fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null),
-        ])
-
-        const notifContent = notifRes?.content || ''
+        const punchRes = await fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null)
         const punchContent = punchRes?.content || ''
 
         // Right Now: events table is the SOLE source (same as production).
         // task_started with no subsequent task_completed = task is active.
         // Per-agent dedup: only the newest task per agent.
         const localActive = []
+        let localEvents = []
         try {
           const clientId = getClientId()
           const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
           if (sbRes.ok) {
             const sbData = await sbRes.json()
             if (sbData.events && sbData.events.length > 0) {
+              localEvents = sbData.events
               const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(sbData.events)
               eventsAgentStatusRef.current = agentStatuses
               eventsAgentLastCompletedRef.current = agentLastCompleted
@@ -464,8 +315,7 @@ export function useDataPipe(parsePunchList) {
         }
 
         setRightNow(localActive)
-        setCompletedFeed(parseCompletedFeed(notifContent))
-        keywordsRef.current = buildAutoCheckKeywords(notifContent)
+        keywordsRef.current = buildAutoCheckKeywordsFromEvents(localEvents)
 
         if (punchContent && parseFnRef.current) {
           setPunchData(parseFnRef.current(punchContent))
@@ -645,6 +495,11 @@ export function useDataPipe(parsePunchList) {
           }
 
           setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
+        }
+
+        // Build auto-check keywords from completed events (events table is source of truth)
+        if (data.events && data.events.length > 0) {
+          keywordsRef.current = buildAutoCheckKeywordsFromEvents(data.events)
         }
 
         setPunchLoading(false)

@@ -8863,7 +8863,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
     prevMessageCountRef.current = chatMessages?.length || 0
   }, [agentSlug, activeTab])
 
-  // Working agents count -- use REAL data from useDataPipe (agent-notifications.md TASK STARTED/FINISHED)
+  // Working agents count -- use REAL data from useDataPipe (events table task_started/task_completed)
   // Bobby2: Full pipeData passed to TopSquares so sidebar uses same persistent truth as HUD pills
   const pipeData = useDataPipe(parsePunchListSidebar)
   const { rightNow: liveAgents, pillCounts: pipeCounts } = pipeData
@@ -10994,7 +10994,7 @@ export default function GameDashboard() {
     window.location.reload()
   }, [])
 
-  // Right Now tasks: wire to useDataPipe (real-time from task-status.jsonl + agent-notifications.md)
+  // Right Now tasks: wire to useDataPipe (real-time from events table -- sole source of truth)
   // Live data from server -- no localStorage
   const pipeData = useDataPipe(parsePunchListSidebar)
   const rightNowTasks = pipeData?.rightNow || []

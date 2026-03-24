@@ -6,7 +6,7 @@
 //
 // DONE(bobby2): Toast click action -- dispatches 'corner-navigate-agent' custom event with { agentSlug }. GameDashboard listens for this to switch rooms.
 // DONE(bobby2): Notification sound -- Web Audio API chime: ascending triad for completions, descending for blocked, neutral for system. 0.08 gain (subtle).
-// DONE(bobby2): Notification history panel -- bell click toggles full notification log panel. Shows all notifications from agent-notifications.md, grouped by time, with dismiss-all.
+// DONE(bobby2): Notification history panel -- bell click toggles full notification log panel. Shows all notifications from events table, grouped by time, with dismiss-all.
 // DONE(bobby2): Notification plain English -- humanizeNotification() strips commit hashes, jargon, @mentions, TODO counts. Extracts SHIPPED items. Truncates to 120 chars. Toast reads like a human update.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
@@ -165,56 +165,70 @@ function humanizeNotification(raw, agentName) {
   return msg || raw
 }
 
-// Hook: polls agent-notifications.md for new completions
+// Hook: polls events table for new task_completed/task_failed events (toast notifications)
 function useAgentNotifications() {
   const [notifications, setNotifications] = useState([])
-  const lastLineCountRef = useRef(0)
+  const lastSeenIdRef = useRef(null)
   const dismissedRef = useRef(new Set())
 
   useEffect(() => {
-    if (!IS_LOCAL) return
-
     const poll = async () => {
       try {
-        const res = await fetch('/api/local/file?path=context/agent-notifications.md')
+        const { getClientId } = await import('../lib/clientConfig.js')
+        const clientId = getClientId()
+        const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
         if (!res.ok) return
-        const json = await res.json()
-        if (!json.content) return
+        const data = await res.json()
+        const events = data.events || []
 
-        const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
-        if (lines.length > lastLineCountRef.current) {
-          // New notifications arrived
-          const newLines = lines.slice(lastLineCountRef.current)
-          const newNotifs = newLines.map((line, i) => {
-            const timestampMatch = line.match(/^\[([^\]]+)\]/)
-            const agentMatch = line.match(/(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
-            const messageMatch = line.match(/:\s*(.+)$/)
+        // Find events newer than the last one we've seen
+        // events are newest-first from the API
+        const relevantTypes = new Set(['task_completed', 'task_failed', 'qa_passed', 'build_pushed'])
+        const relevant = events.filter(ev => relevantTypes.has(ev.event_type))
 
-            const rawMessage = messageMatch?.[1]?.trim() || line
-            const name = agentMatch?.[0] || 'System'
+        if (relevant.length === 0) return
 
-            return {
-              id: `notif-${Date.now()}-${i}`,
-              time: timestampMatch?.[1] || 'now',
-              agentSlug: agentMatch ? agentMatch[0].toLowerCase() : null,
-              agentName: name,
-              message: humanizeNotification(rawMessage, name),
-              type: line.toLowerCase().includes('blocked') ? 'blocked'
-                : line.toLowerCase().includes('finish') || line.toLowerCase().includes('ship') || line.toLowerCase().includes('done') ? 'complete'
-                : 'system',
-              createdAt: Date.now(),
-            }
-          }).filter(n => !dismissedRef.current.has(n.message))
-
-          if (newNotifs.length > 0) {
-            // Play notification chime based on the most important notification type
-            const hasBlocked = newNotifs.some(n => n.type === 'blocked')
-            const hasComplete = newNotifs.some(n => n.type === 'complete')
-            playNotificationChime(hasBlocked ? 'blocked' : hasComplete ? 'complete' : 'system')
-            setNotifications(prev => [...newNotifs, ...prev].slice(0, 10))
-          }
+        const newestId = relevant[0]?.id
+        if (lastSeenIdRef.current === null) {
+          // First poll: seed the last-seen marker without showing toasts
+          lastSeenIdRef.current = newestId
+          return
         }
-        lastLineCountRef.current = lines.length
+
+        if (newestId === lastSeenIdRef.current) return
+
+        // Find events newer than last seen
+        const newEvents = []
+        for (const ev of relevant) {
+          if (ev.id === lastSeenIdRef.current) break
+          newEvents.push(ev)
+        }
+
+        const newNotifs = newEvents.map((ev, i) => {
+          const agent = ev.agent || 'system'
+          const name = agent.charAt(0).toUpperCase() + agent.slice(1)
+          const rawMessage = ev.payload?.description || ev.payload?.task || ev.payload?.text || `${name} task update`
+          const type = ev.event_type === 'task_failed' ? 'blocked' : 'complete'
+
+          return {
+            id: `notif-${ev.id || Date.now()}-${i}`,
+            time: ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'now',
+            agentSlug: agent,
+            agentName: name,
+            message: humanizeNotification(rawMessage, name),
+            type,
+            createdAt: Date.now(),
+          }
+        }).filter(n => !dismissedRef.current.has(n.message))
+
+        if (newNotifs.length > 0) {
+          const hasBlocked = newNotifs.some(n => n.type === 'blocked')
+          const hasComplete = newNotifs.some(n => n.type === 'complete')
+          playNotificationChime(hasBlocked ? 'blocked' : hasComplete ? 'complete' : 'system')
+          setNotifications(prev => [...newNotifs, ...prev].slice(0, 10))
+        }
+
+        lastSeenIdRef.current = newestId
       } catch {}
     }
 
@@ -276,40 +290,42 @@ export function NotificationBadge({ count, style }) {
   )
 }
 
-// Hook: loads FULL notification history from agent-notifications.md (all entries, not just new)
+// Hook: loads FULL notification history from events table (all entries, newest first)
 function useFullNotificationHistory() {
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
-    if (!IS_LOCAL) { setLoading(false); return }
     try {
-      const res = await fetch('/api/local/file?path=context/agent-notifications.md')
+      const { getClientId } = await import('../lib/clientConfig.js')
+      const clientId = getClientId()
+      const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
       if (!res.ok) { setLoading(false); return }
-      const json = await res.json()
-      if (!json.content) { setLoading(false); return }
+      const data = await res.json()
+      const events = data.events || []
 
-      const lines = json.content.trim().split('\n').filter(l => l.startsWith('['))
-      const entries = lines.map((line, i) => {
-        const timestampMatch = line.match(/^\[([^\]]+)\]/)
-        const agentMatch = line.match(/(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
-        const messageMatch = line.match(/:\s*(.+)$/)
-        const rawMessage = messageMatch?.[1]?.trim() || line
-        const name = agentMatch?.[0] || 'System'
+      const relevantTypes = new Set(['task_completed', 'task_failed', 'task_started', 'qa_passed', 'build_pushed'])
+      const entries = events
+        .filter(ev => relevantTypes.has(ev.event_type))
+        .map((ev, i) => {
+          const agent = ev.agent || 'system'
+          const name = agent.charAt(0).toUpperCase() + agent.slice(1)
+          const rawMessage = ev.payload?.description || ev.payload?.task || ev.payload?.text || `${name} task update`
+          const type = ev.event_type === 'task_failed' ? 'blocked'
+            : ev.event_type === 'task_completed' || ev.event_type === 'qa_passed' || ev.event_type === 'build_pushed' ? 'complete'
+            : 'system'
 
-        return {
-          id: `hist-${i}`,
-          time: timestampMatch?.[1] || '',
-          agentSlug: agentMatch ? agentMatch[0].toLowerCase() : null,
-          agentName: name,
-          message: humanizeNotification(rawMessage, name),
-          rawMessage: rawMessage,
-          type: line.toLowerCase().includes('blocked') ? 'blocked'
-            : line.toLowerCase().includes('finish') || line.toLowerCase().includes('ship') || line.toLowerCase().includes('done') ? 'complete'
-            : 'system',
-        }
-      }).reverse() // Most recent first
-
+          return {
+            id: `hist-${ev.id || i}`,
+            time: ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+            agentSlug: agent,
+            agentName: name,
+            message: humanizeNotification(rawMessage, name),
+            rawMessage,
+            type,
+          }
+        })
+      // events are already newest-first from the API
       setHistory(entries)
     } catch {}
     setLoading(false)
