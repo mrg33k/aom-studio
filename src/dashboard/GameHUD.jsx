@@ -669,9 +669,11 @@ export default function GameHUD({
     }
 
     // LIVE TASK AUTO-CHECK: mark tasks as done if they match TASK FINISHED notifications
+    // Skip fromAgentStatus tasks -- they come from agent_status table which is already truth.
+    // Auto-checking those would cause checkmarks/strikethrough on actively running agent pills.
     for (const project of merged) {
       for (const task of project.tasks) {
-        if (!task.done && isAutoChecked(task.text)) {
+        if (!task.done && !task.fromAgentStatus && isAutoChecked(task.text)) {
           task.done = true
           task.autoChecked = true
         }

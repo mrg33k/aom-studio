@@ -305,9 +305,8 @@ export function useDataPipe(parsePunchList) {
         const punchRes = await fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null)
         const punchContent = punchRes?.content || ''
 
-        // Right Now: events table is the SOLE source (same as production).
-        // task_started with no subsequent task_completed = task is active.
-        // Per-agent dedup: only the newest task per agent.
+        // Right Now: agent_status table is the SOLE source of truth (same as production).
+        // Events table used only for room status dots and auto-check keywords.
         const localActive = []
         let localEvents = []
         try {
@@ -317,10 +316,29 @@ export function useDataPipe(parsePunchList) {
             const sbData = await sbRes.json()
             if (sbData.events && sbData.events.length > 0) {
               localEvents = sbData.events
-              const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(sbData.events)
+              const { agentStatuses, agentLastCompleted } = deriveStateFromEvents(sbData.events)
               eventsAgentStatusRef.current = agentStatuses
               eventsAgentLastCompletedRef.current = agentLastCompleted
-              localActive.push(...rightNowTasks)
+              // Note: rightNowTasks from events NOT pushed -- agent_status is source of truth
+            }
+            // Right Now pills from agent_status table only
+            if (sbData.agentStatuses && Array.isArray(sbData.agentStatuses)) {
+              const now = Date.now()
+              for (const agent of sbData.agentStatuses) {
+                if (agent.status === 'working' || agent.status === 'active') {
+                  const ageMs = agent.updated_at ? now - new Date(agent.updated_at).getTime() : 0
+                  const isStale = ageMs > 60000
+                  localActive.push({
+                    agent: agent.slug,
+                    text: agent.current_task || `${agent.slug} is working`,
+                    isLive: true,
+                    isQueued: false,
+                    fromAgentStatus: true,
+                    isStale,
+                    updatedAt: agent.updated_at,
+                  })
+                }
+              }
             }
             if (sbData.tasks) {
               // Done tasks awaiting approval
@@ -368,17 +386,37 @@ export function useDataPipe(parsePunchList) {
         if (!res.ok) return
         const data = await res.json()
 
-        // Right Now: events table is the SOLE source.
-        // task_started with no subsequent task_completed = task is active.
-        // Per-agent dedup: only the newest task per agent.
+        // Right Now: agent_status table is the SOLE source of truth.
+        // Events table is only used for room status dots (eventsAgentStatusRef) and auto-check keywords.
+        // This prevents old task_completed events from causing checkmarks/strikethrough on active pills.
         {
           const active = []
 
+          // Still populate eventsAgentStatusRef for room state dots (backward compat)
           if (data.events && data.events.length > 0) {
-            const { rightNowTasks, agentStatuses, agentLastCompleted } = deriveStateFromEvents(data.events)
+            const { agentStatuses, agentLastCompleted } = deriveStateFromEvents(data.events)
             eventsAgentStatusRef.current = agentStatuses
             eventsAgentLastCompletedRef.current = agentLastCompleted
-            active.push(...rightNowTasks)
+          }
+
+          // Right Now pills come ONLY from agent_status table
+          if (data.agentStatuses && Array.isArray(data.agentStatuses)) {
+            const now = Date.now()
+            for (const agent of data.agentStatuses) {
+              if (agent.status === 'working' || agent.status === 'active') {
+                const ageMs = agent.updated_at ? now - new Date(agent.updated_at).getTime() : 0
+                const isStale = ageMs > 60000 // 60s without heartbeat
+                active.push({
+                  agent: agent.slug,
+                  text: agent.current_task || `${agent.slug} is working`,
+                  isLive: true,
+                  isQueued: false,
+                  fromAgentStatus: true,
+                  isStale,
+                  updatedAt: agent.updated_at,
+                })
+              }
+            }
           }
 
           // KEEP: Done tasks awaiting approval -> Inbox pill (not Right Now)
