@@ -95,8 +95,8 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
 
       <style>{`
         @keyframes fabRingPulse {
-          0%, 100% { opacity: 0.6; transform: scale(1); }
-          50%       { opacity: 0.15; transform: scale(1.18); }
+          0%, 100% { opacity: 0.7; transform: scale(1); }
+          50%       { opacity: 0.1; transform: scale(1.25); }
         }
       `}</style>
 

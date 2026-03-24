@@ -33,7 +33,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
   const tpGlow = isDaytime
     ? 'linear-gradient(180deg, rgba(59,130,246,0.12) 0%, transparent 100%)'
     : 'linear-gradient(180deg, rgba(100,180,255,0.05) 0%, transparent 100%)'
-  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.3)' : 'rgba(100,180,255,0.18)'
+  const tpCheckboxBorder = isDaytime ? 'rgba(59,130,246,0.7)' : 'rgba(100,180,255,0.55)'
   const tpCheckboxBg = isDaytime ? 'rgba(59,130,246,0.12)' : 'rgba(100,180,255,0.03)'
   const tpCloseBg = isDaytime ? 'rgba(59,130,246,0.22)' : 'rgba(100,180,255,0.06)'
   const tpCloseHoverBg = isDaytime ? 'rgba(59,130,246,0.25)' : 'rgba(100,180,255,0.12)'

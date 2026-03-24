@@ -471,7 +471,7 @@ export default function CreateRoomModal({ isOpen, onClose, isNightMode, onRoomCr
               {/* Room preview chip */}
               <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
                 <span style={{
-                  fontSize: 10, fontWeight: 600, letterSpacing: '0.05em',
+                  fontSize: 12, fontWeight: 600, letterSpacing: '0.05em',
                   color: selectedRole.color, opacity: 0.8,
                   fontFamily: "'Inter Tight','Inter',sans-serif",
                 }}>
@@ -627,7 +627,7 @@ function RoleCard({ role, accentRgb, cardBg, cardBorder, textPrimary, textDim, o
           {role.label}
         </div>
         <div style={{
-          fontSize: 10, color: textDim, marginTop: 3, lineHeight: 1.35,
+          fontSize: 12, color: textDim, marginTop: 3, lineHeight: 1.35,
         }}>
           {role.desc}
         </div>
