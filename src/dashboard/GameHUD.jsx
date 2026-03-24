@@ -534,6 +534,7 @@ export default function GameHUD({
         isQueued: !!t.isQueued,
         taskId: t.taskId,
         isSubtask: !!t.isSubtask,
+        fromAgentStatus: !!t.fromAgentStatus,
       })
     })
     // Manual tasks (in-memory)
@@ -1018,7 +1019,8 @@ export default function GameHUD({
               {hasTickerTasks ? tickerTasks.map((task, idx) => {
                 const pcKey = task.taskId ? String(task.taskId) : task.text
                 const isTickerPending = !!pendingCompletion[pcKey]
-                const effectiveDone = task.done || isTickerPending
+                // agent_status pills are NEVER done/checked -- they're live or gone
+                const effectiveDone = task.fromAgentStatus ? false : (task.done || isTickerPending)
                 return (
                 <motion.button
                   key={task.manualId || task.text || idx}
@@ -1063,7 +1065,16 @@ export default function GameHUD({
                     transition: 'background 150ms ease, border-color 150ms ease',
                   }}
                 >
-                  {isTickerPending ? (
+                  {task.fromAgentStatus ? (
+                    <span style={{
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: '#FF6B3D',
+                      boxShadow: '0 0 6px rgba(255,107,61,0.6)',
+                      animation: 'statusPulse 1.5s ease-in-out infinite',
+                      willChange: 'transform, opacity',
+                      flexShrink: 0,
+                    }} />
+                  ) : isTickerPending ? (
                     <CheckCircle2 size={13} color="#60A5FA" style={{ flexShrink: 0, opacity: 0.7 }} />
                   ) : task.done ? (
                     <CheckCircle2 size={13} color="#22C55E" style={{ flexShrink: 0 }} />
