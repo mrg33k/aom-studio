@@ -1054,7 +1054,7 @@ export default function GameHUD({
                           : task.isQueued
                             ? 'rgba(233,30,144,0.12)'
                             : 'rgba(245,158,11,0.12)',
-                    border: `1.5px solid ${isTickerPending ? 'rgba(59,130,246,0.30)' : task.done ? 'rgba(34,197,94,0.3)' : task.isLive && !task.isQueued ? (task.agent === 'elon' ? 'rgba(34,197,94,0.35)' : 'rgba(255,107,61,0.25)') : task.isQueued ? 'rgba(233,30,144,0.25)' : 'rgba(245,158,11,0.35)'}`,
+                    border: `1.5px solid ${isTickerPending ? 'rgba(59,130,246,0.30)' : task.isLive && !task.isQueued ? 'rgba(255,107,61,0.25)' : task.isQueued ? 'rgba(233,30,144,0.25)' : 'rgba(245,158,11,0.35)'}`,
                     borderRadius: 10,
                     cursor: 'pointer',
                     flexShrink: 0,
@@ -1085,7 +1085,7 @@ export default function GameHUD({
                     <span style={{
                       width: 7, height: 7, borderRadius: '50%',
                       background: '#FF6B3D',
-                      boxShadow: task.agent === 'elon' ? '0 0 6px rgba(34,197,94,0.7)' : '0 0 6px rgba(255,107,61,0.6)',
+                      boxShadow: '0 0 6px rgba(255,107,61,0.6)',
                       animation: 'statusPulse 1.5s ease-in-out infinite',
                       willChange: 'transform, opacity',
                       flexShrink: 0,
@@ -1103,7 +1103,7 @@ export default function GameHUD({
                     fontFamily: "'Inter', system-ui, sans-serif",
                     fontSize: task.isSubtask ? 11 : 13,
                     fontWeight: task.isSubtask ? 500 : 600,
-                    color: isTickerPending ? (isDaytime ? '#2563EB' : '#60A5FA') : task.done ? '#4ADE80' : task.isSubtask ? 'rgba(255,180,140,0.85)' : hudTextPrimary,
+                    color: isTickerPending ? (isDaytime ? '#2563EB' : '#60A5FA') : task.isSubtask ? 'rgba(255,180,140,0.85)' : hudTextPrimary,
                     whiteSpace: 'nowrap',
                     maxWidth: 200,
                     overflow: 'hidden',
