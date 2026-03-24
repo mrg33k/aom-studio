@@ -54,7 +54,11 @@ function getAgentDocs(agentSlug) {
     const briefDocs = []
     for (const cat of briefsIndex.categories) {
       for (const item of (cat.items || [])) {
-        if (item.agent?.toLowerCase() === agentSlug || item.agent === agentDisplayName) {
+        // AOM Team room shows ALL briefs; individual agents show only theirs
+        const isMatch = agentSlug === 'aom-team' || agentSlug === 'aom-internal'
+          || item.agent?.toLowerCase() === agentSlug
+          || item.agent === agentDisplayName
+        if (isMatch) {
           briefDocs.push({
             label: item.title,
             group: 'Briefs',
