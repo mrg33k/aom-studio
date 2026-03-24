@@ -499,6 +499,8 @@ function TaskContextMenu({ position, task, onClose, onAction, isNightMode, proje
 function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, spriteAgents = SPRITE_AGENTS_FALLBACK, isExpanded, onExpand, project, isNightMode }) {
   const [isHovered, setIsHovered] = useState(false)
   const isDone = task.done
+  // Detect touch device so grip is always visible (touch has no hover state)
+  const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches
 
   // Find agent info for badge
   const agentInfo = task.agent ? AGENTS.find(a => a.slug === task.agent) : null
@@ -552,15 +554,16 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
         {/* Priority bar indicator (left edge) */}
         <TaskPriorityBar taskText={task.text} />
 
-        {/* Drag handle (visible on hover) -- stopPropagation so drag doesn't trigger expand */}
+        {/* Drag handle -- always visible on touch, hover-reveal on desktop */}
         <div
           onClick={e => e.stopPropagation()}
           style={{
-            opacity: isHovered ? 0.5 : 0,
+            opacity: isTouchDevice ? 0.35 : isHovered ? 0.5 : 0,
             transition: 'opacity 100ms ease',
             cursor: 'grab',
             display: 'flex', flexDirection: 'column', gap: 2,
             paddingTop: 3,
+            touchAction: 'none',
           }}
         >
           <GripVertical size={14} color="#4A5568" />
@@ -2087,7 +2090,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                               key={task.text}
                               value={task}
                               as="div"
-                              style={{ cursor: 'grab' }}
+                              style={{ cursor: 'grab', touchAction: 'none' }}
                               whileDrag={{ scale: 1.02, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 100 }}
                             >
                               <TaskCard

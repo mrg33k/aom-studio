@@ -750,6 +750,8 @@ function BoardColumn({
           minHeight: 100,
           transition: 'background 150ms ease, border-color 150ms ease',
           boxShadow: isHighlighted ? `inset 0 0 12px ${config.color}15` : 'none',
+          // Allow horizontal board scroll on touch, but let card pointer capture handle vertical
+          touchAction: 'pan-x',
         }}>
         {sortedCards.length === 0 ? (
           <div style={{
