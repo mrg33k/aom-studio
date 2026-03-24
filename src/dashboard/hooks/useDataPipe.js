@@ -311,7 +311,14 @@ export function useDataPipe(parsePunchList) {
         let localEvents = []
         try {
           const clientId = getClientId()
-          const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
+          const sbController = new AbortController()
+          const sbTimeout = setTimeout(() => sbController.abort(), 12000)
+          let sbRes
+          try {
+            sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`, { signal: sbController.signal })
+          } finally {
+            clearTimeout(sbTimeout)
+          }
           if (sbRes.ok) {
             const sbData = await sbRes.json()
             if (sbData.events && sbData.events.length > 0) {
@@ -382,8 +389,15 @@ export function useDataPipe(parsePunchList) {
       try {
         const clientId = getClientId()
 
-        const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
-        if (!res.ok) return
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 12000)
+        let res
+        try {
+          res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`, { signal: controller.signal })
+        } finally {
+          clearTimeout(timeout)
+        }
+        if (!res.ok) { setPunchLoading(false); return }
         const data = await res.json()
 
         // Right Now: agent_status table is the SOLE source of truth.
