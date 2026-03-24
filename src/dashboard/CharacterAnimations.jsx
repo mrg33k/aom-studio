@@ -414,7 +414,7 @@ function SpeechBubble({ visible, scale, agentColor }) {
       transform: `translateX(-50%) scale(${scale})`,
       transformOrigin: 'bottom center',
       transition: scale > 0 ? 'none' : 'transform 150ms ease-in',
-      background: 'rgba(255,255,255,0.95)',
+      background: 'rgba(15,25,50,0.92)',
       borderRadius: 8,
       padding: '3px 8px',
       boxShadow: `0 2px 8px rgba(0,0,0,0.2), 0 0 0 1px ${agentColor}33`,

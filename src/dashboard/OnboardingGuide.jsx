@@ -246,7 +246,7 @@ function Particles() {
             width: p.r * 2,
             height: p.r * 2,
             borderRadius: '50%',
-            background: '#fff',
+            background: 'rgba(59,130,246,0.35)',
           }}
         />
       ))}
