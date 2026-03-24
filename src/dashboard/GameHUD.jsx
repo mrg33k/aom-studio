@@ -846,7 +846,9 @@ export default function GameHUD({
       onTouchEnd={handleHudSwipeEnd}
       style={{
         position: 'fixed',
-        bottom: isMobile ? (drawerSnap === 'full' ? 0 : 50) : 0,
+        // At half-snap: raise RNB 75px above the drawer edge (Patrik: "raise that section up another 75 pixels")
+        // Full-snap: flush at bottom (drawer covers viewport, HUD is above drawer).
+        bottom: isMobile ? (drawerSnap === 'full' ? 0 : 125) : 0,
         left: 0, right: 0,
         zIndex: 40,
         pointerEvents: 'auto',

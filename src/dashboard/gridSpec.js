@@ -321,7 +321,7 @@ export const AGENTS = GRID_SPEC.rooms
 AGENTS.push(
   { slug: 'paige', name: 'Paige', role: 'Client Success', color: '#66BB6A', statusColors: { active: '#66BB6A', idle: '#3A7A3A', offline: '#1A401A' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#FFB74D', monitorColor: '#A5D6A7' },
   { slug: 'pixel', name: 'Pixel', role: 'Extension', color: '#8B5CF6', statusColors: { active: '#8B5CF6', idle: '#5A3AA0', offline: '#2A1A50' }, floor: 'wood-warm', floorColor: '#C4956A', lightColor: '#CE93D8', monitorColor: '#B0BEC5' },
-  { slug: 'mark', name: 'Mark', role: 'Infrastructure', color: '#4CAF50', statusColors: { active: '#4CAF50', idle: '#2E7D32', offline: '#1B5E20' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#81C784', monitorColor: '#A5D6A7' },
+  { slug: 'mark', name: 'Mark', role: 'Photos & Lighting', color: '#8B9DAF', statusColors: { active: '#8B9DAF', idle: '#5A6E80', offline: '#2A3A48' }, floor: 'wood-dark', floorColor: '#6B5240', lightColor: '#B0C4D4', monitorColor: '#B0C4D4' },
 )
 
 // ─── PROJECT ROOMS ──────────────────────────────────────────────────────────
@@ -349,6 +349,7 @@ export const PROJECTS = [
 //   Row 1 (4): Creative+      -- Cleo, Jacob, AOM Team, Patrik
 //   Row 2 (5): Top projects   -- Corner, Ambition, KOHRS, ISA, Skylar
 //   Row 3 (4): More projects  -- Brandon Wiley, NABI, Outreach, AI Advisory
+//   Row 4 (overflow, 6 max): On-set crew -- Mark
 // Hidden rooms appended last (not rendered):
 //   included-health
 // Removed from grid (still in AGENTS/GRID_SPEC for board view + chat):
@@ -379,6 +380,8 @@ export const ALL_ROOMS = [
   _PROJECT_MAP['nabi'],
   _PROJECT_MAP['outreach'],
   _PROJECT_MAP['ai-advisory'],
+  // Row 4 (overflow) -- On-set crew
+  _AGENT_MAP['mark'],
   // Hidden -- not rendered on hex grid (still accessible in Board view, chat dropdowns, @mentions)
   _PROJECT_MAP['included-health'],
 ].filter(Boolean)

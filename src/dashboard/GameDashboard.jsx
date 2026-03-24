@@ -9496,15 +9496,15 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
       }}>
         {(agentSlug === 'patrik'
           ? [
-              { id: 'notes', label: 'NOTES', key: 'N' },
-              { id: 'tasks', label: 'LIST', key: 'L' },
-              { id: 'info', label: 'INFO', key: 'I' },
+              { id: 'notes', label: 'NOTES' },
+              { id: 'tasks', label: 'LIST' },
+              { id: 'info', label: 'INFO' },
             ]
           : [
-              { id: 'chat', label: 'CHAT', key: 'L' },
-              { id: 'tasks', label: 'LIST', key: 'T' },
-              { id: 'info', label: 'INFO', key: 'I' },
-              { id: 'files', label: 'FILES', key: 'F' },
+              { id: 'chat', label: 'CHAT' },
+              { id: 'tasks', label: 'LIST' },
+              { id: 'info', label: 'INFO' },
+              { id: 'files', label: 'FILES' },
             ]
         ).map(tab => {
           const active = activeTab === tab.id
@@ -13073,9 +13073,11 @@ export default function GameDashboard() {
             // keyboard actually opens. Snapping here first causes it to save 'full'
             // as the restore point, so the drawer never returns to half on keyboard close.
           }}
-          // At full-snap with keyboard closed, raise input above the GameHUD ticker.
+          // Raise input above the GameHUD ticker at both full-snap and half-snap.
+          // At half-snap (drawer not covering full screen), the RNB is still visible below
+          // and the input must sit above it. bottomOffset lifts input by hudBarHeight always.
           // When keyboard is open, kbOffset handles the offset (bottomOffset is ignored).
-          bottomOffset={drawerSnap === 'full' ? hudBarHeight : 0}
+          bottomOffset={hudBarHeight}
         />
       )}
 
