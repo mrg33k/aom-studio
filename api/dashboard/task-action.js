@@ -26,6 +26,31 @@ async function supabasePatch(filter, body) {
   return resp.json();
 }
 
+async function supabasePostEvent(agent, eventType, description, taskId) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    const crypto = await import('crypto');
+    const payload = { description: description || '' };
+    if (taskId) payload.task_id = taskId;
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        id: crypto.randomUUID(),
+        agent: agent || 'system',
+        event_type: eventType,
+        payload,
+        timestamp: new Date().toISOString(),
+      }),
+    });
+  } catch {}
+}
+
 async function supabasePost(body) {
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
     method: 'POST',
@@ -134,9 +159,9 @@ export default async function handler(req, res) {
       case 'addToRightNow': {
         // Two paths: if the task exists in Supabase, PATCH to active. If not, POST a new one.
         const existing = taskId ? null : await findTaskByText(taskText, clientId);
+        let addResult;
         if (existing || taskId) {
-          const result = await supabasePatch(filter, { status: 'active' });
-          return res.status(200).json({ ok: true, action: 'addToRightNow', result });
+          addResult = await supabasePatch(filter, { status: 'active' });
         } else {
           // Task doesn't exist in Supabase yet -- create it as active
           const crypto = await import('crypto');
@@ -148,14 +173,18 @@ export default async function handler(req, res) {
             source: 'user',
             client_id: clientId,
           };
-          const result = await supabasePost(newTask);
-          return res.status(200).json({ ok: true, action: 'addToRightNow', created: true, result });
+          addResult = await supabasePost(newTask);
         }
+        // Log task_started event so Right Now bar updates immediately
+        await supabasePostEvent(agent || 'elon', 'task_started', taskText, taskId || null);
+        return res.status(200).json({ ok: true, action: 'addToRightNow', result: addResult });
       }
 
       case 'markDone': {
         // Alias for toggle(done=true) for convenience from BoardView
         const result = await supabasePatch(filter, { status: 'done', completed_at: new Date().toISOString() });
+        // Log task_completed event so activity feed + agent status update
+        await supabasePostEvent(agent || 'elon', 'task_completed', taskText, taskId || null);
         return res.status(200).json({ ok: true, action: 'markDone', result });
       }
 

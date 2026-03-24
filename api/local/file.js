@@ -1,11 +1,16 @@
 // GET /api/local/file?path=context/task-status.jsonl
 // Local development endpoint: read files from AOM-EA repo
 // Used by useDataPipe to fetch agent-notifications.md, punch-list.md, active-missions.md, task-status.jsonl
+// Also used by FilesTab docs panel to render .md agent files.
 
 import fs from 'fs';
 import path from 'path';
 
-const BASE_PATH = path.resolve(process.cwd(), '..', 'AOM-EA');
+// Resolve AOM-EA root: prefer env var, then hardcoded dev path, then sibling-dir fallback.
+const AOM_EA_ENV = process.env.AOM_EA_ROOT;
+const AOM_EA_HARDCODED = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA';
+const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
+const BASE_PATH = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
 
 export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
