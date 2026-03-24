@@ -153,6 +153,23 @@ export default function FilesTab({ agentSlug, clientId, isNightMode, onSendFileT
     setDocsDoc(null)
     setDocsRawMode(false)
     try {
+      // Briefs: load HTML content from the JSON file via dynamic import
+      if (doc.isBriefInline && doc.briefSlug) {
+        const module = await import(`../data/briefs/${doc.briefSlug}.json`)
+        const briefData = module.default || module
+        const htmlContent = briefData.content || ''
+        setDocsDoc({
+          ...doc,
+          content: htmlContent,
+          isHtml: true,
+          label: briefData.title || doc.label,
+          briefSummary: briefData.summary || doc.briefSummary,
+          briefDate: briefData.date || doc.briefDate,
+          briefAgent: briefData.agent || '',
+        })
+        setDocsLoading(false)
+        return
+      }
       const res = await fetch(`/api/local/file?path=${encodeURIComponent(doc.path)}`)
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
@@ -1054,7 +1071,7 @@ function DocsDocList({ agentSlug, isDaytime, borderColor, mutedText, labelText, 
               accentColor={accentColor}
               accentBg={accentBg}
               accentBorder={accentBorder}
-              onClick={doc.isBrief ? () => window.open(doc.briefPath, '_blank') : () => onSelectDoc(doc)}
+              onClick={doc.isBrief ? () => onSelectDoc({ ...doc, content: null, isBriefInline: true }) : () => onSelectDoc(doc)}
             />
           ))}
         </div>
@@ -1221,6 +1238,21 @@ function DocsDocViewer({ doc, isDaytime, borderColor, mutedText, accentColor, ac
               }}
             />
           </div>
+        ) : doc.isHtml ? (
+          <>
+            <style>{MD_READER_STYLES}</style>
+            {doc.briefAgent && doc.briefDate && (
+              <div style={{ padding: '12px 18px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(59,130,246,0.15)', color: '#60A5FA', fontWeight: 600 }}>{doc.briefAgent}</span>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', color: '#9CA3AF' }}>{doc.briefDate}</span>
+              </div>
+            )}
+            <div
+              className={`md-reader${isDaytime ? '' : ' md-reader-night'}`}
+              style={{ padding: '16px 18px' }}
+              dangerouslySetInnerHTML={{ __html: doc.content }}
+            />
+          </>
         ) : (
           <MarkdownDocViewer content={doc.content} isDaytime={isDaytime} />
         )}
