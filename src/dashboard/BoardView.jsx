@@ -870,7 +870,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const rightNow = pipeData?.rightNow || []
   const completedFeed = pipeData?.completedFeed || []
   const punchData = pipeData?.punchData || null
-  const punchLoading = pipeData?.punchLoading ?? false
 
   // Filter state: which types are visible
   const [showStatus, setShowStatus] = useState(true)
@@ -1326,37 +1325,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const shadowLeft = `linear-gradient(to right, ${bgColor}, transparent)`
   const shadowRight = `linear-gradient(to left, ${bgColor}, transparent)`
 
-  // Loading state: pipeData not ready yet -- show dark background with skeleton row
-  // Prevents the board from appearing blank/white before data arrives.
-  // Condition: punchData null AND no lastUpdated timestamp (means first fetch hasn't completed).
-  const dataReady = punchData !== null || (pipeData?.lastUpdated != null)
-  if (!dataReady) {
-    return (
-      <div style={{
-        position: 'fixed', inset: 0, top: 0,
-        background: bgColor,
-        paddingTop: topPadding,
-        paddingBottom: hudHeight + 12,
-        display: 'flex', flexDirection: 'column',
-        zIndex: 15, overflow: 'hidden',
-      }}>
-        <div style={{
-          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: 16,
-        }}>
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} style={{
-              width: 260, height: 200,
-              background: isNightMode ? 'rgba(20,50,130,0.18)' : 'rgba(25,70,200,0.25)',
-              border: `1.5px solid ${isNightMode ? 'rgba(60,120,255,0.15)' : 'rgba(80,150,255,0.30)'}`,
-              borderRadius: 12,
-              flexShrink: 0,
-            }} />
-          ))}
-        </div>
-      </div>
-    )
-  }
+  // Board renders immediately with empty columns. Data fills in when API returns.
+  // Previous loading skeleton caused "completely black" screen when API was slow/failed.
 
   return (
     <div style={{
