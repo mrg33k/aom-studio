@@ -10922,14 +10922,19 @@ export default function GameDashboard() {
         setClientIdFromUser(user)
         setAuthed(true)
         sessionStorage.setItem('dash-auth', '1') // cache for refresh UX
-        // Existing accounts: skip onboarding. Only show it for accounts
-        // created in the last 10 minutes (brand new signups).
+        // Existing accounts: skip onboarding ONLY if they've been onboarded before.
+        // New workspaces (non-AOM) always get onboarding until they complete it.
+        // AOM (Patrik) skips onboarding if account is >10min old.
+        const world = user.user_metadata?.world || 'aom'
         if (user.created_at) {
           const ageMs = Date.now() - new Date(user.created_at).getTime()
-          if (ageMs > 10 * 60 * 1000) {
+          const isAom = world === 'aom'
+          if (isAom && ageMs > 10 * 60 * 1000) {
             localStorage.setItem('corner_onboarded', '1')
             setShowOnboarding(false)
           }
+          // Non-AOM workspaces: show onboarding unless they've completed it
+          // (localStorage 'corner_onboarded' tracks per-browser, not per-account)
         }
       } else {
         setAuthed(false)

@@ -65,8 +65,17 @@ export default async function handler(req, res) {
     const tasks = [...activeTasks, ...recentDone];
 
     // Split agents vs projects
-    const agentList = agents.filter(a => a.type === 'agent');
+    let agentList = agents.filter(a => a.type === 'agent');
     const projectList = agents.filter(a => a.type === 'project');
+
+    // Multi-tenant: seed default system agent for empty workspaces (new tenants like Q)
+    // This lets new users see Elon without needing a pre-seeded DB row per tenant.
+    if (agentList.length === 0 && clientId !== 'aom') {
+      agentList = [{
+        slug: 'elon', name: 'Elon', role: 'System Agent', type: 'agent',
+        status: 'idle', current_task: '', color: '#F97316', client_id: clientId,
+      }];
+    }
 
     // Build status format matching what useDataPipe expects
     const agentStatuses = agentList.map(a => ({
