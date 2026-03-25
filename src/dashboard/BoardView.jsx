@@ -912,6 +912,10 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   // Context menu state -- { position: {x,y}, task } -- drives shared TaskContextMenu (Supabase-driven)
   const [boardCtxMenu, setBoardCtxMenu] = useState(null)
 
+  // Track which tasks are "overridden" to a different column by drag-and-drop
+  // Declared here (before handleContextAction) to avoid TDZ crash when it appears in the dep array
+  const [cardOverrides, setCardOverrides] = useState({})
+
   // Map a board entry to the task shape expected by TaskContextMenu
   const entryToTask = useCallback((entry, columnKey) => ({
     text: entry?.text || entry?.description || entry?.currentTask || '',
@@ -1070,9 +1074,6 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   }, [draggingCard, colDragging])
 
   // ── Build cards per column ─────────────────────────────────────────────
-
-  // Track which tasks are "overridden" to a different column by drag-and-drop
-  const [cardOverrides, setCardOverrides] = useState({})
 
   const saveCardOverrides = useCallback((overrides) => {
     setCardOverrides(overrides)
