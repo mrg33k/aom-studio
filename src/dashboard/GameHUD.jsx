@@ -1411,6 +1411,7 @@ export default function GameHUD({
         }
         .hud-border-shimmer {
           animation: hudBorderShimmer 4s ease-in-out infinite;
+          will-change: background-position;
         }
         .hud-panel-shimmer {
           transition: border-color 400ms ease;
@@ -1458,6 +1459,7 @@ export default function GameHUD({
         }
         .ticker-task-live {
           animation: tickerFlash 2s ease-in-out infinite;
+          will-change: box-shadow;
         }
         @keyframes tickerFlashFuchsia {
           0%, 100% { box-shadow: 0 0 0 rgba(233,30,144,0); }
@@ -1465,6 +1467,7 @@ export default function GameHUD({
         }
         .ticker-task-queued {
           animation: tickerFlashFuchsia 2s ease-in-out infinite;
+          will-change: box-shadow;
         }
         @keyframes tickerFlashGreen {
           0%, 100% { box-shadow: 0 0 0 rgba(34,197,94,0); }
@@ -1472,6 +1475,7 @@ export default function GameHUD({
         }
         .ticker-task-elon {
           animation: tickerFlashGreen 2s ease-in-out infinite;
+          will-change: box-shadow;
         }
         @keyframes spin {
           from { transform: rotate(0deg); }
