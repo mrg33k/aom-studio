@@ -4800,6 +4800,22 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                     </button>
                   )}
                 </div>
+
+                {/* Sign out */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  <button
+                    data-aom-item
+                    onClick={() => { onSignOut?.(); setAomOpen(false) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 44, padding: '0 14px', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'background 100ms ease', textAlign: 'left', boxSizing: 'border-box' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.06)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <span style={{ color: '#F87171', flexShrink: 0 }}>
+                      <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </span>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: '#F87171', fontFamily: "'Inter', sans-serif" }}>Sign out</span>
+                  </button>
+                </div>
               </motion.div>
             )}
             </AnimatePresence>,
