@@ -85,6 +85,52 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
+// ---- BOARD ERROR BOUNDARY (prevents board crashes from killing the dashboard) ----
+class BoardErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, info) {
+    console.error('[Corner] Board view crash:', error, info?.componentStack?.slice(0, 300))
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 15,
+          background: '#060E1C',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          fontFamily: "'Inter', system-ui, sans-serif",
+          paddingTop: 60,
+        }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#EF4444', marginBottom: 12 }}>
+            Board failed to load
+          </div>
+          <div style={{ fontSize: 13, color: '#64748B', marginBottom: 20, maxWidth: 300, textAlign: 'center' }}>
+            {String(this.state.error?.message || 'Unknown error').slice(0, 120)}
+          </div>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            style={{
+              background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)',
+              borderRadius: 8, padding: '10px 24px', color: '#60A5FA',
+              cursor: 'pointer', fontWeight: 600, fontSize: 14,
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 // ---- MODE CONFIG -----------------------------------------------------------
 const MODES = {
   game: { id: 'game', label: 'GAME', icon: MapIcon, key: '1', path: '/dashboard' },
@@ -12603,30 +12649,32 @@ export default function GameDashboard() {
 
       {/* Board view: Trello/kanban mode -- shown when viewMode === 'board', hides game canvas */}
       {viewMode === 'board' && (
-        <BoardView
-          pipeData={pipeData}
-          isMobile={isMobile}
-          isNightMode={isNightMode}
-          hudHeight={hudBarHeight}
-          onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
-          onViewDetail={(task) => {
-            setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
-            if (task.agent) {
-              setSelectedRoom(task.agent)
-              setCameraTarget(task.agent)
-              setIsOverview(false)
-            }
-            if (isMobile) {
-              setDrawerSnap('half')
-              setMobileDrawerActiveTab('tasks')
-            } else {
-              // Switch out of board view so the sidebar is visible
-              setViewMode('game')
-              setPanelActiveTab('tasks')
-              setPanelVisible(true)
-            }
-          }}
-        />
+        <BoardErrorBoundary>
+          <BoardView
+            pipeData={pipeData}
+            isMobile={isMobile}
+            isNightMode={isNightMode}
+            hudHeight={hudBarHeight}
+            onTaskTap={isMobile ? (task, project) => setTaskDetailSheet({ task, project }) : undefined}
+            onViewDetail={(task) => {
+              setSidebarFocusTaskId(task.id || task.taskId || task.text || null)
+              if (task.agent) {
+                setSelectedRoom(task.agent)
+                setCameraTarget(task.agent)
+                setIsOverview(false)
+              }
+              if (isMobile) {
+                setDrawerSnap('half')
+                setMobileDrawerActiveTab('tasks')
+              } else {
+                // Switch out of board view so the sidebar is visible
+                setViewMode('game')
+                setPanelActiveTab('tasks')
+                setPanelVisible(true)
+              }
+            }}
+          />
+        </BoardErrorBoundary>
       )}
 
       {/* Main content area -- game + sidebar side by side (flex row) */}

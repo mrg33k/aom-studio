@@ -1528,14 +1528,20 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
             <div style={{
               flex: 1,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              color: isNightMode ? '#334155' : '#94A3B8',
+              gap: 8,
               fontFamily: "'Inter', system-ui, sans-serif",
-              fontSize: 14,
-              fontStyle: 'italic',
             }}>
-              {search ? 'No cards match your search' : 'No columns visible -- turn on a filter above'}
+              <div style={{ fontSize: 28, opacity: 0.4 }}>&#9634;</div>
+              <div style={{
+                color: isNightMode ? '#64748B' : '#94A3B8',
+                fontSize: 14,
+                fontWeight: 500,
+              }}>
+                {search ? 'No cards match your search' : 'No columns visible -- turn on a filter above'}
+              </div>
             </div>
           )}
         </div>
