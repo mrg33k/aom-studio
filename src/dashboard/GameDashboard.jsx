@@ -4151,7 +4151,7 @@ function PreferencesModal({ isOpen, onClose, currentUser, isNightMode, onSignOut
   )
 }
 
-function CreateWorldModal({ isOpen, onClose, isNightMode, onTestAsNewUser }) {
+function CreateWorldModal({ isOpen, onClose, isNightMode, onTestAsNewUser, onEnterWorldAsNewUser }) {
   const [email, setEmail] = useState('')
   const [worldSlug, setWorldSlug] = useState('')
   const [name, setName] = useState('')
@@ -4247,6 +4247,15 @@ function CreateWorldModal({ isOpen, onClose, isNightMode, onTestAsNewUser }) {
                   ))}
                 </div>
                 <div style={{ marginTop: 10, fontSize: 12, color: '#94A3B8', fontFamily: "'Inter', sans-serif" }}>Share login credentials with your client to begin.</div>
+                <button
+                  onClick={() => { onEnterWorldAsNewUser?.(result.world); onClose() }}
+                  style={{ marginTop: 12, width: '100%', padding: '10px 14px', background: 'rgba(34,197,94,0.1)', border: '1.5px solid rgba(34,197,94,0.35)', borderRadius: 8, color: '#4ADE80', fontSize: 14, fontWeight: 700, fontFamily: "'Inter', sans-serif", cursor: 'pointer', transition: 'all 150ms ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.18)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.1)' }}
+                >
+                  <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                  Preview onboarding as new client
+                </button>
               </div>
             </div>
           )}
@@ -4625,7 +4634,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                           )}
                         </div>
                         {currentUser?.email && (
-                          <div style={{ fontSize: 13, color: '#94A3B8', fontFamily: "'Inter', sans-serif", marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}>
+                          <div style={{ fontSize: 14, color: '#94A3B8', fontFamily: "'Inter', sans-serif", marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260 }}>
                             {currentUser.email}
                           </div>
                         )}
@@ -4639,7 +4648,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                         >
                           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                          <span style={{ fontSize: 14, fontWeight: 600, color: '#F59E0B', fontFamily: "'Inter', sans-serif" }}>
+                          <span style={{ fontSize: 16, fontWeight: 600, color: '#F59E0B', fontFamily: "'Inter', sans-serif" }}>
                             Return to {myWorld.toUpperCase()}
                           </span>
                         </button>
@@ -4682,7 +4691,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                 {/* Worlds section */}
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 6px' }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: "'Inter', sans-serif" }}>
                       Worlds {worldsLoading ? '…' : worlds.length > 0 ? `(${worlds.length})` : ''}
                     </span>
                   </div>
@@ -4715,10 +4724,10 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                               </span>
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 15, fontWeight: 600, color: isCurrent ? '#60A5FA' : '#F1F5F9', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              <div style={{ fontSize: 16, fontWeight: 600, color: isCurrent ? '#60A5FA' : '#F1F5F9', fontFamily: "'Inter', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {w.name || w.world}
                               </div>
-                              <div style={{ fontSize: 12, color: '#94A3B8', fontFamily: "'Inter', sans-serif" }}>{w.world}</div>
+                              <div style={{ fontSize: 13, color: '#94A3B8', fontFamily: "'Inter', sans-serif" }}>{w.world}</div>
                             </div>
                             {isCurrent && (
                               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -4740,7 +4749,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                     >
-                      <span style={{ fontSize: 15, fontWeight: 600, color: '#60A5FA', fontFamily: "'Inter', sans-serif" }}>View all {worlds.length} worlds</span>
+                      <span style={{ fontSize: 16, fontWeight: 600, color: '#60A5FA', fontFamily: "'Inter', sans-serif" }}>View all {worlds.length} worlds</span>
                       <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
                   )}
@@ -13689,6 +13698,10 @@ export default function GameDashboard() {
             onTestAsNewUser={() => {
               localStorage.removeItem('corner_onboarded')
               setShowOnboarding(true)
+            }}
+            onEnterWorldAsNewUser={(world) => {
+              localStorage.removeItem('corner_onboarded')
+              handleEnterWorld({ world })
             }}
           />
         )}
