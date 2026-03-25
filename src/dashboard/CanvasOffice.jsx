@@ -2712,6 +2712,46 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     }
   }, [redesignModal, redesignVibe, redesignLoading, showToast])
 
+  // ---- REGENERATE ROOM (one-click, default vibe) ----
+  const handleRegenerateRoom = useCallback(async (roomId, roomName) => {
+    let geminiKey = ''
+    try { geminiKey = JSON.parse(localStorage.getItem('corner_api_keys') || '{}').gemini || '' } catch {}
+    if (!geminiKey) {
+      showToast('Add a Gemini API key in Settings first')
+      return
+    }
+
+    showToast(`Regenerating ${roomName}'s room...`)
+    const prompt = `Isometric pixel-art game room for an AI agent named ${roomName}. Style: Crossy Road / The Sims isometric top-down 3/4 view. Clean pixel art, vibrant colors, cozy office or workspace interior. Square format. Unique layout, creative details.`
+
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseModalities: ['IMAGE'] },
+          }),
+        }
+      )
+      if (!resp.ok) throw new Error(`Gemini ${resp.status}`)
+      const data = await resp.json()
+      const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData)
+      if (!part) throw new Error('No image in response')
+      const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
+
+      roomImageOverrideMap[roomId] = dataUrl
+      localStorage.setItem('corner_room_overrides', JSON.stringify(roomImageOverrideMap))
+      delete roomImages[roomId]
+      ensureRoomImages(roomId)
+      showToast(`${roomName}'s room regenerated!`)
+    } catch (err) {
+      showToast(`Regeneration failed: ${err.message}`)
+    }
+  }, [showToast])
+
   // ---- TOUCH EVENTS ----
   const onTouchStart = useCallback((e) => {
     setContextMenu(null)
@@ -3180,11 +3220,20 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           />
           {/* Separator */}
           <div style={{ height: 1, background: 'rgba(96, 165, 250, 0.12)', margin: '4px 0' }} />
-          {/* Steffen room redesign */}
+          {/* Quick regenerate (one-click, no modal) */}
           <ContextMenuItem
-            label="Redesign Room"
-            icon="✦"
+            label="Regenerate Room"
+            icon="&#x21BB;"
             accent
+            onClick={() => {
+              handleRegenerateRoom(contextMenu.roomId, contextMenu.roomName)
+              setContextMenu(null)
+            }}
+          />
+          {/* Steffen room redesign (custom vibe) */}
+          <ContextMenuItem
+            label="Redesign Room..."
+            icon="✦"
             onClick={() => {
               setRedesignModal({ roomId: contextMenu.roomId, roomName: contextMenu.roomName })
               setContextMenu(null)
