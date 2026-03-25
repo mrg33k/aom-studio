@@ -13148,12 +13148,9 @@ export default function GameDashboard() {
             // keyboard actually opens. Snapping here first causes it to save 'full'
             // as the restore point, so the drawer never returns to half on keyboard close.
           }}
-          // Raise input above the GameHUD at both full-snap and half-snap.
-          // Full-snap: HUD is at bottom=0, so input at hudBarHeight clears it.
-          // Half-snap: HUD is raised to bottom=125 (above the drawer edge), so input
-          // must be at 125 + hudBarHeight to sit above the HUD without overlapping the pills row.
+          // Raise input above the GameHUD bar (flush at bottom in both snaps).
           // When keyboard is open, kbOffset handles the offset (bottomOffset is ignored).
-          bottomOffset={drawerSnap === 'full' ? hudBarHeight : 125 + hudBarHeight}
+          bottomOffset={hudBarHeight}
         />
       )}
 
