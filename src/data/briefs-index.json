@@ -1,29 +1,9 @@
 {
-  "generated": "2026-03-24T02:50:00.525Z",
+  "generated": "2026-03-25T22:12:28.981Z",
   "categories": [
     {
       "name": "Strategy",
       "items": [
-        {
-          "title": "Corner Sales Plan: First 10 Enterprise Customers",
-          "slug": "corner-sales-plan",
-          "agent": "Steve",
-          "date": "2026-03-22",
-          "dateFormatted": "Mar 22",
-          "summary": "The north star sales document for hitting $35k/month recurring from 10 paying Corner customers. Covers website, content, onboarding, outreach channels, sales process, retention, and 90-day execution timeline.",
-          "path": "/briefs/corner-sales-plan",
-          "hasPage": true
-        },
-        {
-          "title": "Sales Room: Real Platform Screenshots Brief",
-          "slug": "sales-room-screenshot-brief",
-          "agent": "Steve",
-          "date": "2026-03-23",
-          "dateFormatted": "Mar 23",
-          "summary": "Exactly which live Corner platform screenshots to capture for sales assets, which shots are non-negotiable, and what features to avoid until fixed.",
-          "path": "/briefs/sales-room-screenshot-brief",
-          "hasPage": true
-        },
         {
           "title": "CORNER Client Onboarding Guide",
           "slug": "client-onboarding-guide",
@@ -282,21 +262,6 @@
           "dateFormatted": "Mar 7",
           "summary": "Gap analysis between current dashboard and reference, with actionable improvement proposals.",
           "path": "/briefs/dashboard-brief",
-          "hasPage": true
-        }
-      ]
-    },
-    {
-      "name": "QA",
-      "items": [
-        {
-          "title": "Elmo QA Sort: All 41 Recurring Pains",
-          "slug": "elmo-qa-full-41-sort",
-          "agent": "Steve",
-          "date": "2026-03-23",
-          "dateFormatted": "Mar 23",
-          "summary": "Cross-reference of all 41 recurring Corner pains against Elmo QA findings: which failures are real vs invented, what still has zero QA coverage, and priority order for Bobby.",
-          "path": "/briefs/elmo-qa-full-41-sort",
           "hasPage": true
         }
       ]
@@ -1998,26 +1963,6 @@
     {
       "name": "Content",
       "items": [
-        {
-          "title": "Crown Training V2 -- Gemini CD Review",
-          "slug": "crown-v2-cd-review",
-          "agent": "Cleo",
-          "date": "2026-03-23",
-          "dateFormatted": "Mar 23",
-          "summary": "Ruthless category-by-category Creative Director review of the Ambition Mechanical crown training reel V2. Overall F+/2 out of 10. Five non-negotiable fixes to reach B+.",
-          "path": "/briefs/crown-v2-cd-review",
-          "hasPage": true
-        },
-        {
-          "title": "Crown V3 Cage Match -- Gemini CD Review",
-          "slug": "crown-v3-cd-review",
-          "agent": "Cleo",
-          "date": "2026-03-23",
-          "dateFormatted": "Mar 23",
-          "summary": "Gemini 2.5 Pro Creative Director review of Crown V3 Cage Match Contender A. Overall D+/4 out of 10. Five priority fixes: regrading, kinetic text, pacing, sound design, and ending.",
-          "path": "/briefs/crown-v3-cd-review",
-          "hasPage": true
-        },
         {
           "title": "Ambition: 15-20 Branded Social Animations",
           "slug": "ambition-branded-posts",

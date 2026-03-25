@@ -61,6 +61,33 @@ export default async function handler(req, res) {
   }
 
   // Default: agent_status update
+  // Supports: status, current_task, name (rename), client_id scoping
+  const { name, client_id: clientIdParam } = req.query;
+
+  // Rename-only mode: slug + name, no status required
+  if (slug && name && !status) {
+    const trimmedName = name.trim();
+    const filter = clientIdParam
+      ? `slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
+      : `slug=eq.${encodeURIComponent(slug)}`;
+    try {
+      // Update agent_status name
+      const resp = await fetch(`${SUPABASE_URL}/rest/v1/agent_status?${filter}`, {
+        method: 'PATCH', headers, body: JSON.stringify({ name: trimmedName }),
+      });
+      // Also update rooms table name so canvas label updates via Realtime
+      const roomFilter = clientIdParam
+        ? `id=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientIdParam)}`
+        : `id=eq.${encodeURIComponent(slug)}`;
+      await fetch(`${SUPABASE_URL}/rest/v1/rooms?${roomFilter}`, {
+        method: 'PATCH', headers, body: JSON.stringify({ name: trimmedName }),
+      }).catch(() => {});
+      return res.status(resp.ok ? 200 : 500).json({ ok: resp.ok });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   if (!slug || !status) {
     return res.status(400).json({ error: 'slug and status required' });
   }

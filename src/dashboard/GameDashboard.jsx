@@ -10139,6 +10139,11 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             agentStatus={agentStatus}
             isNightMode={isNightMode}
             latestResult={agentStatus?.latestResult}
+            agentDisplayName={agentStatus?.name}
+            onAgentRenamed={(newName) => {
+              // Trigger a refetch so the new name propagates to rooms/HUD
+              if (data?.refetch) data.refetch()
+            }}
           />
         )}
 

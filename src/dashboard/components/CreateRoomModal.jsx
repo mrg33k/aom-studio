@@ -5,6 +5,7 @@
 // Writes to Supabase agent_status table.
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { getClientId } from '../lib/clientConfig'
 
 // ── role definitions ─────────────────────────────────────────────────────────
 const ROLES = [
@@ -200,7 +201,8 @@ export default function CreateRoomModal({ isOpen, onClose, isNightMode, onRoomCr
       } else {
         const { supabase } = await import('../lib/supabase.js')
         if (supabase) {
-          // 1. Write agent to agent_status
+          // 1. Write agent to agent_status (scoped to current world)
+          const clientId = getClientId()
           const { error: sbErr } = await supabase
             .from('agent_status')
             .upsert({
@@ -211,16 +213,18 @@ export default function CreateRoomModal({ isOpen, onClose, isNightMode, onRoomCr
               status: 'idle',
               current_task: null,
               type: 'agent',
-              client_id: 'aom',
+              client_id: clientId,
             }, { onConflict: 'slug' })
           if (sbErr) throw new Error(sbErr.message)
 
           // 2. Write to rooms table so CanvasOffice Realtime shows the hex room
-          const { data: maxData } = await supabase
+          let maxQuery = supabase
             .from('rooms')
             .select('grid_order')
             .order('grid_order', { ascending: false })
             .limit(1)
+          if (clientId !== 'aom') maxQuery = maxQuery.eq('client_id', clientId)
+          const { data: maxData } = await maxQuery
           const nextOrder = (maxData?.[0]?.grid_order ?? 16) + 1
           const { error: roomErr } = await supabase
             .from('rooms')
@@ -231,6 +235,7 @@ export default function CreateRoomModal({ isOpen, onClose, isNightMode, onRoomCr
               type: 'agent',
               hidden: false,
               grid_order: nextOrder,
+              client_id: clientId,
             }, { onConflict: 'id' })
           if (roomErr) console.warn('[CreateRoomModal] rooms upsert:', roomErr.message)
         } else {

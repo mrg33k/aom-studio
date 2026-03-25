@@ -3,12 +3,13 @@
 // usePatrikTodos, useCheckingInTasks, and usePunchListData across GameHUD + ChecklistMode.
 //
 // BEFORE: 6+ hooks polling 3 files at different intervals (3s, 5s, 8s).
-//   - events table is the SOLE source of truth for Right Now + agent status
+//   - agent-notifications.md polled 3 separate times per cycle
 //   - punch-list.md polled at 5s, re-derived in PatrikTodos/CheckingIn
-//   Total: 2 fetch calls per 3s window. Everything updates together. Pill counts match activity feed.
+//   - active-missions.md polled at 3s
+//   Total: ~7 fetch calls per cycle. Data arrives at different times. Pills lag behind activity feed.
 //
-// AFTER: 1 poll every 3s. events table drives Right Now + agent status. punch-list drives task pills.
-//   All data computed in the same tick.
+// AFTER: 1 poll every 3s. 3 parallel fetches (one per file). All data computed in the same tick.
+//   Total: 3 fetch calls per 3s window. Everything updates together. Pill counts match activity feed.
 //
 // Rule: If the activity feed updates and the pill count doesn't, something is polling separately. Kill it.
 
@@ -41,16 +42,161 @@ export function formatRelativeTime(dateStr) {
   }
 }
 
-// ---- BUILD AUTO-CHECK KEYWORDS from events table ----------------------------
-// Extracts keywords from task_completed events to fuzzy-match against punch-list tasks.
-function buildAutoCheckKeywordsFromEvents(events) {
-  if (!events || events.length === 0) return new Set()
+// ---- PARSE RIGHT NOW from notifications (agent-notifications.md is source of truth) ----
+// For EACH agent, find their MOST RECENT entry (TASK STARTED or TASK FINISHED).
+// If most recent = TASK STARTED, agent is ACTIVE (shows in Right Now).
+// If most recent = TASK FINISHED, agent is DONE (excluded from Right Now).
+// active-missions.md is a FALLBACK only for agents with zero notification entries.
+function parseRightNow(missionsContent, notifContent) {
+  // Step 1: Build per-agent most-recent-state from notifications (source of truth)
+  // Walk lines top-to-bottom so later entries overwrite earlier ones = most recent wins.
+  const agentState = new Map() // slug -> { state: 'started'|'finished', text }
+
+  if (notifContent) {
+    const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
+
+    for (const line of lines) {
+      const startMatch = line.match(/TASK STARTED:\s*(\w[\w\s]*?\d?)\s*[-\u2013]\s*(.+?)$/i)
+      if (startMatch) {
+        let slug = startMatch[1].toLowerCase().replace(/\s+\d+$/, '').trim()
+        if (/^bobby/.test(slug)) slug = 'bobby'
+        if (/^steffen/.test(slug)) slug = 'steffen'
+        let text = startMatch[2].replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
+        if (text.length > 55) text = text.slice(0, 52) + '...'
+        agentState.set(slug, { state: 'started', text, agent: slug })
+      }
+      // Match standard "TASK FINISHED: Agent -" and non-standard variants like
+      // "TASK FINISHED Agent:", "TASK FINISHED] Bobby:", "**TASK FINISHED** | Bobby"
+      const finishMatch = line.match(/TASK FINISHED[:\s|]*\s*(\w[\w\s]*?\d?)\s*[-\u2013:|]/i)
+      if (finishMatch) {
+        let slug = finishMatch[1].toLowerCase().replace(/\s+\d+$/, '').replace(/\s*\(.*$/, '').trim()
+        if (/^bobby/.test(slug)) slug = 'bobby'
+        if (/^steffen/.test(slug)) slug = 'steffen'
+        agentState.set(slug, { state: 'finished', text: '', agent: slug })
+      }
+    }
+  }
+
+  // Step 2: Collect agents whose most recent notification is TASK STARTED
+  const activeTasks = []
+  const agentsFromNotifs = new Set()
+
+  for (const [slug, info] of agentState) {
+    agentsFromNotifs.add(slug)
+    if (info.state === 'started') {
+      activeTasks.push({ text: info.text, agent: slug, done: false, isLive: true })
+    }
+  }
+
+  // Step 3: FALLBACK -- agents in active-missions.md "Running" table that have
+  // zero notification entries get included (they haven't reported in yet).
+  if (missionsContent) {
+    const runningSection = missionsContent.split(/^## Running/m)[1]
+    if (runningSection) {
+      const runningContent = runningSection.split(/^## /m)[0]
+      const rows = runningContent.trim().split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('Agent'))
+      for (const row of rows) {
+        const cells = row.split('|').map(c => c.trim()).filter(Boolean)
+        if (cells.length < 3) continue
+        let agentSlug = cells[0].toLowerCase().replace(/\s+\d+$/, '').trim()
+        if (/^bobby/.test(agentSlug)) agentSlug = 'bobby'
+        if (/^steffen/.test(agentSlug)) agentSlug = 'steffen'
+        // Only include if this agent has NO notification entries at all
+        if (agentsFromNotifs.has(agentSlug)) continue
+        let text = cells[1].replace(/^Relaunched:\s*/i, '').replace(/\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim()
+        if (text.length > 55) text = text.slice(0, 52) + '...'
+        if (text.length > 3 && agentSlug) {
+          activeTasks.push({ text, agent: agentSlug, done: false, isLive: true })
+        }
+      }
+    }
+  }
+
+  return activeTasks
+}
+
+// ---- PARSE COMPLETED FEED from notifications --------------------------------
+function parseCompletedFeed(notifContent) {
+  if (!notifContent) return []
+
+  const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
+  const completionLines = lines
+    .filter(l => {
+      if (/PATRIK\s*(DIRECTIVE|CLARIFICATION|FEEDBACK|BUG|REMINDER|DECISION)/i.test(l)) return false
+      if (/COUNCIL\s*(DIRECTIVE|DECISION)/i.test(l)) return false
+      if (/NEXT\s*WAVE/i.test(l)) return false
+      return /TASK\s*FINISHED|SHIPPED|DELIVERED|MILESTONE/i.test(l)
+    })
+    .slice(-8)
+    .reverse()
+
+  return completionLines.map((line) => {
+    const agentMatch = line.match(/(?:Bobby\s*\d?|Steffen\s*\d?|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)/i)
+    let agentSlug = agentMatch ? agentMatch[0].toLowerCase().replace(/\s+/g, '') : null
+    if (agentSlug && /^bobby\d?$/.test(agentSlug)) agentSlug = 'bobby'
+    if (agentSlug && /^steffen\d?$/.test(agentSlug)) agentSlug = 'steffen'
+
+    let text = ''
+    const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
+    const shippedMatch = line.match(/SHIPPED:\s*(?:\(1\)\s*)?(.+?)(?:,\s*\(2\)|\.\s|$)/i)
+    const milestoneMatch = line.match(/MILESTONE:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
+    if (taskMatch) text = taskMatch[1].trim()
+    else if (milestoneMatch) text = milestoneMatch[1].trim()
+    else if (shippedMatch) text = shippedMatch[1].trim()
+    else {
+      const afterAgent = line.match(/\]\s*(?:TASK\s*FINISHED:\s*)?(?:Bobby|Steffen|Cleo|Steve|Elon|Alex|Tony|Jacob|Colton|Elmo|Mom|Paige|Pixel)[\d\s]*[-\u2013:]\s*(.+?)(?:\.\s|$)/i)
+      text = afterAgent ? afterAgent[1].trim() : ''
+    }
+
+    text = text.replace(/@\w+:?/g, '')
+      .replace(/\b[0-9a-f]{7,8}\b/g, '')
+      .replace(/projects\/\S+/g, '')
+      .replace(/\d+\s*commits?\s*pushed\s*\([^)]*\)/gi, '')
+      .replace(/\(\s*\d+\s*commits?\s*to\s*[\w-]+[^)]*\)/gi, '')
+      .replace(/\([^)]*commits?[^)]*\)/gi, '')
+      .replace(/\([\s,]*\)/g, '')
+      .replace(/REMAINING\s*TODOs?:.*$/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/^\s*[-\u2013:,.\s]+/, '')
+      .replace(/[-\u2013:,.\s]+$/, '')
+      .trim()
+    if (text.length > 55) text = text.slice(0, 52) + '...'
+
+    const isoMatch = line.match(/\[(\d{4}-\d{2}-\d{2}T[^\]]+)\]/)
+    const dateMatch = line.match(/\[(\d{4}-\d{2}-\d{2})\]/)
+    const rawTimestamp = isoMatch ? isoMatch[1] : (dateMatch ? dateMatch[1] : '')
+    const relativeTime = formatRelativeTime(rawTimestamp)
+
+    return {
+      text,
+      agent: agentSlug,
+      timestamp: relativeTime,
+      rawTimestamp,
+      done: true,
+      isLive: false,
+    }
+  }).filter(t => t.text.length > 3 && t.agent)
+}
+
+// ---- BUILD AUTO-CHECK KEYWORDS from notifications ---------------------------
+function buildAutoCheckKeywords(notifContent) {
+  if (!notifContent) return new Set()
+
+  const lines = notifContent.trim().split('\n').filter(l => l.startsWith('['))
+  const completionLines = lines.filter(l =>
+    /TASK\s*FINISHED|COMPLETE|DELIVERED|SHIPPED/i.test(l)
+  )
 
   const completedDescriptions = []
-  for (const ev of events) {
-    if (ev.event_type !== 'task_completed' && ev.event_type !== 'qa_passed' && ev.event_type !== 'build_pushed') continue
-    const desc = ev.payload?.description || ev.payload?.task || ev.payload?.text
-    if (desc) completedDescriptions.push(desc.toLowerCase())
+  for (const line of completionLines) {
+    const taskMatch = line.match(/TASK\s*FINISHED:\s*[\w\s\d]+[-\u2013]\s*(.+?)(?:\.\s|$)/i)
+    const shippedMatch = line.match(/SHIPPED:\s*(?:\(\d+\)\s*)?(.+?)(?:,\s*\(\d+\)|\.\s|$)/i)
+    if (taskMatch) completedDescriptions.push(taskMatch[1].trim().toLowerCase())
+    if (shippedMatch) completedDescriptions.push(shippedMatch[1].trim().toLowerCase())
+    const numberedItems = line.matchAll(/\((\d+)\)\s*([^,(]+)/g)
+    for (const match of numberedItems) {
+      completedDescriptions.push(match[2].trim().toLowerCase())
+    }
   }
 
   const keywords = new Set()
@@ -121,65 +267,22 @@ export function deriveStateFromEvents(events) {
     }
   }
 
-  // Right Now: tasks whose latest event is task_started, task_queued, or build_pushed
-  // FIX #7: Color mapping:
-  //   task_queued  -> isQueued: true, isLive: false  -> fuchsia (#E91E90)
-  //   task_started -> isLive: true,  isQueued: false -> orange  (#FF6B3D)
-  //   build_pushed -> isDoneAwaitingApproval: true   -> yellow  (#F59E0B)
+  // Right Now: tasks whose latest event is task_started
   const rightNowTasks = []
-  for (const [taskId, info] of taskLatest) {
-    const ev = info.event_type
-    if (ev !== 'task_started' && ev !== 'task_queued' && ev !== 'build_pushed') continue
+  for (const [, info] of taskLatest) {
+    if (info.event_type !== 'task_started') continue
     const description = info.payload.description || info.payload.task || info.payload.text || 'Working...'
-    const parentEntry = {
-      agent:                info.agent,
-      text:                 description.length > 55 ? description.slice(0, 52) + '...' : description,
-      isLive:               ev === 'task_started',
-      isQueued:             ev === 'task_queued',
-      isDoneAwaitingApproval: ev === 'build_pushed',
-      fromEvents:           true,
-    }
-    rightNowTasks.push(parentEntry)
-
-    // FIX #32: If task_started has a subtasks array, expand each as its own pill.
-    // Each subtask inherits the parent agent and live status, gets isSubtask: true
-    // so the HUD can render it slightly indented under the parent.
-    if (ev === 'task_started' && Array.isArray(info.payload.subtasks) && info.payload.subtasks.length > 0) {
-      info.payload.subtasks.forEach((sub, idx) => {
-        const subText = typeof sub === 'string' ? sub : (sub.text || sub.description || sub.task || `Subtask ${idx + 1}`)
-        rightNowTasks.push({
-          agent:      info.agent,
-          text:       subText.length > 55 ? subText.slice(0, 52) + '...' : subText,
-          isLive:     true,
-          isQueued:   false,
-          isSubtask:  true,
-          parentText: parentEntry.text,
-          fromEvents: true,
-          taskId:     `${taskId}-sub-${idx}`,
-        })
-      })
-    }
-  }
-
-  // Dedup: one parent task per agent (newest wins -- taskLatest is built newest-first).
-  // Subtasks (isSubtask: true) are always kept -- they are children of the parent that passed dedup.
-  const seenAgents = new Set()
-  const dedupedTasks = []
-  for (const task of rightNowTasks) {
-    if (task.isSubtask) {
-      // Only include subtasks whose parent agent made it through dedup
-      if (seenAgents.has(task.agent)) dedupedTasks.push(task)
-      continue
-    }
-    if (seenAgents.has(task.agent)) continue
-    seenAgents.add(task.agent)
-    dedupedTasks.push(task)
+    rightNowTasks.push({
+      agent:     info.agent,
+      text:      description.length > 55 ? description.slice(0, 52) + '...' : description,
+      isLive:    true,
+      isQueued:  false,
+      fromEvents: true,
+    })
   }
 
   // Agent statuses derived from latest event
-  // Also track the last completed task description per agent (for Info tab latestResult)
   const agentStatuses = {}
-  const agentLastCompleted = {} // agent slug -> last completed task description string
   for (const [agent, info] of agentLatest) {
     const ageMs = info.timestamp ? now - new Date(info.timestamp).getTime() : 0
     let status = 'IDLE'
@@ -187,16 +290,13 @@ export function deriveStateFromEvents(events) {
       status = ageMs >= STALL_MS ? 'STALLED' : 'WORKING'
     } else if (info.event_type === 'task_completed' || info.event_type === 'qa_passed' || info.event_type === 'build_pushed') {
       status = 'IDLE'
-      // Capture the last completed task description for the Info tab
-      const desc = info.payload?.description || info.payload?.task || info.payload?.text || null
-      if (desc) agentLastCompleted[agent] = desc
     } else if (info.event_type === 'task_failed' || info.event_type === 'qa_failed') {
       status = 'STUCK'
     }
     agentStatuses[agent] = status
   }
 
-  return { rightNowTasks: dedupedTasks, agentStatuses, agentLastCompleted }
+  return { rightNowTasks, agentStatuses }
 }
 
 // ---- DERIVE YOUR TODOS from parsed punch data --------------------------------
@@ -286,10 +386,10 @@ export function useDataPipe(parsePunchList) {
   const [punchData, setPunchData] = useState(null)
   const [punchLoading, setPunchLoading] = useState(IS_LOCAL)
   const [lastUpdated, setLastUpdated] = useState(null)
+  // Supabase-sourced agent list for the current world (replaces hardcoded ALL_AGENT_SLUGS)
+  const [supabaseAgents, setSupabaseAgents] = useState([])
   // Events-derived agent statuses: agent slug -> 'WORKING'|'IDLE'|'STUCK'|'STALLED'
   const eventsAgentStatusRef = useRef({})
-  // Events-derived last completed task per agent: agent slug -> description string
-  const eventsAgentLastCompletedRef = useRef({})
 
   // Auto-check keywords stored in ref for stable callback
   const keywordsRef = useRef(new Set())
@@ -300,59 +400,76 @@ export function useDataPipe(parsePunchList) {
 
   const fetchAll = useCallback(async () => {
     if (IS_LOCAL) {
-      // LOCAL: read from filesystem API (punch-list only) + Supabase events
+      // LOCAL: read from filesystem APIs
       try {
-        const punchRes = await fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null)
-        const punchContent = punchRes?.content || ''
+        const [notifRes, punchRes, missionsRes, taskStatusRes] = await Promise.all([
+          fetch('/api/local/file?path=context/agent-notifications.md').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/local/file?path=context/active-missions.md').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/local/file?path=context/task-status.jsonl').then(r => r.ok ? r.json() : null).catch(() => null),
+        ])
 
-        // Right Now: agent_status table is the SOLE source of truth (same as production).
-        // Events table used only for room status dots and auto-check keywords.
-        const localActive = []
-        let localEvents = []
+        const notifContent = notifRes?.content || ''
+        const punchContent = punchRes?.content || ''
+        const missionsContent = missionsRes?.content || ''
+        const taskStatusContent = taskStatusRes?.content || ''
+
+        // Parse task-status.jsonl: each line is JSON with status: STARTED, WORKING, QUEUED, FINISHED
+        let taskStatusTasks = []
+        if (taskStatusContent) {
+          const lines = taskStatusContent.trim().split('\n').filter(line => line && !line.startsWith('#'))
+          for (const line of lines) {
+            try {
+              const task = JSON.parse(line)
+              if (task.status === 'STARTED' || task.status === 'WORKING') {
+                taskStatusTasks.push({
+                  text: task.description || task.task || task.text || 'Running...',
+                  agent: task.agent || 'system',
+                  done: false,
+                  isLive: true,
+                  isQueued: false,
+                  taskId: task.id,
+                })
+              } else if (task.status === 'QUEUED') {
+                taskStatusTasks.push({
+                  text: task.description || task.task || task.text || 'Queued...',
+                  agent: task.agent || 'system',
+                  done: false,
+                  isLive: true,
+                  isQueued: true,
+                  taskId: task.id,
+                })
+              }
+            } catch {
+              // Skip malformed lines
+            }
+          }
+        }
+
+        // Merge task-status tasks with notifications-based tasks (task-status takes priority)
+        const notifTasks = parseRightNow(missionsContent, notifContent)
+        const mergedTasks = [...taskStatusTasks]
+        for (const task of notifTasks) {
+          if (!mergedTasks.some(t => t.agent === task.agent)) {
+            mergedTasks.push(task)
+          }
+        }
+
+        // Hybrid: also read Supabase for done/todo tasks + events (not tracked in local files)
+        // done tasks -> Right Now with isDoneAwaitingApproval (yellow)
+        // todo tasks -> To Do pill via setTodoItems
+        // events -> Right Now active tasks + agent status overrides
         try {
           const clientId = getClientId()
-          const sbController = new AbortController()
-          const sbTimeout = setTimeout(() => sbController.abort(), 12000)
-          let sbRes
-          try {
-            sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`, { signal: sbController.signal })
-          } finally {
-            clearTimeout(sbTimeout)
-          }
+          const sbRes = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
           if (sbRes.ok) {
             const sbData = await sbRes.json()
-            if (sbData.events && sbData.events.length > 0) {
-              localEvents = sbData.events
-              const { agentStatuses, agentLastCompleted } = deriveStateFromEvents(sbData.events)
-              eventsAgentStatusRef.current = agentStatuses
-              eventsAgentLastCompletedRef.current = agentLastCompleted
-              // Note: rightNowTasks from events NOT pushed -- agent_status is source of truth
-            }
-            // Right Now pills from agent_status table only
-            if (sbData.agentStatuses && Array.isArray(sbData.agentStatuses)) {
-              const now = Date.now()
-              for (const agent of sbData.agentStatuses) {
-                if (agent.status === 'working' || agent.status === 'active') {
-                  const ageMs = agent.updated_at ? now - new Date(agent.updated_at).getTime() : 0
-                  const isStale = ageMs > 60000
-                  localActive.push({
-                    agent: agent.slug,
-                    text: agent.current_task || `${agent.slug} is working`,
-                    isLive: true,
-                    isQueued: false,
-                    fromAgentStatus: true,
-                    isStale,
-                    updatedAt: agent.updated_at,
-                  })
-                }
-              }
-            }
             if (sbData.tasks) {
               // Done tasks awaiting approval
               const doneEntries = sbData.tasks
                 .filter(t => t.status === 'done' && t.agent !== 'patrik')
                 .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
-              localActive.push(...doneEntries)
+              mergedTasks.push(...doneEntries)
 
               // Todo tasks for To Do pill
               const todoEntries = sbData.tasks
@@ -366,13 +483,24 @@ export function useDataPipe(parsePunchList) {
                 .map(t => ({ text: t.text || '', agent: 'patrik', taskId: t.id, done: false, project: t.project }))
               setPersonalTodos(patrikEntries)
             }
+            // Events table: derive Right Now tasks and agent statuses
+            if (sbData.events && sbData.events.length > 0) {
+              const { rightNowTasks, agentStatuses } = deriveStateFromEvents(sbData.events)
+              eventsAgentStatusRef.current = agentStatuses
+              // Merge events-derived tasks: events take priority for agents that have event data
+              const eventsAgentSet = new Set(rightNowTasks.map(t => t.agent))
+              const filteredMerged = mergedTasks.filter(t => !eventsAgentSet.has(t.agent) || t.isDoneAwaitingApproval)
+              mergedTasks.length = 0
+              mergedTasks.push(...rightNowTasks, ...filteredMerged)
+            }
           }
         } catch {
-          // Supabase unavailable in local dev -- Right Now stays empty
+          // Supabase unavailable in local dev -- skip done/todo tasks
         }
 
-        setRightNow(localActive)
-        keywordsRef.current = buildAutoCheckKeywordsFromEvents(localEvents)
+        setRightNow(mergedTasks)
+        setCompletedFeed(parseCompletedFeed(notifContent))
+        keywordsRef.current = buildAutoCheckKeywords(notifContent)
 
         if (punchContent && parseFnRef.current) {
           setPunchData(parseFnRef.current(punchContent))
@@ -389,58 +517,62 @@ export function useDataPipe(parsePunchList) {
       try {
         const clientId = getClientId()
 
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 12000)
-        let res
-        try {
-          res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`, { signal: controller.signal })
-        } finally {
-          clearTimeout(timeout)
-        }
-        if (!res.ok) { setPunchLoading(false); return }
+        // cage-match A: fetch active_processes (PID-verified truth) in parallel with main status
+        const [res, activeAgentsRes] = await Promise.all([
+          fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`),
+          fetch('/api/dashboard/active-agents').catch(() => null),
+        ])
+        if (!res.ok) return
         const data = await res.json()
+        const activeAgentsData = activeAgentsRes?.ok ? await activeAgentsRes.json() : null
 
-        // Right Now: agent_status table is the SOLE source of truth.
-        // Events table is only used for room status dots (eventsAgentStatusRef) and auto-check keywords.
-        // This prevents old task_completed events from causing checkmarks/strikethrough on active pills.
+        // Map Supabase data to Right Now format
+        // cage-match A: Right Now = PID-verified processes from active_processes table.
+        // Tasks table status is NEVER used for Right Now (it drifts). Only used for
+        // queued/todo/done task pills.
         {
           const active = []
 
-          // Still populate eventsAgentStatusRef for room state dots (backward compat)
-          if (data.events && data.events.length > 0) {
-            const { agentStatuses, agentLastCompleted } = deriveStateFromEvents(data.events)
-            eventsAgentStatusRef.current = agentStatuses
-            eventsAgentLastCompletedRef.current = agentLastCompleted
-          }
+          // PRIMARY SOURCE (cage-match A): processes confirmed alive by PID check on the Mac.
+          // Each row = an agent that has a live OS process right now. Zero drift possible.
+          if (activeAgentsData?.active?.length > 0) {
+            const pidVerifiedAgents = new Set()
+            for (const proc of activeAgentsData.active) {
+              pidVerifiedAgents.add(proc.agent)
+              active.push({
+                agent:    proc.agent,
+                text:     proc.task_text || `${proc.agent} is working`,
+                isLive:   true,
+                isQueued: false,
+                taskId:   proc.task_id || null,
+                // Surface heartbeat age so the UI can show "last seen Xs ago"
+                heartbeatAge: proc.age_seconds,
+              })
+            }
+          } else if (!activeAgentsData || !activeAgentsData.tableExists) {
+            // active_processes table not yet migrated -- fall back to tasks table
+            // (old behavior, same as contender B). Remove once table is live.
+            if (data.tasks) {
+              const workingEntries = data.tasks
+                .filter(t => t.status === 'active' || t.status === 'working' || t.status === 'in_progress')
+                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} is working`, isLive: true, isQueued: false, taskId: t.id }))
+              active.push(...workingEntries)
 
-          // Right Now pills come ONLY from agent_status table
-          if (data.agentStatuses && Array.isArray(data.agentStatuses)) {
-            const now = Date.now()
-            for (const agent of data.agentStatuses) {
-              if (agent.status === 'working' || agent.status === 'active') {
-                const ageMs = agent.updated_at ? now - new Date(agent.updated_at).getTime() : 0
-                const isStale = ageMs > 60000 // 60s without heartbeat
-                active.push({
-                  agent: agent.slug,
-                  text: agent.current_task || `${agent.slug} is working`,
-                  isLive: true,
-                  isQueued: false,
-                  fromAgentStatus: true,
-                  isStale,
-                  updatedAt: agent.updated_at,
-                })
-              }
+              const queuedEntries = data.tasks
+                .filter(t => t.status === 'queued')
+                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
+              active.push(...queuedEntries)
             }
           }
 
-          // KEEP: Done tasks awaiting approval -> Inbox pill (not Right Now)
+          // ALWAYS: Done tasks awaiting approval -> Inbox pill (not Right Now)
           if (data.tasks) {
             const doneEntries = data.tasks
               .filter(t => t.status === 'done' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
             active.push(...doneEntries)
 
-            // Todo tasks for To Do pill
+            // Todo tasks for To Do pill (never shown in Right Now)
             const todoEntries = data.tasks
               .filter(t => t.status === 'todo' && t.agent !== 'patrik')
               .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
@@ -453,13 +585,34 @@ export function useDataPipe(parsePunchList) {
             setPersonalTodos(patrikEntries)
           }
 
+          // Events table: merge events-derived Right Now tasks + store agent statuses.
+          // Events are the new source of truth for Right Now. They take priority over
+          // active_processes and tasks table for agents that have event data.
+          if (data.events && data.events.length > 0) {
+            const { rightNowTasks, agentStatuses } = deriveStateFromEvents(data.events)
+            eventsAgentStatusRef.current = agentStatuses
+            if (rightNowTasks.length > 0) {
+              // For agents that have events data: replace their active entry with the events version.
+              // Agents only in active_processes (no events) are kept as-is.
+              const eventsAgentSet = new Set(rightNowTasks.map(t => t.agent))
+              const nonEventsActive = active.filter(t => !eventsAgentSet.has(t.agent) || t.isDoneAwaitingApproval)
+              active.length = 0
+              active.push(...rightNowTasks, ...nonEventsActive)
+            }
+          }
+
           setRightNow(active)
         }
 
-        // Map tasks to completed feed (includes 'completed' and 'done' statuses)
+        // Store Supabase agent list for world-scoped rooms (replaces hardcoded ALL_AGENT_SLUGS)
+        if (data.agents && data.agents.length > 0) {
+          setSupabaseAgents(data.agents)
+        }
+
+        // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
         if (data.tasks) {
           const completed = data.tasks
-            .filter(t => t.status === 'completed' || t.status === 'done')
+            .filter(t => t.status === 'completed')
             .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
           setCompletedFeed(completed)
         }
@@ -581,11 +734,6 @@ export function useDataPipe(parsePunchList) {
           setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
         }
 
-        // Build auto-check keywords from completed events (events table is source of truth)
-        if (data.events && data.events.length > 0) {
-          keywordsRef.current = buildAutoCheckKeywordsFromEvents(data.events)
-        }
-
         setPunchLoading(false)
         setLastUpdated(Date.now())
       } catch {
@@ -672,25 +820,39 @@ export function useDataPipe(parsePunchList) {
   // Priority order: events table (richest -- WORKING/IDLE/STUCK/STALLED) >
   //   rightNow isLive flag (WORKING) > fallback IDLE.
   // STALLED is amber: task_started but 20+ min with no follow-up event.
-  const ALL_AGENT_SLUGS = ['elon', 'gary', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
+  //
+  // WORLD ISOLATION: Non-AOM worlds use ONLY their Supabase agent_status rows.
+  // AOM falls back to hardcoded list for backwards compatibility.
+  const AOM_AGENT_SLUGS = ['elon', 'bobby', 'steffen', 'steve', 'cleo', 'alex', 'mom', 'tony', 'colton', 'jacob', 'paige', 'elmo', 'pixel']
+  const clientId = getClientId()
   const activeAgentSlugs = new Set(rightNow.filter(t => t.isLive).map(t => t.agent))
   const eventsStatuses = eventsAgentStatusRef.current
-  const eventsLastCompleted = eventsAgentLastCompletedRef.current
-  const agents = ALL_AGENT_SLUGS.map(slug => {
-    let status = 'IDLE'
-    if (eventsStatuses[slug]) {
-      // Events table is richest source: WORKING, IDLE, STUCK, or STALLED
-      status = eventsStatuses[slug]
-    } else if (activeAgentSlugs.has(slug)) {
-      status = 'WORKING'
-    }
-    return {
-      slug,
-      name: slug.charAt(0).toUpperCase() + slug.slice(1),
-      status,
-      latestResult: eventsLastCompleted[slug] || null,
-    }
-  })
+
+  let agents
+  if (clientId === 'aom' && supabaseAgents.length === 0) {
+    // AOM fallback: hardcoded list until Supabase agent_status is populated
+    agents = AOM_AGENT_SLUGS.map(slug => {
+      let status = 'IDLE'
+      if (eventsStatuses[slug]) status = eventsStatuses[slug]
+      else if (activeAgentSlugs.has(slug)) status = 'WORKING'
+      return { slug, name: slug.charAt(0).toUpperCase() + slug.slice(1), status }
+    })
+  } else {
+    // World-scoped: only agents from Supabase agent_status for this client_id
+    const source = supabaseAgents.length > 0 ? supabaseAgents : []
+    agents = source.map(a => {
+      let status = 'IDLE'
+      if (eventsStatuses[a.slug]) status = eventsStatuses[a.slug]
+      else if (activeAgentSlugs.has(a.slug)) status = 'WORKING'
+      return {
+        slug: a.slug,
+        name: a.name || a.slug.charAt(0).toUpperCase() + a.slug.slice(1),
+        role: a.role || '',
+        status,
+        color: a.color || '#60A5FA',
+      }
+    })
+  }
 
   return {
     rightNow,

@@ -9,23 +9,14 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_P
 const DEFAULT_CLIENT_ID = 'aom';
 
 async function supabaseGet(table, params = '') {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-      },
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
-    clearTimeout(timeout);
-    return [];
-  }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    },
+  });
+  if (!res.ok) return [];
+  return res.json();
 }
 
 export default async function handler(req, res) {
@@ -55,27 +46,18 @@ export default async function handler(req, res) {
       supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
       // Non-completed, non-blocked tasks (queued, active, todo, working, done, rejected, failed)
       supabaseGet('tasks', `status=not.in.(completed,blocked)&order=created_at.desc${clientFilter}`),
-      // Recent completed tasks (for completed feed) -- includes both 'completed' (Patrik confirmed) and 'done' (agent finished)
-      supabaseGet('tasks', `status=in.(completed,done)&order=created_at.desc&limit=50${clientFilter}`),
-      // Projects table: active projects ordered by recency weight (not client-scoped, global per AOM config)
-      supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc`),
-      // Events table: last 200 events ordered newest-first for Right Now + agent status derivation
-      supabaseGet('events', `order=timestamp.desc&limit=200`),
+      // Recent completed tasks (for completed feed)
+      supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
+      // Projects table: scoped per client for multi-tenant isolation
+      supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc${clientFilter}`),
+      // Events table: scoped per client for multi-tenant isolation
+      supabaseGet('events', `order=timestamp.desc&limit=200${clientFilter}`),
     ]);
     const tasks = [...activeTasks, ...recentDone];
 
     // Split agents vs projects
-    let agentList = agents.filter(a => a.type === 'agent');
+    const agentList = agents.filter(a => a.type === 'agent');
     const projectList = agents.filter(a => a.type === 'project');
-
-    // Multi-tenant: seed default system agent for empty workspaces (new tenants like Q)
-    // This lets new users see Elon without needing a pre-seeded DB row per tenant.
-    if (agentList.length === 0 && clientId !== 'aom') {
-      agentList = [{
-        slug: 'elon', name: 'Elon', role: 'System Agent', type: 'agent',
-        status: 'idle', current_task: '', color: '#F97316', client_id: clientId,
-      }];
-    }
 
     // Build status format matching what useDataPipe expects
     const agentStatuses = agentList.map(a => ({
@@ -83,9 +65,7 @@ export default async function handler(req, res) {
       name: a.name,
       role: a.role,
       status: a.status || 'idle',
-      current_task: a.current_task || '',
       currentTask: a.current_task || '',
-      updated_at: a.updated_at || null,
       color: a.color,
     }));
 

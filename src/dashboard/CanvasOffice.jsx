@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
 import { ALL_ROOMS, PROJECTS } from './gridSpec.js'
 import { supabase } from './lib/supabase.js'
+import { getClientId } from './lib/clientConfig.js'
 
 // CanvasOffice: MULTI-ROOM hex tessellation with wave crossfade transitions
 //
@@ -963,6 +964,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       // Update ROOM_META with live name/color/type for all rooms (hidden or not).
       // This means adding a new project in Supabase gets the right pill color + label
       // without a code deploy.
+      const restoredFreePos = {}
       data.forEach(r => {
         if (r.name || r.color || r.type) {
           ROOM_META[r.id] = {
@@ -971,7 +973,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
             type: r.type || ROOM_META[r.id]?.type || 'agent',
           }
         }
+        // Restore persisted free positions (island cubes)
+        if (r.pos_x != null && r.pos_y != null) {
+          restoredFreePos[r.id] = { x: r.pos_x, y: r.pos_y }
+        }
       })
+      // Apply restored free positions
+      if (Object.keys(restoredFreePos).length > 0) {
+        freePositionsRef.current = { ...freePositionsRef.current, ...restoredFreePos }
+      }
       // Update hex grid layout order (visible rooms only)
       const visible = data.filter(r => !r.hidden).map(r => r.id)
       if (visible.length === 0) return
@@ -979,13 +989,32 @@ const CanvasOffice = forwardRef(function CanvasOffice({
       setSlotOrder(visible)
     }
 
-    const fetchLayout = () =>
-      supabase
+    const clientId = getClientId()
+
+    const fetchLayout = () => {
+      let query = supabase
         .from('rooms')
-        .select('id, hidden, grid_order, name, color, type')
+        .select('id, hidden, grid_order, name, color, type, client_id, pos_x, pos_y')
         .not('grid_order', 'is', null)
         .order('grid_order', { ascending: true })
-        .then(({ data }) => applyRoomsData(data))
+
+      // Non-AOM worlds: only show their own rooms
+      if (clientId !== 'aom') {
+        query = query.eq('client_id', clientId)
+      }
+
+      return query.then(({ data }) => {
+        if (data && data.length > 0) {
+          applyRoomsData(data)
+        } else if (clientId !== 'aom') {
+          // Clean world: no rooms table entries yet. Show nothing (empty grid).
+          // Agents from agent_status will be added as rooms when created via dashboard.
+          _defaultLayoutOrder = []
+          setSlotOrder([])
+        }
+        // AOM with empty rooms table: keep gridSpec fallback (existing behavior)
+      })
+    }
 
     // Initial fetch
     fetchLayout()
@@ -2467,6 +2496,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         // Save island position -- freePos overrides slot rendering
         freePositionsRef.current = { ...freePositionsRef.current, [draggedRoomId]: { x: finalSnap.x, y: finalSnap.y } }
 
+        // Persist free position to Supabase rooms table
+        if (supabase) {
+          supabase.from('rooms').upsert(
+            { id: draggedRoomId, pos_x: finalSnap.x, pos_y: finalSnap.y },
+            { onConflict: 'id' }
+          ).then(({ error }) => {
+            if (error) console.error('[CanvasOffice] island pos persist failed:', error.message)
+          })
+        }
+
       } else {
         // ---- NORMAL SLOT SNAP: snap back to home slot ----
         const alreadyHome = Math.abs(dragFromX - homeSlotPos.x) < 1 && Math.abs(dragFromY - homeSlotPos.y) < 1
@@ -2485,6 +2524,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         const newFreePos = { ...freePositionsRef.current }
         delete newFreePos[draggedRoomId]
         freePositionsRef.current = newFreePos
+
+        // Clear persisted free position in Supabase
+        if (supabase) {
+          supabase.from('rooms').upsert(
+            { id: draggedRoomId, pos_x: null, pos_y: null },
+            { onConflict: 'id' }
+          ).then(({ error }) => {
+            if (error) console.error('[CanvasOffice] clear island pos failed:', error.message)
+          })
+        }
       }
 
       drag.active = false
@@ -3029,6 +3078,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
 
           freePositionsRef.current = { ...freePositionsRef.current, [draggedRoomId]: { x: finalSnapTE.x, y: finalSnapTE.y } }
 
+          // Persist free position to Supabase rooms table (touch path)
+          if (supabase) {
+            supabase.from('rooms').upsert(
+              { id: draggedRoomId, pos_x: finalSnapTE.x, pos_y: finalSnapTE.y },
+              { onConflict: 'id' }
+            ).then(({ error }) => {
+              if (error) console.error('[CanvasOffice] island pos persist (touch) failed:', error.message)
+            })
+          }
+
         } else {
           // ---- NORMAL SLOT SNAP: snap back to home slot ----
           const alreadyHome = Math.abs(dragFromX - homeSlotPos.x) < 1 && Math.abs(dragFromY - homeSlotPos.y) < 1
@@ -3046,6 +3105,16 @@ const CanvasOffice = forwardRef(function CanvasOffice({
           const newFreePos = { ...freePositionsRef.current }
           delete newFreePos[draggedRoomId]
           freePositionsRef.current = newFreePos
+
+          // Clear persisted free position (touch path)
+          if (supabase) {
+            supabase.from('rooms').upsert(
+              { id: draggedRoomId, pos_x: null, pos_y: null },
+              { onConflict: 'id' }
+            ).then(({ error }) => {
+              if (error) console.error('[CanvasOffice] clear island pos (touch) failed:', error.message)
+            })
+          }
         }
 
         drag.active = false
