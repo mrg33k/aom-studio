@@ -190,11 +190,15 @@ function useIdleBounce(agentSlug, isActive) {
     startTimeRef.current = performance.now()
 
     const animate = (now) => {
+      // Pause animation when tab not visible (saves per-agent rAF cost)
+      if (document.hidden) {
+        rafRef.current = requestAnimationFrame(animate)
+        return
+      }
       const elapsed = now - startTimeRef.current
       const phase = (elapsed / IDLE_BOUNCE_PERIOD + phaseOffset) * Math.PI * 2
       const y = Math.sin(phase) * IDLE_BOUNCE_AMPLITUDE
       setBounceY(y)
-      // Shadow inversely scales with height
       setShadowScale(1 - (y / IDLE_BOUNCE_AMPLITUDE) * 0.15)
       rafRef.current = requestAnimationFrame(animate)
     }
@@ -274,6 +278,7 @@ function useSpeakingAnimation(isSpeaking) {
 
       // Animate speaking bounce
       const animate = (now) => {
+        if (document.hidden) { rafRef.current = requestAnimationFrame(animate); return }
         const elapsed = now - startRef.current
         springGrow()
 
@@ -329,6 +334,7 @@ function useCelebration(agentSlug) {
     setConfettiParticles(particles)
 
     const animate = (now) => {
+      if (document.hidden) { rafRef.current = requestAnimationFrame(animate); return }
       const elapsed = now - startRef.current
       const progress = Math.min(elapsed / CELEBRATION_DURATION, 1)
 

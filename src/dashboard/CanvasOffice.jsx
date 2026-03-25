@@ -2159,11 +2159,25 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     dirtyRef.current = true
   }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, contextMenu, unreadAgents, loaded])
 
-  // Render loop
+  // Render loop -- pauses when tab not visible to save CPU
   useEffect(() => {
     if (!loaded) return
     let raf
+    let paused = false
+
     const loop = () => {
+      // Skip rendering entirely when tab is hidden (saves 60fps of CPU)
+      if (document.hidden) {
+        if (!paused) paused = true
+        raf = requestAnimationFrame(loop)
+        return
+      }
+      // Force a redraw on the first frame back from being hidden
+      if (paused) {
+        dirtyRef.current = true
+        paused = false
+      }
+
       // Check whether anything is visually animating this frame (independently of React state).
       // These conditions run every frame so animations that modify refs directly (camera momentum,
       // drag, celebration, shuffle) still get drawn even when React state hasn't changed.
