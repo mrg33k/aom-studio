@@ -59,7 +59,7 @@ function useRelayBadge() {
     }
 
     poll()
-    const timer = setInterval(poll, 5000)
+    const timer = setInterval(poll, 8000)
     return () => clearInterval(timer)
   }, [])
 
@@ -165,14 +165,19 @@ function humanizeNotification(raw, agentName) {
   return msg || raw
 }
 
-// Hook: polls events table for new task_completed/task_failed events (toast notifications)
+// Hook: polls events table for toast notifications + full notification history (consolidated)
+// Previously two separate hooks (useAgentNotifications at 8s + useFullNotificationHistory at 10s)
+// hitting the same endpoint. Now one poll serves both.
 function useAgentNotifications() {
   const [notifications, setNotifications] = useState([])
+  const [history, setHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(true)
   const lastSeenIdRef = useRef(null)
   const dismissedRef = useRef(new Set())
 
   useEffect(() => {
     const poll = async () => {
+      if (document.hidden) return // Skip when tab not visible
       try {
         const { getClientId } = await import('../lib/clientConfig.js')
         const clientId = getClientId()
@@ -181,8 +186,31 @@ function useAgentNotifications() {
         const data = await res.json()
         const events = data.events || []
 
-        // Find events newer than the last one we've seen
-        // events are newest-first from the API
+        // --- Build full history (was useFullNotificationHistory) ---
+        const historyTypes = new Set(['task_completed', 'task_failed', 'task_started', 'qa_passed', 'build_pushed'])
+        const historyEntries = events
+          .filter(ev => historyTypes.has(ev.event_type))
+          .map((ev, i) => {
+            const agent = ev.agent || 'system'
+            const name = agent.charAt(0).toUpperCase() + agent.slice(1)
+            const rawMessage = ev.payload?.description || ev.payload?.task || ev.payload?.text || `${name} task update`
+            const type = ev.event_type === 'task_failed' ? 'blocked'
+              : ev.event_type === 'task_completed' || ev.event_type === 'qa_passed' || ev.event_type === 'build_pushed' ? 'complete'
+              : 'system'
+            return {
+              id: `hist-${ev.id || i}`,
+              time: ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+              agentSlug: agent,
+              agentName: name,
+              message: humanizeNotification(rawMessage, name),
+              rawMessage,
+              type,
+            }
+          })
+        setHistory(historyEntries)
+        setHistoryLoading(false)
+
+        // --- Toast notifications ---
         const relevantTypes = new Set(['task_completed', 'task_failed', 'qa_passed', 'build_pushed'])
         const relevant = events.filter(ev => relevantTypes.has(ev.event_type))
 
@@ -190,14 +218,12 @@ function useAgentNotifications() {
 
         const newestId = relevant[0]?.id
         if (lastSeenIdRef.current === null) {
-          // First poll: seed the last-seen marker without showing toasts
           lastSeenIdRef.current = newestId
           return
         }
 
         if (newestId === lastSeenIdRef.current) return
 
-        // Find events newer than last seen
         const newEvents = []
         for (const ev of relevant) {
           if (ev.id === lastSeenIdRef.current) break
@@ -250,7 +276,7 @@ function useAgentNotifications() {
     setNotifications([])
   }, [notifications])
 
-  return { notifications, dismiss, dismissAll }
+  return { notifications, dismiss, dismissAll, history, historyLoading }
 }
 
 // Badge component (sits on the chat icon or bell) -- pill with "N updates" label
@@ -290,59 +316,9 @@ export function NotificationBadge({ count, style }) {
   )
 }
 
-// Hook: loads FULL notification history from events table (all entries, newest first)
-function useFullNotificationHistory() {
-  const [history, setHistory] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  const refresh = useCallback(async () => {
-    try {
-      const { getClientId } = await import('../lib/clientConfig.js')
-      const clientId = getClientId()
-      const res = await fetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
-      if (!res.ok) { setLoading(false); return }
-      const data = await res.json()
-      const events = data.events || []
-
-      const relevantTypes = new Set(['task_completed', 'task_failed', 'task_started', 'qa_passed', 'build_pushed'])
-      const entries = events
-        .filter(ev => relevantTypes.has(ev.event_type))
-        .map((ev, i) => {
-          const agent = ev.agent || 'system'
-          const name = agent.charAt(0).toUpperCase() + agent.slice(1)
-          const rawMessage = ev.payload?.description || ev.payload?.task || ev.payload?.text || `${name} task update`
-          const type = ev.event_type === 'task_failed' ? 'blocked'
-            : ev.event_type === 'task_completed' || ev.event_type === 'qa_passed' || ev.event_type === 'build_pushed' ? 'complete'
-            : 'system'
-
-          return {
-            id: `hist-${ev.id || i}`,
-            time: ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-            agentSlug: agent,
-            agentName: name,
-            message: humanizeNotification(rawMessage, name),
-            rawMessage,
-            type,
-          }
-        })
-      // events are already newest-first from the API
-      setHistory(entries)
-    } catch {}
-    setLoading(false)
-  }, [])
-
-  useEffect(() => {
-    refresh()
-    const timer = setInterval(refresh, 10000)
-    return () => clearInterval(timer)
-  }, [refresh])
-
-  return { history, loading, refresh }
-}
-
 // Full notification history panel (opens from bell click, anchored above HUD)
-function NotificationHistoryPanel({ onClose }) {
-  const { history, loading } = useFullNotificationHistory()
+// History data comes from useAgentNotifications (consolidated poll) via props.
+function NotificationHistoryPanel({ onClose, history, loading }) {
   const panelRef = useRef(null)
 
   // Close on click outside
@@ -535,7 +511,7 @@ function NotificationHistoryPanel({ onClose }) {
 // Bell button with badge + notification history panel toggle
 export function HUDBellButton({ onClick }) {
   const { unreadCount, clearBadge } = useRelayBadge()
-  const { notifications } = useAgentNotifications()
+  const { notifications, history, historyLoading } = useAgentNotifications()
   const [historyOpen, setHistoryOpen] = useState(false)
   const [glowing, setGlowing] = useState(false)
   const prevCountRef = useRef(0)
@@ -590,7 +566,7 @@ export function HUDBellButton({ onClick }) {
       {/* History panel anchored above bell */}
       <AnimatePresence>
         {historyOpen && (
-          <NotificationHistoryPanel onClose={() => setHistoryOpen(false)} />
+          <NotificationHistoryPanel onClose={() => setHistoryOpen(false)} history={history} loading={historyLoading} />
         )}
       </AnimatePresence>
     </div>

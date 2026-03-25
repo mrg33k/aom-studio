@@ -408,41 +408,24 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     'Real work happening right now.',
   ], [agent.name])
 
-  // Elapsed timer: counts up every second while streaming
+  // Unified streaming tick: elapsed (1s), thinking phrases (3s), motivational phrases (5s)
+  // Consolidates 3 separate setIntervals into 1
   useEffect(() => {
     if (!streaming || !streamStartTime) {
       setElapsedSeconds(0)
-      return
-    }
-    const interval = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - streamStartTime) / 1000))
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [streaming, streamStartTime])
-
-  // Rotate thinking phrases every 3 seconds while streaming
-  useEffect(() => {
-    if (!streaming) {
       setThinkingPhrase(0)
-      return
-    }
-    const interval = setInterval(() => {
-      setThinkingPhrase(prev => (prev + 1) % thinkingPhrases.length)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [streaming, thinkingPhrases.length])
-
-  // Rotate motivational phrases every 5 seconds while streaming
-  useEffect(() => {
-    if (!streaming) {
       setMotivationalPhrase(0)
       return
     }
+    let tickCount = 0
     const interval = setInterval(() => {
-      setMotivationalPhrase(prev => (prev + 1) % motivationalPhrases.length)
-    }, 5000)
+      tickCount++
+      setElapsedSeconds(Math.floor((Date.now() - streamStartTime) / 1000))
+      if (tickCount % 3 === 0) setThinkingPhrase(prev => (prev + 1) % thinkingPhrases.length)
+      if (tickCount % 5 === 0) setMotivationalPhrase(prev => (prev + 1) % motivationalPhrases.length)
+    }, 1000)
     return () => clearInterval(interval)
-  }, [streaming, motivationalPhrases.length])
+  }, [streaming, streamStartTime, thinkingPhrases.length, motivationalPhrases.length])
   const knownSlugsRef = useRef(KNOWN_SLUGS_FALLBACK)
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -733,6 +716,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
 
     // REST poll fallback
     const poll = setInterval(async () => {
+      if (document.hidden) return // Skip when tab not visible
       try {
         const { data } = await supabase
           .from('messages')
@@ -834,6 +818,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     const pollInterval = IS_LOCAL ? 2500 : 5000
 
     convPollRef.current = setInterval(async () => {
+      if (document.hidden) return // Skip when tab not visible
       try {
         const sinceParam = lastConvTimestampRef.current
           ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}`
@@ -893,7 +878,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     if (IS_LOCAL) {
     bgPollRef.current = setInterval(async () => {
       // Only poll outbox if we're NOT actively polling from a send (startRelayPoll handles that)
-      if (relayPollRef.current) return
+      if (relayPollRef.current || document.hidden) return
 
       try {
         const outRes = await fetch('/api/local/relay-outbox')
@@ -1645,6 +1630,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
   useEffect(() => {
     const pollInterval = IS_LOCAL ? 2500 : 5000
     convPollRef.current = setInterval(async () => {
+      if (document.hidden) return // Skip when tab not visible
       try {
         const sinceParam = lastConvTimestampRef.current ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}` : ''
         const endpoint = IS_LOCAL

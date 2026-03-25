@@ -11498,6 +11498,7 @@ export default function GameDashboard() {
     })
 
     const bgPoll = setInterval(async () => {
+      if (document.hidden) return // Skip when tab not visible
       const active = selectedRoomRef.current
       // Only check agents that are NOT the currently active room
       const toCheck = POLL_AGENTS.filter(slug => slug !== active)
@@ -11821,6 +11822,7 @@ export default function GameDashboard() {
       let lastSeenTs = new Date().toISOString()
 
       const poll = setInterval(async () => {
+        if (document.hidden) return // Skip when tab not visible
         try {
           // AOM Team Room: fetch all messages without agent filter
           const pollUrl = isAomTeamRoom
@@ -11881,6 +11883,7 @@ export default function GameDashboard() {
       ? `/api/local/conversations?all=true&limit=200`
       : `${CONV_API_BASE}?target=${selectedRoom}&type=${isProj ? 'project' : 'agent'}&limit=50`
     const poll = setInterval(() => {
+      if (document.hidden) return // Skip when tab not visible
       fetch(pollUrl)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
@@ -12611,7 +12614,7 @@ export default function GameDashboard() {
         .catch(() => {})
     }
     fetchDebug()
-    const interval = setInterval(fetchDebug, 5000)
+    const interval = setInterval(() => { if (!document.hidden) fetchDebug() }, 5000)
     return () => clearInterval(interval)
   }, [showRelayDebug])
 
