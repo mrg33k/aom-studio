@@ -934,7 +934,7 @@ export default function GameHUD({
           borderRadius: isMobile ? 0 : '18px 18px 0 0',
           boxShadow: hudPanelShadow,
           padding: isMobile ? '4px 8px' : '0 20px',
-          paddingBottom: isMobile ? 'max(20px, env(safe-area-inset-bottom, 20px))' : undefined,
+          paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0px)' : undefined,
           margin: isMobile ? 0 : '0 12px',
           // Mobile: flush bottom with no gap
           ...(isMobile ? { borderRadius: 0 } : {}),

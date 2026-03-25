@@ -10140,7 +10140,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                   willChange: 'transform, opacity',
                 }} />
                 <span style={{
-                  fontSize: 10, fontWeight: 700, color: isDaytime ? '#3B82F6' : '#60A5FA',
+                  fontSize: 12, fontWeight: 700, color: isDaytime ? '#3B82F6' : '#60A5FA',
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.08em', textTransform: 'uppercase', flex: 1,
                 }}>TASK COMPLETE{total > 1 ? ` (${total})` : ''}</span>
@@ -13079,11 +13079,12 @@ export default function GameDashboard() {
             // keyboard actually opens. Snapping here first causes it to save 'full'
             // as the restore point, so the drawer never returns to half on keyboard close.
           }}
-          // Raise input above the GameHUD ticker at both full-snap and half-snap.
-          // At half-snap (drawer not covering full screen), the RNB is still visible below
-          // and the input must sit above it. bottomOffset lifts input by hudBarHeight always.
+          // Raise input above the GameHUD at both full-snap and half-snap.
+          // Full-snap: HUD is at bottom=0, so input at hudBarHeight clears it.
+          // Half-snap: HUD is raised to bottom=125 (above the drawer edge), so input
+          // must be at 125 + hudBarHeight to sit above the HUD without overlapping the pills row.
           // When keyboard is open, kbOffset handles the offset (bottomOffset is ignored).
-          bottomOffset={hudBarHeight}
+          bottomOffset={drawerSnap === 'full' ? hudBarHeight : 125 + hudBarHeight}
         />
       )}
 
