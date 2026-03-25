@@ -456,10 +456,10 @@ export function useDataPipe(parsePunchList) {
           setRightNow(active)
         }
 
-        // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
+        // Map tasks to completed feed (includes 'completed' and 'done' statuses)
         if (data.tasks) {
           const completed = data.tasks
-            .filter(t => t.status === 'completed')
+            .filter(t => t.status === 'completed' || t.status === 'done')
             .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
           setCompletedFeed(completed)
         }

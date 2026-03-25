@@ -55,8 +55,8 @@ export default async function handler(req, res) {
       supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
       // Non-completed, non-blocked tasks (queued, active, todo, working, done, rejected, failed)
       supabaseGet('tasks', `status=not.in.(completed,blocked)&order=created_at.desc${clientFilter}`),
-      // Recent completed tasks (for completed feed)
-      supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
+      // Recent completed tasks (for completed feed) -- includes both 'completed' (Patrik confirmed) and 'done' (agent finished)
+      supabaseGet('tasks', `status=in.(completed,done)&order=created_at.desc&limit=50${clientFilter}`),
       // Projects table: active projects ordered by recency weight (not client-scoped, global per AOM config)
       supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc`),
       // Events table: last 200 events ordered newest-first for Right Now + agent status derivation
