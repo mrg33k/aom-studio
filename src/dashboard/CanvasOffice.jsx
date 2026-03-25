@@ -998,10 +998,8 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         .not('grid_order', 'is', null)
         .order('grid_order', { ascending: true })
 
-      // Non-AOM worlds: only show their own rooms
-      if (clientId !== 'aom') {
-        query = query.eq('client_id', clientId)
-      }
+      // All worlds scoped by client_id -- no cross-world room leaks
+      query = query.eq('client_id', clientId)
 
       return query.then(({ data }) => {
         if (data && data.length > 0) {

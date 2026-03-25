@@ -12073,9 +12073,27 @@ export default function GameDashboard() {
   }, [isOverview])
 
   const handleRoomClick = (roomId) => {
-    // Use ROOM_LOOKUP which includes both agent rooms and project rooms
-    const room = ROOM_LOOKUP[roomId]
-    if (!room) return
+    // Use ROOM_LOOKUP which includes both agent rooms and project rooms.
+    // For Supabase-sourced rooms not in gridSpec, create a dynamic entry so
+    // chat routing works for any world's agents (e.g. Q's Jarvis).
+    let room = ROOM_LOOKUP[roomId]
+    if (!room) {
+      // Dynamic room from Supabase (not in gridSpec). Build a minimal entry.
+      const agentData = data?.agents?.find(a => a.slug === roomId)
+      if (agentData) {
+        room = {
+          id: roomId,
+          name: agentData.name || roomId,
+          agent: roomId,
+          role: agentData.role || 'Agent',
+          agentColor: agentData.color || '#60A5FA',
+          type: 'agent',
+        }
+        ROOM_LOOKUP[roomId] = room
+      } else {
+        return
+      }
+    }
     // Skip communal rooms (main-hall, cafe, growth-zone) which have agent === null
     // but allow project rooms (type === 'project') through
     if (room.agent === null && room.type !== 'project') return
