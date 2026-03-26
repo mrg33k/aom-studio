@@ -30,10 +30,13 @@ const AGENT_ICONS = {
 const PROJECT_ICON = FolderKanban
 
 // ---- HEX GEOMETRY (pointy-top) ----
-const HEX_W = 130
-const HEX_H = HEX_W * (2 / Math.sqrt(3))
-const HEX_ROW_H = HEX_H * 0.75
+const HEX_W_DESKTOP = 130
 const HEX_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+
+function hexGeometry(hexW) {
+  const hexH = hexW * (2 / Math.sqrt(3))
+  return { hexW, hexH, hexRowH: hexH * 0.75, leftMargin: hexW * 0.5 }
+}
 
 // Row sizes: compute from room count when rooms are dynamic.
 // Default matches gridSpec ALL_ROOMS order: [4, 4, 5, 4, 1]
@@ -63,15 +66,15 @@ function getGridPos(index, rowSizes) {
   return { row: rowSizes.length, col: index - consumed }
 }
 
-const GRID_COLS = 8
+const GRID_COLS_DESKTOP = 8
+const GRID_COLS_MOBILE = 5
 const GRID_ROWS = 6
-const LEFT_MARGIN = HEX_W * 0.5
 
-function gridToPixel(row, col) {
-  const oddOffset = row % 2 !== 0 ? HEX_W * 0.5 : 0
+function gridToPixel(row, col, geo) {
+  const oddOffset = row % 2 !== 0 ? geo.hexW * 0.5 : 0
   return {
-    x: LEFT_MARGIN + col * HEX_W + oddOffset,
-    y: row * HEX_ROW_H,
+    x: geo.leftMargin + col * geo.hexW + oddOffset,
+    y: row * geo.hexRowH,
   }
 }
 
@@ -108,7 +111,17 @@ const HexGrid = forwardRef(function HexGrid({
 }, ref) {
   // Use prop rooms if provided, otherwise fall back to gridSpec ALL_ROOMS (AOM default)
   const rooms = roomsProp && roomsProp.length > 0 ? roomsProp : ALL_ROOMS
-  const rowSizes = rooms === ALL_ROOMS ? DEFAULT_ROW_SIZES : computeRowSizes(rooms.filter(r => !r.hidden).length)
+  const visibleCount = rooms.filter(r => !r.hidden).length
+
+  // Mobile: 3 per row, smaller hexes. Desktop: original layout.
+  const mobileColCount = 3
+  const hexW = isMobile ? Math.min(110, Math.floor((typeof window !== 'undefined' ? window.innerWidth - 40 : 320) / (mobileColCount + 0.5))) : HEX_W_DESKTOP
+  const geo = hexGeometry(hexW)
+  const GRID_COLS = isMobile ? GRID_COLS_MOBILE : GRID_COLS_DESKTOP
+
+  const rowSizes = isMobile
+    ? (() => { const rs = []; let rem = visibleCount; while (rem > 0) { rs.push(Math.min(rem, mobileColCount)); rem -= mobileColCount }; return rs })()
+    : (rooms === ALL_ROOMS ? DEFAULT_ROW_SIZES : computeRowSizes(visibleCount))
 
   const containerRef = useRef(null)
   const gridRef = useRef(null) // inner grid div for accurate position calculations
@@ -224,20 +237,20 @@ const HexGrid = forwardRef(function HexGrid({
   visible.forEach((slug) => {
     const gp = roomGridPositions[slug]
     if (!gp) return
-    posMap[slug] = gridToPixel(gp.row, gp.col)
+    posMap[slug] = gridToPixel(gp.row, gp.col, geo)
     occupiedSlots[`${gp.row},${gp.col}`] = slug
   })
 
-  const gridW = LEFT_MARGIN + GRID_COLS * HEX_W + HEX_W
-  const gridH = GRID_ROWS * HEX_ROW_H + HEX_H * 0.25 + 40
+  const gridW = geo.leftMargin + GRID_COLS * geo.hexW + geo.hexW
+  const gridH = GRID_ROWS * geo.hexRowH + geo.hexH * 0.25 + 40
 
   // Find nearest grid slot to a pixel position
   const pixelToNearestSlot = useCallback((px, py) => {
     let bestRow = 0, bestCol = 0, bestDist = Infinity
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
-        const { x, y } = gridToPixel(r, c)
-        const d = Math.hypot(px - x - HEX_W / 2, py - y - HEX_H / 2)
+        const { x, y } = gridToPixel(r, c, geo)
+        const d = Math.hypot(px - x - geo.hexW / 2, py - y - geo.hexH / 2)
         if (d < bestDist) { bestDist = d; bestRow = r; bestCol = c }
       }
     }
@@ -375,8 +388,8 @@ const HexGrid = forwardRef(function HexGrid({
         <svg style={{ position: 'absolute', inset: 0, width: gridW, height: gridH, pointerEvents: 'none', zIndex: 0 }}>
           {Array.from({ length: GRID_ROWS }, (_, row) =>
             Array.from({ length: GRID_COLS }, (_, col) => {
-              const { x, y } = gridToPixel(row, col)
-              const cx = x + HEX_W / 2, cy = y + HEX_H / 2, r = HEX_W / 2 - 2
+              const { x, y } = gridToPixel(row, col, geo)
+              const cx = x + geo.hexW / 2, cy = y + geo.hexH / 2, r = geo.hexW / 2 - 2
               const pts = Array.from({ length: 6 }, (_, i) => {
                 const a = (Math.PI / 180) * (60 * i - 30)
                 return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
@@ -401,7 +414,7 @@ const HexGrid = forwardRef(function HexGrid({
           const Icon = AGENT_ICONS[slug] || PROJECT_ICON
           const isSwapTarget = swapProgress?.slug === slug
           // When dragging: snap to grid pos. Otherwise: use assigned grid position.
-          const displayPos = isDrag && dragGridPos ? gridToPixel(dragGridPos.row, dragGridPos.col) : p
+          const displayPos = isDrag && dragGridPos ? gridToPixel(dragGridPos.row, dragGridPos.col, geo) : p
           const x = displayPos.x
           const y = displayPos.y
 
@@ -409,7 +422,7 @@ const HexGrid = forwardRef(function HexGrid({
             <div
               key={slug}
               style={{
-                position: 'absolute', left: x, top: y, width: HEX_W, height: HEX_H,
+                position: 'absolute', left: x, top: y, width: geo.hexW, height: geo.hexH,
                 clipPath: HEX_CLIP, WebkitClipPath: HEX_CLIP,
                 background: isSel || isFoc ? 'rgba(37,99,235,0.25)' : isHov ? 'rgba(30,60,120,0.95)' : 'rgba(30,60,120,0.85)',
                 cursor: isDrag ? 'grabbing' : 'pointer',
@@ -431,11 +444,11 @@ const HexGrid = forwardRef(function HexGrid({
 
               {/* Content */}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '14px 8px' }}>
-                <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, color: '#EDF2FA', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', lineHeight: 1.2, maxWidth: HEX_W - 24, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+                <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, color: '#EDF2FA', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', lineHeight: 1.2, maxWidth: geo.hexW - 24, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
                   {meta.name || slug}
                 </div>
                 <Icon size={isMobile ? 18 : 20} strokeWidth={1.8} style={{ color: meta.color || 'rgba(96,165,250,0.6)', opacity: st === 'working' || st === 'active' ? 1 : 0.6, flexShrink: 0, transition: 'opacity 200ms ease' }} />
-                <div style={{ fontSize: 10, fontWeight: 500, color: 'rgba(200,214,229,0.45)', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', maxWidth: HEX_W - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 10, fontWeight: 500, color: 'rgba(200,214,229,0.45)', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', maxWidth: geo.hexW - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {meta.role || meta.type || ''}
                 </div>
               </div>
