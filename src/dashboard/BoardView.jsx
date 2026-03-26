@@ -108,8 +108,20 @@ function useColumnChat(agentSlug, isActive) {
       .then(data => {
         const msgs = (data?.messages || [])
           .filter(m => !m.agent || m.agent === agentSlug)
-          .map(m => ({ role: m.role || 'assistant', content: m.text || '', time: m.timestamp || '' }))
-          .filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+          .filter(m => {
+            // Only show dashboard user messages + relay/assistant responses
+            // Filter out: terminal spawn prompts, inter-agent routing, session logs
+            const src = (m.source || '').toLowerCase()
+            if (src === 'terminal') return false
+            if (src.startsWith('agent-')) return false
+            const txt = (m.text || '')
+            if (txt.startsWith('[SESSION LOG]')) return false
+            if (txt.startsWith('[From ')) return false
+            if (txt.startsWith('You are ') && txt.includes('Working directory:')) return false
+            return true
+          })
+          .map(m => ({ role: m.role || 'assistant', content: m.text || '', time: m.timestamp || '', source: m.source }))
+          .filter(m => m.content)
         setMessages(msgs)
         setLoading(false)
       })
@@ -216,10 +228,19 @@ function ColTabBar({ tabs, active, onChange }) {
 
 function ChatPanel({ chat, agentName }) {
   const ref = useRef(null)
+  const inputRef = useRef(null)
   useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight }, [chat.messages.length])
 
+  const doSend = () => {
+    if (chat.input.trim()) {
+      chat.sendMessage(chat.input)
+    }
+  }
+
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}
+      onClick={e => e.stopPropagation()}
+    >
       <div ref={ref} style={{
         flex: 1, overflowY: 'auto', padding: '6px 12px',
         display: 'flex', flexDirection: 'column', gap: 5,
@@ -243,27 +264,35 @@ function ChatPanel({ chat, agentName }) {
           </div>
         ))}
       </div>
-      <form onSubmit={e => { e.preventDefault(); if (chat.input.trim()) chat.sendMessage(chat.input) }} style={{
+      <div style={{
         display: 'flex', gap: 6, padding: '8px 12px',
         borderTop: '1px solid var(--bv-divider)', flexShrink: 0, background: 'var(--bv-bar)',
       }}>
         <input
-          value={chat.input} onChange={e => chat.setInput(e.target.value)}
+          ref={inputRef}
+          value={chat.input}
+          onChange={e => chat.setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend() } }}
           placeholder={`Message ${agentName}...`}
+          onClick={e => e.stopPropagation()}
           style={{
             flex: 1, background: 'var(--bv-input-bg)', border: '1.5px solid var(--bv-input-border)',
             borderRadius: 10, padding: '9px 12px', color: 'var(--bv-text)', fontSize: 13,
             fontFamily: "'Inter', sans-serif", outline: 'none',
           }}
         />
-        <button type="submit" style={{
-          width: 36, height: 36, borderRadius: 10, border: 'none',
-          background: 'var(--bv-accent)', color: 'var(--bv-accent-text)',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); doSend() }}
+          style={{
+            width: 36, height: 36, borderRadius: 10, border: 'none',
+            background: 'var(--bv-accent)', color: 'var(--bv-accent-text)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
-      </form>
+      </div>
     </div>
   )
 }
