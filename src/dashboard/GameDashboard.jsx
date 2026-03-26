@@ -12722,16 +12722,42 @@ export default function GameDashboard() {
               {currentMode === 'game' && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: '#0A0F1A' }} />
               )}
-              {/* CanvasOffice replaced with CSS HexGrid for performance */}
+              {/* CSS/SVG HexGrid -- zero Canvas, zero rAF */}
               <HexGrid
-                rooms={ALL_ROOMS}
-                onRoomClick={handleRoomClick}
-                isDaytime={!isNightMode}
+                ref={canvasOfficeRef}
                 agentStatus={agentStatus}
+                onRoomClick={handleRoomClick}
                 selectedRoom={selectedRoom}
                 hoveredRoom={hoveredRoom}
                 setHoveredRoom={setHoveredRoom}
+                isNightMode={isNightMode}
+                drawerSnap={drawerSnap}
                 isMobile={isMobile}
+                mobileHudHeight={isMobile ? hudBarHeight : 0}
+                initialFocusRoom={isMobile ? DEFAULT_AGENT : null}
+                unreadAgents={unreadAgents}
+                onOpenChat={(roomId) => {
+                  handleChat(roomId)
+                  setPanelActiveTab('chat')
+                  setPanelVisible(true)
+                }}
+                onSendMessage={(roomId) => {
+                  handleChat(roomId)
+                  setPanelActiveTab('chat')
+                  setPanelVisible(true)
+                  setTimeout(() => {
+                    const input = document.querySelector('[data-panel-chat-input]')
+                    if (input) input.focus()
+                  }, 150)
+                }}
+                onViewTasks={(roomId) => {
+                  setSelectedRoom(roomId)
+                  setCameraTarget(roomId)
+                  setIsOverview(false)
+                  setPanelVisible(true)
+                  setPanelActiveTab('tasks')
+                }}
+                onSetAsHome={() => {}}
               />
 
               {/* Camera controls REMOVED per Patrik directive. Zoom/home/overview via keyboard only. */}

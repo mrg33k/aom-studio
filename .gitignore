@@ -8,3 +8,4 @@ dist
 .env.prod
 .env.seed
 .env*.local
+.env.production

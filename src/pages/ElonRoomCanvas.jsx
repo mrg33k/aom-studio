@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
-import CanvasRoom from '../dashboard/CanvasRoom.jsx'
+// CanvasRoom.jsx was archived -- stubbed out
+// import CanvasRoom from '../dashboard/CanvasRoom.jsx'
 
 // ElonRoomCanvas: Full-screen dark view showing ONLY Elon's server room.
 // Centered on screen, dark background (#0D0D1A), no other rooms.
@@ -115,12 +116,17 @@ export default function ElonRoomCanvas() {
           zIndex: 1,
         }}
       >
-        <CanvasRoom
-          roomId="elon"
-          isActive={true}
-          useProductionFurniture={true}
-          onClick={handleRoomClick}
-        />
+        {/* CanvasRoom archived -- placeholder */}
+        <div style={{
+          width: '100%', height: '100%',
+          background: 'rgba(76,175,80,0.05)',
+          border: '1px solid rgba(76,175,80,0.2)',
+          borderRadius: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#4CAF50', fontSize: 14, fontFamily: 'monospace',
+        }}>
+          Elon's Server Room (Canvas archived)
+        </div>
 
         {/* Click feedback overlay */}
         {clicked && (
