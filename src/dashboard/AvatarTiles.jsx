@@ -57,22 +57,7 @@ function CtxItem({ label, onClick, color }) {
 }
 
 // ---- COMPONENT ----
-// Error boundary wrapper to prevent blank screen crashes
-class AvatarTilesErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { hasError: false, error: null } }
-  static getDerivedStateFromError(error) { return { hasError: true, error } }
-  componentDidCatch(error, info) { console.error('[AvatarTiles] Render crash:', error, info) }
-  render() {
-    if (this.state.hasError) {
-      return React.createElement('div', {
-        style: { padding: 20, color: '#EF4444', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, position: 'relative', zIndex: 10, background: '#050A14', width: '100%', height: '100%' }
-      }, `Dashboard Error: ${this.state.error?.message || 'Unknown'}. Try refreshing.`)
-    }
-    return this.props.children
-  }
-}
-
-const AvatarTilesInner = forwardRef(function AvatarTilesInner({
+const AvatarTiles = forwardRef(function AvatarTiles({
   agentStatus = {},
   onRoomClick,
   selectedRoom,
@@ -740,12 +725,6 @@ const AvatarTilesInner = forwardRef(function AvatarTilesInner({
         }}
       />
     </div>
-  )
-})
-
-const AvatarTiles = forwardRef(function AvatarTiles(props, ref) {
-  return React.createElement(AvatarTilesErrorBoundary, null,
-    React.createElement(AvatarTilesInner, { ...props, ref })
   )
 })
 
