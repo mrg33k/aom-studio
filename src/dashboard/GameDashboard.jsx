@@ -12857,6 +12857,8 @@ export default function GameDashboard() {
           transition: 'right 250ms ease, bottom 200ms ease',
           pointerEvents: 'none',
           opacity: 1,
+          // Hide bottom HUD on Board view -- Board has its own filter system
+          display: viewMode === 'board' ? 'none' : 'block',
         }}>
         <div style={{ position: 'relative', width: '100%', height: 0, transform: 'translateZ(0)', pointerEvents: 'auto' }}>
         <Suspense fallback={null}>

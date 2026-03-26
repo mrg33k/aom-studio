@@ -555,8 +555,10 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   const agents = pipeData?.agents || []
   const punchData = pipeData?.punchData || null
 
-  // Filter mode: 'agents' | 'projects'
-  const [filterMode, setFilterMode] = useState('agents')
+  // Filter mode: 'agents' | 'projects' | 'custom'
+  const [filterMode, setFilterMode] = useState(() => {
+    try { return localStorage.getItem('corner-board-filter') || 'agents' } catch { return 'agents' }
+  })
   // Expanded column (desktop)
   const [expandedCol, setExpandedCol] = useState(0)
   // Active column (mobile)
@@ -670,15 +672,16 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   // Drag reorder handlers
   const handleDragDrop = useCallback((targetSlug) => {
     if (!dragSource || dragSource === targetSlug) { setDragSource(null); setDragTarget(null); return }
-    const cols = filterMode === 'agents' ? agentColumns : projectColumns
-    const slugs = cols.map(c => filterMode === 'agents' ? c.agent.slug : c.project.slug)
+    const isAgentMode = filterMode === 'agents' || filterMode === 'custom'
+    const cols = isAgentMode ? agentColumns : projectColumns
+    const slugs = cols.map(c => isAgentMode ? c.agent.slug : c.project.slug)
     const srcIdx = slugs.indexOf(dragSource)
     const tgtIdx = slugs.indexOf(targetSlug)
     if (srcIdx < 0 || tgtIdx < 0) { setDragSource(null); setDragTarget(null); return }
     const newOrder = [...slugs]
     newOrder.splice(srcIdx, 1)
     newOrder.splice(tgtIdx, 0, dragSource)
-    if (filterMode === 'agents') {
+    if (isAgentMode) {
       setAgentOrder(newOrder)
       try { localStorage.setItem('corner-board-agent-order', JSON.stringify(newOrder)) } catch {}
     } else {
@@ -689,7 +692,18 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     setDragTarget(null)
   }, [dragSource, filterMode, agentColumns, projectColumns])
 
-  const currentCols = filterMode === 'agents' ? agentColumns : projectColumns
+  const currentCols = filterMode === 'projects' ? projectColumns : agentColumns
+
+  // Save filter mode on change
+  const switchFilter = (mode) => {
+    setFilterMode(mode)
+    setActiveMobileCol(0)
+    setExpandedCol(0)
+    try { localStorage.setItem('corner-board-filter', mode) } catch {}
+  }
+
+  // Custom view: shows whatever the current drag arrangement is (agents + projects mixed later)
+  // For now: custom = agents view with saved order (the "save my arrangement" mode)
 
   return (
     <div style={{
@@ -699,6 +713,8 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       background: 'var(--bv-bg)',
       overflow: 'hidden',
       transition: 'background 0.4s',
+      // Pad top to clear the fixed TaskHUD top bar
+      paddingTop: isMobile ? 'calc(48px + env(safe-area-inset-top, 0px))' : 52,
     }}>
       <style>{`
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -710,10 +726,10 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         borderBottom: '1px solid var(--bv-divider)',
         background: 'var(--bv-bar2)', flexShrink: 0,
       }}>
-        {['agents', 'projects'].map(mode => (
+        {['agents', 'projects', 'custom'].map(mode => (
           <button
             key={mode}
-            onClick={() => { setFilterMode(mode); setActiveMobileCol(0); setExpandedCol(0) }}
+            onClick={() => switchFilter(mode)}
             style={{
               padding: '5px 14px', borderRadius: 20,
               border: `1.5px solid ${filterMode === mode ? 'var(--bv-accent-border)' : 'var(--bv-col-border)'}`,
@@ -798,7 +814,7 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
         gap: 10, padding: isMobile ? 0 : '12px 16px',
         position: 'relative',
       }}>
-        {filterMode === 'agents' && agentColumns.map((col, idx) => {
+        {(filterMode === 'agents' || filterMode === 'custom') && agentColumns.map((col, idx) => {
           const show = isMobile ? idx === activeMobileCol : true
           if (!show && isMobile) return null
           return (
