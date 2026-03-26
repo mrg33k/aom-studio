@@ -65,7 +65,7 @@ class AvatarTilesErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return React.createElement('div', {
-        style: { padding: 20, color: '#EF4444', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14 }
+        style: { padding: 20, color: '#EF4444', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14, position: 'relative', zIndex: 10, background: '#050A14', width: '100%', height: '100%' }
       }, `Dashboard Error: ${this.state.error?.message || 'Unknown'}. Try refreshing.`)
     }
     return this.props.children
@@ -91,6 +91,8 @@ const AvatarTilesInner = forwardRef(function AvatarTilesInner({
   initialFocusRoom = null,
 }, ref) {
   const rooms = roomsProp && roomsProp.length > 0 ? roomsProp : ALL_ROOMS
+  // Debug: log render to verify component mounts
+  useEffect(() => { console.log('[AvatarTiles] mounted, rooms:', rooms.length, 'isMobile:', isMobile) }, [])
   const allVisible = useMemo(() => rooms.filter(r => !r.hidden), [rooms])
 
   // Ordered tile list (drag-to-reorder). Persists to Supabase preferences.
@@ -404,6 +406,13 @@ const AvatarTilesInner = forwardRef(function AvatarTilesInner({
           50% { box-shadow: 0 0 16px var(--tile-c), 0 0 30px color-mix(in srgb, var(--tile-c) 40%, transparent); }
         }
       `}</style>
+
+      {/* Debug: visible room count */}
+      {visible.length === 0 && (
+        <div style={{ padding: 20, color: '#F59E0B', fontSize: 14, fontFamily: "'Inter', system-ui, sans-serif", textAlign: 'center' }}>
+          No rooms loaded. Rooms prop: {roomsProp ? roomsProp.length : 'null'}, ALL_ROOMS: {ALL_ROOMS.length}
+        </div>
+      )}
 
       {/* ---- SECTION RENDERER ---- */}
       {[
