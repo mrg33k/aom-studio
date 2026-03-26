@@ -4525,7 +4525,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
       paddingTop: isMobile ? 'env(safe-area-inset-top, 0px)' : 0,
       background: isNightMode
         ? 'rgba(15,27,45,0.95)'
-        : 'rgba(15,25,50,0.85)',
+        : 'rgba(14,42,82,0.95)',
     }}>
       {/* Top bar */}
       <div style={{
@@ -4533,7 +4533,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
         transition: 'background 500ms ease, border-color 500ms ease, box-shadow 500ms ease',
         background: isNightMode
           ? 'linear-gradient(180deg, rgba(15,27,45,0.95) 0%, rgba(15,27,45,0.88) 100%)'
-          : 'rgba(15,25,50,0.85)',
+          : 'linear-gradient(180deg, rgba(14,42,82,0.96) 0%, rgba(16,46,90,0.92) 100%)',
         backdropFilter: 'blur(12px)',
         borderBottom: isNightMode
           ? '1px solid rgba(59,130,246,0.15)'
@@ -12789,7 +12789,7 @@ export default function GameDashboard() {
             <div style={{ flex: 1, minWidth: 0, position: 'relative', overflow: 'hidden' }}>
               {/* Game background: clean dark */}
               {currentMode === 'game' && (
-                <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: '#0A0F1A' }} />
+                <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: isNightMode ? '#0A0F1A' : '#0C2244' }} />
               )}
               {/* Avatar Tiles -- premium card grid with Lucide icons. Used on both mobile and desktop. */}
               <AvatarTiles

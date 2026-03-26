@@ -336,7 +336,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
   return (
     <div style={{
       width: '100%', height: '100%', overflow: 'auto', WebkitOverflowScrolling: 'touch',
-      background: '#050A14', padding: '12px',
+      background: isNightMode ? '#050A14' : '#0E2A52', padding: '12px',
     }}>
       <style>{`
         @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
