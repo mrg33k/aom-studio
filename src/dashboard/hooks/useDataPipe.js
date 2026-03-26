@@ -771,8 +771,9 @@ export function useDataPipe(parsePunchList) {
     // Only active where supabase client is configured (production + local with env vars).
     let agentStatusChannel = null
     let eventsChannel = null
+    let tasksChannel = null
     if (supabase) {
-      // agent_status table: existing subscription
+      // agent_status table: any change triggers full refresh (RNB, alive dots, agent status)
       agentStatusChannel = supabase
         .channel('agent-status-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
@@ -780,12 +781,18 @@ export function useDataPipe(parsePunchList) {
         })
         .subscribe()
 
-      // events table: new INSERT subscription -- fires fetchAll immediately when an agent
-      // writes a new event (task_started, task_completed, task_failed, etc.).
-      // This is the primary real-time trigger for Right Now task pills and agent status.
+      // events table: INSERT triggers refresh (task_started/completed -> RNB pills)
       eventsChannel = supabase
         .channel('events-inserts')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, () => {
+          fetchAll()
+        })
+        .subscribe()
+
+      // tasks table: any change triggers refresh (new tasks, status changes -> pills + RNB)
+      tasksChannel = supabase
+        .channel('tasks-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
           fetchAll()
         })
         .subscribe()
@@ -795,6 +802,7 @@ export function useDataPipe(parsePunchList) {
       clearInterval(timer)
       if (agentStatusChannel) supabase.removeChannel(agentStatusChannel)
       if (eventsChannel) supabase.removeChannel(eventsChannel)
+      if (tasksChannel) supabase.removeChannel(tasksChannel)
     }
   }, [fetchAll])
 
