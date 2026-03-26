@@ -92,13 +92,24 @@ const HexGrid = forwardRef(function HexGrid({
   const containerRef = useRef(null)
   const [slotOrder, setSlotOrder] = useState(() => ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug))
   const [dragSlug, setDragSlug] = useState(null)
-  const [dragPos, setDragPos] = useState(null) // { x, y }
+  const [dragGridPos, setDragGridPos] = useState(null) // {row, col} -- snapped grid position while dragging
   const [contextMenu, setContextMenu] = useState(null)
   const [toast, setToast] = useState(null)
   const [hiddenRooms, setHiddenRooms] = useState(new Set())
-  const [islandPos, setIslandPos] = useState({}) // slug -> {x, y} for free-dragged hexes
+  // roomPositions: slug -> {row, col} for custom placements (replaces slot order for positioned rooms)
+  const [roomGridPositions, setRoomGridPositions] = useState(() => {
+    const positions = {}
+    const slugs = ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
+    slugs.forEach((slug, i) => {
+      const { row, col } = getGridPos(i)
+      positions[slug] = { row, col }
+    })
+    return positions
+  })
   const [focusedRoom, setFocusedRoom] = useState(initialFocusRoom || null)
-  const dragStartRef = useRef(null) // { clientX, clientY, offsetX, offsetY }
+  const swapTimerRef = useRef(null) // timer for 3s hold-to-swap
+  const swapTargetRef = useRef(null) // slug being hovered for swap
+  const [swapProgress, setSwapProgress] = useState(null) // { slug, startTime } for visual indicator
   const didDragRef = useRef(false)
 
   const metaRef = useRef({})
@@ -112,9 +123,15 @@ const HexGrid = forwardRef(function HexGrid({
     triggerCelebration: () => {},
     focusRoom: (roomId) => setFocusedRoom(roomId && slotOrder.includes(roomId) ? roomId : null),
     resetLayout: () => {
-      setSlotOrder(ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug))
+      const slugs = ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
+      setSlotOrder(slugs)
       setHiddenRooms(new Set())
-      setIslandPos({})
+      const positions = {}
+      slugs.forEach((slug, i) => {
+        const { row, col } = getGridPos(i)
+        positions[slug] = { row, col }
+      })
+      setRoomGridPositions(positions)
     },
     addRoom: ({ slug, name, color, type = 'agent' }) => {
       if (!slug) return
@@ -128,80 +145,103 @@ const HexGrid = forwardRef(function HexGrid({
     setTimeout(() => setToast(null), 2000)
   }, [])
 
-  // ---- Position map ----
+  // ---- Position map: slug -> pixel {x, y} from grid positions ----
   const visible = slotOrder.filter(s => !hiddenRooms.has(s))
-
+  const occupiedSlots = {} // "row,col" -> slug
   const posMap = {}
-  visible.forEach((slug, i) => {
-    const { row, col } = getGridPos(i)
-    posMap[slug] = gridToPixel(row, col)
+  visible.forEach((slug) => {
+    const gp = roomGridPositions[slug]
+    if (!gp) return
+    posMap[slug] = gridToPixel(gp.row, gp.col)
+    occupiedSlots[`${gp.row},${gp.col}`] = slug
   })
 
   const gridW = LEFT_MARGIN + GRID_COLS * HEX_W + HEX_W
   const gridH = GRID_ROWS * HEX_ROW_H + HEX_H * 0.25 + 40
 
-  // ---- DRAG ----
+  // Find nearest grid slot to a pixel position
+  const pixelToNearestSlot = useCallback((px, py) => {
+    let bestRow = 0, bestCol = 0, bestDist = Infinity
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        const { x, y } = gridToPixel(r, c)
+        const d = Math.hypot(px - x - HEX_W / 2, py - y - HEX_H / 2)
+        if (d < bestDist) { bestDist = d; bestRow = r; bestCol = c }
+      }
+    }
+    return { row: bestRow, col: bestCol }
+  }, [])
+
+  // ---- DRAG: snap-to-grid, 3s hold for swap ----
   const onDown = useCallback((e, slug) => {
     if (e.button === 2) return
-    const rect = containerRef.current?.getBoundingClientRect()
-    if (!rect) return
-    const cx = e.touches ? e.touches[0].clientX : e.clientX
-    const cy = e.touches ? e.touches[0].clientY : e.clientY
-    const pos = posMap[slug]
-    if (!pos) return
     didDragRef.current = false
-    dragStartRef.current = { clientX: cx, clientY: cy, offX: cx - rect.left - pos.x, offY: cy - rect.top - pos.y }
     setDragSlug(slug)
-    setDragPos(pos)
-  }, [posMap])
+    setDragGridPos(roomGridPositions[slug] || null)
+  }, [roomGridPositions])
+
+  const clearSwapTimer = useCallback(() => {
+    if (swapTimerRef.current) { clearTimeout(swapTimerRef.current); swapTimerRef.current = null }
+    swapTargetRef.current = null
+    setSwapProgress(null)
+  }, [])
 
   useEffect(() => {
     if (!dragSlug) return
     const onMove = (e) => {
       const rect = containerRef.current?.getBoundingClientRect()
-      if (!rect || !dragStartRef.current) return
+      if (!rect) return
       const cx = e.touches ? e.touches[0].clientX : e.clientX
       const cy = e.touches ? e.touches[0].clientY : e.clientY
-      const dx = cx - dragStartRef.current.clientX
-      const dy = cy - dragStartRef.current.clientY
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) didDragRef.current = true
-      setDragPos({
-        x: cx - rect.left - dragStartRef.current.offX,
-        y: cy - rect.top - dragStartRef.current.offY,
-      })
-    }
-    const onUp = () => {
-      if (didDragRef.current && dragPos) {
-        let bestSlug = null, bestDist = Infinity
-        for (const [s, p] of Object.entries(posMap)) {
-          if (s === dragSlug) continue
-          const visualP = islandPos[s] || p
-          const d = Math.hypot(dragPos.x - visualP.x, dragPos.y - visualP.y)
-          if (d < bestDist) { bestDist = d; bestSlug = s }
-        }
-        if (bestSlug && bestDist < HEX_W * 0.8) {
-          // Close to another hex -- swap positions
-          setSlotOrder(prev => {
-            const next = [...prev]
-            const a = next.indexOf(dragSlug)
-            const b = next.indexOf(bestSlug)
-            if (a >= 0 && b >= 0) { next[a] = bestSlug; next[b] = dragSlug }
-            return next
-          })
-          setIslandPos(prev => {
-            const next = { ...prev }
-            delete next[dragSlug]
-            delete next[bestSlug]
-            return next
-          })
-        } else if (bestDist > HEX_W) {
-          // Dropped far from all hexes -- park as island
-          setIslandPos(prev => ({ ...prev, [dragSlug]: { x: dragPos.x, y: dragPos.y } }))
+      didDragRef.current = true
+
+      // Find nearest grid slot to cursor
+      const px = cx - rect.left
+      const py = cy - rect.top
+      const nearest = pixelToNearestSlot(px, py)
+      const slotKey = `${nearest.row},${nearest.col}`
+      const occupant = occupiedSlots[slotKey]
+
+      if (!occupant || occupant === dragSlug) {
+        // Empty slot or own slot: snap here immediately
+        setDragGridPos(nearest)
+        clearSwapTimer()
+      } else {
+        // Occupied slot: start 3s swap timer if not already timing this target
+        setDragGridPos(nearest) // visually show we're hovering this slot
+        if (swapTargetRef.current !== occupant) {
+          clearSwapTimer()
+          swapTargetRef.current = occupant
+          setSwapProgress({ slug: occupant, startTime: Date.now() })
+          swapTimerRef.current = setTimeout(() => {
+            // 3s hold complete: swap positions
+            setRoomGridPositions(prev => {
+              const dragGP = prev[dragSlug]
+              const targetGP = prev[occupant]
+              if (!dragGP || !targetGP) return prev
+              return { ...prev, [dragSlug]: targetGP, [occupant]: dragGP }
+            })
+            setDragSlug(null)
+            setDragGridPos(null)
+            clearSwapTimer()
+            showToast('Swapped')
+          }, 3000)
         }
       }
+    }
+    const onUp = () => {
+      if (didDragRef.current && dragGridPos) {
+        const slotKey = `${dragGridPos.row},${dragGridPos.col}`
+        const occupant = occupiedSlots[slotKey]
+        if (!occupant || occupant === dragSlug) {
+          // Drop on empty slot: move here
+          setRoomGridPositions(prev => ({ ...prev, [dragSlug]: { row: dragGridPos.row, col: dragGridPos.col } }))
+        }
+        // If occupied and timer hasn't fired, just return to original position (do nothing)
+      }
       setDragSlug(null)
-      setDragPos(null)
-      dragStartRef.current = null
+      setDragGridPos(null)
+      clearSwapTimer()
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
@@ -213,7 +253,7 @@ const HexGrid = forwardRef(function HexGrid({
       window.removeEventListener('touchmove', onMove)
       window.removeEventListener('touchend', onUp)
     }
-  }, [dragSlug, dragPos, posMap, islandPos])
+  }, [dragSlug, dragGridPos, occupiedSlots, pixelToNearestSlot, clearSwapTimer, showToast])
 
   const handleClick = useCallback((slug) => {
     if (didDragRef.current) return
@@ -252,14 +292,15 @@ const HexGrid = forwardRef(function HexGrid({
     <div
       ref={containerRef}
       style={{
-        width: '100%', height: '100%', position: 'relative', overflow: 'auto',
+        width: '100%', height: '100%', position: 'relative', overflow: 'hidden',
         background: bg, userSelect: 'none', WebkitUserSelect: 'none',
-        touchAction: isMobile ? 'manipulation' : 'pan-x pan-y',
+        touchAction: 'none',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         WebkitTouchCallout: 'none', zIndex: 1,
       }}
       onClick={(e) => { if (e.target === e.currentTarget) { setFocusedRoom(null); setContextMenu(null) } }}
     >
-      <div style={{ position: 'relative', width: gridW, height: gridH, margin: '40px auto', minHeight: '100%' }}>
+      <div style={{ position: 'relative', width: gridW, height: gridH }}>
         {/* SVG subtle hex outlines */}
         <svg style={{ position: 'absolute', inset: 0, width: gridW, height: gridH, pointerEvents: 'none', zIndex: 0 }}>
           {Array.from({ length: GRID_ROWS }, (_, row) =>
@@ -288,9 +329,11 @@ const HexGrid = forwardRef(function HexGrid({
           const isFoc = focusedRoom === slug
           const hasUn = unreadAgents[slug] > 0
           const Icon = AGENT_ICONS[slug] || PROJECT_ICON
-          const island = islandPos[slug]
-          const x = isDrag && dragPos ? dragPos.x : island ? island.x : p.x
-          const y = isDrag && dragPos ? dragPos.y : island ? island.y : p.y
+          const isSwapTarget = swapProgress?.slug === slug
+          // When dragging: snap to grid pos. Otherwise: use assigned grid position.
+          const displayPos = isDrag && dragGridPos ? gridToPixel(dragGridPos.row, dragGridPos.col) : p
+          const x = displayPos.x
+          const y = displayPos.y
 
           return (
             <div
@@ -334,6 +377,17 @@ const HexGrid = forwardRef(function HexGrid({
                 </div>
               )}
 
+              {/* Swap progress indicator (3s hold) */}
+              {isSwapTarget && (
+                <div style={{
+                  position: 'absolute', inset: 0, clipPath: HEX_CLIP, WebkitClipPath: HEX_CLIP,
+                  background: 'rgba(245,158,11,0.15)',
+                  border: '2px solid rgba(245,158,11,0.6)',
+                  pointerEvents: 'none', zIndex: 7,
+                  animation: 'hexSwapFill 3s linear forwards',
+                }} />
+              )}
+
               {/* Focus ring */}
               {(isSel || isFoc) && <div style={{ position: 'absolute', inset: -2, clipPath: HEX_CLIP, WebkitClipPath: HEX_CLIP, border: '2px solid rgba(37,99,235,0.6)', pointerEvents: 'none', zIndex: 6 }} />}
             </div>
@@ -359,10 +413,22 @@ const HexGrid = forwardRef(function HexGrid({
             {hiddenRooms.size > 0 && (
               <CtxItem label={`Show Hidden (${hiddenRooms.size})`} icon="\u25CE" onClick={() => { setHiddenRooms(new Set()); setSlotOrder(ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)); setContextMenu(null); showToast('All rooms restored') }} />
             )}
-            <CtxItem label="Reset Room Order" icon="\u2316" onClick={() => { setSlotOrder(ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)); setHiddenRooms(new Set()); setIslandPos({}); setContextMenu(null); showToast('Layout reset') }} />
+            <CtxItem label="Reset Room Order" icon="\u2316" onClick={() => {
+              const slugs = ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
+              setSlotOrder(slugs)
+              setHiddenRooms(new Set())
+              const positions = {}
+              slugs.forEach((s, i) => { const g = getGridPos(i); positions[s] = { row: g.row, col: g.col } })
+              setRoomGridPositions(positions)
+              setContextMenu(null)
+              showToast('Layout reset')
+            }} />
           </div>
         )}
       </div>
+
+      {/* Swap animation keyframe */}
+      <style>{`@keyframes hexSwapFill { 0% { opacity: 0.2; } 100% { opacity: 0.8; } }`}</style>
 
       {/* Toast */}
       {toast && (
