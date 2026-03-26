@@ -12223,6 +12223,70 @@ export default function GameDashboard() {
     setAtMenuFilter('')
     let text = textOverride || panelChatInput?.trim()
     if (!text || panelStreaming) return
+
+    // DOT-PREFIX TASK CREATION: ".fix the nav bug" creates a task instead of sending a message
+    if (text.startsWith('.') && text.length > 1) {
+      const taskText = text.slice(1).trim()
+      if (taskText) {
+        setPanelChatInput('')
+        const agent = selectedRoom
+        const clientId = getClientId()
+        // Optimistic UI: show task creation confirmation in chat
+        setAgentChats(prev => {
+          const current = prev[agent]?._all || []
+          const taskMsg = {
+            id: `task-${Date.now()}`,
+            role: 'user',
+            content: `📋 Task created: ${taskText}`,
+            time: new Date().toISOString(),
+            source: 'task-creation',
+          }
+          return { ...prev, [agent]: { _all: [...current, taskMsg] } }
+        })
+        // Create task in Supabase via API
+        try {
+          await fetch('/api/dashboard/supabase-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              agent,
+              text: taskText,
+              role: 'user',
+              source: 'corner-dashboard-task',
+              client_id: clientId,
+              is_task: true,
+            }),
+          })
+          // Also create a row in the tasks table
+          const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+          const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+          if (SUPABASE_URL && SUPABASE_KEY) {
+            await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify({
+                agent,
+                text: taskText,
+                status: 'queued',
+                client_id: clientId,
+                created_at: new Date().toISOString(),
+              }),
+            })
+          }
+          // Refetch pipeline data so RNB picks up the new task
+          pipeData?.refetch?.()
+        } catch (err) {
+          console.error('[Corner] Task creation failed:', err)
+        }
+        return
+      }
+    }
+
     // @ prefix routing: "@bobby fix the nav" switches to Bobby, sends "fix the nav"
     const atPrefixMatch = text.match(/^@(\S+)\s*(.*)$/)
     if (atPrefixMatch) {
