@@ -8835,8 +8835,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
   // Confirmation box minimize toggle -- collapses to slim bar, resets on agent switch or task count drops
   // Mobile default: start EXPANDED (false) so Approve/Deny buttons are immediately tappable.
   // marginTop:auto previously pushed card behind MobileFixedInput -- now card sits naturally in flow.
-  const [confirmMinimized, setConfirmMinimized] = useState(false)
-  useEffect(() => { setConfirmMinimized(false) }, [agentSlug, confirmDoneCount]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [confirmMinimized, setConfirmMinimized] = useState(true)
+  // Reset index on agent switch but keep minimized state (Patrik: always minimized by default)
   // Track which task is currently animating the approve glow+fade (keyed by taskId or text)
   const [approvingTaskId, setApprovingTaskId] = useState(null)
   // Track which task is currently animating the deny/reject red glow+fade
@@ -10109,19 +10109,19 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 onClick={() => setConfirmMinimized(false)}
               >
                 <div style={{
-                  width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                  background: '#3B82F6',
-                  boxShadow: '0 0 6px #3B82F6, 0 0 12px rgba(59,130,246,0.4)',
-                  animation: 'vegasTypingBounce 2s ease-in-out',
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: '#22C55E',
+                  boxShadow: '0 0 6px #22C55E, 0 0 12px rgba(34,197,94,0.4)',
+                  animation: 'livePulse 1.5s ease-in-out infinite',
                   willChange: 'transform, opacity',
                 }} />
                 <span style={{
-                  fontSize: 12, fontWeight: 700, color: isDaytime ? '#3B82F6' : '#60A5FA',
+                  fontSize: 12, fontWeight: 700, color: '#22C55E',
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.08em', textTransform: 'uppercase', flex: 1,
                 }}>TASK COMPLETE{total > 1 ? ` (${total})` : ''}</span>
                 {/* Expand chevron */}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDaytime ? '#3B82F6' : '#60A5FA'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="18 15 12 9 6 15" />
                 </svg>
               </motion.div>
