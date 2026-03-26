@@ -376,11 +376,14 @@ const AvatarTiles = forwardRef(function AvatarTiles({
             </span>
           </div>
 
-          {/* Tile grid (horizontal scroll on mobile for top section) */}
+          {/* Tile grid -- horizontal scroll on mobile when 3+ tiles, grid otherwise */}
+          {(() => {
+            const useHScroll = isMobile && section.items.length > 2
+            return (
           <div style={{
-            display: section.horizontal ? 'flex' : 'grid',
-            ...(section.horizontal
-              ? { gap: 10, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: 4, scrollbarWidth: 'none' }
+            display: useHScroll ? 'flex' : 'grid',
+            ...(useHScroll
+              ? { gap: 10, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: 4, scrollbarWidth: 'none', msOverflowStyle: 'none' }
               : { gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(200px, 1fr))', gap: isMobile ? 10 : 14 }
             ),
             position: 'relative', zIndex: 1,
@@ -420,8 +423,8 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                     borderRadius: 20, overflow: 'hidden', position: 'relative',
                     cursor: isDragging ? 'grabbing' : 'grab',
                     opacity: isDragging ? 0.5 : 1,
-                    ...(section.horizontal
-                      ? { minWidth: isMobile ? 140 : 180, minHeight: isMobile ? 120 : 150, flexShrink: 0 }
+                    ...(useHScroll
+                      ? { minWidth: 155, minHeight: 120, flexShrink: 0 }
                       : { minHeight: isMobile ? 140 : 180 }
                     ),
                     outline: isDropTarget ? '2px dashed rgba(96,165,250,0.6)' : 'none', outlineOffset: -2,
@@ -444,7 +447,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.6))', pointerEvents: 'none' }} />
                   <div style={{ position: 'absolute', top: '-30%', right: '-30%', width: '80%', height: '80%', background: `radial-gradient(circle, color-mix(in srgb, ${color} 20%, transparent), transparent 70%)`, pointerEvents: 'none' }} />
                   <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)', pointerEvents: 'none', opacity: active ? 0.15 : 0.08, transition: 'opacity 0.3s ease' }}>
-                    <Icon size={section.horizontal ? (isMobile ? 48 : 64) : (isMobile ? 56 : 72)} strokeWidth={1.2} style={{ color: '#fff' }} />
+                    <Icon size={useHScroll ? (isMobile ? 48 : 64) : (isMobile ? 56 : 72)} strokeWidth={1.2} style={{ color: '#fff' }} />
                   </div>
                   {(active || hasUnread) && (
                     <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', alignItems: 'center', gap: 5, zIndex: 2 }}>
@@ -453,7 +456,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                     </div>
                   )}
                   <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div style={{ fontSize: section.horizontal ? (isMobile ? 15 : 18) : (isMobile ? 18 : 20), fontWeight: 800, color: '#EDF2FA', letterSpacing: '-0.01em', fontFamily: "'Inter', system-ui, sans-serif", textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>{name}</div>
+                    <div style={{ fontSize: useHScroll ? (isMobile ? 15 : 18) : (isMobile ? 18 : 20), fontWeight: 800, color: '#EDF2FA', letterSpacing: '-0.01em', fontFamily: "'Inter', system-ui, sans-serif", textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>{name}</div>
                     <div style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: color, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2, fontFamily: "'Inter', system-ui, sans-serif", textShadow: `0 0 12px ${color}40` }}>{room.role || room.type || ''}</div>
                   </div>
                   {isSel && <div style={{ position: 'absolute', inset: -1, borderRadius: 21, border: `2px solid ${color}`, boxShadow: `0 0 20px ${color}60, inset 0 0 20px ${color}15`, pointerEvents: 'none', zIndex: 3 }} />}
@@ -461,6 +464,8 @@ const AvatarTiles = forwardRef(function AvatarTiles({
               )
             })}
           </div>
+            )
+          })()}
         </div>
       ))}
 
