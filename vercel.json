@@ -40,6 +40,7 @@
     { "source": "/login", "destination": "/index.html" },
     { "source": "/settings", "destination": "/index.html" },
     { "source": "/onboarding", "destination": "/index.html" },
-    { "source": "/onboarding/:path*", "destination": "/index.html" }
+    { "source": "/onboarding/:path*", "destination": "/index.html" },
+    { "source": "/finance", "destination": "/index.html" }
   ]
 }

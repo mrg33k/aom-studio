@@ -5,7 +5,8 @@ import {
   Linkedin, Search, FileText, CheckCircle2, MessageSquare,
   ChevronDown, ChevronUp, ExternalLink, Crosshair, Shield,
   TrendingUp, Eye, MousePointer, Printer, Users, BarChart3,
-  Clock, Play, Pause, DollarSign
+  Clock, Play, Pause, DollarSign, Mic, Globe, Mail,
+  Activity, UserPlus, ThumbsUp, FileBarChart
 } from 'lucide-react';
 
 function useSEO() {
@@ -48,41 +49,59 @@ const red = {
 };
 
 function RedBar() {
-  return <div className="w-12 h-[2px] bg-red-500 mb-4" />;
+  return <div className="w-12 h-[2px] bg-[#0a0e2a] mb-4" />;
 }
 
-function SectionKicker({ children }) {
-  return <p className="text-xs font-body font-medium uppercase tracking-[0.2em] text-gray-400 mb-4">{children}</p>;
-}
-
-function PartDivider({ part, title }) {
+function SectionBadge({ children }) {
   return (
-    <div style={{ background: navy[950] }} className="py-20 border-y border-white/5">
-      <div className="max-w-5xl mx-auto px-6 text-center">
+    <span className="inline-block text-[10px] font-heading font-bold uppercase tracking-[0.2em] text-[#0a0e2a]/50 border border-[#0a0e2a]/20 rounded-full px-4 py-1.5 mb-4">
+      {children}
+    </span>
+  );
+}
+
+function PartDivider({ id, part, title, ghostNum }) {
+  return (
+    <div id={id} style={{ background: navy[950] }} className="relative py-28 border-y border-gray-200 scroll-mt-8 overflow-hidden">
+      <div className="absolute inset-0" style={{
+        backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px)',
+      }} />
+      {ghostNum && (
+        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none"
+          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 'clamp(200px, 30vw, 400px)', fontWeight: 800, color: 'rgba(255,255,255,0.03)', lineHeight: 1 }}>
+          {ghostNum}
+        </span>
+      )}
+      <div className="relative max-w-5xl mx-auto px-6 text-center">
         <motion.p {...fadeUp()} className="text-red-500 text-sm font-body font-medium uppercase tracking-[0.3em] mb-3">{part}</motion.p>
-        <motion.h2 {...fadeUp(0.1)} className="text-4xl md:text-5xl font-heading font-bold text-white">{title}</motion.h2>
+        <motion.h2 {...fadeUp(0.1)} className="text-4xl md:text-5xl font-heading font-black text-white uppercase tracking-wide">{title}</motion.h2>
+        <div className="w-16 h-1 bg-red-500 mx-auto mt-6" />
       </div>
     </div>
   );
 }
 
-function Expandable({ title, children, defaultOpen = false }) {
+function Expandable({ number, title, icon: Icon, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-white/10 rounded-lg overflow-hidden mb-4" style={{ background: navy[800] }}>
+    <div className="border border-gray-200 border-l-4 border-l-[#0a0e2a] rounded-2xl overflow-hidden mb-3 bg-white shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 transition-colors text-left"
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left"
       >
-        <span className="font-heading font-semibold text-white text-base">{title}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[#0a0e2a]/10 font-heading font-black text-3xl">{number}</span>
+          {Icon && <Icon size={18} className="text-[#0a0e2a]" />}
+          <span className="font-heading font-semibold text-[#0a0e2a] text-base">{title}</span>
+        </div>
         {open ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
       </button>
-      {open && <div className="px-5 py-5 border-t border-white/5">{children}</div>}
+      {open && <div className="px-5 py-5 border-t border-gray-100 bg-gray-50/50">{children}</div>}
     </div>
   );
 }
 
-/* ─── DATA ─── */
+/* --- DATA --- */
 
 const gcHitList = [
   { company: 'Willmeng Construction', person: 'Keyvan Ghahreman', title: 'VP, Operational Excellence', linkedin: 'https://www.linkedin.com/in/keyvan-ghahreman/', builds: 'Commercial, healthcare, higher ed, tenant improvement', talking: 'Employee-owned, 100% ESOP. Reference ASU projects or Banner Health Campus.' },
@@ -252,88 +271,125 @@ const aomCommitments = [
 ];
 
 
-/* ─── COMPONENTS ─── */
+/* --- COMPONENTS --- */
 
 function HitListTable({ data, type }) {
   const isGC = type === 'gc';
   return (
-    <div className="overflow-x-auto -mx-2">
-      <table className="w-full text-left text-[15px] min-w-[900px]">
-        <thead>
-          <tr className="border-b-2 border-red-500/30">
-            <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Company</th>
-            <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">{isGC ? 'What They Build' : 'What They Manage'}</th>
-            <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Talking Point</th>
-            <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Decision Maker & Title</th>
-            <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm w-24">LinkedIn</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className={`border-b border-white/5 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
-              <td className="py-3 px-3 font-semibold text-white whitespace-nowrap text-[14px]">{row.company}</td>
-              <td className="py-3 px-3 text-gray-300 text-[13px]">{isGC ? row.builds : row.manages}</td>
-              <td className="py-3 px-3 text-[13px] text-gray-400 italic">{row.talking}</td>
-              <td className="py-3 px-3 text-[14px]">
-                <span className="text-white">{row.person}</span>
-                <br />
-                <span className="text-gray-500 text-[12px]">{row.title}</span>
-              </td>
-              <td className="py-3 px-3 text-center">
-                {row.linkedin ? (
-                  <a href={row.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 px-3 py-1.5 rounded text-xs font-medium transition-colors">
-                    <ExternalLink size={12} /> View
-                  </a>
-                ) : (
-                  <span className="text-gray-600 text-xs">Needs research</span>
-                )}
-              </td>
+    <div className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-[15px] min-w-[900px]">
+          <thead>
+            <tr className="bg-[#0a0e2a]">
+              <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Company</th>
+              <th className="py-3 px-3 font-heading font-semibold text-white text-sm">{isGC ? 'What They Build' : 'What They Manage'}</th>
+              <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Talking Point</th>
+              <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Decision Maker & Title</th>
+              <th className="py-3 px-3 font-heading font-semibold text-white text-sm w-24">LinkedIn</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((row, i) => (
+              <tr key={i} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                <td className="py-3 px-3 font-semibold text-[#0a0e2a] whitespace-nowrap text-[14px]">{row.company}</td>
+                <td className="py-3 px-3 text-gray-600 text-[13px]">{isGC ? row.builds : row.manages}</td>
+                <td className="py-3 px-3 text-[13px] text-gray-500 italic">{row.talking}</td>
+                <td className="py-3 px-3 text-[14px]">
+                  <span className="text-[#0a0e2a] font-medium">{row.person}</span>
+                  <br />
+                  <span className="text-gray-400 text-[12px]">{row.title}</span>
+                </td>
+                <td className="py-3 px-3 text-center">
+                  {row.linkedin ? (
+                    <a href={row.linkedin} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                      <ExternalLink size={12} /> View
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 text-xs">Needs research</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 
-/* ─── MAIN PAGE ─── */
+/* --- MAIN PAGE --- */
 
 export default function BriefAmbitionStrategy() {
   useSEO();
 
   return (
-    <div className="min-h-screen text-gray-200" style={{ background: navy[900] }}>
+    <div className="min-h-screen bg-white">
 
-      {/* ── HERO ── */}
+      {/* == HERO (Navy - the ONE dark section) == */}
       <div className="relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${navy[950]}, ${navy[800]}, ${navy[950]})` }}>
+        {/* Thin red bar at top */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 z-10" />
+        {/* Diagonal line texture */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px)',
+        }} />
+        {/* Ghost BD watermark */}
+        <span className="absolute top-1/2 right-[5%] -translate-y-1/2 pointer-events-none select-none"
+          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 'clamp(200px, 30vw, 400px)', fontWeight: 800, color: 'rgba(255,255,255,0.03)', lineHeight: 1 }}>
+          BD
+        </span>
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
 
-        <div className="relative max-w-5xl mx-auto px-6 pt-12 pb-20">
+        <div className="relative max-w-5xl mx-auto px-6 pt-20 pb-28 md:pt-28 md:pb-36">
           <motion.a {...fadeUp()} href="/briefs" className="inline-flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors text-sm mb-12">
             <ArrowLeft size={16} /> All Briefs
           </motion.a>
 
-          <motion.div {...fadeUp(0.1)} className="mb-6">
-            <span className="text-red-500 text-xs font-body font-medium uppercase tracking-[0.3em]">Ambition Mechanical x AOM</span>
+          <motion.div {...fadeUp(0.1)} className="mb-2">
+            <span className="text-white/40 text-xs font-body font-medium uppercase tracking-[0.3em]">Ambition Mechanical x AOM</span>
           </motion.div>
 
-          <motion.h1 {...fadeUp(0.2)} className="text-4xl md:text-6xl font-heading font-bold text-white leading-[1.1] mb-6">
-            Market Strategy &<br />Business Development<br />Playbook
+          <motion.h1 {...fadeUp(0.15)} className="text-7xl md:text-[10rem] font-heading font-black leading-[0.95] mb-4 tracking-tight"
+            style={{ color: '#dc2626', textShadow: '0 0 80px rgba(220,38,38,0.3)' }}>
+            AMBITION
           </motion.h1>
 
-          <motion.p {...fadeUp(0.3)} className="text-lg md:text-xl text-white/60 max-w-2xl leading-relaxed mb-10 font-body">
-            Built from our March 21 strategy session. Everything discussed, organized, researched, and ready to execute.
+          <motion.p {...fadeUp(0.2)} className="text-sm md:text-base font-heading font-semibold text-white/50 mb-4 uppercase tracking-[0.25em]">
+            Business Development Playbook
           </motion.p>
 
-          <motion.div {...fadeUp(0.4)} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <motion.p {...fadeUp(0.25)} className="text-base md:text-lg text-white/50 max-w-2xl leading-relaxed mb-10 font-body">
+            Built from our March 21 strategy session. Everything we discussed, organized, researched, and ready to execute.
+          </motion.p>
+
+          {/* Two navigation cards */}
+          <motion.div {...fadeUp(0.3)} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 max-w-xl">
+            <a
+              href="#meeting-recap"
+              className="group bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/40 rounded-xl px-6 py-5 transition-all"
+            >
+              <p className="text-white font-heading font-bold text-lg mb-1">Meeting Recap</p>
+              <p className="text-white/40 text-sm font-body group-hover:text-white/60 transition-colors">What we discussed and committed to</p>
+            </a>
+            <a
+              href="#playbook"
+              className="group bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 hover:border-red-500/50 rounded-xl px-6 py-5 transition-all"
+            >
+              <p className="text-white font-heading font-bold text-lg mb-1">The Playbook</p>
+              <p className="text-white/40 text-sm font-body group-hover:text-white/60 transition-colors">Events, contacts, strategies, intel</p>
+            </a>
+          </motion.div>
+
+          {/* Stat boxes */}
+          <motion.div {...fadeUp(0.35)} className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { n: '27', l: 'GC Contacts' },
               { n: '15', l: 'PM Contacts' },
               { n: '12', l: 'Events Mapped' },
               { n: '8', l: 'Competitors Scanned' },
             ].map((s, i) => (
-              <div key={i} className="bg-white/5 border border-white/10 rounded-lg px-5 py-4 text-center">
+              <div key={i} className="backdrop-blur-sm bg-white/[0.07] border border-white/[0.12] rounded-xl px-5 py-4 text-center">
                 <p className="text-2xl md:text-3xl font-heading font-bold text-red-500">{s.n}</p>
                 <p className="text-white/50 text-sm font-body mt-1">{s.l}</p>
               </div>
@@ -342,473 +398,74 @@ export default function BriefAmbitionStrategy() {
         </div>
       </div>
 
-      {/* ── WHY THIS MATTERS ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[800] }}>
+      {/* == WHY THIS MATTERS (Light) == */}
+      <section className="py-16 md:py-20 bg-slate-50">
         <div className="max-w-5xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>The Opportunity</SectionKicker>
+          <motion.div {...fadeUp()} className="relative">
+            <SectionBadge>The Opportunity</SectionBadge>
             <RedBar />
             <div className="flex items-center gap-3 mb-3">
-              <Zap size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">Why This Matters</h2>
+              <Zap size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">Why This Matters</h2>
             </div>
           </motion.div>
 
           <motion.div {...fadeUp(0.1)} className="grid md:grid-cols-3 gap-6 mt-8">
-            <div className="rounded-lg p-6 border border-white/10" style={{ background: navy[700] }}>
-              <p className="text-3xl font-heading font-bold text-red-500 mb-2">$205B+</p>
-              <p className="text-white font-semibold mb-2">Phoenix Construction Boom</p>
-              <p className="text-gray-400 text-[15px] leading-relaxed">Semiconductor investment alone through end of decade. TSMC, KoMiCo, data centers, infrastructure. Every one of these projects needs mechanical contractors.</p>
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-500 to-red-400 rounded-t-2xl" />
+              <p className="text-3xl font-heading font-bold text-[#0a0e2a] mb-2">$205B+</p>
+              <p className="text-[#0a0e2a] font-semibold mb-2">Phoenix Construction Boom</p>
+              <p className="text-gray-600 text-[15px] leading-relaxed">Semiconductor investment alone through end of decade. TSMC, KoMiCo, data centers, infrastructure. Every one of these projects needs mechanical contractors.</p>
             </div>
-            <div className="rounded-lg p-6 border border-white/10" style={{ background: navy[700] }}>
-              <p className="text-3xl font-heading font-bold text-red-500 mb-2">71%</p>
-              <p className="text-white font-semibold mb-2">Generational Shift</p>
-              <p className="text-gray-400 text-[15px] leading-relaxed">Millennials and Gen Z now make up 71% of the construction workforce. They evaluate subs on LinkedIn, not at the golf course. Digital presence is now a buying signal.</p>
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-500 to-red-400 rounded-t-2xl" />
+              <p className="text-3xl font-heading font-bold text-[#0a0e2a] mb-2">71%</p>
+              <p className="text-[#0a0e2a] font-semibold mb-2">Generational Shift</p>
+              <p className="text-gray-600 text-[15px] leading-relaxed">Millennials and Gen Z now make up 71% of the construction workforce. They evaluate subs on LinkedIn, not at the golf course. Digital presence is now a buying signal.</p>
             </div>
-            <div className="rounded-lg p-6 border border-white/10" style={{ background: navy[700] }}>
-              <p className="text-3xl font-heading font-bold text-red-500 mb-2">0</p>
-              <p className="text-white font-semibold mb-2">Competitors Doing This</p>
-              <p className="text-gray-400 text-[15px] leading-relaxed">Nobody in Phoenix commercial mechanical is doing real content marketing. Climatec posts corporate updates. Everyone else is invisible. Ambition has first-mover advantage in a $39B+ market.</p>
+            <div className="relative overflow-hidden rounded-2xl p-6 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-red-500 to-red-400 rounded-t-2xl" />
+              <p className="text-3xl font-heading font-bold text-[#0a0e2a] mb-2">0</p>
+              <p className="text-[#0a0e2a] font-semibold mb-2">Competitors Doing This</p>
+              <p className="text-gray-600 text-[15px] leading-relaxed">Nobody in Phoenix commercial mechanical is doing real content marketing. Climatec posts corporate updates. Everyone else is invisible. Ambition has first-mover advantage in a $39B+ market.</p>
             </div>
           </motion.div>
 
-          <motion.p {...fadeUp(0.2)} className="text-gray-300 text-[16px] leading-relaxed mt-8 max-w-3xl">
+          <motion.p {...fadeUp(0.2)} className="text-gray-600 text-[16px] leading-relaxed mt-8 max-w-3xl">
             The assistant PM who is 28 years old and making her first vendor recommendation does not have a Rolodex. She has LinkedIn and Google. If Ambition shows up there with case studies, technical knowledge, and a professional brand, you are on her shortlist. If you do not show up there, you do not exist to her.
           </motion.p>
         </div>
       </section>
 
-      {/* ── PART 1 DIVIDER ── */}
-      <PartDivider part="Part 1" title="The War Room" />
+      {/* ========================================= */}
+      {/* PART 1: MEETING RECAP                     */}
+      {/* ========================================= */}
+      <PartDivider id="meeting-recap" part="Part 1" title="Meeting Recap" ghostNum="1" />
 
-      {/* War Room Intro */}
-      <section className="py-8" style={{ background: navy[900] }}>
+      {/* Recap Intro */}
+      <section className="py-8 bg-white">
         <div className="max-w-5xl mx-auto px-6">
-          <motion.p {...fadeUp()} className="text-gray-400 text-[16px] leading-relaxed border-l-2 border-red-500/40 pl-6">
-            This section is built for Ambition's internal team to align your sales and business development goals based on what we discussed in our March 21 strategy session. Every section below is actionable. Names, companies, strategies, events. Ready to work.
+          <motion.p {...fadeUp()} className="text-gray-500 text-[16px] leading-relaxed border-l-2 border-red-500/40 pl-6">
+            Everything from the March 21 strategy session with Eric, Mo, and Patrik. Key decisions, commitments, LinkedIn strategy, reporting, pricing, and next steps.
           </motion.p>
         </div>
       </section>
 
-      {/* ── 1. GC HIT LIST ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[900] }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>Section 1</SectionKicker>
-            <RedBar />
-            <div className="flex items-center gap-3 mb-3">
-              <Crosshair size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">GC Hit List</h2>
-            </div>
-            <p className="text-gray-400 text-lg mb-8 max-w-3xl font-body">
-              We researched every major GC in Phoenix metro, identified decision-makers, and mapped them to your capabilities. This is your prospecting list, ready to work.
-            </p>
-          </motion.div>
-          <motion.div {...fadeUp(0.1)}>
-            <HitListTable data={gcHitList} type="gc" />
-          </motion.div>
-          <motion.p {...fadeUp(0.15)} className="text-sm text-gray-500 mt-4">
-            25 contacts across 17 companies. "TBD" items: search "[Name] [Company] Phoenix" on LinkedIn to find and connect.
-          </motion.p>
-        </div>
-      </section>
-
-      {/* ── 2. PM HIT LIST ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[800] }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>Section 2</SectionKicker>
-            <RedBar />
-            <div className="flex items-center gap-3 mb-3">
-              <Building2 size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">Property Management Hit List</h2>
-            </div>
-            <p className="text-gray-400 text-lg mb-8 max-w-3xl font-body">
-              Property management is a different angle for revenue. These firms hire mechanical subs for ongoing maintenance, retrofits, and 24/7 emergency service. The play: Ambition becomes their go-to mechanical partner for their entire portfolio. One relationship here equals recurring revenue for years.
-            </p>
-          </motion.div>
-          <motion.div {...fadeUp(0.1)}>
-            <HitListTable data={pmHitList} type="pm" />
-          </motion.div>
-          <motion.p {...fadeUp(0.15)} className="text-sm text-gray-500 mt-4">
-            15 contacts across 11 firms covering medical office, commercial, industrial, and Class A portfolios.
-          </motion.p>
-        </div>
-      </section>
-
-      {/* ── 3. OUTREACH STRATEGIES ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[900] }}>
+      {/* 1. What Was Discussed */}
+      <section className="py-16 md:py-20 bg-white">
         <div className="max-w-5xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>Section 3</SectionKicker>
+          <motion.div {...fadeUp()} className="mb-16 relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              01
+            </span>
+            <SectionBadge>Section 1</SectionBadge>
             <RedBar />
             <div className="flex items-center gap-3 mb-3">
-              <Target size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">8 Outreach Strategies</h2>
+              <MessageSquare size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">What Was Discussed</h2>
             </div>
-            <p className="text-gray-400 text-lg mb-8 max-w-3xl font-body">
-              These are not email templates. These are strategic plays. Each one is designed to put Ambition in front of the right people at the right time with the right proof.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-5">
-            {outreachStrategies.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <motion.div key={i} {...fadeUp(i * 0.05)} className="rounded-lg p-6 border border-white/10 hover:border-red-500/30 transition-colors" style={{ background: navy[800] }}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-red-500 font-heading font-bold text-sm">{s.num}</span>
-                    <Icon size={18} className="text-red-400" />
-                    <h4 className="font-heading font-bold text-white text-[16px]">{s.title}</h4>
-                  </div>
-                  <p className="text-gray-300 text-[15px] leading-relaxed mb-3">{s.desc}</p>
-                  <p className="text-gray-500 text-[14px] leading-relaxed">{s.detail}</p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 4. LINKEDIN PLAYBOOK ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[800] }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>Section 4</SectionKicker>
-            <RedBar />
-            <div className="flex items-center gap-3 mb-3">
-              <Linkedin size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">LinkedIn Playbook</h2>
-            </div>
-            <p className="text-gray-400 text-lg mb-8 max-w-3xl font-body">
-              LinkedIn is the primary channel. 75% of effort goes here. GC project managers, property managers, and facility directors live on LinkedIn. AOM handles connection outreach and engagement on your behalf.
-            </p>
-          </motion.div>
-
-          {/* Strategy Overview */}
-          <motion.div {...fadeUp(0.1)} className="mb-10">
-            <h3 className="text-xl font-heading font-bold text-white mb-4">What AOM Is Doing</h3>
-            <div className="grid md:grid-cols-3 gap-4">
-              {[
-                { phase: 'Phase 1: Build (Weeks 1-4)', desc: 'Connect with all BOMA, IREM, IFMA chapter members. Connect with PMs and estimators at top 20 GCs. Target: 200+ new connections in Month 1.' },
-                { phase: 'Phase 2: Engage (Weeks 2-8)', desc: 'Comment on every post from target GCs and PM firms. Share and tag their project announcements. No pitching. Add value. Be visible.' },
-                { phase: 'Phase 3: Convert (Weeks 4-12)', desc: 'Personalized messages referencing specific projects. Share matching case studies. Invite to site tours or lunch-and-learns.' },
-              ].map((p, i) => (
-                <div key={i} className="rounded-lg p-5 border border-white/10" style={{ background: navy[700] }}>
-                  <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-2">{p.phase}</p>
-                  <p className="text-gray-300 text-[14px] leading-relaxed">{p.desc}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Post Ideas */}
-          <motion.div {...fadeUp(0.15)} className="mb-10">
-            <h3 className="text-xl font-heading font-bold text-white mb-4">Post Ideas for Mo</h3>
-            <div className="grid md:grid-cols-3 gap-4">
-              {linkedinPostIdeas.map((p, i) => (
-                <div key={i} className="rounded-lg p-5 border border-white/10" style={{ background: navy[700] }}>
-                  <p className="font-heading font-semibold text-white mb-2">{p.title}</p>
-                  <p className="text-[14px] text-gray-400 leading-relaxed">{p.desc}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Groups */}
-          <motion.div {...fadeUp(0.2)}>
-            <h3 className="text-xl font-heading font-bold text-white mb-4">10 Groups to Join</h3>
-            <div className="rounded-lg border border-white/10 overflow-hidden" style={{ background: navy[700] }}>
-              {linkedinGroups.map((g, i) => (
-                <div key={i} className={`flex items-center gap-4 px-5 py-3.5 ${i < linkedinGroups.length - 1 ? 'border-b border-white/5' : ''}`}>
-                  <span className="text-red-500 font-heading font-bold text-sm w-6">{i + 1}</span>
-                  <div>
-                    <span className="text-[15px] text-white">{g.name}</span>
-                    <span className="text-gray-500 text-[13px] ml-3">{g.why}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── 5. EVENTS CALENDAR ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[900] }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>Section 5</SectionKicker>
-            <RedBar />
-            <div className="flex items-center gap-3 mb-3">
-              <Calendar size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">Events Calendar</h2>
-            </div>
-            <p className="text-gray-400 text-lg mb-2 max-w-3xl font-body">
-              Where to show up and who you will meet. Register for the first 5 this week.
-            </p>
-          </motion.div>
-
-          <motion.div {...fadeUp(0.1)} className="overflow-x-auto -mx-2 mt-6">
-            <table className="w-full text-left text-[14px] min-w-[850px]">
-              <thead>
-                <tr className="border-b-2 border-red-500/30">
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Event</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Date</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Location</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Who Attends</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Why It Matters</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm w-20">Link</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map((e, i) => (
-                  <tr key={i} className={`border-b border-white/5 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
-                    <td className="py-3 px-3 font-semibold text-white">{e.event}</td>
-                    <td className="py-3 px-3 text-gray-300 whitespace-nowrap">{e.date}</td>
-                    <td className="py-3 px-3 text-gray-400">{e.location}</td>
-                    <td className="py-3 px-3 text-gray-400">{e.who}</td>
-                    <td className="py-3 px-3 text-gray-500 italic">{e.why}</td>
-                    <td className="py-3 px-3 text-center">
-                      {e.link ? (
-                        <a href={e.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-red-400 hover:text-red-300 text-xs font-medium transition-colors">
-                          <ExternalLink size={12} />
-                        </a>
-                      ) : (
-                        <span className="text-gray-600 text-xs">TBD</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── 6. COMPETITOR INTEL ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[800] }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>Section 6</SectionKicker>
-            <RedBar />
-            <div className="flex items-center gap-3 mb-3">
-              <Search size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">Competitor Intel</h2>
-            </div>
-            <p className="text-gray-400 text-lg mb-8 max-w-3xl font-body">
-              Who else is marketing to these same targets, and where they are falling short.
-            </p>
-          </motion.div>
-
-          {/* Competitor comparison grid */}
-          <motion.div {...fadeUp(0.1)} className="overflow-x-auto -mx-2 mb-8">
-            <table className="w-full text-left text-[14px] min-w-[700px]">
-              <thead>
-                <tr className="border-b-2 border-red-500/30">
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Competitor</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Type</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">LinkedIn</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">What They Do</th>
-                  <th className="py-3 px-3 font-heading font-semibold text-red-400 text-sm">Ambition's Edge</th>
-                </tr>
-              </thead>
-              <tbody>
-                {competitors.map((c, i) => (
-                  <tr key={i} className={`border-b border-white/5 ${i % 2 === 0 ? '' : 'bg-white/[0.02]'}`}>
-                    <td className="py-3 px-3 font-semibold text-white whitespace-nowrap">{c.name}</td>
-                    <td className="py-3 px-3">
-                      <span className={`text-xs px-2 py-1 rounded font-medium ${
-                        c.category === 'Corporate Giant' ? 'bg-blue-500/10 text-blue-400' :
-                        c.category === 'PE-Backed' ? 'bg-purple-500/10 text-purple-400' :
-                        c.category === 'Direct Competitor' ? 'bg-yellow-500/10 text-yellow-400' :
-                        c.category === 'Residential' ? 'bg-green-500/10 text-green-400' :
-                        'bg-gray-500/10 text-gray-400'
-                      }`}>{c.category}</span>
-                    </td>
-                    <td className="py-3 px-3 text-gray-400">{c.followers}</td>
-                    <td className="py-3 px-3 text-gray-400 text-[13px]">{c.doing}</td>
-                    <td className="py-3 px-3 text-red-400 font-medium text-[13px]">{c.gap}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
-
-          <motion.div {...fadeUp(0.2)} className="rounded-lg p-6 border border-red-500/20" style={{ background: navy[950] }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Zap size={18} className="text-red-500" />
-              <h4 className="text-white font-heading font-bold text-lg">The Bottom Line</h4>
-            </div>
-            <p className="text-gray-300 text-[16px] leading-relaxed">
-              Nobody in Phoenix commercial mechanical is doing real content marketing. Ambition has the opportunity to be the ONLY commercial mechanical contractor in Phoenix with real job site content, a founder story, LinkedIn thought leadership, professional case studies, and active social media. This is a massive first-mover advantage.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── 7. MISSION STATEMENTS ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[900] }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>Section 7</SectionKicker>
-            <RedBar />
-            <div className="flex items-center gap-3 mb-3">
-              <Shield size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">Mission Statements</h2>
-            </div>
-          </motion.div>
-
-          {/* Eric's quote */}
-          <motion.div {...fadeUp(0.05)} className="border-l-4 border-red-500 pl-6 py-4 mb-8 rounded-r-lg" style={{ background: navy[800] }}>
-            <p className="text-white text-[17px] font-heading italic leading-relaxed">
-              "I really want him to come up with the mission statement based on this... he can come up with like 5 and then I want you to pick one. And then we're gonna own it."
-            </p>
-            <p className="text-gray-500 text-sm mt-2 uppercase tracking-wider">Eric, Mar 21 Strategy Session</p>
-          </motion.div>
-
-          <p className="text-gray-400 text-[16px] mb-8 max-w-3xl font-body">
-            Five options based on how your target clients describe their own values. Each one was tested against what GCs and property managers care about most. Pick one, and we run with it everywhere.
-          </p>
-
-          <div className="grid gap-5">
-            {missionStatements.map((m, i) => (
-              <motion.div key={i} {...fadeUp(i * 0.06)} className={`rounded-lg p-6 border ${m.rec ? 'border-red-500/40' : 'border-white/10'}`} style={{ background: m.rec ? navy[950] : navy[800] }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <span className={`text-xs font-heading font-bold ${m.rec ? 'text-red-500' : 'text-gray-500'}`}>Option {m.num}</span>
-                  {m.rec && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded font-medium">{m.rec}</span>}
-                </div>
-                <p className="text-xl md:text-2xl font-heading font-bold leading-snug mb-3 text-white">"{m.tagline}"</p>
-                <p className="text-[14px] leading-relaxed text-gray-400">{m.why}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.p {...fadeUp(0.4)} className="text-sm text-gray-500 mt-6 leading-relaxed">
-            <span className="font-semibold text-gray-400">Recommendation:</span> Use Option 01 as the brand tagline (TikTok bio, hard hat sticker, proposal cover) and Option 05 as the sales positioning line (case study headers, sales conversations). Both work together.
-          </motion.p>
-        </div>
-      </section>
-
-      {/* ── 8. WEEKLY REPORT ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[800] }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <motion.div {...fadeUp()}>
-            <SectionKicker>Section 8</SectionKicker>
-            <RedBar />
-            <div className="flex items-center gap-3 mb-3">
-              <BarChart3 size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">Weekly Report</h2>
-            </div>
-            <p className="text-gray-400 text-lg mb-8 max-w-3xl font-body">
-              Here is what the automated weekly report will look like. Delivered every Friday via email as long as the system is running.
-            </p>
-          </motion.div>
-
-          {/* Visual report mockup */}
-          <motion.div {...fadeUp(0.1)} className="rounded-xl border border-white/10 overflow-hidden" style={{ background: navy[950] }}>
-            {/* Report header */}
-            <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
-              <div>
-                <p className="text-white font-heading font-bold text-lg">Ambition Mechanical Weekly Report</p>
-                <p className="text-gray-500 text-sm">Week of March 24 - 28, 2026</p>
-              </div>
-              <span className="text-red-500 text-xs font-medium uppercase tracking-wider">Automated</span>
-            </div>
-
-            {/* Website Analytics */}
-            <div className="px-6 py-5 border-b border-white/10">
-              <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-4">Website Analytics</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: 'Page Views', value: '---', sub: 'Total this week' },
-                  { label: 'Unique Visitors', value: '---', sub: 'New + returning' },
-                  { label: 'Top Page', value: '---', sub: 'Most visited' },
-                  { label: 'Avg. Time on Site', value: '---', sub: 'Minutes' },
-                ].map((m, i) => (
-                  <div key={i} className="rounded-lg p-4 border border-white/5" style={{ background: navy[800] }}>
-                    <p className="text-gray-500 text-xs mb-1">{m.label}</p>
-                    <p className="text-white font-heading font-bold text-xl">{m.value}</p>
-                    <p className="text-gray-600 text-xs mt-1">{m.sub}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* LinkedIn Metrics */}
-            <div className="px-6 py-5 border-b border-white/10">
-              <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-4">LinkedIn Metrics</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: 'Profile Views', value: '---' },
-                  { label: 'Post Engagement', value: '---' },
-                  { label: 'Follower Growth', value: '---' },
-                  { label: 'New Connections', value: '---' },
-                ].map((m, i) => (
-                  <div key={i} className="rounded-lg p-4 border border-white/5" style={{ background: navy[800] }}>
-                    <p className="text-gray-500 text-xs mb-1">{m.label}</p>
-                    <p className="text-white font-heading font-bold text-xl">{m.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Social Media */}
-            <div className="px-6 py-5 border-b border-white/10">
-              <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-4">Social Media (Instagram / TikTok)</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {[
-                  { label: 'Total Views', value: '---' },
-                  { label: 'Engagement Rate', value: '---' },
-                  { label: 'New Followers', value: '---' },
-                ].map((m, i) => (
-                  <div key={i} className="rounded-lg p-4 border border-white/5" style={{ background: navy[800] }}>
-                    <p className="text-gray-500 text-xs mb-1">{m.label}</p>
-                    <p className="text-white font-heading font-bold text-xl">{m.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Items */}
-            <div className="px-6 py-5">
-              <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-4">Action Items from AOM</p>
-              <div className="space-y-3">
-                {[
-                  'Review data and adjust strategy based on top-performing content',
-                  'Follow up on any website visitors that match active bid targets',
-                  'Schedule next content shoot based on engagement patterns',
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 text-gray-400 text-[14px]">
-                    <CheckCircle2 size={16} className="text-red-500/50 mt-0.5 shrink-0" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.p {...fadeUp(0.2)} className="text-gray-500 text-sm mt-4 italic">
-            Delivered automatically every Friday via email as long as the system is running. Action items come from AOM based on data analysis.
-          </motion.p>
-        </div>
-      </section>
-
-      {/* ── PART 2 DIVIDER ── */}
-      <PartDivider part="Part 2" title="The Recap" />
-
-      {/* ── MEETING RECAP ── */}
-      <section className="py-16 md:py-20" style={{ background: navy[900] }}>
-        <div className="max-w-5xl mx-auto px-6">
-
-          {/* What Was Discussed */}
-          <motion.div {...fadeUp()} className="mb-16">
-            <SectionKicker>The Meeting</SectionKicker>
-            <RedBar />
-            <div className="flex items-center gap-3 mb-3">
-              <MessageSquare size={24} className="text-red-500" />
-              <h2 className="text-3xl font-heading font-bold text-white">What Was Discussed</h2>
-            </div>
-            <p className="text-gray-400 text-lg mb-8 font-body">Key decisions and direction from the March 21 strategy session with Eric, Mo, and Patrik.</p>
+            <p className="text-gray-500 text-lg mb-8 font-body">Key decisions and direction from the March 21 strategy session with Eric, Mo, and Patrik.</p>
 
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               {[
@@ -817,58 +474,68 @@ export default function BriefAmbitionStrategy() {
                 { quote: '"Put him in a suit without a tie."', who: 'Eric (on Mo\'s content look)' },
                 { quote: '"I want to know what my return on investment is."', who: 'Eric' },
               ].map((q, i) => (
-                <div key={i} className="border-l-4 border-red-500 px-5 py-4 rounded-r-lg" style={{ background: navy[800] }}>
-                  <p className="text-[16px] font-heading font-semibold text-white italic">{q.quote}</p>
-                  <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">{q.who}, Mar 21</p>
+                <div key={i} className="relative border-l-4 border-red-500 px-5 py-4 rounded-r-2xl bg-slate-50">
+                  <span className="absolute -top-2 left-4 text-red-500/10 font-heading text-6xl font-black leading-none">"</span>
+                  <p className="relative text-[16px] font-heading font-semibold text-[#0a0e2a] italic">{q.quote}</p>
+                  <p className="relative text-xs text-gray-400 mt-1 uppercase tracking-wider">{q.who}, Mar 21</p>
                 </div>
               ))}
             </div>
 
-            <div className="rounded-lg p-6 border border-white/10" style={{ background: navy[800] }}>
-              <h4 className="font-heading font-bold text-white mb-4">Key Decisions</h4>
-              <ul className="space-y-3 text-[15px] text-gray-300">
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-red-500 mt-0.5 shrink-0" /> LinkedIn is the primary channel. 75% of effort goes there. GC project managers, property managers, and facility directors live on LinkedIn.</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-red-500 mt-0.5 shrink-0" /> Case studies are the centerpiece. Not claims. Proof. Before/during/after, tag the GC, track who clicks.</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-red-500 mt-0.5 shrink-0" /> Mo in a blazer on the job site. Professional but not corporate. Pattern interrupt against every other contractor on social.</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-red-500 mt-0.5 shrink-0" /> Google Analytics + LinkedIn Insight Tag on the site. Track who visits, which companies, what they look at. Cross-reference with active bids.</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-red-500 mt-0.5 shrink-0" /> $500/month Google Ads test budget. Commercial keywords only. No residential. Dedicated landing page, not the homepage.</li>
-                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-red-500 mt-0.5 shrink-0" /> Weekly reports to Eric. Every Friday. Website traffic, LinkedIn engagement, social media stats, action items from AOM.</li>
+            <div className="rounded-2xl p-6 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+              <h4 className="font-heading font-bold text-[#0a0e2a] mb-4">Key Decisions</h4>
+              <ul className="space-y-3 text-[15px] text-gray-700">
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-green-600 mt-0.5 shrink-0" /> LinkedIn is the primary channel. 75% of effort goes there. GC project managers, property managers, and facility directors live on LinkedIn.</li>
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-green-600 mt-0.5 shrink-0" /> Case studies are the centerpiece. Not claims. Proof. Before/during/after, tag the GC, track who clicks.</li>
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-green-600 mt-0.5 shrink-0" /> Mo in a blazer on the job site. Professional but not corporate. Pattern interrupt against every other contractor on social.</li>
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-green-600 mt-0.5 shrink-0" /> Google Analytics + LinkedIn Insight Tag on the site. Track who visits, which companies, what they look at. Cross-reference with active bids.</li>
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-green-600 mt-0.5 shrink-0" /> $500/month Google Ads test budget. Commercial keywords only. No residential. Dedicated landing page, not the homepage.</li>
+                <li className="flex items-start gap-3"><CheckCircle2 size={18} className="text-green-600 mt-0.5 shrink-0" /> Weekly reports to Eric. Every Friday. Website traffic, LinkedIn engagement, social media stats, action items from AOM.</li>
               </ul>
             </div>
           </motion.div>
+        </div>
+      </section>
 
-          {/* AOM Commitments - Visual Timeline */}
-          <motion.div {...fadeUp(0.1)} className="mb-16">
+      {/* 2. What AOM Committed To */}
+      <section className="py-16 md:py-20 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              02
+            </span>
+            <SectionBadge>Section 2</SectionBadge>
             <RedBar />
-            <h2 className="text-2xl font-heading font-bold text-white mb-6">What AOM Committed To</h2>
+            <h2 className="text-2xl font-heading font-bold text-[#0a0e2a] mb-6">What AOM Committed To</h2>
 
             <div className="space-y-3">
               {aomCommitments.map((c, i) => (
-                <div key={i} className="flex items-center gap-4 rounded-lg px-5 py-4 border border-white/10" style={{ background: navy[800] }}>
+                <div key={i} className="flex items-center gap-4 rounded-2xl px-5 py-4 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
                   <div className="shrink-0">
                     {c.status === 'complete' ? (
-                      <CheckCircle2 size={20} className="text-green-500" />
+                      <CheckCircle2 size={20} className="text-green-600" />
                     ) : c.status === 'in-progress' ? (
-                      <Play size={20} className="text-yellow-500" />
+                      <Play size={20} className="text-yellow-600" />
                     ) : c.status === 'needs-meeting' ? (
-                      <MessageSquare size={20} className="text-blue-400" />
+                      <MessageSquare size={20} className="text-blue-500" />
                     ) : (
-                      <Clock size={20} className="text-gray-500" />
+                      <Clock size={20} className="text-gray-400" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white text-[15px]">{c.item}</p>
+                    <p className="font-semibold text-[#0a0e2a] text-[15px]">{c.item}</p>
                     <p className="text-[13px] text-gray-500 mt-0.5">{c.detail}</p>
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded font-medium ${
-                      c.type === 'ongoing' ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-500/10 text-gray-400'
+                      c.type === 'ongoing' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'
                     }`}>{c.type === 'ongoing' ? 'Ongoing' : 'One-time'}</span>
                     <span className={`text-xs px-2 py-1 rounded font-medium ${
-                      c.status === 'complete' ? 'bg-green-500/10 text-green-400' :
-                      c.status === 'in-progress' ? 'bg-yellow-500/10 text-yellow-400' :
-                      c.status === 'needs-meeting' ? 'bg-blue-500/10 text-blue-400' :
-                      'bg-gray-500/10 text-gray-500'
+                      c.status === 'complete' ? 'bg-green-50 text-green-700' :
+                      c.status === 'in-progress' ? 'bg-yellow-50 text-yellow-700' :
+                      c.status === 'needs-meeting' ? 'bg-blue-50 text-blue-600' :
+                      'bg-gray-100 text-gray-500'
                     }`}>{
                       c.status === 'complete' ? 'Done' :
                       c.status === 'in-progress' ? 'In Progress' :
@@ -880,59 +547,294 @@ export default function BriefAmbitionStrategy() {
               ))}
             </div>
           </motion.div>
+        </div>
+      </section>
 
-          {/* Pricing */}
-          <motion.div {...fadeUp(0.15)} className="mb-16">
+      {/* 3. LinkedIn Playbook */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              03
+            </span>
+            <SectionBadge>Section 3</SectionBadge>
             <RedBar />
-            <h2 className="text-2xl font-heading font-bold text-white mb-6">Pricing</h2>
-            <div className="rounded-lg p-6 border border-white/10" style={{ background: navy[950] }}>
-              <p className="text-red-400 text-xs uppercase tracking-wider font-medium mb-4">Current Rate: $2,000/month</p>
+            <div className="flex items-center gap-3 mb-3">
+              <Linkedin size={24} className="text-[#0077b5]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">LinkedIn Playbook</h2>
+            </div>
+            <p className="text-gray-500 text-lg mb-8 max-w-3xl font-body">
+              LinkedIn is the primary channel. 75% of effort goes here. GC project managers, property managers, and facility directors live on LinkedIn. AOM handles connection outreach and engagement on your behalf.
+            </p>
+          </motion.div>
 
-              <p className="text-white text-[16px] leading-relaxed mb-4">For $2,000/month, AOM is delivering:</p>
+          {/* Strategy Overview */}
+          <motion.div {...fadeUp(0.1)} className="mb-10">
+            <h3 className="text-xl font-heading font-bold text-[#0a0e2a] mb-4">What AOM Is Doing</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              {[
+                { phase: 'Phase 1: Build (Weeks 1-4)', desc: 'Connect with all BOMA, IREM, IFMA chapter members. Connect with PMs and estimators at top 20 GCs. Target: 200+ new connections in Month 1.' },
+                { phase: 'Phase 2: Engage (Weeks 2-8)', desc: 'Comment on every post from target GCs and PM firms. Share and tag their project announcements. No pitching. Add value. Be visible.' },
+                { phase: 'Phase 3: Convert (Weeks 4-12)', desc: 'Personalized messages referencing specific projects. Share matching case studies. Invite to site tours or lunch-and-learns.' },
+              ].map((p, i) => (
+                <div key={i} className="rounded-2xl p-5 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+                  <p className="text-[#0a0e2a]/60 text-xs font-semibold uppercase tracking-wider mb-2">{p.phase}</p>
+                  <p className="text-gray-600 text-[14px] leading-relaxed">{p.desc}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Post Ideas */}
+          <motion.div {...fadeUp(0.15)} className="mb-10">
+            <h3 className="text-xl font-heading font-bold text-[#0a0e2a] mb-4">Post Ideas for Mo</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              {linkedinPostIdeas.map((p, i) => (
+                <div key={i} className="rounded-2xl p-5 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+                  <p className="font-heading font-semibold text-[#0a0e2a] mb-2">{p.title}</p>
+                  <p className="text-[14px] text-gray-500 leading-relaxed">{p.desc}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Groups */}
+          <motion.div {...fadeUp(0.2)}>
+            <h3 className="text-xl font-heading font-bold text-[#0a0e2a] mb-4">10 Groups to Join</h3>
+            <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm">
+              {linkedinGroups.map((g, i) => (
+                <div key={i} className={`flex items-center gap-4 px-5 py-3.5 ${i < linkedinGroups.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                  <span className="text-[#0a0e2a] font-heading font-bold text-sm w-6">{i + 1}</span>
+                  <div>
+                    <span className="text-[15px] text-[#0a0e2a] font-medium">{g.name}</span>
+                    <span className="text-gray-400 text-[13px] ml-3">{g.why}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 4. Weekly Report */}
+      <section className="py-16 md:py-20 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              04
+            </span>
+            <SectionBadge>Section 4</SectionBadge>
+            <RedBar />
+            <div className="flex items-center gap-3 mb-3">
+              <BarChart3 size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">Weekly Report</h2>
+            </div>
+            <p className="text-gray-500 text-lg mb-8 max-w-3xl font-body">
+              Here is what the automated weekly report will look like. Delivered every Friday via email. Real numbers, real insights, no fluff.
+            </p>
+          </motion.div>
+
+          {/* Visual report mockup - WHITE */}
+          <motion.div {...fadeUp(0.1)} className="rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm">
+            {/* Report header */}
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-[#0a0e2a] flex items-center justify-center">
+                  <BarChart3 size={20} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-[#0a0e2a] font-heading font-bold text-lg">Ambition Mechanical Weekly Report</p>
+                  <p className="text-gray-400 text-sm">Week of March 24 - 28, 2026</p>
+                </div>
+              </div>
+              <span className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full font-medium">Automated</span>
+            </div>
+
+            {/* Website Analytics */}
+            <div className="px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center gap-2 mb-4">
+                <Globe size={16} className="text-[#0a0e2a]" />
+                <p className="text-[#0a0e2a] text-sm font-semibold uppercase tracking-wider">Website Analytics</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                {[
+                  { label: 'Page Views', value: '---', sub: 'Total this week' },
+                  { label: 'Unique Visitors', value: '---', sub: 'New + returning' },
+                  { label: 'Top Page', value: '---', sub: 'Most visited' },
+                  { label: 'Avg. Time on Site', value: '---', sub: 'Minutes' },
+                ].map((m, i) => (
+                  <div key={i} className="rounded-lg p-4 bg-slate-50 border border-gray-100">
+                    <p className="text-gray-500 text-xs mb-1">{m.label}</p>
+                    <p className="text-[#0a0e2a] font-heading font-bold text-xl">{m.value}</p>
+                    <p className="text-gray-400 text-xs mt-1">{m.sub}</p>
+                  </div>
+                ))}
+              </div>
+              {/* Advanced tracking callout */}
+              <div className="rounded-lg p-4 bg-blue-50 border border-blue-100">
+                <p className="text-blue-800 text-sm font-semibold mb-2">Advanced Tracking Capabilities</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { icon: Building2, label: 'Company-Level Visitor ID', desc: 'See which companies visit' },
+                    { icon: Target, label: 'UTM Campaign Tracking', desc: 'Track per-prospect clicks' },
+                    { icon: Eye, label: 'Bid Signal Detection', desc: 'Post-bid visit alerts' },
+                    { icon: Activity, label: 'Behavior Flow', desc: 'What they browse after landing' },
+                  ].map((t, i) => {
+                    const TIcon = t.icon;
+                    return (
+                      <div key={i} className="flex items-start gap-2">
+                        <TIcon size={14} className="text-blue-600 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-blue-800 text-xs font-medium">{t.label}</p>
+                          <p className="text-blue-600 text-[11px]">{t.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* LinkedIn Metrics */}
+            <div className="px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center gap-2 mb-4">
+                <Linkedin size={16} className="text-[#0077b5]" />
+                <p className="text-[#0a0e2a] text-sm font-semibold uppercase tracking-wider">LinkedIn Metrics</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {[
+                  { label: 'Profile Views', value: '---' },
+                  { label: 'Post Engagement', value: '---' },
+                  { label: 'Follower Growth', value: '---' },
+                  { label: 'New Connections', value: '---' },
+                  { label: 'People Invited to Profile', value: '---' },
+                ].map((m, i) => (
+                  <div key={i} className="rounded-lg p-4 bg-slate-50 border border-gray-100">
+                    <p className="text-gray-500 text-xs mb-1">{m.label}</p>
+                    <p className="text-[#0a0e2a] font-heading font-bold text-xl">{m.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Social Media */}
+            <div className="px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={16} className="text-[#0a0e2a]" />
+                <p className="text-[#0a0e2a] text-sm font-semibold uppercase tracking-wider">Social Media (Instagram / TikTok)</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { label: 'Total Views', value: '---' },
+                  { label: 'Engagement Rate', value: '---' },
+                  { label: 'New Followers', value: '---' },
+                ].map((m, i) => (
+                  <div key={i} className="rounded-lg p-4 bg-slate-50 border border-gray-100">
+                    <p className="text-gray-500 text-xs mb-1">{m.label}</p>
+                    <p className="text-[#0a0e2a] font-heading font-bold text-xl">{m.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Items */}
+            <div className="px-6 py-5">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 size={16} className="text-green-600" />
+                <p className="text-[#0a0e2a] text-sm font-semibold uppercase tracking-wider">Action Items from AOM</p>
+              </div>
+              <div className="space-y-3">
+                {[
+                  'Review data and adjust strategy based on top-performing content',
+                  'Follow up on any website visitors that match active bid targets',
+                  'Schedule next content shoot based on engagement patterns',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3 text-gray-600 text-[14px]">
+                    <CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.p {...fadeUp(0.2)} className="text-gray-400 text-sm mt-4 italic">
+            Delivered automatically every Friday via email as long as the system is running. Action items come from AOM based on data analysis.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* 5. Pricing */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              05
+            </span>
+            <SectionBadge>Section 5</SectionBadge>
+            <RedBar />
+            <h2 className="text-2xl font-heading font-bold text-[#0a0e2a] mb-6">Pricing</h2>
+            <div className="rounded-2xl p-6 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+              <p className="text-[#0a0e2a] text-xs uppercase tracking-wider font-semibold mb-4 flex items-center gap-2">
+                <DollarSign size={14} />
+                Current Rate: $2,000/month
+              </p>
+
+              <p className="text-gray-700 text-[16px] leading-relaxed mb-4">For $2,000/month, AOM is delivering:</p>
 
               <div className="grid md:grid-cols-2 gap-3 mb-6">
                 {[
-                  'Video production (content shoots, editing, post)',
+                  'Video production and content shoots',
                   'Social media management (LinkedIn, Instagram, TikTok)',
-                  'Website design and development',
                   'Market research and competitive analysis',
                   'Google Analytics setup and tracking',
                   'Strategy development and BD planning',
-                  'Content shoots (on-site, in-studio)',
                   'LinkedIn management and outreach',
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-2 text-gray-300 text-[14px]">
-                    <CheckCircle2 size={14} className="text-red-500 mt-1 shrink-0" />
+                  <div key={i} className="flex items-start gap-2 text-gray-700 text-[14px]">
+                    <CheckCircle2 size={14} className="text-green-600 mt-1 shrink-0" />
                     <span>{item}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-white/10 pt-4">
-                <p className="text-gray-400 text-[15px] leading-relaxed">
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-gray-500 text-[15px] leading-relaxed">
                   Rate and scope to be reviewed at end of Q2 based on performance data and evolving service requirements.
                 </p>
               </div>
             </div>
           </motion.div>
+        </div>
+      </section>
 
-          {/* What We Need From You */}
-          <motion.div {...fadeUp(0.2)}>
+      {/* 6. What We Need From You */}
+      <section className="py-16 md:py-20 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              06
+            </span>
+            <SectionBadge>Section 6</SectionBadge>
             <RedBar />
-            <h2 className="text-2xl font-heading font-bold text-white mb-6">What We Need From You</h2>
-            <div className="rounded-lg p-6 border-2 border-red-500/20" style={{ background: navy[800] }}>
-              <ul className="space-y-5 text-[15px] text-gray-300">
+            <h2 className="text-2xl font-heading font-bold text-[#0a0e2a] mb-6">What We Need From You</h2>
+            <div className="rounded-2xl p-6 bg-white border-2 border-red-200 shadow-sm">
+              <ul className="space-y-5 text-[15px] text-gray-700">
                 <li className="flex items-start gap-3">
-                  <span className="text-red-500 font-heading font-bold text-lg">1</span>
-                  <span><strong className="text-white">Set up $500/month Google Ads budget.</strong> We handle campaign setup, targeting, and optimization. You fund the spend through your Google Ads account.</span>
+                  <span className="text-red-500 font-heading font-bold text-lg mt-[-2px]">1</span>
+                  <span><strong className="text-[#0a0e2a]">Set up $500/month Google Ads budget.</strong> We handle campaign setup, targeting, and optimization. You fund the spend through your Google Ads account.</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-red-500 font-heading font-bold text-lg">2</span>
-                  <span><strong className="text-white">Send PDF of Phoenix Business Journal contact list.</strong> Any GC or CRE contacts Eric has from PBJ events or subscriptions. We will cross-reference with our hit list.</span>
+                  <span className="text-red-500 font-heading font-bold text-lg mt-[-2px]">2</span>
+                  <span><strong className="text-[#0a0e2a]">Send PDF of Phoenix Business Journal contact list.</strong> Any GC or CRE contacts Eric has from PBJ events or subscriptions. We will cross-reference with our hit list.</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="text-red-500 font-heading font-bold text-lg">3</span>
-                  <span><strong className="text-white">Book content shoots.</strong> We need Mo and the team on active job sites for 2-3 hours per shoot. Coordinate with AOM on scheduling.</span>
+                  <span className="text-red-500 font-heading font-bold text-lg mt-[-2px]">3</span>
+                  <span><strong className="text-[#0a0e2a]">Book content shoots.</strong> We need Mo and the team on active job sites for 2-3 hours per shoot. Coordinate with AOM on scheduling.</span>
                 </li>
               </ul>
             </div>
@@ -940,9 +842,352 @@ export default function BriefAmbitionStrategy() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <div className="py-12 border-t border-white/5" style={{ background: navy[950] }}>
-        <div className="max-w-5xl mx-auto px-6 text-center">
+
+      {/* ========================================= */}
+      {/* PART 2: BUSINESS DEVELOPMENT PLAYBOOK     */}
+      {/* ========================================= */}
+      <PartDivider id="playbook" part="Part 2" title="Business Development Playbook" ghostNum="2" />
+
+      {/* 1. Events Calendar (FIRST) */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              01
+            </span>
+            <SectionBadge>Section 1</SectionBadge>
+            <RedBar />
+            <div className="flex items-center gap-3 mb-3">
+              <Calendar size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">Events Calendar</h2>
+            </div>
+            <p className="text-gray-500 text-lg mb-2 max-w-3xl font-body">
+              Where to show up and who you will meet. Register for the first 5 this week.
+            </p>
+          </motion.div>
+
+          <motion.div {...fadeUp(0.1)} className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[14px] min-w-[850px]">
+                <thead>
+                  <tr className="bg-[#0a0e2a]">
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Event</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Date</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Location</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Who Attends</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Why It Matters</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm w-20">Link</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((e, i) => (
+                    <tr key={i} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                      <td className="py-3 px-3 font-semibold text-[#0a0e2a]">{e.event}</td>
+                      <td className="py-3 px-3 text-gray-600 whitespace-nowrap">{e.date}</td>
+                      <td className="py-3 px-3 text-gray-500">{e.location}</td>
+                      <td className="py-3 px-3 text-gray-500">{e.who}</td>
+                      <td className="py-3 px-3 text-gray-400 italic">{e.why}</td>
+                      <td className="py-3 px-3 text-center">
+                        {e.link ? (
+                          <a href={e.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                            <ExternalLink size={12} /> View
+                          </a>
+                        ) : (
+                          <span className="text-gray-300 text-xs">TBD</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 2. Speaking Opportunities (NEW) */}
+      <section className="py-16 md:py-20 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              02
+            </span>
+            <SectionBadge>Section 2</SectionBadge>
+            <RedBar />
+            <div className="flex items-center gap-3 mb-3">
+              <Mic size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">Speaking Opportunities</h2>
+            </div>
+            <p className="text-gray-500 text-lg mb-8 max-w-3xl font-body">
+              Do not just attend events. Get Mo in front of the room. A 10-minute technical presentation turns him from "another sub" into "the expert."
+            </p>
+          </motion.div>
+
+          <motion.div {...fadeUp(0.1)} className="grid md:grid-cols-2 gap-5 mb-8">
+            {[
+              {
+                title: 'BOMA / IREM / IFMA Chapter Meetings',
+                desc: 'Offer a 10-minute technical presentation at monthly chapter meetings. Topics like "Common VRF Issues We See in Phoenix Commercial Properties" or "5 Signs Your Building\'s HVAC System is Costing You Money." These groups meet monthly and are always looking for speakers.',
+                action: 'Contact chapter program chairs to get on the speaker schedule.',
+              },
+              {
+                title: 'ASA Events and Panels',
+                desc: 'ASA hosts multiple events per quarter. The Partners in Construction series and University series both feature industry speakers. Position Mo as a subject matter expert on mechanical systems for commercial projects.',
+                action: 'Target: ASA Partners in Construction (Mar 31 at Hensel Phelps) as the first speaking opportunity.',
+              },
+              {
+                title: 'Arizona Construction Summit',
+                desc: 'Annual event at GCU (Apr 9) with construction owners and leaders. Get Mo on a panel or as a breakout speaker. Decision-makers are concentrated in one room for an entire day.',
+                action: 'Apply for panel or breakout session through the event organizer.',
+              },
+              {
+                title: 'Sponsor a Table at the ASA Awards Gala',
+                desc: 'The Masquerade Ball (Apr 30) is the premier ASA event. Sponsoring a table puts Ambition at the center of the networking. Invite target GCs and PMs to sit with you.',
+                action: 'Budget for table sponsorship. Invite 3-4 key prospects from the GC Hit List.',
+              },
+            ].map((opp, i) => (
+              <div key={i} className="rounded-2xl p-6 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+                <h4 className="font-heading font-bold text-[#0a0e2a] text-[16px] mb-2">{opp.title}</h4>
+                <p className="text-gray-600 text-[14px] leading-relaxed mb-3">{opp.desc}</p>
+                <div className="flex items-start gap-2 pt-2 border-t border-gray-100">
+                  <Zap size={14} className="text-red-500 mt-0.5 shrink-0" />
+                  <p className="text-[13px] text-red-600 font-medium">{opp.action}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+
+          <motion.div {...fadeUp(0.2)} className="rounded-2xl p-5 bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all duration-300">
+            <h4 className="font-heading font-bold text-[#0a0e2a] mb-3">Suggested Talk Topics</h4>
+            <div className="grid md:grid-cols-2 gap-3">
+              {[
+                'Common VRF Issues We See in Phoenix Commercial Properties',
+                '5 Signs Your Building\'s HVAC System is Costing You Money',
+                'Mechanical Best Practices for Arizona\'s Extreme Climate',
+                'What GCs Should Ask Their Mechanical Sub Before Signing',
+                'Energy Efficiency Upgrades That Pay for Themselves in 12 Months',
+                'The Hidden Cost of Deferred HVAC Maintenance in Commercial Buildings',
+              ].map((topic, i) => (
+                <div key={i} className="flex items-start gap-2 text-gray-600 text-[14px]">
+                  <FileText size={14} className="text-[#0a0e2a] mt-0.5 shrink-0" />
+                  <span>{topic}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 3. GC Hit List */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              03
+            </span>
+            <SectionBadge>Section 3</SectionBadge>
+            <RedBar />
+            <div className="flex items-center gap-3 mb-3">
+              <Crosshair size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">GC Hit List</h2>
+            </div>
+            <p className="text-gray-500 text-lg mb-8 max-w-3xl font-body">
+              We researched every major GC in Phoenix metro, identified decision-makers, and mapped them to your capabilities. This is your prospecting list, ready to work.
+            </p>
+          </motion.div>
+          <motion.div {...fadeUp(0.1)}>
+            <HitListTable data={gcHitList} type="gc" />
+          </motion.div>
+          <motion.p {...fadeUp(0.15)} className="text-sm text-gray-400 mt-4">
+            25 contacts across 17 companies. "TBD" items: search "[Name] [Company] Phoenix" on LinkedIn to find and connect.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* 4. PM Hit List */}
+      <section className="py-16 md:py-20 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              04
+            </span>
+            <SectionBadge>Section 4</SectionBadge>
+            <RedBar />
+            <div className="flex items-center gap-3 mb-3">
+              <Building2 size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">Property Management Hit List</h2>
+            </div>
+            <p className="text-gray-500 text-lg mb-8 max-w-3xl font-body">
+              Property management is a different angle for revenue. These firms hire mechanical subs for ongoing maintenance, retrofits, and 24/7 emergency service. The play: Ambition becomes their go-to mechanical partner for their entire portfolio. One relationship here equals recurring revenue for years.
+            </p>
+          </motion.div>
+          <motion.div {...fadeUp(0.1)}>
+            <HitListTable data={pmHitList} type="pm" />
+          </motion.div>
+          <motion.p {...fadeUp(0.15)} className="text-sm text-gray-400 mt-4">
+            15 contacts across 11 firms covering medical office, commercial, industrial, and Class A portfolios.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* 5. Competitor Intel */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              05
+            </span>
+            <SectionBadge>Section 5</SectionBadge>
+            <RedBar />
+            <div className="flex items-center gap-3 mb-3">
+              <Search size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">Competitor Intel</h2>
+            </div>
+            <p className="text-gray-500 text-lg mb-8 max-w-3xl font-body">
+              Who else is marketing to these same targets, and where they are falling short.
+            </p>
+          </motion.div>
+
+          {/* Competitor comparison grid */}
+          <motion.div {...fadeUp(0.1)} className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[14px] min-w-[700px]">
+                <thead>
+                  <tr className="bg-[#0a0e2a]">
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Competitor</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Type</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">LinkedIn</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">What They Do</th>
+                    <th className="py-3 px-3 font-heading font-semibold text-white text-sm">Ambition's Edge</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {competitors.map((c, i) => (
+                    <tr key={i} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <td className="py-3 px-3 font-semibold text-[#0a0e2a] whitespace-nowrap">{c.name}</td>
+                    <td className="py-3 px-3">
+                      <span className={`text-xs px-2 py-1 rounded font-medium ${
+                        c.category === 'Corporate Giant' ? 'bg-blue-50 text-blue-600' :
+                        c.category === 'PE-Backed' ? 'bg-purple-50 text-purple-600' :
+                        c.category === 'Direct Competitor' ? 'bg-yellow-50 text-yellow-700' :
+                        c.category === 'Residential' ? 'bg-green-50 text-green-600' :
+                        'bg-gray-100 text-gray-500'
+                      }`}>{c.category}</span>
+                    </td>
+                    <td className="py-3 px-3 text-gray-500">{c.followers}</td>
+                    <td className="py-3 px-3 text-gray-500 text-[13px]">{c.doing}</td>
+                    <td className="py-3 px-3 text-green-700 font-medium text-[13px]">{c.gap}</td>
+                  </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+
+          <motion.div {...fadeUp(0.2)} className="rounded-2xl p-6 bg-[#0a0e2a]">
+            <div className="flex items-center gap-2 mb-3">
+              <Zap size={18} className="text-red-500" />
+              <h4 className="text-white font-heading font-bold text-lg">The Bottom Line</h4>
+            </div>
+            <p className="text-white/80 text-[16px] leading-relaxed">
+              Nobody in Phoenix commercial mechanical is doing real content marketing. Ambition has the opportunity to be the ONLY commercial mechanical contractor in Phoenix with real job site content, a founder story, LinkedIn thought leadership, professional case studies, and active social media. This is a massive first-mover advantage.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* 6. Mission Statements */}
+      <section className="py-16 md:py-20 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              06
+            </span>
+            <SectionBadge>Section 6</SectionBadge>
+            <RedBar />
+            <div className="flex items-center gap-3 mb-3">
+              <Shield size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">Mission Statements</h2>
+            </div>
+          </motion.div>
+
+          {/* Eric's quote */}
+          <motion.div {...fadeUp(0.05)} className="relative border-l-4 border-red-500 pl-6 py-4 mb-8 rounded-r-2xl bg-white shadow-sm">
+            <span className="absolute -top-2 left-4 text-red-500/10 font-heading text-6xl font-black leading-none">"</span>
+            <p className="relative text-[#0a0e2a] text-[17px] font-heading italic leading-relaxed">
+              "I really want him to come up with the mission statement based on this... he can come up with like 5 and then I want you to pick one. And then we're gonna own it."
+            </p>
+            <p className="relative text-gray-400 text-sm mt-2 uppercase tracking-wider">Eric, Mar 21 Strategy Session</p>
+          </motion.div>
+
+          <p className="text-gray-500 text-[16px] mb-8 max-w-3xl font-body">
+            Five options based on how your target clients describe their own values. Each one was tested against what GCs and property managers care about most. Pick one, and we run with it everywhere.
+          </p>
+
+          <div className="grid gap-5">
+            {missionStatements.map((m, i) => (
+              <motion.div key={i} {...fadeUp(i * 0.06)} className={`rounded-2xl p-6 bg-white shadow-sm border hover:shadow-lg transition-all duration-300 ${m.rec ? 'border-red-300 ring-1 ring-red-100 hover:border-red-400' : 'border-gray-200 hover:border-gray-300'}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className={`text-xs font-heading font-bold ${m.rec ? 'text-red-500' : 'text-gray-400'}`}>Option {m.num}</span>
+                  {m.rec && <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded font-medium">{m.rec}</span>}
+                </div>
+                <p className="text-xl md:text-2xl font-heading font-bold leading-snug mb-3 text-[#0a0e2a]">"{m.tagline}"</p>
+                <p className="text-[14px] leading-relaxed text-gray-500">{m.why}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.p {...fadeUp(0.4)} className="text-sm text-gray-400 mt-6 leading-relaxed">
+            <span className="font-semibold text-gray-600">Recommendation:</span> Use Option 01 as the brand tagline (TikTok bio, hard hat sticker, proposal cover) and Option 05 as the sales positioning line (case study headers, sales conversations). Both work together.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* 7. Outreach Strategies (LAST - Expandable/Accordion) */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div {...fadeUp()} className="relative">
+            <span className="absolute -top-8 -left-2 pointer-events-none select-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 140, fontWeight: 800, color: 'rgba(10,14,42,0.04)', lineHeight: 1 }}>
+              07
+            </span>
+            <SectionBadge>Section 7</SectionBadge>
+            <RedBar />
+            <div className="flex items-center gap-3 mb-3">
+              <Target size={24} className="text-[#0a0e2a]" />
+              <h2 className="text-3xl font-heading font-bold text-[#0a0e2a]">8 Outreach Strategies</h2>
+            </div>
+            <p className="text-gray-500 text-lg mb-8 max-w-3xl font-body">
+              These are not email templates. These are strategic plays. Each one is designed to put Ambition in front of the right people at the right time with the right proof. Click any strategy to expand.
+            </p>
+          </motion.div>
+
+          <div>
+            {outreachStrategies.map((s, i) => (
+              <motion.div key={i} {...fadeUp(i * 0.04)}>
+                <Expandable number={s.num} title={s.title} icon={s.icon}>
+                  <p className="text-gray-700 text-[15px] leading-relaxed mb-3">{s.desc}</p>
+                  <p className="text-gray-500 text-[14px] leading-relaxed">{s.detail}</p>
+                </Expandable>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* == FOOTER == */}
+      <div className="relative py-12 border-t border-gray-200 bg-[#0a0e2a] overflow-hidden">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px)',
+        }} />
+        <div className="relative max-w-5xl mx-auto px-6 text-center">
+          <div className="w-12 h-[2px] bg-red-500 mx-auto mb-4" />
           <p className="text-white/30 text-xs uppercase tracking-[0.2em] mb-2">Prepared by</p>
           <p className="text-white/60 text-sm font-body">AOM (Ahead of Market) | March 2026</p>
           <p className="text-white/30 text-xs mt-4">ambitionac.com | (480) 600-2942 | 437 S. 48th St., Suite 101, Tempe, AZ 85281</p>
