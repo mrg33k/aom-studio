@@ -198,7 +198,7 @@ function useColumnChat(agentSlug, isActive) {
 
 // ── AGENT COLUMN ─────────────────────────────────────────────────────────────
 
-function AgentColumn({ agent, tasks, isExpanded, onExpand, isNight, isMobile, onContextMenu }) {
+function AgentColumn({ agent, tasks, isExpanded, onExpand, isNight, isMobile, onContextMenu, onDragStart, onDragOver, onDrop, isDragTarget }) {
   const chatRef = useRef(null)
   const chat = useColumnChat(agent.slug, true)
   const color = agent.color || getAgentColor(agent.slug)
@@ -206,6 +206,9 @@ function AgentColumn({ agent, tasks, isExpanded, onExpand, isNight, isMobile, on
   const statusCfg = status === 'WORKING' ? { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)', color: '#22C55E', glow: true }
     : status === 'DONE' ? { bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', color: '#3B82F6', glow: false }
     : { bg: 'rgba(107,114,128,0.12)', border: 'rgba(107,114,128,0.3)', color: '#6B7280', glow: false }
+
+  // Tasks minimized by default, expandable
+  const [tasksOpen, setTasksOpen] = useState(false)
 
   // Auto-scroll chat on new messages
   useEffect(() => {
@@ -219,26 +222,30 @@ function AgentColumn({ agent, tasks, isExpanded, onExpand, isNight, isMobile, on
 
   return (
     <div
+      draggable={!isMobile}
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart?.(agent.slug) }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver?.(agent.slug) }}
+      onDrop={(e) => { e.preventDefault(); onDrop?.(agent.slug) }}
       onClick={() => !isExpanded && onExpand?.()}
       style={{
         display: 'flex', flexDirection: 'column',
         ...(isMobile ? { position: 'absolute', inset: 0 } : {
           minWidth: isExpanded ? 380 : 300, maxWidth: isExpanded ? 420 : 360, flex: '0 0 auto',
           borderRadius: 14,
-          border: `1px solid ${isExpanded ? 'var(--bv-col-border-exp)' : 'var(--bv-col-border)'}`,
-          background: isExpanded ? 'var(--bv-col-exp)' : 'var(--bv-col)',
+          border: `1px solid ${isDragTarget ? 'var(--bv-accent-border)' : isExpanded ? 'var(--bv-col-border-exp)' : 'var(--bv-col-border)'}`,
+          background: isDragTarget ? 'var(--bv-accent)' : isExpanded ? 'var(--bv-col-exp)' : 'var(--bv-col)',
           backdropFilter: 'blur(8px)',
           boxShadow: isExpanded ? '0 0 30px rgba(59,130,246,0.08)' : 'none',
         }),
         transition: 'all 0.25s', overflow: 'hidden',
       }}
     >
-      {/* Header */}
+      {/* Header (drag handle) */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '12px 16px',
         borderBottom: '1px solid var(--bv-divider)',
-        flexShrink: 0, position: 'relative', cursor: isMobile ? 'default' : 'pointer',
+        flexShrink: 0, position: 'relative', cursor: isMobile ? 'default' : 'grab',
       }}>
         <div style={{
           position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
@@ -271,56 +278,68 @@ function AgentColumn({ agent, tasks, isExpanded, onExpand, isNight, isMobile, on
         </div>
       </div>
 
-      {/* Active Tasks */}
-      <div style={{
-        fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-        textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)',
-        padding: '10px 16px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexShrink: 0,
-      }}>
-        Active Tasks
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{
-            fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-            color: 'var(--bv-dim)', background: 'var(--bv-badge)',
-            padding: '1px 6px', borderRadius: 10,
-          }}>{tasks.length}</span>
+      {/* Active Tasks (minimized by default, click to expand) */}
+      <div
+        onClick={(e) => { e.stopPropagation(); setTasksOpen(!tasksOpen) }}
+        style={{
+          fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+          textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)',
+          padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexShrink: 0, cursor: 'pointer',
+          borderBottom: '1px solid var(--bv-divider)',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-card)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: tasksOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}><polyline points="9 18 15 12 9 6"/></svg>
+          Active Tasks
         </div>
+        <span style={{
+          fontSize: 10, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+          color: tasks.length > 0 ? '#22C55E' : 'var(--bv-dim)',
+          background: tasks.length > 0 ? 'rgba(34,197,94,0.12)' : 'var(--bv-badge)',
+          padding: '2px 8px', borderRadius: 10,
+          minWidth: 22, textAlign: 'center',
+        }}>{tasks.length}</span>
       </div>
-      <div style={{
-        padding: '0 12px 6px', height: 140, overflowY: 'auto', flexShrink: 0,
-        borderBottom: '1px solid var(--bv-divider)',
-      }}>
-        {tasks.length === 0 && (
-          <div style={{ padding: '12px 4px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic' }}>
-            No active tasks
-          </div>
-        )}
-        {tasks.map((t, i) => (
-          <div
-            key={t.taskId || t.text || i}
-            onContextMenu={(e) => { e.preventDefault(); onContextMenu?.(e, t) }}
-            style={{
-              padding: '8px 12px', borderRadius: 8,
-              background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
-              marginBottom: 5, cursor: 'context-menu', transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-card-hover)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--bv-card)'}
-          >
-            <div style={{ fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4 }}>{t.text || 'Task'}</div>
-            {t.project && (
-              <div style={{ marginTop: 4 }}>
-                <span style={{
-                  fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                  padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase',
-                  background: `${getAgentColor(t.project)}18`, color: getAgentColor(t.project),
-                }}>{t.project}</span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      {tasksOpen && (
+        <div style={{
+          padding: '4px 12px 6px', maxHeight: 160, overflowY: 'auto', flexShrink: 0,
+          borderBottom: '1px solid var(--bv-divider)',
+        }}>
+          {tasks.length === 0 && (
+            <div style={{ padding: '8px 4px', textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, fontStyle: 'italic' }}>
+              No active tasks
+            </div>
+          )}
+          {tasks.map((t, i) => (
+            <div
+              key={t.taskId || t.text || i}
+              onContextMenu={(e) => { e.preventDefault(); onContextMenu?.(e, t) }}
+              style={{
+                padding: '8px 12px', borderRadius: 8,
+                background: 'var(--bv-card)', border: '1px solid var(--bv-card-border)',
+                marginBottom: 5, cursor: 'context-menu', transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bv-card-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--bv-card)'}
+            >
+              <div style={{ fontSize: 13, color: 'var(--bv-text2)', lineHeight: 1.4 }}>{t.text || 'Task'}</div>
+              {t.project && (
+                <div style={{ marginTop: 4 }}>
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                    padding: '1px 6px', borderRadius: 4, textTransform: 'uppercase',
+                    background: `${getAgentColor(t.project)}18`, color: getAgentColor(t.project),
+                  }}>{t.project}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Chat */}
       <div style={{
@@ -389,7 +408,7 @@ function AgentColumn({ agent, tasks, isExpanded, onExpand, isNight, isMobile, on
 
 // ── PROJECT COLUMN ───────────────────────────────────────────────────────────
 
-function ProjectColumn({ project, tasks, isExpanded, onExpand, isMobile, onContextMenu, onAddTask }) {
+function ProjectColumn({ project, tasks, isExpanded, onExpand, isMobile, onContextMenu, onAddTask, onDragStart, onDragOver, onDrop, isDragTarget }) {
   const color = project.color || '#60A5FA'
   const [newTaskText, setNewTaskText] = useState('')
   const [adding, setAdding] = useState(false)
@@ -405,26 +424,30 @@ function ProjectColumn({ project, tasks, isExpanded, onExpand, isMobile, onConte
 
   return (
     <div
+      draggable={!isMobile}
+      onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; onDragStart?.(project.slug) }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver?.(project.slug) }}
+      onDrop={(e) => { e.preventDefault(); onDrop?.(project.slug) }}
       onClick={() => !isExpanded && onExpand?.()}
       style={{
         display: 'flex', flexDirection: 'column',
         ...(isMobile ? { position: 'absolute', inset: 0 } : {
           minWidth: isExpanded ? 380 : 300, maxWidth: isExpanded ? 420 : 360, flex: '0 0 auto',
           borderRadius: 14,
-          border: `1px solid ${isExpanded ? 'var(--bv-col-border-exp)' : 'var(--bv-col-border)'}`,
-          background: isExpanded ? 'var(--bv-col-exp)' : 'var(--bv-col)',
+          border: `1px solid ${isDragTarget ? 'var(--bv-accent-border)' : isExpanded ? 'var(--bv-col-border-exp)' : 'var(--bv-col-border)'}`,
+          background: isDragTarget ? 'var(--bv-accent)' : isExpanded ? 'var(--bv-col-exp)' : 'var(--bv-col)',
           backdropFilter: 'blur(8px)',
           boxShadow: isExpanded ? '0 0 30px rgba(59,130,246,0.08)' : 'none',
         }),
         transition: 'all 0.25s', overflow: 'hidden',
       }}
     >
-      {/* Header */}
+      {/* Header (drag handle) */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '12px 16px',
         borderBottom: '1px solid var(--bv-divider)',
-        flexShrink: 0, position: 'relative', cursor: isMobile ? 'default' : 'pointer',
+        flexShrink: 0, position: 'relative', cursor: isMobile ? 'default' : 'grab',
       }}>
         <div style={{
           position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
@@ -541,6 +564,18 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   // Context menu
   const [ctxMenu, setCtxMenu] = useState(null)
 
+  // Drag reorder state
+  const [dragSource, setDragSource] = useState(null)
+  const [dragTarget, setDragTarget] = useState(null)
+
+  // Column order persistence per filter mode (localStorage)
+  const [agentOrder, setAgentOrder] = useState(() => {
+    try { const s = localStorage.getItem('corner-board-agent-order'); return s ? JSON.parse(s) : null } catch { return null }
+  })
+  const [projectOrder, setProjectOrder] = useState(() => {
+    try { const s = localStorage.getItem('corner-board-project-order'); return s ? JSON.parse(s) : null } catch { return null }
+  })
+
   const vars = cssVars(isNightMode)
 
   // Build agent column data: top agents with their RNB tasks
@@ -556,21 +591,37 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   }, [agents, rightNow, isMobile])
 
   const agentColumns = useMemo(() => {
-    return topAgentSlugs.map(slug => {
+    // Apply saved order if available
+    let orderedSlugs = [...topAgentSlugs]
+    if (agentOrder) {
+      const known = new Set(topAgentSlugs)
+      const ordered = agentOrder.filter(s => known.has(s))
+      const missing = topAgentSlugs.filter(s => !agentOrder.includes(s))
+      orderedSlugs = [...ordered, ...missing]
+    }
+    return orderedSlugs.map(slug => {
       const agent = agents.find(a => a.slug === slug) || { slug, name: getAgentName(slug), status: 'IDLE' }
       const tasks = rightNow.filter(t => t.agent === slug)
       return { agent: { ...agent, color: agent.color || getAgentColor(slug) }, tasks }
     })
-  }, [topAgentSlugs, agents, rightNow])
+  }, [topAgentSlugs, agents, rightNow, agentOrder])
 
   // Build project column data from punchData
   const projectColumns = useMemo(() => {
     if (!punchData?.projects) return []
-    return punchData.projects.map(p => ({
+    const cols = punchData.projects.map(p => ({
       project: { slug: p.section, name: p.name, color: p.color || getAgentColor(p.section) },
       tasks: (p.tasks || []).map(t => ({ ...t, project: p.section })),
     }))
-  }, [punchData])
+    // Apply saved order if available
+    if (projectOrder) {
+      const slugMap = Object.fromEntries(cols.map(c => [c.project.slug, c]))
+      const ordered = projectOrder.filter(s => slugMap[s]).map(s => slugMap[s])
+      const missing = cols.filter(c => !projectOrder.includes(c.project.slug))
+      return [...ordered, ...missing]
+    }
+    return cols
+  }, [punchData, projectOrder])
 
   // Unread tracking (simple: agents with recent assistant messages we haven't viewed)
   const [viewedCols, setViewedCols] = useState(new Set())
@@ -615,6 +666,28 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       pipeData?.refetch?.()
     } catch {}
   }
+
+  // Drag reorder handlers
+  const handleDragDrop = useCallback((targetSlug) => {
+    if (!dragSource || dragSource === targetSlug) { setDragSource(null); setDragTarget(null); return }
+    const cols = filterMode === 'agents' ? agentColumns : projectColumns
+    const slugs = cols.map(c => filterMode === 'agents' ? c.agent.slug : c.project.slug)
+    const srcIdx = slugs.indexOf(dragSource)
+    const tgtIdx = slugs.indexOf(targetSlug)
+    if (srcIdx < 0 || tgtIdx < 0) { setDragSource(null); setDragTarget(null); return }
+    const newOrder = [...slugs]
+    newOrder.splice(srcIdx, 1)
+    newOrder.splice(tgtIdx, 0, dragSource)
+    if (filterMode === 'agents') {
+      setAgentOrder(newOrder)
+      try { localStorage.setItem('corner-board-agent-order', JSON.stringify(newOrder)) } catch {}
+    } else {
+      setProjectOrder(newOrder)
+      try { localStorage.setItem('corner-board-project-order', JSON.stringify(newOrder)) } catch {}
+    }
+    setDragSource(null)
+    setDragTarget(null)
+  }, [dragSource, filterMode, agentColumns, projectColumns])
 
   const currentCols = filterMode === 'agents' ? agentColumns : projectColumns
 
@@ -738,6 +811,10 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               isNight={isNightMode}
               isMobile={isMobile}
               onContextMenu={handleContextMenu}
+              onDragStart={(slug) => setDragSource(slug)}
+              onDragOver={(slug) => setDragTarget(slug)}
+              onDrop={(slug) => handleDragDrop(slug)}
+              isDragTarget={dragTarget === col.agent.slug && dragSource !== col.agent.slug}
             />
           )
         })}
@@ -754,6 +831,10 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
               isMobile={isMobile}
               onContextMenu={handleContextMenu}
               onAddTask={handleAddProjectTask}
+              onDragStart={(slug) => setDragSource(slug)}
+              onDragOver={(slug) => setDragTarget(slug)}
+              onDrop={(slug) => handleDragDrop(slug)}
+              isDragTarget={dragTarget === col.project.slug && dragSource !== col.project.slug}
             />
           )
         })}
