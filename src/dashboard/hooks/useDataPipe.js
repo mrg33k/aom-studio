@@ -827,13 +827,23 @@ export function useDataPipe(parsePunchList) {
   const eventsStatuses = eventsAgentStatusRef.current
 
   let agents
-  if (clientId === 'aom' && supabaseAgents.length === 0) {
-    // AOM fallback: hardcoded list until Supabase agent_status is populated
+  if (clientId === 'aom') {
+    // AOM always uses the full hardcoded agent list. Supabase agent_status
+    // entries overlay status info but never shrink the list. AOM's agent
+    // roster is curated in gridSpec -- Supabase may only have a subset.
+    const sbMap = Object.fromEntries(supabaseAgents.map(a => [a.slug, a]))
     agents = AOM_AGENT_SLUGS.map(slug => {
+      const sb = sbMap[slug]
       let status = 'IDLE'
       if (eventsStatuses[slug]) status = eventsStatuses[slug]
       else if (activeAgentSlugs.has(slug)) status = 'WORKING'
-      return { slug, name: slug.charAt(0).toUpperCase() + slug.slice(1), status }
+      return {
+        slug,
+        name: sb?.name || slug.charAt(0).toUpperCase() + slug.slice(1),
+        role: sb?.role || '',
+        status,
+        color: sb?.color || '#60A5FA',
+      }
     })
   } else {
     // World-scoped: only agents from Supabase agent_status for this client_id
