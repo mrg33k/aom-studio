@@ -102,7 +102,7 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
   ]
 
   // Compute menu item positions (radial from FAB center)
-  const MENU_RADIUS = 72
+  const MENU_RADIUS = 95
   const getItemPos = (angle) => ({
     x: Math.cos((angle * Math.PI) / 180) * MENU_RADIUS,
     y: Math.sin((angle * Math.PI) / 180) * MENU_RADIUS,
@@ -131,7 +131,7 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
       >
         {/* Menu items (radial) */}
         {menuOpen && menuItems.map((item, i) => {
-          const angle = baseAngle + (i * 50)
+          const angle = baseAngle + (i * 65)
           const itemPos = getItemPos(angle)
           const ItemIcon = item.icon
           return (
@@ -144,9 +144,9 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
               }}
               style={{
                 position: 'absolute',
-                left: FAB_SIZE / 2 + itemPos.x - 20,
-                top: FAB_SIZE / 2 + itemPos.y - 20,
-                width: 40, height: 40, borderRadius: 12,
+                left: FAB_SIZE / 2 + itemPos.x - 23,
+                top: FAB_SIZE / 2 + itemPos.y - 23,
+                width: 46, height: 46, borderRadius: 14,
                 background: `${item.color}20`,
                 border: `1.5px solid ${item.color}50`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -158,14 +158,14 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
               onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.12)'; e.currentTarget.style.boxShadow = `0 4px 20px ${item.color}50` }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = `0 4px 16px ${item.color}30` }}
             >
-              <ItemIcon size={18} strokeWidth={2} style={{ color: item.color }} />
+              <ItemIcon size={20} strokeWidth={2} style={{ color: item.color }} />
             </div>
           )
         })}
 
         {/* Labels (below icons) */}
         {menuOpen && menuItems.map((item, i) => {
-          const angle = baseAngle + (i * 50)
+          const angle = baseAngle + (i * 65)
           const itemPos = getItemPos(angle)
           return (
             <div
@@ -173,9 +173,9 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
               style={{
                 position: 'absolute',
                 left: FAB_SIZE / 2 + itemPos.x - 40,
-                top: FAB_SIZE / 2 + itemPos.y + 24,
+                top: FAB_SIZE / 2 + itemPos.y + 28,
                 width: 80, textAlign: 'center',
-                fontSize: 10, fontWeight: 700,
+                fontSize: 11, fontWeight: 700,
                 color: item.color,
                 fontFamily: "'Inter', system-ui, sans-serif",
                 letterSpacing: '0.04em',
