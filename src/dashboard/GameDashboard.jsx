@@ -11780,9 +11780,64 @@ export default function GameDashboard() {
             if (newMsgs.some(m => m.role === 'assistant')) setPanelStreaming(false)
           }
         } catch {}
-      }, 30000)
+      }, 5000) // 5s poll for near-instant chat updates
 
-      return () => clearInterval(poll)
+      // Supabase Realtime: instant push when new messages are inserted for this agent.
+      // Triggers the poll function immediately instead of waiting for the 5s interval.
+      let realtimeChannel = null
+      if (supabase) {
+        const channelName = `chat-${room}-${Date.now()}`
+        const filter = isAomTeamRoom
+          ? undefined // AOM team room: listen to all messages
+          : `agent=eq.${room}`
+        realtimeChannel = supabase
+          .channel(channelName)
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            ...(filter ? { filter } : {}),
+          }, (payload) => {
+            // New message inserted -- trigger immediate poll to fetch via Vercel proxy
+            // (proxy handles auth + formatting; we don't parse the raw Realtime payload)
+            const row = payload?.new
+            if (!row) return
+            // Quick inline push for instant feel, poll will deduplicate
+            const msg = {
+              id: row.id,
+              role: row.role || 'assistant',
+              content: row.text || '',
+              time: row.timestamp || new Date().toISOString(),
+              source: 'realtime',
+              agentTag: isAomTeamRoom ? (row.agent || null) : null,
+              projectPath: isAomTeamRoom ? (row.project_path || null) : null,
+            }
+            if (msg.content) {
+              lastSeenTs = msg.time
+              setAgentChats(prev => {
+                const current = prev[room]?._all || []
+                if (current.some(m => m.id === msg.id)) return prev
+                const isDupContent = current.some(m =>
+                  m.role === msg.role && m.content === msg.content &&
+                  Math.abs(new Date(m.time).getTime() - new Date(msg.time).getTime()) < 5000
+                )
+                if (isDupContent) return prev
+                let updated = [...current]
+                if (row.role !== 'user') updated = updated.filter(m => !m.streaming)
+                updated.push(msg)
+                updated.sort(safeTimeSort)
+                return { ...prev, [room]: { _all: updated } }
+              })
+              if (msg.role === 'assistant') setPanelStreaming(false)
+            }
+          })
+          .subscribe()
+      }
+
+      return () => {
+        clearInterval(poll)
+        if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+      }
     }
 
     // --- LOCAL: file-backed poll ---

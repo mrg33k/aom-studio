@@ -601,6 +601,27 @@ export function useDataPipe(parsePunchList) {
             }
           }
 
+          // FALLBACK: agent_status table with status='working' + current_task.
+          // write-checkpoint.py PATCHes agent_status directly. If no active_processes
+          // rows AND no events captured the agent, this is the last source of truth.
+          // Only add agents not already represented in active[].
+          if (data.agents && data.agents.length > 0) {
+            const alreadyInActive = new Set(active.map(t => t.agent))
+            const workingFromStatus = data.agents
+              .filter(a => a.status === 'working' && a.currentTask && !alreadyInActive.has(a.slug))
+              .map(a => ({
+                agent: a.slug,
+                text: a.currentTask,
+                isLive: true,
+                isQueued: false,
+                taskId: null,
+                source: 'agent_status',
+              }))
+            if (workingFromStatus.length > 0) {
+              active.push(...workingFromStatus)
+            }
+          }
+
           setRightNow(active)
         }
 
