@@ -9,3 +9,6 @@ dist
 .env.seed
 .env*.local
 .env.production
+.next/
+test-screenshots/
+*.png
