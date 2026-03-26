@@ -12168,17 +12168,24 @@ export default function GameDashboard() {
     setPanelVisible(true)
 
     if (roomId === selectedRoom) {
-      // Already selected: zoom to Level 3 (detail)
-      setCameraZoom(ZOOM_MAX)
-      // On mobile, promote drawer: null -> half, half -> full
-      // Reset to 'chat' tab in both cases -- promoting to full without resetting tab
-      // leaves the portal input hidden if user was on 'tasks' or 'info' tab.
-      if (isMobile && drawerSnap === 'half') {
-        setDrawerSnap('full')
-        setMobileDrawerActiveTab('chat')
-      } else if (!drawerSnap) {
-        setDrawerSnap('half')
-        setMobileDrawerActiveTab('chat')
+      // Toggle: click same room again -> close panel/drawer
+      if (isMobile) {
+        if (drawerSnap === 'full') {
+          setDrawerSnap('half')
+        } else if (drawerSnap === 'half') {
+          setDrawerSnap(null)
+          setSelectedRoom(null)
+        } else {
+          setDrawerSnap('half')
+          setMobileDrawerActiveTab('chat')
+        }
+      } else {
+        // Desktop: toggle sidebar visibility
+        if (panelVisible) {
+          setPanelVisible(false)
+        } else {
+          setPanelVisible(true)
+        }
       }
     } else {
       // First click: zoom to Level 2 (neighborhood)
