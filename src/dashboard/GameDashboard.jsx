@@ -9181,16 +9181,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               boxShadow: isTablet ? `0 0 8px ${agentColor}20` : `0 0 20px ${agentColor}30, 0 0 40px ${agentColor}10`,
             }}
           />
-          {/* Status dot */}
-          <div style={{
-            position: 'absolute', bottom: 0, right: 0,
-            width: isTablet ? 8 : 18, height: isTablet ? 8 : 18, borderRadius: '50%',
-            background: cfg.color,
-            border: isNightMode
-              ? `${isTablet ? 1 : 3}px solid #0F1B2D`
-              : `${isTablet ? 1 : 3}px solid #142846`,
-            boxShadow: `0 0 ${isTablet ? 3 : 8}px ${cfg.color}`,
-          }} />
+          {/* Status dot removed (Patrik feedback Mar 25) */}
         </div>
 
         {/* Name + role/status -- stacked on desktop, inline on tablet */}
@@ -9242,27 +9233,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               >&#8250;</button>
             </div>
           ) : (
-            // Desktop: name row with arrows, then subtitle below
+            // Desktop: name + subtitle (arrows removed -- Patrik feedback Mar 25)
             <div style={{ width: '100%', marginBottom: 2 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
-                    const prev = AGENTS[(idx - 1 + AGENTS.length) % AGENTS.length]
-                    if (prev) onSelectAgent?.(prev.slug)
-                  }}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
-                    color: isDaytime ? '#6B8AB0' : '#8BA4C4',
-                    fontSize: 18, lineHeight: 1, flexShrink: 0,
-                    display: 'flex', alignItems: 'center',
-                    opacity: 0.7, transition: 'opacity 120ms ease',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.7' }}
-                  title="Previous agent"
-                >&#8249;</button>
                 <div style={{
                   color: isNightMode ? '#F1F5F9' : '#E8ECF0',
                   fontSize: 22,
@@ -9274,24 +9247,6 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 }}>
                   {agent?.name || room?.agent}
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    const idx = AGENTS.findIndex(a => a.slug === (room?.id || agentSlug))
-                    const next = AGENTS[(idx + 1) % AGENTS.length]
-                    if (next) onSelectAgent?.(next.slug)
-                  }}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px',
-                    color: isDaytime ? '#6B8AB0' : '#8BA4C4',
-                    fontSize: 18, lineHeight: 1, flexShrink: 0,
-                    display: 'flex', alignItems: 'center',
-                    opacity: 0.7, transition: 'opacity 120ms ease',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = '1' }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.7' }}
-                  title="Next agent"
-                >&#8250;</button>
               </div>
               {/* Current task subtitle */}
               {(() => {
@@ -9321,46 +9276,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               {agent?.role || room?.role}
             </div>
           )}
-          {/* Status badge pill -- always visible but smaller on tablet */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: isTablet ? 3 : 5,
-            marginTop: isTablet ? 0 : 6,
-            fontSize: isTablet ? 9 : 11, fontWeight: 700,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
-            borderRadius: 4, padding: isTablet ? '1px 5px' : '2px 8px',
-            flexShrink: 0,
-            ...(status === 'WORKING' ? { color: '#16A34A', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }
-              : status === 'BLOCKED' ? { color: '#DC2626', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }
-              : status === 'DONE' ? { color: '#60A5FA', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }
-              : { color: '#6B7280', background: 'rgba(107,114,128,0.1)', border: '1px solid rgba(107,114,128,0.2)' }),
-          }}>
-            <span style={{
-              width: isTablet ? 4 : 5, height: isTablet ? 4 : 5, borderRadius: '50%',
-              background: status === 'WORKING' ? '#16A34A' : status === 'BLOCKED' ? '#DC2626' : status === 'DONE' ? '#2563EB' : '#6B7280',
-              flexShrink: 0,
-            }} />
-            {status === 'WORKING' ? 'ACTIVE' : status || 'IDLE'}
-          </div>
-          {/* Stat counts removed -- clutter under agent name (Patrik feedback Mar 25) */}
+          {/* Status badge + expand removed (Patrik feedback Mar 25) */}
         </div>
-
-        {/* Extend/collapse -- hidden on tablet to save header space */}
-        {!isTablet && (
-        <button onClick={onToggleExtend} title={isExtended ? 'Collapse panel' : 'Expand panel'}
-          style={{
-            background: isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)',
-            border: isDaytime ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(100,180,255,0.1)',
-            borderRadius: 8, cursor: 'pointer', color: isExtended ? '#E85D26' : (isDaytime ? '#6B8AB0' : '#6B7280'),
-            width: 32, height: 32,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 150ms ease', flexShrink: 0,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = isDaytime ? '#E2E8F0' : '#EDF2FA'; e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.12)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = isExtended ? '#E85D26' : (isDaytime ? '#6B8AB0' : '#6B7280'); e.currentTarget.style.background = isDaytime ? 'rgba(59,130,246,0.18)' : 'rgba(100,180,255,0.06)' }}
-        >
-          {isExtended ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-        </button>
-        )}
       </div>
 
       {/* 4 TopSquares removed -- clutter above tabs (Patrik feedback Mar 25) */}
