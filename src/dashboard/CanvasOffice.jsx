@@ -1181,23 +1181,7 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     },
   }), [triggerCelebration, slotOrder])
 
-  // ---- AUTO-TEST: trigger celebration wave every 60 seconds ----
-  useEffect(() => {
-    let roomIdx = 0
-    const timer = setInterval(() => {
-      if (slotOrder.length === 0) return
-      const id = slotOrder[roomIdx % slotOrder.length]
-      triggerCelebration(id)
-      roomIdx++
-    }, 60000)
-    const initial = setTimeout(() => {
-      if (slotOrder.length > 0) {
-        triggerCelebration(slotOrder[0])
-        roomIdx = 1
-      }
-    }, 3000)
-    return () => { clearInterval(timer); clearTimeout(initial) }
-  }, [triggerCelebration, slotOrder])
+  // Auto-celebration removed -- was running a 60s interval triggering confetti for demo
 
   // Animation time reference
   const startTimeRef = useRef(performance.now())
@@ -2159,28 +2143,15 @@ const CanvasOffice = forwardRef(function CanvasOffice({
     dirtyRef.current = true
   }, [size, hover, selectedRoom, focusedRoom, slotOrder, agentStatus, contextMenu, unreadAgents, loaded])
 
-  // Render loop -- pauses when tab not visible to save CPU
+  // Render loop -- only runs when there's something to draw. Stops when idle.
   useEffect(() => {
     if (!loaded) return
     let raf
-    let paused = false
 
     const loop = () => {
-      // Skip rendering entirely when tab is hidden (saves 60fps of CPU)
-      if (document.hidden) {
-        if (!paused) paused = true
-        raf = requestAnimationFrame(loop)
-        return
-      }
-      // Force a redraw on the first frame back from being hidden
-      if (paused) {
-        dirtyRef.current = true
-        paused = false
-      }
+      // Stop entirely when tab is hidden
+      if (document.hidden) return
 
-      // Check whether anything is visually animating this frame (independently of React state).
-      // These conditions run every frame so animations that modify refs directly (camera momentum,
-      // drag, celebration, shuffle) still get drawn even when React state hasn't changed.
       const hasActiveAnimation = (
         cameraAnimRef.current !== null ||
         celebrationRef.current.active ||
@@ -2188,11 +2159,9 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         panRef.current.active ||
         panRef.current.momentumFrame !== null ||
         Object.keys(shuffleAnimRef.current).length > 0 ||
-        contextMenu !== null ||
-        roomsWithCharsRef.current.size > 0
+        contextMenu !== null
       )
 
-      // Check if any agent is WORKING (drives wave blend crossfade animation each frame)
       const hasWorkingAgent = agentStatus
         ? Object.values(agentStatus).some(s => s?.status === 'WORKING')
         : false
@@ -2202,10 +2171,29 @@ const CanvasOffice = forwardRef(function CanvasOffice({
         dirtyRef.current = false
       }
 
-      raf = requestAnimationFrame(loop)
+      // Only continue loop if there's active animation; otherwise stop and wait for state change
+      if (hasActiveAnimation || hasWorkingAgent) {
+        raf = requestAnimationFrame(loop)
+      }
     }
+
+    // Initial draw
+    dirtyRef.current = true
     raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
+
+    // Restart loop when tab becomes visible again
+    const onVisible = () => {
+      if (!document.hidden) {
+        dirtyRef.current = true
+        raf = requestAnimationFrame(loop)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [draw, loaded, contextMenu, agentStatus])
 
   // Block mousewheel zoom (killed)

@@ -274,7 +274,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
         100% { box-shadow: inset 0 0 0 1px rgba(34,197,94,0.5), 0 0 10px rgba(34,197,94,0.35); }
       }
       .task-approved-glow {
-        animation: taskApprovedGlow 1.2s ease-in-out infinite;
+        animation: taskApprovedGlow 1.2s ease-in-out;
       }
     `}</style>
     <motion.div
@@ -709,7 +709,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                   textTransform: 'uppercase',
                   border: '1px solid rgba(233,30,144,0.25)',
                   flexShrink: 0,
-                  animation: 'statusPulse 2s ease-in-out infinite',
+                  animation: 'statusPulse 2s ease-in-out',
                 }}>
                   QUEUED
                 </span>
@@ -748,7 +748,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                   textTransform: 'uppercase',
                   border: '1px solid #F59E0B',
                   flexShrink: 0,
-                  animation: 'statusPulse 2s ease-in-out infinite',
+                  animation: 'statusPulse 2s ease-in-out',
                 }}>
                   DONE
                 </span>
@@ -766,7 +766,7 @@ export function TaskPanel({ project, onClose, isNightMode, onAddManualTask, onTo
                   textTransform: 'uppercase',
                   border: '1px solid rgba(255,107,61,0.25)',
                   flexShrink: 0,
-                  animation: 'statusPulse 2s ease-in-out infinite',
+                  animation: 'statusPulse 2s ease-in-out',
                 }}>
                   LIVE
                 </span>

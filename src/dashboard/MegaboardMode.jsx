@@ -131,7 +131,7 @@ function HPBar({ percent, label = 'HP' }) {
           {showPulse && (
             <div style={{
               width: '100%', height: '100%', borderRadius: 4, background: color,
-              animation: 'hpPulse 2s ease-in-out infinite',
+              animation: 'hpPulse 2s ease-in-out',
             }} />
           )}
         </motion.div>
@@ -212,7 +212,7 @@ function AgentCard({ agent, status, onClick, isMobile, spriteAgents }) {
           {isActive && (
             <div style={{
               width: 8, height: 8, borderRadius: '50%', background: agent.color,
-              animation: 'megaDotPulse 1.5s ease-in-out infinite',
+              animation: 'megaDotPulse 1.5s ease-in-out',
             }} />
           )}
         </div>
@@ -678,7 +678,7 @@ export default function MegaboardMode({ agentStatus, data, isMobile }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <div style={{
                 width: 6, height: 6, borderRadius: '50%', background: MB.hpGreen,
-                animation: 'megaDotPulse 1.5s ease-in-out infinite',
+                animation: 'megaDotPulse 1.5s ease-in-out',
               }} />
               <span style={{
                 fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 12,

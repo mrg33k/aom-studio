@@ -74,7 +74,7 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
             inset: -3,
             borderRadius: '50%',
             border: `2px solid rgba(${glowColor},0.3)`,
-            animation: 'fabRingPulse 2.4s ease-in-out infinite',
+            animation: 'fabRingPulse 2.4s ease-in-out',
             pointerEvents: 'none',
           }} />
           {/* + icon */}

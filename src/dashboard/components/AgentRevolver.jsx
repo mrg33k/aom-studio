@@ -141,7 +141,7 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
         <div style={{
           position: 'absolute', inset: -8,
           background: `radial-gradient(ellipse at center, ${cfg.glow} 0%, transparent 70%)`,
-          animation: 'hudActiveGlow 2s ease-in-out infinite',
+          animation: 'hudActiveGlow 2s ease-in-out',
           willChange: 'transform, opacity',
           pointerEvents: 'none',
         }} />
@@ -152,7 +152,7 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
         <div style={{
           position: 'absolute', inset: -6,
           background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.3) 0%, transparent 70%)',
-          animation: 'hudBlockedPulse 1.5s ease-in-out infinite',
+          animation: 'hudBlockedPulse 1.5s ease-in-out',
           willChange: 'transform, opacity',
           pointerEvents: 'none',
         }} />
@@ -163,7 +163,7 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
         <div style={{
           position: 'absolute', inset: -5,
           background: 'radial-gradient(ellipse at center, rgba(245,158,11,0.2) 0%, transparent 70%)',
-          animation: 'hudWaitingPulse 2.5s ease-in-out infinite',
+          animation: 'hudWaitingPulse 2.5s ease-in-out',
           willChange: 'opacity',
           pointerEvents: 'none',
         }} />
@@ -264,7 +264,7 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
           border: `2px solid ${HUD.panelBgSolid}`,
           boxShadow: '0 0 8px rgba(245,158,11,0.4)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          animation: 'hudWaitingSpin 3s linear infinite',
+          animation: 'hudWaitingSpin 3s linear',
           willChange: 'transform',
         }}>
           <Clock size={7} color="#FFF" strokeWidth={3} />
@@ -277,7 +277,7 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
           background: cfg.color,
           border: `2px solid ${HUD.panelBgSolid}`,
           boxShadow: `0 0 8px ${cfg.glow}`,
-          animation: isActive ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
+          animation: isActive ? 'hudStatusPulse 1.5s ease-in-out' : 'none',
           willChange: isActive ? 'transform, opacity' : 'auto',
         }} />
       )}
@@ -290,7 +290,7 @@ export function AgentPortrait({ slug, size = 58, status = 'IDLE', onClick, onCon
           background: '#EF4444', border: `2px solid ${HUD.panelBgSolid}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 0 10px rgba(239,68,68,0.6)',
-          animation: 'hudBlockedBadge 2s ease-in-out infinite',
+          animation: 'hudBlockedBadge 2s ease-in-out',
           willChange: 'transform',
         }}>
           <X size={10} color="#FFF" strokeWidth={3} />
@@ -397,7 +397,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
           <div style={{
             position: 'absolute', inset: -6,
             background: `radial-gradient(ellipse at center, ${mainCfg.glow} 0%, transparent 70%)`,
-            animation: 'hudActiveGlow 2s ease-in-out infinite', willChange: 'transform, opacity', pointerEvents: 'none',
+            animation: 'hudActiveGlow 2s ease-in-out', willChange: 'transform, opacity', pointerEvents: 'none',
           }} />
         )}
         <svg width={52} height={52} viewBox="0 0 52 52" style={{ position: 'absolute', inset: 0 }}>
@@ -414,7 +414,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
           position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
           width: 14, height: 14, borderRadius: '50%', background: mainCfg.color,
           border: `2px solid ${HUD.panelBgSolid}`, boxShadow: `0 0 10px ${mainCfg.glow}`,
-          animation: mainStatus === 'WORKING' ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
+          animation: mainStatus === 'WORKING' ? 'hudStatusPulse 1.5s ease-in-out' : 'none',
         }} />
       </motion.div>
 
@@ -461,7 +461,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                 overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
                 background: '#0A0F1E',
                 boxShadow: status === 'WORKING' ? `0 0 12px ${cfg.glow}` : status === 'BLOCKED' ? `0 0 10px rgba(239,68,68,0.4)` : 'none',
-                animation: status === 'WORKING' ? 'hudMiniDotPulse 2s ease-in-out infinite' : status === 'BLOCKED' ? 'hudMiniDotBlocked 1.5s ease-in-out infinite' : 'none',
+                animation: status === 'WORKING' ? 'hudMiniDotPulse 2s ease-in-out' : status === 'BLOCKED' ? 'hudMiniDotBlocked 1.5s ease-in-out' : 'none',
                 willChange: status === 'WORKING' || status === 'BLOCKED' ? 'box-shadow, opacity' : 'auto',
                 opacity: status === 'IDLE' ? 0.6 : 1,
               }}
@@ -569,7 +569,7 @@ export function AgentRoster({ agentStatus, onAgentClick, onAgentContextMenu }) {
                     <div style={{
                       width: 8, height: 8, borderRadius: '50%', background: cfg.color,
                       boxShadow: status === 'WORKING' ? `0 0 6px ${cfg.glow}` : 'none',
-                      animation: status === 'WORKING' ? 'hudStatusPulse 1.5s ease-in-out infinite' : 'none',
+                      animation: status === 'WORKING' ? 'hudStatusPulse 1.5s ease-in-out' : 'none',
                     }} />
                   </motion.button>
                 )

@@ -151,13 +151,13 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
           width: 3, borderRadius: 2,
           background: isTodoList ? '#EF4444' : isRightNow ? pillColor : isSchedule ? project.color : '#EF4444',
           boxShadow: `0 0 12px ${isTodoList ? 'rgba(239,68,68,0.5)' : (isRightNow || isSchedule) ? pillColor : 'rgba(239,68,68,0.6)'}88`,
-          animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out infinite' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out infinite' : 'none',
+          animation: (isRightNow && hasLiveTasks) ? 'statusPulse 1.5s ease-in-out' : (isTodoList || (isClient && project.statusTag === 'RED')) ? 'statusPulse 2s ease-in-out' : 'none',
         }} />
       )}
 
       {/* Project indicator - BIGGER on desktop, compact on mobile/tablet. */}
       {isRightNow ? (
-        <Zap size={12} color={pillColor} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${pillColor}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out infinite' : 'none' }} />
+        <Zap size={12} color={pillColor} style={{ flexShrink: 0, filter: `drop-shadow(0 0 8px ${pillColor}AA)`, animation: hasLiveTasks ? 'statusPulse 2s ease-in-out' : 'none' }} />
       ) : isCompletedFeed ? (
         <CheckCircle2 size={12} color={project.color} style={{ flexShrink: 0, filter: `drop-shadow(0 0 6px ${project.color}88)` }} />
       ) : isTodoList ? (
@@ -216,13 +216,13 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
           textTransform: 'uppercase',
           border: '1.5px solid rgba(255,107,61,0.3)',
           whiteSpace: 'nowrap',
-          animation: 'statusPulse 2s ease-in-out infinite',
+          animation: 'statusPulse 2s ease-in-out',
         }}>
           <span style={{
             width: 6, height: 6, borderRadius: '50%',
             background: '#FF6B3D',
             boxShadow: '0 0 6px rgba(255,107,61,0.6)',
-            animation: 'statusPulse 1.5s ease-in-out infinite',
+            animation: 'statusPulse 1.5s ease-in-out',
           }} />
           LIVE
         </span>
@@ -244,7 +244,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
           textTransform: 'uppercase',
           border: '1.5px solid rgba(239,68,68,0.25)',
           whiteSpace: 'nowrap',
-          animation: 'statusPulse 2.5s ease-in-out infinite',
+          animation: 'statusPulse 2.5s ease-in-out',
         }}>
           <AlertCircle size={10} />
           NEEDS YOU
@@ -300,7 +300,7 @@ export function ProjectCard({ project, isExpanded, onClick, onContextMenu, isNig
           border: `1.5px solid ${tagStyle.border}`,
           whiteSpace: 'nowrap',
           boxShadow: tagStyle.glow !== 'none' ? `0 0 10px ${tagStyle.glow}` : 'none',
-          animation: project.statusTag === 'RED' ? 'statusPulse 2.5s ease-in-out infinite' : 'none',
+          animation: project.statusTag === 'RED' ? 'statusPulse 2.5s ease-in-out' : 'none',
         }}>
           {project.section === 'outreach' ? 'OUTREACH'
             : project.icon === 'client' || project.isClient ? 'CLIENT'

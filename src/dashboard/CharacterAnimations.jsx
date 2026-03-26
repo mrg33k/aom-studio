@@ -190,11 +190,7 @@ function useIdleBounce(agentSlug, isActive) {
     startTimeRef.current = performance.now()
 
     const animate = (now) => {
-      // Pause animation when tab not visible (saves per-agent rAF cost)
-      if (document.hidden) {
-        rafRef.current = requestAnimationFrame(animate)
-        return
-      }
+      if (document.hidden) return // Stop loop when tab hidden
       const elapsed = now - startTimeRef.current
       const phase = (elapsed / IDLE_BOUNCE_PERIOD + phaseOffset) * Math.PI * 2
       const y = Math.sin(phase) * IDLE_BOUNCE_AMPLITUDE
@@ -204,8 +200,19 @@ function useIdleBounce(agentSlug, isActive) {
     }
 
     rafRef.current = requestAnimationFrame(animate)
+
+    // Restart when tab becomes visible
+    const onVisible = () => {
+      if (!document.hidden && isActive) {
+        startTimeRef.current = performance.now()
+        rafRef.current = requestAnimationFrame(animate)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [isActive, phaseOffset])
 
@@ -258,8 +265,15 @@ function useSpeakingAnimation(isSpeaking) {
   const [speakBounceY, setSpeakBounceY] = useState(0)
   const rafRef = useRef(null)
   const startRef = useRef(null)
+  const visHandlerRef = useRef(null)
 
   useEffect(() => {
+    // Clean up previous visibility handler
+    if (visHandlerRef.current) {
+      document.removeEventListener('visibilitychange', visHandlerRef.current)
+      visHandlerRef.current = null
+    }
+
     if (isSpeaking) {
       startRef.current = performance.now()
 
@@ -268,29 +282,35 @@ function useSpeakingAnimation(isSpeaking) {
       const springGrow = () => {
         const elapsed = performance.now() - startRef.current
         if (elapsed < 150) {
-          setBubbleScale(elapsed / 150 * 1.15) // overshoot
+          setBubbleScale(elapsed / 150 * 1.15)
         } else if (elapsed < 300) {
-          setBubbleScale(1.15 - (elapsed - 150) / 150 * 0.15) // settle
+          setBubbleScale(1.15 - (elapsed - 150) / 150 * 0.15)
         } else {
           setBubbleScale(1.0)
         }
       }
 
-      // Animate speaking bounce
       const animate = (now) => {
-        if (document.hidden) { rafRef.current = requestAnimationFrame(animate); return }
+        if (document.hidden) return
         const elapsed = now - startRef.current
         springGrow()
-
         const phase = (elapsed / SPEAKING_BOUNCE_PERIOD) * Math.PI * 2
-        const y = Math.sin(phase) * 3 // faster, slightly more amplitude
+        const y = Math.sin(phase) * 3
         setSpeakBounceY(y)
         rafRef.current = requestAnimationFrame(animate)
       }
 
       rafRef.current = requestAnimationFrame(animate)
+
+      const onVisible = () => {
+        if (!document.hidden) {
+          startRef.current = performance.now()
+          rafRef.current = requestAnimationFrame(animate)
+        }
+      }
+      visHandlerRef.current = onVisible
+      document.addEventListener('visibilitychange', onVisible)
     } else {
-      // Shrink bubble
       setBubbleScale(0)
       setSpeakBounceY(0)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
@@ -298,6 +318,10 @@ function useSpeakingAnimation(isSpeaking) {
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      if (visHandlerRef.current) {
+        document.removeEventListener('visibilitychange', visHandlerRef.current)
+        visHandlerRef.current = null
+      }
     }
   }, [isSpeaking])
 
@@ -334,7 +358,7 @@ function useCelebration(agentSlug) {
     setConfettiParticles(particles)
 
     const animate = (now) => {
-      if (document.hidden) { rafRef.current = requestAnimationFrame(animate); return }
+      if (document.hidden) return // Stop loop when tab hidden
       const elapsed = now - startRef.current
       const progress = Math.min(elapsed / CELEBRATION_DURATION, 1)
 
@@ -662,7 +686,7 @@ export function AnimatedAgentCharacter({
           position: 'absolute', inset: -8,
           borderRadius: '50%',
           background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`,
-          animation: 'characterGlow 2s ease-in-out infinite',
+          animation: 'characterGlow 2s ease-in-out',
         }} />
       )}
 
@@ -676,7 +700,7 @@ export function AnimatedAgentCharacter({
             <div key={i} style={{
               width: 5, height: 5, borderRadius: '50%',
               background: '#F59E0B',
-              animation: `dotPulse 0.8s ease-in-out ${i * 0.2}s infinite`,
+              animation: `dotPulse 0.8s ease-in-out ${i * 0.2}s`,
             }} />
           ))}
         </div>

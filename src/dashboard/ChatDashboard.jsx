@@ -203,7 +203,7 @@ function useDashboardData(interval = 30000) {
   const [loading, setLoading] = useState(true)
   const lastRaw = useRef(null)
   const endpoint = IS_LOCAL ? '/api/local/status' : '/api/dashboard/supabase-status'
-  const pollInterval = IS_LOCAL ? 5000 : interval
+  const pollInterval = 30000
 
   const fetchData = useCallback(async () => {
     try {
@@ -730,7 +730,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           for (const row of data) addResponse(row)
         }
       } catch {}
-    }, 3000)
+    }, 30000)
 
     return () => {
       supabase.removeChannel(channel)
@@ -815,8 +815,6 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
     // NOTE: Supabase Realtime is broken on Safari/iOS with sb_publishable_ keys.
     // Always poll via Vercel proxy regardless. Poll is the reliable path.
 
-    const pollInterval = IS_LOCAL ? 2500 : 5000
-
     convPollRef.current = setInterval(async () => {
       if (document.hidden) return // Skip when tab not visible
       try {
@@ -871,13 +869,11 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           }
         }
       } catch {}
-    }, pollInterval)
+    }, 30000)
 
-    // FAST-PATH OUTBOX POLL: 500ms poll of relay-outbox for immediate response display (local only)
-    // On production, the conversation JSONL is the single source (relay-outbox is local file only)
+    // FAST-PATH OUTBOX POLL: 30s poll of relay-outbox (local only)
     if (IS_LOCAL) {
     bgPollRef.current = setInterval(async () => {
-      // Only poll outbox if we're NOT actively polling from a send (startRelayPoll handles that)
       if (relayPollRef.current || document.hidden) return
 
       try {
@@ -913,7 +909,7 @@ function ChatPanel({ agent, statusData, onClose, isMobile }) {
           return deduplicateMessages(updated)
         })
       } catch {}
-    }, 500) // 500ms for near-instant outbox relay display
+    }, 30000)
     } // end IS_LOCAL block for fast-path outbox poll
 
     return () => {
@@ -1628,9 +1624,8 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
 
   // Poll for new messages
   useEffect(() => {
-    const pollInterval = IS_LOCAL ? 2500 : 5000
     convPollRef.current = setInterval(async () => {
-      if (document.hidden) return // Skip when tab not visible
+      if (document.hidden) return
       try {
         const sinceParam = lastConvTimestampRef.current ? `&since=${encodeURIComponent(lastConvTimestampRef.current)}` : ''
         const endpoint = IS_LOCAL
@@ -1668,7 +1663,7 @@ function TeamRoomPanel({ agentStatus, onClose, isMobile }) {
           if (chatTimeoutRef.current) clearTimeout(chatTimeoutRef.current)
         }
       } catch {}
-    }, pollInterval)
+    }, 30000)
     return () => { if (convPollRef.current) clearInterval(convPollRef.current) }
   }, [])
 

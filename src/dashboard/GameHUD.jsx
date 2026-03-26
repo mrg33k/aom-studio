@@ -127,7 +127,7 @@ function InboxPanel({ unreadMsgs, onClose, isNightMode, onNavigateToAgent, onCla
           width: 7, height: 7, borderRadius: '50%',
           background: '#3B82F6',
           boxShadow: '0 0 8px rgba(59,130,246,0.8), 0 0 14px rgba(59,130,246,0.4)',
-          animation: 'vegasTypingBounce 2s ease-in-out infinite',
+          animation: 'vegasTypingBounce 2s ease-in-out',
           willChange: 'transform, opacity',
         }} />
         <span style={{
@@ -1069,7 +1069,7 @@ export default function GameHUD({
                       width: 7, height: 7, borderRadius: '50%',
                       background: '#FF6B3D',
                       boxShadow: '0 0 6px rgba(255,107,61,0.6)',
-                      animation: 'statusPulse 1.5s ease-in-out infinite',
+                      animation: 'statusPulse 1.5s ease-in-out',
                       willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
@@ -1081,7 +1081,7 @@ export default function GameHUD({
                     <span style={{
                       width: 7, height: 7, borderRadius: '50%', background: '#F59E0B',
                       boxShadow: '0 0 6px rgba(245,158,11,0.7)',
-                      animation: 'statusPulse 2s ease-in-out infinite',
+                      animation: 'statusPulse 2s ease-in-out',
                       willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
@@ -1089,7 +1089,7 @@ export default function GameHUD({
                     <span style={{
                       width: 7, height: 7, borderRadius: '50%', background: '#E91E90',
                       boxShadow: '0 0 6px rgba(233,30,144,0.6)',
-                      animation: 'statusPulse 2s ease-in-out infinite',
+                      animation: 'statusPulse 2s ease-in-out',
                       willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
@@ -1098,7 +1098,7 @@ export default function GameHUD({
                       width: 7, height: 7, borderRadius: '50%',
                       background: '#FF6B3D',
                       boxShadow: '0 0 6px rgba(255,107,61,0.6)',
-                      animation: 'statusPulse 1.5s ease-in-out infinite',
+                      animation: 'statusPulse 1.5s ease-in-out',
                       willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
@@ -1106,7 +1106,7 @@ export default function GameHUD({
                     <span style={{
                       width: 7, height: 7, borderRadius: '50%', background: '#F59E0B',
                       boxShadow: '0 0 6px rgba(245,158,11,0.7)',
-                      animation: 'statusPulse 2s ease-in-out infinite',
+                      animation: 'statusPulse 2s ease-in-out',
                       willChange: 'transform, opacity',
                       flexShrink: 0,
                     }} />
@@ -1410,7 +1410,7 @@ export default function GameHUD({
           100% { background-position: 200% 0; }
         }
         .hud-border-shimmer {
-          animation: hudBorderShimmer 4s ease-in-out infinite;
+          animation: hudBorderShimmer 4s ease-in-out;
           will-change: background-position;
         }
         .hud-panel-shimmer {
@@ -1458,7 +1458,7 @@ export default function GameHUD({
           animation: tickerFlash 1.2s ease-out 1, tickerWiggle 0.5s ease-in-out 1 0.15s;
         }
         .ticker-task-live {
-          animation: tickerFlash 2s ease-in-out infinite;
+          animation: tickerFlash 2s ease-in-out;
           will-change: box-shadow;
         }
         @keyframes tickerFlashFuchsia {
@@ -1466,7 +1466,7 @@ export default function GameHUD({
           30% { box-shadow: 0 0 12px rgba(233,30,144,0.55); }
         }
         .ticker-task-queued {
-          animation: tickerFlashFuchsia 2s ease-in-out infinite;
+          animation: tickerFlashFuchsia 2s ease-in-out;
           will-change: box-shadow;
         }
         @keyframes tickerFlashGreen {
@@ -1474,7 +1474,7 @@ export default function GameHUD({
           30% { box-shadow: 0 0 12px rgba(34,197,94,0.45); }
         }
         .ticker-task-elon {
-          animation: tickerFlashGreen 2s ease-in-out infinite;
+          animation: tickerFlashGreen 2s ease-in-out;
           will-change: box-shadow;
         }
         @keyframes spin {

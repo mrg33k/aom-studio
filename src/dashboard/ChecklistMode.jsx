@@ -263,7 +263,7 @@ function ProjectSidebar({ projects, selectedProject, onSelectProject, isMobile, 
               color: '#FF6B3D',
               fontFamily: "'Inter Tight', system-ui, sans-serif", fontSize: 15, fontWeight: 700,
               textTransform: 'uppercase',
-              animation: 'rightNowPulse 3s ease-in-out infinite',
+              animation: 'rightNowPulse 3s ease-in-out',
             }}
           >
             <Zap size={14} color="#FF6B3D" style={{ filter: 'drop-shadow(0 0 4px rgba(255,107,61,0.7))' }} />
@@ -661,13 +661,13 @@ function TaskCard({ task, projectColor, onCheck, index, onContextMenu, isLive, s
                 border: '1px solid rgba(255,107,61,0.3)',
                 borderRadius: 4, padding: '2px 8px',
                 display: 'flex', alignItems: 'center', gap: 5,
-                animation: 'rightNowPulse 2s ease-in-out infinite',
+                animation: 'rightNowPulse 2s ease-in-out',
               }}>
                 <div style={{
                   width: 6, height: 6, borderRadius: '50%',
                   background: '#FF6B3D',
                   boxShadow: '0 0 6px #FF6B3D',
-                  animation: 'rightNowDotPulse 1.5s ease-in-out infinite',
+                  animation: 'rightNowDotPulse 1.5s ease-in-out',
                 }} />
                 LIVE
               </span>
@@ -823,13 +823,13 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents 
             borderRadius: 4, padding: '3px 8px',
             display: 'flex', alignItems: 'center', gap: 5,
             flexShrink: 0,
-            animation: 'rightNowPulse 2s ease-in-out infinite',
+            animation: 'rightNowPulse 2s ease-in-out',
           }}>
             <div style={{
               width: 5, height: 5, borderRadius: '50%',
               background: color,
               boxShadow: `0 0 6px ${color}`,
-              animation: 'rightNowDotPulse 1.5s ease-in-out infinite',
+              animation: 'rightNowDotPulse 1.5s ease-in-out',
             }} />
             LIVE
           </span>
@@ -851,7 +851,7 @@ function RightNowTaskCard({ task, index, isDaytime, onContextMenu, spriteAgents 
             width: '100%', height: '100%',
             background: `linear-gradient(90deg, transparent, ${color}66, transparent)`,
             borderRadius: 1,
-            animation: 'rightNowPulse 2s ease-in-out infinite',
+            animation: 'rightNowPulse 2s ease-in-out',
           }} />
         </div>
       )}
@@ -915,7 +915,7 @@ function RightNowSection({ tasks, orderedTasks, onReorder, isCollapsed, onToggle
 
         <Zap size={20} color={color} style={{
           filter: `drop-shadow(0 0 8px ${color}AA)`,
-          animation: 'rightNowPulse 2s ease-in-out infinite',
+          animation: 'rightNowPulse 2s ease-in-out',
         }} />
 
         <span style={{
@@ -938,7 +938,7 @@ function RightNowSection({ tasks, orderedTasks, onReorder, isCollapsed, onToggle
           padding: '4px 12px', borderRadius: 10, lineHeight: 1,
           boxShadow: `0 2px 8px ${color}55, 0 0 20px ${color}22`,
           minWidth: 28, textAlign: 'center',
-          animation: 'rightNowPulse 3s ease-in-out infinite',
+          animation: 'rightNowPulse 3s ease-in-out',
         }}>
           {tasks.length} running
         </span>
@@ -1092,7 +1092,7 @@ function YourTodoTaskCard({ task, index, isDaytime, onCheck, onContextMenu }) {
           borderRadius: 4, padding: '3px 8px',
           display: 'flex', alignItems: 'center', gap: 4,
           flexShrink: 0,
-          animation: 'todosPulse 2.5s ease-in-out infinite',
+          animation: 'todosPulse 2.5s ease-in-out',
         }}>
           <AlertCircle size={10} />
           YOU
@@ -1122,7 +1122,7 @@ function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck, on
 
         <AlertCircle size={20} color="#EF4444" style={{
           filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.5))',
-          animation: 'todosPulse 2.5s ease-in-out infinite',
+          animation: 'todosPulse 2.5s ease-in-out',
         }} />
 
         <span style={{
@@ -1146,7 +1146,7 @@ function YourTodosSection({ tasks, isCollapsed, onToggle, isDaytime, onCheck, on
             padding: '4px 12px', borderRadius: 10, lineHeight: 1,
             boxShadow: '0 2px 8px rgba(239,68,68,0.4), 0 0 20px rgba(239,68,68,0.15)',
             minWidth: 28, textAlign: 'center',
-            animation: 'todosPulse 3s ease-in-out infinite',
+            animation: 'todosPulse 3s ease-in-out',
           }}>
             {tasks.length} needs you
           </span>
@@ -1507,7 +1507,7 @@ function ProjectGroupHeader({ project, isCollapsed, onToggle }) {
 
       {/* Project icon */}
       {isRightNow ? (
-        <Zap size={18} color={project.color} style={{ filter: `drop-shadow(0 0 6px ${project.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
+        <Zap size={18} color={project.color} style={{ filter: `drop-shadow(0 0 6px ${project.color}AA)`, animation: 'rightNowPulse 2s ease-in-out' }} />
       ) : isSchedule ? (
         <Flame size={18} color={project.color} style={{ filter: `drop-shadow(0 0 4px ${project.color}66)` }} />
       ) : (
@@ -2051,7 +2051,7 @@ export default function ChecklistMode({ agentStatus, isMobile, data }) {
                   {selectedProject && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                       {project.section === 'rightnow' ? (
-                        <Zap size={24} color={project.color} style={{ filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: 'rightNowPulse 2s ease-in-out infinite' }} />
+                        <Zap size={24} color={project.color} style={{ filter: `drop-shadow(0 0 8px ${project.color}AA)`, animation: 'rightNowPulse 2s ease-in-out' }} />
                       ) : (project.section === 'schedule' || project.section === 'today') ? (
                         <Flame size={24} color={project.color} style={{ filter: `drop-shadow(0 0 6px ${project.color}66)` }} />
                       ) : (

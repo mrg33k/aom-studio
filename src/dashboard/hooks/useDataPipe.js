@@ -744,9 +744,7 @@ export function useDataPipe(parsePunchList) {
 
   useEffect(() => {
     fetchAll()
-    // Local: poll every 3s. Production: poll every 10s (Supabase has rate limits)
-    const interval = IS_LOCAL ? 3000 : 10000
-    const timer = setInterval(fetchAll, interval)
+    const timer = setInterval(fetchAll, 30000)
 
     // Supabase Realtime subscriptions -- instant updates without waiting for poll.
     // Only active where supabase client is configured (production + local with env vars).

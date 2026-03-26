@@ -59,7 +59,7 @@ function useRelayBadge() {
     }
 
     poll()
-    const timer = setInterval(poll, 8000)
+    const timer = setInterval(poll, 30000)
     return () => clearInterval(timer)
   }, [])
 
@@ -259,7 +259,7 @@ function useAgentNotifications() {
     }
 
     poll()
-    const timer = setInterval(poll, 8000)
+    const timer = setInterval(poll, 30000)
     return () => clearInterval(timer)
   }, [])
 
@@ -299,7 +299,7 @@ export function NotificationBadge({ count, style }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '0 7px',
         boxShadow: '0 0 10px rgba(239,68,68,0.6), 0 0 20px rgba(239,68,68,0.25)',
-        animation: 'hudBadgePulse 2.5s ease-in-out infinite',
+        animation: 'hudBadgePulse 2.5s ease-in-out',
         zIndex: 5,
         whiteSpace: 'nowrap',
         ...style,
