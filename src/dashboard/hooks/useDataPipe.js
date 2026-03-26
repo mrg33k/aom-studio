@@ -772,30 +772,47 @@ export function useDataPipe(parsePunchList) {
     let agentStatusChannel = null
     let eventsChannel = null
     let tasksChannel = null
+    let messagesChannel = null
     if (supabase) {
+      console.log('[Corner Realtime] Subscribing to agent_status, events, tasks, messages...')
+
       // agent_status table: any change triggers full refresh (RNB, alive dots, agent status)
       agentStatusChannel = supabase
         .channel('agent-status-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
+          console.log('[Corner Realtime] agent_status changed')
           fetchAll()
         })
-        .subscribe()
+        .subscribe((status) => console.log('[Corner Realtime] agent_status sub:', status))
 
       // events table: INSERT triggers refresh (task_started/completed -> RNB pills)
       eventsChannel = supabase
         .channel('events-inserts')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, () => {
+          console.log('[Corner Realtime] events INSERT')
           fetchAll()
         })
-        .subscribe()
+        .subscribe((status) => console.log('[Corner Realtime] events sub:', status))
 
       // tasks table: any change triggers refresh (new tasks, status changes -> pills + RNB)
       tasksChannel = supabase
         .channel('tasks-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+          console.log('[Corner Realtime] tasks changed')
           fetchAll()
         })
-        .subscribe()
+        .subscribe((status) => console.log('[Corner Realtime] tasks sub:', status))
+
+      // messages table: INSERT triggers refresh (new chat messages update throughput + unread)
+      messagesChannel = supabase
+        .channel('messages-inserts')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+          console.log('[Corner Realtime] messages INSERT')
+          fetchAll()
+        })
+        .subscribe((status) => console.log('[Corner Realtime] messages sub:', status))
+    } else {
+      console.log('[Corner Realtime] supabase client is null -- no Realtime subscriptions')
     }
 
     return () => {
@@ -803,6 +820,7 @@ export function useDataPipe(parsePunchList) {
       if (agentStatusChannel) supabase.removeChannel(agentStatusChannel)
       if (eventsChannel) supabase.removeChannel(eventsChannel)
       if (tasksChannel) supabase.removeChannel(tasksChannel)
+      if (messagesChannel) supabase.removeChannel(messagesChannel)
     }
   }, [fetchAll])
 
