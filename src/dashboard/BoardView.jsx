@@ -242,13 +242,14 @@ function ChatPanel({ chat, agentName }) {
       onClick={e => e.stopPropagation()}
     >
       <div ref={ref} style={{
-        flex: 1, overflowY: 'auto', padding: '6px 12px',
+        flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '6px 12px',
         display: 'flex', flexDirection: 'column', gap: 5,
       }}>
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
         {chat.messages.map((m, i) => (
           <div key={i} style={{
             padding: '7px 11px', borderRadius: 10, fontSize: 13, lineHeight: 1.5, maxWidth: '88%',
+            wordBreak: 'break-word', overflowWrap: 'break-word', overflowX: 'hidden',
             background: m.role === 'user' ? 'var(--bv-chat-user)' : 'var(--bv-chat-agent)',
             border: `1px solid ${m.role === 'user' ? 'rgba(59,130,246,0.25)' : 'var(--bv-card-border)'}`,
             color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
