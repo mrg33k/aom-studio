@@ -211,6 +211,8 @@ export default function FinanceTracker() {
   const [search, setSearch] = useState('');
   const [uploadMsg, setUploadMsg] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const fileRef = useRef(null);
 
   // Load AOM v4 fonts
@@ -337,30 +339,39 @@ export default function FinanceTracker() {
     URL.revokeObjectURL(url);
   }, [transactions]);
 
-  // Computed stats
+  // Date-filtered base (used by stats + full filter)
+  const dateFiltered = useMemo(() => {
+    let list = transactions;
+    if (dateFrom) list = list.filter(t => t.date >= dateFrom);
+    if (dateTo) list = list.filter(t => t.date <= dateTo);
+    return list;
+  }, [transactions, dateFrom, dateTo]);
+
+  // Computed stats (react to date range)
   const stats = useMemo(() => {
-    const revenue = transactions.filter(t => t.owner === 'Revenue').reduce((s, t) => s + t.amount, 0);
-    const refunds = transactions.filter(t => t.owner === 'Refund').reduce((s, t) => s + t.amount, 0);
-    const transfers = transactions.filter(t => t.owner === 'Transfer').reduce((s, t) => s + t.amount, 0);
-    const expenses = transactions.filter(t => !['Revenue', 'Refund', 'Transfer'].includes(t.owner)).reduce((s, t) => s + t.amount, 0);
-    const patrikSpend = transactions.filter(t => t.owner === 'Patrik').reduce((s, t) => s + t.amount, 0);
-    const ashSpend = transactions.filter(t => t.owner === 'Ash').reduce((s, t) => s + t.amount, 0);
-    const aomSpend = transactions.filter(t => t.owner === 'AOM').reduce((s, t) => s + t.amount, 0);
+    const src = dateFiltered;
+    const revenue = src.filter(t => t.owner === 'Revenue').reduce((s, t) => s + t.amount, 0);
+    const refunds = src.filter(t => t.owner === 'Refund').reduce((s, t) => s + t.amount, 0);
+    const transfers = src.filter(t => t.owner === 'Transfer').reduce((s, t) => s + t.amount, 0);
+    const expenses = src.filter(t => !['Revenue', 'Refund', 'Transfer'].includes(t.owner)).reduce((s, t) => s + t.amount, 0);
+    const patrikSpend = src.filter(t => t.owner === 'Patrik').reduce((s, t) => s + t.amount, 0);
+    const ashSpend = src.filter(t => t.owner === 'Ash').reduce((s, t) => s + t.amount, 0);
+    const aomSpend = src.filter(t => t.owner === 'AOM').reduce((s, t) => s + t.amount, 0);
     const net = revenue + refunds + expenses + transfers;
 
     const catTotals = {};
-    transactions.filter(t => t.amount < 0 && !['Revenue', 'Refund', 'Transfer'].includes(t.owner)).forEach(t => {
+    src.filter(t => t.amount < 0 && !['Revenue', 'Refund', 'Transfer'].includes(t.owner)).forEach(t => {
       const cat = t.category || 'Uncategorized';
       catTotals[cat] = (catTotals[cat] || 0) + Math.abs(t.amount);
     });
     const topCategory = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
 
-    const expenseTxns = transactions.filter(t => t.amount < 0 && !['Revenue', 'Refund', 'Transfer'].includes(t.owner));
+    const expenseTxns = src.filter(t => t.amount < 0 && !['Revenue', 'Refund', 'Transfer'].includes(t.owner));
     const biggestExpense = expenseTxns.length ? expenseTxns.reduce((max, t) => Math.abs(t.amount) > Math.abs(max.amount) ? t : max, expenseTxns[0]) : null;
 
-    const meals = transactions.filter(t => (t.category || '').toLowerCase() === 'meals').reduce((s, t) => s + t.amount, 0);
+    const meals = src.filter(t => (t.category || '').toLowerCase() === 'meals').reduce((s, t) => s + t.amount, 0);
 
-    const dates = transactions.map(t => new Date(t.date)).filter(d => !isNaN(d));
+    const dates = src.map(t => new Date(t.date)).filter(d => !isNaN(d));
     let days = 1;
     if (dates.length > 1) {
       const min = Math.min(...dates);
@@ -373,13 +384,13 @@ export default function FinanceTracker() {
     return {
       revenue, expenses, net, patrikSpend, ashSpend, aomSpend, refunds, transfers,
       topCategory: topCategory ? { name: topCategory[0], amount: topCategory[1] } : null,
-      dailySpend, biggestExpense, txnCount: transactions.length, monthlyBurn, meals
+      dailySpend, biggestExpense, txnCount: src.length, monthlyBurn, meals
     };
-  }, [transactions]);
+  }, [dateFiltered]);
 
   // Sort and filter
   const filtered = useMemo(() => {
-    let list = [...transactions];
+    let list = [...dateFiltered];
 
     if (filterOwner !== 'All') {
       list = list.filter(t => t.owner === filterOwner);
@@ -405,7 +416,7 @@ export default function FinanceTracker() {
     });
 
     return list;
-  }, [transactions, filterOwner, search, sortCol, sortDir]);
+  }, [dateFiltered, filterOwner, search, sortCol, sortDir]);
 
   const handleSort = (col) => {
     if (sortCol === col) {
@@ -608,6 +619,41 @@ export default function FinanceTracker() {
                 padding: '8px 14px', color: V4.textPrimary, fontSize: 13, outline: 'none', fontFamily: V4.space
               }}
             />
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              style={{
+                background: V4.card, border: `1px solid ${V4.border}`, borderRadius: 8,
+                padding: '6px 10px', color: V4.textPrimary, fontSize: 12, outline: 'none',
+                fontFamily: V4.space, colorScheme: 'dark'
+              }}
+            />
+            <span style={{ color: V4.textSecondary, fontSize: 11 }}>to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              style={{
+                background: V4.card, border: `1px solid ${V4.border}`, borderRadius: 8,
+                padding: '6px 10px', color: V4.textPrimary, fontSize: 12, outline: 'none',
+                fontFamily: V4.space, colorScheme: 'dark'
+              }}
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                style={{
+                  background: 'transparent', border: 'none', color: V4.accent,
+                  fontSize: 11, cursor: 'pointer', fontFamily: V4.space, fontWeight: 600,
+                  padding: '4px 8px'
+                }}
+              >
+                CLEAR
+              </button>
+            )}
           </div>
           <span style={{ color: V4.textSecondary, fontSize: 11, fontFamily: V4.space, letterSpacing: '0.1em' }}>{filtered.length} RESULTS</span>
         </div>
