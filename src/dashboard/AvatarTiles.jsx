@@ -383,12 +383,13 @@ const AvatarTiles = forwardRef(function AvatarTiles({
 
           {/* Tile grid -- horizontal scroll on mobile when 3+ tiles, grid otherwise */}
           {(() => {
-            const useHScroll = isMobile && section.items.length > 2
+            // Always horizontal scroll -- max 3 visual rows (Favorites, Agents, Projects)
+            const useHScroll = section.items.length > (isMobile ? 2 : 0)
             return (
           <div style={{
             display: useHScroll ? 'flex' : 'grid',
             ...(useHScroll
-              ? { gap: 10, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: 4, scrollbarWidth: 'none', msOverflowStyle: 'none' }
+              ? { gap: isMobile ? 10 : 14, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: 4, scrollbarWidth: 'none', msOverflowStyle: 'none' }
               : { gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(200px, 1fr))', gap: isMobile ? 10 : 14 }
             ),
             position: 'relative', zIndex: 1,
@@ -435,7 +436,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                     cursor: isDragging ? 'grabbing' : 'grab',
                     opacity: isDragging ? 0.5 : 1,
                     ...(useHScroll
-                      ? { minWidth: 155, minHeight: 120, flexShrink: 0 }
+                      ? { minWidth: isMobile ? 155 : 180, minHeight: isMobile ? 120 : 160, flexShrink: 0 }
                       : { minHeight: isMobile ? 140 : 180 }
                     ),
                     outline: isDropTarget ? '2px dashed rgba(96,165,250,0.6)' : 'none', outlineOffset: -2,
