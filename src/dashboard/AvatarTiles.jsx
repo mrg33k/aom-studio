@@ -154,6 +154,56 @@ const AvatarTiles = forwardRef(function AvatarTiles({
     setDragOverSlug(null)
   }, [dragSlug, dragOverSlug, visible, saveTileOrder])
 
+  // Pinned favorites (top section). Auto-populated from last 5 used if empty.
+  const [pinnedSlugs, setPinnedSlugs] = useState([])
+  const pinnedLoadedRef = useRef(false)
+  useEffect(() => {
+    if (pinnedLoadedRef.current) return
+    pinnedLoadedRef.current = true
+    const clientId = getClientId()
+    fetch(`/api/dashboard/preferences?key=tile_pinned&client=${encodeURIComponent(clientId)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.value && Array.isArray(data.value)) setPinnedSlugs(data.value)
+      })
+      .catch(() => {})
+  }, [])
+  const savePinned = useCallback((pins) => {
+    setPinnedSlugs(pins)
+    fetch('/api/dashboard/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'tile_pinned', client_id: getClientId(), value: pins }),
+    }).catch(() => {})
+  }, [])
+
+  // Track last used for auto-populating top section
+  const trackUsed = useCallback((slug) => {
+    if (pinnedSlugs.includes(slug)) return // already pinned manually
+    // Auto-pin logic handled by section rendering (last 5 active agents)
+  }, [pinnedSlugs])
+
+  // Split visible into sections
+  const sections = useMemo(() => {
+    const slugSet = new Set(visible.map(r => r.slug))
+    // Top section: manually pinned OR auto last 5 active/recently-used agents
+    const manualPins = pinnedSlugs.filter(s => slugSet.has(s))
+    let topSlugs = manualPins.length > 0
+      ? manualPins
+      : visible.filter(r => {
+          const st = agentStatus[r.slug]?.status
+          return st === 'working' || st === 'active'
+        }).slice(0, 5).map(r => r.slug)
+    // If still empty, use first 5
+    if (topSlugs.length === 0) topSlugs = visible.slice(0, 5).map(r => r.slug)
+
+    const topSet = new Set(topSlugs)
+    const top = topSlugs.map(s => visible.find(r => r.slug === s)).filter(Boolean)
+    const agents = visible.filter(r => !topSet.has(r.slug) && (r.type === 'agent' || !r.type))
+    const projects = visible.filter(r => !topSet.has(r.slug) && r.type === 'project')
+    return { top, agents, projects }
+  }, [visible, pinnedSlugs, agentStatus])
+
   const [contextMenu, setContextMenu] = useState(null)
   const [subMenu, setSubMenu] = useState(null)
   const [renameValue, setRenameValue] = useState('')
@@ -301,124 +351,118 @@ const AvatarTiles = forwardRef(function AvatarTiles({
         }
       `}</style>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(200px, 1fr))',
-        gap: isMobile ? 10 : 14,
-        position: 'relative', zIndex: 1,
-      }}>
-        {visible.map((room, i) => {
-          const slug = room.slug
-          const { color, Icon, name } = getCustom(slug, room)
-          const st = agentStatus[slug]?.status || 'idle'
-          const active = st === 'working' || st === 'active'
-          const isSel = selectedRoom === slug
-          const isHov = extHover === slug
-          const isFeatured = slug === featuredSlug
-          const hasUnread = unreadAgents[slug] > 0
+      {/* ---- SECTION RENDERER ---- */}
+      {[
+        { key: 'top', label: 'Favorites', items: sections.top, horizontal: isMobile },
+        { key: 'agents', label: 'Agents', items: sections.agents, horizontal: false },
+        { key: 'projects', label: 'Projects', items: sections.projects, horizontal: false },
+      ].filter(s => s.items.length > 0).map(section => (
+        <div key={section.key} style={{ marginBottom: isMobile ? 16 : 20 }}>
+          {/* Section header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '0 4px', marginBottom: 8,
+          }}>
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: '#4A6080',
+              fontFamily: "'Inter', system-ui, sans-serif",
+              textTransform: 'uppercase', letterSpacing: '0.12em',
+            }}>
+              {section.label}
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(59,130,246,0.1)' }} />
+            <span style={{ fontSize: 10, color: '#3A5570', fontFamily: "'Inter', system-ui, sans-serif" }}>
+              {section.items.length}
+            </span>
+          </div>
 
-          const isDragging = dragSlug === slug
-          const isDropTarget = dragOverSlug === slug && dragSlug !== slug
+          {/* Tile grid (horizontal scroll on mobile for top section) */}
+          <div style={{
+            display: section.horizontal ? 'flex' : 'grid',
+            ...(section.horizontal
+              ? { gap: 10, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', paddingBottom: 4, scrollbarWidth: 'none' }
+              : { gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(200px, 1fr))', gap: isMobile ? 10 : 14 }
+            ),
+            position: 'relative', zIndex: 1,
+          }}>
+            {section.items.map((room, i) => {
+              const slug = room.slug
+              const { color, Icon, name } = getCustom(slug, room)
+              const st = agentStatus[slug]?.status || 'idle'
+              const active = st === 'working' || st === 'active'
+              const isSel = selectedRoom === slug
+              const isHov = extHover === slug
+              const hasUnread = unreadAgents[slug] > 0
+              const isDragging = dragSlug === slug
+              const isDropTarget = dragOverSlug === slug && dragSlug !== slug
 
-          return (
-            <div
-              key={slug}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.effectAllowed = 'move'
-                e.dataTransfer.setData('text/plain', slug)
-                handleDragStart(slug, e)
-              }}
-              onDragOver={(e) => { e.preventDefault(); handleDragOver(slug) }}
-              onDragEnter={(e) => { e.preventDefault(); handleDragOver(slug) }}
-              onDrop={(e) => { e.preventDefault(); handleDragEnd() }}
-              onDragEnd={handleDragEnd}
-              onClick={() => { if (!didDragRef.current) onRoomClick?.(slug) }}
-              onMouseEnter={() => setExtHover?.(slug)}
-              onMouseLeave={() => setExtHover?.(null)}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                setSubMenu(null)
-                setContextMenu({ x: e.clientX, y: e.clientY, slug, roomName: name })
-              }}
-              onTouchStart={(e) => {
-                const touch = e.touches[0]
-                longPressRef.current = setTimeout(() => {
-                  setSubMenu(null)
-                  setContextMenu({ x: touch.clientX, y: touch.clientY, slug, roomName: name })
-                }, 600)
-              }}
-              onTouchEnd={() => clearTimeout(longPressRef.current)}
-              onTouchMove={() => clearTimeout(longPressRef.current)}
-              style={{
-                '--tile-c': color,
-                borderRadius: 20, overflow: 'hidden', position: 'relative',
-                cursor: isDragging ? 'grabbing' : 'grab',
-                opacity: isDragging ? 0.5 : 1,
-                minHeight: isFeatured ? (isMobile ? 280 : 340) : (isMobile ? 140 : 180),
-                gridRow: isFeatured ? 'span 2' : 'span 1',
-                outline: isDropTarget ? `2px dashed rgba(96,165,250,0.6)` : 'none',
-                outlineOffset: -2,
-                display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-                padding: isMobile ? 14 : 18,
-                background: `linear-gradient(145deg,
-                  color-mix(in srgb, ${color} 8%, #0a1428) 0%,
-                  color-mix(in srgb, ${color} 25%, #060b18) 50%,
-                  color-mix(in srgb, ${color} 45%, #030612) 100%)`,
-                border: active || isSel || isHov
-                  ? `1.5px solid color-mix(in srgb, ${color} ${active || isSel ? 50 : 35}%, transparent)`
-                  : `1.5px solid color-mix(in srgb, ${color} 20%, transparent)`,
-                boxShadow: active || isSel
-                  ? `0 4px 30px color-mix(in srgb, ${color} 20%, transparent)`
-                  : isHov ? `0 4px 20px color-mix(in srgb, ${color} 12%, transparent)` : 'none',
-                transform: isHov && !isMobile ? 'translateY(-2px)' : 'none',
-                animation: `tileSlide 0.4s ease ${0.03 * (i + 1)}s backwards${active ? ', glowPulse 2s ease-in-out infinite alternate' : ''}`,
-                '--glow-c15': `color-mix(in srgb, ${color} 15%, transparent)`,
-                '--glow-c30': `color-mix(in srgb, ${color} 30%, transparent)`,
-                '--glow-c10': `color-mix(in srgb, ${color} 10%, transparent)`,
-                transition: 'transform 0.2s ease, border-color 0.3s ease, box-shadow 0.3s ease',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.6))', pointerEvents: 'none' }} />
-              <div style={{ position: 'absolute', top: '-30%', right: '-30%', width: '80%', height: '80%', background: `radial-gradient(circle, color-mix(in srgb, ${color} 20%, transparent), transparent 70%)`, pointerEvents: 'none' }} />
-
-              {/* Center icon */}
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)', pointerEvents: 'none', opacity: active ? 0.15 : 0.08, transition: 'opacity 0.3s ease' }}>
-                <Icon size={isFeatured ? (isMobile ? 80 : 100) : (isMobile ? 56 : 72)} strokeWidth={1.2} style={{ color: '#fff' }} />
-              </div>
-
-              {/* Status + unread */}
-              {(active || hasUnread) && (
-                <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 6, zIndex: 2 }}>
-                  {hasUnread && (
-                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', system-ui, sans-serif", border: '2px solid rgba(5,10,20,0.5)', boxShadow: '0 0 10px rgba(239,68,68,0.5)' }}>
-                      {unreadAgents[slug] > 9 ? '9+' : unreadAgents[slug]}
+              return (
+                <div
+                  key={slug}
+                  draggable
+                  onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', slug); handleDragStart(slug, e) }}
+                  onDragOver={(e) => { e.preventDefault(); handleDragOver(slug) }}
+                  onDragEnter={(e) => { e.preventDefault(); handleDragOver(slug) }}
+                  onDrop={(e) => { e.preventDefault(); handleDragEnd() }}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => { if (!didDragRef.current) { onRoomClick?.(slug); trackUsed(slug) } }}
+                  onMouseEnter={() => setExtHover?.(slug)}
+                  onMouseLeave={() => setExtHover?.(null)}
+                  onContextMenu={(e) => { e.preventDefault(); setSubMenu(null); setContextMenu({ x: e.clientX, y: e.clientY, slug, roomName: name, section: section.key }) }}
+                  onTouchStart={(e) => {
+                    const touch = e.touches[0]
+                    longPressRef.current = setTimeout(() => { setSubMenu(null); setContextMenu({ x: touch.clientX, y: touch.clientY, slug, roomName: name, section: section.key }) }, 600)
+                  }}
+                  onTouchEnd={() => clearTimeout(longPressRef.current)}
+                  onTouchMove={() => clearTimeout(longPressRef.current)}
+                  style={{
+                    '--tile-c': color,
+                    borderRadius: 20, overflow: 'hidden', position: 'relative',
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    opacity: isDragging ? 0.5 : 1,
+                    ...(section.horizontal
+                      ? { minWidth: isMobile ? 140 : 180, minHeight: isMobile ? 120 : 150, flexShrink: 0 }
+                      : { minHeight: isMobile ? 140 : 180 }
+                    ),
+                    outline: isDropTarget ? '2px dashed rgba(96,165,250,0.6)' : 'none', outlineOffset: -2,
+                    display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                    padding: isMobile ? 12 : 18,
+                    background: `linear-gradient(145deg, color-mix(in srgb, ${color} 8%, #0a1428) 0%, color-mix(in srgb, ${color} 25%, #060b18) 50%, color-mix(in srgb, ${color} 45%, #030612) 100%)`,
+                    border: active || isSel || isHov
+                      ? `1.5px solid color-mix(in srgb, ${color} ${active || isSel ? 50 : 35}%, transparent)`
+                      : `1.5px solid color-mix(in srgb, ${color} 20%, transparent)`,
+                    boxShadow: active || isSel ? `0 4px 30px color-mix(in srgb, ${color} 20%, transparent)` : isHov ? `0 4px 20px color-mix(in srgb, ${color} 12%, transparent)` : 'none',
+                    transform: isHov && !isMobile ? 'translateY(-2px)' : 'none',
+                    animation: `tileSlide 0.4s ease ${0.03 * (i + 1)}s backwards${active ? ', glowPulse 2s ease-in-out infinite alternate' : ''}`,
+                    '--glow-c15': `color-mix(in srgb, ${color} 15%, transparent)`,
+                    '--glow-c30': `color-mix(in srgb, ${color} 30%, transparent)`,
+                    '--glow-c10': `color-mix(in srgb, ${color} 10%, transparent)`,
+                    transition: 'transform 0.2s ease, border-color 0.3s ease, box-shadow 0.3s ease',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.6))', pointerEvents: 'none' }} />
+                  <div style={{ position: 'absolute', top: '-30%', right: '-30%', width: '80%', height: '80%', background: `radial-gradient(circle, color-mix(in srgb, ${color} 20%, transparent), transparent 70%)`, pointerEvents: 'none' }} />
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)', pointerEvents: 'none', opacity: active ? 0.15 : 0.08, transition: 'opacity 0.3s ease' }}>
+                    <Icon size={section.horizontal ? (isMobile ? 48 : 64) : (isMobile ? 56 : 72)} strokeWidth={1.2} style={{ color: '#fff' }} />
+                  </div>
+                  {(active || hasUnread) && (
+                    <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', alignItems: 'center', gap: 5, zIndex: 2 }}>
+                      {hasUnread && <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', system-ui, sans-serif", border: '2px solid rgba(5,10,20,0.5)' }}>{unreadAgents[slug] > 9 ? '9+' : unreadAgents[slug]}</div>}
+                      {active && <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, animation: 'livePulse 1.2s ease-in-out infinite' }} />}
                     </div>
                   )}
-                  {active && (
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 10px ${color}`, animation: 'livePulse 1.2s ease-in-out infinite' }} />
-                  )}
+                  <div style={{ position: 'relative', zIndex: 1 }}>
+                    <div style={{ fontSize: section.horizontal ? (isMobile ? 15 : 18) : (isMobile ? 18 : 20), fontWeight: 800, color: '#EDF2FA', letterSpacing: '-0.01em', fontFamily: "'Inter', system-ui, sans-serif", textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>{name}</div>
+                    <div style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: color, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2, fontFamily: "'Inter', system-ui, sans-serif", textShadow: `0 0 12px ${color}40` }}>{room.role || room.type || ''}</div>
+                  </div>
+                  {isSel && <div style={{ position: 'absolute', inset: -1, borderRadius: 21, border: `2px solid ${color}`, boxShadow: `0 0 20px ${color}60, inset 0 0 20px ${color}15`, pointerEvents: 'none', zIndex: 3 }} />}
                 </div>
-              )}
-
-              {/* Name + role */}
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ fontSize: isFeatured ? (isMobile ? 22 : 26) : (isMobile ? 18 : 20), fontWeight: 800, color: '#EDF2FA', letterSpacing: '-0.01em', fontFamily: "'Inter', system-ui, sans-serif", textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>
-                  {name}
-                </div>
-                <div style={{ fontSize: isMobile ? 11 : 12, fontWeight: 700, color: color, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2, fontFamily: "'Inter', system-ui, sans-serif", textShadow: `0 0 12px ${color}40` }}>
-                  {room.role || room.type || ''}
-                </div>
-              </div>
-
-              {isSel && (
-                <div style={{ position: 'absolute', inset: -1, borderRadius: 21, border: `2px solid ${color}`, boxShadow: `0 0 20px ${color}60, inset 0 0 20px ${color}15`, pointerEvents: 'none', zIndex: 3 }} />
-              )}
-            </div>
-          )
-        })}
-      </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
 
       {/* ---- CONTEXT MENU ---- */}
       {contextMenu && !subMenu && (
@@ -431,6 +475,11 @@ const AvatarTiles = forwardRef(function AvatarTiles({
           <CtxItem label="Change Color" onClick={() => setSubMenu('color')} />
           <CtxItem label="Change Icon" onClick={() => setSubMenu('icon')} />
           <CtxItem label="Rename" onClick={() => { setRenameValue(contextMenu.roomName); setSubMenu('rename') }} />
+          <div style={{ height: 1, background: 'rgba(96,165,250,0.12)', margin: '4px 0' }} />
+          {pinnedSlugs.includes(contextMenu.slug)
+            ? <CtxItem label="Unpin from Top" color="#F59E0B" onClick={() => { savePinned(pinnedSlugs.filter(s => s !== contextMenu.slug)); setContextMenu(null) }} />
+            : <CtxItem label="Pin to Top" color="#22C55E" onClick={() => { savePinned([...pinnedSlugs, contextMenu.slug]); setContextMenu(null) }} />
+          }
         </div>
       )}
 
