@@ -409,8 +409,8 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
         display: 'flex', flexDirection: 'column',
         ...(isMobile ? { position: 'absolute', inset: 0 } : {
           minWidth: 320, maxWidth: 380, flex: '0 0 auto', borderRadius: 14,
-          border: `1px solid ${isDragTarget ? 'var(--bv-accent-border)' : 'var(--bv-col-border)'}`,
-          background: isDragTarget ? 'var(--bv-accent)' : 'var(--bv-col)',
+          border: `1.5px solid ${isDragTarget ? 'var(--bv-accent-border)' : `${color}35`}`,
+          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 6%, var(--bv-col))`,
           backdropFilter: 'blur(8px)',
         }),
         transition: 'all 0.25s', overflow: 'hidden',
@@ -423,7 +423,7 @@ function AgentColumn({ agent, tasks, isMobile, onContextMenu, onClose, onDragSta
         borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
         cursor: isMobile ? 'default' : 'grab',
       }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0' }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 8px ${color}40` }} />
         <div style={{
           width: 30, height: 30, borderRadius: '50%',
           background: `${color}22`, border: `1.5px solid ${color}60`, color,
@@ -496,8 +496,8 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
         display: 'flex', flexDirection: 'column',
         ...(isMobile ? { position: 'absolute', inset: 0 } : {
           minWidth: 320, maxWidth: 380, flex: '0 0 auto', borderRadius: 14,
-          border: `1px solid ${isDragTarget ? 'var(--bv-accent-border)' : 'var(--bv-col-border)'}`,
-          background: isDragTarget ? 'var(--bv-accent)' : 'var(--bv-col)',
+          border: `1.5px solid ${isDragTarget ? 'var(--bv-accent-border)' : `${color}35`}`,
+          background: isDragTarget ? 'var(--bv-accent)' : `color-mix(in srgb, ${color} 6%, var(--bv-col))`,
           backdropFilter: 'blur(8px)',
         }),
         transition: 'all 0.25s', overflow: 'hidden',
@@ -510,7 +510,7 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
         borderBottom: '1px solid var(--bv-divider)', flexShrink: 0, position: 'relative',
         cursor: isMobile ? 'default' : 'grab',
       }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0' }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color, borderRadius: '0 2px 2px 0', boxShadow: `0 0 8px ${color}40` }} />
         <div style={{
           width: 30, height: 30, borderRadius: 10,
           background: `${color}22`, border: `1.5px solid ${color}60`, color,
