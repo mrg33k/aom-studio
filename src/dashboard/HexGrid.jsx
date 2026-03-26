@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { ALL_ROOMS } from './gridSpec.js'
+import { supabase } from './lib/supabase.js'
+import { getClientId } from './lib/clientConfig.js'
 import {
   Wrench, BarChart3, Palette, Terminal, Megaphone, Video, Mail, Share2,
   Shield, Eye, Cpu, Bot, Crown, Camera, Heart, Lightbulb, FolderKanban,
@@ -96,7 +98,7 @@ const HexGrid = forwardRef(function HexGrid({
   const [contextMenu, setContextMenu] = useState(null)
   const [toast, setToast] = useState(null)
   const [hiddenRooms, setHiddenRooms] = useState(new Set())
-  // roomPositions: slug -> {row, col} for custom placements (replaces slot order for positioned rooms)
+  // roomPositions: slug -> {row, col} -- persisted to Supabase user_preferences
   const [roomGridPositions, setRoomGridPositions] = useState(() => {
     const positions = {}
     const slugs = ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
@@ -106,6 +108,45 @@ const HexGrid = forwardRef(function HexGrid({
     })
     return positions
   })
+  const positionsLoadedRef = useRef(false)
+
+  // Load positions from Supabase on mount
+  useEffect(() => {
+    if (positionsLoadedRef.current) return
+    positionsLoadedRef.current = true
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('user_preferences')
+          .select('value')
+          .eq('key', 'hex_positions')
+          .eq('client_id', getClientId())
+          .single()
+        if (data?.value && typeof data.value === 'object' && Object.keys(data.value).length > 0) {
+          setRoomGridPositions(data.value)
+        }
+      } catch {}
+    })()
+  }, [])
+
+  // Save to Supabase whenever positions change (debounced)
+  const saveTimerRef = useRef(null)
+  useEffect(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      supabase
+        .from('user_preferences')
+        .upsert({
+          key: 'hex_positions',
+          client_id: getClientId(),
+          value: roomGridPositions,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'key,client_id' })
+        .then(() => {})
+        .catch(() => {})
+    }, 1000) // 1s debounce
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
+  }, [roomGridPositions])
   const [focusedRoom, setFocusedRoom] = useState(initialFocusRoom || null)
   const swapTimerRef = useRef(null) // timer for 3s hold-to-swap
   const swapTargetRef = useRef(null) // slug being hovered for swap
