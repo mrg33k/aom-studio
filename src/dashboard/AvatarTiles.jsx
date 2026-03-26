@@ -57,7 +57,22 @@ function CtxItem({ label, onClick, color }) {
 }
 
 // ---- COMPONENT ----
-const AvatarTiles = forwardRef(function AvatarTiles({
+// Error boundary wrapper to prevent blank screen crashes
+class AvatarTilesErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null } }
+  static getDerivedStateFromError(error) { return { hasError: true, error } }
+  componentDidCatch(error, info) { console.error('[AvatarTiles] Render crash:', error, info) }
+  render() {
+    if (this.state.hasError) {
+      return React.createElement('div', {
+        style: { padding: 20, color: '#EF4444', fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14 }
+      }, `Dashboard Error: ${this.state.error?.message || 'Unknown'}. Try refreshing.`)
+    }
+    return this.props.children
+  }
+}
+
+const AvatarTilesInner = forwardRef(function AvatarTilesInner({
   agentStatus = {},
   onRoomClick,
   selectedRoom,
@@ -716,6 +731,12 @@ const AvatarTiles = forwardRef(function AvatarTiles({
         }}
       />
     </div>
+  )
+})
+
+const AvatarTiles = forwardRef(function AvatarTiles(props, ref) {
+  return React.createElement(AvatarTilesErrorBoundary, null,
+    React.createElement(AvatarTilesInner, { ...props, ref })
   )
 })
 
