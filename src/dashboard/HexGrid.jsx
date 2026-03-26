@@ -130,7 +130,9 @@ const HexGrid = forwardRef(function HexGrid({
   })
   const positionsLoadedRef = useRef(false)
 
-  // Load positions from Vercel API on mount (bypasses RLS)
+  // Load positions from Vercel API on mount (bypasses RLS).
+  // MERGE saved positions into defaults -- rooms not in saved data keep default positions.
+  // This prevents rooms from disappearing when saved data only has a subset.
   useEffect(() => {
     if (positionsLoadedRef.current) return
     positionsLoadedRef.current = true
@@ -139,7 +141,7 @@ const HexGrid = forwardRef(function HexGrid({
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.value && typeof data.value === 'object' && Object.keys(data.value).length > 0) {
-          setRoomGridPositions(data.value)
+          setRoomGridPositions(prev => ({ ...prev, ...data.value }))
         }
       })
       .catch(() => {})
