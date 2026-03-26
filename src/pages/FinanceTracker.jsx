@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { supabase } from '../dashboard/lib/supabase';
 import seedData from '../data/finance-seed.json';
 
 const AUTH_KEY = 'aom-finance-auth';
@@ -262,6 +263,40 @@ export default function FinanceTracker() {
   useEffect(() => {
     if (authed) fetchTransactions();
   }, [authed, fetchTransactions]);
+
+  // Supabase Realtime: live sync when either user edits
+  useEffect(() => {
+    if (!authed || !supabase) return;
+
+    const channel = supabase
+      .channel('finance-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'finance_transactions',
+      }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          const updated = payload.new;
+          setTransactions(prev => prev.map(t =>
+            t.id === updated.id ? { ...updated, amount: Number(updated.amount) } : t
+          ));
+        } else if (payload.eventType === 'INSERT') {
+          const inserted = { ...payload.new, amount: Number(payload.new.amount) };
+          setTransactions(prev => {
+            if (prev.some(t => t.id === inserted.id)) return prev;
+            return [inserted, ...prev];
+          });
+        } else if (payload.eventType === 'DELETE') {
+          const deletedId = payload.old.id;
+          setTransactions(prev => prev.filter(t => t.id !== deletedId));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [authed]);
 
   // Owner change: optimistic local update + API persist
   const handleOwnerChange = useCallback((txn, newOwner) => {
