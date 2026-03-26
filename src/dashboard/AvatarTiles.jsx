@@ -204,6 +204,44 @@ const AvatarTiles = forwardRef(function AvatarTiles({
     return { top, agents, projects }
   }, [visible, pinnedSlugs, agentStatus])
 
+  // Background image upload
+  const fileInputRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleUploadBackground = useCallback(async (slug, file) => {
+    if (!file || !file.type.startsWith('image/')) return
+    setUploading(true)
+    try {
+      // Get signed upload URL from Vercel API
+      const clientId = getClientId()
+      const ext = file.name.split('.').pop() || 'jpg'
+      const filename = `tile-bg-${slug}-${Date.now()}.${ext}`
+      const uploadRes = await fetch(`/api/dashboard/files?action=upload&path=${encodeURIComponent(`${clientId}/${slug}/${filename}`)}&contentType=${encodeURIComponent(file.type)}`)
+      if (!uploadRes.ok) throw new Error('Failed to get upload URL')
+      const { signedUrl } = await uploadRes.json()
+      // Upload to Supabase storage
+      await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file })
+      // Build public URL
+      const publicUrl = signedUrl.split('?')[0].replace('/storage/v1/object/upload/sign/', '/storage/v1/object/public/')
+      // Save to customizations
+      const newCustoms = { ...customizations, [slug]: { ...customizations[slug], backgroundImage: publicUrl } }
+      saveCustomizations(newCustoms)
+    } catch (err) {
+      console.error('[AvatarTiles] Upload failed:', err)
+    }
+    setUploading(false)
+    setSubMenu(null)
+    setContextMenu(null)
+  }, [customizations, saveCustomizations])
+
+  const handleRemoveBackground = useCallback((slug) => {
+    const newCustoms = { ...customizations }
+    if (newCustoms[slug]) delete newCustoms[slug].backgroundImage
+    saveCustomizations(newCustoms)
+    setSubMenu(null)
+    setContextMenu(null)
+  }, [customizations, saveCustomizations])
+
   const [contextMenu, setContextMenu] = useState(null)
   const [subMenu, setSubMenu] = useState(null)
   const [renameValue, setRenameValue] = useState('')
@@ -286,6 +324,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
       color: c.color || room.color || '#60A5FA',
       Icon: c.icon ? (ALL_ICONS[c.icon] || AGENT_ICONS[slug] || PROJECT_ICON) : (AGENT_ICONS[slug] || PROJECT_ICON),
       name: c.nickname || room.name || slug,
+      backgroundImage: c.backgroundImage || null,
     }
   }
 
@@ -387,7 +426,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
           }}>
             {section.items.map((room, i) => {
               const slug = room.slug
-              const { color, Icon, name } = getCustom(slug, room)
+              const { color, Icon, name, backgroundImage } = getCustom(slug, room)
               const st = agentStatus[slug]?.status || 'idle'
               const active = st === 'working' || st === 'active'
               const isSel = selectedRoom === slug
@@ -427,7 +466,9 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                     outline: isDropTarget ? '2px dashed rgba(96,165,250,0.6)' : 'none', outlineOffset: -2,
                     display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
                     padding: isMobile ? 12 : 18,
-                    background: `linear-gradient(145deg, color-mix(in srgb, ${color} 8%, #0a1428) 0%, color-mix(in srgb, ${color} 25%, #060b18) 50%, color-mix(in srgb, ${color} 45%, #030612) 100%)`,
+                    background: backgroundImage
+                      ? `url(${backgroundImage}) center/cover no-repeat`
+                      : `linear-gradient(145deg, color-mix(in srgb, ${color} 8%, #0a1428) 0%, color-mix(in srgb, ${color} 25%, #060b18) 50%, color-mix(in srgb, ${color} 45%, #030612) 100%)`,
                     border: active || isSel || isHov
                       ? `1.5px solid color-mix(in srgb, ${color} ${active || isSel ? 50 : 35}%, transparent)`
                       : `1.5px solid color-mix(in srgb, ${color} 20%, transparent)`,
@@ -475,6 +516,8 @@ const AvatarTiles = forwardRef(function AvatarTiles({
           <CtxItem label="Change Color" onClick={() => setSubMenu('color')} />
           <CtxItem label="Change Icon" onClick={() => setSubMenu('icon')} />
           <CtxItem label="Rename" onClick={() => { setRenameValue(contextMenu.roomName); setSubMenu('rename') }} />
+          <div style={{ height: 1, background: 'rgba(96,165,250,0.12)', margin: '4px 0' }} />
+          <CtxItem label="Set Background" onClick={() => setSubMenu('background')} />
           <div style={{ height: 1, background: 'rgba(96,165,250,0.12)', margin: '4px 0' }} />
           {pinnedSlugs.includes(contextMenu.slug)
             ? <CtxItem label="Unpin from Top" color="#F59E0B" onClick={() => { savePinned(pinnedSlugs.filter(s => s !== contextMenu.slug)); setContextMenu(null) }} />
@@ -614,6 +657,64 @@ const AvatarTiles = forwardRef(function AvatarTiles({
           )}
         </div>
       )}
+
+      {/* ---- BACKGROUND SUB-MENU ---- */}
+      {contextMenu && subMenu === 'background' && (
+        <div data-ctx-menu style={{ ...menuStyle, left: contextMenu.x, top: contextMenu.y, minWidth: 220 }} onClick={e => e.stopPropagation()}>
+          <div style={{ ...headerStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span onClick={() => setSubMenu(null)} style={{ cursor: 'pointer', opacity: 0.6 }}>←</span>
+            Set Background
+          </div>
+          <CtxItem label={uploading ? 'Uploading...' : 'Upload Image'} onClick={() => {
+            if (uploading) return
+            fileInputRef.current?.click()
+          }} />
+          <CtxItem label="Generate Background" color="#A78BFA" onClick={() => {
+            // Generate a themed gradient based on agent color
+            const c = customizations[contextMenu.slug]?.color || rooms.find(r => r.slug === contextMenu.slug)?.color || '#60A5FA'
+            // Create a more dramatic gradient as a "generated" background
+            const canvas = document.createElement('canvas')
+            canvas.width = 400; canvas.height = 400
+            const ctx = canvas.getContext('2d')
+            // Radial gradient with agent color
+            const grad = ctx.createRadialGradient(120, 100, 20, 200, 200, 300)
+            grad.addColorStop(0, c + 'CC')
+            grad.addColorStop(0.4, c + '44')
+            grad.addColorStop(1, '#030612')
+            ctx.fillStyle = grad
+            ctx.fillRect(0, 0, 400, 400)
+            // Add some noise dots
+            for (let n = 0; n < 80; n++) {
+              const nx = Math.random() * 400, ny = Math.random() * 400
+              ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`
+              ctx.beginPath()
+              ctx.arc(nx, ny, Math.random() * 2 + 0.5, 0, Math.PI * 2)
+              ctx.fill()
+            }
+            const dataUrl = canvas.toDataURL('image/png')
+            const newCustoms = { ...customizations, [contextMenu.slug]: { ...customizations[contextMenu.slug], backgroundImage: dataUrl } }
+            saveCustomizations(newCustoms)
+            setSubMenu(null)
+            setContextMenu(null)
+          }} />
+          {customizations[contextMenu.slug]?.backgroundImage && (
+            <CtxItem label="Remove Background" color="#EF4444" onClick={() => handleRemoveBackground(contextMenu.slug)} />
+          )}
+        </div>
+      )}
+
+      {/* Hidden file input for background upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file && contextMenu) handleUploadBackground(contextMenu.slug, file)
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 })
