@@ -76,9 +76,86 @@ const AvatarTiles = forwardRef(function AvatarTiles({
   initialFocusRoom = null,
 }, ref) {
   const rooms = roomsProp && roomsProp.length > 0 ? roomsProp : ALL_ROOMS
-  const visible = useMemo(() => rooms.filter(r => !r.hidden), [rooms])
+  const allVisible = useMemo(() => rooms.filter(r => !r.hidden), [rooms])
+
+  // Ordered tile list (drag-to-reorder). Persists to Supabase preferences.
+  const [tileOrder, setTileOrder] = useState(null) // null = use default order
+  const orderLoadedRef = useRef(false)
+
+  // Load saved tile order
+  useEffect(() => {
+    if (orderLoadedRef.current) return
+    orderLoadedRef.current = true
+    const clientId = getClientId()
+    fetch(`/api/dashboard/preferences?key=tile_order&client=${encodeURIComponent(clientId)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.value && Array.isArray(data.value) && data.value.length > 0) {
+          setTileOrder(data.value)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Save tile order (debounced)
+  const orderSaveRef = useRef(null)
+  const saveTileOrder = useCallback((order) => {
+    setTileOrder(order)
+    if (orderSaveRef.current) clearTimeout(orderSaveRef.current)
+    orderSaveRef.current = setTimeout(() => {
+      fetch('/api/dashboard/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'tile_order', client_id: getClientId(), value: order }),
+      }).catch(() => {})
+    }, 800)
+  }, [])
+
+  // Apply ordering: use saved order, then append any new rooms not in saved order
+  const visible = useMemo(() => {
+    if (!tileOrder || tileOrder.length === 0) return allVisible
+    const slugSet = new Set(allVisible.map(r => r.slug))
+    const ordered = tileOrder.filter(s => slugSet.has(s)).map(s => allVisible.find(r => r.slug === s))
+    const remaining = allVisible.filter(r => !tileOrder.includes(r.slug))
+    return [...ordered, ...remaining]
+  }, [allVisible, tileOrder])
+
+  // Drag state
+  const [dragSlug, setDragSlug] = useState(null)
+  const [dragOverSlug, setDragOverSlug] = useState(null)
+  const dragStartRef = useRef(null)
+  const didDragRef = useRef(false)
+
+  const handleDragStart = useCallback((slug, e) => {
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
+    didDragRef.current = false
+    setDragSlug(slug)
+  }, [])
+
+  const handleDragOver = useCallback((slug) => {
+    if (!dragSlug || slug === dragSlug) return
+    didDragRef.current = true
+    setDragOverSlug(slug)
+  }, [dragSlug])
+
+  const handleDragEnd = useCallback(() => {
+    if (dragSlug && dragOverSlug && dragSlug !== dragOverSlug) {
+      const currentOrder = visible.map(r => r.slug)
+      const fromIdx = currentOrder.indexOf(dragSlug)
+      const toIdx = currentOrder.indexOf(dragOverSlug)
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const newOrder = [...currentOrder]
+        newOrder.splice(fromIdx, 1)
+        newOrder.splice(toIdx, 0, dragSlug)
+        saveTileOrder(newOrder)
+      }
+    }
+    setDragSlug(null)
+    setDragOverSlug(null)
+  }, [dragSlug, dragOverSlug, visible, saveTileOrder])
+
   const [contextMenu, setContextMenu] = useState(null)
-  const [subMenu, setSubMenu] = useState(null) // 'color' | 'icon' | 'rename' | null
+  const [subMenu, setSubMenu] = useState(null)
   const [renameValue, setRenameValue] = useState('')
   const [customizations, setCustomizations] = useState({}) // slug -> { color, icon, nickname }
   const longPressRef = useRef(null)
@@ -240,10 +317,23 @@ const AvatarTiles = forwardRef(function AvatarTiles({
           const isFeatured = slug === featuredSlug
           const hasUnread = unreadAgents[slug] > 0
 
+          const isDragging = dragSlug === slug
+          const isDropTarget = dragOverSlug === slug && dragSlug !== slug
+
           return (
             <div
               key={slug}
-              onClick={() => onRoomClick?.(slug)}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = 'move'
+                e.dataTransfer.setData('text/plain', slug)
+                handleDragStart(slug, e)
+              }}
+              onDragOver={(e) => { e.preventDefault(); handleDragOver(slug) }}
+              onDragEnter={(e) => { e.preventDefault(); handleDragOver(slug) }}
+              onDrop={(e) => { e.preventDefault(); handleDragEnd() }}
+              onDragEnd={handleDragEnd}
+              onClick={() => { if (!didDragRef.current) onRoomClick?.(slug) }}
               onMouseEnter={() => setExtHover?.(slug)}
               onMouseLeave={() => setExtHover?.(null)}
               onContextMenu={(e) => {
@@ -262,9 +352,13 @@ const AvatarTiles = forwardRef(function AvatarTiles({
               onTouchMove={() => clearTimeout(longPressRef.current)}
               style={{
                 '--tile-c': color,
-                borderRadius: 20, overflow: 'hidden', position: 'relative', cursor: 'pointer',
+                borderRadius: 20, overflow: 'hidden', position: 'relative',
+                cursor: isDragging ? 'grabbing' : 'grab',
+                opacity: isDragging ? 0.5 : 1,
                 minHeight: isFeatured ? (isMobile ? 280 : 340) : (isMobile ? 140 : 180),
                 gridRow: isFeatured ? 'span 2' : 'span 1',
+                outline: isDropTarget ? `2px dashed rgba(96,165,250,0.6)` : 'none',
+                outlineOffset: -2,
                 display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
                 padding: isMobile ? 14 : 18,
                 background: `linear-gradient(145deg,
