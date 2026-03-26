@@ -1,53 +1,42 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { supabase } from '../dashboard/lib/supabase.js';
 import seedData from '../data/finance-seed.json';
 
 const AUTH_KEY = 'aom-finance-auth';
 const PASSWORD = 'aom2026';
-const TABLE = 'finance_transactions';
+const API_URL = '/api/dashboard/finance';
 
 const OWNER_OPTIONS = ['Patrik', 'Ash', 'AOM', 'Review', 'Revenue', 'Refund', 'Transfer'];
 
 const OWNER_COLORS = {
-  Patrik: { bg: 'rgba(59,130,246,0.10)', border: '#3B82F6', text: '#93C5FD', badge: '#3B82F6' },
-  Ash: { bg: 'rgba(249,115,22,0.10)', border: '#F97316', text: '#FDBA74', badge: '#F97316' },
+  Patrik: { bg: 'rgba(232,93,38,0.08)', border: '#E85D26', text: '#F0A882', badge: '#E85D26' },
+  Ash: { bg: 'rgba(168,133,96,0.10)', border: '#A88560', text: '#D4B896', badge: '#A88560' },
   AOM: { bg: 'rgba(34,197,94,0.10)', border: '#22C55E', text: '#86EFAC', badge: '#22C55E' },
   Review: { bg: 'rgba(234,179,8,0.10)', border: '#EAB308', text: '#FDE047', badge: '#EAB308' },
-  Revenue: { bg: 'rgba(16,185,129,0.10)', border: '#10B981', text: '#6EE7B7', badge: '#10B981' },
-  Refund: { bg: 'rgba(156,163,175,0.10)', border: '#9CA3AF', text: '#D1D5DB', badge: '#9CA3AF' },
-  Transfer: { bg: 'rgba(156,163,175,0.08)', border: '#6B7280', text: '#9CA3AF', badge: '#6B7280' },
+  Revenue: { bg: 'rgba(34,197,94,0.10)', border: '#22C55E', text: '#86EFAC', badge: '#22C55E' },
+  Refund: { bg: 'rgba(138,132,124,0.10)', border: '#8A847C', text: '#B8B2AA', badge: '#8A847C' },
+  Transfer: { bg: 'rgba(138,132,124,0.06)', border: '#6B6560', text: '#8A847C', badge: '#6B6560' },
 };
 
 // Auto-tag rules for new CSV uploads
 function autoTagOwner(desc, amount, category) {
   const d = desc.toUpperCase();
-  // Revenue
   if (d.includes('SQUARE INC') && amount > 0) return 'Revenue';
   if (d.includes('INCLUDED HEALTH') && amount > 0) return 'Revenue';
   if (d.includes('SQ *ID') && amount > 0) return 'Revenue';
-  // Refund
   if ((category || '').toLowerCase() === 'refund') return 'Refund';
   if (d.startsWith('RBT ') && amount > 0 && amount < 50) return 'Refund';
   if (d.includes('ATM FEE REIMBURSEMENT')) return 'Refund';
-  // Transfer
   if ((category || '').toLowerCase() === 'bank transfer') return 'Transfer';
-  // Ash
   if (d.includes('NELLIS AUCTION')) return 'Ash';
   if (d.includes('WWW.MAC.BID')) return 'Ash';
-  // AOM software/SaaS
   const saas = ['CLAUDE', 'ADOBE', 'VERCEL', 'FRAME.IO', 'DROPBOX', 'REPLIT', 'GOOGLE*WORKSPACE', 'GOOGLE WORKSPACE', 'BLACKMAGIC', 'ELEVENLABS', 'BONSAI', 'ANTHROPIC', 'NETFLIX', 'HELLOBONSAI', 'PROSP AI', 'CONTENTBUDDY'];
   for (const s of saas) { if (d.includes(s)) return 'AOM'; }
-  // AOM rent
   if (d.includes('FRYS-MKTPLACE') && Math.abs(amount) > 500) return 'AOM';
-  // AOM utilities
   if (d.includes('COX') && d.includes('COMM')) return 'AOM';
   if (d.includes('SRP')) return 'AOM';
-  // AOM insurance
   if (d.includes('PROGRESSIVE')) return 'AOM';
   if (d.includes('SERVICELINE')) return 'AOM';
-  // AOM people
   if (d.includes('KARL ASHLEY DE GUZMAN')) return 'AOM';
-  // Default
   return 'Patrik';
 }
 
@@ -63,7 +52,6 @@ function parseNovoCSV(text) {
     const line = lines[i].trim();
     if (!line || line.startsWith(',SUMMARY') || line.startsWith(',Total') || line.startsWith(',Net')) break;
 
-    // Parse CSV respecting quotes
     const fields = [];
     let current = '';
     let inQuotes = false;
@@ -82,14 +70,13 @@ function parseNovoCSV(text) {
     const amount = parseFloat(amountStr) || 0;
     const category = fields[3] || '';
 
-    // Convert date
     const parts = dateStr.split('-');
     let isoDate;
     if (parts.length === 3) {
       if (parts[0].length === 4) {
-        isoDate = dateStr; // already YYYY-MM-DD
+        isoDate = dateStr;
       } else {
-        isoDate = `${parts[2]}-${parts[0]}-${parts[1]}`; // MM-DD-YYYY -> YYYY-MM-DD
+        isoDate = `${parts[2]}-${parts[0]}-${parts[1]}`;
       }
     } else {
       isoDate = dateStr;
@@ -100,9 +87,7 @@ function parseNovoCSV(text) {
       owner = fields[4] || '';
       notes = fields[5] || '';
     } else {
-      // Novo format: Date, Description, Amount, Note, Check Number, Category
       notes = fields[3] || '';
-      // fields[4] = check number, fields[5] = category from Novo
       owner = autoTagOwner(desc, amount, fields[5] || category);
     }
 
@@ -125,7 +110,22 @@ function formatDate(d) {
   return d;
 }
 
-// Password gate
+// AOM v4 brand tokens
+const V4 = {
+  bg: '#0C0C0C',
+  card: '#151515',
+  accent: '#E85D26',
+  accentHover: '#D14E1C',
+  textPrimary: '#F0ECE6',
+  textSecondary: '#8A847C',
+  border: 'rgba(255,255,255,0.10)',
+  green: '#22c55e',
+  red: '#ef4444',
+  syne: "'Syne', sans-serif",
+  space: "'Space Grotesk', sans-serif",
+};
+
+// Password gate (AOM v4 themed)
 function PasswordGate({ onAuth }) {
   const [pw, setPw] = useState('');
   const [error, setError] = useState(false);
@@ -145,10 +145,15 @@ function PasswordGate({ onAuth }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0A0F1C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: V4.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <form onSubmit={handleSubmit} style={{ textAlign: 'center' }}>
-        <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 32, color: '#fff', marginBottom: 8, letterSpacing: 2 }}>AOM FINANCE</h1>
-        <p style={{ color: '#6B7280', fontSize: 14, marginBottom: 24, fontFamily: "'Inter', sans-serif" }}>Enter password to continue</p>
+        <div style={{ marginBottom: 24 }}>
+          <span style={{ fontFamily: V4.syne, fontWeight: 800, fontSize: 32, color: '#fff', letterSpacing: '-0.02em' }}>
+            AOM<span style={{ color: V4.accent }}>.</span>
+          </span>
+        </div>
+        <h2 style={{ fontFamily: V4.syne, fontWeight: 700, fontSize: 20, color: V4.textPrimary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>FINANCE</h2>
+        <p style={{ color: V4.textSecondary, fontSize: 14, marginBottom: 24, fontFamily: V4.space }}>Enter password to continue</p>
         <input
           ref={inputRef}
           type="password"
@@ -156,34 +161,42 @@ function PasswordGate({ onAuth }) {
           onChange={(e) => { setPw(e.target.value); setError(false); }}
           placeholder="Password"
           style={{
-            background: '#141B2D', border: error ? '1px solid #EF4444' : '1px solid #1E293B', borderRadius: 8, padding: '12px 20px',
-            color: '#fff', fontSize: 16, width: 260, outline: 'none', fontFamily: "'Inter', sans-serif"
+            background: V4.card, border: error ? `1px solid ${V4.red}` : `1px solid ${V4.border}`, borderRadius: 10, padding: '12px 20px',
+            color: V4.textPrimary, fontSize: 16, width: 260, outline: 'none', fontFamily: V4.space
           }}
         />
         <br />
         <button type="submit" style={{
-          marginTop: 16, background: '#3B82F6', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 32px',
-          fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter', sans-serif"
+          marginTop: 16, background: V4.accent, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 32px',
+          fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: V4.syne, textTransform: 'uppercase', letterSpacing: '0.1em'
         }}>Enter</button>
-        {error && <p style={{ color: '#EF4444', fontSize: 13, marginTop: 12 }}>Wrong password</p>}
+        {error && <p style={{ color: V4.red, fontSize: 13, marginTop: 12, fontFamily: V4.space }}>Wrong password</p>}
       </form>
     </div>
   );
 }
 
-// Stat card
+// Stat card (AOM v4)
 function StatCard({ label, value, color, sub }) {
   return (
     <div style={{
-      background: '#141B2D', borderRadius: 12, padding: '18px 20px', flex: '1 1 160px', minWidth: 150,
-      border: `1px solid ${color}22`, transition: 'transform 0.2s', cursor: 'default'
+      background: V4.card, borderRadius: 16, padding: '18px 20px', flex: '1 1 160px', minWidth: 150,
+      border: `1px solid ${V4.border}`, transition: 'all 0.25s ease', cursor: 'default', position: 'relative', overflow: 'hidden'
     }}
-      onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-      onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = `0 0 20px ${color}18`;
+        e.currentTarget.style.borderColor = `${color}33`;
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.borderColor = V4.border;
+      }}
     >
-      <div style={{ color: '#6B7280', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>{label}</div>
-      <div style={{ color: color, fontSize: 22, fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: 0.5 }}>{value}</div>
-      {sub && <div style={{ color: '#4B5563', fontSize: 11, marginTop: 4, fontFamily: "'Inter', sans-serif" }}>{sub}</div>}
+      <div style={{ color: V4.textSecondary, fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6, fontFamily: V4.space }}>{label}</div>
+      <div style={{ color: color, fontSize: 22, fontWeight: 700, fontFamily: V4.syne, letterSpacing: '-0.01em' }}>{value}</div>
+      {sub && <div style={{ color: V4.textSecondary, fontSize: 11, marginTop: 4, fontFamily: V4.space }}>{sub}</div>}
     </div>
   );
 }
@@ -200,24 +213,23 @@ export default function FinanceTracker() {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef(null);
 
-  // Fetch all transactions from Supabase
+  // Load AOM v4 fonts
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, []);
+
+  // Fetch all transactions via API
   const fetchTransactions = useCallback(async () => {
-    if (!supabase) {
-      // Fallback: no Supabase configured (local dev)
-      setTransactions(seedData);
-      setLoading(false);
-      return;
-    }
     try {
-      const { data, error } = await supabase
-        .from(TABLE)
-        .select('*')
-        .order('date', { ascending: false });
+      const resp = await fetch(API_URL);
+      if (!resp.ok) throw new Error('API error');
+      const data = await resp.json();
 
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        // Empty table: seed it
+      if (!data.transactions || data.transactions.length === 0) {
+        // Empty table: seed it via API upsert
         const rows = seedData.map(t => ({
           date: t.date,
           description: t.description,
@@ -226,45 +238,46 @@ export default function FinanceTracker() {
           owner: t.owner || 'Review',
           notes: t.notes || '',
         }));
-        const { error: insertErr } = await supabase.from(TABLE).upsert(rows, { onConflict: 'date,description,amount' });
-        if (insertErr) console.error('Seed insert error:', insertErr);
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'upsert', transactions: rows }),
+        });
         // Re-fetch after seeding
-        const { data: seeded } = await supabase.from(TABLE).select('*').order('date', { ascending: false });
-        setTransactions(seeded || seedData);
+        const resp2 = await fetch(API_URL);
+        const data2 = await resp2.json();
+        setTransactions(data2.transactions || seedData);
       } else {
-        setTransactions(data);
+        setTransactions(data.transactions);
       }
     } catch (err) {
-      console.error('Supabase fetch error:', err);
+      console.error('Finance API fetch error:', err);
       setTransactions(seedData);
     }
     setLoading(false);
   }, []);
 
-  // Load on mount
   useEffect(() => {
     if (authed) fetchTransactions();
   }, [authed, fetchTransactions]);
 
-  // Owner change: instant local update + async Supabase write
+  // Owner change: optimistic local update + API persist
   const handleOwnerChange = useCallback((txn, newOwner) => {
-    // Optimistic local update
     setTransactions(prev => prev.map(t =>
       t.id === txn.id ? { ...t, owner: newOwner } : t
     ));
-    // Persist to Supabase
-    if (supabase && txn.id) {
-      supabase
-        .from(TABLE)
-        .update({ owner: newOwner })
-        .eq('id', txn.id)
-        .then(({ error }) => {
-          if (error) console.error('Owner update error:', error);
-        });
+    if (txn.id) {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update-owner', id: txn.id, owner: newOwner }),
+      }).then(r => {
+        if (!r.ok) console.error('Owner update error');
+      });
     }
   }, []);
 
-  // CSV upload: upsert to Supabase, then refresh
+  // CSV upload via API
   const handleFile = useCallback(async (file) => {
     if (!file) return;
     const text = await file.text();
@@ -274,49 +287,39 @@ export default function FinanceTracker() {
       return;
     }
 
-    if (!supabase) {
-      // Fallback for local dev without Supabase
+    try {
+      const resp = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'upsert', transactions: newTxns }),
+      });
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        setUploadMsg('Upload error: ' + (data.error || 'Unknown'));
+        return;
+      }
+
+      const inserted = data.inserted || 0;
+      const dupes = newTxns.length - inserted;
+      setUploadMsg(
+        inserted > 0
+          ? `Added ${inserted} new transactions${dupes > 0 ? `, skipped ${dupes} duplicates` : ''}.`
+          : `All ${newTxns.length} transactions already exist. Nothing added.`
+      );
+
+      await fetchTransactions();
+    } catch (err) {
+      // Fallback for local dev without API
       const existing = new Set(transactions.map(t => `${t.date}|${t.description}|${t.amount}`));
       const unique = newTxns.filter(t => !existing.has(`${t.date}|${t.description}|${t.amount}`));
       if (unique.length > 0) {
         setTransactions(prev => [...prev, ...unique]);
-        setUploadMsg(`Added ${unique.length} new transactions.`);
+        setUploadMsg(`Added ${unique.length} new transactions (local).`);
       } else {
         setUploadMsg(`All ${newTxns.length} transactions already exist.`);
       }
-      return;
     }
-
-    const rows = newTxns.map(t => ({
-      date: t.date,
-      description: t.description,
-      amount: t.amount,
-      category: t.category || '',
-      owner: t.owner || 'Review',
-      notes: t.notes || '',
-    }));
-
-    const { data, error } = await supabase
-      .from(TABLE)
-      .upsert(rows, { onConflict: 'date,description,amount', ignoreDuplicates: true })
-      .select();
-
-    if (error) {
-      console.error('Upload error:', error);
-      setUploadMsg('Upload error: ' + error.message);
-      return;
-    }
-
-    const inserted = data?.length || 0;
-    const dupes = newTxns.length - inserted;
-    setUploadMsg(
-      inserted > 0
-        ? `Added ${inserted} new transactions${dupes > 0 ? `, skipped ${dupes} duplicates` : ''}.`
-        : `All ${newTxns.length} transactions already exist. Nothing added.`
-    );
-
-    // Refresh from Supabase
-    await fetchTransactions();
   }, [transactions, fetchTransactions]);
 
   // Export CSV
@@ -345,7 +348,6 @@ export default function FinanceTracker() {
     const aomSpend = transactions.filter(t => t.owner === 'AOM').reduce((s, t) => s + t.amount, 0);
     const net = revenue + refunds + expenses + transfers;
 
-    // Fun stats
     const catTotals = {};
     transactions.filter(t => t.amount < 0 && !['Revenue', 'Refund', 'Transfer'].includes(t.owner)).forEach(t => {
       const cat = t.category || 'Uncategorized';
@@ -358,7 +360,6 @@ export default function FinanceTracker() {
 
     const meals = transactions.filter(t => (t.category || '').toLowerCase() === 'meals').reduce((s, t) => s + t.amount, 0);
 
-    // Days span
     const dates = transactions.map(t => new Date(t.date)).filter(d => !isNaN(d));
     let days = 1;
     if (dates.length > 1) {
@@ -420,19 +421,24 @@ export default function FinanceTracker() {
     return sortDir === 'asc' ? ' \u2191' : ' \u2193';
   };
 
-  // Clear data: delete all from Supabase and re-seed
+  // Clear data via API
   const clearData = useCallback(async () => {
     if (!window.confirm('Clear all finance data? This cannot be undone.')) return;
-    if (supabase) {
-      // Delete all rows (Supabase requires a filter, so use gte on created_at)
-      await supabase.from(TABLE).delete().gte('created_at', '1970-01-01');
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete-all' }),
+      });
+    } catch (err) {
+      console.error('Clear error:', err);
     }
     setTransactions([]);
     setUploadMsg('Data cleared. Reloading seed...');
     await fetchTransactions();
   }, [fetchTransactions]);
 
-  // Refresh button handler
+  // Refresh
   const handleRefresh = useCallback(async () => {
     setLoading(true);
     await fetchTransactions();
@@ -443,54 +449,68 @@ export default function FinanceTracker() {
   if (!authed) return <PasswordGate onAuth={() => setAuthed(true)} />;
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#0A0F1C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: V4.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid #1E293B', borderTop: '2px solid #3B82F6', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-        <p style={{ color: '#6B7280', fontSize: 14, fontFamily: "'Inter', sans-serif" }}>Loading transactions...</p>
+        <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${V4.card}`, borderTop: `2px solid ${V4.accent}`, animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+        <p style={{ color: V4.textSecondary, fontSize: 14, fontFamily: V4.space }}>Loading transactions...</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   );
 
-  const headerStyle = { fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 };
-  const bodyFont = { fontFamily: "'Inter', sans-serif" };
   const thStyle = {
-    padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-    letterSpacing: 1, color: '#6B7280', borderBottom: '1px solid #1E293B', cursor: 'pointer',
-    userSelect: 'none', whiteSpace: 'nowrap', ...bodyFont
+    padding: '10px 12px', textAlign: 'left', fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+    letterSpacing: '0.15em', color: V4.textSecondary, borderBottom: `1px solid ${V4.border}`, cursor: 'pointer',
+    userSelect: 'none', whiteSpace: 'nowrap', fontFamily: V4.space
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0A0F1C', color: '#E5E7EB', ...bodyFont }}>
-      {/* Header */}
-      <div style={{ padding: '32px 24px 0', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: V4.bg, color: V4.textPrimary, fontFamily: V4.space }}>
+      {/* Header with diagonal pattern */}
+      <div style={{
+        padding: '32px 24px 24px', maxWidth: 1400, margin: '0 auto', position: 'relative',
+        background: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(232,93,38,0.04) 5px, rgba(232,93,38,0.04) 6px)'
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 style={{ ...headerStyle, fontSize: 36, color: '#fff', letterSpacing: 3, margin: 0 }}>AOM FINANCE</h1>
-            <p style={{ color: '#6B7280', fontSize: 14, margin: '4px 0 0' }}>Q1 2026 Spending Tracker</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 4 }}>
+              <span style={{ fontFamily: V4.syne, fontWeight: 800, fontSize: 24, color: '#fff', letterSpacing: '-0.02em' }}>
+                AOM<span style={{ color: V4.accent }}>.</span>
+              </span>
+              <h1 style={{ fontFamily: V4.syne, fontWeight: 800, fontSize: 36, color: '#fff', letterSpacing: '0.08em', margin: 0, textTransform: 'uppercase' }}>FINANCE</h1>
+            </div>
+            <p style={{ color: V4.textSecondary, fontSize: 13, margin: '4px 0 0', fontFamily: V4.space, letterSpacing: '0.05em' }}>Q1 2026 Spending Tracker</p>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button onClick={() => fileRef.current?.click()} style={{
-              background: '#3B82F6', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', ...bodyFont
-            }}>
+              background: V4.accent, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: V4.syne, textTransform: 'uppercase', letterSpacing: '0.1em',
+              transition: 'background 0.2s'
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = V4.accentHover}
+              onMouseLeave={e => e.currentTarget.style.background = V4.accent}
+            >
               Upload CSV
             </button>
             <button onClick={exportCSV} style={{
-              background: 'transparent', color: '#6B7280', border: '1px solid #1E293B', borderRadius: 8, padding: '10px 20px',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', ...bodyFont
-            }}>
+              background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 20px',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: V4.space, letterSpacing: '0.05em',
+              transition: 'border-color 0.2s'
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = V4.accent + '55'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = V4.border}
+            >
               Export CSV
             </button>
             <button onClick={handleRefresh} style={{
-              background: 'transparent', color: '#6B7280', border: '1px solid #1E293B', borderRadius: 8, padding: '10px 20px',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', ...bodyFont
+              background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 20px',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: V4.space, letterSpacing: '0.05em'
             }}>
               Refresh
             </button>
             <button onClick={clearData} style={{
-              background: 'transparent', color: '#4B5563', border: '1px solid #1E293B', borderRadius: 8, padding: '10px 16px',
-              fontSize: 12, cursor: 'pointer', ...bodyFont
+              background: 'transparent', color: V4.textSecondary, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 16px',
+              fontSize: 11, cursor: 'pointer', fontFamily: V4.space, opacity: 0.5
             }}>
               Reset
             </button>
@@ -502,12 +522,12 @@ export default function FinanceTracker() {
       {/* Stats bar */}
       <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <StatCard label="Revenue" value={formatCurrency(stats.revenue)} color="#10B981" />
-          <StatCard label="Expenses" value={formatCurrency(stats.expenses)} color="#EF4444" />
-          <StatCard label="Net" value={formatCurrency(stats.net)} color={stats.net >= 0 ? '#10B981' : '#EF4444'} />
-          <StatCard label="Patrik" value={formatCurrency(stats.patrikSpend)} color="#3B82F6" />
-          <StatCard label="Ash" value={formatCurrency(stats.ashSpend)} color="#F97316" />
-          <StatCard label="AOM Business" value={formatCurrency(stats.aomSpend)} color="#22C55E" />
+          <StatCard label="Revenue" value={formatCurrency(stats.revenue)} color={V4.green} />
+          <StatCard label="Expenses" value={formatCurrency(stats.expenses)} color={V4.red} />
+          <StatCard label="Net" value={formatCurrency(stats.net)} color={stats.net >= 0 ? V4.green : V4.red} />
+          <StatCard label="Patrik" value={formatCurrency(stats.patrikSpend)} color={V4.accent} />
+          <StatCard label="Ash" value={formatCurrency(stats.ashSpend)} color="#A88560" />
+          <StatCard label="AOM Business" value={formatCurrency(stats.aomSpend)} color={V4.green} />
         </div>
       </div>
 
@@ -517,18 +537,18 @@ export default function FinanceTracker() {
           <StatCard label="Top Category" value={stats.topCategory ? stats.topCategory.name : '--'} color="#A78BFA"
             sub={stats.topCategory ? formatCurrency(-stats.topCategory.amount) : ''} />
           <StatCard label="Avg Daily Spend" value={formatCurrency(-stats.dailySpend)} color="#F472B6" />
-          <StatCard label="Biggest Expense" value={stats.biggestExpense ? formatCurrency(stats.biggestExpense.amount) : '--'} color="#FB923C"
+          <StatCard label="Biggest Expense" value={stats.biggestExpense ? formatCurrency(stats.biggestExpense.amount) : '--'} color={V4.accent}
             sub={stats.biggestExpense ? stats.biggestExpense.description.slice(0, 30) : ''} />
-          <StatCard label="Transactions" value={stats.txnCount.toString()} color="#60A5FA" />
-          <StatCard label="Monthly Burn" value={formatCurrency(-stats.monthlyBurn)} color="#F87171" />
+          <StatCard label="Transactions" value={stats.txnCount.toString()} color={V4.textPrimary} />
+          <StatCard label="Monthly Burn" value={formatCurrency(-stats.monthlyBurn)} color={V4.red} />
           <StatCard label="Meals Total" value={formatCurrency(stats.meals)} color="#FBBF24" />
         </div>
       </div>
 
-      {/* Upload zone + message */}
+      {/* Upload message */}
       {uploadMsg && (
         <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto 12px' }}>
-          <div style={{ background: '#141B2D', border: '1px solid #1E293B', borderRadius: 8, padding: '10px 16px', color: '#86EFAC', fontSize: 13 }}>
+          <div style={{ background: V4.card, border: `1px solid ${V4.border}`, borderRadius: 10, padding: '10px 16px', color: V4.green, fontSize: 13, fontFamily: V4.space }}>
             {uploadMsg}
           </div>
         </div>
@@ -542,13 +562,13 @@ export default function FinanceTracker() {
           onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
           onClick={() => fileRef.current?.click()}
           style={{
-            border: `2px dashed ${dragOver ? '#3B82F6' : '#1E293B'}`,
-            borderRadius: 12, padding: '20px', textAlign: 'center', cursor: 'pointer',
-            background: dragOver ? 'rgba(59,130,246,0.05)' : 'transparent',
+            border: `2px dashed ${dragOver ? V4.accent : V4.border}`,
+            borderRadius: 14, padding: '20px', textAlign: 'center', cursor: 'pointer',
+            background: dragOver ? 'rgba(232,93,38,0.05)' : 'transparent',
             transition: 'all 0.2s'
           }}
         >
-          <p style={{ color: '#4B5563', fontSize: 13, margin: 0 }}>
+          <p style={{ color: V4.textSecondary, fontSize: 13, margin: 0, fontFamily: V4.space }}>
             Drop a CSV here or click to upload
           </p>
         </div>
@@ -557,20 +577,26 @@ export default function FinanceTracker() {
       {/* Filters */}
       <div style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto 12px' }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {['All', ...OWNER_OPTIONS].map(o => (
-            <button
-              key={o}
-              onClick={() => setFilterOwner(o)}
-              style={{
-                background: filterOwner === o ? (o === 'All' ? '#3B82F6' : OWNER_COLORS[o]?.badge || '#3B82F6') : '#141B2D',
-                color: filterOwner === o ? '#fff' : '#6B7280',
-                border: `1px solid ${filterOwner === o ? 'transparent' : '#1E293B'}`,
-                borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', ...bodyFont
-              }}
-            >
-              {o}
-            </button>
-          ))}
+          {['All', ...OWNER_OPTIONS].map(o => {
+            const isActive = filterOwner === o;
+            const badgeColor = o === 'All' ? V4.accent : (OWNER_COLORS[o]?.badge || V4.accent);
+            return (
+              <button
+                key={o}
+                onClick={() => setFilterOwner(o)}
+                style={{
+                  background: isActive ? badgeColor : V4.card,
+                  color: isActive ? '#fff' : V4.textSecondary,
+                  border: `1px solid ${isActive ? 'transparent' : V4.border}`,
+                  borderRadius: 8, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  fontFamily: V4.space, textTransform: 'uppercase', letterSpacing: '0.1em',
+                  transition: 'all 0.15s'
+                }}
+              >
+                {o}
+              </button>
+            );
+          })}
           <div style={{ flex: 1, minWidth: 200 }}>
             <input
               type="text"
@@ -578,21 +604,21 @@ export default function FinanceTracker() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search transactions..."
               style={{
-                width: '100%', background: '#141B2D', border: '1px solid #1E293B', borderRadius: 6,
-                padding: '8px 14px', color: '#E5E7EB', fontSize: 13, outline: 'none', ...bodyFont
+                width: '100%', background: V4.card, border: `1px solid ${V4.border}`, borderRadius: 8,
+                padding: '8px 14px', color: V4.textPrimary, fontSize: 13, outline: 'none', fontFamily: V4.space
               }}
             />
           </div>
-          <span style={{ color: '#4B5563', fontSize: 12 }}>{filtered.length} results</span>
+          <span style={{ color: V4.textSecondary, fontSize: 11, fontFamily: V4.space, letterSpacing: '0.1em' }}>{filtered.length} RESULTS</span>
         </div>
       </div>
 
       {/* Table */}
       <div style={{ padding: '0 24px 40px', maxWidth: 1400, margin: '0 auto' }}>
-        <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid #1E293B' }}>
+        <div style={{ overflowX: 'auto', borderRadius: 14, border: `1px solid ${V4.border}` }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#0F1629' }}>
+              <tr style={{ background: V4.card }}>
                 <th onClick={() => handleSort('date')} style={{ ...thStyle, width: 100 }}>Date{sortArrow('date')}</th>
                 <th onClick={() => handleSort('description')} style={{ ...thStyle, minWidth: 200 }}>Description{sortArrow('description')}</th>
                 <th onClick={() => handleSort('amount')} style={{ ...thStyle, width: 110, textAlign: 'right' }}>Amount{sortArrow('amount')}</th>
@@ -604,37 +630,38 @@ export default function FinanceTracker() {
             <tbody>
               {filtered.map((t, i) => {
                 const oc = OWNER_COLORS[t.owner] || OWNER_COLORS.Patrik;
+                const rowBg = i % 2 === 0 ? V4.bg : V4.card;
                 return (
                   <tr key={t.id || `${t.date}-${t.description}-${t.amount}-${i}`}
-                    style={{ background: oc.bg, borderBottom: '1px solid #1E293B10', transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = `${oc.border}18`}
-                    onMouseLeave={e => e.currentTarget.style.background = oc.bg}
+                    style={{ background: rowBg, borderBottom: `1px solid ${V4.border}`, transition: 'background 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = `${oc.border}12`}
+                    onMouseLeave={e => e.currentTarget.style.background = rowBg}
                   >
-                    <td style={{ padding: '8px 12px', color: '#9CA3AF', whiteSpace: 'nowrap', fontSize: 12 }}>{formatDate(t.date)}</td>
-                    <td style={{ padding: '8px 12px', color: '#E5E7EB', fontWeight: 500 }}>
+                    <td style={{ padding: '8px 12px', color: V4.textSecondary, whiteSpace: 'nowrap', fontSize: 12 }}>{formatDate(t.date)}</td>
+                    <td style={{ padding: '8px 12px', color: V4.textPrimary, fontWeight: 500 }}>
                       {t.description}
                     </td>
                     <td style={{
-                      padding: '8px 12px', textAlign: 'right', fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif",
-                      fontSize: 14, color: t.amount >= 0 ? '#10B981' : '#EF4444'
+                      padding: '8px 12px', textAlign: 'right', fontWeight: 700, fontFamily: V4.syne,
+                      fontSize: 14, color: t.amount >= 0 ? V4.green : V4.red
                     }}>
                       {formatCurrency(t.amount)}
                     </td>
-                    <td style={{ padding: '8px 12px', color: '#6B7280', fontSize: 12 }}>{t.category}</td>
+                    <td style={{ padding: '8px 12px', color: V4.textSecondary, fontSize: 12 }}>{t.category}</td>
                     <td style={{ padding: '8px 12px' }}>
                       <select
                         value={t.owner}
                         onChange={(e) => handleOwnerChange(t, e.target.value)}
                         style={{
-                          background: `${oc.badge}22`, color: oc.text, border: `1px solid ${oc.badge}44`,
-                          borderRadius: 4, padding: '4px 8px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                          outline: 'none', ...bodyFont, appearance: 'auto'
+                          background: `${oc.badge}18`, color: oc.text, border: `1px solid ${oc.badge}33`,
+                          borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                          outline: 'none', fontFamily: V4.space, appearance: 'auto', letterSpacing: '0.05em'
                         }}
                       >
                         {OWNER_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                     </td>
-                    <td style={{ padding: '8px 12px', color: '#6B7280', fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '8px 12px', color: V4.textSecondary, fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.notes}
                     </td>
                   </tr>
@@ -643,13 +670,10 @@ export default function FinanceTracker() {
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <div style={{ padding: 40, textAlign: 'center', color: '#4B5563' }}>No transactions found.</div>
+            <div style={{ padding: 40, textAlign: 'center', color: V4.textSecondary, fontFamily: V4.space }}>No transactions found.</div>
           )}
         </div>
       </div>
-
-      {/* Google Fonts */}
-      <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     </div>
   );
 }
