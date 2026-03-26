@@ -114,7 +114,7 @@ export default async function handler(req, res) {
         notes: t.notes || '',
       }))
 
-      const url = `${SUPABASE_URL}/rest/v1/${TABLE}`
+      const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=date,description,amount`
       const sbRes = await fetch(url, {
         method: 'POST',
         headers: supabaseHeaders({ 'Prefer': 'resolution=merge-duplicates,return=representation' }),
