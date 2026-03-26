@@ -12074,7 +12074,7 @@ export default function GameDashboard() {
     const pipeAgents = pipeData?.agents || []
     for (const a of pipeAgents) {
       if (!map[a.slug]) map[a.slug] = a
-      else map[a.slug] = { ...map[a.slug], status: a.status || map[a.slug].status }
+      else map[a.slug] = { ...map[a.slug], status: a.status || map[a.slug].status, updatedAt: a.updatedAt || map[a.slug].updatedAt }
     }
     return map
   }, [data, pipeData?.agents])

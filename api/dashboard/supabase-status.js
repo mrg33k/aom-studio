@@ -67,6 +67,7 @@ export default async function handler(req, res) {
       status: a.status || 'idle',
       currentTask: a.current_task || '',
       color: a.color,
+      updatedAt: a.updated_at || null,
     }));
 
     // Build throughput from recent messages

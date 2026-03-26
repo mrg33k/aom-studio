@@ -864,6 +864,7 @@ export function useDataPipe(parsePunchList) {
         role: sb?.role || '',
         status,
         color: sb?.color || '#60A5FA',
+        updatedAt: sb?.updatedAt || null,
       }
     })
   } else {
@@ -879,6 +880,7 @@ export function useDataPipe(parsePunchList) {
         role: a.role || '',
         status,
         color: a.color || '#60A5FA',
+        updatedAt: a.updatedAt || null,
       }
     })
   }

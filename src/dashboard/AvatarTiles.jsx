@@ -79,6 +79,10 @@ const AvatarTiles = forwardRef(function AvatarTiles({
   const rooms = roomsProp && roomsProp.length > 0 ? roomsProp : ALL_ROOMS
   const allVisible = useMemo(() => rooms.filter(r => !r.hidden), [rooms])
 
+  // Tick every 10s to update alive/dead dots
+  const [, setTick] = useState(0)
+  useEffect(() => { const t = setInterval(() => setTick(n => n + 1), 10000); return () => clearInterval(t) }, [])
+
   // Ordered tile list (drag-to-reorder). Persists to Supabase preferences.
   const [tileOrder, setTileOrder] = useState(null) // null = use default order
   const orderLoadedRef = useRef(false)
@@ -400,6 +404,12 @@ const AvatarTiles = forwardRef(function AvatarTiles({
               const isDragging = dragSlug === slug
               const isDropTarget = dragOverSlug === slug && dragSlug !== slug
 
+              // Alive/dead indicator from updated_at
+              const updatedAt = agentStatus[slug]?.updatedAt
+              const ageSec = updatedAt ? Math.round((Date.now() - new Date(updatedAt).getTime()) / 1000) : null
+              const aliveColor = ageSec === null ? '#6B7280' : ageSec < 30 ? '#22C55E' : ageSec < 60 ? '#F59E0B' : '#6B7280'
+              const aliveLabel = ageSec === null ? 'unknown' : ageSec < 30 ? 'alive' : ageSec < 60 ? 'recent' : 'idle'
+
               return (
                 <div
                   key={slug}
@@ -450,11 +460,23 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                   <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)', pointerEvents: 'none', opacity: active ? 0.15 : 0.08, transition: 'opacity 0.3s ease' }}>
                     <Icon size={useHScroll ? (isMobile ? 48 : 64) : (isMobile ? 56 : 72)} strokeWidth={1.2} style={{ color: '#fff' }} />
                   </div>
-                  {(active || hasUnread) && (
-                    <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', alignItems: 'center', gap: 5, zIndex: 2 }}>
-                      {hasUnread && <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', system-ui, sans-serif", border: '2px solid rgba(5,10,20,0.5)' }}>{unreadAgents[slug] > 9 ? '9+' : unreadAgents[slug]}</div>}
-                      {active && <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, animation: 'livePulse 1.2s ease-in-out infinite' }} />}
-                    </div>
+                  {/* Alive/dead dot (top-left) -- always visible for agents */}
+                  {room.type !== 'project' && (
+                    <div
+                      title={aliveLabel === 'alive' ? `Active ${ageSec}s ago` : aliveLabel === 'recent' ? `Last seen ${ageSec}s ago` : ageSec !== null ? `Idle ${Math.round(ageSec / 60)}m` : 'No data'}
+                      style={{
+                        position: 'absolute', top: 10, left: 10, zIndex: 2,
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: aliveColor,
+                        boxShadow: aliveColor === '#22C55E' ? `0 0 8px ${aliveColor}, 0 0 16px ${aliveColor}40` : `0 0 4px ${aliveColor}80`,
+                        border: '1.5px solid rgba(0,0,0,0.3)',
+                        animation: aliveColor === '#22C55E' ? 'livePulse 1.5s ease-in-out infinite' : 'none',
+                      }}
+                    />
+                  )}
+                  {/* Unread badge (top-right) */}
+                  {hasUnread && (
+                    <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 2, width: 18, height: 18, borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', system-ui, sans-serif", border: '2px solid rgba(5,10,20,0.5)', boxShadow: '0 0 8px rgba(239,68,68,0.5)' }}>{unreadAgents[slug] > 9 ? '9+' : unreadAgents[slug]}</div>
                   )}
                   <div style={{ position: 'relative', zIndex: 1 }}>
                     <div style={{ fontSize: useHScroll ? TYPE.base : TYPE.lg, fontWeight: 800, color: '#EDF2FA', letterSpacing: LS.tight, fontFamily: "'Inter', system-ui, sans-serif", textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: 1.2 }}>{name}</div>
