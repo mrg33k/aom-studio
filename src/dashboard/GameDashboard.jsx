@@ -1399,7 +1399,6 @@ function AgentCharacterHTML({ color, status, agentSlug, isSpeaking, roomW, roomH
             imageRendering: 'pixelated',
             display: 'block',
             filter: isWorking ? `drop-shadow(0 0 8px ${color}66)` : 'none',
-            transition: 'filter 400ms ease',
           }}
         />
       </div>
@@ -1598,7 +1597,6 @@ function RoomTile({ room, agent, agentStatus, isHovered, isSelected, onClick, on
         width: tileW, height: tileH,
         cursor: hasAgent ? 'pointer' : 'default',
         filter: `brightness(${baseBrightness})`,
-        transition: 'filter 400ms ease, transform 200ms ease',
         transform: (isHovered && hasAgent) ? 'scale(1.02)' : 'scale(1)',
         zIndex: (isHovered || isSelected) ? 5 : 1,
       }}
@@ -1739,7 +1737,7 @@ function IsometricRoom({ room, agent, agentStatus, isHovered, isSelected, onClic
   const hasRoomRender = roomsWithRenders.has(room.id)
   const roomLightOverlay = ROOM_LIGHT_OVERLAYS[room.id]
   return (
-    <g onClick={() => hasAgent && onClick?.(room.id)} style={{ cursor: hasAgent ? 'pointer' : 'default', filter: `brightness(${baseBrightness})`, transition: 'filter 400ms ease' }}>
+    <g onClick={() => hasAgent && onClick?.(room.id)} style={{ cursor: hasAgent ? 'pointer' : 'default', filter: `brightness(${baseBrightness})` }}>
       {hasRoomRender ? (
         <foreignObject x={0} y={0} width={roomW} height={roomH} style={{ overflow: 'hidden' }}>
           <img src={`/corner/rooms/${room.id === 'main-hall' ? 'main-hall' : room.id + '-room'}.png`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -2069,10 +2067,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
   }, [handleMouseUp, onZoomChange])
 
   const detailLevel = getDetailLevel(cameraZoom)
-  // Game-native zoom transitions: snappy but smooth, no janky web feel
-  const zoomTransition = detailLevel === 'overview'
-    ? '0.45s cubic-bezier(0.25, 0.1, 0.25, 1.0)'
-    : '0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+  const zoomTransition = '0s'
 
   // Camera offset centers on the target room using image-space coordinates
   const getRoomCenter = (roomId) => {
@@ -2189,13 +2184,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 left: `${target.x}%`,
                 top: `${target.y}%`,
               }}
-              transition={{
-                opacity: { delay: hasLoaded ? 0 : waveDelay, duration: 0.3 },
-                scale: { delay: waveDelay, type: 'spring', stiffness: 380, damping: 16, mass: 0.6 },
-                y: { delay: waveDelay, type: 'spring', stiffness: 380, damping: 16, mass: 0.6 },
-                left: { type: 'spring', stiffness: 280, damping: 24, mass: 0.8 },
-                top: { type: 'spring', stiffness: 280, damping: 24, mass: 0.8 },
-              }}
+              transition={{ duration: 0 }}
               style={{
                 position: 'absolute',
                 left: `${target.x}%`,
@@ -2212,7 +2201,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 <motion.div
                   initial={{ opacity: 0, scale: 0.7, y: -8 }}
                   animate={hasLoaded ? { opacity: 1, scale: 1, y: 0 } : {}}
-                  transition={{ delay: waveDelay + 0.15, type: 'spring', stiffness: 400, damping: 18, mass: 0.6 }}
+                  transition={{ duration: 0 }}
                   style={{
                     position: 'absolute',
                     left: '20%',
@@ -2236,7 +2225,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                         width: 80, height: 40,
                         imageRendering: 'auto',
                         display: 'block',
-                        transition: 'filter 300ms ease',
+                        transition: 'none',
                       }}
                     />
                     {/* Status dot overlay on nameplate */}
@@ -2269,7 +2258,7 @@ function IsometricOffice({ agentStatus, onRoomClick, onRoomContextMenu, selected
                 <motion.div
                   initial={{ opacity: 0, y: -12 }}
                   animate={hasLoaded ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: waveDelay + 0.25, type: 'spring', stiffness: 350, damping: 20, mass: 0.5 }}
+                  transition={{ duration: 0 }}
                   style={{
                     position: 'absolute',
                     left: `${(target.w - 1.5) / target.w * 100}%`,

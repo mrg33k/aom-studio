@@ -328,7 +328,7 @@ export default function CanvasRoom({
           height: '100%',
           display: 'block',
           imageRendering: 'pixelated',
-          transition: 'filter 200ms ease',
+          transition: 'none',
           filter: hovered
             ? 'brightness(1.1) drop-shadow(0 0 12px rgba(76,175,80,0.3))'
             : isActive

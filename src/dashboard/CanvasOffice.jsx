@@ -49,7 +49,7 @@ const WAVE_OFFSET = 1.2      // Stagger between consecutive rooms in seconds
 const DRAG_THRESHOLD = 5
 
 // Camera transition duration (ms)
-const CAMERA_TRANSITION_MS = 400
+const CAMERA_TRANSITION_MS = 0
 
 // Shuffle animation duration (ms)
 const SHUFFLE_ANIM_MS = 200
