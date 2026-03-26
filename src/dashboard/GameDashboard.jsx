@@ -3800,9 +3800,11 @@ function MobileDrawer({
         paddingBottom: keyboardOpen ? 0 : 0,
         height: sheetHeight,
         zIndex: isFullSnap || keyboardOpen ? 200 : 38,
-        background: 'rgba(15,25,50,0.98)',
+        background: isNightMode
+          ? 'rgba(15,25,50,0.98)'
+          : 'linear-gradient(180deg, rgba(20,50,110,0.97) 0%, rgba(24,58,120,0.96) 50%, rgba(18,45,100,0.97) 100%)',
         borderRadius: (isFullSnap || keyboardOpen) ? 0 : '16px 16px 0 0',
-        boxShadow: '0 -8px 30px rgba(0, 0, 0, 0.6)',
+        boxShadow: isNightMode ? '0 -8px 30px rgba(0, 0, 0, 0.6)' : '0 -8px 30px rgba(0, 20, 60, 0.5)',
         display: 'flex',
         flexDirection: 'column',
         // PERMANENT FIX: overflow:'clip' instead of overflow:'hidden'.
@@ -8997,7 +8999,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         flexShrink: 0,
         background: isNightMode
           ? 'linear-gradient(180deg, #0C1829 0%, #0F1B2D 30%, #111E33 100%)'
-          : 'linear-gradient(180deg, rgba(20,40,70,0.97) 0%, rgba(24,48,82,0.96) 50%, rgba(20,40,70,0.97) 100%)',
+          : 'linear-gradient(180deg, rgba(20,50,110,0.97) 0%, rgba(24,58,120,0.96) 50%, rgba(18,45,100,0.97) 100%)',
         borderLeft: isMobile ? 'none' : (isNightMode
           ? '2px solid rgba(59, 130, 246, 0.35)'
           : '2px solid rgba(59, 130, 246, 0.35)'),
