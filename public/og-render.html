@@ -4,97 +4,171 @@
 <meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: 1200px; height: 630px; overflow: hidden; background: #0C0C0C; position: relative; font-family: 'Space Grotesk', sans-serif; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden;
+    background: #0C0C0C; position: relative;
+    font-family: 'Space Grotesk', sans-serif;
+  }
 
-  /* Subtle grid overlay */
+  /* Grid overlay matching brand v4 hero */
   .grid-overlay {
     position: absolute; inset: 0;
     background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
     background-size: 60px 60px;
+    pointer-events: none;
   }
 
-  /* Geometric accents */
-  .geo-br {
-    position: absolute; bottom: 0; right: 0;
-    width: 0; height: 0;
-    border-left: 400px solid transparent;
-    border-bottom: 310px solid rgba(232, 93, 38, 0.06);
+  /* Top bar: logo left, version badge right */
+  .top-bar {
+    position: absolute; top: 40px; left: 60px; right: 60px;
+    display: flex; justify-content: space-between; align-items: center;
   }
-  .geo-tl {
-    position: absolute; top: 0; left: 0;
-    width: 0; height: 0;
-    border-right: 400px solid transparent;
-    border-top: 280px solid rgba(255, 255, 255, 0.015);
-  }
-
-  /* Orange accent bar */
-  .orange-rule {
-    position: absolute; top: 310px; left: 80px;
-    width: 120px; height: 3px;
-    background: #E85D26; border-radius: 1.5px;
-  }
-
-  /* Top stripe */
-  .top-stripe { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #E85D26; }
-
-  /* Bottom stripe */
-  .bottom-stripe { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: #E85D26; }
-
-  /* Typography */
-  .wordmark {
-    position: absolute; top: 140px; left: 80px;
+  .logo {
     font-family: 'Syne', sans-serif; font-weight: 800;
-    font-size: 140px; color: #F0ECE6; letter-spacing: -4px;
-    line-height: 1;
+    font-size: 24px; color: #F0ECE6; letter-spacing: -0.5px;
   }
-  .wordmark .dot { color: #E85D26; }
+  .logo .dot { color: #E85D26; }
 
-  .tagline {
-    position: absolute; top: 330px; left: 82px;
-    font-weight: 500; font-size: 34px; color: #F0ECE6;
-    letter-spacing: 0.5px; line-height: 1.35;
-  }
-
-  .subline {
-    position: absolute; top: 455px; left: 82px;
-    font-weight: 400; font-size: 20px; color: #8A847C;
-    letter-spacing: 0.3px;
+  .version-badge {
+    border: 1px solid #E85D26; border-radius: 20px;
+    padding: 4px 14px;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 500;
+    font-size: 12px; color: #E85D26; letter-spacing: 1px;
   }
 
+  /* Center: giant AOM. */
+  .giant-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -55%);
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 200px; color: #F0ECE6;
+    letter-spacing: -6px; line-height: 1;
+    white-space: nowrap;
+  }
+  .giant-text .dot {
+    display: inline-block;
+    width: 36px; height: 36px;
+    background: #E85D26;
+    border-radius: 4px;
+    vertical-align: baseline;
+    margin-left: 2px;
+    position: relative;
+    top: -10px;
+  }
+
+  /* Divider line */
+  .divider {
+    position: absolute;
+    top: 410px; left: 60px; right: 60px;
+    height: 1px;
+    background: rgba(255,255,255,0.10);
+  }
+
+  /* Bottom meta row */
+  .meta-row {
+    position: absolute;
+    top: 430px; left: 60px; right: 60px;
+    display: flex; align-items: baseline; gap: 48px;
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .meta-label {
+    font-size: 10px; font-weight: 500;
+    color: #8A847C; letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .meta-value {
+    font-size: 16px; font-weight: 500;
+    color: #F0ECE6; letter-spacing: 0.3px;
+  }
+  .meta-value.orange { color: #E85D26; }
+
+  /* Services row */
+  .services-row {
+    position: absolute;
+    top: 510px; left: 60px; right: 60px;
+    display: flex; align-items: center; gap: 20px;
+  }
+  .service-tag {
+    font-size: 13px; font-weight: 500;
+    color: #8A847C; letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .service-sep {
+    font-size: 13px; color: rgba(255,255,255,0.15);
+  }
+
+  /* URL bottom right */
   .url {
-    position: absolute; bottom: 50px; left: 82px;
-    font-weight: 600; font-size: 18px; color: #E85D26;
-    letter-spacing: 1.5px;
+    position: absolute;
+    bottom: 36px; right: 60px;
+    font-weight: 600; font-size: 15px;
+    color: #E85D26; letter-spacing: 1.5px;
   }
 
-  .vertical-text {
-    position: absolute; right: 30px; bottom: 40px;
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 14px; color: rgba(255, 255, 255, 0.06);
-    letter-spacing: 4px;
-    writing-mode: vertical-rl; text-orientation: mixed;
-    transform: rotate(180deg);
+  /* Tagline badge (replaces BRAND IDENTITY SYSTEM) */
+  .tagline-badge {
+    position: absolute;
+    top: 100px; left: 60px;
+    border: 1px solid rgba(138,132,124,0.4); border-radius: 20px;
+    padding: 5px 16px;
+    font-size: 11px; font-weight: 500;
+    color: #8A847C; letter-spacing: 2.5px;
+    text-transform: uppercase;
   }
 </style>
 </head>
 <body>
   <div class="grid-overlay"></div>
-  <div class="geo-tl"></div>
-  <div class="geo-br"></div>
-  <div class="orange-rule"></div>
-  <div class="top-stripe"></div>
 
-  <div class="wordmark">AOM<span class="dot">.</span></div>
-  <div class="tagline">We Make Companies<br>Impossible to Ignore</div>
-  <div class="subline">Video &nbsp;/ &nbsp;Social &nbsp;/ &nbsp;Web &nbsp;/ &nbsp;AI Systems</div>
-  <div class="url">AHEADOFMARKET.COM</div>
-  <div class="vertical-text">AHEAD OF MARKET</div>
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div class="logo">AOM<span class="dot">.</span></div>
+    <div class="version-badge">PHOENIX, AZ</div>
+  </div>
 
-  <div class="bottom-stripe"></div>
+  <!-- Category badge -->
+  <div class="tagline-badge">CREATIVE PRODUCTION + AI SYSTEMS</div>
+
+  <!-- Giant AOM. -->
+  <div class="giant-text">AOM<span class="dot"></span></div>
+
+  <!-- Divider -->
+  <div class="divider"></div>
+
+  <!-- Meta row: mirrors the brand v4 style -->
+  <div class="meta-row">
+    <div class="meta-item">
+      <span class="meta-label">Full Name</span>
+      <span class="meta-value">Ahead of Market</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Founded</span>
+      <span class="meta-value">2020</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Direction</span>
+      <span class="meta-value">We Make Companies Impossible to Ignore</span>
+    </div>
+  </div>
+
+  <!-- Services row -->
+  <div class="services-row">
+    <span class="service-tag">Video</span>
+    <span class="service-sep">/</span>
+    <span class="service-tag">Social</span>
+    <span class="service-sep">/</span>
+    <span class="service-tag">Web</span>
+    <span class="service-sep">/</span>
+    <span class="service-tag">AI Systems</span>
+  </div>
+
+  <!-- URL -->
+  <div class="url">aheadofmarket.com</div>
 </body>
 </html>
