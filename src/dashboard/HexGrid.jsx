@@ -442,15 +442,15 @@ const HexGrid = forwardRef(function HexGrid({
               {/* Glass gradient */}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)', pointerEvents: 'none' }} />
 
-              {/* Content */}
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '14px 8px' }}>
-                <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, color: '#EDF2FA', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', lineHeight: 1.2, maxWidth: geo.hexW - 24, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+              {/* Content: name + role underneath, icon below */}
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '14px 8px' }}>
+                <div style={{ fontSize: isMobile ? 14 : 18, fontWeight: 700, color: '#EDF2FA', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', lineHeight: 1.2, maxWidth: geo.hexW - 24, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
                   {meta.name || slug}
                 </div>
-                <Icon size={isMobile ? 18 : 20} strokeWidth={1.8} style={{ color: meta.color || 'rgba(96,165,250,0.6)', opacity: st === 'working' || st === 'active' ? 1 : 0.6, flexShrink: 0, transition: 'opacity 200ms ease' }} />
-                <div style={{ fontSize: 10, fontWeight: 500, color: 'rgba(200,214,229,0.45)', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', maxWidth: geo.hexW - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {meta.role || meta.type || ''}
+                <div style={{ fontSize: isMobile ? 9 : 10, fontWeight: 600, color: meta.color || 'rgba(96,165,250,0.7)', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', maxWidth: geo.hexW - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  {meta.role || ''}
                 </div>
+                <Icon size={isMobile ? 16 : 20} strokeWidth={1.8} style={{ color: meta.color || 'rgba(96,165,250,0.6)', opacity: st === 'working' || st === 'active' ? 1 : 0.5, flexShrink: 0, transition: 'opacity 200ms ease', marginTop: 2 }} />
               </div>
 
               {/* Unread badge */}

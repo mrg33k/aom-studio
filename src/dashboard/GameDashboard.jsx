@@ -4583,8 +4583,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           )
         )}
 
-        {/* WEB badge (production) */}
-        {!IS_LOCAL && (
+        {/* WEB badge (production, desktop only -- too cramped on mobile) */}
+        {!IS_LOCAL && !isMobile && (
           <span style={{
             display: 'flex', alignItems: 'center', gap: 5,
             fontSize: 11, fontWeight: 700,
