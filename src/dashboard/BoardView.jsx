@@ -242,14 +242,14 @@ function ChatPanel({ chat, agentName }) {
       onClick={e => e.stopPropagation()}
     >
       <div ref={ref} style={{
-        flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '6px 12px',
-        display: 'flex', flexDirection: 'column', gap: 5,
+        flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '10px 14px',
+        display: 'flex', flexDirection: 'column', gap: 8,
       }}>
         {chat.loading && <div style={{ textAlign: 'center', color: 'var(--bv-dim)', fontSize: 12, padding: 20 }}>Loading...</div>}
         {chat.messages.map((m, i) => (
           <div key={i} style={{
-            padding: '7px 11px', borderRadius: 10, fontSize: 13, lineHeight: 1.5, maxWidth: '88%',
-            wordBreak: 'break-word', overflowWrap: 'break-word', overflowX: 'hidden',
+            padding: '10px 14px', borderRadius: 10, fontSize: 14, lineHeight: 1.55, maxWidth: '92%',
+            wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap',
             background: m.role === 'user' ? 'var(--bv-chat-user)' : 'var(--bv-chat-agent)',
             border: `1px solid ${m.role === 'user' ? 'rgba(59,130,246,0.25)' : 'var(--bv-card-border)'}`,
             color: m.role === 'user' ? 'var(--bv-text)' : 'var(--bv-text2)',
@@ -257,11 +257,14 @@ function ChatPanel({ chat, agentName }) {
             borderBottomLeftRadius: m.role !== 'user' ? 4 : 10,
             borderBottomRightRadius: m.role === 'user' ? 4 : 10,
             opacity: m.streaming ? 0.6 : 1,
+            minWidth: 0,
           }}>
-            <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 2, opacity: 0.5 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 3, opacity: 0.6 }}>
               {m.role === 'user' ? 'You' : agentName}
             </div>
-            {m.streaming ? <span style={{ animation: 'bvPulse 1.5s infinite' }}>Thinking...</span> : m.content}
+            <div style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}>
+              {m.streaming ? <span style={{ animation: 'bvPulse 1.5s infinite' }}>Thinking...</span> : m.content}
+            </div>
           </div>
         ))}
       </div>
