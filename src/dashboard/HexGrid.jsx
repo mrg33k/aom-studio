@@ -307,15 +307,14 @@ const HexGrid = forwardRef(function HexGrid({
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)', pointerEvents: 'none' }} />
 
               {/* Content */}
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '14px 8px' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: meta.color || '#60A5FA', opacity: st === 'working' || st === 'active' ? 1 : 0.5, flexShrink: 0 }} />
-                <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: '#EDF2FA', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', lineHeight: 1.2, maxWidth: HEX_W - 24, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '14px 8px' }}>
+                <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, color: '#EDF2FA', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', lineHeight: 1.2, maxWidth: HEX_W - 24, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
                   {meta.name || slug}
                 </div>
-                <div style={{ fontSize: 10, fontWeight: 500, color: 'rgba(200,214,229,0.5)', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', maxWidth: HEX_W - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <Icon size={isMobile ? 18 : 20} strokeWidth={1.8} style={{ color: meta.color || 'rgba(96,165,250,0.6)', opacity: st === 'working' || st === 'active' ? 1 : 0.6, flexShrink: 0, transition: 'opacity 200ms ease' }} />
+                <div style={{ fontSize: 10, fontWeight: 500, color: 'rgba(200,214,229,0.45)', fontFamily: "'Inter',system-ui,sans-serif", textAlign: 'center', maxWidth: HEX_W - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {meta.role || meta.type || ''}
                 </div>
-                <Icon size={isMobile ? 16 : 18} strokeWidth={1.5} style={{ color: 'rgba(96,165,250,0.6)', flexShrink: 0 }} />
               </div>
 
               {/* Unread badge */}
