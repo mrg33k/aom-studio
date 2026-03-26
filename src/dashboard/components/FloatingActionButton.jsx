@@ -1,90 +1,220 @@
 // FloatingActionButton.jsx
-// Single persistent FAB anchored top-right of game viewport.
-// Tap opens role picker modal directly (no intermediate dropdown).
-// Always above game content (z:55).
+// Draggable FAB with radial menu: New Agent, New Project, Create Group.
+// Persists position to localStorage. Tap opens menu, drag repositions.
 
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { UserPlus, FolderPlus, Users } from 'lucide-react'
 import CreateRoomModal from './CreateRoomModal.jsx'
 
-// Position: top-right corner of game map area
-// FAB_TOP uses CSS calc to clear the nav bar (48px mobile / 52px desktop) + safe-area-inset-top + margin.
-// Written as a string so it can be used directly in the style prop.
-const FAB_TOP_CSS = 'calc(52px + env(safe-area-inset-top, 0px) + 16px)'
-const FAB_RIGHT = 16  // px
-const FAB_SIZE  = 48  // px -- main button diameter
+const FAB_SIZE = 48
+const STORAGE_KEY = 'fab-position'
+
+// Default position: bottom-right with safe margins
+function getDefaultPos(isMobile) {
+  return {
+    x: (typeof window !== 'undefined' ? window.innerWidth : 375) - FAB_SIZE - 16,
+    y: (typeof window !== 'undefined' ? window.innerHeight : 800) - FAB_SIZE - (isMobile ? 140 : 80),
+  }
+}
 
 export default function FloatingActionButton({ isNightMode, isMobile, sidebarWidthPct = 0, onRoomCreated }) {
+  const [menuOpen, setMenuOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [modalType, setModalType] = useState('agent') // 'agent' | 'project' | 'group'
+  const [pos, setPos] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return getDefaultPos(isMobile)
+  })
 
-  // Theme tokens
+  const dragRef = useRef(null)
+  const startRef = useRef(null)
+  const didDragRef = useRef(false)
+  const fabRef = useRef(null)
+
+  // Clamp position within viewport
+  const clamp = useCallback((x, y) => {
+    const maxX = window.innerWidth - FAB_SIZE - 8
+    const maxY = window.innerHeight - FAB_SIZE - 8
+    return { x: Math.max(8, Math.min(x, maxX)), y: Math.max(8, Math.min(y, maxY)) }
+  }, [])
+
+  // Save position
+  const savePos = useCallback((p) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)) } catch {}
+  }, [])
+
+  // Drag handlers
+  const onPointerDown = useCallback((e) => {
+    if (e.button !== 0) return
+    didDragRef.current = false
+    startRef.current = { x: e.clientX - pos.x, y: e.clientY - pos.y, startX: e.clientX, startY: e.clientY }
+    dragRef.current = true
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [pos])
+
+  const onPointerMove = useCallback((e) => {
+    if (!dragRef.current || !startRef.current) return
+    const dx = Math.abs(e.clientX - startRef.current.startX)
+    const dy = Math.abs(e.clientY - startRef.current.startY)
+    if (dx > 5 || dy > 5) didDragRef.current = true
+    const newPos = clamp(e.clientX - startRef.current.x, e.clientY - startRef.current.y)
+    setPos(newPos)
+  }, [clamp])
+
+  const onPointerUp = useCallback((e) => {
+    if (!dragRef.current) return
+    dragRef.current = false
+    e.currentTarget.releasePointerCapture(e.pointerId)
+    if (didDragRef.current) {
+      savePos(pos)
+    }
+  }, [pos, savePos])
+
+  const handleClick = useCallback(() => {
+    if (didDragRef.current) return // Was a drag, not a click
+    setMenuOpen(prev => !prev)
+  }, [])
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e) => {
+      if (fabRef.current?.contains(e.target)) return
+      setMenuOpen(false)
+    }
+    setTimeout(() => document.addEventListener('pointerdown', handler), 0)
+    return () => document.removeEventListener('pointerdown', handler)
+  }, [menuOpen])
+
+  // Theme
   const glowColor = isNightMode ? '120,80,255' : '59,130,246'
   const bgMain = isNightMode
     ? 'radial-gradient(circle at 40% 35%, rgba(100,60,220,0.95), rgba(30,20,80,0.98))'
     : 'radial-gradient(circle at 40% 35%, rgba(59,130,246,0.95), rgba(15,27,60,0.98))'
 
-  const rightVal = sidebarWidthPct > 0
-    ? `calc(max(${sidebarWidthPct}%, 300px) + ${FAB_RIGHT}px)`
-    : `${FAB_RIGHT}px`
+  const menuItems = [
+    { label: 'New Agent', icon: UserPlus, color: '#22C55E', type: 'agent', angle: -90 },
+    { label: 'New Project', icon: FolderPlus, color: '#3B82F6', type: 'project', angle: -45 },
+    { label: 'Create Group', icon: Users, color: '#F59E0B', type: 'group', angle: 0 },
+  ]
+
+  // Compute menu item positions (radial from FAB center)
+  const MENU_RADIUS = 72
+  const getItemPos = (angle) => ({
+    x: Math.cos((angle * Math.PI) / 180) * MENU_RADIUS,
+    y: Math.sin((angle * Math.PI) / 180) * MENU_RADIUS,
+  })
+
+  // Determine which direction to expand menu based on FAB position
+  const isNearRight = pos.x > window.innerWidth * 0.6
+  const isNearBottom = pos.y > window.innerHeight * 0.6
+  const baseAngle = isNearRight
+    ? (isNearBottom ? 200 : 110) // expand left/up or left/down
+    : (isNearBottom ? 280 : 20) // expand right/up or right/down
 
   return (
     <>
-      {/* Main FAB button */}
       <div
+        ref={fabRef}
         style={{
           position: 'fixed',
-          top: FAB_TOP_CSS,
-          right: rightVal,
-          transition: 'right 250ms ease',
+          left: pos.x,
+          top: pos.y,
           zIndex: 55,
-          pointerEvents: 'auto',
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
         }}
       >
+        {/* Menu items (radial) */}
+        {menuOpen && menuItems.map((item, i) => {
+          const angle = baseAngle + (i * 50)
+          const itemPos = getItemPos(angle)
+          const ItemIcon = item.icon
+          return (
+            <div
+              key={item.type}
+              onClick={() => {
+                setModalType(item.type)
+                setModalOpen(true)
+                setMenuOpen(false)
+              }}
+              style={{
+                position: 'absolute',
+                left: FAB_SIZE / 2 + itemPos.x - 20,
+                top: FAB_SIZE / 2 + itemPos.y - 20,
+                width: 40, height: 40, borderRadius: 12,
+                background: `${item.color}20`,
+                border: `1.5px solid ${item.color}50`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: `0 4px 16px ${item.color}30`,
+                animation: `fabItemPop 0.2s ease ${i * 0.05}s backwards`,
+                transition: 'transform 100ms, box-shadow 100ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.12)'; e.currentTarget.style.boxShadow = `0 4px 20px ${item.color}50` }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = `0 4px 16px ${item.color}30` }}
+            >
+              <ItemIcon size={18} strokeWidth={2} style={{ color: item.color }} />
+            </div>
+          )
+        })}
+
+        {/* Labels (below icons) */}
+        {menuOpen && menuItems.map((item, i) => {
+          const angle = baseAngle + (i * 50)
+          const itemPos = getItemPos(angle)
+          return (
+            <div
+              key={`label-${item.type}`}
+              style={{
+                position: 'absolute',
+                left: FAB_SIZE / 2 + itemPos.x - 40,
+                top: FAB_SIZE / 2 + itemPos.y + 24,
+                width: 80, textAlign: 'center',
+                fontSize: 10, fontWeight: 700,
+                color: item.color,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                letterSpacing: '0.04em',
+                textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+                animation: `fabItemPop 0.2s ease ${i * 0.05 + 0.1}s backwards`,
+                pointerEvents: 'none',
+              }}
+            >
+              {item.label}
+            </div>
+          )
+        })}
+
+        {/* FAB button */}
         <button
-          aria-label="Add a room"
-          onClick={() => setModalOpen(true)}
+          aria-label="Add"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onClick={handleClick}
           style={{
-            width: FAB_SIZE,
-            height: FAB_SIZE,
-            borderRadius: '50%',
-            border: 'none',
-            cursor: 'pointer',
+            width: FAB_SIZE, height: FAB_SIZE, borderRadius: '50%',
+            border: 'none', cursor: dragRef.current ? 'grabbing' : 'grab',
             background: bgMain,
             boxShadow: `0 0 0 1.5px rgba(${glowColor},0.4), 0 4px 20px rgba(${glowColor},0.4), 0 0 30px rgba(${glowColor},0.15)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'box-shadow 250ms ease, transform 200ms cubic-bezier(0.34,1.56,0.64,1)',
-            outline: 'none',
-            position: 'relative',
-            overflow: 'visible',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.boxShadow = `0 0 0 2px rgba(${glowColor},0.55), 0 6px 28px rgba(${glowColor},0.55), 0 0 40px rgba(${glowColor},0.22)`
-            e.currentTarget.style.transform = 'scale(1.08)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.boxShadow = `0 0 0 1.5px rgba(${glowColor},0.4), 0 4px 20px rgba(${glowColor},0.4), 0 0 30px rgba(${glowColor},0.15)`
-            e.currentTarget.style.transform = 'scale(1)'
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: menuOpen ? 'transform 200ms ease' : 'box-shadow 250ms ease',
+            transform: menuOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+            outline: 'none', position: 'relative', overflow: 'visible',
           }}
         >
-          {/* Glow ring animation */}
           <span style={{
-            position: 'absolute',
-            inset: -3,
-            borderRadius: '50%',
+            position: 'absolute', inset: -3, borderRadius: '50%',
             border: `2px solid rgba(${glowColor},0.3)`,
-            animation: 'fabRingPulse 2.4s ease-in-out',
+            animation: menuOpen ? 'none' : 'fabRingPulse 2.4s ease-in-out',
             pointerEvents: 'none',
           }} />
-          {/* + icon */}
-          <svg
-            width={22} height={22}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgba(255,255,255,0.95)"
-            strokeWidth={2.5}
-            strokeLinecap="round"
+          <svg width={22} height={22} viewBox="0 0 24 24" fill="none"
+            stroke="rgba(255,255,255,0.95)" strokeWidth={2.5} strokeLinecap="round"
             style={{ filter: `drop-shadow(0 0 6px rgba(${glowColor},0.8))` }}
           >
             <line x1="12" y1="4" x2="12" y2="20" />
@@ -98,13 +228,17 @@ export default function FloatingActionButton({ isNightMode, isMobile, sidebarWid
           0%, 100% { opacity: 0.7; transform: scale(1); }
           50%       { opacity: 0.1; transform: scale(1.25); }
         }
+        @keyframes fabItemPop {
+          from { opacity: 0; transform: scale(0.3); }
+          to { opacity: 1; transform: scale(1); }
+        }
       `}</style>
 
-      {/* Role picker + name modal */}
       <CreateRoomModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         isNightMode={isNightMode}
+        defaultType={modalType}
         onRoomCreated={(room) => {
           setModalOpen(false)
           onRoomCreated?.(room)
