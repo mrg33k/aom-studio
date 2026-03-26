@@ -5584,7 +5584,7 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
       <div style={{
         position: 'absolute',
         top: '50%',
-        right: isMobile ? 10 : 16,
+        right: isMobile ? 10 : 100,
         transform: 'translateY(-50%)',
         display: 'flex', alignItems: 'center',
         background: isNightMode ? 'rgba(8,16,38,0.92)' : 'rgba(12,24,52,0.82)',
@@ -9317,31 +9317,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
             }} />
             {status === 'WORKING' ? 'ACTIVE' : status || 'IDLE'}
           </div>
-          {/* Stat counts -- desktop only, hidden on tablet to save space */}
-          {!isTablet && (
-            <div style={{ display: 'flex', gap: 12, marginTop: 6, width: '100%' }}>
-              <span style={{
-                fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
-                fontFamily: "'Inter', system-ui, sans-serif",
-                display: 'flex', alignItems: 'center', gap: 4,
-              }}>
-                <span style={{ fontSize: 18, fontWeight: 900, color: '#22C55E', fontVariantNumeric: 'tabular-nums' }}>
-                  {agentStatus?.buildCount || workingCount || 0}
-                </span>
-                builds
-              </span>
-              <span style={{
-                fontSize: 14, fontWeight: 700, color: isDaytime ? '#8BA4C4' : '#6B8AB0',
-                fontFamily: "'Inter', system-ui, sans-serif",
-                display: 'flex', alignItems: 'center', gap: 4,
-              }}>
-                <span style={{ fontSize: 18, fontWeight: 900, color: '#60A5FA', fontVariantNumeric: 'tabular-nums' }}>
-                  {agentStatus?.taskCount || 0}
-                </span>
-                tasks
-              </span>
-            </div>
-          )}
+          {/* Stat counts removed -- clutter under agent name (Patrik feedback Mar 25) */}
         </div>
 
         {/* Extend/collapse -- hidden on tablet to save header space */}
@@ -9363,9 +9339,8 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
         )}
       </div>
 
-      {/* ---- 4 TOP SQUARES (interactive, alive -- replaces stat pills) ---- */}
-      {/* Hidden on mobile and tablet: saves vertical space, agent info in header */}
-      {!isMobile && !isTablet && (
+      {/* 4 TopSquares removed -- clutter above tabs (Patrik feedback Mar 25) */}
+      {false && (
         <TopSquares
           allAgentStatus={allAgentStatus}
           workingCount={workingCount}

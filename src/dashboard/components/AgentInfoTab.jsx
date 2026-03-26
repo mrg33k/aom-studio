@@ -407,11 +407,6 @@ export default function AgentInfoTab({
         onRenamed={onAgentRenamed}
       />
 
-      {/* ---- STATS BAR ---- */}
-      <StatsBar knowledge={knowledge} agentStatus={agentStatus} accentColor={accent} isDaytime={isDaytime} />
-
-      {sectionDivider}
-
       {/* ---- IDENTITY ---- */}
       <div style={{ marginBottom: 12 }}>
         <SectionHeader label="Identity" isOpen={open.identity} onToggle={() => toggle('identity')} accentColor={accent} isDaytime={isDaytime} />
