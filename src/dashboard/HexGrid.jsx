@@ -47,17 +47,14 @@ function getGridPos(index) {
   return { row: ROW_SIZES.length, col: index - consumed }
 }
 
-function getRowSize(row) {
-  return row < ROW_SIZES.length ? ROW_SIZES[row] : 6
-}
+const GRID_COLS = 8
+const GRID_ROWS = 6
+const LEFT_MARGIN = HEX_W * 0.5
 
-function gridToPixel(row, col, rowSize, maxCols) {
-  const maxRowWidth = maxCols * HEX_W
-  const rowWidth = rowSize * HEX_W
-  const rowOffset = (maxRowWidth - rowWidth) / 2
+function gridToPixel(row, col) {
   const oddOffset = row % 2 !== 0 ? HEX_W * 0.5 : 0
   return {
-    x: rowOffset + col * HEX_W + oddOffset,
+    x: LEFT_MARGIN + col * HEX_W + oddOffset,
     y: row * HEX_ROW_H,
   }
 }
@@ -99,6 +96,7 @@ const HexGrid = forwardRef(function HexGrid({
   const [contextMenu, setContextMenu] = useState(null)
   const [toast, setToast] = useState(null)
   const [hiddenRooms, setHiddenRooms] = useState(new Set())
+  const [islandPos, setIslandPos] = useState({}) // slug -> {x, y} for free-dragged hexes
   const [focusedRoom, setFocusedRoom] = useState(initialFocusRoom || null)
   const dragStartRef = useRef(null) // { clientX, clientY, offsetX, offsetY }
   const didDragRef = useRef(false)
@@ -116,6 +114,7 @@ const HexGrid = forwardRef(function HexGrid({
     resetLayout: () => {
       setSlotOrder(ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug))
       setHiddenRooms(new Set())
+      setIslandPos({})
     },
     addRoom: ({ slug, name, color, type = 'agent' }) => {
       if (!slug) return
@@ -130,18 +129,16 @@ const HexGrid = forwardRef(function HexGrid({
   }, [])
 
   // ---- Position map ----
-  const maxCols = Math.max(...ROW_SIZES)
   const visible = slotOrder.filter(s => !hiddenRooms.has(s))
 
   const posMap = {}
   visible.forEach((slug, i) => {
     const { row, col } = getGridPos(i)
-    posMap[slug] = gridToPixel(row, col, getRowSize(row), maxCols)
+    posMap[slug] = gridToPixel(row, col)
   })
 
-  const gridW = maxCols * HEX_W + HEX_W
-  const totalRows = visible.length > 0 ? getGridPos(visible.length - 1).row + 2 : 2
-  const gridH = totalRows * HEX_ROW_H + HEX_H * 0.25 + 40
+  const gridW = LEFT_MARGIN + GRID_COLS * HEX_W + HEX_W
+  const gridH = GRID_ROWS * HEX_ROW_H + HEX_H * 0.25 + 40
 
   // ---- DRAG ----
   const onDown = useCallback((e, slug) => {
@@ -178,10 +175,12 @@ const HexGrid = forwardRef(function HexGrid({
         let bestSlug = null, bestDist = Infinity
         for (const [s, p] of Object.entries(posMap)) {
           if (s === dragSlug) continue
-          const d = Math.hypot(dragPos.x - p.x, dragPos.y - p.y)
-          if (d < bestDist && d < HEX_W * 0.8) { bestDist = d; bestSlug = s }
+          const visualP = islandPos[s] || p
+          const d = Math.hypot(dragPos.x - visualP.x, dragPos.y - visualP.y)
+          if (d < bestDist) { bestDist = d; bestSlug = s }
         }
-        if (bestSlug) {
+        if (bestSlug && bestDist < HEX_W * 0.8) {
+          // Close to another hex -- swap positions
           setSlotOrder(prev => {
             const next = [...prev]
             const a = next.indexOf(dragSlug)
@@ -189,6 +188,15 @@ const HexGrid = forwardRef(function HexGrid({
             if (a >= 0 && b >= 0) { next[a] = bestSlug; next[b] = dragSlug }
             return next
           })
+          setIslandPos(prev => {
+            const next = { ...prev }
+            delete next[dragSlug]
+            delete next[bestSlug]
+            return next
+          })
+        } else if (bestDist > HEX_W) {
+          // Dropped far from all hexes -- park as island
+          setIslandPos(prev => ({ ...prev, [dragSlug]: { x: dragPos.x, y: dragPos.y } }))
         }
       }
       setDragSlug(null)
@@ -205,7 +213,7 @@ const HexGrid = forwardRef(function HexGrid({
       window.removeEventListener('touchmove', onMove)
       window.removeEventListener('touchend', onUp)
     }
-  }, [dragSlug, dragPos, posMap])
+  }, [dragSlug, dragPos, posMap, islandPos])
 
   const handleClick = useCallback((slug) => {
     if (didDragRef.current) return
@@ -254,16 +262,17 @@ const HexGrid = forwardRef(function HexGrid({
       <div style={{ position: 'relative', width: gridW, height: gridH, margin: '40px auto', minHeight: '100%' }}>
         {/* SVG subtle hex outlines */}
         <svg style={{ position: 'absolute', inset: 0, width: gridW, height: gridH, pointerEvents: 'none', zIndex: 0 }}>
-          {visible.map((slug) => {
-            const p = posMap[slug]
-            if (!p) return null
-            const cx = p.x + HEX_W / 2, cy = p.y + HEX_H / 2, r = HEX_W / 2 - 2
-            const pts = Array.from({ length: 6 }, (_, i) => {
-              const a = (Math.PI / 180) * (60 * i - 30)
-              return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
-            }).join(' ')
-            return <polygon key={`g-${slug}`} points={pts} fill="none" stroke="rgba(59,130,246,0.08)" strokeWidth="1" />
-          })}
+          {Array.from({ length: GRID_ROWS }, (_, row) =>
+            Array.from({ length: GRID_COLS }, (_, col) => {
+              const { x, y } = gridToPixel(row, col)
+              const cx = x + HEX_W / 2, cy = y + HEX_H / 2, r = HEX_W / 2 - 2
+              const pts = Array.from({ length: 6 }, (_, i) => {
+                const a = (Math.PI / 180) * (60 * i - 30)
+                return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`
+              }).join(' ')
+              return <polygon key={`bg-${row}-${col}`} points={pts} fill="none" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5" />
+            })
+          )}
         </svg>
 
         {/* Hex tiles */}
@@ -279,8 +288,9 @@ const HexGrid = forwardRef(function HexGrid({
           const isFoc = focusedRoom === slug
           const hasUn = unreadAgents[slug] > 0
           const Icon = AGENT_ICONS[slug] || PROJECT_ICON
-          const x = isDrag && dragPos ? dragPos.x : p.x
-          const y = isDrag && dragPos ? dragPos.y : p.y
+          const island = islandPos[slug]
+          const x = isDrag && dragPos ? dragPos.x : island ? island.x : p.x
+          const y = isDrag && dragPos ? dragPos.y : island ? island.y : p.y
 
           return (
             <div
@@ -349,7 +359,7 @@ const HexGrid = forwardRef(function HexGrid({
             {hiddenRooms.size > 0 && (
               <CtxItem label={`Show Hidden (${hiddenRooms.size})`} icon="\u25CE" onClick={() => { setHiddenRooms(new Set()); setSlotOrder(ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)); setContextMenu(null); showToast('All rooms restored') }} />
             )}
-            <CtxItem label="Reset Room Order" icon="\u2316" onClick={() => { setSlotOrder(ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)); setHiddenRooms(new Set()); setContextMenu(null); showToast('Layout reset') }} />
+            <CtxItem label="Reset Room Order" icon="\u2316" onClick={() => { setSlotOrder(ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)); setHiddenRooms(new Set()); setIslandPos({}); setContextMenu(null); showToast('Layout reset') }} />
           </div>
         )}
       </div>
