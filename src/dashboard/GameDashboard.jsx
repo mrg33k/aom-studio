@@ -12065,13 +12065,17 @@ export default function GameDashboard() {
   }, [data, pipeData?.agents])
 
   // Build unified rooms list from pipeData (same source as BoardView + ChecklistMode).
-  // This ensures Game/Board/Checklist all show the same rooms for the current world.
+  // AOM always uses ALL_ROOMS from gridSpec (full layout with projects, special rooms, etc).
+  // Non-AOM worlds use dynamic rooms from Supabase agent_status (client_id scoped).
   const hexRooms = useMemo(() => {
-    const pipeAgents = pipeData?.agents || []
-    const pipeProjects = (pipeData?.punchData?.projects || [])
-    if (pipeAgents.length === 0 && pipeProjects.length === 0) return null // null = use ALL_ROOMS fallback
+    const clientId = getClientId()
+    // AOM uses the full gridSpec layout -- it has all agents, projects, and special rooms
+    if (clientId === 'aom') return null // null = HexGrid uses ALL_ROOMS fallback
 
-    // Build agent rooms from pipeData.agents (world-scoped)
+    const pipeAgents = pipeData?.agents || []
+    if (pipeAgents.length === 0) return null // No data yet, use fallback
+
+    // Non-AOM: build rooms from Supabase agent_status (world-scoped)
     const agentRooms = pipeAgents.map(a => {
       const gridAgent = AGENTS.find(ga => ga.slug === a.slug)
       return {
@@ -12085,7 +12089,8 @@ export default function GameDashboard() {
       }
     })
 
-    // Build project rooms from pipeData.punchData.projects (Supabase tasks)
+    // Add project rooms from pipeData.punchData.projects (Supabase tasks)
+    const pipeProjects = (pipeData?.punchData?.projects || [])
     const projectRooms = pipeProjects
       .filter(p => p.section && !['rightnow', 'your-todos', 'schedule', 'finish-these', 'checking-in', 'completed-feed', 'general'].includes(p.section))
       .map(p => {
