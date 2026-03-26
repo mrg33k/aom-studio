@@ -566,36 +566,48 @@ function ProjectColumn({ project, tasks, isMobile, onContextMenu, onAddTask, onC
 
 // ── RAIL AVATAR ──────────────────────────────────────────────────────────────
 
-function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount, onClick }) {
+function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount, taskCount, role, onClick, expanded }) {
   const statusRing = status === 'WORKING' ? '0 0 0 2px #22C55E, 0 0 8px rgba(34,197,94,0.25)'
     : status === 'DONE' ? '0 0 0 2px rgba(59,130,246,0.4)'
     : '0 0 0 2px rgba(107,114,128,0.3)'
+  const statusColor = status === 'WORKING' ? '#22C55E' : status === 'DONE' ? '#3B82F6' : '#6B7280'
+  const statusLabel = status === 'WORKING' ? 'Working' : status === 'DONE' ? 'Done' : 'Idle'
 
   return (
     <div
       onClick={onClick}
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: '4px 0', cursor: 'pointer', position: 'relative',
+        display: 'flex', alignItems: expanded ? 'center' : 'center',
+        flexDirection: expanded ? 'row' : 'column',
+        gap: expanded ? 10 : 0,
+        padding: expanded ? '6px 12px' : '4px 0',
+        cursor: 'pointer', position: 'relative',
+        borderRadius: expanded ? 8 : 0,
+        transition: 'background 0.15s',
+        ...(expanded ? {} : { justifyContent: 'center' }),
       }}
+      onMouseEnter={e => { if (expanded) e.currentTarget.style.background = 'var(--bv-card)' }}
+      onMouseLeave={e => { if (expanded) e.currentTarget.style.background = 'transparent' }}
     >
       {/* Active indicator bar */}
       {isActive && (
         <div style={{
           position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
-          width: 3, height: 24, borderRadius: '0 3px 3px 0', background: 'var(--bv-accent-text)',
+          width: 3, height: expanded ? 32 : 24, borderRadius: '0 3px 3px 0', background: 'var(--bv-accent-text)',
         }} />
       )}
       <div style={{
-        width: isActive ? 36 : 32, height: isActive ? 36 : 32,
+        width: expanded ? 36 : (isActive ? 36 : 32),
+        height: expanded ? 36 : (isActive ? 36 : 32),
         borderRadius: isAgent ? '50%' : 10,
         background: `${color}${isActive ? '22' : '10'}`,
         border: `1.5px solid ${color}${isActive ? '60' : '30'}`,
         color, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: isActive ? 14 : 12, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+        fontSize: expanded ? 15 : (isActive ? 14 : 12), fontWeight: 800,
+        fontFamily: "'JetBrains Mono', monospace",
         opacity: isActive ? 1 : 0.45,
         boxShadow: isActive ? statusRing : 'none',
-        transition: 'all 0.2s', position: 'relative',
+        transition: 'all 0.2s', position: 'relative', flexShrink: 0,
       }}>
         {name?.charAt(0) || slug?.charAt(0)?.toUpperCase() || '?'}
         {unreadCount > 0 && (
@@ -608,11 +620,41 @@ function RailAvatar({ slug, name, color, status, isAgent, isActive, unreadCount,
           }}>{unreadCount}</span>
         )}
       </div>
-      <span style={{
-        fontSize: 7, fontWeight: 600, marginTop: 2,
-        color: isActive ? 'var(--bv-accent-text)' : 'rgba(100,140,200,0.4)',
-        maxWidth: 48, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-      }}>{name || slug}</span>
+      {expanded ? (
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              fontSize: 13, fontWeight: 700, color: isActive ? 'var(--bv-text)' : 'var(--bv-dim)',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{name || slug}</span>
+            {taskCount > 0 && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                color: '#22C55E', background: 'rgba(34,197,94,0.12)',
+                padding: '1px 5px', borderRadius: 8, flexShrink: 0,
+              }}>{taskCount}</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
+            <span style={{
+              width: 5, height: 5, borderRadius: '50%', background: statusColor, flexShrink: 0,
+              boxShadow: status === 'WORKING' ? `0 0 4px ${statusColor}` : 'none',
+            }} />
+            <span style={{
+              fontSize: 10, color: statusColor, fontWeight: 600,
+            }}>{statusLabel}</span>
+            {role && (
+              <span style={{ fontSize: 10, color: 'var(--bv-dim)', marginLeft: 2 }}>{role}</span>
+            )}
+          </div>
+        </div>
+      ) : (
+        <span style={{
+          fontSize: 7, fontWeight: 600, marginTop: 2,
+          color: isActive ? 'var(--bv-accent-text)' : 'rgba(100,140,200,0.4)',
+          maxWidth: 48, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{name || slug}</span>
+      )}
     </div>
   )
 }
@@ -693,6 +735,15 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
   // Rail search
   const [railSearch, setRailSearch] = useState('')
 
+  // Rail expanded/collapsed state. Persisted. Mobile: collapsed by default.
+  const [railOpen, setRailOpen] = useState(() => {
+    if (isMobile) return false
+    try { return localStorage.getItem('corner-board-rail') !== 'closed' } catch { return true }
+  })
+  useEffect(() => {
+    try { localStorage.setItem('corner-board-rail', railOpen ? 'open' : 'closed') } catch {}
+  }, [railOpen])
+
   // Toggle column visibility
   const toggleSlug = (slug) => {
     setVisibleSlugs(prev => {
@@ -764,54 +815,111 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* LEFT RAIL */}
+        {/* LEFT RAIL -- collapsible */}
+        {/* Collapsed: thin 20px strip with pull tab */}
+        {/* Expanded: 200px with names, status, search */}
         <div style={{
-          width: 68, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          width: railOpen ? 200 : 20, flexShrink: 0, display: 'flex', flexDirection: 'column',
           background: 'var(--bv-rail)', borderRight: '1px solid var(--bv-divider)',
-          padding: '6px 0', overflowY: 'auto', overflowX: 'hidden',
-          scrollbarWidth: 'none', msOverflowStyle: 'none',
-        }} className="bv-rail-scroll">
-          {/* Search */}
-          <div style={{ padding: '4px 6px 6px' }}>
-            <input
-              value={railSearch} onChange={e => setRailSearch(e.target.value)}
-              placeholder="&#128269;"
-              style={{
-                width: '100%', background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
-                borderRadius: 8, padding: '5px 6px', color: 'var(--bv-text)', fontSize: 11,
-                fontFamily: "'Inter', sans-serif", outline: 'none', textAlign: 'center',
-              }}
-            />
-          </div>
+          transition: 'width 0.2s ease', overflow: 'hidden', position: 'relative',
+        }}>
+          {/* Toggle button */}
+          <button
+            onClick={() => setRailOpen(!railOpen)}
+            style={{
+              position: railOpen ? 'absolute' : 'relative',
+              top: railOpen ? 6 : 6,
+              right: railOpen ? 6 : 'auto',
+              left: railOpen ? 'auto' : '50%',
+              transform: railOpen ? 'none' : 'translateX(-50%)',
+              width: 18, height: 18, borderRadius: 5,
+              border: '1px solid var(--bv-col-border)',
+              background: 'var(--bv-card)', color: 'var(--bv-dim)',
+              fontSize: 10, cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              zIndex: 2, flexShrink: 0, transition: 'all 0.15s',
+            }}
+            title={railOpen ? 'Collapse rail' : 'Expand rail'}
+          >
+            {railOpen ? '\u2039' : '\u203A'}
+          </button>
 
-          {/* Agents section */}
-          <div style={{ fontSize: 7, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,140,200,0.35)', textAlign: 'center', padding: '4px 0 3px' }}>Team</div>
-          {railAgents
-            .filter(a => !railSearch || a.name?.toLowerCase().includes(railSearch.toLowerCase()) || a.slug?.includes(railSearch.toLowerCase()))
-            .map(a => (
-            <RailAvatar
-              key={a.slug} slug={a.slug} name={a.name} color={a.color}
-              status={a.status} isAgent isActive={visibleSlugs.has(a.slug)}
-              unreadCount={!visibleSlugs.has(a.slug) ? (unreadMap[a.slug] || 0) : 0}
-              onClick={() => { toggleSlug(a.slug); if (isMobile) setMobileIdx(0) }}
-            />
-          ))}
+          {/* Collapsed: just colored dots */}
+          {!railOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '30px 0 6px' }}>
+              {allItems.filter(it => visibleSlugs.has(it.slug)).map(it => (
+                <div key={it.slug} style={{
+                  width: 8, height: 8, borderRadius: it.isAgent ? '50%' : 2,
+                  background: it.color || '#60A5FA', opacity: 0.7,
+                  boxShadow: it.status === 'WORKING' ? `0 0 4px ${it.color}` : 'none',
+                }} />
+              ))}
+              {/* Show notification pulse if any hidden agent has unread */}
+              {allItems.some(it => !visibleSlugs.has(it.slug) && (unreadMap[it.slug] || 0) > 0) && (
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: '#F97316', marginTop: 4,
+                  animation: 'bvPulse 1.5s infinite',
+                }} />
+              )}
+            </div>
+          )}
 
-          {/* Divider */}
-          <div style={{ height: 1, background: 'var(--bv-divider)', margin: '6px 8px' }} />
+          {/* Expanded content */}
+          {railOpen && (
+            <div style={{
+              display: 'flex', flexDirection: 'column', flex: 1,
+              overflowY: 'auto', overflowX: 'hidden',
+              scrollbarWidth: 'none', msOverflowStyle: 'none',
+              padding: '6px 0',
+            }} className="bv-rail-scroll">
+              {/* Search */}
+              <div style={{ padding: '4px 8px 8px' }}>
+                <input
+                  value={railSearch} onChange={e => setRailSearch(e.target.value)}
+                  placeholder="Search..."
+                  style={{
+                    width: '100%', background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
+                    borderRadius: 8, padding: '6px 10px', color: 'var(--bv-text)', fontSize: 12,
+                    fontFamily: "'Inter', sans-serif", outline: 'none',
+                  }}
+                />
+              </div>
 
-          {/* Projects section */}
-          <div style={{ fontSize: 7, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,140,200,0.35)', textAlign: 'center', padding: '4px 0 3px' }}>Projects</div>
-          {railProjects
-            .filter(p => !railSearch || p.name?.toLowerCase().includes(railSearch.toLowerCase()) || p.slug?.includes(railSearch.toLowerCase()))
-            .map(p => (
-            <RailAvatar
-              key={p.slug} slug={p.slug} name={p.name} color={p.color}
-              status={null} isAgent={false} isActive={visibleSlugs.has(p.slug)}
-              unreadCount={0}
-              onClick={() => { toggleSlug(p.slug); if (isMobile) setMobileIdx(0) }}
-            />
-          ))}
+              {/* Agents section */}
+              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Team</div>
+              {railAgents
+                .filter(a => !railSearch || a.name?.toLowerCase().includes(railSearch.toLowerCase()) || a.slug?.includes(railSearch.toLowerCase()))
+                .map(a => (
+                <RailAvatar
+                  key={a.slug} slug={a.slug} name={a.name} color={a.color}
+                  status={a.status} isAgent isActive={visibleSlugs.has(a.slug)}
+                  unreadCount={!visibleSlugs.has(a.slug) ? (unreadMap[a.slug] || 0) : 0}
+                  taskCount={a.tasks?.length || 0}
+                  role={a.role}
+                  onClick={() => { toggleSlug(a.slug); if (isMobile) setMobileIdx(0) }}
+                  expanded
+                />
+              ))}
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'var(--bv-divider)', margin: '8px 12px' }} />
+
+              {/* Projects section */}
+              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--bv-muted)', padding: '4px 12px 4px' }}>Projects</div>
+              {railProjects
+                .filter(p => !railSearch || p.name?.toLowerCase().includes(railSearch.toLowerCase()) || p.slug?.includes(railSearch.toLowerCase()))
+                .map(p => (
+                <RailAvatar
+                  key={p.slug} slug={p.slug} name={p.name} color={p.color}
+                  status={null} isAgent={false} isActive={visibleSlugs.has(p.slug)}
+                  unreadCount={0} taskCount={p.tasks?.length || 0} role="Project"
+                  onClick={() => { toggleSlug(p.slug); if (isMobile) setMobileIdx(0) }}
+                  expanded
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* COLUMNS AREA */}

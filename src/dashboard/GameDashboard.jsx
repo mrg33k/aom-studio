@@ -4837,8 +4837,8 @@ function TaskHUD({ data, isOpen, onToggle, selectedAgent, onSelectAgent, onOpenS
           )}
         </div>
 
-        {/* Team pill */}
-        <div ref={teamRef} style={{ position: 'relative', flexShrink: 0 }}>
+        {/* Team pill -- hidden (Patrik: not needed next to AOM) */}
+        <div ref={teamRef} style={{ position: 'relative', flexShrink: 0, display: 'none' }}>
           <button
             onClick={() => setTeamOpen(!teamOpen)}
             style={{
