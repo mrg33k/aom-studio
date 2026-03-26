@@ -33,9 +33,9 @@ const PROJECT_ICON = FolderKanban
 const HEX_W_DESKTOP = 130
 const HEX_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
 
-function hexGeometry(hexW) {
+function hexGeometry(hexW, isMobile = false) {
   const hexH = hexW * (2 / Math.sqrt(3))
-  return { hexW, hexH, hexRowH: hexH * 0.75, leftMargin: hexW * 0.5 }
+  return { hexW, hexH, hexRowH: hexH * 0.75, leftMargin: isMobile ? 4 : hexW * 0.5 }
 }
 
 // Row sizes: compute from room count when rooms are dynamic.
@@ -115,8 +115,10 @@ const HexGrid = forwardRef(function HexGrid({
 
   // Mobile: 3 per row, smaller hexes. Desktop: original layout.
   const mobileColCount = 3
-  const hexW = isMobile ? Math.min(110, Math.floor((typeof window !== 'undefined' ? window.innerWidth - 40 : 320) / (mobileColCount + 0.5))) : HEX_W_DESKTOP
-  const geo = hexGeometry(hexW)
+  // Mobile: fill viewport width. 3 columns + 0.5 offset for odd rows + small margin.
+  // Formula: hexW = (viewportWidth - 2*padding) / (cols + 0.5)
+  const hexW = isMobile ? Math.floor((typeof window !== 'undefined' ? window.innerWidth - 16 : 360) / (mobileColCount + 0.5)) : HEX_W_DESKTOP
+  const geo = hexGeometry(hexW, isMobile)
   const GRID_COLS = isMobile ? GRID_COLS_MOBILE : GRID_COLS_DESKTOP
 
   const rowSizes = isMobile
