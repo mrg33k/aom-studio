@@ -110,41 +110,32 @@ const HexGrid = forwardRef(function HexGrid({
   })
   const positionsLoadedRef = useRef(false)
 
-  // Load positions from Supabase on mount
+  // Load positions from Vercel API on mount (bypasses RLS)
   useEffect(() => {
     if (positionsLoadedRef.current) return
     positionsLoadedRef.current = true
-    ;(async () => {
-      try {
-        const { data } = await supabase
-          .from('user_preferences')
-          .select('value')
-          .eq('key', 'hex_positions')
-          .eq('client_id', getClientId())
-          .single()
+    const clientId = getClientId()
+    fetch(`/api/dashboard/preferences?key=hex_positions&client=${encodeURIComponent(clientId)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
         if (data?.value && typeof data.value === 'object' && Object.keys(data.value).length > 0) {
           setRoomGridPositions(data.value)
         }
-      } catch {}
-    })()
+      })
+      .catch(() => {})
   }, [])
 
-  // Save to Supabase whenever positions change (debounced)
+  // Save positions via Vercel API whenever they change (debounced)
   const saveTimerRef = useRef(null)
   useEffect(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
-      supabase
-        .from('user_preferences')
-        .upsert({
-          key: 'hex_positions',
-          client_id: getClientId(),
-          value: roomGridPositions,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'key,client_id' })
-        .then(() => {})
-        .catch(() => {})
-    }, 1000) // 1s debounce
+      fetch('/api/dashboard/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'hex_positions', client_id: getClientId(), value: roomGridPositions }),
+      }).catch(() => {})
+    }, 1000)
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
   }, [roomGridPositions])
   const [focusedRoom, setFocusedRoom] = useState(initialFocusRoom || null)
