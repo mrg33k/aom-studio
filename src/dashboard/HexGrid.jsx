@@ -35,18 +35,32 @@ const HEX_H = HEX_W * (2 / Math.sqrt(3))
 const HEX_ROW_H = HEX_H * 0.75
 const HEX_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
 
-// Row sizes matching gridSpec ALL_ROOMS order
-const ROW_SIZES = [4, 4, 5, 4, 1]
+// Row sizes: compute from room count when rooms are dynamic.
+// Default matches gridSpec ALL_ROOMS order: [4, 4, 5, 4, 1]
+const DEFAULT_ROW_SIZES = [4, 4, 5, 4, 1]
 
-function getGridPos(index) {
+function computeRowSizes(count) {
+  if (count <= 0) return [1]
+  // For small counts (e.g. Q with 1-2 agents), single rows of up to 5
+  const rows = []
+  let remaining = count
+  while (remaining > 0) {
+    const rowSize = Math.min(remaining, remaining <= 9 ? 4 : 5)
+    rows.push(rowSize)
+    remaining -= rowSize
+  }
+  return rows
+}
+
+function getGridPos(index, rowSizes) {
   let consumed = 0
-  for (let r = 0; r < ROW_SIZES.length; r++) {
-    if (index < consumed + ROW_SIZES[r]) {
+  for (let r = 0; r < rowSizes.length; r++) {
+    if (index < consumed + rowSizes[r]) {
       return { row: r, col: index - consumed }
     }
-    consumed += ROW_SIZES[r]
+    consumed += rowSizes[r]
   }
-  return { row: ROW_SIZES.length, col: index - consumed }
+  return { row: rowSizes.length, col: index - consumed }
 }
 
 const GRID_COLS = 8
@@ -86,13 +100,18 @@ const HexGrid = forwardRef(function HexGrid({
   onViewTasks,
   onSetAsHome,
   unreadAgents = {},
+  rooms: roomsProp,
   // These props exist on CanvasOffice but aren't needed for CSS grid:
   drawerSnap,
   mobileHudHeight,
   initialFocusRoom = null,
 }, ref) {
+  // Use prop rooms if provided, otherwise fall back to gridSpec ALL_ROOMS (AOM default)
+  const rooms = roomsProp && roomsProp.length > 0 ? roomsProp : ALL_ROOMS
+  const rowSizes = rooms === ALL_ROOMS ? DEFAULT_ROW_SIZES : computeRowSizes(rooms.filter(r => !r.hidden).length)
+
   const containerRef = useRef(null)
-  const [slotOrder, setSlotOrder] = useState(() => ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug))
+  const [slotOrder, setSlotOrder] = useState(() => rooms.filter(r => !r.hidden).map(r => r.slug))
   const [dragSlug, setDragSlug] = useState(null)
   const [dragGridPos, setDragGridPos] = useState(null) // {row, col} -- snapped grid position while dragging
   const [contextMenu, setContextMenu] = useState(null)
@@ -101,9 +120,9 @@ const HexGrid = forwardRef(function HexGrid({
   // roomPositions: slug -> {row, col} -- persisted to Supabase user_preferences
   const [roomGridPositions, setRoomGridPositions] = useState(() => {
     const positions = {}
-    const slugs = ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
+    const slugs = rooms.filter(r => !r.hidden).map(r => r.slug)
     slugs.forEach((slug, i) => {
-      const { row, col } = getGridPos(i)
+      const { row, col } = getGridPos(i, rowSizes)
       positions[slug] = { row, col }
     })
     return positions
@@ -144,23 +163,41 @@ const HexGrid = forwardRef(function HexGrid({
   const [swapProgress, setSwapProgress] = useState(null) // { slug, startTime } for visual indicator
   const didDragRef = useRef(false)
 
+  // Sync slotOrder + positions when rooms prop changes (e.g. world switch)
+  const roomsSigRef = useRef(rooms.map(r => r.slug).join(','))
+  useEffect(() => {
+    const sig = rooms.map(r => r.slug).join(',')
+    if (sig !== roomsSigRef.current) {
+      roomsSigRef.current = sig
+      const slugs = rooms.filter(r => !r.hidden).map(r => r.slug)
+      setSlotOrder(slugs)
+      const newRowSizes = rooms === ALL_ROOMS ? DEFAULT_ROW_SIZES : computeRowSizes(slugs.length)
+      const positions = {}
+      slugs.forEach((slug, i) => {
+        const { row, col } = getGridPos(i, newRowSizes)
+        positions[slug] = { row, col }
+      })
+      setRoomGridPositions(positions)
+    }
+  }, [rooms])
+
   const metaRef = useRef({})
   useEffect(() => {
     const m = {}
-    for (const r of ALL_ROOMS) m[r.slug] = r
+    for (const r of rooms) m[r.slug] = r
     metaRef.current = m
-  }, [])
+  }, [rooms])
 
   useImperativeHandle(ref, () => ({
     triggerCelebration: () => {},
     focusRoom: (roomId) => setFocusedRoom(roomId && slotOrder.includes(roomId) ? roomId : null),
     resetLayout: () => {
-      const slugs = ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
+      const slugs = rooms.filter(r => !r.hidden).map(r => r.slug)
       setSlotOrder(slugs)
       setHiddenRooms(new Set())
       const positions = {}
       slugs.forEach((slug, i) => {
-        const { row, col } = getGridPos(i)
+        const { row, col } = getGridPos(i, rowSizes)
         positions[slug] = { row, col }
       })
       setRoomGridPositions(positions)
@@ -350,7 +387,7 @@ const HexGrid = forwardRef(function HexGrid({
 
         {/* Hex tiles */}
         {visible.map((slug) => {
-          const meta = metaRef.current[slug] || ALL_ROOMS.find(r => r.slug === slug) || {}
+          const meta = metaRef.current[slug] || rooms.find(r => r.slug === slug) || {}
           const p = posMap[slug]
           if (!p) return null
           const isDrag = dragSlug === slug
@@ -443,14 +480,14 @@ const HexGrid = forwardRef(function HexGrid({
             <div style={{ height: 1, background: 'rgba(96,165,250,0.12)', margin: '4px 0' }} />
             <CtxItem label="Hide Room" icon="\u2715" onClick={() => { setHiddenRooms(prev => new Set([...prev, contextMenu.roomId])); setSlotOrder(prev => prev.filter(s => s !== contextMenu.roomId)); setContextMenu(null); showToast('Room hidden') }} />
             {hiddenRooms.size > 0 && (
-              <CtxItem label={`Show Hidden (${hiddenRooms.size})`} icon="\u25CE" onClick={() => { setHiddenRooms(new Set()); setSlotOrder(ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)); setContextMenu(null); showToast('All rooms restored') }} />
+              <CtxItem label={`Show Hidden (${hiddenRooms.size})`} icon="\u25CE" onClick={() => { setHiddenRooms(new Set()); setSlotOrder(rooms.filter(r => !r.hidden).map(r => r.slug)); setContextMenu(null); showToast('All rooms restored') }} />
             )}
             <CtxItem label="Reset Room Order" icon="\u2316" onClick={() => {
-              const slugs = ALL_ROOMS.filter(r => !r.hidden).map(r => r.slug)
+              const slugs = rooms.filter(r => !r.hidden).map(r => r.slug)
               setSlotOrder(slugs)
               setHiddenRooms(new Set())
               const positions = {}
-              slugs.forEach((s, i) => { const g = getGridPos(i); positions[s] = { row: g.row, col: g.col } })
+              slugs.forEach((s, i) => { const g = getGridPos(i, rowSizes); positions[s] = { row: g.row, col: g.col } })
               setRoomGridPositions(positions)
               setContextMenu(null)
               showToast('Layout reset')

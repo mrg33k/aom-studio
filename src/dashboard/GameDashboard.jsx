@@ -12050,11 +12050,59 @@ export default function GameDashboard() {
 
   // Agent status lookup
   const agentStatus = useMemo(() => {
-    if (!data?.agents) return {}
     const map = {}
-    for (const a of data.agents) map[a.slug] = a
+    // Primary: useDashboardData agents (local dev)
+    if (data?.agents) {
+      for (const a of data.agents) map[a.slug] = a
+    }
+    // Overlay: pipeData agents have real-time status from Supabase (world-scoped)
+    const pipeAgents = pipeData?.agents || []
+    for (const a of pipeAgents) {
+      if (!map[a.slug]) map[a.slug] = a
+      else map[a.slug] = { ...map[a.slug], status: a.status || map[a.slug].status }
+    }
     return map
-  }, [data])
+  }, [data, pipeData?.agents])
+
+  // Build unified rooms list from pipeData (same source as BoardView + ChecklistMode).
+  // This ensures Game/Board/Checklist all show the same rooms for the current world.
+  const hexRooms = useMemo(() => {
+    const pipeAgents = pipeData?.agents || []
+    const pipeProjects = (pipeData?.punchData?.projects || [])
+    if (pipeAgents.length === 0 && pipeProjects.length === 0) return null // null = use ALL_ROOMS fallback
+
+    // Build agent rooms from pipeData.agents (world-scoped)
+    const agentRooms = pipeAgents.map(a => {
+      const gridAgent = AGENTS.find(ga => ga.slug === a.slug)
+      return {
+        slug: a.slug,
+        name: a.name || gridAgent?.name || a.slug,
+        color: a.color || gridAgent?.color || '#60A5FA',
+        type: 'agent',
+        role: a.role || gridAgent?.role || '',
+        statusColors: gridAgent?.statusColors || null,
+        hidden: false,
+      }
+    })
+
+    // Build project rooms from pipeData.punchData.projects (Supabase tasks)
+    const projectRooms = pipeProjects
+      .filter(p => p.section && !['rightnow', 'your-todos', 'schedule', 'finish-these', 'checking-in', 'completed-feed', 'general'].includes(p.section))
+      .map(p => {
+        const gridProject = PROJECTS.find(gp => gp.slug === p.section)
+        return {
+          slug: p.section,
+          name: p.name || gridProject?.name || p.section,
+          color: p.color || gridProject?.color || '#888',
+          type: gridProject?.type || 'project',
+          role: 'Project',
+          statusColors: gridProject?.statusColors || null,
+          hidden: gridProject?.hidden || false,
+        }
+      })
+
+    return [...agentRooms, ...projectRooms]
+  }, [pipeData?.agents, pipeData?.punchData?.projects])
 
   // When overview mode changes, adjust zoom (Steffen spec: 0.7x overview, 1.6x neighborhood)
   useEffect(() => {
@@ -12727,6 +12775,7 @@ export default function GameDashboard() {
               <HexGrid
                 ref={canvasOfficeRef}
                 agentStatus={agentStatus}
+                rooms={hexRooms}
                 onRoomClick={handleRoomClick}
                 selectedRoom={selectedRoom}
                 hoveredRoom={hoveredRoom}
