@@ -99,8 +99,8 @@ const AvatarTiles = forwardRef(function AvatarTiles({
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 10,
+        gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: isMobile ? 10 : 14,
         position: 'relative',
         zIndex: 1,
       }}>
@@ -110,6 +110,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
           const st = agentStatus[slug]?.status || 'idle'
           const active = st === 'working' || st === 'active'
           const isSel = selectedRoom === slug
+          const isHov = extHover === slug
           const isFeatured = slug === featuredSlug
           const hasUnread = unreadAgents[slug] > 0
           const Icon = AGENT_ICONS[slug] || PROJECT_ICON
@@ -118,6 +119,8 @@ const AvatarTiles = forwardRef(function AvatarTiles({
             <div
               key={slug}
               onClick={() => onRoomClick?.(slug)}
+              onMouseEnter={() => setExtHover?.(slug)}
+              onMouseLeave={() => setExtHover?.(null)}
               onContextMenu={(e) => {
                 e.preventDefault()
                 setContextMenu({ x: e.clientX, y: e.clientY, slug, roomName: room.name || slug })
@@ -136,22 +139,23 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                 overflow: 'hidden',
                 position: 'relative',
                 cursor: 'pointer',
-                minHeight: isFeatured ? 280 : 140,
+                minHeight: isFeatured ? (isMobile ? 280 : 340) : (isMobile ? 140 : 180),
                 gridRow: isFeatured ? 'span 2' : 'span 1',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'flex-end',
-                padding: 14,
+                padding: isMobile ? 14 : 18,
                 background: `linear-gradient(145deg,
                   color-mix(in srgb, ${color} 8%, #0a1428) 0%,
                   color-mix(in srgb, ${color} 25%, #060b18) 50%,
                   color-mix(in srgb, ${color} 45%, #030612) 100%)`,
-                border: active || isSel
-                  ? `1.5px solid color-mix(in srgb, ${color} 50%, transparent)`
+                border: active || isSel || isHov
+                  ? `1.5px solid color-mix(in srgb, ${color} ${active || isSel ? 50 : 35}%, transparent)`
                   : `1.5px solid color-mix(in srgb, ${color} 20%, transparent)`,
                 boxShadow: active || isSel
                   ? `0 4px 30px color-mix(in srgb, ${color} 20%, transparent)`
-                  : 'none',
+                  : isHov ? `0 4px 20px color-mix(in srgb, ${color} 12%, transparent)` : 'none',
+                transform: isHov && !isMobile ? 'translateY(-2px)' : 'none',
                 animation: `tileSlide 0.4s ease ${0.03 * (i + 1)}s backwards${active ? ', glowPulse 2s ease-in-out infinite alternate' : ''}`,
                 '--glow-c15': `color-mix(in srgb, ${color} 15%, transparent)`,
                 '--glow-c30': `color-mix(in srgb, ${color} 30%, transparent)`,
@@ -184,7 +188,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                 transition: 'opacity 0.3s ease',
               }}>
                 <Icon
-                  size={isFeatured ? 80 : 56}
+                  size={isFeatured ? (isMobile ? 80 : 100) : (isMobile ? 56 : 72)}
                   strokeWidth={1.2}
                   style={{ color: '#fff' }}
                 />
@@ -224,7 +228,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
               {/* Name + role at bottom */}
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <div style={{
-                  fontSize: isFeatured ? 22 : 18,
+                  fontSize: isFeatured ? (isMobile ? 22 : 26) : (isMobile ? 18 : 20),
                   fontWeight: 800,
                   color: '#EDF2FA',
                   letterSpacing: '-0.01em',
@@ -235,7 +239,7 @@ const AvatarTiles = forwardRef(function AvatarTiles({
                   {room.name || slug}
                 </div>
                 <div style={{
-                  fontSize: 11, fontWeight: 700,
+                  fontSize: isMobile ? 11 : 12, fontWeight: 700,
                   color: color,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',

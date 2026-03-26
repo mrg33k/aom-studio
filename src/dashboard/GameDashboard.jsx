@@ -12751,84 +12751,44 @@ export default function GameDashboard() {
               {currentMode === 'game' && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: '#0A0F1A' }} />
               )}
-              {/* Mobile: Avatar Tiles (premium card grid). Desktop: HexGrid (CSS/SVG hex layout). */}
-              {isMobile ? (
-                <AvatarTiles
-                  ref={canvasOfficeRef}
-                  agentStatus={agentStatus}
-                  rooms={hexRooms}
-                  onRoomClick={handleRoomClick}
-                  selectedRoom={selectedRoom}
-                  hoveredRoom={hoveredRoom}
-                  setHoveredRoom={setHoveredRoom}
-                  isNightMode={isNightMode}
-                  drawerSnap={drawerSnap}
-                  isMobile={isMobile}
-                  mobileHudHeight={hudBarHeight}
-                  initialFocusRoom={DEFAULT_AGENT}
-                  unreadAgents={unreadAgents}
-                  onOpenChat={(roomId) => {
-                    handleChat(roomId)
-                    setPanelActiveTab('chat')
-                    setPanelVisible(true)
-                  }}
-                  onSendMessage={(roomId) => {
-                    handleChat(roomId)
-                    setPanelActiveTab('chat')
-                    setPanelVisible(true)
-                    setTimeout(() => {
-                      const input = document.querySelector('[data-panel-chat-input]')
-                      if (input) input.focus()
-                    }, 150)
-                  }}
-                  onViewTasks={(roomId) => {
-                    setSelectedRoom(roomId)
-                    setCameraTarget(roomId)
-                    setIsOverview(false)
-                    setPanelVisible(true)
-                    setPanelActiveTab('tasks')
-                  }}
-                  onSetAsHome={() => {}}
-                />
-              ) : (
-                <HexGrid
-                  ref={canvasOfficeRef}
-                  agentStatus={agentStatus}
-                  rooms={hexRooms}
-                  onRoomClick={handleRoomClick}
-                  selectedRoom={selectedRoom}
-                  hoveredRoom={hoveredRoom}
-                  setHoveredRoom={setHoveredRoom}
-                  isNightMode={isNightMode}
-                  drawerSnap={drawerSnap}
-                  isMobile={false}
-                  mobileHudHeight={0}
-                  initialFocusRoom={null}
-                  unreadAgents={unreadAgents}
-                  onOpenChat={(roomId) => {
-                    handleChat(roomId)
-                    setPanelActiveTab('chat')
-                    setPanelVisible(true)
-                  }}
-                  onSendMessage={(roomId) => {
-                    handleChat(roomId)
-                    setPanelActiveTab('chat')
-                    setPanelVisible(true)
-                    setTimeout(() => {
-                      const input = document.querySelector('[data-panel-chat-input]')
-                      if (input) input.focus()
-                    }, 150)
-                  }}
-                  onViewTasks={(roomId) => {
-                    setSelectedRoom(roomId)
-                    setCameraTarget(roomId)
-                    setIsOverview(false)
-                    setPanelVisible(true)
-                    setPanelActiveTab('tasks')
-                  }}
-                  onSetAsHome={() => {}}
-                />
-              )}
+              {/* Avatar Tiles -- premium card grid with Lucide icons. Used on both mobile and desktop. */}
+              <AvatarTiles
+                ref={canvasOfficeRef}
+                agentStatus={agentStatus}
+                rooms={hexRooms}
+                onRoomClick={handleRoomClick}
+                selectedRoom={selectedRoom}
+                hoveredRoom={hoveredRoom}
+                setHoveredRoom={setHoveredRoom}
+                isNightMode={isNightMode}
+                drawerSnap={drawerSnap}
+                isMobile={isMobile}
+                mobileHudHeight={isMobile ? hudBarHeight : 0}
+                initialFocusRoom={isMobile ? DEFAULT_AGENT : null}
+                unreadAgents={unreadAgents}
+                onOpenChat={(roomId) => {
+                  handleChat(roomId)
+                  setPanelActiveTab('chat')
+                  setPanelVisible(true)
+                }}
+                onSendMessage={(roomId) => {
+                  handleChat(roomId)
+                  setPanelActiveTab('chat')
+                  setPanelVisible(true)
+                  setTimeout(() => {
+                    const input = document.querySelector('[data-panel-chat-input]')
+                    if (input) input.focus()
+                  }, 150)
+                }}
+                onViewTasks={(roomId) => {
+                  setSelectedRoom(roomId)
+                  setCameraTarget(roomId)
+                  setIsOverview(false)
+                  setPanelVisible(true)
+                  setPanelActiveTab('tasks')
+                }}
+                onSetAsHome={() => {}}
+              />
 
               {/* Camera controls REMOVED per Patrik directive. Zoom/home/overview via keyboard only. */}
 
