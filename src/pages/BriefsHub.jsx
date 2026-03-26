@@ -33,6 +33,8 @@ const fadeUp = (delay = 0) => ({
 // These get merged with generated data so the list always shows the full picture.
 // As agents add frontmatter, items move from this list to the generated index automatically.
 const fallbackItems = [
+  // Client Strategy
+  { title: 'Ambition Mechanical: Market Research & Strategy', agent: 'Alex', date: 'Mar 2026', path: '/briefs/ambition-market-strategy', category: 'Strategy', summary: 'Deep market research for Ambition Mechanical. Trade orgs, 20+ GC profiles, PM firms, values alignment, and full marketing strategy.' },
   // Strategy
   { title: 'Growth Plan', agent: 'Alex', date: 'Mar 2026', path: '/growth-plan', category: 'Strategy', summary: 'Revenue growth strategy and client acquisition roadmap.' },
   { title: 'Build Proposal Template', agent: 'Alex', date: 'Mar 2026', path: null, category: 'Strategy', summary: 'Standardized proposal format for client engagements.' },
