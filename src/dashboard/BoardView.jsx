@@ -690,6 +690,9 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
     return m
   }, [inboxItems])
 
+  // Rail search
+  const [railSearch, setRailSearch] = useState('')
+
   // Toggle column visibility
   const toggleSlug = (slug) => {
     setVisibleSlugs(prev => {
@@ -756,19 +759,36 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
       <style>{`
         @keyframes bvPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         @keyframes bvSlideIn { from { opacity: 0; transform: translateX(20px) scale(0.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        .bv-rail-scroll::-webkit-scrollbar { display: none; }
       `}</style>
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* LEFT RAIL */}
         <div style={{
-          width: 56, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          width: 68, flexShrink: 0, display: 'flex', flexDirection: 'column',
           background: 'var(--bv-rail)', borderRight: '1px solid var(--bv-divider)',
           padding: '6px 0', overflowY: 'auto', overflowX: 'hidden',
-        }}>
+          scrollbarWidth: 'none', msOverflowStyle: 'none',
+        }} className="bv-rail-scroll">
+          {/* Search */}
+          <div style={{ padding: '4px 6px 6px' }}>
+            <input
+              value={railSearch} onChange={e => setRailSearch(e.target.value)}
+              placeholder="&#128269;"
+              style={{
+                width: '100%', background: 'var(--bv-input-bg)', border: '1px solid var(--bv-col-border)',
+                borderRadius: 8, padding: '5px 6px', color: 'var(--bv-text)', fontSize: 11,
+                fontFamily: "'Inter', sans-serif", outline: 'none', textAlign: 'center',
+              }}
+            />
+          </div>
+
           {/* Agents section */}
-          <div style={{ fontSize: 7, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,140,200,0.35)', textAlign: 'center', padding: '6px 0 3px' }}>Team</div>
-          {railAgents.map(a => (
+          <div style={{ fontSize: 7, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,140,200,0.35)', textAlign: 'center', padding: '4px 0 3px' }}>Team</div>
+          {railAgents
+            .filter(a => !railSearch || a.name?.toLowerCase().includes(railSearch.toLowerCase()) || a.slug?.includes(railSearch.toLowerCase()))
+            .map(a => (
             <RailAvatar
               key={a.slug} slug={a.slug} name={a.name} color={a.color}
               status={a.status} isAgent isActive={visibleSlugs.has(a.slug)}
@@ -778,11 +798,13 @@ export default function BoardView({ pipeData, isMobile, isNightMode = true, hudH
           ))}
 
           {/* Divider */}
-          <div style={{ height: 1, background: 'var(--bv-divider)', margin: '6px 10px' }} />
+          <div style={{ height: 1, background: 'var(--bv-divider)', margin: '6px 8px' }} />
 
           {/* Projects section */}
-          <div style={{ fontSize: 7, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,140,200,0.35)', textAlign: 'center', padding: '6px 0 3px' }}>Projects</div>
-          {railProjects.map(p => (
+          <div style={{ fontSize: 7, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(100,140,200,0.35)', textAlign: 'center', padding: '4px 0 3px' }}>Projects</div>
+          {railProjects
+            .filter(p => !railSearch || p.name?.toLowerCase().includes(railSearch.toLowerCase()) || p.slug?.includes(railSearch.toLowerCase()))
+            .map(p => (
             <RailAvatar
               key={p.slug} slug={p.slug} name={p.name} color={p.color}
               status={null} isAgent={false} isActive={visibleSlugs.has(p.slug)}

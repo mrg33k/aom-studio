@@ -149,6 +149,30 @@ const CONV_API_BASE = IS_LOCAL ? '/api/local/conversations' : '/api/conversation
 const RELAY_SEND_URL = IS_LOCAL ? '/api/local/relay-send' : '/api/dashboard/supabase-messages'
 const DEFAULT_AGENT = 'elon' // Patrik's main agent - camera starts here
 
+// ---- SYSTEM MESSAGE FILTER ----
+// Filters out terminal spawn prompts, inter-agent routing, session logs, and deduplicates.
+// Applied to all chat message loading paths (sidebar + board).
+function filterChatMessages(msgs) {
+  const seen = new Set()
+  return msgs.filter(m => {
+    const src = (m.source || '').toLowerCase()
+    const txt = m.content || m.text || ''
+    // Filter system sources
+    if (src === 'terminal') return false
+    if (src.startsWith('agent-')) return false
+    // Filter system content patterns
+    if (txt.startsWith('[SESSION LOG]')) return false
+    if (txt.startsWith('[From ')) return false
+    if (txt.startsWith('You are ') && txt.includes('Working directory:')) return false
+    if (!txt.trim()) return false
+    // Dedup by content + role (same message appearing multiple times)
+    const key = `${m.role || ''}:${txt.slice(0, 120)}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 // ---- POWERUP MENU CONFIG ----
 const POWERUPS_FALLBACK = [
   { id: 'htt', name: 'Hold That Thought', slash: '/htt', icon: BookmarkPlus, color: '#D97706', subtitle: 'park an idea' },
@@ -11699,14 +11723,15 @@ export default function GameDashboard() {
       fetch(fetchUrl)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
-          const msgs = (data?.messages || [])
-            .filter(m => isAomTeamRoom || (!m.agent || m.agent === room)) // AOM room: no agent filter (aggregate all)
+          const rawMsgs = (data?.messages || [])
+            .filter(m => isAomTeamRoom || (!m.agent || m.agent === room))
             .map(m => ({
               id: m.id, role: m.role || 'assistant', content: m.text || '',
               time: m.timestamp || '', source: m.source || 'supabase',
-              agentTag: isAomTeamRoom ? (m.agent || null) : null, // carry agent slug for project tag badge
-              projectPath: isAomTeamRoom ? (m.project_path || null) : null, // project path for tag chip
-            })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+              agentTag: isAomTeamRoom ? (m.agent || null) : null,
+              projectPath: isAomTeamRoom ? (m.project_path || null) : null,
+            }))
+          const msgs = filterChatMessages(rawMsgs)
           console.log(`[Corner] Proxy: loaded ${msgs.length} msgs for ${room}${isAomTeamRoom ? ' (aggregate)' : ''}`)
           setAgentChats(prev => ({ ...prev, [room]: { _all: msgs } }))
           setPanelChatLoading(false)
@@ -11724,7 +11749,7 @@ export default function GameDashboard() {
         fetch(`/api/local/conversations?all=true&limit=200`)
           .then(res => res.ok ? res.json() : null)
           .then(data => {
-            const msgs = (data?.messages || []).map(m => ({
+            const rawMsgs2 = (data?.messages || []).map(m => ({
               role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
               content: m.text || '',
               time: m.timestamp || '',
@@ -11732,7 +11757,8 @@ export default function GameDashboard() {
               id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
               agentTag: m.agent || null,
               projectPath: m.project_path || null,
-            })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+            })).filter(m => m.content)
+            const msgs = filterChatMessages(rawMsgs2)
             console.log(`[Corner] Local aggregate: loaded ${msgs.length} msgs for AOM Team Room`)
             setAgentChats(prev => ({ ...prev, [slug]: { _all: msgs } }))
             setPanelChatLoading(false)
@@ -11750,13 +11776,14 @@ export default function GameDashboard() {
       fetch(`${CONV_API_BASE}?target=${convTarget}&type=${convType}&limit=50`)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
-          const msgs = (data?.messages || []).map(m => ({
+          const rawMsgs3 = (data?.messages || []).map(m => ({
             role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
             content: m.text || '',
             time: m.timestamp || '',
             source: m.source || 'file',
             id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-          })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+          })).filter(m => m.content)
+          const msgs = filterChatMessages(rawMsgs3)
           console.log(`[Corner] GitHub: loaded ${msgs.length} msgs for ${slug}`)
           setAgentChats(prev => ({ ...prev, [slug]: { _all: msgs } }))
           setPanelChatLoading(false)
@@ -11854,15 +11881,14 @@ export default function GameDashboard() {
           if (!data?.messages?.length) return
           setAgentChats(prev => {
             const currentMsgs = (prev[selectedRoom]?._all || []).filter(m => !m.streaming)
-            const serverMsgs = data.messages.map(m => ({
+            const serverMsgs = filterChatMessages(data.messages.map(m => ({
               role: m.role || (m.sender === 'patrik' ? 'user' : 'assistant'),
               content: m.text || '',
               time: m.timestamp || '',
               source: m.source || 'file',
               id: m.id || `file-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-              // AOM Team Room: carry agent tag + project path from aggregate data
               ...(isLocalAomRoom ? { agentTag: m.agent || null, projectPath: m.project_path || null } : {}),
-            })).filter(m => m.content && !m.content.startsWith('[SESSION LOG]'))
+            })).filter(m => m.content))
 
             // MERGE instead of replace: keep local-only optimistic messages
             const serverIds = new Set(serverMsgs.map(m => m.id))
