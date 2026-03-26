@@ -3211,10 +3211,10 @@ function MobileFixedInput({
         // while still allowing tap-to-focus on the input inside. 'manipulation' = allow
         // single tap + long press, disable double-tap zoom and pan gestures on the wrapper.
         touchAction: 'manipulation',
-        background: 'rgba(15,25,50,0.98)',
+        background: isNightMode ? 'rgba(15,25,50,0.98)' : 'rgba(20,50,110,0.97)',
         borderTop: isNightMode
           ? '2px solid rgba(59,130,246,0.12)'
-          : '2px solid rgba(59,130,246,0.18)',
+          : '2px solid rgba(59,130,246,0.30)',
         padding: '6px 14px',
         // When keyboard open: minimal padding (keyboard provides clearance).
         // When raised above HUD (bottomOffset > 0, full-snap): no SAB needed -- bar is
@@ -3380,13 +3380,13 @@ function MobileFixedInput({
           spellCheck={false}
           style={{
             width: '100%',
-            background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)',
-            border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.15)',
+            background: isNightMode ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.10)',
+            border: isNightMode ? '2px solid rgba(59,130,246,0.2)' : '2px solid rgba(59,130,246,0.35)',
             borderRadius: 10,
             padding: '10px 52px 10px 44px',
             fontSize: 15, fontWeight: 400,
             fontFamily: "'Inter', system-ui, sans-serif",
-            color: isNightMode ? '#F1F5F9' : '#E2E8F0',
+            color: '#F1F5F9',
             outline: 'none',
             transition: 'border-color 200ms ease, box-shadow 200ms ease',
             userSelect: 'text',
