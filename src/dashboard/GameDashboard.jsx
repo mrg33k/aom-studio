@@ -28,6 +28,7 @@ import { useWebSocket, WS_STATE } from './useWebSocket.js'
 // Only CanvasOffice (3-layer system) renders characters now
 // import CanvasOffice from './CanvasOffice.jsx'
 import HexGrid from './HexGrid.jsx'
+import AvatarTiles from './AvatarTiles.jsx'
 
 import { useDataPipe } from './hooks/useDataPipe.js'
 import TaskContextMenuShared, { TaskPriorityBar, TaskNoteIndicator, handleTaskContextAction } from './components/TaskContextMenu.jsx'
@@ -9561,8 +9562,9 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
               isNearBottomRef.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < threshold
               if (isNearBottomRef.current) setShowNewMsgIndicator(false)
             }} style={{
-              flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px',
-              display: 'flex', flexDirection: 'column', gap: 14,
+              flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden',
+              padding: isMobile ? '12px 12px' : '16px 20px',
+              display: 'flex', flexDirection: 'column', gap: isMobile ? 10 : 14,
               position: 'relative',
             }}>
               {chatLoading && (
@@ -9727,7 +9729,7 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                 return (
                   <div key={msg.id || i}
                     style={{
-                      display: 'flex', gap: 10, alignItems: 'flex-start',
+                      display: 'flex', gap: isMobile ? 8 : 10, alignItems: 'flex-start',
                       flexDirection: isUser ? 'row-reverse' : 'row',
                       position: 'relative',
                       marginTop: 0,
@@ -9748,14 +9750,14 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     onTouchEnd={() => clearTimeout(msgLongPressRef.current)}
                     onTouchMove={() => clearTimeout(msgLongPressRef.current)}
                   >
-                    {/* Avatar -- 36px with colored ring per Steffen target */}
+                    {/* Avatar -- 28px mobile, 36px desktop */}
                     {isUser ? (
                       <div style={{
-                        width: 36, height: 36, borderRadius: '50%',
-                        border: '3px solid #F59E0B',
+                        width: isMobile ? 28 : 36, height: isMobile ? 28 : 36, borderRadius: '50%',
+                        border: `${isMobile ? 2 : 3}px solid #F59E0B`,
                         background: '#F59E0B',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 14, fontWeight: 800, color: '#1E2A3A',
+                        fontSize: isMobile ? 11 : 14, fontWeight: 800, color: '#1E2A3A',
                         flexShrink: 0,
                         boxShadow: '0 0 12px rgba(245,158,11,0.4), 0 2px 4px rgba(0,0,0,0.2)',
                       }}>
@@ -9764,19 +9766,19 @@ function UnifiedPanel({ room, agent, agentStatus, allAgentStatus, onClose, onCha
                     ) : (
                       <SpriteAvatar
                         agentSlug={isAomRoom && msgAgentSlug ? msgAgentSlug : room?.id}
-                        size={36}
+                        size={isMobile ? 28 : 36}
                         borderColor={isAomRoom && msgAgentSlug ? msgAgentColor : agentColor}
                         status={status}
                         style={{
                           flexShrink: 0,
-                          borderWidth: 3,
+                          borderWidth: isMobile ? 2 : 3,
                           boxShadow: `0 0 12px ${isAomRoom && msgAgentSlug ? msgAgentColor : agentColor}40, 0 2px 4px rgba(0,0,0,0.2)`,
                         }}
                       />
                     )}
 
                     {/* Message content */}
-                    <div style={{ maxWidth: '80%', minWidth: 0, overflow: 'hidden' }}>
+                    <div style={{ maxWidth: isMobile ? '85%' : '80%', minWidth: 0, overflow: 'visible' }}>
                       {/* Name + timestamp + project chip -- on every message in AOM Team Room */}
                       {!msg.streaming && (
                         <div style={{
@@ -12694,44 +12696,84 @@ export default function GameDashboard() {
               {currentMode === 'game' && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundColor: '#0A0F1A' }} />
               )}
-              {/* CSS/SVG HexGrid -- zero Canvas, zero rAF */}
-              <HexGrid
-                ref={canvasOfficeRef}
-                agentStatus={agentStatus}
-                rooms={hexRooms}
-                onRoomClick={handleRoomClick}
-                selectedRoom={selectedRoom}
-                hoveredRoom={hoveredRoom}
-                setHoveredRoom={setHoveredRoom}
-                isNightMode={isNightMode}
-                drawerSnap={drawerSnap}
-                isMobile={isMobile}
-                mobileHudHeight={isMobile ? hudBarHeight : 0}
-                initialFocusRoom={isMobile ? DEFAULT_AGENT : null}
-                unreadAgents={unreadAgents}
-                onOpenChat={(roomId) => {
-                  handleChat(roomId)
-                  setPanelActiveTab('chat')
-                  setPanelVisible(true)
-                }}
-                onSendMessage={(roomId) => {
-                  handleChat(roomId)
-                  setPanelActiveTab('chat')
-                  setPanelVisible(true)
-                  setTimeout(() => {
-                    const input = document.querySelector('[data-panel-chat-input]')
-                    if (input) input.focus()
-                  }, 150)
-                }}
-                onViewTasks={(roomId) => {
-                  setSelectedRoom(roomId)
-                  setCameraTarget(roomId)
-                  setIsOverview(false)
-                  setPanelVisible(true)
-                  setPanelActiveTab('tasks')
-                }}
-                onSetAsHome={() => {}}
-              />
+              {/* Mobile: Avatar Tiles (premium card grid). Desktop: HexGrid (CSS/SVG hex layout). */}
+              {isMobile ? (
+                <AvatarTiles
+                  ref={canvasOfficeRef}
+                  agentStatus={agentStatus}
+                  rooms={hexRooms}
+                  onRoomClick={handleRoomClick}
+                  selectedRoom={selectedRoom}
+                  hoveredRoom={hoveredRoom}
+                  setHoveredRoom={setHoveredRoom}
+                  isNightMode={isNightMode}
+                  drawerSnap={drawerSnap}
+                  isMobile={isMobile}
+                  mobileHudHeight={hudBarHeight}
+                  initialFocusRoom={DEFAULT_AGENT}
+                  unreadAgents={unreadAgents}
+                  onOpenChat={(roomId) => {
+                    handleChat(roomId)
+                    setPanelActiveTab('chat')
+                    setPanelVisible(true)
+                  }}
+                  onSendMessage={(roomId) => {
+                    handleChat(roomId)
+                    setPanelActiveTab('chat')
+                    setPanelVisible(true)
+                    setTimeout(() => {
+                      const input = document.querySelector('[data-panel-chat-input]')
+                      if (input) input.focus()
+                    }, 150)
+                  }}
+                  onViewTasks={(roomId) => {
+                    setSelectedRoom(roomId)
+                    setCameraTarget(roomId)
+                    setIsOverview(false)
+                    setPanelVisible(true)
+                    setPanelActiveTab('tasks')
+                  }}
+                  onSetAsHome={() => {}}
+                />
+              ) : (
+                <HexGrid
+                  ref={canvasOfficeRef}
+                  agentStatus={agentStatus}
+                  rooms={hexRooms}
+                  onRoomClick={handleRoomClick}
+                  selectedRoom={selectedRoom}
+                  hoveredRoom={hoveredRoom}
+                  setHoveredRoom={setHoveredRoom}
+                  isNightMode={isNightMode}
+                  drawerSnap={drawerSnap}
+                  isMobile={false}
+                  mobileHudHeight={0}
+                  initialFocusRoom={null}
+                  unreadAgents={unreadAgents}
+                  onOpenChat={(roomId) => {
+                    handleChat(roomId)
+                    setPanelActiveTab('chat')
+                    setPanelVisible(true)
+                  }}
+                  onSendMessage={(roomId) => {
+                    handleChat(roomId)
+                    setPanelActiveTab('chat')
+                    setPanelVisible(true)
+                    setTimeout(() => {
+                      const input = document.querySelector('[data-panel-chat-input]')
+                      if (input) input.focus()
+                    }, 150)
+                  }}
+                  onViewTasks={(roomId) => {
+                    setSelectedRoom(roomId)
+                    setCameraTarget(roomId)
+                    setIsOverview(false)
+                    setPanelVisible(true)
+                    setPanelActiveTab('tasks')
+                  }}
+                  onSetAsHome={() => {}}
+                />
+              )}
 
               {/* Camera controls REMOVED per Patrik directive. Zoom/home/overview via keyboard only. */}
 
